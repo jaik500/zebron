@@ -8,9 +8,18 @@ export const routes: Routes = [
         './features/resources/pages/resource-list/resource-list.component'
       ).then((m) => m.ResourceListComponent),
   },
+
+  {
+    path: 'resources/:slug',
+    loadComponent: () =>
+      import(
+        './features/resources/pages/resource-detail/resource-detail.component'
+      ).then((m) => m.ResourceDetailComponent),
+  },
+
   {
     path: '',
-    redirectTo: 'resources',
     pathMatch: 'full',
+    redirectTo: '/resources',
   },
 ];

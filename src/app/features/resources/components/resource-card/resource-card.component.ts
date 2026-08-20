@@ -1,12 +1,15 @@
 import { Component, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Resource } from '../../../../core/models/resource.model';
 
 @Component({
   selector: 'app-resource-card',
   standalone: true,
+  imports: [RouterLink],
   template: `
-    <article
-      class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm
+    <a
+      [routerLink]="['/resources', resource().slug]"
+      class="block rounded-xl border border-gray-200 bg-white p-5 shadow-sm
              transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <div class="flex items-start justify-between gap-4">
@@ -53,7 +56,7 @@ import { Resource } from '../../../../core/models/resource.model';
           }
         </div>
       }
-    </article>
+    </a>
   `,
   styles: [],
 })
