@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import {
   collection,
   getDocs,
-  orderBy,
   query,
   where,
 } from 'firebase/firestore';
@@ -17,17 +16,24 @@ export class CategoryService {
   async getActiveCategories(): Promise<Category[]> {
     const categoriesRef = collection(firestore, 'categories');
 
+    // Load categories that are published.
+    // We sort them in Angular instead of using Firestore orderBy()
+    // so we do not need a composite Firestore index.
     const categoriesQuery = query(
       categoriesRef,
-      where('active', '==', true),
-      orderBy('sortOrder')
+      where('status', '==', 'published')
     );
 
     const snapshot = await getDocs(categoriesQuery);
 
-    return snapshot.docs.map((doc) => ({
+    const categories = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Category[];
+
+    // Sort categories alphabetically by name.
+    return categories.sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
   }
 }

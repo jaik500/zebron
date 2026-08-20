@@ -4,6 +4,7 @@ import { ResourceService } from '../../../../core/services/resource.service';
 import { ResourceCardComponent } from '../../components/resource-card/resource-card.component';
 import { CategoryService } from '../../../../core/services/category.service';
 import { Category } from '../../../../core/models/category.model';
+import { ActivatedRoute, Router, } from '@angular/router';
 
 @Component({
   selector: 'app-resource-list',
@@ -189,6 +190,8 @@ import { Category } from '../../../../core/models/category.model';
 export class ResourceListComponent implements OnInit {
   private readonly resourceService = inject(ResourceService);
   private readonly categoryService = inject(CategoryService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   protected readonly resources = signal<Resource[]>([]);
   protected readonly categories = signal<Category[]>([]);
@@ -262,18 +265,25 @@ export class ResourceListComponent implements OnInit {
   ngOnInit(): void {
     this.loadResources();
     this.loadCategories();
-  }
 
-  private async loadCategories(): Promise<void> {
-    try {
-      const categories =
-        await this.categoryService.getActiveCategories();
+    // Read the category filter from the URL.
+    const category = this.route.snapshot.queryParamMap.get('category');
 
-      this.categories.set(categories);
-    } catch (error) {
-      console.error('Failed to load categories:', error);
+    if (category) {
+      this.selectedCategory.set(category);
     }
   }
+
+    private async loadCategories(): Promise<void> {
+      try {
+        const categories =
+          await this.categoryService.getActiveCategories();
+
+        this.categories.set(categories);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      }
+    }
 
   protected onSearch(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -296,9 +306,20 @@ export class ResourceListComponent implements OnInit {
   }
 
   protected onCategoryChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    this.selectedCategory.set(select.value);
-  }
+      const select = event.target as HTMLSelectElement;
+      const category = select.value;
+
+      this.selectedCategory.set(category);
+
+      // Keep the selected category in the URL so the filter is shareable.
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {
+          category: category || null,
+        },
+        queryParamsHandling: 'merge',
+      });
+    }
 
   protected clearFilters(): void {
     this.searchTerm.set('');

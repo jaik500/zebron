@@ -84,4 +84,35 @@ export class ResourceService {
       ...document.data(),
     } as Resource;
   }
+
+  /**
+ * Get published resources that belong to the same category.
+ *
+ * The current resource is excluded from the results.
+ */
+  async getRelatedResources(
+    categoryId: string,
+    currentResourceId: string,
+    limitCount = 3
+  ): Promise<Resource[]> {
+    const resourcesRef = collection(firestore, 'resources');
+
+    const resourcesQuery = query(
+      resourcesRef,
+      where('categoryId', '==', categoryId),
+      where('status', '==', 'published'),
+      limit(limitCount + 1)
+    );
+
+    const snapshot = await getDocs(resourcesQuery);
+
+    return snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }) as Resource)
+      .filter((resource) => resource.id !== currentResourceId)
+      .slice(0, limitCount);
+  }
+
 }
