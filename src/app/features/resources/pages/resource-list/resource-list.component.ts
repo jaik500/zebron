@@ -5,6 +5,7 @@ import { ResourceCardComponent } from '../../components/resource-card/resource-c
 import { CategoryService } from '../../../../core/services/category.service';
 import { Category } from '../../../../core/models/category.model';
 import { ActivatedRoute, Router, } from '@angular/router';
+import { QueryDocumentSnapshot } from 'firebase/firestore';
 
 @Component({
   selector: 'app-resource-list',
@@ -12,11 +13,25 @@ import { ActivatedRoute, Router, } from '@angular/router';
   imports: [ResourceCardComponent],
   template: `
     <main class="p-8">
-      <h1 class="text-3xl font-bold">Resources</h1>
+      <!-- Page header -->
+      <section class="rounded-2xl bg-gray-50 px-6 py-8 sm:px-8">
+        <div class="max-w-3xl">
+          <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">
+            Resource Directory
+          </p>
 
-      <p class="mt-2 text-gray-600">
-        Browse available resources.
-      </p>
+          <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            Find the help you need
+          </h1>
+
+          <p class="mt-3 text-base leading-7 text-gray-600 sm:text-lg">
+            Browse trusted resources, services, organizations, and tools
+            available to help you and your community.
+          </p>
+        </div>
+      </section>
+
+     
 
       <!-- Category navigation -->
       <section class="mt-6">
@@ -294,6 +309,19 @@ export class ResourceListComponent implements OnInit {
   protected readonly onlineOnly = signal(false);
   protected readonly featuredOnly = signal(false);
 
+    // Pagination state for the public resource list.
+  // Firestore uses the last document as the cursor for the next page.
+  private lastResourceDocument: QueryDocumentSnapshot | undefined;
+
+  // Controls whether another page of resources is available.
+  protected readonly hasMoreResources = signal(true);
+
+  // Separate loading state for the "Load More" button.
+  protected readonly loadingMore = signal(false);
+
+  // Number of resources requested from Firestore per page.
+  private readonly resourcePageSize = 12;
+
   protected readonly resourceTypes: ResourceType[] = [
     'government',
     'nonprofit',
@@ -461,15 +489,31 @@ export class ResourceListComponent implements OnInit {
     return type.charAt(0).toUpperCase() + type.slice(1);
   }
 
+    /**
+   * Load the first page of published resources.
+   *
+   * This resets the Firestore pagination cursor so a fresh
+   * query always starts from the newest resources.
+   */
   private async loadResources(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
-    try {
-      const resources =
-        await this.resourceService.getPublishedResources();
+    // Reset pagination state for a fresh resource load.
+    this.lastResourceDocument = undefined;
+    this.hasMoreResources.set(true);
 
-      this.resources.set(resources);
+    try {
+      const page =
+        await this.resourceService.getPublishedResourcesPage(
+          this.resourcePageSize
+        );
+
+      this.resources.set(page.resources);
+      this.lastResourceDocument =
+        page.lastDocument ?? undefined;
+      this.hasMoreResources.set(page.hasMore);
+
     } catch (error) {
       console.error('Failed to load resources:', error);
 
@@ -478,6 +522,52 @@ export class ResourceListComponent implements OnInit {
       );
     } finally {
       this.loading.set(false);
+    }
+  }
+
+    /**
+   * Load the next page of published resources and append
+   * the results to the resources already displayed.
+   */
+  protected async loadMoreResources(): Promise<void> {
+    if (
+      this.loadingMore() ||
+      !this.hasMoreResources()
+    ) {
+      return;
+    }
+
+    this.loadingMore.set(true);
+
+    try {
+      const page =
+        await this.resourceService.getPublishedResourcesPage(
+          this.resourcePageSize,
+          this.lastResourceDocument
+        );
+
+      // Append the new page instead of replacing the existing results.
+      this.resources.update((resources) => [
+        ...resources,
+        ...page.resources,
+      ]);
+
+      this.lastResourceDocument =
+        page.lastDocument ?? undefined;
+
+      this.hasMoreResources.set(page.hasMore);
+
+    } catch (error) {
+      console.error(
+        'Failed to load more resources:',
+        error
+      );
+
+      this.error.set(
+        'Unable to load more resources. Please try again.'
+      );
+    } finally {
+      this.loadingMore.set(false);
     }
   }
 
