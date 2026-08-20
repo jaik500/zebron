@@ -1,5 +1,4 @@
 import { Timestamp } from 'firebase/firestore';
-import { Location } from './location.model';
 import { Availability } from './availability.model';
 
 export type ResourceType =
@@ -39,7 +38,7 @@ export interface Resource {
   phone?: string;
   email?: string;
 
-  location?: Location;
+  locationId?: string;
   availability?: Availability;
 
   online: boolean;

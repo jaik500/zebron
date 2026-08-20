@@ -1,12 +1,16 @@
 import { Injectable } from '@angular/core';
 import {
+  addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
   limit,
   orderBy,
   query,
+  serverTimestamp,
+  updateDoc,
   where,
 } from 'firebase/firestore';
 
@@ -113,6 +117,80 @@ export class ResourceService {
       }) as Resource)
       .filter((resource) => resource.id !== currentResourceId)
       .slice(0, limitCount);
+  }
+
+    /**
+   * Get all resources for the admin dashboard.
+   *
+   * Unlike the public resource list, this includes
+   * draft, pending, published, and archived resources.
+   */
+  async getAllResources(): Promise<Resource[]> {
+    const resourcesQuery = query(
+      this.resourcesCollection,
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(resourcesQuery);
+
+    return snapshot.docs.map((document) => ({
+      id: document.id,
+      ...document.data(),
+    })) as Resource[];
+  }
+
+  /**
+   * Create a new resource.
+   */
+  async createResource(
+    resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
+    const document = await addDoc(
+      this.resourcesCollection,
+      {
+        ...resource,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }
+    );
+
+    return document.id;
+  }
+
+  /**
+   * Update an existing resource.
+   */
+  async updateResource(
+    resourceId: string,
+    resource: Partial<
+      Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>
+    >
+  ): Promise<void> {
+    const resourceRef = doc(
+      firestore,
+      'resources',
+      resourceId
+    );
+
+    await updateDoc(resourceRef, {
+      ...resource,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  /**
+   * Delete an existing resource.
+   */
+  async deleteResource(
+    resourceId: string
+  ): Promise<void> {
+    const resourceRef = doc(
+      firestore,
+      'resources',
+      resourceId
+    );
+
+    await deleteDoc(resourceRef);
   }
 
 }

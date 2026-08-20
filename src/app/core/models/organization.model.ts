@@ -1,5 +1,4 @@
 import { Timestamp } from 'firebase/firestore';
-import { Location } from './location.model';
 
 export interface Organization {
   id: string;
@@ -13,7 +12,7 @@ export interface Organization {
 
   logoUrl?: string;
 
-  location?: Location;
+  locationId?: string;
 
   verified: boolean;
   active: boolean;

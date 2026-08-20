@@ -18,9 +18,25 @@ import { Resource } from '../../../../core/models/resource.model';
             {{ resource().name }}
           </h2>
 
-          <p class="mt-1 text-sm text-gray-500">
-            {{ resource().resourceType }}
-          </p>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <!-- Resource type -->
+            <span
+              class="rounded-full bg-gray-100 px-2.5 py-1 text-xs
+                    font-medium text-gray-700"
+            >
+              {{ resource().resourceType }}
+            </span>
+
+            <!-- Category -->
+            @if (categoryName()) {
+              <span
+                class="rounded-full bg-blue-50 px-2.5 py-1 text-xs
+                      font-medium text-blue-700"
+              >
+                {{ categoryName() }}
+              </span>
+            }
+          </div>
         </div>
 
         @if (resource().featured) {
@@ -62,4 +78,7 @@ import { Resource } from '../../../../core/models/resource.model';
 })
 export class ResourceCardComponent {
   readonly resource = input.required<Resource>();
+
+  // The category name associated with this resource.
+  readonly categoryName = input<string>('');
 }

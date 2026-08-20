@@ -1,9 +1,14 @@
-import { Component, inject, input, OnInit, signal } from '@angular/core';
+import { Component, inject, input, effect, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
+
 import { ResourceCardComponent } from '../../components/resource-card/resource-card.component';
 import { Resource } from '../../../../core/models/resource.model';
 import { ResourceService } from '../../../../core/services/resource.service';
-import { CommonModule } from '@angular/common';
+import { Location } from '../../../../core/models/location.model';
+import { LocationService } from '../../../../core/services/location.service';
+import { Category } from '../../../../core/models/category.model';
+import { CategoryService } from '../../../../core/services/category.service';
 
 @Component({
   selector: 'app-resource-detail',
@@ -46,7 +51,18 @@ import { CommonModule } from '@angular/common';
               {{ resource()!.name }}
             </h1>
 
-            <p class="mt-2 text-gray-500">
+            @if (category()) {
+              <a
+                [routerLink]="['/resources']"
+                [queryParams]="{ category: category()!.slug }"
+                class="mt-2 inline-block text-sm font-medium text-blue-600
+                      hover:text-blue-800 hover:underline"
+              >
+                {{ category()!.name }}
+              </a>
+            }
+
+            <p class="mt-1 text-gray-500">
               {{ resource()!.resourceType }}
             </p>
           </div>
@@ -174,7 +190,7 @@ import { CommonModule } from '@angular/common';
         </div>
 
         <!-- Location -->
-        @if (resource()!.location) {
+        @if (location()) {
           <div class="mt-8">
             <h2 class="text-xl font-semibold text-gray-900">
               Location
@@ -185,58 +201,58 @@ import { CommonModule } from '@angular/common';
                      bg-gray-50 p-5"
             >
 
-              @if (resource()!.location!.address) {
+              @if (location()?.address) {
                 <p class="text-gray-700">
-                  {{ resource()!.location!.address }}
+                  {{ location()?.address }}
                 </p>
               }
 
               @if (
-                resource()!.location!.city ||
-                resource()!.location!.state ||
-                resource()!.location!.zipCode
+                location()?.city ||
+                location()?.state ||
+                location()?.zipCode
               ) {
                 <p class="mt-1 text-gray-600">
 
-                  @if (resource()!.location!.city) {
-                    {{ resource()!.location!.city }}
+                  @if (location()?.city) {
+                    {{ location()?.city }}
                   }
 
                   @if (
-                    resource()!.location!.city &&
-                    resource()!.location!.state
+                    location()?.city &&
+                    location()?.state
                   ) {
                     ,
                   }
 
-                  @if (resource()!.location!.state) {
-                    {{ resource()!.location!.state }}
+                  @if (location()?.state) {
+                    {{ location()?.state }}
                   }
 
-                  @if (resource()!.location!.zipCode) {
-                    {{ resource()!.location!.zipCode }}
+                  @if (location()?.zipCode) {
+                    {{ location()?.zipCode }}
                   }
 
                 </p>
               }
 
-              @if (resource()!.location!.country) {
+              @if (location()?.country) {
                 <p class="mt-1 text-gray-600">
-                  {{ resource()!.location!.country }}
+                  {{ location()?.country }}
                 </p>
               }
 
               @if (
-                resource()!.location!.latitude !== undefined &&
-                resource()!.location!.longitude !== undefined
+                location()?.latitude !== undefined &&
+                location()?.longitude !== undefined
               ) {
                 <a
                   class="mt-4 inline-block text-blue-600 hover:underline"
                   [href]="
                     'https://www.google.com/maps/search/?api=1&query=' +
-                    resource()!.location!.latitude +
+                    location()?.latitude +
                     ',' +
-                    resource()!.location!.longitude
+                    location()?.longitude
                   "
                   target="_blank"
                   rel="noopener noreferrer"
@@ -501,7 +517,7 @@ import { CommonModule } from '@angular/common';
                 Other resources in this category.
               </p>
 
-              <div class="mt-5 space-y-4">
+              <div class="mt-6 grid gap-2">
                 @for (
                   relatedResource of relatedResources();
                   track relatedResource.id
@@ -524,48 +540,76 @@ import { CommonModule } from '@angular/common';
   `,
   styles: [],
 })
-export class ResourceDetailComponent implements OnInit {
+export class ResourceDetailComponent {
   private readonly resourceService = inject(ResourceService);
+  private readonly locationService = inject(LocationService);
+  private readonly categoryService = inject(CategoryService);
 
   readonly slug = input.required<string>();
 
   protected readonly resource = signal<Resource | null>(null);
+  protected readonly location = signal<Location | null>(null);
+  protected readonly category = signal<Category | null>(null);
   protected readonly relatedResources = signal<Resource[]>([]);
   protected readonly relatedLoading = signal(false);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
 
-  ngOnInit(): void {
+  constructor() {
+  // Reload the resource whenever the route slug changes.
+  effect(() => {
+    this.slug();
     this.loadResource();
+  });
 }
 
-  private async loadResource(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
+ private async loadResource(): Promise<void> {
+  this.loading.set(true);
+  this.error.set(null);
 
-    try {
-      const resource =
-        await this.resourceService.getResourceBySlug(this.slug());
+  try {
+    const resource =
+      await this.resourceService.getResourceBySlug(this.slug());
 
-      if (!resource) {
-        this.error.set('Resource not found.');
-        return;
-      }
-
-      this.resource.set(resource);
-
-      // Load other published resources from the same category.
-      await this.loadRelatedResources(resource);
-    } catch (error) {
-      console.error('Failed to load resource:', error);
-
-      this.error.set(
-        'Unable to load this resource. Please try again later.'
-      );
-    } finally {
-      this.loading.set(false);
+    if (!resource) {
+      this.error.set('Resource not found.');
+      return;
     }
+
+    this.resource.set(resource);
+
+    // Load the location associated with this resource.
+    if (resource.locationId) {
+      const location =
+        await this.locationService.getLocationById(
+          resource.locationId
+        );
+
+      this.location.set(location);
+    }
+
+        // Load the category associated with this resource.
+    if (resource.categoryId) {
+      const category =
+        await this.categoryService.getCategoryById(
+          resource.categoryId
+        );
+
+      this.category.set(category);
+    }
+
+    // Load other published resources from the same category.
+    await this.loadRelatedResources(resource);
+  } catch (error) {
+    console.error('Failed to load resource:', error);
+
+    this.error.set(
+      'Unable to load this resource. Please try again later.'
+    );
+  } finally {
+    this.loading.set(false);
   }
+}
 
   private async loadRelatedResources(
     resource: Resource

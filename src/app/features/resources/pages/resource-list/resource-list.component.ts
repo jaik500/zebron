@@ -18,6 +18,43 @@ import { ActivatedRoute, Router, } from '@angular/router';
         Browse available resources.
       </p>
 
+      <!-- Category navigation -->
+      <section class="mt-6">
+        <h2 class="text-lg font-semibold text-gray-900">
+          Browse by category
+        </h2>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            (click)="selectCategory('')"
+            [class.bg-blue-600]="!selectedCategory()"
+            [class.text-white]="!selectedCategory()"
+            [class.bg-gray-100]="selectedCategory()"
+            [class.text-gray-700]="selectedCategory()"
+            class="rounded-full px-4 py-2 text-sm font-medium
+                  hover:bg-blue-100"
+          >
+            All
+          </button>
+
+          @for (category of categories(); track category.id) {
+            <button
+              type="button"
+              (click)="selectCategory(category.slug)"
+              [class.bg-blue-600]="selectedCategory() === category.slug"
+              [class.text-white]="selectedCategory() === category.slug"
+              [class.bg-gray-100]="selectedCategory() !== category.slug"
+              [class.text-gray-700]="selectedCategory() !== category.slug"
+              class="rounded-full px-4 py-2 text-sm font-medium
+                    hover:bg-blue-100"
+            >
+              {{ category.name }}
+            </button>
+          }
+        </div>
+      </section>
+
       <!-- Search and filters -->
       <section
         class="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
@@ -63,7 +100,7 @@ import { ActivatedRoute, Router, } from '@angular/router';
             >
               <option value="">All categories</option>
 
-              @for (category of categories(); track category.id) {
+              @for (category of categories(); track category.slug) {
                 <option [value]="category.slug">
                   {{ category.name }}
                 </option>
@@ -142,7 +179,34 @@ import { ActivatedRoute, Router, } from '@angular/router';
       </section>
 
       @if (loading()) {
-        <p class="mt-6">Loading resources...</p>
+        <!-- Resource loading skeletons -->
+        <div
+          class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          aria-label="Loading resources"
+        >
+          @for (skeleton of [1, 2, 3, 4, 5, 6]; track skeleton) {
+            <div
+              class="animate-pulse rounded-xl border border-gray-200
+                    bg-white p-5 shadow-sm"
+            >
+              <!-- Category skeleton -->
+              <div class="h-5 w-24 rounded bg-gray-200"></div>
+
+              <!-- Title skeleton -->
+              <div class="mt-4 h-6 w-3/4 rounded bg-gray-200"></div>
+
+              <!-- Description skeleton -->
+              <div class="mt-3 space-y-2">
+                <div class="h-4 w-full rounded bg-gray-200"></div>
+                <div class="h-4 w-5/6 rounded bg-gray-200"></div>
+                <div class="h-4 w-2/3 rounded bg-gray-200"></div>
+              </div>
+
+              <!-- Footer skeleton -->
+              <div class="mt-6 h-4 w-28 rounded bg-gray-200"></div>
+            </div>
+          }
+        </div>
       }
 
       @if (error()) {
@@ -157,9 +221,31 @@ import { ActivatedRoute, Router, } from '@angular/router';
         resources().length > 0 &&
         filteredResources().length === 0
       ) {
-        <p class="mt-6 text-gray-600">
-          No resources match your search or filters.
-        </p>
+        <div
+          class="mt-8 rounded-xl border border-gray-200
+                bg-white p-8 text-center shadow-sm"
+        >
+          <h2 class="text-lg font-semibold text-gray-900">
+            No resources found
+          </h2>
+
+          <p class="mt-2 text-sm text-gray-600">
+            We couldn't find any resources matching your
+            current search or filters.
+          </p>
+
+          @if (hasActiveFilters()) {
+            <button
+              type="button"
+              (click)="clearFilters()"
+              class="mt-5 rounded-lg bg-blue-600 px-5 py-2
+                    text-sm font-medium text-white
+                    hover:bg-blue-700"
+            >
+              Clear filters
+            </button>
+          }
+        </div>
       }
 
       @if (
@@ -169,7 +255,10 @@ import { ActivatedRoute, Router, } from '@angular/router';
       ) {
         <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           @for (resource of filteredResources(); track resource.id) {
-            <app-resource-card [resource]="resource" />
+            <app-resource-card 
+              [resource]="resource" 
+              [categoryName]="getCategoryName(resource.categoryId)"
+            /> 
           }
         </div>
       }
@@ -216,41 +305,71 @@ export class ResourceListComponent implements OnInit {
     'other',
   ];
 
-  protected readonly filteredResources = computed(() => {
-    const search = this.searchTerm().trim().toLowerCase();
-    const type = this.selectedType();
-    const category = this.selectedCategory();
+  protected readonly selectedCategoryId = computed(() => {
+    const slug = this.selectedCategory();
 
-    return this.resources().filter((resource) => {
-      const matchesSearch =
-        !search ||
-        resource.name.toLowerCase().includes(search) ||
-        resource.description.toLowerCase().includes(search) ||
-        resource.tags.some((tag) =>
-          tag.toLowerCase().includes(search)
-        );
+    if (!slug) {
+      return '';
+    }
 
-      const matchesType =
-        !type || resource.resourceType === type;
+    const category = this.categories().find(
+      (category) => category.slug === slug
+    );
 
-      const matchesCategory =
-        !category || resource.categoryId === category;
-
-      const matchesOnline =
-        !this.onlineOnly() || resource.online;
-
-      const matchesFeatured =
-        !this.featuredOnly() || resource.featured;
-
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesCategory &&
-        matchesOnline &&
-        matchesFeatured
-      );
-    });
+    return category?.id ?? '';
   });
+
+  /**
+ * Find the display name for a resource's category.
+ *
+ * Resources store the category document ID,
+ * while categories contain the human-readable name.
+ */
+    protected getCategoryName(categoryId: string): string {
+            return (
+                    this.categories().find(
+                              (category) => category.id === categoryId
+                                      )?.name ?? ''
+                                            );
+                                                
+    }
+
+ protected readonly filteredResources = computed(() => {
+  const search = this.searchTerm().trim().toLowerCase();
+  const type = this.selectedType();
+  const categoryId = this.selectedCategoryId();
+
+  return this.resources().filter((resource) => {
+    const matchesSearch =
+      !search ||
+      resource.name.toLowerCase().includes(search) ||
+      resource.description.toLowerCase().includes(search) ||
+      resource.tags.some((tag) =>
+        tag.toLowerCase().includes(search)
+      );
+
+    const matchesType =
+      !type || resource.resourceType === type;
+
+    const matchesCategory =
+      !categoryId ||
+      resource.categoryId === categoryId;
+
+    const matchesOnline =
+      !this.onlineOnly() || resource.online;
+
+    const matchesFeatured =
+      !this.featuredOnly() || resource.featured;
+
+    return (
+      matchesSearch &&
+      matchesType &&
+      matchesCategory &&
+      matchesOnline &&
+      matchesFeatured
+    );
+  });
+});
 
   protected readonly hasActiveFilters = computed(() => {
     return (
@@ -322,12 +441,21 @@ export class ResourceListComponent implements OnInit {
     }
 
   protected clearFilters(): void {
-    this.searchTerm.set('');
-    this.selectedType.set('');
-    this.selectedCategory.set('');
-    this.onlineOnly.set(false);
-    this.featuredOnly.set(false);
-  }
+  this.searchTerm.set('');
+  this.selectedType.set('');
+  this.selectedCategory.set('');
+  this.onlineOnly.set(false);
+  this.featuredOnly.set(false);
+
+  // Remove the category filter from the URL.
+  this.router.navigate([], {
+    relativeTo: this.route,
+    queryParams: {
+      category: null,
+    },
+    queryParamsHandling: 'merge',
+  });
+}
 
   protected formatResourceType(type: ResourceType): string {
     return type.charAt(0).toUpperCase() + type.slice(1);
@@ -352,4 +480,19 @@ export class ResourceListComponent implements OnInit {
       this.loading.set(false);
     }
   }
+
+  protected selectCategory(categorySlug: string): void {
+    this.selectedCategory.set(categorySlug);
+
+    // Keep the selected category in the URL so the page is shareable.
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        category: categorySlug || null,
+      },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+
 }
