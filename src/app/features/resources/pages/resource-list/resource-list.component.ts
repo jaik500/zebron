@@ -14,17 +14,20 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
   template: `
     <main class="p-8">
       <!-- Page header -->
-      <section class="rounded-2xl bg-gray-50 px-6 py-8 sm:px-8">
+      <section class="rounded-2xl bg-[#032D42] px-6 py-8 text-white shadow-sm sm:px-8">
         <div class="max-w-3xl">
-          <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">
+          <p class="text-sm font-semibold uppercase tracking-wide text-blue-100">
             Resource Directory
           </p>
 
-          <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h1
+            class="mt-2 text-3xl font-bold tracking-tight text-white
+                  sm:text-4xl"
+          >
             Find the help you need
           </h1>
 
-          <p class="mt-3 text-base leading-7 text-gray-600 sm:text-lg">
+          <p class="mt-3 text-base leading-7 text-blue-100 sm:text-lg">
             Browse trusted resources, services, organizations, and tools
             available to help you and your community.
           </p>
@@ -43,7 +46,7 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
           <button
             type="button"
             (click)="selectCategory('')"
-            [class.bg-blue-600]="!selectedCategory()"
+            [class.bg-[#007979]]="!selectedCategory()"
             [class.text-white]="!selectedCategory()"
             [class.bg-gray-100]="selectedCategory()"
             [class.text-gray-700]="selectedCategory()"
@@ -57,7 +60,7 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
             <button
               type="button"
               (click)="selectCategory(category.slug)"
-              [class.bg-blue-600]="selectedCategory() === category.slug"
+              [class.bg-[#007979]]="selectedCategory() === category.slug"
               [class.text-white]="selectedCategory() === category.slug"
               [class.bg-gray-100]="selectedCategory() !== category.slug"
               [class.text-gray-700]="selectedCategory() !== category.slug"
@@ -92,7 +95,7 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
               placeholder="Search resources..."
               class="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2
                      focus:border-blue-500 focus:outline-none focus:ring-2
-                     focus:ring-blue-500"
+                     focus:ring-blue-500 hover:bg-[#032D42]/10"
             />
           </div>
 
@@ -111,7 +114,7 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
               (change)="onCategoryChange($event)"
               class="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2
                     focus:border-blue-500 focus:outline-none focus:ring-2
-                    focus:ring-blue-500"
+                    focus:ring-blue-500 hover:bg-[#032D42]/10"
             >
               <option value="">All categories</option>
 
@@ -136,9 +139,13 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
               id="resourceType"
               [value]="selectedType()"
               (change)="onTypeChange($event)"
-              class="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2
-                     focus:border-blue-500 focus:outline-none focus:ring-2
-                     focus:ring-blue-500"
+              class="mt-1 block w-full rounded-lg border border-gray-300
+                bg-white px-4 py-2.5 text-gray-800 shadow-sm
+                transition
+                hover:border-gray-400
+                hover:bg-[#032D42]/10
+                focus:border-[#032D42] focus:outline-none
+                focus:ring-2 focus:ring-[#032D42]/20"
             >
               <option value="">All types</option>
 
