@@ -9,13 +9,28 @@ import {
   limit,
   orderBy,
   query,
+  QueryDocumentSnapshot,
   serverTimestamp,
+  startAfter,
   updateDoc,
   where,
 } from 'firebase/firestore';
 
 import { firestore } from './firebase-config';
 import { Resource } from '../models/resource.model';
+
+
+/**
+ * Represents one page of published resources.
+ *
+ * The lastDocument is used by Firestore to determine
+ * where the next page should begin.
+ */
+export interface ResourcePage {
+  resources: Resource[];
+  lastDocument: QueryDocumentSnapshot | null;
+  hasMore: boolean;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -42,6 +57,52 @@ export class ResourceService {
           ...document.data(),
         }) as Resource
     );
+  }
+
+     /**
+   * Get one page of published resources.
+   *
+   * Firestore uses the last document from the previous page
+   * to continue loading resources without downloading the
+   * entire collection again.
+   */
+  async getPublishedResourcesPage(
+    pageSize = 12,
+    lastDocument?: QueryDocumentSnapshot
+  ): Promise<ResourcePage> {
+    const resourcesQuery = lastDocument
+      ? query(
+          this.resourcesCollection,
+          where('status', '==', 'published'),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastDocument),
+          limit(pageSize)
+        )
+      : query(
+          this.resourcesCollection,
+          where('status', '==', 'published'),
+          orderBy('createdAt', 'desc'),
+          limit(pageSize)
+        );
+
+    const snapshot = await getDocs(resourcesQuery);
+
+    const resources = snapshot.docs.map(
+      (document) =>
+        ({
+          id: document.id,
+          ...document.data(),
+        }) as Resource
+    );
+
+    return {
+      resources,
+      lastDocument:
+        snapshot.docs.length > 0
+          ? snapshot.docs[snapshot.docs.length - 1]
+          : null,
+      hasMore: snapshot.docs.length === pageSize,
+    };
   }
 
   async getResourceById(
