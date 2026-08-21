@@ -30,6 +30,13 @@ export const routes: Routes = [
       ).then((m) => m.LoginComponent),
   },
 
+  // Public user registration. 
+  { path: 'register', 
+    loadComponent: () => import( 
+      './features/auth/pages/register/register.component' 
+    ).then((m) => m.RegisterComponent), 
+  },
+
    
   // Resource administration.
   {

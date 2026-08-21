@@ -1,11 +1,18 @@
 import { Injectable, signal } from '@angular/core';
 import {
+  createUserWithEmailAndPassword,
   User as FirebaseUser,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
+  updateProfile,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+} from 'firebase/firestore';
 
 import { firebaseAuth, firestore } from './firebase-config';
 import { User } from '../models/user.model';
@@ -118,4 +125,50 @@ export class AuthService {
   async logout(): Promise<void> {
     await signOut(firebaseAuth);
   }
+
+  
+  /**
+   * Register a new Zebron user.
+   *
+   * New accounts always receive the "user" role.
+   * Admin privileges must be granted separately.
+   */
+  async register(
+    email: string,
+    password: string,
+    displayName: string
+  ): Promise<void> {
+    const credential =
+      await createUserWithEmailAndPassword(
+        firebaseAuth,
+        email,
+        password
+      );
+
+    // Store the display name in Firebase Authentication.
+    await updateProfile(credential.user, {
+      displayName,
+    });
+
+    // Create the corresponding Firestore user profile.
+    // New registrations are NEVER created as admins.
+    const userRef = doc(
+      firestore,
+      'users',
+      credential.user.uid
+    );
+
+    await setDoc(userRef, {
+      email: credential.user.email ?? email,
+      displayName,
+      role: 'user',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    // Load the newly-created Firestore profile.
+    await this.loadUserProfile(credential.user);
+  }
+
+
 }

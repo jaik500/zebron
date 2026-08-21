@@ -6,31 +6,63 @@ import { CategoryService } from '../../../../core/services/category.service';
 import { Category } from '../../../../core/models/category.model';
 import { ActivatedRoute, Router, } from '@angular/router';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
+import { RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-resource-list',
   standalone: true,
-  imports: [ResourceCardComponent],
+  imports: [ResourceCardComponent, RouterLink, CommonModule],
   template: `
     <main class="p-8">
       <!-- Page header -->
       <section class="rounded-2xl bg-[#032D42] px-6 py-8 text-white shadow-sm sm:px-8">
-        <div class="max-w-3xl">
-          <p class="text-sm font-semibold uppercase tracking-wide text-blue-100">
-            Resource Directory
-          </p>
+        <div
+          class="flex flex-col gap-6 sm:flex-row
+                sm:items-start sm:justify-between"
+        >
+          <div class="max-w-3xl">
+            <p
+              class="text-sm font-semibold uppercase
+                    tracking-wide text-blue-100"
+            >
+              Resource Directory
+            </p>
 
-          <h1
-            class="mt-2 text-3xl font-bold tracking-tight text-white
-                  sm:text-4xl"
-          >
-            Find the help you need
-          </h1>
+            <h1
+              class="mt-2 text-3xl font-bold tracking-tight text-white
+                    sm:text-4xl"
+            >
+              Find the help you need
+            </h1>
 
-          <p class="mt-3 text-base leading-7 text-blue-100 sm:text-lg">
-            Browse trusted resources, services, organizations, and tools
-            available to help you and your community.
-          </p>
+            <p class="mt-3 text-base leading-7 text-blue-100 sm:text-lg">
+              Browse trusted resources, services, organizations, and tools
+              available to help you and your community.
+            </p>
+          </div>
+
+          <!-- Authentication buttons -->
+          <div class="flex shrink-0 gap-3">
+            <a
+              routerLink="/login"
+              class="rounded-lg border border-white/30
+                    bg-white/10 px-4 py-2.5 text-sm
+                    font-semibold text-white
+                    transition hover:bg-white/20"
+            >
+              Sign in
+            </a>
+
+            <a
+              routerLink="/register"
+              class="rounded-lg bg-white px-4 py-2.5
+                    text-sm font-semibold text-[#032D42]
+                    shadow-sm transition hover:bg-blue-50"
+            >
+              Register
+            </a>
+          </div>
         </div>
       </section>
 
