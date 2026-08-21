@@ -236,7 +236,7 @@ import { Location } from '../../../../core/models/location.model';
             <button
               type="submit"
               [disabled]="saving()"
-              class="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              class="rounded-lg bg-[#032D42] px-5 py-2 text-sm font-medium text-white hover:bg-[#032D42]/90 disabled:opacity-50"
             >
               {{
                 saving() ? 'Saving...' : editingId() ? 'Update organization' : 'Create organization'
@@ -286,7 +286,7 @@ import { Location } from '../../../../core/models/location.model';
 
                     @if (organization.verified) {
                       <span
-                        class="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700"
+                        class="rounded-full bg-[#007979]/10 px-2 py-1 text-xs font-medium text-[#007979]"
                       >
                         Verified
                       </span>

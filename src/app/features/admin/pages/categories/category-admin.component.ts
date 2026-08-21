@@ -63,8 +63,8 @@ import { CategoryService } from '../../../../core/services/category.service';
               placeholder="Food Assistance"
               class="mt-1 block w-full rounded-lg border
                      border-gray-300 px-4 py-2
-                     focus:border-blue-500 focus:outline-none
-                     focus:ring-2 focus:ring-blue-500"
+                     focus:border-[#007979] focus:outline-none
+                     focus:ring-2 focus:ring-[#007979]/20"
             />
           </div>
 
@@ -86,8 +86,8 @@ import { CategoryService } from '../../../../core/services/category.service';
               placeholder="food-assistance"
               class="mt-1 block w-full rounded-lg border
                      border-gray-300 px-4 py-2
-                     focus:border-blue-500 focus:outline-none
-                     focus:ring-2 focus:ring-blue-500"
+                     focus:border-[#007979] focus:outline-none
+                     focus:ring-2 focus:ring-[#007979]/20"
             />
 
             <p class="mt-1 text-xs text-gray-500">
@@ -112,8 +112,8 @@ import { CategoryService } from '../../../../core/services/category.service';
               placeholder="Programs and services that provide food assistance."
               class="mt-1 block w-full rounded-lg border
                      border-gray-300 px-4 py-2
-                     focus:border-blue-500 focus:outline-none
-                     focus:ring-2 focus:ring-blue-500"
+                     focus:border-[#007979] focus:outline-none
+                     focus:ring-2 focus:ring-[#007979]/20"
             ></textarea>
           </div>
 
@@ -134,8 +134,8 @@ import { CategoryService } from '../../../../core/services/category.service';
               placeholder="food"
               class="mt-1 block w-full rounded-lg border
                      border-gray-300 px-4 py-2
-                     focus:border-blue-500 focus:outline-none
-                     focus:ring-2 focus:ring-blue-500"
+                     focus:border-[#007979] focus:outline-none
+                     focus:ring-2 focus:ring-[#007979]/20"
             />
           </div>
 
@@ -157,8 +157,8 @@ import { CategoryService } from '../../../../core/services/category.service';
               required
               class="mt-1 block w-full rounded-lg border
                      border-gray-300 px-4 py-2
-                     focus:border-blue-500 focus:outline-none
-                     focus:ring-2 focus:ring-blue-500"
+                     focus:border-[#007979] focus:outline-none
+                     focus:ring-2 focus:ring-[#007979]/20"
             />
           </div>
 
@@ -191,9 +191,9 @@ import { CategoryService } from '../../../../core/services/category.service';
             <button
               type="submit"
               [disabled]="saving()"
-              class="rounded-lg bg-blue-600 px-5 py-2
+              class="rounded-lg bg-[#032D42] px-5 py-2
                      text-sm font-medium text-white
-                     hover:bg-blue-700 disabled:opacity-50"
+                     hover:bg-[#032D42]/90 disabled:opacity-50"
             >
               {{ saving()
                 ? 'Saving...'

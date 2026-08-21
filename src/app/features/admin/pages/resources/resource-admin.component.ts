@@ -90,8 +90,8 @@ import { AuthService } from '../../../../core/services/auth.service';
                   placeholder="Food Assistance"
                   class="mt-1 block w-full rounded-lg border
                          border-gray-300 px-4 py-2
-                         focus:border-blue-500 focus:outline-none
-                         focus:ring-2 focus:ring-blue-500"
+                         focus:border-[#007979] focus:outline-none
+                         focus:ring-2 focus:ring-[#007979]/20"
                 />
               </div>
 
@@ -113,8 +113,8 @@ import { AuthService } from '../../../../core/services/auth.service';
                   placeholder="food-assistance"
                   class="mt-1 block w-full rounded-lg border
                          border-gray-300 px-4 py-2
-                         focus:border-blue-500 focus:outline-none
-                         focus:ring-2 focus:ring-blue-500"
+                         focus:border-[#007979] focus:outline-none
+                         focus:ring-2 focus:ring-[#007979]/20"
                 />
               </div>
 
@@ -134,9 +134,9 @@ import { AuthService } from '../../../../core/services/auth.service';
                   required
                   class="mt-1 block w-full rounded-lg border
                          border-gray-300 px-4 py-2
-                         bg-white focus:border-blue-500
+                         bg-white focus:border-[#007979]
                          focus:outline-none focus:ring-2
-                         focus:ring-blue-500"
+                         focus:ring-[#007979]/20"
                 >
                   <option value="">
                     Select a category
@@ -166,9 +166,9 @@ import { AuthService } from '../../../../core/services/auth.service';
                   required
                   class="mt-1 block w-full rounded-lg border
                          border-gray-300 px-4 py-2
-                         bg-white focus:border-blue-500
+                         bg-white focus:border-[#007979]
                          focus:outline-none focus:ring-2
-                         focus:ring-blue-500"
+                         focus:ring-[#007979]/20"
                 >
                   @for (type of resourceTypes; track type) {
                     <option [value]="type">
@@ -198,8 +198,8 @@ import { AuthService } from '../../../../core/services/auth.service';
                 placeholder="Describe this resource."
                 class="mt-1 block w-full rounded-lg border
                        border-gray-300 px-4 py-2
-                       focus:border-blue-500 focus:outline-none
-                       focus:ring-2 focus:ring-blue-500"
+                       focus:border-[#007979] focus:outline-none
+                       focus:ring-2 focus:ring-[#007979]/20"
               ></textarea>
             </div>
           </div>
@@ -495,9 +495,9 @@ import { AuthService } from '../../../../core/services/auth.service';
             <button
               type="submit"
               [disabled]="saving()"
-              class="rounded-lg bg-blue-600 px-5 py-2
+              class="rounded-lg bg-[#032D42] px-5 py-2
                      text-sm font-medium text-white
-                     hover:bg-blue-700 disabled:opacity-50"
+                     hover:bg-[#032D42]/90 disabled:opacity-50"
             >
               {{
                 saving()
