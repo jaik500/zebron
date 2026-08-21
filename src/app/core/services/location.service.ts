@@ -42,7 +42,10 @@ export class LocationService {
       return null;
     }
 
-    return snapshot.data() as Location;
+    return {
+      id: snapshot.id,
+      ...snapshot.data(),
+    } as Location;
   }
 
   /**

@@ -278,6 +278,31 @@ import { QueryDocumentSnapshot } from 'firebase/firestore';
         </div>
       }
 
+      <!-- Load more resources -->
+      @if (
+        !loading() &&
+        !error() &&
+        filteredResources().length > 0 &&
+        hasMoreResources()
+      ) {
+        <div class="mt-8 flex justify-center">
+          <button
+            type="button"
+            (click)="loadMoreResources()"
+            [disabled]="loadingMore()"
+            class="rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium
+                  text-white transition hover:bg-blue-700
+                  disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            @if (loadingMore()) {
+              Loading...
+            } @else {
+              Load more resources
+            }
+          </button>
+        </div>
+      }
+
       @if (
         !loading() &&
         !error() &&

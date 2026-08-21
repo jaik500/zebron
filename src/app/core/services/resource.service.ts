@@ -19,7 +19,6 @@ import {
 import { firestore } from './firebase-config';
 import { Resource } from '../models/resource.model';
 
-
 /**
  * Represents one page of published resources.
  *
@@ -36,16 +35,13 @@ export interface ResourcePage {
   providedIn: 'root',
 })
 export class ResourceService {
-  private readonly resourcesCollection = collection(
-    firestore,
-    'resources'
-  );
+  private readonly resourcesCollection = collection(firestore, 'resources');
 
   async getPublishedResources(): Promise<Resource[]> {
     const q = query(
       this.resourcesCollection,
       where('status', '==', 'published'),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
     );
 
     const snapshot = await getDocs(q);
@@ -55,11 +51,11 @@ export class ResourceService {
         ({
           id: document.id,
           ...document.data(),
-        }) as Resource
+        }) as Resource,
     );
   }
 
-     /**
+  /**
    * Get one page of published resources.
    *
    * Firestore uses the last document from the previous page
@@ -68,7 +64,7 @@ export class ResourceService {
    */
   async getPublishedResourcesPage(
     pageSize = 12,
-    lastDocument?: QueryDocumentSnapshot
+    lastDocument?: QueryDocumentSnapshot,
   ): Promise<ResourcePage> {
     const resourcesQuery = lastDocument
       ? query(
@@ -76,13 +72,13 @@ export class ResourceService {
           where('status', '==', 'published'),
           orderBy('createdAt', 'desc'),
           startAfter(lastDocument),
-          limit(pageSize)
+          limit(pageSize),
         )
       : query(
           this.resourcesCollection,
           where('status', '==', 'published'),
           orderBy('createdAt', 'desc'),
-          limit(pageSize)
+          limit(pageSize),
         );
 
     const snapshot = await getDocs(resourcesQuery);
@@ -92,27 +88,18 @@ export class ResourceService {
         ({
           id: document.id,
           ...document.data(),
-        }) as Resource
+        }) as Resource,
     );
 
     return {
       resources,
-      lastDocument:
-        snapshot.docs.length > 0
-          ? snapshot.docs[snapshot.docs.length - 1]
-          : null,
+      lastDocument: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
       hasMore: snapshot.docs.length === pageSize,
     };
   }
 
-  async getResourceById(
-    resourceId: string
-  ): Promise<Resource | null> {
-    const resourceRef = doc(
-      firestore,
-      'resources',
-      resourceId
-    );
+  async getResourceById(resourceId: string): Promise<Resource | null> {
+    const resourceRef = doc(firestore, 'resources', resourceId);
 
     const snapshot = await getDoc(resourceRef);
 
@@ -126,14 +113,12 @@ export class ResourceService {
     } as Resource;
   }
 
-  async getResourceBySlug(
-    slug: string
-  ): Promise<Resource | null> {
+  async getResourceBySlug(slug: string): Promise<Resource | null> {
     const q = query(
       this.resourcesCollection,
       where('slug', '==', slug),
       where('status', '==', 'published'),
-      limit(1)
+      limit(1),
     );
 
     const snapshot = await getDocs(q);
@@ -151,14 +136,14 @@ export class ResourceService {
   }
 
   /**
- * Get published resources that belong to the same category.
- *
- * The current resource is excluded from the results.
- */
+   * Get published resources that belong to the same category.
+   *
+   * The current resource is excluded from the results.
+   */
   async getRelatedResources(
     categoryId: string,
     currentResourceId: string,
-    limitCount = 3
+    limitCount = 3,
   ): Promise<Resource[]> {
     const resourcesRef = collection(firestore, 'resources');
 
@@ -166,31 +151,31 @@ export class ResourceService {
       resourcesRef,
       where('categoryId', '==', categoryId),
       where('status', '==', 'published'),
-      limit(limitCount + 1)
+      limit(limitCount + 1),
     );
 
     const snapshot = await getDocs(resourcesQuery);
 
     return snapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }) as Resource)
+      .map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+          }) as Resource,
+      )
       .filter((resource) => resource.id !== currentResourceId)
       .slice(0, limitCount);
   }
 
-    /**
+  /**
    * Get all resources for the admin dashboard.
    *
    * Unlike the public resource list, this includes
    * draft, pending, published, and archived resources.
    */
   async getAllResources(): Promise<Resource[]> {
-    const resourcesQuery = query(
-      this.resourcesCollection,
-      orderBy('createdAt', 'desc')
-    );
+    const resourcesQuery = query(this.resourcesCollection, orderBy('createdAt', 'desc'));
 
     const snapshot = await getDocs(resourcesQuery);
 
@@ -204,16 +189,13 @@ export class ResourceService {
    * Create a new resource.
    */
   async createResource(
-    resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>
+    resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<string> {
-    const document = await addDoc(
-      this.resourcesCollection,
-      {
-        ...resource,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      }
-    );
+    const document = await addDoc(this.resourcesCollection, {
+      ...resource,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
 
     return document.id;
   }
@@ -223,15 +205,9 @@ export class ResourceService {
    */
   async updateResource(
     resourceId: string,
-    resource: Partial<
-      Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>
-    >
+    resource: Partial<Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>>,
   ): Promise<void> {
-    const resourceRef = doc(
-      firestore,
-      'resources',
-      resourceId
-    );
+    const resourceRef = doc(firestore, 'resources', resourceId);
 
     await updateDoc(resourceRef, {
       ...resource,
@@ -242,16 +218,9 @@ export class ResourceService {
   /**
    * Delete an existing resource.
    */
-  async deleteResource(
-    resourceId: string
-  ): Promise<void> {
-    const resourceRef = doc(
-      firestore,
-      'resources',
-      resourceId
-    );
+  async deleteResource(resourceId: string): Promise<void> {
+    const resourceRef = doc(firestore, 'resources', resourceId);
 
     await deleteDoc(resourceRef);
   }
-
 }
