@@ -1,4 +1,3 @@
-
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
@@ -26,7 +25,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
         >
 
           <div>
-
             <p
               class="text-sm font-semibold uppercase
                      tracking-wide text-blue-100"
@@ -47,84 +45,124 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               Manage Zebron resources and database content.
             </p>
-
           </div>
 
+          <!-- Dashboard header actions -->
+          <div class="flex flex-wrap items-center gap-3">
 
-          <a
-            routerLink="/resources"
-            class="shrink-0 rounded-lg
-                   border border-white/30
-                   bg-white/10 px-4 py-2.5
-                   text-sm font-semibold text-white
-                   transition hover:bg-white/20"
-          >
-            View site
-          </a>
+            <!-- Contact mailbox -->
+            <a
+              routerLink="/admin/contact"
+              class="shrink-0 rounded-lg
+                     border border-white/30
+                     bg-white/10 px-4 py-2.5
+                     text-sm font-semibold text-white
+                     transition hover:bg-white/20"
+            >
+              Contact Mailbox
+            </a>
 
+            <!-- Public site -->
+            <a
+              routerLink="/resources"
+              class="shrink-0 rounded-lg
+                     border border-white/30
+                     bg-white/10 px-4 py-2.5
+                     text-sm font-semibold text-white
+                     transition hover:bg-white/20"
+            >
+              View site
+            </a>
+
+          </div>
         </div>
       </section>
 
 
       <!-- =========================================================
-           Admin information
+           Signed-in administrator information
            ========================================================= -->
       @if (authService.user(); as user) {
 
-        <div
+        <section
           class="mt-8 rounded-xl
                  border border-[#032D42]/20
                  bg-[#032D42]/5 p-5"
         >
 
-          <p
-            class="text-sm font-semibold uppercase
-                   tracking-wide text-[#007979]"
+          <div
+            class="flex flex-col gap-4
+                   sm:flex-row sm:items-center
+                   sm:justify-between"
           >
-            Signed in as
-          </p>
 
-          <p
-            class="mt-1 font-semibold text-[#032D42]"
-          >
-            {{ user.displayName || user.email }}
-          </p>
+            <!-- Administrator information -->
+            <div>
+              <p
+                class="text-sm font-semibold uppercase
+                       tracking-wide text-[#007979]"
+              >
+                Signed in as
+              </p>
 
-          <p
-            class="mt-1 text-sm text-gray-600"
-          >
-            Administrator
-          </p>
+              <p
+                class="mt-1 font-semibold text-[#032D42]"
+              >
+                {{ user.displayName || user.email }}
+              </p>
 
-        </div>
+              <p
+                class="mt-1 text-sm text-gray-600"
+              >
+                Administrator
+              </p>
+            </div>
+
+            <!-- Logout button on the far right -->
+            <button
+              type="button"
+              (click)="signOut()"
+              [disabled]="signingOut()"
+              class="shrink-0 rounded-lg
+                     bg-[#032D42]
+                     px-5 py-2.5
+                     text-sm font-semibold text-white
+                     transition
+                     hover:bg-[#032D42]/90
+                     disabled:cursor-not-allowed
+                     disabled:opacity-60"
+            >
+              @if (signingOut()) {
+                Signing out...
+              } @else {
+                Sign out
+              }
+            </button>
+
+          </div>
+        </section>
 
       }
 
 
       <!-- =========================================================
-           Management sections
+           Administration
            ========================================================= -->
       <section class="mt-8">
 
-        <div class="flex items-center justify-between">
+        <div>
+          <p
+            class="text-sm font-semibold uppercase
+                   tracking-wide text-[#007979]"
+          >
+            Administration
+          </p>
 
-          <div>
-
-            <p
-              class="text-sm font-semibold uppercase
-                     tracking-wide text-[#007979]"
-            >
-              Administration
-            </p>
-
-            <h2
-              class="mt-1 text-xl font-semibold text-[#032D42]"
-            >
-              Manage content
-            </h2>
-
-          </div>
-
+          <h2
+            class="mt-1 text-xl font-semibold text-[#032D42]"
+          >
+            Manage content
+          </h2>
         </div>
 
 
@@ -133,9 +171,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                  sm:grid-cols-2 lg:grid-cols-4"
         >
 
-          <!-- =====================================================
-               Categories
-               ===================================================== -->
+          <!-- Categories -->
           <a
             routerLink="/admin/categories"
             class="group rounded-xl
@@ -145,7 +181,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
                    hover:border-[#032D42]/40
                    hover:shadow-md"
           >
-
             <h3
               class="text-lg font-semibold
                      text-[#032D42]
@@ -167,13 +202,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               Manage →
             </span>
-
           </a>
 
 
-          <!-- =====================================================
-               Resources
-               ===================================================== -->
+          <!-- Resources -->
           <a
             routerLink="/admin/resources"
             class="group rounded-xl
@@ -183,7 +215,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
                    hover:border-[#032D42]/40
                    hover:shadow-md"
           >
-
             <h3
               class="text-lg font-semibold
                      text-[#032D42]
@@ -205,13 +236,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               Manage →
             </span>
-
           </a>
 
 
-          <!-- =====================================================
-               Organizations
-               ===================================================== -->
+          <!-- Organizations -->
           <a
             routerLink="/admin/organizations"
             class="group rounded-xl
@@ -221,7 +249,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
                    hover:border-[#032D42]/40
                    hover:shadow-md"
           >
-
             <h3
               class="text-lg font-semibold
                      text-[#032D42]
@@ -243,13 +270,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               Manage →
             </span>
-
           </a>
 
 
-          <!-- =====================================================
-               Submissions
-               ===================================================== -->
+          <!-- Submissions -->
           <a
             routerLink="/admin/submissions"
             class="group rounded-xl
@@ -259,7 +283,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
                    hover:border-[#032D42]/40
                    hover:shadow-md"
           >
-
             <h3
               class="text-lg font-semibold
                      text-[#032D42]
@@ -281,146 +304,191 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               Manage →
             </span>
-
           </a>
 
+
           <!-- Users -->
-<a
-  routerLink="/admin/users"
-  class="group rounded-2xl
-         border border-gray-200
-         bg-white p-6
-         shadow-sm
-         transition
-         hover:-translate-y-0.5
-         hover:border-[#007979]/30
-         hover:shadow-md"
->
-  <div
-    class="flex h-12 w-12
-           items-center justify-center
-           rounded-xl
-           bg-[#007979]/10
-           text-[#007979]"
-  >
-    <!-- Users icon -->
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.8"
-      class="h-6 w-6"
-      aria-hidden="true"
-    >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-      />
+          <a
+            routerLink="/admin/users"
+            class="group rounded-2xl
+                   border border-gray-200
+                   bg-white p-6 shadow-sm
+                   transition
+                   hover:-translate-y-0.5
+                   hover:border-[#007979]/30
+                   hover:shadow-md"
+          >
 
-      <circle
-        cx="9"
-        cy="7"
-        r="4"
-      />
+            <div
+              class="flex h-12 w-12
+                     items-center justify-center
+                     rounded-xl
+                     bg-[#007979]/10
+                     text-[#007979]"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                class="h-6 w-6"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                />
 
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        d="M22 21v-2a4 4 0 0 0-3-3.87"
-      />
+                <circle
+                  cx="9"
+                  cy="7"
+                  r="4"
+                />
 
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        d="M16 3.13a4 4 0 0 1 0 7.75"
-      />
-    </svg>
-  </div>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M22 21v-2a4 4 0 0 0-3-3.87"
+                />
 
-  <div class="mt-5">
-    <h2
-      class="text-lg font-semibold
-             text-[#032D42]
-             group-hover:text-[#007979]"
-    >
-      Users
-    </h2>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M16 3.13a4 4 0 0 1 0 7.75"
+                />
+              </svg>
+            </div>
 
-    <p
-      class="mt-2 text-sm
-             leading-6 text-gray-500"
-    >
-      Manage user accounts, profiles,
-      roles, and permissions.
-    </p>
-  </div>
+            <div class="mt-5">
+              <h2
+                class="text-lg font-semibold
+                       text-[#032D42]
+                       group-hover:text-[#007979]"
+              >
+                Users
+              </h2>
 
-  <div
-    class="mt-5 text-sm font-semibold
-           text-[#007979]"
-  >
-    Manage users →
-  </div>
-</a>
+              <p
+                class="mt-2 text-sm
+                       leading-6 text-gray-500"
+              >
+                Manage user accounts, profiles,
+                roles, and permissions.
+              </p>
+            </div>
+
+            <div
+              class="mt-5 text-sm font-semibold
+                     text-[#007979]"
+            >
+              Manage users →
+            </div>
+          </a>
+
+
+          <!-- Contact Mailbox -->
+          <a
+            routerLink="/admin/contact"
+            class="group rounded-2xl
+                   border border-gray-200
+                   bg-white p-6
+                   shadow-sm
+                   transition
+                   hover:-translate-y-0.5
+                   hover:border-[#007979]/30
+                   hover:shadow-md"
+          >
+
+            <div
+              class="flex h-12 w-12
+                     items-center justify-center
+                     rounded-xl
+                     bg-[#007979]/10
+                     text-[#007979]"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                class="h-6 w-6"
+                aria-hidden="true"
+              >
+                <rect
+                  x="3"
+                  y="5"
+                  width="18"
+                  height="14"
+                  rx="2"
+                />
+
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m3 7 9 6 9-6"
+                />
+              </svg>
+            </div>
+
+            <div class="mt-5">
+              <h2
+                class="text-lg font-semibold
+                       text-[#032D42]
+                       group-hover:text-[#007979]"
+              >
+                Contact Mailbox
+              </h2>
+
+              <p
+                class="mt-2 text-sm
+                       leading-6 text-gray-500"
+              >
+                Review and manage messages
+                submitted through the contact form.
+              </p>
+            </div>
+
+            <div
+              class="mt-5 text-sm font-semibold
+                     text-[#007979]"
+            >
+              Open mailbox →
+            </div>
+          </a>
 
         </div>
-
-      </section>
-
-
-      <!-- =========================================================
-           Sign out
-           ========================================================= -->
-      <section
-        class="mt-10 border-t
-               border-gray-200 pt-6"
-      >
-
-        <button
-          type="button"
-          (click)="signOut()"
-          [disabled]="signingOut()"
-          class="rounded-lg bg-[#032D42]
-                 px-5 py-2.5
-                 text-sm font-semibold text-white
-                 transition
-                 hover:bg-[#032D42]/90
-                 disabled:cursor-not-allowed
-                 disabled:opacity-60"
-        >
-
-          @if (signingOut()) {
-            Signing out...
-          } @else {
-            Sign out
-          }
-
-        </button>
-
       </section>
 
     </main>
   `,
 })
 export class AdminDashboardComponent {
-  protected readonly authService = inject(AuthService);
 
-  private readonly router = inject(Router);
-  private readonly toast = inject(HotToastService);
+  protected readonly authService =
+    inject(AuthService);
+
+  private readonly router =
+    inject(Router);
+
+  private readonly toast =
+    inject(HotToastService);
 
   /**
    * Prevent duplicate sign-out requests while
    * Firebase is processing the current request.
    */
-  protected readonly signingOut = signal(false);
+  protected readonly signingOut =
+    signal(false);
 
   /**
    * Sign the administrator out of Firebase,
    * show feedback, and return to the login page.
    */
   protected async signOut(): Promise<void> {
+
     // Prevent multiple clicks while signing out.
     if (this.signingOut()) {
       return;
@@ -429,29 +497,35 @@ export class AdminDashboardComponent {
     this.signingOut.set(true);
 
     try {
+
       // Sign out from Firebase Authentication.
       await this.authService.logout();
 
-      // Let the administrator know the operation succeeded.
-      this.toast.success('You have been signed out.');
+      // Notify the administrator.
+      this.toast.success(
+        'You have been signed out.',
+      );
 
-      // Explicitly return to the login page.
-      await this.router.navigateByUrl('/login');
+      // Return to the login page.
+      await this.router.navigateByUrl(
+        '/login',
+      );
 
     } catch (error) {
+
       console.error(
         'Failed to sign out:',
         error,
       );
 
-      // Keep the user on the dashboard if logout fails.
       this.toast.error(
         'Unable to sign out. Please try again.',
       );
 
     } finally {
+
       this.signingOut.set(false);
+
     }
   }
 }
-

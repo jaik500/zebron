@@ -1,9 +1,12 @@
 import { Routes } from '@angular/router';
+
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
-  // Public resource list.
+  // =====================================================
+  // PUBLIC RESOURCE LIST
+  // =====================================================
   {
     path: 'resources',
     loadComponent: () =>
@@ -12,7 +15,20 @@ export const routes: Routes = [
       ).then((m) => m.ResourceListComponent),
   },
 
-  // Public resource detail page.
+  // =====================================================
+  // PUBLIC CONTACT FORM
+  // =====================================================
+  {
+    path: 'contact',
+    loadComponent: () =>
+      import(
+        './features/contact/pages/contact/contact'
+      ).then((m) => m.ContactComponent),
+  },
+
+  // =====================================================
+  // PUBLIC RESOURCE DETAIL
+  // =====================================================
   {
     path: 'resources/:slug',
     loadComponent: () =>
@@ -21,7 +37,9 @@ export const routes: Routes = [
       ).then((m) => m.ResourceDetailComponent),
   },
 
-  // Admin login.
+  // =====================================================
+  // LOGIN
+  // =====================================================
   {
     path: 'login',
     loadComponent: () =>
@@ -30,47 +48,44 @@ export const routes: Routes = [
       ).then((m) => m.LoginComponent),
   },
 
-  // Public user registration. 
-  { path: 'register', 
-    loadComponent: () => import( 
-      './features/auth/pages/register/register.component' 
-    ).then((m) => m.RegisterComponent), 
+  // =====================================================
+  // PUBLIC REGISTRATION
+  // =====================================================
+  {
+    path: 'register',
+    loadComponent: () =>
+      import(
+        './features/auth/pages/register/register.component'
+      ).then((m) => m.RegisterComponent),
   },
 
-  // Protected user profile.
-{
-  path: 'profile',
-  canActivate: [authGuard],
-  loadComponent: () =>
-    import(
-      './features/profile/pages/user-profile/user-profile'
-    ).then((m) => m.UserProfileComponent ),
-},
+  // =====================================================
+  // PROTECTED USER PROFILE
+  // =====================================================
+  {
+    path: 'profile',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/profile/pages/user-profile/user-profile'
+      ).then((m) => m.UserProfileComponent),
+  },
 
-// Protected resource submission form.
-{
-  path: 'submit',
-  canActivate: [authGuard],
-  loadComponent: () =>
-    import(
-      './features/submissions/pages/submit-resource/submit-resource.component'
-    ).then(
-      (m) => m.SubmitResourceComponent
-    ),
-},// Protected resource submission form.
-{
-  path: 'submit',
-  canActivate: [authGuard],
-  loadComponent: () =>
-    import(
-      './features/submissions/pages/submit-resource/submit-resource.component'
-    ).then(
-      (m) => m.SubmitResourceComponent
-    ),
-},
+  // =====================================================
+  // PROTECTED RESOURCE SUBMISSION
+  // =====================================================
+  {
+    path: 'submit',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import(
+        './features/submissions/pages/submit-resource/submit-resource.component'
+      ).then((m) => m.SubmitResourceComponent),
+  },
 
-   
-  // Resource administration.
+  // =====================================================
+  // ADMIN RESOURCE MANAGEMENT
+  // =====================================================
   {
     path: 'admin/resources',
     canActivate: [adminGuard],
@@ -80,7 +95,9 @@ export const routes: Routes = [
       ).then((m) => m.ResourceAdminComponent),
   },
 
-    // Organization administration.
+  // =====================================================
+  // ADMIN ORGANIZATION MANAGEMENT
+  // =====================================================
   {
     path: 'admin/organizations',
     canActivate: [adminGuard],
@@ -90,29 +107,47 @@ export const routes: Routes = [
       ).then((m) => m.OrganizationAdminComponent),
   },
 
-   // Protected user administration.
-{
-  path: 'admin/users',
-  canActivate: [adminGuard],
-  loadComponent: () =>
-    import(
-      './features/admin/pages/users/user-admin.component'
-    ).then((m) => m.UserAdminComponent),
-},
+  // =====================================================
+  // ADMIN USER MANAGEMENT
+  // =====================================================
+  {
+    path: 'admin/users',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/users/user-admin.component'
+      ).then((m) => m.UserAdminComponent),
+  },
 
-//// Submission administration.
-{
-  path: 'admin/submissions',
-  canActivate: [adminGuard],
-  loadComponent: () =>
-    import(
-      './features/admin/pages/submissions/submission-admin.component'
-    ).then(
-      (m) => m.SubmissionAdminComponent
-    ),
-},
+  // =====================================================
+  // ADMIN SUBMISSION MANAGEMENT
+  // =====================================================
+  {
+    path: 'admin/submissions',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/submissions/submission-admin.component'
+      ).then((m) => m.SubmissionAdminComponent),
+  },
 
-  // Protected administration area.
+    // =====================================================
+  // ADMIN CONTACT MAILBOX
+  // =====================================================
+  {
+    path: 'admin/contact',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/contact/contact-mailbox.component'
+      ).then(
+        (m) => m.ContactMailboxComponent,
+      ),
+  },
+
+  // =====================================================
+  // ADMIN DASHBOARD
+  // =====================================================
   {
     path: 'admin',
     canActivate: [adminGuard],
@@ -122,7 +157,9 @@ export const routes: Routes = [
       ).then((m) => m.AdminDashboardComponent),
   },
 
-  // Protected category management.
+  // =====================================================
+  // ADMIN CATEGORY MANAGEMENT
+  // =====================================================
   {
     path: 'admin/categories',
     canActivate: [adminGuard],
@@ -132,7 +169,9 @@ export const routes: Routes = [
       ).then((m) => m.CategoryAdminComponent),
   },
 
-  // Default route.
+  // =====================================================
+  // DEFAULT ROUTE
+  // =====================================================
   {
     path: '',
     pathMatch: 'full',
