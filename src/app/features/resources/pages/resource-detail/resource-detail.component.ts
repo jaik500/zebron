@@ -39,7 +39,7 @@ import { CategoryService } from '../../../../core/services/category.service';
 
   @if (!loading() && !error() && resource()) {
     <!-- Main content + right sidebar -->
-    <div class="mt-8 grid gap-8 lg:grid-cols-3">
+    <div class="mt-6 grid gap-8 lg:grid-cols-3">
 
       <!-- Main resource content -->
       <article class="lg:col-span-2">

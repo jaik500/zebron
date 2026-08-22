@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-
+import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
@@ -36,6 +36,16 @@ export const routes: Routes = [
       './features/auth/pages/register/register.component' 
     ).then((m) => m.RegisterComponent), 
   },
+
+  // Protected user profile.
+{
+  path: 'profile',
+  canActivate: [authGuard],
+  loadComponent: () =>
+    import(
+      './features/profile/pages/user-profile/user-profile'
+    ).then((m) => m.UserProfileComponent ),
+},
 
    
   // Resource administration.

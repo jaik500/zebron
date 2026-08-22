@@ -4,10 +4,12 @@ import { ResourceService } from '../../../../core/services/resource.service';
 import { ResourceCardComponent } from '../../components/resource-card/resource-card.component';
 import { CategoryService } from '../../../../core/services/category.service';
 import { Category } from '../../../../core/models/category.model';
-import { ActivatedRoute, Router, } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../../../core/services/auth.service';
+import { HotToastService } from '@ngxpert/hot-toast';
 
 @Component({
   selector: 'app-resource-list',
@@ -16,63 +18,185 @@ import { CommonModule } from '@angular/common';
   template: `
     <main class="p-8">
       <!-- Page header -->
+      <!-- Page header -->
       <section class="rounded-2xl bg-[#032D42] px-6 py-8 text-white shadow-sm sm:px-8">
         <div
           class="flex flex-col gap-6 sm:flex-row
-                sm:items-start sm:justify-between"
+          sm:items-start sm:justify-between"
         >
+          <!-- Header content -->
           <div class="max-w-3xl">
             <p
               class="text-sm font-semibold uppercase
-                    tracking-wide text-blue-100"
+              tracking-wide text-blue-100"
             >
               Resource Directory
             </p>
 
             <h1
               class="mt-2 text-3xl font-bold tracking-tight text-white
-                    sm:text-4xl"
+              sm:text-4xl"
             >
               Find the help you need
             </h1>
 
             <p class="mt-3 text-base leading-7 text-blue-100 sm:text-lg">
-              Browse trusted resources, services, organizations, and tools
-              available to help you and your community.
+              Browse trusted resources, services, organizations, and tools available to help you and
+              your community.
             </p>
           </div>
 
-          <!-- Authentication buttons -->
-          <div class="flex shrink-0 gap-3">
-            <a
-              routerLink="/login"
-              class="rounded-lg border border-white/30
-                    bg-white/10 px-4 py-2.5 text-sm
-                    font-semibold text-white
-                    transition hover:bg-white/20"
-            >
-              Sign in
-            </a>
+          <!-- Authentication / Profile navigation -->
+          <div class="flex shrink-0 items-start gap-3 sm:ml-auto">
+            @if (authService.firebaseUser()) {
+              <!-- =========================================================
+     Header navigation
+     Home + More menu
+     ========================================================= -->
+              <div class="relative flex items-center gap-2">
 
-            <a
-              routerLink="/register"
-              class="rounded-lg bg-white px-4 py-2.5
-                    text-sm font-semibold text-[#032D42]
-                    shadow-sm transition hover:bg-blue-50"
-            >
-              Register
-            </a>
+                <!-- More menu -->
+                <div class="relative">
+                  <button
+                    type="button"
+                    (click)="toggleMoreMenu()"
+                    [attr.aria-expanded]="showMoreMenu()"
+                    aria-label="More navigation options"
+                    class="inline-flex h-10 w-10
+                    items-center justify-center
+                    rounded-md
+                    border border-white/30
+                    bg-white/10
+                    text-xl font-bold
+                    text-white
+                    transition hover:bg-white/20
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-white/40"
+                  >
+                    <span aria-hidden="true" class="leading-none"> ⋮ </span>
+                  </button>
+
+                  <!-- More menu dropdown -->
+                  @if (showMoreMenu()) {
+                    <div
+                      class="absolute right-0 z-50 mt-2
+               w-56 overflow-hidden
+               rounded-xl
+               border border-gray-200
+               bg-white
+               shadow-lg"
+                    >
+                      <!-- Menu heading -->
+                      <div
+                        class="border-b border-gray-100
+                 px-4 py-3"
+                      >
+                        <p
+                          class="text-xs font-semibold
+                   uppercase tracking-wide
+                   text-[#007979]"
+                        >
+                          More
+                        </p>
+
+                        <p class="mt-1 text-xs text-gray-500">Explore Zebron</p>
+                      </div>
+
+                      <!-- Resources -->
+                      <a
+                        routerLink="/resources"
+                        (click)="closeMoreMenu()"
+                        class="flex items-center gap-3
+                        px-4 py-3
+                        text-sm font-medium
+                        text-gray-700
+                        transition hover:bg-gray-50
+                        hover:text-[#007979]"
+                      >
+                        <span class="text-base" aria-hidden="true"> 📚 </span>
+
+                        Resources
+                      </a>
+
+                      <!-- Profile -->
+                      <a
+                        routerLink="/profile"
+                        (click)="closeMoreMenu()"
+                        class="flex items-center gap-3
+                 px-4 py-3
+                 text-sm font-medium
+                 text-gray-700
+                 transition hover:bg-gray-50
+                 hover:text-[#007979]"
+                      >
+                        <span class="text-base" aria-hidden="true"> 👤 </span>
+
+                        My Profile
+                      </a>
+
+                      <!-- Admin Dashboard -->
+                      @if (authService.isAdmin) {
+                        <a
+                          routerLink="/admin"
+                          (click)="closeMoreMenu()"
+                          class="flex items-center gap-3
+                   border-t border-gray-100
+                   px-4 py-3
+                   text-sm font-medium
+                   text-gray-700
+                   transition hover:bg-gray-50
+                   hover:text-[#007979]"
+                        >
+                          <span class="text-base" aria-hidden="true"> ⚙ </span>
+
+                          Admin Dashboard
+                        </a>
+                      }
+                      <button type="button"
+                        (click)="signOut()"
+                        class="flex items-center gap-3
+                        border-t border-gray-100
+                        px-4 py-3
+                        text-sm font-medium
+                        text-gray-700
+                        transition hover:bg-gray-50
+                        hover:text-[#007979]"
+                      >
+                      <span class="text-base" aria-hidden="true"> ↩️ </span>
+                        Log out
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            } @else {
+              <a
+                routerLink="/login"
+                class="rounded-lg border border-white/30
+                bg-white/10 px-4 py-2.5 text-sm
+                font-semibold text-white
+                transition hover:bg-white/20"
+              >
+                Sign in
+              </a>
+
+              <a
+                routerLink="/register"
+                class="rounded-lg bg-white px-4 py-2.5
+                text-sm font-semibold text-[#032D42]
+                shadow-sm transition hover:bg-blue-50"
+              >
+                Register
+              </a>
+            }
           </div>
         </div>
       </section>
 
-     
-
       <!-- Category navigation -->
       <section class="mt-6">
-        <h2 class="text-lg font-semibold text-gray-900">
-          Browse by category
-        </h2>
+        <h2 class="text-lg font-semibold text-gray-900">Browse by category</h2>
 
         <div class="mt-3 flex flex-wrap gap-2">
           <button
@@ -106,18 +230,11 @@ import { CommonModule } from '@angular/common';
       </section>
 
       <!-- Search and filters -->
-      <section
-        class="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
-      >
+      <section class="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <div class="grid gap-4 md:grid-cols-3">
           <!-- Search -->
           <div>
-            <label
-              for="search"
-              class="block text-sm font-medium text-gray-700"
-            >
-              Search
-            </label>
+            <label for="search" class="block text-sm font-medium text-gray-700"> Search </label>
 
             <input
               id="search"
@@ -133,12 +250,7 @@ import { CommonModule } from '@angular/common';
 
           <!-- Category -->
           <div>
-            <label
-              for="category"
-              class="block text-sm font-medium text-gray-700"
-            >
-              Category
-            </label>
+            <label for="category" class="block text-sm font-medium text-gray-700"> Category </label>
 
             <select
               id="category"
@@ -160,10 +272,7 @@ import { CommonModule } from '@angular/common';
 
           <!-- Resource type -->
           <div>
-            <label
-              for="resourceType"
-              class="block text-sm font-medium text-gray-700"
-            >
+            <label for="resourceType" class="block text-sm font-medium text-gray-700">
               Resource type
             </label>
 
@@ -234,10 +343,7 @@ import { CommonModule } from '@angular/common';
 
       @if (loading()) {
         <!-- Resource loading skeletons -->
-        <div
-          class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-          aria-label="Loading resources"
-        >
+        <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading resources">
           @for (skeleton of [1, 2, 3, 4, 5, 6]; track skeleton) {
             <div
               class="animate-pulse rounded-xl border border-gray-200
@@ -269,23 +375,15 @@ import { CommonModule } from '@angular/common';
         </p>
       }
 
-      @if (
-        !loading() &&
-        !error() &&
-        resources().length > 0 &&
-        filteredResources().length === 0
-      ) {
+      @if (!loading() && !error() && resources().length > 0 && filteredResources().length === 0) {
         <div
           class="mt-8 rounded-xl border border-gray-200
                 bg-white p-8 text-center shadow-sm"
         >
-          <h2 class="text-lg font-semibold text-gray-900">
-            No resources found
-          </h2>
+          <h2 class="text-lg font-semibold text-gray-900">No resources found</h2>
 
           <p class="mt-2 text-sm text-gray-600">
-            We couldn't find any resources matching your
-            current search or filters.
+            We couldn't find any resources matching your current search or filters.
           </p>
 
           @if (hasActiveFilters()) {
@@ -302,28 +400,19 @@ import { CommonModule } from '@angular/common';
         </div>
       }
 
-      @if (
-        !loading() &&
-        !error() &&
-        filteredResources().length > 0
-      ) {
+      @if (!loading() && !error() && filteredResources().length > 0) {
         <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           @for (resource of filteredResources(); track resource.id) {
-            <app-resource-card 
-              [resource]="resource" 
+            <app-resource-card
+              [resource]="resource"
               [categoryName]="getCategoryName(resource.categoryId)"
-            /> 
+            />
           }
         </div>
       }
 
       <!-- Load more resources -->
-      @if (
-        !loading() &&
-        !error() &&
-        filteredResources().length > 0 &&
-        hasMoreResources()
-      ) {
+      @if (!loading() && !error() && filteredResources().length > 0 && hasMoreResources()) {
         <div class="mt-8 flex justify-center">
           <button
             type="button"
@@ -342,14 +431,8 @@ import { CommonModule } from '@angular/common';
         </div>
       }
 
-      @if (
-        !loading() &&
-        !error() &&
-        resources().length === 0
-      ) {
-        <p class="mt-6 text-gray-600">
-          No resources are currently available.
-        </p>
+      @if (!loading() && !error() && resources().length === 0) {
+        <p class="mt-6 text-gray-600">No resources are currently available.</p>
       }
     </main>
   `,
@@ -360,6 +443,8 @@ export class ResourceListComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  protected readonly authService = inject(AuthService);
+  private readonly toast = inject(HotToastService);
 
   protected readonly resources = signal<Resource[]>([]);
   protected readonly categories = signal<Category[]>([]);
@@ -372,8 +457,11 @@ export class ResourceListComponent implements OnInit {
   protected readonly selectedCategory = signal('');
   protected readonly onlineOnly = signal(false);
   protected readonly featuredOnly = signal(false);
+  // Controls the additional navigation menu.
+  protected readonly showMoreMenu = signal(false);
+  protected readonly signingOut = signal(false);
 
-    // Pagination state for the public resource list.
+  // Pagination state for the public resource list.
   // Firestore uses the last document as the cursor for the next page.
   private lastResourceDocument: QueryDocumentSnapshot | undefined;
 
@@ -404,64 +492,44 @@ export class ResourceListComponent implements OnInit {
       return '';
     }
 
-    const category = this.categories().find(
-      (category) => category.slug === slug
-    );
+    const category = this.categories().find((category) => category.slug === slug);
 
     return category?.id ?? '';
   });
 
   /**
- * Find the display name for a resource's category.
- *
- * Resources store the category document ID,
- * while categories contain the human-readable name.
- */
-    protected getCategoryName(categoryId: string): string {
-            return (
-                    this.categories().find(
-                              (category) => category.id === categoryId
-                                      )?.name ?? ''
-                                            );
-                                                
-    }
+   * Find the display name for a resource's category.
+   *
+   * Resources store the category document ID,
+   * while categories contain the human-readable name.
+   */
+  protected getCategoryName(categoryId: string): string {
+    return this.categories().find((category) => category.id === categoryId)?.name ?? '';
+  }
 
- protected readonly filteredResources = computed(() => {
-  const search = this.searchTerm().trim().toLowerCase();
-  const type = this.selectedType();
-  const categoryId = this.selectedCategoryId();
+  protected readonly filteredResources = computed(() => {
+    const search = this.searchTerm().trim().toLowerCase();
+    const type = this.selectedType();
+    const categoryId = this.selectedCategoryId();
 
-  return this.resources().filter((resource) => {
-    const matchesSearch =
-      !search ||
-      resource.name.toLowerCase().includes(search) ||
-      resource.description.toLowerCase().includes(search) ||
-      resource.tags.some((tag) =>
-        tag.toLowerCase().includes(search)
-      );
+    return this.resources().filter((resource) => {
+      const matchesSearch =
+        !search ||
+        resource.name.toLowerCase().includes(search) ||
+        resource.description.toLowerCase().includes(search) ||
+        resource.tags.some((tag) => tag.toLowerCase().includes(search));
 
-    const matchesType =
-      !type || resource.resourceType === type;
+      const matchesType = !type || resource.resourceType === type;
 
-    const matchesCategory =
-      !categoryId ||
-      resource.categoryId === categoryId;
+      const matchesCategory = !categoryId || resource.categoryId === categoryId;
 
-    const matchesOnline =
-      !this.onlineOnly() || resource.online;
+      const matchesOnline = !this.onlineOnly() || resource.online;
 
-    const matchesFeatured =
-      !this.featuredOnly() || resource.featured;
+      const matchesFeatured = !this.featuredOnly() || resource.featured;
 
-    return (
-      matchesSearch &&
-      matchesType &&
-      matchesCategory &&
-      matchesOnline &&
-      matchesFeatured
-    );
+      return matchesSearch && matchesType && matchesCategory && matchesOnline && matchesFeatured;
+    });
   });
-});
 
   protected readonly hasActiveFilters = computed(() => {
     return (
@@ -485,16 +553,15 @@ export class ResourceListComponent implements OnInit {
     }
   }
 
-    private async loadCategories(): Promise<void> {
-      try {
-        const categories =
-          await this.categoryService.getActiveCategories();
+  private async loadCategories(): Promise<void> {
+    try {
+      const categories = await this.categoryService.getActiveCategories();
 
-        this.categories.set(categories);
-      } catch (error) {
-        console.error('Failed to load categories:', error);
-      }
+      this.categories.set(categories);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
     }
+  }
 
   protected onSearch(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -517,43 +584,43 @@ export class ResourceListComponent implements OnInit {
   }
 
   protected onCategoryChange(event: Event): void {
-      const select = event.target as HTMLSelectElement;
-      const category = select.value;
+    const select = event.target as HTMLSelectElement;
+    const category = select.value;
 
-      this.selectedCategory.set(category);
+    this.selectedCategory.set(category);
 
-      // Keep the selected category in the URL so the filter is shareable.
-      this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: {
-          category: category || null,
-        },
-        queryParamsHandling: 'merge',
-      });
-    }
+    // Keep the selected category in the URL so the filter is shareable.
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        category: category || null,
+      },
+      queryParamsHandling: 'merge',
+    });
+  }
 
   protected clearFilters(): void {
-  this.searchTerm.set('');
-  this.selectedType.set('');
-  this.selectedCategory.set('');
-  this.onlineOnly.set(false);
-  this.featuredOnly.set(false);
+    this.searchTerm.set('');
+    this.selectedType.set('');
+    this.selectedCategory.set('');
+    this.onlineOnly.set(false);
+    this.featuredOnly.set(false);
 
-  // Remove the category filter from the URL.
-  this.router.navigate([], {
-    relativeTo: this.route,
-    queryParams: {
-      category: null,
-    },
-    queryParamsHandling: 'merge',
-  });
-}
+    // Remove the category filter from the URL.
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        category: null,
+      },
+      queryParamsHandling: 'merge',
+    });
+  }
 
   protected formatResourceType(type: ResourceType): string {
     return type.charAt(0).toUpperCase() + type.slice(1);
   }
 
-    /**
+  /**
    * Load the first page of published resources.
    *
    * This resets the Firestore pagination cursor so a fresh
@@ -568,68 +635,47 @@ export class ResourceListComponent implements OnInit {
     this.hasMoreResources.set(true);
 
     try {
-      const page =
-        await this.resourceService.getPublishedResourcesPage(
-          this.resourcePageSize
-        );
+      const page = await this.resourceService.getPublishedResourcesPage(this.resourcePageSize);
 
       this.resources.set(page.resources);
-      this.lastResourceDocument =
-        page.lastDocument ?? undefined;
+      this.lastResourceDocument = page.lastDocument ?? undefined;
       this.hasMoreResources.set(page.hasMore);
-
     } catch (error) {
       console.error('Failed to load resources:', error);
 
-      this.error.set(
-        'Unable to load resources. Please try again later.'
-      );
+      this.error.set('Unable to load resources. Please try again later.');
     } finally {
       this.loading.set(false);
     }
   }
 
-    /**
+  /**
    * Load the next page of published resources and append
    * the results to the resources already displayed.
    */
   protected async loadMoreResources(): Promise<void> {
-    if (
-      this.loadingMore() ||
-      !this.hasMoreResources()
-    ) {
+    if (this.loadingMore() || !this.hasMoreResources()) {
       return;
     }
 
     this.loadingMore.set(true);
 
     try {
-      const page =
-        await this.resourceService.getPublishedResourcesPage(
-          this.resourcePageSize,
-          this.lastResourceDocument
-        );
+      const page = await this.resourceService.getPublishedResourcesPage(
+        this.resourcePageSize,
+        this.lastResourceDocument,
+      );
 
       // Append the new page instead of replacing the existing results.
-      this.resources.update((resources) => [
-        ...resources,
-        ...page.resources,
-      ]);
+      this.resources.update((resources) => [...resources, ...page.resources]);
 
-      this.lastResourceDocument =
-        page.lastDocument ?? undefined;
+      this.lastResourceDocument = page.lastDocument ?? undefined;
 
       this.hasMoreResources.set(page.hasMore);
-
     } catch (error) {
-      console.error(
-        'Failed to load more resources:',
-        error
-      );
+      console.error('Failed to load more resources:', error);
 
-      this.error.set(
-        'Unable to load more resources. Please try again.'
-      );
+      this.error.set('Unable to load more resources. Please try again.');
     } finally {
       this.loadingMore.set(false);
     }
@@ -648,5 +694,42 @@ export class ResourceListComponent implements OnInit {
     });
   }
 
+  /**
+   * Toggle the additional navigation menu.
+   */
+  protected toggleMoreMenu(): void {
+    this.showMoreMenu.update((visible) => !visible);
+  }
 
+  /**
+   * Close the additional navigation menu.
+   */
+  protected closeMoreMenu(): void {
+    this.showMoreMenu.set(false);
+  }
+
+  /**
+   * Sign the user out and return to login.
+   */
+  protected async signOut(): Promise<void> {
+    if (this.signingOut()) {
+      return;
+    }
+
+    this.signingOut.set(true);
+
+    try {
+      await this.authService.logout();
+
+      this.toast.success('You have been signed out.');
+
+      await this.router.navigateByUrl('/login');
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+
+      this.toast.error('Unable to sign out. Please try again.');
+    } finally {
+      this.signingOut.set(false);
+    }
+  }
 }

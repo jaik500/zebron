@@ -10,15 +10,18 @@ import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes, withComponentInputBinding(), withViewTransitions()), 
+    provideRouter(routes, withComponentInputBinding(), withViewTransitions()),
     provideClientHydration(withEventReplay()),
     provideHotToastConfig({
-      style: { marginTop: '70px' },
+      position: 'top-center',
       stacking: 'depth',
-      duration: 1000,
+      duration: 3000,
+      style: {
+        marginTop: '70px',
+      },
     }),
     provideHttpClient(withFetch()),
-     {
+    {
       provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
       useValue: {
         appearance: 'outline',
@@ -26,5 +29,5 @@ export const appConfig: ApplicationConfig = {
         floatLabel: 'never',
       },
     },
-  ]
+  ],
 };

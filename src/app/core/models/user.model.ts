@@ -1,17 +1,35 @@
-import { Timestamp } from 'firebase/firestore';
 
-export type UserRole = 'user' | 'admin';
 
 export interface User {
   id: string;
 
   email: string;
+
   displayName: string;
 
-  photoURL?: string;
+  role: 'user' | 'admin';
 
-  role: UserRole;
+  // Optional personal information.
+  firstName?: string;
+  lastName?: string;
+  preferredName?: string;
+  phone?: string;
 
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  // Optional location information.
+  countryOfOrigin?: string;
+  currentCountry?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+
+  // Optional preferences.
+  preferredLanguage?: string;
+
+  // Optional profile information.
+  bio?: string;
+  website?: string;
+  photoUrl?: string;
+
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }

@@ -1,8 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
+import { HotToastService } from '@ngxpert/hot-toast';
 
 @Component({
   selector: 'app-login',
@@ -10,9 +11,7 @@ import { AuthService } from '../../../../core/services/auth.service';
   imports: [FormsModule, RouterLink],
   template: `
     <main class="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
-
       <div class="mx-auto max-w-md">
-
         <!-- Back navigation -->
         <a
           routerLink="/resources"
@@ -27,10 +26,8 @@ import { AuthService } from '../../../../core/services/auth.service';
           class="mt-6 overflow-hidden rounded-2xl border
                  border-gray-200 bg-white shadow-lg"
         >
-
           <!-- Header -->
           <div class="bg-[#032D42] px-6 py-8 text-white sm:px-8">
-
             <div
               class="flex h-12 w-12 items-center justify-center
                      rounded-xl bg-white/10"
@@ -53,29 +50,19 @@ import { AuthService } from '../../../../core/services/auth.service';
               </svg>
             </div>
 
-            <h1 class="mt-5 text-2xl font-bold sm:text-3xl">
-              Admin Login
-            </h1>
+            <h1 class="mt-5 text-2xl font-bold sm:text-3xl">Sign in to Zebron</h1>
 
             <p class="mt-2 text-sm leading-6 text-blue-100">
-              Sign in to manage Zebron content and resources.
+              Sign in to access your Zebron account.
             </p>
           </div>
 
           <!-- Form -->
           <div class="p-6 sm:p-8">
-
-            <form
-              class="space-y-5"
-              (ngSubmit)="login()"
-            >
-
+            <form class="space-y-5" (ngSubmit)="login()">
               <!-- Email -->
               <div>
-                <label
-                  for="email"
-                  class="block text-sm font-semibold text-gray-800"
-                >
+                <label for="email" class="block text-sm font-semibold text-gray-800">
                   Email address
                 </label>
 
@@ -102,16 +89,12 @@ import { AuthService } from '../../../../core/services/auth.service';
               <!-- Password -->
               <div>
                 <div class="flex items-center justify-between">
-                  <label
-                    for="password"
-                    class="block text-sm font-semibold text-gray-800"
-                  >
+                  <label for="password" class="block text-sm font-semibold text-gray-800">
                     Password
                   </label>
                 </div>
 
                 <div class="relative mt-2">
-
                   <input
                     id="password"
                     name="password"
@@ -137,11 +120,7 @@ import { AuthService } from '../../../../core/services/auth.service';
                     class="absolute inset-y-0 right-0 flex items-center
                            px-4 text-gray-500 transition
                            hover:text-[#032D42]"
-                    [attr.aria-label]="
-                      showPassword()
-                        ? 'Hide password'
-                        : 'Show password'
-                    "
+                    [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
                   >
                     @if (showPassword()) {
                       <svg
@@ -205,7 +184,6 @@ import { AuthService } from '../../../../core/services/auth.service';
                       </svg>
                     }
                   </button>
-
                 </div>
               </div>
 
@@ -217,7 +195,6 @@ import { AuthService } from '../../../../core/services/auth.service';
                          bg-red-50 p-4 text-sm text-red-700"
                 >
                   <div class="flex gap-3">
-
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -239,7 +216,6 @@ import { AuthService } from '../../../../core/services/auth.service';
                     <p>
                       {{ error() }}
                     </p>
-
                   </div>
                 </div>
               }
@@ -288,41 +264,71 @@ import { AuthService } from '../../../../core/services/auth.service';
                   Sign in
                 }
               </button>
-
             </form>
 
             <!-- >Register Link -->
             <p class="mt-6 text-center text-sm text-gray-600">
               Don't have an account?
-              <a
-                routerLink="/register"
-                class="font-semibold text-[#032D42] hover:underline"
-              >
+              <a routerLink="/register" class="font-semibold text-[#032D42] hover:underline">
                 Create an account
               </a>
             </p>
 
-
             <!-- Security note -->
-            <div
-              class="mt-6 border-t border-gray-100 pt-5"
-            >
+            <div class="mt-6 border-t border-gray-100 pt-5">
               <p class="text-center text-xs leading-5 text-gray-500">
-                Authorized administrators only.
-                Your credentials are securely handled by Firebase Authentication.
+                Authorized administrators only. Your credentials are securely handled by Firebase
+                Authentication.
               </p>
             </div>
-
           </div>
         </section>
-
       </div>
+
+      <!-- // Show the administrator task selection popup. -->
+      <ng-template #adminPrompt>
+        <div class="w-full">
+          <p class="text-lg font-semibold text-[#032D42]">Administrator Access</p>
+
+          <p class="mt-2 text-sm leading-6 text-gray-600">
+            You have administrator access to Zebron. Would you like to perform administrative tasks?
+          </p>
+
+          <div
+            class="mt-6 flex flex-col gap-3
+             sm:flex-row sm:justify-end"
+          >
+            <button
+              type="button"
+              (click)="continueToResources()"
+              class="rounded-lg border border-gray-300
+               bg-white px-4 py-2.5 text-sm
+               font-semibold text-gray-700
+               transition hover:bg-gray-50"
+            >
+              Go to Resources
+            </button>
+
+            <button
+              type="button"
+              (click)="continueToAdmin()"
+              class="rounded-lg bg-[#032D42]
+               px-4 py-2.5 text-sm
+               font-semibold text-white
+               transition hover:bg-[#032D42]/90"
+            >
+              Admin Tasks
+            </button>
+          </div>
+        </div>
+      </ng-template>
     </main>
   `,
 })
 export class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly toast = inject(HotToastService);
 
   protected email = '';
   protected password = '';
@@ -330,26 +336,137 @@ export class LoginComponent {
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly showPassword = signal(false);
+  // Controls the administrator task selection popup.
+  protected readonly showAdminPrompt = signal(false);
 
+  // Prevents the login flow from navigating before
+  // the administrator makes a selection.
+  private adminPromptResolve: ((goToAdmin: boolean) => void) | null = null;
+  private adminToastRef: any = null;
+  /**
+   * Prevents the administrator prompt from being
+   * displayed more than once during a login attempt.
+   */
+  private adminPromptShown = false;
+  @ViewChild('adminPrompt') private adminPrompt!: TemplateRef<unknown>;
+
+  /**
+   * Sign the user in and route them according
+   * to their account role.
+   *
+   * Administrators are shown a Hot Toast prompt
+   * asking whether they want to perform admin tasks.
+   *
+   * Regular users go directly to the resources page.
+   */
   protected async login(): Promise<void> {
+    // Prevent duplicate submissions while
+    // the current login attempt is running.
+    if (this.loading()) {
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 
     try {
-      await this.authService.signIn(
-        this.email.trim(),
-        this.password
-      );
+      // Authenticate with Firebase and load the
+      // corresponding Firestore user profile.
+      await this.authService.signIn(this.email.trim(), this.password);
 
-      await this.router.navigate(['/admin']);
+      // Debug authentication and role information.
+      console.log('========== LOGIN DEBUG ==========');
+      console.log('Firebase user:', this.authService.firebaseUser());
+      console.log('Firestore user:', this.authService.user());
+      console.log('User role:', this.authService.user()?.role);
+      console.log('Is admin:', this.authService.isAdmin);
+      console.log('=================================');
+
+      // Administrators are given a choice after login.
+      if (this.authService.isAdmin) {
+        console.log('LOGIN: ADMIN DETECTED');
+
+        // Prevent a second administrator prompt
+        // from being created during this login attempt.
+        if (this.adminPromptShown) {
+          console.log('ADMIN PROMPT: Already displayed.');
+
+          return;
+        }
+
+        this.adminPromptShown = true;
+
+        // Show the administrator confirmation toast.
+        this.adminToastRef = this.toast.show(this.adminPrompt, {
+          id: 'admin-login-prompt',
+          autoClose: false,
+          dismissible: false,
+          style: {
+            width: '500px',
+            maxWidth: '90vw',
+            padding: '24px',
+          },
+        });
+
+        // Authentication is complete. The admin
+        // chooses where to continue from the toast.
+        return;
+      }
+
+      // Regular authenticated users go directly
+      // to the public resource directory.
+      console.log('LOGIN: REGULAR USER');
+
+      await this.router.navigate(['/resources']);
     } catch (error) {
       console.error('Login failed:', error);
 
-      this.error.set(
-        'Unable to sign in. Please check your email and password.'
-      );
+      this.error.set('Unable to sign in. Please check your email and password.');
     } finally {
+      // Always stop the login loading indicator.
+      //
+      // IMPORTANT:
+      // Do NOT show the admin toast here.
+      // The admin toast is created only inside
+      // the administrator branch above.
       this.loading.set(false);
     }
+  }
+
+  /**
+   * Display the administrator task selection popup.
+   *
+   * Returns true when the administrator chooses
+   * to perform admin tasks.
+   *
+   * Returns false when the administrator chooses
+   * to continue to the public resources page.
+   */
+  private showAdministratorPrompt(): Promise<boolean> {
+    this.showAdminPrompt.set(true);
+
+    return new Promise<boolean>((resolve) => {
+      this.adminPromptResolve = resolve;
+    });
+  }
+
+  /**
+   * Route the administrator to the public resource directory.
+   */
+  protected continueToResources(): void {
+    this.adminToastRef?.close();
+    this.adminToastRef = null;
+
+    this.router.navigate(['/resources']);
+  }
+
+  /**
+   * Route the administrator to the admin dashboard.
+   */
+  protected continueToAdmin(): void {
+    this.adminToastRef?.close();
+    this.adminToastRef = null;
+
+    this.router.navigate(['/admin']);
   }
 }
