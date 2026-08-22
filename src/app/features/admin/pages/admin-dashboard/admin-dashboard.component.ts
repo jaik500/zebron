@@ -284,6 +284,87 @@ import { HotToastService } from '@ngxpert/hot-toast';
 
           </a>
 
+          <!-- Users -->
+<a
+  routerLink="/admin/users"
+  class="group rounded-2xl
+         border border-gray-200
+         bg-white p-6
+         shadow-sm
+         transition
+         hover:-translate-y-0.5
+         hover:border-[#007979]/30
+         hover:shadow-md"
+>
+  <div
+    class="flex h-12 w-12
+           items-center justify-center
+           rounded-xl
+           bg-[#007979]/10
+           text-[#007979]"
+  >
+    <!-- Users icon -->
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      class="h-6 w-6"
+      aria-hidden="true"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+      />
+
+      <circle
+        cx="9"
+        cy="7"
+        r="4"
+      />
+
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M22 21v-2a4 4 0 0 0-3-3.87"
+      />
+
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M16 3.13a4 4 0 0 1 0 7.75"
+      />
+    </svg>
+  </div>
+
+  <div class="mt-5">
+    <h2
+      class="text-lg font-semibold
+             text-[#032D42]
+             group-hover:text-[#007979]"
+    >
+      Users
+    </h2>
+
+    <p
+      class="mt-2 text-sm
+             leading-6 text-gray-500"
+    >
+      Manage user accounts, profiles,
+      roles, and permissions.
+    </p>
+  </div>
+
+  <div
+    class="mt-5 text-sm font-semibold
+           text-[#007979]"
+  >
+    Manage users →
+  </div>
+</a>
+
         </div>
 
       </section>

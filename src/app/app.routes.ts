@@ -47,6 +47,28 @@ export const routes: Routes = [
     ).then((m) => m.UserProfileComponent ),
 },
 
+// Protected resource submission form.
+{
+  path: 'submit',
+  canActivate: [authGuard],
+  loadComponent: () =>
+    import(
+      './features/submissions/pages/submit-resource/submit-resource.component'
+    ).then(
+      (m) => m.SubmitResourceComponent
+    ),
+},// Protected resource submission form.
+{
+  path: 'submit',
+  canActivate: [authGuard],
+  loadComponent: () =>
+    import(
+      './features/submissions/pages/submit-resource/submit-resource.component'
+    ).then(
+      (m) => m.SubmitResourceComponent
+    ),
+},
+
    
   // Resource administration.
   {
@@ -67,6 +89,28 @@ export const routes: Routes = [
         './features/admin/pages/organizations/organization-admin.component'
       ).then((m) => m.OrganizationAdminComponent),
   },
+
+   // Protected user administration.
+{
+  path: 'admin/users',
+  canActivate: [adminGuard],
+  loadComponent: () =>
+    import(
+      './features/admin/pages/users/user-admin.component'
+    ).then((m) => m.UserAdminComponent),
+},
+
+//// Submission administration.
+{
+  path: 'admin/submissions',
+  canActivate: [adminGuard],
+  loadComponent: () =>
+    import(
+      './features/admin/pages/submissions/submission-admin.component'
+    ).then(
+      (m) => m.SubmissionAdminComponent
+    ),
+},
 
   // Protected administration area.
   {

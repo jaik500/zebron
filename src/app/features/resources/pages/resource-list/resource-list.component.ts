@@ -4,436 +4,653 @@ import { ResourceService } from '../../../../core/services/resource.service';
 import { ResourceCardComponent } from '../../components/resource-card/resource-card.component';
 import { CategoryService } from '../../../../core/services/category.service';
 import { Category } from '../../../../core/models/category.model';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
-import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../../core/services/auth.service';
 import { HotToastService } from '@ngxpert/hot-toast';
+import { UsefulLinksComponent } from '../../components/useful-links/useful-links.component';
 
 @Component({
   selector: 'app-resource-list',
   standalone: true,
-  imports: [ResourceCardComponent, RouterLink, CommonModule],
+  imports: [
+    ResourceCardComponent,
+    UsefulLinksComponent,
+    RouterLink,
+    CommonModule,
+  ],
   template: `
-    <main class="p-8">
-      <!-- Page header -->
-      <!-- Page header -->
-      <section class="rounded-2xl bg-[#032D42] px-6 py-8 text-white shadow-sm sm:px-8">
+    <main class="p-4 sm:p-6 lg:p-8">
+
+      <!-- =========================================================
+           Page Header
+           ========================================================= -->
+      <section
+        class="rounded-2xl bg-[#032D42]
+               px-4 py-6 text-white
+               shadow-sm sm:px-8 sm:py-8"
+      >
         <div
-          class="flex flex-col gap-6 sm:flex-row
-          sm:items-start sm:justify-between"
+          class="flex items-center
+                 justify-between gap-3"
         >
-          <!-- Header content -->
-          <div class="max-w-3xl">
+
+          <!-- Resource Directory title -->
+          <div class="min-w-0 flex-1">
+
             <p
-              class="text-sm font-semibold uppercase
-              tracking-wide text-blue-100"
+              class="text-xs font-semibold
+                     uppercase tracking-wide
+                     text-blue-100 sm:text-sm"
             >
               Resource Directory
             </p>
 
             <h1
-              class="mt-2 text-3xl font-bold tracking-tight text-white
-              sm:text-4xl"
+              class="mt-1 text-2xl font-bold
+                     tracking-tight text-white
+                     sm:text-4xl"
             >
               Find the help you need
             </h1>
 
-            <p class="mt-3 text-base leading-7 text-blue-100 sm:text-lg">
-              Browse trusted resources, services, organizations, and tools available to help you and
-              your community.
+            <p
+              class="mt-2 max-w-3xl
+                     text-sm leading-6
+                     text-blue-100 sm:mt-3
+                     sm:text-lg sm:leading-7"
+            >
+              Browse trusted resources, services,
+              organizations, and tools available to
+              help you and your community.
             </p>
+
           </div>
 
-          <!-- Authentication / Profile navigation -->
-          <div class="flex shrink-0 items-start gap-3 sm:ml-auto">
-            @if (authService.firebaseUser()) {
-              <!-- =========================================================
-     Header navigation
-     Home + More menu
-     ========================================================= -->
-              <div class="relative flex items-center gap-2">
+          <!-- More menu -->
+          <div class="relative shrink-0">
 
-                <!-- More menu -->
-                <div class="relative">
-                  <button
-                    type="button"
-                    (click)="toggleMoreMenu()"
-                    [attr.aria-expanded]="showMoreMenu()"
-                    aria-label="More navigation options"
-                    class="inline-flex h-10 w-10
-                    items-center justify-center
-                    rounded-md
-                    border border-white/30
-                    bg-white/10
-                    text-xl font-bold
-                    text-white
-                    transition hover:bg-white/20
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-white/40"
+            <button
+              type="button"
+              (click)="toggleMoreMenu()"
+              [attr.aria-expanded]="showMoreMenu()"
+              aria-label="More options"
+              title="More options"
+              class="flex h-10 w-10
+                     items-center justify-center
+                     rounded-lg
+                     border border-white/30
+                     bg-white/10
+                     text-xl font-bold
+                     text-white
+                     transition
+                     hover:bg-white/20
+                     focus:outline-none
+                     focus:ring-2
+                     focus:ring-white/40
+                     sm:h-11 sm:w-11"
+            >
+              <span
+                aria-hidden="true"
+                class="leading-none"
+              >
+                ⋮
+              </span>
+            </button>
+
+            <!-- More menu -->
+            @if (showMoreMenu()) {
+              <div
+                class="absolute right-0 z-50
+                       mt-2 w-56
+                       overflow-hidden
+                       rounded-xl
+                       border border-gray-200
+                       bg-white
+                       shadow-lg"
+              >
+
+                <div
+                  class="border-b border-gray-100
+                         px-4 py-3"
+                >
+                  <p
+                    class="text-xs font-semibold
+                           uppercase tracking-wide
+                           text-[#007979]"
                   >
-                    <span aria-hidden="true" class="leading-none"> ⋮ </span>
-                  </button>
+                    More
+                  </p>
 
-                  <!-- More menu dropdown -->
-                  @if (showMoreMenu()) {
-                    <div
-                      class="absolute right-0 z-50 mt-2
-               w-56 overflow-hidden
-               rounded-xl
-               border border-gray-200
-               bg-white
-               shadow-lg"
-                    >
-                      <!-- Menu heading -->
-                      <div
-                        class="border-b border-gray-100
-                 px-4 py-3"
-                      >
-                        <p
-                          class="text-xs font-semibold
-                   uppercase tracking-wide
-                   text-[#007979]"
-                        >
-                          More
-                        </p>
-
-                        <p class="mt-1 text-xs text-gray-500">Explore Zebron</p>
-                      </div>
-
-                      <!-- Resources -->
-                      <a
-                        routerLink="/resources"
-                        (click)="closeMoreMenu()"
-                        class="flex items-center gap-3
-                        px-4 py-3
-                        text-sm font-medium
-                        text-gray-700
-                        transition hover:bg-gray-50
-                        hover:text-[#007979]"
-                      >
-                        <span class="text-base" aria-hidden="true"> 📚 </span>
-
-                        Resources
-                      </a>
-
-                      <!-- Profile -->
-                      <a
-                        routerLink="/profile"
-                        (click)="closeMoreMenu()"
-                        class="flex items-center gap-3
-                 px-4 py-3
-                 text-sm font-medium
-                 text-gray-700
-                 transition hover:bg-gray-50
-                 hover:text-[#007979]"
-                      >
-                        <span class="text-base" aria-hidden="true"> 👤 </span>
-
-                        My Profile
-                      </a>
-
-                      <!-- Admin Dashboard -->
-                      @if (authService.isAdmin) {
-                        <a
-                          routerLink="/admin"
-                          (click)="closeMoreMenu()"
-                          class="flex items-center gap-3
-                   border-t border-gray-100
-                   px-4 py-3
-                   text-sm font-medium
-                   text-gray-700
-                   transition hover:bg-gray-50
-                   hover:text-[#007979]"
-                        >
-                          <span class="text-base" aria-hidden="true"> ⚙ </span>
-
-                          Admin Dashboard
-                        </a>
-                      }
-                      <button type="button"
-                        (click)="signOut()"
-                        class="flex items-center gap-3
-                        border-t border-gray-100
-                        px-4 py-3
-                        text-sm font-medium
-                        text-gray-700
-                        transition hover:bg-gray-50
-                        hover:text-[#007979]"
-                      >
-                      <span class="text-base" aria-hidden="true"> ↩️ </span>
-                        Log out
-                      </button>
-                    </div>
-                  }
+                  <p
+                    class="mt-1 text-xs
+                           text-gray-500"
+                  >
+                    Explore Zebron
+                  </p>
                 </div>
-              </div>
-            } @else {
-              <a
-                routerLink="/login"
-                class="rounded-lg border border-white/30
-                bg-white/10 px-4 py-2.5 text-sm
-                font-semibold text-white
-                transition hover:bg-white/20"
-              >
-                Sign in
-              </a>
 
-              <a
-                routerLink="/register"
-                class="rounded-lg bg-white px-4 py-2.5
-                text-sm font-semibold text-[#032D42]
-                shadow-sm transition hover:bg-blue-50"
-              >
-                Register
-              </a>
+                <a
+                  routerLink="/resources"
+                  (click)="closeMoreMenu()"
+                  class="block px-4 py-3
+                         text-sm font-medium
+                         text-gray-700
+                         hover:bg-gray-50
+                         hover:text-[#007979]"
+                >
+                  Resources
+                </a>
+
+                <a
+                  routerLink="/profile"
+                  (click)="closeMoreMenu()"
+                  class="block px-4 py-3
+                         text-sm font-medium
+                         text-gray-700
+                         hover:bg-gray-50
+                         hover:text-[#007979]"
+                >
+                  My Profile
+                </a>
+
+                @if (authService.isAdmin) {
+                  <a
+                    routerLink="/admin"
+                    (click)="closeMoreMenu()"
+                    class="block border-t
+                           border-gray-100
+                           px-4 py-3
+                           text-sm font-medium
+                           text-gray-700
+                           hover:bg-gray-50
+                           hover:text-[#007979]"
+                  >
+                    Admin Dashboard
+                  </a>
+                }
+
+              </div>
             }
+
           </div>
+
         </div>
       </section>
 
-      <!-- Category navigation -->
-      <section class="mt-6">
-        <h2 class="text-lg font-semibold text-gray-900">Browse by category</h2>
 
-        <div class="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            (click)="selectCategory('')"
-            [class.bg-[#007979]]="!selectedCategory()"
-            [class.text-white]="!selectedCategory()"
-            [class.bg-gray-100]="selectedCategory()"
-            [class.text-gray-700]="selectedCategory()"
-            class="rounded-full px-4 py-2 text-sm font-medium
-                  hover:bg-blue-100"
-          >
-            All
-          </button>
+      <!-- =========================================================
+           Main Directory Layout
+           ========================================================= -->
+      <div
+        class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]"
+      >
 
-          @for (category of categories(); track category.id) {
-            <button
-              type="button"
-              (click)="selectCategory(category.slug)"
-              [class.bg-[#007979]]="selectedCategory() === category.slug"
-              [class.text-white]="selectedCategory() === category.slug"
-              [class.bg-gray-100]="selectedCategory() !== category.slug"
-              [class.text-gray-700]="selectedCategory() !== category.slug"
-              class="rounded-full px-4 py-2 text-sm font-medium
-                    hover:bg-blue-100"
+        <!-- =======================================================
+             Main Resource Directory
+             ======================================================= -->
+        <section class="min-w-0">
+
+          <!-- Category navigation -->
+          <section>
+            <h2
+              class="text-lg font-semibold
+                     text-gray-900"
             >
-              {{ category.name }}
-            </button>
-          }
-        </div>
-      </section>
+              Browse by category
+            </h2>
 
-      <!-- Search and filters -->
-      <section class="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div class="grid gap-4 md:grid-cols-3">
-          <!-- Search -->
-          <div>
-            <label for="search" class="block text-sm font-medium text-gray-700"> Search </label>
+            <div class="mt-3 flex flex-wrap gap-2">
 
-            <input
-              id="search"
-              type="search"
-              [value]="searchTerm()"
-              (input)="onSearch($event)"
-              placeholder="Search resources..."
-              class="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2
-                     focus:border-blue-500 focus:outline-none focus:ring-2
-                     focus:ring-blue-500 hover:bg-[#032D42]/10"
-            />
-          </div>
+              <button
+                type="button"
+                (click)="selectCategory('')"
+                [class.bg-[#007979]]="!selectedCategory()"
+                [class.text-white]="!selectedCategory()"
+                [class.bg-gray-100]="selectedCategory()"
+                [class.text-gray-700]="selectedCategory()"
+                class="rounded-full px-4 py-2
+                       text-sm font-medium
+                       hover:bg-blue-100"
+              >
+                All
+              </button>
 
-          <!-- Category -->
-          <div>
-            <label for="category" class="block text-sm font-medium text-gray-700"> Category </label>
-
-            <select
-              id="category"
-              [value]="selectedCategory()"
-              (change)="onCategoryChange($event)"
-              class="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2
-                    focus:border-blue-500 focus:outline-none focus:ring-2
-                    focus:ring-blue-500 hover:bg-[#032D42]/10"
-            >
-              <option value="">All categories</option>
-
-              @for (category of categories(); track category.slug) {
-                <option [value]="category.slug">
+              @for (
+                category of categories();
+                track category.id
+              ) {
+                <button
+                  type="button"
+                  (click)="selectCategory(category.slug)"
+                  [class.bg-[#007979]]="
+                    selectedCategory() === category.slug
+                  "
+                  [class.text-white]="
+                    selectedCategory() === category.slug
+                  "
+                  [class.bg-gray-100]="
+                    selectedCategory() !== category.slug
+                  "
+                  [class.text-gray-700]="
+                    selectedCategory() !== category.slug
+                  "
+                  class="rounded-full px-4 py-2
+                         text-sm font-medium
+                         hover:bg-blue-100"
+                >
                   {{ category.name }}
-                </option>
+                </button>
               }
-            </select>
-          </div>
 
-          <!-- Resource type -->
-          <div>
-            <label for="resourceType" class="block text-sm font-medium text-gray-700">
-              Resource type
-            </label>
+            </div>
+          </section>
 
-            <select
-              id="resourceType"
-              [value]="selectedType()"
-              (change)="onTypeChange($event)"
-              class="mt-1 block w-full rounded-lg border border-gray-300
-                bg-white px-4 py-2.5 text-gray-800 shadow-sm
-                transition
-                hover:border-gray-400
-                hover:bg-[#032D42]/10
-                focus:border-[#032D42] focus:outline-none
-                focus:ring-2 focus:ring-[#032D42]/20"
-            >
-              <option value="">All types</option>
 
-              @for (type of resourceTypes; track type) {
-                <option [value]="type">
-                  {{ formatResourceType(type) }}
-                </option>
-              }
-            </select>
-          </div>
-        </div>
+          <!-- =====================================================
+               Search and Filters
+               ===================================================== -->
+          <section
+            class="mt-6 rounded-xl
+                   border border-gray-200
+                   bg-white p-5 shadow-sm"
+          >
 
-        <!-- Additional filters -->
-        <div class="mt-4 flex flex-wrap gap-6">
-          <label class="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              [checked]="onlineOnly()"
-              (change)="onOnlineChange($event)"
-              class="rounded border-gray-300"
-            />
-            Available online
-          </label>
+            <div class="grid gap-4 md:grid-cols-3">
 
-          <label class="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              [checked]="featuredOnly()"
-              (change)="onFeaturedChange($event)"
-              class="rounded border-gray-300"
-            />
-            Featured
-          </label>
+              <!-- Search -->
+              <div>
+                <label
+                  for="search"
+                  class="block text-sm
+                         font-medium text-gray-700"
+                >
+                  Search
+                </label>
 
-          @if (hasActiveFilters()) {
-            <button
-              type="button"
-              (click)="clearFilters()"
-              class="text-sm font-medium text-blue-600 hover:text-blue-800"
-            >
-              Clear filters
-            </button>
-          }
-        </div>
-
-        @if (!loading()) {
-          <p class="mt-4 text-sm text-gray-500">
-            {{ filteredResources().length }}
-            {{ filteredResources().length === 1 ? 'resource' : 'resources' }}
-            found
-          </p>
-        }
-      </section>
-
-      @if (loading()) {
-        <!-- Resource loading skeletons -->
-        <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading resources">
-          @for (skeleton of [1, 2, 3, 4, 5, 6]; track skeleton) {
-            <div
-              class="animate-pulse rounded-xl border border-gray-200
-                    bg-white p-5 shadow-sm"
-            >
-              <!-- Category skeleton -->
-              <div class="h-5 w-24 rounded bg-gray-200"></div>
-
-              <!-- Title skeleton -->
-              <div class="mt-4 h-6 w-3/4 rounded bg-gray-200"></div>
-
-              <!-- Description skeleton -->
-              <div class="mt-3 space-y-2">
-                <div class="h-4 w-full rounded bg-gray-200"></div>
-                <div class="h-4 w-5/6 rounded bg-gray-200"></div>
-                <div class="h-4 w-2/3 rounded bg-gray-200"></div>
+                <input
+                  id="search"
+                  type="search"
+                  [value]="searchTerm()"
+                  (input)="onSearch($event)"
+                  placeholder="Search resources..."
+                  class="mt-1 block w-full
+                         rounded-lg border
+                         border-gray-300
+                         px-4 py-2
+                         focus:border-blue-500
+                         focus:outline-none
+                         focus:ring-2
+                         focus:ring-blue-500
+                         hover:bg-[#032D42]/10"
+                />
               </div>
 
-              <!-- Footer skeleton -->
-              <div class="mt-6 h-4 w-28 rounded bg-gray-200"></div>
+
+              <!-- Category -->
+              <div>
+                <label
+                  for="category"
+                  class="block text-sm
+                         font-medium text-gray-700"
+                >
+                  Category
+                </label>
+
+                <select
+                  id="category"
+                  [value]="selectedCategory()"
+                  (change)="onCategoryChange($event)"
+                  class="mt-1 block w-full
+                         rounded-lg border
+                         border-gray-300
+                         px-4 py-2
+                         focus:border-blue-500
+                         focus:outline-none
+                         focus:ring-2
+                         focus:ring-blue-500
+                         hover:bg-[#032D42]/10"
+                >
+                  <option value="">
+                    All categories
+                  </option>
+
+                  @for (
+                    category of categories();
+                    track category.slug
+                  ) {
+                    <option [value]="category.slug">
+                      {{ category.name }}
+                    </option>
+                  }
+                </select>
+              </div>
+
+
+              <!-- Resource type -->
+              <div>
+                <label
+                  for="resourceType"
+                  class="block text-sm
+                         font-medium text-gray-700"
+                >
+                  Resource type
+                </label>
+
+                <select
+                  id="resourceType"
+                  [value]="selectedType()"
+                  (change)="onTypeChange($event)"
+                  class="mt-1 block w-full
+                         rounded-lg border
+                         border-gray-300
+                         bg-white px-4 py-2.5
+                         text-gray-800 shadow-sm
+                         transition
+                         hover:border-gray-400
+                         hover:bg-[#032D42]/10
+                         focus:border-[#032D42]
+                         focus:outline-none
+                         focus:ring-2
+                         focus:ring-[#032D42]/20"
+                >
+                  <option value="">
+                    All types
+                  </option>
+
+                  @for (
+                    type of resourceTypes;
+                    track type
+                  ) {
+                    <option [value]="type">
+                      {{ formatResourceType(type) }}
+                    </option>
+                  }
+                </select>
+              </div>
+
+            </div>
+
+
+            <!-- Additional filters -->
+            <div class="mt-4 flex flex-wrap gap-6">
+
+              <label
+                class="flex items-center gap-2
+                       text-sm text-gray-700"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="onlineOnly()"
+                  (change)="onOnlineChange($event)"
+                  class="rounded border-gray-300"
+                />
+                Available online
+              </label>
+
+
+              <label
+                class="flex items-center gap-2
+                       text-sm text-gray-700"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="featuredOnly()"
+                  (change)="onFeaturedChange($event)"
+                  class="rounded border-gray-300"
+                />
+                Featured
+              </label>
+
+
+              @if (hasActiveFilters()) {
+                <button
+                  type="button"
+                  (click)="clearFilters()"
+                  class="text-sm font-medium
+                         text-blue-600
+                         hover:text-blue-800"
+                >
+                  Clear filters
+                </button>
+              }
+
+            </div>
+
+
+            @if (!loading()) {
+              <p
+                class="mt-4 text-sm
+                       text-gray-500"
+              >
+                {{ filteredResources().length }}
+                {{
+                  filteredResources().length === 1
+                    ? 'resource'
+                    : 'resources'
+                }}
+                found
+              </p>
+            }
+
+          </section>
+
+
+          <!-- =====================================================
+               Loading
+               ===================================================== -->
+          @if (loading()) {
+
+            <div
+              class="mt-6 grid gap-6
+                     sm:grid-cols-2
+                     lg:grid-cols-3"
+              aria-label="Loading resources"
+            >
+
+              @for (
+                skeleton of [1, 2, 3, 4, 5, 6];
+                track skeleton
+              ) {
+                <div
+                  class="animate-pulse
+                         rounded-xl
+                         border border-gray-200
+                         bg-white p-5 shadow-sm"
+                >
+
+                  <div
+                    class="h-5 w-24
+                           rounded bg-gray-200"
+                  ></div>
+
+                  <div
+                    class="mt-4 h-6 w-3/4
+                           rounded bg-gray-200"
+                  ></div>
+
+                  <div class="mt-3 space-y-2">
+                    <div
+                      class="h-4 w-full
+                             rounded bg-gray-200"
+                    ></div>
+
+                    <div
+                      class="h-4 w-5/6
+                             rounded bg-gray-200"
+                    ></div>
+
+                    <div
+                      class="h-4 w-2/3
+                             rounded bg-gray-200"
+                    ></div>
+                  </div>
+
+                  <div
+                    class="mt-6 h-4 w-28
+                           rounded bg-gray-200"
+                  ></div>
+
+                </div>
+              }
+
             </div>
           }
-        </div>
-      }
 
-      @if (error()) {
-        <p class="mt-6 text-red-600">
-          {{ error() }}
-        </p>
-      }
 
-      @if (!loading() && !error() && resources().length > 0 && filteredResources().length === 0) {
-        <div
-          class="mt-8 rounded-xl border border-gray-200
-                bg-white p-8 text-center shadow-sm"
-        >
-          <h2 class="text-lg font-semibold text-gray-900">No resources found</h2>
-
-          <p class="mt-2 text-sm text-gray-600">
-            We couldn't find any resources matching your current search or filters.
-          </p>
-
-          @if (hasActiveFilters()) {
-            <button
-              type="button"
-              (click)="clearFilters()"
-              class="mt-5 rounded-lg bg-blue-600 px-5 py-2
-                    text-sm font-medium text-white
-                    hover:bg-blue-700"
+          <!-- Error -->
+          @if (error()) {
+            <p
+              class="mt-6 text-red-600"
             >
-              Clear filters
-            </button>
+              {{ error() }}
+            </p>
           }
-        </div>
-      }
 
-      @if (!loading() && !error() && filteredResources().length > 0) {
-        <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          @for (resource of filteredResources(); track resource.id) {
-            <app-resource-card
-              [resource]="resource"
-              [categoryName]="getCategoryName(resource.categoryId)"
-            />
+
+          <!-- No matching resources -->
+          @if (
+            !loading() &&
+            !error() &&
+            resources().length > 0 &&
+            filteredResources().length === 0
+          ) {
+            <div
+              class="mt-8 rounded-xl
+                     border border-gray-200
+                     bg-white p-8
+                     text-center shadow-sm"
+            >
+
+              <h2
+                class="text-lg font-semibold
+                       text-gray-900"
+              >
+                No resources found
+              </h2>
+
+              <p
+                class="mt-2 text-sm
+                       text-gray-600"
+              >
+                We couldn't find any resources
+                matching your current search or
+                filters.
+              </p>
+
+              @if (hasActiveFilters()) {
+                <button
+                  type="button"
+                  (click)="clearFilters()"
+                  class="mt-5 rounded-lg
+                         bg-blue-600
+                         px-5 py-2
+                         text-sm font-medium
+                         text-white
+                         hover:bg-blue-700"
+                >
+                  Clear filters
+                </button>
+              }
+
+            </div>
           }
-        </div>
-      }
 
-      <!-- Load more resources -->
-      @if (!loading() && !error() && filteredResources().length > 0 && hasMoreResources()) {
-        <div class="mt-8 flex justify-center">
-          <button
-            type="button"
-            (click)="loadMoreResources()"
-            [disabled]="loadingMore()"
-            class="rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium
-                  text-white transition hover:bg-blue-700
-                  disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            @if (loadingMore()) {
-              Loading...
-            } @else {
-              Load more resources
-            }
-          </button>
-        </div>
-      }
 
-      @if (!loading() && !error() && resources().length === 0) {
-        <p class="mt-6 text-gray-600">No resources are currently available.</p>
-      }
+          <!-- =====================================================
+               Resource Cards
+               ===================================================== -->
+          @if (
+            !loading() &&
+            !error() &&
+            filteredResources().length > 0
+          ) {
+            <div
+              class="mt-6 grid gap-6
+                     sm:grid-cols-2
+                     lg:grid-cols-3"
+            >
+
+              @for (
+                resource of filteredResources();
+                track resource.id
+              ) {
+                <app-resource-card
+                  [resource]="resource"
+                  [categoryName]="
+                    getCategoryName(resource.categoryId)
+                  "
+                />
+              }
+
+            </div>
+          }
+
+
+          <!-- =====================================================
+               Load More
+               ===================================================== -->
+          @if (
+            !loading() &&
+            !error() &&
+            filteredResources().length > 0 &&
+            hasMoreResources()
+          ) {
+            <div
+              class="mt-8 flex justify-center"
+            >
+              <button
+                type="button"
+                (click)="loadMoreResources()"
+                [disabled]="loadingMore()"
+                class="rounded-lg
+                       bg-blue-600
+                       px-6 py-3
+                       text-sm font-medium
+                       text-white transition
+                       hover:bg-blue-700
+                       disabled:cursor-not-allowed
+                       disabled:opacity-50"
+              >
+                @if (loadingMore()) {
+                  Loading...
+                } @else {
+                  Load more resources
+                }
+              </button>
+            </div>
+          }
+
+
+          <!-- Empty directory -->
+          @if (
+            !loading() &&
+            !error() &&
+            resources().length === 0
+          ) {
+            <p
+              class="mt-6 text-gray-600"
+            >
+              No resources are currently available.
+            </p>
+          }
+
+        </section>
+
+
+        <!-- =======================================================
+             Right Sidebar
+             Useful Links + Catalogs
+             ======================================================= -->
+        <aside
+          class="lg:sticky lg:top-6 lg:self-start"
+        >
+          <app-useful-links />
+        </aside>
+
+      </div>
+
     </main>
   `,
   styles: [],
@@ -443,6 +660,7 @@ export class ResourceListComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
   protected readonly authService = inject(AuthService);
   private readonly toast = inject(HotToastService);
 
@@ -457,19 +675,25 @@ export class ResourceListComponent implements OnInit {
   protected readonly selectedCategory = signal('');
   protected readonly onlineOnly = signal(false);
   protected readonly featuredOnly = signal(false);
+
   // Controls the additional navigation menu.
   protected readonly showMoreMenu = signal(false);
+
   protected readonly signingOut = signal(false);
 
   // Pagination state for the public resource list.
-  // Firestore uses the last document as the cursor for the next page.
-  private lastResourceDocument: QueryDocumentSnapshot | undefined;
+  // Firestore uses the last document as the cursor
+  // for the next page.
+  private lastResourceDocument:
+    QueryDocumentSnapshot | undefined;
 
-  // Controls whether another page of resources is available.
-  protected readonly hasMoreResources = signal(true);
+  // Controls whether another page is available.
+  protected readonly hasMoreResources =
+    signal(true);
 
-  // Separate loading state for the "Load More" button.
-  protected readonly loadingMore = signal(false);
+  // Separate loading state for the Load More button.
+  protected readonly loadingMore =
+    signal(false);
 
   // Number of resources requested from Firestore per page.
   private readonly resourcePageSize = 12;
@@ -485,68 +709,116 @@ export class ResourceListComponent implements OnInit {
     'other',
   ];
 
-  protected readonly selectedCategoryId = computed(() => {
-    const slug = this.selectedCategory();
+  protected readonly selectedCategoryId =
+    computed(() => {
+      const slug = this.selectedCategory();
 
-    if (!slug) {
-      return '';
-    }
+      if (!slug) {
+        return '';
+      }
 
-    const category = this.categories().find((category) => category.slug === slug);
+      const category = this.categories().find(
+        (category) =>
+          category.slug === slug
+      );
 
-    return category?.id ?? '';
-  });
+      return category?.id ?? '';
+    });
 
   /**
-   * Find the display name for a resource's category.
+   * Find the display name for a resource category.
    *
    * Resources store the category document ID,
    * while categories contain the human-readable name.
    */
-  protected getCategoryName(categoryId: string): string {
-    return this.categories().find((category) => category.id === categoryId)?.name ?? '';
+  protected getCategoryName(
+    categoryId: string
+  ): string {
+    return (
+      this.categories().find(
+        (category) =>
+          category.id === categoryId
+      )?.name ?? ''
+    );
   }
 
-  protected readonly filteredResources = computed(() => {
-    const search = this.searchTerm().trim().toLowerCase();
-    const type = this.selectedType();
-    const categoryId = this.selectedCategoryId();
+  protected readonly filteredResources =
+    computed(() => {
+      const search =
+        this.searchTerm()
+          .trim()
+          .toLowerCase();
 
-    return this.resources().filter((resource) => {
-      const matchesSearch =
-        !search ||
-        resource.name.toLowerCase().includes(search) ||
-        resource.description.toLowerCase().includes(search) ||
-        resource.tags.some((tag) => tag.toLowerCase().includes(search));
+      const type =
+        this.selectedType();
 
-      const matchesType = !type || resource.resourceType === type;
+      const categoryId =
+        this.selectedCategoryId();
 
-      const matchesCategory = !categoryId || resource.categoryId === categoryId;
+      return this.resources().filter(
+        (resource) => {
+          const matchesSearch =
+            !search ||
+            resource.name
+              .toLowerCase()
+              .includes(search) ||
+            resource.description
+              .toLowerCase()
+              .includes(search) ||
+            resource.tags.some(
+              (tag) =>
+                tag
+                  .toLowerCase()
+                  .includes(search)
+            );
 
-      const matchesOnline = !this.onlineOnly() || resource.online;
+          const matchesType =
+            !type ||
+            resource.resourceType === type;
 
-      const matchesFeatured = !this.featuredOnly() || resource.featured;
+          const matchesCategory =
+            !categoryId ||
+            resource.categoryId === categoryId;
 
-      return matchesSearch && matchesType && matchesCategory && matchesOnline && matchesFeatured;
+          const matchesOnline =
+            !this.onlineOnly() ||
+            resource.online;
+
+          const matchesFeatured =
+            !this.featuredOnly() ||
+            resource.featured;
+
+          return (
+            matchesSearch &&
+            matchesType &&
+            matchesCategory &&
+            matchesOnline &&
+            matchesFeatured
+          );
+        }
+      );
     });
-  });
 
-  protected readonly hasActiveFilters = computed(() => {
-    return (
-      this.searchTerm().trim() !== '' ||
-      this.selectedType() !== '' ||
-      this.selectedCategory() !== '' ||
-      this.onlineOnly() ||
-      this.featuredOnly()
-    );
-  });
+  protected readonly hasActiveFilters =
+    computed(() => {
+      return (
+        this.searchTerm().trim() !== '' ||
+        this.selectedType() !== '' ||
+        this.selectedCategory() !== '' ||
+        this.onlineOnly() ||
+        this.featuredOnly()
+      );
+    });
 
   ngOnInit(): void {
     this.loadResources();
     this.loadCategories();
 
     // Read the category filter from the URL.
-    const category = this.route.snapshot.queryParamMap.get('category');
+    const category =
+      this.route.snapshot
+        .queryParamMap
+        .get('category');
 
     if (category) {
       this.selectedCategory.set(category);
@@ -555,41 +827,64 @@ export class ResourceListComponent implements OnInit {
 
   private async loadCategories(): Promise<void> {
     try {
-      const categories = await this.categoryService.getActiveCategories();
+      const categories =
+        await this.categoryService
+          .getActiveCategories();
 
       this.categories.set(categories);
     } catch (error) {
-      console.error('Failed to load categories:', error);
+      console.error(
+        'Failed to load categories:',
+        error
+      );
     }
   }
 
   protected onSearch(event: Event): void {
-    const input = event.target as HTMLInputElement;
+    const input =
+      event.target as HTMLInputElement;
+
     this.searchTerm.set(input.value);
   }
 
   protected onTypeChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    this.selectedType.set(select.value as ResourceType | '');
+    const select =
+      event.target as HTMLSelectElement;
+
+    this.selectedType.set(
+      select.value as ResourceType | ''
+    );
   }
 
   protected onOnlineChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
+    const input =
+      event.target as HTMLInputElement;
+
     this.onlineOnly.set(input.checked);
   }
 
   protected onFeaturedChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
+    const input =
+      event.target as HTMLInputElement;
+
     this.featuredOnly.set(input.checked);
   }
 
-  protected onCategoryChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const category = select.value;
+  protected onCategoryChange(
+    event: Event
+  ): void {
+    const select =
+      event.target as HTMLSelectElement;
 
-    this.selectedCategory.set(category);
+    const category =
+      select.value;
 
-    // Keep the selected category in the URL so the filter is shareable.
+    this.selectedCategory.set(
+      category
+    );
+
+    // Keep the selected category in the URL
+    // so the filter is shareable.
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
@@ -616,75 +911,124 @@ export class ResourceListComponent implements OnInit {
     });
   }
 
-  protected formatResourceType(type: ResourceType): string {
-    return type.charAt(0).toUpperCase() + type.slice(1);
+  protected formatResourceType(
+    type: ResourceType
+  ): string {
+    return (
+      type.charAt(0).toUpperCase() +
+      type.slice(1)
+    );
   }
 
   /**
    * Load the first page of published resources.
    *
-   * This resets the Firestore pagination cursor so a fresh
-   * query always starts from the newest resources.
+   * This resets the Firestore pagination cursor
+   * so a fresh query starts from the newest resources.
    */
   private async loadResources(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
-    // Reset pagination state for a fresh resource load.
-    this.lastResourceDocument = undefined;
+    // Reset pagination state.
+    this.lastResourceDocument =
+      undefined;
+
     this.hasMoreResources.set(true);
 
     try {
-      const page = await this.resourceService.getPublishedResourcesPage(this.resourcePageSize);
+      const page =
+        await this.resourceService
+          .getPublishedResourcesPage(
+            this.resourcePageSize
+          );
 
-      this.resources.set(page.resources);
-      this.lastResourceDocument = page.lastDocument ?? undefined;
-      this.hasMoreResources.set(page.hasMore);
+      this.resources.set(
+        page.resources
+      );
+
+      this.lastResourceDocument =
+        page.lastDocument ??
+        undefined;
+
+      this.hasMoreResources.set(
+        page.hasMore
+      );
     } catch (error) {
-      console.error('Failed to load resources:', error);
+      console.error(
+        'Failed to load resources:',
+        error
+      );
 
-      this.error.set('Unable to load resources. Please try again later.');
+      this.error.set(
+        'Unable to load resources. Please try again later.'
+      );
     } finally {
       this.loading.set(false);
     }
   }
 
   /**
-   * Load the next page of published resources and append
-   * the results to the resources already displayed.
+   * Load the next page of published resources
+   * and append the results to the resources already displayed.
    */
   protected async loadMoreResources(): Promise<void> {
-    if (this.loadingMore() || !this.hasMoreResources()) {
+    if (
+      this.loadingMore() ||
+      !this.hasMoreResources()
+    ) {
       return;
     }
 
     this.loadingMore.set(true);
 
     try {
-      const page = await this.resourceService.getPublishedResourcesPage(
-        this.resourcePageSize,
-        this.lastResourceDocument,
+      const page =
+        await this.resourceService
+          .getPublishedResourcesPage(
+            this.resourcePageSize,
+            this.lastResourceDocument
+          );
+
+      // Append the new page instead of replacing
+      // the existing results.
+      this.resources.update(
+        (resources) => [
+          ...resources,
+          ...page.resources,
+        ]
       );
 
-      // Append the new page instead of replacing the existing results.
-      this.resources.update((resources) => [...resources, ...page.resources]);
+      this.lastResourceDocument =
+        page.lastDocument ??
+        undefined;
 
-      this.lastResourceDocument = page.lastDocument ?? undefined;
-
-      this.hasMoreResources.set(page.hasMore);
+      this.hasMoreResources.set(
+        page.hasMore
+      );
     } catch (error) {
-      console.error('Failed to load more resources:', error);
+      console.error(
+        'Failed to load more resources:',
+        error
+      );
 
-      this.error.set('Unable to load more resources. Please try again.');
+      this.error.set(
+        'Unable to load more resources. Please try again.'
+      );
     } finally {
       this.loadingMore.set(false);
     }
   }
 
-  protected selectCategory(categorySlug: string): void {
-    this.selectedCategory.set(categorySlug);
+  protected selectCategory(
+    categorySlug: string
+  ): void {
+    this.selectedCategory.set(
+      categorySlug
+    );
 
-    // Keep the selected category in the URL so the page is shareable.
+    // Keep the selected category in the URL
+    // so the page is shareable.
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
@@ -698,7 +1042,9 @@ export class ResourceListComponent implements OnInit {
    * Toggle the additional navigation menu.
    */
   protected toggleMoreMenu(): void {
-    this.showMoreMenu.update((visible) => !visible);
+    this.showMoreMenu.update(
+      (visible) => !visible
+    );
   }
 
   /**
@@ -721,13 +1067,22 @@ export class ResourceListComponent implements OnInit {
     try {
       await this.authService.logout();
 
-      this.toast.success('You have been signed out.');
+      this.toast.success(
+        'You have been signed out.'
+      );
 
-      await this.router.navigateByUrl('/login');
+      await this.router.navigateByUrl(
+        '/login'
+      );
     } catch (error) {
-      console.error('Failed to sign out:', error);
+      console.error(
+        'Failed to sign out:',
+        error
+      );
 
-      this.toast.error('Unable to sign out. Please try again.');
+      this.toast.error(
+        'Unable to sign out. Please try again.'
+      );
     } finally {
       this.signingOut.set(false);
     }

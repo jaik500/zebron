@@ -29,5 +29,7 @@ export interface ResourceSubmission {
   reviewedBy?: string;
   reviewedAt?: Timestamp;
 
+  rejectionReason?: string;
+
   createdAt: Timestamp;
 }
