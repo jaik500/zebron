@@ -1,4 +1,8 @@
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {
+  onCall,
+  HttpsError,
+  CallableRequest,
+} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {getAuth} from "firebase-admin/auth";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
@@ -6,8 +10,81 @@ import {initializeApp} from "firebase-admin/app";
 
 initializeApp();
 
+/**
+ * Resend configuration.
+ *
+ * The API key is stored in Firebase Secret Manager.
+ * It is never exposed to the Angular application.
+ */
+const RESEND_API_URL = "https://api.resend.com/emails";
+const ZEBRON_FROM_EMAIL = "Zebron <noreply@zebron.org>";
+
 const db = getFirestore();
 const auth = getAuth();
+
+/**
+ * Verify that the caller is authenticated
+ * and has administrator privileges.
+ *
+ * This is used by all administrator-only
+ * email functions.
+ */
+async function requireAdmin(
+  request: CallableRequest<unknown>
+): Promise<{
+  uid: string;
+  email?: string;
+}> {
+  /**
+   * Firebase Authentication must be present.
+   */
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be signed in as an administrator."
+    );
+  }
+
+  const uid = request.auth.uid;
+
+  /**
+   * Load the Zebron Firestore profile.
+   */
+  const profile =
+    await db
+      .collection("users")
+      .doc(uid)
+      .get();
+
+  if (!profile.exists) {
+    throw new HttpsError(
+      "permission-denied",
+      "Administrator profile could not be found."
+    );
+  }
+
+  const profileData =
+    profile.data();
+
+  /**
+   * Only users with the admin role may
+   * send email through the mailbox.
+   */
+  if (profileData?.["role"] !== "admin") {
+    throw new HttpsError(
+      "permission-denied",
+      "Only administrators can send email."
+    );
+  }
+
+  return {
+    uid,
+    email:
+      typeof profileData?.["email"] === "string" ?
+        profileData["email"] :
+        undefined,
+  };
+}
 
 /**
  * Create a new Firebase Authentication user and
@@ -465,6 +542,480 @@ export const submitContactMessage = onCall(
     return {
       success: true,
     };
+  }
+);
+
+
+/**
+ * Send a reply from the administrator mailbox.
+ *
+ * Only authenticated administrators may use this function.
+ *
+ * The email is sent through Resend using the
+ * RESEND_API_KEY Firebase Secret.
+ */
+export const sendContactReply = onCall(
+  {
+    region: "us-central1",
+
+    /**
+     * Make the Resend API key available to this function.
+     */
+    secrets: ["RESEND_API_KEY"],
+  },
+  async (request) => {
+    const admin =
+      await requireAdmin(request);
+
+    const data =
+      request.data as {
+        messageId?: unknown;
+        to?: unknown;
+        subject?: unknown;
+        message?: unknown;
+      };
+
+    /**
+     * Clean incoming values.
+     */
+    const messageId =
+      clean(data.messageId);
+
+    const to =
+      clean(data.to)?.toLowerCase();
+
+    const subject =
+      clean(data.subject);
+
+    const message =
+      clean(data.message);
+
+    /**
+     * Validate the message ID.
+     */
+    if (!messageId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Message ID is required."
+      );
+    }
+
+    /**
+     * Validate recipient.
+     */
+    if (
+      !to ||
+      to.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A valid recipient email address is required."
+      );
+    }
+
+    /**
+     * Validate subject.
+     */
+    if (!subject) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Subject is required."
+      );
+    }
+
+    if (subject.length > 200) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Subject is too long."
+      );
+    }
+
+    /**
+     * Validate message body.
+     */
+    if (!message) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Message is required."
+      );
+    }
+
+    if (message.length > 10000) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Message is too long."
+      );
+    }
+
+    /**
+     * Read the Resend API key from Firebase Secret Manager.
+     */
+    const apiKey =
+      process.env["RESEND_API_KEY"];
+
+    if (!apiKey) {
+      logger.error(
+        "RESEND_API_KEY is not configured."
+      );
+
+      throw new HttpsError(
+        "failed-precondition",
+        "Email service is not configured."
+      );
+    }
+
+    /**
+     * Send the email through Resend.
+     */
+    try {
+      const response =
+        await fetch(
+          RESEND_API_URL,
+          {
+            method: "POST",
+
+            headers: {
+              "Authorization":
+                `Bearer ${apiKey}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              from:
+                ZEBRON_FROM_EMAIL,
+
+              to: [to],
+
+              subject,
+
+              text: message,
+            }),
+          }
+        );
+
+      const result =
+        await response.json()
+          .catch(() => ({}));
+
+      if (!response.ok) {
+        logger.error(
+          "Resend failed to send contact reply.",
+          {
+            status:
+              response.status,
+
+            result,
+
+            adminUid:
+              admin.uid,
+
+            to,
+          }
+        );
+
+        throw new HttpsError(
+          "internal",
+          "Unable to send the email."
+        );
+      }
+
+      /**
+       * Record the outbound reply.
+       *
+       * We use a subcollection under the
+       * original contact message so the
+       * conversation remains associated.
+       */
+      await db
+        .collection("contactMessages")
+        .doc(messageId)
+        .collection("replies")
+        .add({
+          from:
+            ZEBRON_FROM_EMAIL,
+
+          to,
+
+          subject,
+
+          message,
+
+          sentBy:
+            admin.uid,
+
+          createdAt:
+            FieldValue.serverTimestamp(),
+        });
+
+      logger.info(
+        "Contact reply sent successfully.",
+        {
+          adminUid:
+            admin.uid,
+
+          to,
+
+          subject,
+
+          messageId,
+        }
+      );
+
+      return {
+        success: true,
+      };
+    } catch (error: unknown) {
+      /**
+       * Re-throw Firebase HttpsErrors unchanged.
+       */
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      logger.error(
+        "Unexpected error while sending contact reply.",
+        {
+          error,
+
+          adminUid:
+            admin.uid,
+
+          to,
+        }
+      );
+
+      throw new HttpsError(
+        "internal",
+        "Unable to send the email."
+      );
+    }
+  }
+);
+
+
+/**
+ * Send a new email from the administrator mailbox.
+ *
+ * Only authenticated administrators may use this function.
+ */
+export const sendNewContactMessage = onCall(
+  {
+    region: "us-central1",
+
+    /**
+     * Make the Resend API key available to this function.
+     */
+    secrets: ["RESEND_API_KEY"],
+  },
+  async (request) => {
+    const admin =
+      await requireAdmin(request);
+
+    const data =
+      request.data as {
+        to?: unknown;
+        subject?: unknown;
+        message?: unknown;
+      };
+
+    /**
+     * Clean incoming values.
+     */
+    const to =
+      clean(data.to)?.toLowerCase();
+
+    const subject =
+      clean(data.subject);
+
+    const message =
+      clean(data.message);
+
+    /**
+     * Validate recipient.
+     */
+    if (
+      !to ||
+      to.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A valid recipient email address is required."
+      );
+    }
+
+    /**
+     * Validate subject.
+     */
+    if (!subject) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Subject is required."
+      );
+    }
+
+    if (subject.length > 200) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Subject is too long."
+      );
+    }
+
+    /**
+     * Validate message body.
+     */
+    if (!message) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Message is required."
+      );
+    }
+
+    if (message.length > 10000) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Message is too long."
+      );
+    }
+
+    /**
+     * Retrieve the Resend API key from
+     * Firebase Secret Manager.
+     */
+    const apiKey =
+      process.env["RESEND_API_KEY"];
+
+    if (!apiKey) {
+      logger.error(
+        "RESEND_API_KEY is not configured."
+      );
+
+      throw new HttpsError(
+        "failed-precondition",
+        "Email service is not configured."
+      );
+    }
+
+    try {
+      /**
+       * Send the email through Resend.
+       */
+      const response =
+        await fetch(
+          RESEND_API_URL,
+          {
+            method: "POST",
+
+            headers: {
+              "Authorization":
+                `Bearer ${apiKey}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              from:
+                ZEBRON_FROM_EMAIL,
+
+              to: [to],
+
+              subject,
+
+              text: message,
+            }),
+          }
+        );
+
+      const result =
+        await response.json()
+          .catch(() => ({}));
+
+      if (!response.ok) {
+        logger.error(
+          "Resend failed to send new contact message.",
+          {
+            status:
+              response.status,
+
+            result,
+
+            adminUid:
+              admin.uid,
+
+            to,
+          }
+        );
+
+        throw new HttpsError(
+          "internal",
+          "Unable to send the email."
+        );
+      }
+
+      /**
+       * Keep a record of administrator-sent
+       * messages in a dedicated collection.
+       */
+      await db
+        .collection("outboundMessages")
+        .add({
+          from:
+            ZEBRON_FROM_EMAIL,
+
+          to,
+
+          subject,
+
+          message,
+
+          sentBy:
+            admin.uid,
+
+          createdAt:
+            FieldValue.serverTimestamp(),
+        });
+
+      logger.info(
+        "New administrator email sent successfully.",
+        {
+          adminUid:
+            admin.uid,
+
+          to,
+
+          subject,
+        }
+      );
+
+      return {
+        success: true,
+      };
+    } catch (error: unknown) {
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      logger.error(
+        "Unexpected error while sending new contact message.",
+        {
+          error,
+
+          adminUid:
+            admin.uid,
+
+          to,
+        }
+      );
+
+      throw new HttpsError(
+        "internal",
+        "Unable to send the email."
+      );
+    }
   }
 );
 

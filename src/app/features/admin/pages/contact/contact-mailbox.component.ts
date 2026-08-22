@@ -15,6 +15,7 @@ import {
 } from '../../../../core/models/contact-message.model';
 
 import { ContactMessageService } from '../../../../core/services/contact-message.service';
+import { ContactService } from '../../../../core/services/contact.service';
 
 /**
  * Filter options used by the contact mailbox.
@@ -48,18 +49,19 @@ type MailboxFilter =
              ===================================================== -->
         <div
           class="mb-8 flex flex-col gap-4
-                 sm:flex-row sm:items-center
+                 rounded-xl bg-[#032D42] px-6 py-6
+                 shadow-sm sm:flex-row sm:items-center
                  sm:justify-between"
         >
 
           <div>
             <h1
-              class="text-2xl font-bold tracking-tight text-gray-900"
+              class="text-2xl font-bold tracking-tight text-white"
             >
               Contact Mailbox
             </h1>
 
-            <p class="mt-1 text-sm text-gray-600">
+            <p class="mt-1 text-sm text-white/80">
               Manage messages submitted through the
               Zebron contact form.
             </p>
@@ -84,6 +86,21 @@ type MailboxFilter =
             >
               ← Admin Dashboard
             </a>
+
+            <!-- New message -->
+            <button
+              type="button"
+              (click)="newMessage()"
+              class="inline-flex items-center
+                     justify-center rounded-lg
+                     bg-white px-4 py-2
+                     text-sm font-semibold
+                     text-[#032D42]
+                     shadow-sm transition
+                     hover:bg-gray-100"
+            >
+              + New Message
+            </button>
 
             <!-- Refresh -->
             <button
@@ -700,98 +717,20 @@ type MailboxFilter =
 
           <!-- Modal actions -->
           <div
-            class="flex flex-wrap justify-end
+            class="flex flex-wrap items-center justify-between
                    gap-3 border-t px-6 py-4"
           >
 
-            @if (
-              selectedMessage()!.status === 'new'
-            ) {
-
-              <button
-                type="button"
-                (click)="
-                  markAsRead(selectedMessage()!)
-                "
-                class="rounded-lg bg-green-600
-                       px-4 py-2
-                       text-sm font-medium
-                       text-white
-                       hover:bg-green-700"
-              >
-                Mark as Read
-              </button>
-
-            }
-
-
-            @if (
-              selectedMessage()!.status === 'archived'
-            ) {
-
-              <button
-                type="button"
-                (click)="
-                  unarchiveMessage(
-                    selectedMessage()!
-                  )
-                "
-                class="rounded-lg bg-gray-700
-                       px-4 py-2
-                       text-sm font-medium
-                       text-white
-                       hover:bg-gray-800"
-              >
-                Restore
-              </button>
-
-            } @else {
-
-              <button
-                type="button"
-                (click)="
-                  archiveMessage(
-                    selectedMessage()!
-                  )
-                "
-                class="rounded-lg bg-gray-700
-                       px-4 py-2
-                       text-sm font-medium
-                       text-white
-                       hover:bg-gray-800"
-              >
-                Archive
-              </button>
-
-            }
-
-
+            <!-- Reply stays at the far left -->
             <button
               type="button"
-              (click)="
-                deleteMessage(selectedMessage()!)
-              "
-              class="rounded-lg bg-red-600
-                     px-4 py-2
-                     text-sm font-medium
-                     text-white
-                     hover:bg-red-700"
+              (click)="replyToMessage(selectedMessage()!)"
+              class="rounded-lg bg-[#032D42]
+                     px-4 py-2 text-sm font-medium
+                     text-white transition
+                     hover:bg-[#064B68]"
             >
-              Delete
-            </button>
-
-
-            <button
-              type="button"
-              (click)="closeMessage()"
-              class="rounded-lg
-                     border border-gray-300
-                     bg-white px-4 py-2
-                     text-sm font-medium
-                     text-gray-700
-                     hover:bg-gray-50"
-            >
-              Close
+              Reply
             </button>
 
           </div>
@@ -801,6 +740,178 @@ type MailboxFilter =
       </div>
 
     }
+
+      <!-- =====================================================
+           EMAIL COMPOSER
+           ===================================================== -->
+      @if (composeMode() !== "none") {
+
+        <div
+          class="fixed inset-0 z-50 flex items-center
+                 justify-center bg-black/50 px-4 py-6"
+          (click)="closeComposer()"
+        >
+
+          <div
+            class="w-full max-w-2xl overflow-hidden
+                   rounded-xl bg-white shadow-2xl"
+            (click)="$event.stopPropagation()"
+          >
+
+            <!-- Composer header -->
+            <div
+              class="flex items-center justify-between
+                     bg-[#032D42] px-6 py-4"
+            >
+
+              <div>
+                <h2 class="text-lg font-semibold text-white">
+                  {{ composeMode() === "reply"
+                    ? "Reply to Message"
+                    : "New Message" }}
+                </h2>
+
+                <p class="mt-1 text-sm text-white/70">
+                  Send an email from Zebron.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                (click)="closeComposer()"
+                [disabled]="sending()"
+                class="rounded-lg p-2 text-white/80
+                       transition hover:bg-white/10
+                       hover:text-white
+                       disabled:opacity-50"
+                aria-label="Close composer"
+              >
+                ✕
+              </button>
+
+            </div>
+
+            <!-- Composer form -->
+            <form
+              class="space-y-5 px-6 py-6"
+              (submit)="$event.preventDefault(); sendComposedMessage()"
+            >
+
+              <!-- Recipient -->
+              <div>
+                <label
+                  for="compose-to"
+                  class="block text-sm font-medium text-gray-700"
+                >
+                  To
+                </label>
+
+                <input
+                  id="compose-to"
+                  type="email"
+                  [value]="composeTo()"
+                  (input)="composeTo.set($any($event.target).value)"
+                  placeholder="recipient@example.com"
+                  required
+                  [disabled]="sending()"
+                  class="mt-1 w-full rounded-lg border
+                         border-gray-300 px-3 py-2
+                         text-sm text-gray-900
+                         outline-none focus:border-[#032D42]
+                         focus:ring-2 focus:ring-[#032D42]/20
+                         disabled:bg-gray-100"
+                />
+              </div>
+
+              <!-- Subject -->
+              <div>
+                <label
+                  for="compose-subject"
+                  class="block text-sm font-medium text-gray-700"
+                >
+                  Subject
+                </label>
+
+                <input
+                  id="compose-subject"
+                  type="text"
+                  [value]="composeSubject()"
+                  (input)="composeSubject.set($any($event.target).value)"
+                  placeholder="Message subject"
+                  required
+                  [disabled]="sending()"
+                  class="mt-1 w-full rounded-lg border
+                         border-gray-300 px-3 py-2
+                         text-sm text-gray-900
+                         outline-none focus:border-[#032D42]
+                         focus:ring-2 focus:ring-[#032D42]/20
+                         disabled:bg-gray-100"
+                />
+              </div>
+
+              <!-- Message -->
+              <div>
+                <label
+                  for="compose-message"
+                  class="block text-sm font-medium text-gray-700"
+                >
+                  Message
+                </label>
+
+                <textarea
+                  id="compose-message"
+                  rows="8"
+                  [value]="composeMessage()"
+                  (input)="composeMessage.set($any($event.target).value)"
+                  placeholder="Write your message..."
+                  required
+                  [disabled]="sending()"
+                  class="mt-1 w-full resize-y rounded-lg border
+                         border-gray-300 px-3 py-2
+                         text-sm leading-6 text-gray-900
+                         outline-none focus:border-[#032D42]
+                         focus:ring-2 focus:ring-[#032D42]/20
+                         disabled:bg-gray-100"
+                ></textarea>
+              </div>
+
+              <!-- Composer actions -->
+              <div
+                class="flex justify-end gap-3 border-t pt-5"
+              >
+                <button
+                  type="button"
+                  (click)="closeComposer()"
+                  [disabled]="sending()"
+                  class="rounded-lg border border-gray-300
+                         bg-white px-4 py-2 text-sm font-medium
+                         text-gray-700 transition
+                         hover:bg-gray-50
+                         disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  [disabled]="sending()"
+                  class="rounded-lg bg-[#032D42] px-5 py-2
+                         text-sm font-semibold text-white
+                         transition hover:bg-[#064B68]
+                         disabled:cursor-not-allowed
+                         disabled:opacity-50"
+                >
+                  {{ sending() ? "Sending..." : "Send Message" }}
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+
+      }
 
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -812,6 +923,11 @@ export class ContactMailboxComponent
    * Contact message service used for all
    * mailbox Firestore operations.
    */
+  /**
+   * Contact service used for administrator email delivery.
+   */
+  private readonly contactService = inject(ContactService);
+
   private readonly contactMessageService =
     inject(ContactMessageService);
 
@@ -1128,6 +1244,116 @@ export class ContactMailboxComponent
    * Update the local signal after changing
    * a message status in Firestore.
    */
+  /**
+   * Controls the administrator email composer.
+   */
+  readonly composeMode = signal<"none" | "reply" | "new">("none");
+
+  /** Recipient of the composed message. */
+  readonly composeTo = signal("");
+
+  /** Subject of the composed message. */
+  readonly composeSubject = signal("");
+
+  /** Body of the composed message. */
+  readonly composeMessage = signal("");
+
+  /** Indicates that an email is being sent. */
+  readonly sending = signal(false);
+
+  /**
+   * Open a reply composer for a mailbox message.
+   */
+  replyToMessage(message: ContactMessage): void {
+    this.composeMode.set("reply");
+    this.composeTo.set(message.email);
+    this.composeSubject.set(
+      message.subject.toLowerCase().startsWith("re:")
+        ? message.subject
+        : `Re: ${message.subject}`,
+    );
+    this.composeMessage.set("");
+  }
+
+  /**
+   * Open a blank composer for a new message.
+   */
+  newMessage(): void {
+    this.composeMode.set("new");
+    this.composeTo.set("");
+    this.composeSubject.set("");
+    this.composeMessage.set("");
+  }
+
+  /** Close the administrator email composer. */
+  closeComposer(): void {
+    if (this.sending()) {
+      return;
+    }
+
+    this.composeMode.set("none");
+    this.composeTo.set("");
+    this.composeSubject.set("");
+    this.composeMessage.set("");
+  }
+
+  /**
+   * Send a reply or a new administrator message.
+   */
+  async sendComposedMessage(): Promise<void> {
+    const to = this.composeTo().trim();
+    const subject = this.composeSubject().trim();
+    const message = this.composeMessage().trim();
+
+    if (!to || !subject || !message) {
+      this.error.set(
+        "Recipient, subject, and message are required.",
+      );
+      return;
+    }
+
+    this.sending.set(true);
+    this.error.set(null);
+
+    try {
+      if (this.composeMode() === "reply") {
+        const selected = this.selectedMessage();
+
+        if (!selected) {
+          throw new Error(
+            "No contact message is selected.",
+          );
+        }
+
+        await this.contactService.sendReply({
+          messageId: selected.id,
+          to,
+          subject,
+          message,
+        });
+      } else {
+        await this.contactService.sendNewMessage({
+          to,
+          subject,
+          message,
+        });
+      }
+
+      this.closeComposer();
+    } catch (error) {
+      console.error(
+        "Failed to send email:",
+        error,
+      );
+
+      this.error.set(
+        "Unable to send the email. Please try again.",
+      );
+    } finally {
+      this.sending.set(false);
+    }
+  }
+
   private updateLocalStatus(
     messageId: string,
     status: ContactMessageStatus,

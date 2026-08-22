@@ -21,6 +21,30 @@ export interface ContactSubmission {
   website?: string;
 }
 
+/**
+ * Data required to send an administrator reply
+ * to an existing contact message.
+ */
+export interface ContactReply {
+  messageId: string;
+  to: string;
+  subject: string;
+  message: string;
+}
+
+/**
+ * Data required to send a new administrator email.
+ */
+export interface NewContactMessage {
+  to: string;
+  subject: string;
+  message: string;
+}
+
+interface ContactFunctionResponse {
+  success: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -28,9 +52,7 @@ export class ContactService {
   /**
    * Firebase Functions client.
    *
-   * The backend function is deployed to us-central1,
-   * which is also the region currently used by the
-   * createUser function.
+   * The backend functions are deployed to us-central1.
    */
   private readonly functions =
     getFunctions(
@@ -38,9 +60,9 @@ export class ContactService {
       'us-central1',
     );
 
-
   /**
-   * Send a contact message to the Firebase backend.
+   * Send a contact message from the public
+   * contact form to the Firebase backend.
    */
   async sendMessage(
     submission: ContactSubmission,
@@ -48,7 +70,7 @@ export class ContactService {
     const sendContactMessage =
       httpsCallable<
         ContactSubmission,
-        { success: boolean }
+        ContactFunctionResponse
       >(
         this.functions,
         'submitContactMessage',
@@ -56,6 +78,52 @@ export class ContactService {
 
     await sendContactMessage(
       submission,
+    );
+  }
+
+  /**
+   * Send a reply to an existing contact message.
+   *
+   * The Firebase backend verifies that the caller
+   * is an administrator before sending the email.
+   */
+  async sendReply(
+    reply: ContactReply,
+  ): Promise<void> {
+    const sendContactReply =
+      httpsCallable<
+        ContactReply,
+        ContactFunctionResponse
+      >(
+        this.functions,
+        'sendContactReply',
+      );
+
+    await sendContactReply(
+      reply,
+    );
+  }
+
+  /**
+   * Send a new message from the administrator mailbox.
+   *
+   * The Firebase backend verifies that the caller
+   * is an administrator before sending the email.
+   */
+  async sendNewMessage(
+    message: NewContactMessage,
+  ): Promise<void> {
+    const sendNewContactMessage =
+      httpsCallable<
+        NewContactMessage,
+        ContactFunctionResponse
+      >(
+        this.functions,
+        'sendNewContactMessage',
+      );
+
+    await sendNewContactMessage(
+      message,
     );
   }
 }
