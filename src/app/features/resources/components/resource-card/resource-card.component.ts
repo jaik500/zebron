@@ -9,20 +9,30 @@ import { Resource } from '../../../../core/models/resource.model';
   template: `
     <a
       [routerLink]="['/resources', resource().slug]"
-      class="block rounded-xl border border-gray-200 bg-white p-5 shadow-sm
+      class="block rounded-xl border border-gray-200 bg-white px-5 py-2 shadow-sm
              transition hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <h2 class="text-xl font-semibold text-gray-900">
+      <!-- Card Header -->
+      <div class="flex items-start justify-between gap-1">
+        <div class="min-w-0 flex-1">
+          <!-- Resource name -->
+          <h2
+            class="truncate text-base font-semibold
+             leading-5 text-gray-900
+             sm:text-lg sm:leading-6"
+            [title]="resource().name"
+          >
             {{ resource().name }}
           </h2>
 
-          <div class="mt-2 flex flex-wrap items-center gap-2">
+          <!-- Resource metadata -->
+          <div class="mt-0.5 flex flex-wrap items-center gap-1">
             <!-- Resource type -->
             <span
-              class="rounded-full bg-gray-100 px-2.5 py-1 text-xs
-                    font-medium text-gray-700"
+              class="rounded-full bg-gray-100
+               px-1.5 py-0
+               text-[12px] font-medium
+               leading-3 text-gray-700"
             >
               {{ resource().resourceType }}
             </span>
@@ -30,8 +40,10 @@ import { Resource } from '../../../../core/models/resource.model';
             <!-- Category -->
             @if (categoryName()) {
               <span
-                class="rounded-full bg-blue-50 px-2.5 py-1 text-xs
-                      font-medium text-blue-700"
+                class="rounded-full bg-blue-50
+                 px-1.5 py-0
+                 text-[12px] font-medium
+                 leading-3 text-blue-700"
               >
                 {{ categoryName() }}
               </span>
@@ -39,10 +51,14 @@ import { Resource } from '../../../../core/models/resource.model';
           </div>
         </div>
 
+        <!-- Featured -->
         @if (resource().featured) {
           <span
-            class="rounded-full bg-yellow-100 px-3 py-1 text-xs
-                   font-medium text-yellow-800"
+            class="shrink-0 rounded-full
+             bg-yellow-100
+             px-1.5 py-0
+             text-[9px] font-medium
+             leading-3 text-yellow-800"
           >
             Featured
           </span>
@@ -54,17 +70,13 @@ import { Resource } from '../../../../core/models/resource.model';
       </p>
 
       @if (resource().online) {
-        <div class="mt-4 text-sm text-gray-500">
-          Available online
-        </div>
+        <div class="mt-4 text-sm text-gray-500">Available online</div>
       }
 
       @if (resource().cost) {
         <div class="mt-2 text-sm">
           @if (resource().cost?.free) {
-            <span class="font-medium text-green-600">
-              Free
-            </span>
+            <span class="font-medium text-green-600"> Free </span>
           } @else if (resource().cost?.description) {
             <span class="text-gray-600">
               {{ resource().cost?.description }}

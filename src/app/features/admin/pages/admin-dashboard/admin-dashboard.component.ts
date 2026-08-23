@@ -331,7 +331,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
         <!-- =======================================================
              MANAGE CONTENT
              ======================================================= -->
-        <section class="mt-4">
+        <section class="mt-1">
 
           <div>
 
