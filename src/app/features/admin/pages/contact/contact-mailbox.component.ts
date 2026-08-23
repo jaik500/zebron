@@ -40,7 +40,7 @@ type MailboxFilter =
     RouterLink,
   ],
   template: `
-    <div class="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-gray-50 px-4 py-4 sm:px-6 lg:px-8">
 
       <div class="mx-auto max-w-7xl">
 
@@ -48,7 +48,7 @@ type MailboxFilter =
              PAGE HEADER
              ===================================================== -->
         <div
-          class="mb-8 flex flex-col gap-4
+          class="mb-4 flex flex-col gap-4
                  rounded-xl bg-[#032D42] px-6 py-6
                  shadow-sm sm:flex-row sm:items-center
                  sm:justify-between"
@@ -58,7 +58,7 @@ type MailboxFilter =
             <h1
               class="text-2xl font-bold tracking-tight text-white"
             >
-              Contact Mailbox
+             Zebron Mailbox
             </h1>
 
             <p class="mt-1 text-sm text-white/80">
@@ -117,6 +117,134 @@ type MailboxFilter =
             >
               {{ loading() ? 'Refreshing...' : 'Refresh' }}
             </button>
+<!-- More mailbox options -->
+<div class="relative">
+
+  <!-- Vertical three-dot menu button -->
+  <button
+    type="button"
+    (click)="toggleMoreMenu()"
+    class="inline-flex h-10 w-10
+           items-center justify-center
+           rounded-lg bg-white/10
+           text-xl font-bold text-white
+           transition hover:bg-white/20
+           focus:outline-none
+           focus:ring-2 focus:ring-white/40"
+    aria-label="More mailbox options"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="moreMenuOpen()"
+  >
+    ⋮
+  </button>
+
+  @if (moreMenuOpen()) {
+    <div
+      class="absolute right-0 z-50 mt-2 w-56
+             overflow-hidden rounded-xl
+             border border-gray-200
+             bg-white shadow-xl"
+      role="menu"
+    >
+
+      <!-- Inbox -->
+      <a
+        routerLink="/admin/contact"
+        (click)="closeMoreMenu()"
+        class="flex items-center gap-3
+               px-4 py-3 text-sm font-medium
+               text-gray-700 transition
+               hover:bg-gray-50"
+        role="menuitem"
+      >
+        <span class="text-base">📥</span>
+        <span>Inbox</span>
+      </a>
+
+      <!-- Sent Emails -->
+      <a
+        routerLink="/admin/contact/sent"
+        (click)="closeMoreMenu()"
+        class="flex items-center gap-3
+               px-4 py-3 text-sm font-medium
+               text-gray-700 transition
+               hover:bg-gray-50"
+        role="menuitem"
+      >
+        <span class="text-base">📤</span>
+        <span>Sent Emails</span>
+      </a>
+
+      <!-- Refresh -->
+      <button
+        type="button"
+        (click)="loadMessages(); closeMoreMenu()"
+        [disabled]="loading()"
+        class="flex w-full items-center gap-3
+               px-4 py-3 text-left
+               text-sm font-medium text-gray-700
+               transition hover:bg-gray-50
+               disabled:cursor-not-allowed
+               disabled:opacity-50"
+        role="menuitem"
+      >
+        <span class="text-base">🔄</span>
+        <span>
+          {{ loading() ? 'Refreshing...' : 'Refresh' }}
+        </span>
+      </button>
+
+      <!-- New Message -->
+      <button
+        type="button"
+        (click)="newMessage(); closeMoreMenu()"
+        class="flex w-full items-center gap-3
+               px-4 py-3 text-left
+               text-sm font-medium text-gray-700
+               transition hover:bg-gray-50"
+        role="menuitem"
+      >
+        <span class="text-base">✉️</span>
+        <span>New Message</span>
+      </button>
+
+      <!-- Divider -->
+      <div class="border-t border-gray-100"></div>
+
+      <!-- Archived -->
+      <button
+        type="button"
+        disabled
+        class="flex w-full cursor-not-allowed
+               items-center gap-3 px-4 py-3
+               text-left text-sm font-medium
+               text-gray-400"
+        role="menuitem"
+        title="Coming soon"
+      >
+        <span class="text-base">🗄️</span>
+        <span>Archived</span>
+      </button>
+
+      <!-- Trash -->
+      <button
+        type="button"
+        disabled
+        class="flex w-full cursor-not-allowed
+               items-center gap-3 px-4 py-3
+               text-left text-sm font-medium
+               text-gray-400"
+        role="menuitem"
+        title="Coming soon"
+      >
+        <span class="text-base">🗑️</span>
+        <span>Trash</span>
+      </button>
+
+    </div>
+  }
+
+</div>
 
           </div>
 
@@ -140,20 +268,105 @@ type MailboxFilter =
         }
 
 
+               <!-- =====================================================
+             MAILBOX SEARCH
+             ===================================================== -->
+        <div class="mb-2">
+
+          <label
+            for="mailbox-search"
+            class="sr-only"
+          >
+            Search mailbox
+          </label>
+
+          <div class="relative">
+
+            <!-- Search icon -->
+            <span
+              class="pointer-events-none
+                     absolute inset-y-0 left-0
+                     flex items-center pl-4
+                     text-gray-400"
+              aria-hidden="true"
+            >
+              🔍
+            </span>
+
+            <input
+              id="mailbox-search"
+              type="search"
+              [value]="searchQuery()"
+              (input)="
+                searchQuery.set(
+                  $any($event.target).value
+                )
+              "
+              placeholder="Search sender, email, subject, or message..."
+              autocomplete="off"
+              class="w-full rounded-xl
+                     border border-gray-300
+                     bg-white py-3 pl-11 pr-10
+                     text-sm text-gray-900
+                     shadow-sm outline-none
+                     transition
+                     placeholder:text-gray-400
+                     focus:border-[#032D42]
+                     focus:ring-2
+                     focus:ring-[#032D42]/20"
+            />
+
+            <!-- Clear search -->
+            @if (searchQuery()) {
+              <button
+                type="button"
+                (click)="searchQuery.set('')"
+                class="absolute inset-y-0 right-0
+                       flex items-center px-4
+                       text-gray-400
+                       transition hover:text-gray-700"
+                aria-label="Clear mailbox search"
+              >
+                ✕
+              </button>
+            }
+
+          </div>
+
+          <!-- Search result count -->
+          @if (searchQuery()) {
+            <p class="mt-2 text-xs text-gray-500">
+              Showing
+              <span class="font-semibold text-gray-700">
+                {{ filteredMessages().length }}
+              </span>
+              matching
+              {{
+                filteredMessages().length === 1
+                  ? 'message'
+                  : 'messages'
+              }}
+            </p>
+          }
+
+        </div>
+
+
+
         <!-- =====================================================
              MAILBOX SUMMARY
              ===================================================== -->
         <div
-          class="mb-6 grid grid-cols-1 gap-4
+          class="mb-4 grid grid-cols-1 gap-4
                  sm:grid-cols-2 lg:grid-cols-4"
         >
-
+     
           <!-- All messages -->
           <button
             type="button"
             (click)="setFilter('all')"
             class="rounded-xl border
-                   bg-white p-5 text-left
+                   bg-white px-5 py-2 text-left
                    shadow-sm transition
                    hover:shadow-md"
             [class.ring-2]="filter() === 'all'"
@@ -162,7 +375,7 @@ type MailboxFilter =
               All Messages
             </p>
 
-            <p class="mt-2 text-3xl font-bold text-gray-900">
+            <p class=" mt-1 text-3xl font-bold text-gray-900">
               {{ messages().length }}
             </p>
           </button>
@@ -173,7 +386,7 @@ type MailboxFilter =
             type="button"
             (click)="setFilter('new')"
             class="rounded-xl border
-                   bg-white p-5 text-left
+                   bg-white px-5 py-2 text-left
                    shadow-sm transition
                    hover:shadow-md"
             [class.ring-2]="filter() === 'new'"
@@ -182,7 +395,7 @@ type MailboxFilter =
               New
             </p>
 
-            <p class="mt-2 text-3xl font-bold text-blue-600">
+            <p class="mt-1 text-3xl font-bold text-blue-600">
               {{ newCount() }}
             </p>
           </button>
@@ -193,7 +406,7 @@ type MailboxFilter =
             type="button"
             (click)="setFilter('read')"
             class="rounded-xl border
-                   bg-white p-5 text-left
+                   bg-white px-5 py-2 text-left
                    shadow-sm transition
                    hover:shadow-md"
             [class.ring-2]="filter() === 'read'"
@@ -202,7 +415,7 @@ type MailboxFilter =
               Read
             </p>
 
-            <p class="mt-2 text-3xl font-bold text-green-600">
+            <p class="mt-1 text-3xl font-bold text-green-600">
               {{ readCount() }}
             </p>
           </button>
@@ -213,7 +426,7 @@ type MailboxFilter =
             type="button"
             (click)="setFilter('archived')"
             class="rounded-xl border
-                   bg-white p-5 text-left
+                   bg-white px-5 py-2 text-left
                    shadow-sm transition
                    hover:shadow-md"
             [class.ring-2]="filter() === 'archived'"
@@ -222,12 +435,15 @@ type MailboxFilter =
               Archived
             </p>
 
-            <p class="mt-2 text-3xl font-bold text-gray-500">
+            <p class="mt-1 text-3xl font-bold text-gray-500">
               {{ archivedCount() }}
             </p>
           </button>
 
         </div>
+
+
+        
 
 
         <!-- =====================================================
@@ -913,6 +1129,29 @@ type MailboxFilter =
 
       }
 
+        <!-- Success toast -->
+        @if (toastMessage()) {
+          <div
+            class="fixed bottom-6 right-6 z-[100]
+                   flex items-center gap-3
+                   rounded-xl bg-green-600
+                   px-5 py-4 text-sm font-semibold
+                   text-white shadow-2xl"
+            role="status"
+            aria-live="polite"
+          >
+            <span
+              class="flex h-6 w-6 items-center justify-center
+                     rounded-full bg-white/20"
+              aria-hidden="true"
+            >
+              ✓
+            </span>
+
+            <span>{{ toastMessage() }}</span>
+          </div>
+        }
+
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -936,6 +1175,15 @@ export class ContactMailboxComponent
    */
   readonly messages =
     signal<ContactMessage[]>([]);
+
+  /**
+ * Current mailbox search text.
+ *
+ * Searches sender name, sender email,
+ * subject, and message body.
+ */
+readonly searchQuery =
+  signal("");
 
   /**
    * Currently selected mailbox filter.
@@ -998,24 +1246,75 @@ export class ContactMailboxComponent
     );
 
   /**
-   * Messages displayed for the currently
-   * selected filter.
-   */
-  readonly filteredMessages =
-    computed(() => {
+ * Messages displayed for the currently
+ * selected status filter and search query.
+ *
+ * Search is performed locally against:
+ * - Sender name
+ * - Sender email address
+ * - Subject
+ * - Message body
+ *
+ * This avoids another Firestore request
+ * whenever the administrator searches.
+ */
+readonly filteredMessages =
+  computed(() => {
 
-      const currentFilter =
-        this.filter();
+    const currentFilter =
+      this.filter();
 
-      if (currentFilter === 'all') {
-        return this.messages();
-      }
+    const search =
+      this.searchQuery()
+        .trim()
+        .toLowerCase();
 
-      return this.messages().filter(
-        (message) =>
-          message.status === currentFilter,
-      );
-    });
+    return this.messages().filter(
+      (message) => {
+
+        /**
+         * Apply the status filter first.
+         */
+        const matchesStatus =
+          currentFilter === 'all' ||
+          message.status === currentFilter;
+
+        if (!matchesStatus) {
+          return false;
+        }
+
+        /**
+         * No search text means every message
+         * matching the status filter is displayed.
+         */
+        if (!search) {
+          return true;
+        }
+
+        /**
+         * Search across the important mailbox
+         * fields.
+         */
+        return (
+          message.name
+            ?.toLowerCase()
+            .includes(search) ||
+
+          message.email
+            ?.toLowerCase()
+            .includes(search) ||
+
+          message.subject
+            ?.toLowerCase()
+            .includes(search) ||
+
+          message.message
+            ?.toLowerCase()
+            .includes(search)
+        );
+      },
+    );
+  });
 
   /**
    * Load messages when the mailbox opens.
@@ -1258,8 +1557,35 @@ export class ContactMailboxComponent
   /** Body of the composed message. */
   readonly composeMessage = signal("");
 
-  /** Indicates that an email is being sent. */
+    /** Indicates that an email is being sent. */
   readonly sending = signal(false);
+
+  /**
+   * Controls the vertical three-dot mailbox menu.
+   */
+  readonly moreMenuOpen = signal(false);
+
+  /**
+   * Toggle the vertical three-dot mailbox menu.
+   */
+  toggleMoreMenu(): void {
+    this.moreMenuOpen.update(
+      (open) => !open,
+    );
+  }
+
+  /**
+   * Close the vertical three-dot mailbox menu.
+   */
+  closeMoreMenu(): void {
+    this.moreMenuOpen.set(false);
+  }
+
+  /** Success message displayed after an email is sent. */
+  readonly toastMessage = signal<string | null>(null);
+
+  /** Timer used to automatically hide the success toast. */
+  private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Open a reply composer for a mailbox message.
@@ -1283,6 +1609,22 @@ export class ContactMailboxComponent
     this.composeTo.set("");
     this.composeSubject.set("");
     this.composeMessage.set("");
+  }
+
+  /**
+   * Display a temporary success toast.
+   */
+  private showSuccessToast(message: string): void {
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+    }
+
+    this.toastMessage.set(message);
+
+    this.toastTimer = setTimeout(() => {
+      this.toastMessage.set(null);
+      this.toastTimer = null;
+    }, 4000);
   }
 
   /** Close the administrator email composer. */
@@ -1339,7 +1681,14 @@ export class ContactMailboxComponent
         });
       }
 
-      this.closeComposer();
+      // Firebase confirmed the message was sent successfully.
+      // Reset and close the composer before showing the toast.
+      this.composeMode.set("none");
+      this.composeTo.set("");
+      this.composeSubject.set("");
+      this.composeMessage.set("");
+
+      this.showSuccessToast("Message sent successfully.");
     } catch (error) {
       console.error(
         "Failed to send email:",

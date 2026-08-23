@@ -1,9 +1,4 @@
-import {
-  Component,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -20,205 +15,182 @@ import { LocationService } from '../../../../core/services/location.service';
   selector: 'app-organization-admin',
   standalone: true,
 
-  imports: [
-    FormsModule,
-    RouterLink,
-  ],
+  imports: [FormsModule, RouterLink],
 
   template: `
-    <main class="mx-auto max-w-6xl p-6 sm:p-8">
-
-      <!-- =========================================================
-           Page header
-           ========================================================= -->
-      <div class="mb-4">
-        <a
-          routerLink="/admin"
-          class="text-sm font-medium text-gray-500
-                 transition hover:text-[#007979]"
-        >
+    <div class="min-h-screen bg-gray-50">
+      <!-- Header -->
+      <!-- <div class="mb-2">
+        <a routerLink="/admin" class="text-sm text-gray-600 transition hover:text-gray-900">
           ← Admin Dashboard
         </a>
-      </div>
-
-      <section
-        class="rounded-2xl bg-[#032D42]
-               px-6 py-5 text-white shadow-sm"
-      >
-        <p
-          class="text-xs font-semibold uppercase
-                 tracking-[0.15em] text-[#7DD3D3]"
+      </div> -->
+      <header class="border-b border-gray-200 bg-[#032D42]">
+        <div
+          class="mx-auto flex max-w-7xl items-center
+                 justify-between gap-4 px-4 py-4
+                 sm:px-6 lg:px-8 "
         >
-          Administration
-        </p>
+          <div>
+            <p
+              class="text-xs font-semibold uppercase tracking-wider
+             text-[#7ED6D1]"
+            >
+              Administration
+            </p>
+            <h1
+              class="text-xl font-bold text-white
+                     sm:text-3xl"
+            >
+              Organization
+            </h1>
 
-        <h1 class="mt-1 text-2xl font-bold tracking-tight">
-          Organizations
-        </h1>
+            <p class="mt-1 text-sm text-white/80">
+               Create and manage organizations associated with Zebron resources.
+            </p>
+          </div>
 
-        <p class="mt-2 max-w-2xl text-sm leading-6 text-white/75">
-          Create and manage organizations associated with
-          Zebron resources.
-        </p>
-      </section>
+          <a
+            routerLink="/admin"
+            class="shrink-0 rounded-lg border
+                   border-gray-300 bg-white px-3 py-2
+                   text-sm font-semibold text-gray-700
+                   hover:border-[#032D42]
+                   hover:text-[#032D42]"
+          >
+            Admin Dashboard
+          </a>
+        </div>
+      </header>
 
+      <main class="mx-auto max-w-6xl p-4 sm:p-2">
+        <!-- =========================================================
+           Page header
+           ========================================================= -->
+        
 
-      <!-- =========================================================
+        <!-- =========================================================
            Main organization management area
            ========================================================= -->
-      <section
-        class="mt-4 rounded-2xl border border-gray-200
+        <section
+          class="mt-2 rounded-2xl border border-gray-200
                bg-white shadow-sm"
-      >
-
-        <div class="grid gap-0 lg:grid-cols-3">
-
-          <!-- =====================================================
+        >
+          <div class="grid gap-0 lg:grid-cols-3">
+            <!-- =====================================================
                FORM
                ===================================================== -->
-          <div class="lg:col-span-2 p-6 sm:p-8">
-
-            <div
-              class="flex flex-col gap-1
+            <div class="lg:col-span-2 p-4 sm:p-6">
+              <div
+                class="flex flex-col gap-1
                      border-b border-gray-200 pb-5"
-            >
-              <p
-                class="text-xs font-semibold uppercase
+              >
+                <p
+                  class="text-xs font-semibold uppercase
                        tracking-wide text-[#007979]"
-              >
-                {{ editingId() ? 'Edit organization' : 'New organization' }}
-              </p>
+                >
+                  {{ editingId() ? 'Edit organization' : 'New organization' }}
+                </p>
 
-              <h2
-                class="text-xl font-semibold text-[#032D42]"
-              >
-                {{
-                  editingId()
-                    ? 'Update organization'
-                    : 'Create organization'
-                }}
-              </h2>
+                <h2 class="text-xl font-semibold text-[#032D42]">
+                  {{ editingId() ? 'Update organization' : 'Create organization' }}
+                </h2>
 
-              <p class="text-sm text-gray-500">
-                {{
-                  editingId()
-                    ? 'Update the organization details and location information.'
-                    : 'Add an organization and its location information.'
-                }}
-              </p>
-            </div>
-
-
-            <!-- =================================================
-                 Organization form
-                 ================================================= -->
-            <form
-              class="mt-6 space-y-7"
-              (ngSubmit)="saveOrganization()"
-            >
+                <p class="text-sm text-gray-500">
+                  {{
+                    editingId()
+                      ? 'Update the organization details and location information.'
+                      : 'Add an organization and its location information.'
+                  }}
+                </p>
+              </div>
 
               <!-- =================================================
+                 Organization form
+                 ================================================= -->
+              <form class="mt-6 space-y-7" (ngSubmit)="saveOrganization()">
+                <!-- =================================================
                    Basic information
                    ================================================= -->
-              <section>
+                <section>
+                  <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-900">Basic information</h3>
 
-                <div class="mb-4">
-                  <h3
-                    class="text-sm font-semibold text-gray-900"
-                  >
-                    Basic information
-                  </h3>
+                    <p class="mt-1 text-xs text-gray-500">
+                      Core information used to identify the organization.
+                    </p>
+                  </div>
 
-                  <p class="mt-1 text-xs text-gray-500">
-                    Core information used to identify the organization.
-                  </p>
-                </div>
+                  <div class="grid gap-5 sm:grid-cols-2">
+                    <!-- Organization name -->
+                    <div class="sm:col-span-2">
+                      <label for="name" class="block text-sm font-medium text-gray-700">
+                        Organization name
+                      </label>
 
-                <div class="grid gap-5 sm:grid-cols-2">
-
-                  <!-- Organization name -->
-                  <div class="sm:col-span-2">
-
-                    <label
-                      for="name"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      Organization name
-                    </label>
-
-                    <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      [(ngModel)]="form.name"
-                      (ngModelChange)="generateSlug()"
-                      required
-                      placeholder="Maryland Food Bank"
-                      class="mt-1 block w-full rounded-lg
+                      <input
+                        id="name"
+                        name="name"
+                        type="text"
+                        [(ngModel)]="form.name"
+                        (ngModelChange)="generateSlug()"
+                        required
+                        placeholder="Maryland Food Bank"
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
-                             bg-white px-4 py-2.5
+                             bg-gray-50 px-4 py-2.5
                              text-sm text-gray-900
                              placeholder:text-gray-400
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    />
+                             focus:ring-[#007979]/20
+                             focus:bg-white"
+                      />
+                    </div>
 
-                  </div>
+                    <!-- Slug -->
+                    <div class="sm:col-span-2">
+                      <label for="slug" class="block text-sm font-medium text-gray-700">
+                        Slug
+                      </label>
 
-
-                  <!-- Slug -->
-                  <div class="sm:col-span-2">
-
-                    <label
-                      for="slug"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      Slug
-                    </label>
-
-                    <input
-                      id="slug"
-                      name="slug"
-                      type="text"
-                      [(ngModel)]="form.slug"
-                      required
-                      placeholder="maryland-food-bank"
-                      class="mt-1 block w-full rounded-lg
+                      <input
+                        id="slug"
+                        name="slug"
+                        type="text"
+                        [(ngModel)]="form.slug"
+                        required
+                        placeholder="maryland-food-bank"
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
                              bg-gray-50 px-4 py-2.5
                              text-sm text-gray-700
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    />
+                             focus:ring-[#007979]/20
+                             focus:bg-white"
+                      />
 
-                    <p class="mt-1.5 text-xs text-gray-500">
-                      Automatically generated from the organization name.
-                    </p>
+                      <p class="mt-1.5 text-xs text-gray-500">
+                        Automatically generated from the organization name.
+                      </p>
+                    </div>
 
-                  </div>
+                    <!-- Description -->
+                    <div class="sm:col-span-2">
+                      <label for="description" class="block text-sm font-medium text-gray-700">
+                        Description
+                      </label>
 
-
-                  <!-- Description -->
-                  <div class="sm:col-span-2">
-
-                    <label
-                      for="description"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      Description
-                    </label>
-
-                    <textarea
-                      id="description"
-                      name="description"
-                      rows="4"
-                      [(ngModel)]="form.description"
-                      placeholder="Describe the organization and the services it provides."
-                      class="mt-1 block w-full rounded-lg
+                      <textarea
+                        id="description"
+                        name="description"
+                        rows="4"
+                        [(ngModel)]="form.description"
+                        placeholder="Describe the organization and the services it provides."
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
                              px-4 py-2.5 text-sm
                              text-gray-900
@@ -226,229 +198,182 @@ import { LocationService } from '../../../../core/services/location.service';
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    ></textarea>
-
+                             focus:ring-[#007979]/20
+                             bg-gray-50
+                             focus:bg-white"
+                      ></textarea>
+                    </div>
                   </div>
+                </section>
 
-                </div>
-
-              </section>
-
-
-              <!-- =================================================
+                <!-- =================================================
                    Contact information
                    ================================================= -->
-              <section
-                class="border-t border-gray-200 pt-6"
-              >
+                <section class="border-t border-gray-200 pt-6">
+                  <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-900">Contact information</h3>
 
-                <div class="mb-4">
-                  <h3
-                    class="text-sm font-semibold text-gray-900"
-                  >
-                    Contact information
-                  </h3>
+                    <p class="mt-1 text-xs text-gray-500">
+                      Optional ways users can contact the organization.
+                    </p>
+                  </div>
 
-                  <p class="mt-1 text-xs text-gray-500">
-                    Optional ways users can contact the organization.
-                  </p>
-                </div>
+                  <div class="grid gap-5 sm:grid-cols-2">
+                    <!-- Website -->
+                    <div>
+                      <label for="website" class="block text-sm font-medium text-gray-700">
+                        Website
+                      </label>
 
-                <div class="grid gap-5 sm:grid-cols-2">
-
-                  <!-- Website -->
-                  <div>
-
-                    <label
-                      for="website"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      Website
-                    </label>
-
-                    <input
-                      id="website"
-                      name="website"
-                      type="url"
-                      [(ngModel)]="form.website"
-                      placeholder="https://example.org"
-                      class="mt-1 block w-full rounded-lg
+                      <input
+                        id="website"
+                        name="website"
+                        type="url"
+                        [(ngModel)]="form.website"
+                        placeholder="https://example.org"
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
                              px-4 py-2.5 text-sm
                              placeholder:text-gray-400
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    />
+                             focus:ring-[#007979]/20
+                             focus:bg-white
+                             bg-gray-50"
+                      />
+                    </div>
 
-                  </div>
+                    <!-- Phone -->
+                    <div>
+                      <label for="phone" class="block text-sm font-medium text-gray-700">
+                        Phone
+                      </label>
 
-
-                  <!-- Phone -->
-                  <div>
-
-                    <label
-                      for="phone"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      Phone
-                    </label>
-
-                    <input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      [(ngModel)]="form.phone"
-                      placeholder="301-555-1234"
-                      class="mt-1 block w-full rounded-lg
+                      <input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        [(ngModel)]="form.phone"
+                        placeholder="301-555-1234"
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
                              px-4 py-2.5 text-sm
                              placeholder:text-gray-400
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    />
+                             focus:ring-[#007979]/20
+                             focus:bg-white
+                             bg-gray-50"
+                      />
+                    </div>
 
-                  </div>
+                    <!-- Email -->
+                    <div class="sm:col-span-2">
+                      <label for="email" class="block text-sm font-medium text-gray-700">
+                        Email
+                      </label>
 
-
-                  <!-- Email -->
-                  <div class="sm:col-span-2">
-
-                    <label
-                      for="email"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      Email
-                    </label>
-
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      [(ngModel)]="form.email"
-                      placeholder="info@example.org"
-                      class="mt-1 block w-full rounded-lg
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        [(ngModel)]="form.email"
+                        placeholder="info@example.org"
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
                              px-4 py-2.5 text-sm
                              placeholder:text-gray-400
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    />
-
+                             focus:ring-[#007979]/20
+                             focus:bg-white
+                             bg-gray-50"
+                      />
+                    </div>
                   </div>
+                </section>
 
-                </div>
-
-              </section>
-
-
-              <!-- =================================================
+                <!-- =================================================
                    Location
                    ================================================= -->
-              <section
-                class="border-t border-gray-200 pt-6"
-              >
+                <section class="border-t border-gray-200 pt-6">
+                  <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-900">Location</h3>
 
-                <div class="mb-4">
+                    <p class="mt-1 text-xs text-gray-500">
+                      The location is stored separately in the
+                      <code>locations</code> collection and linked to this organization.
+                    </p>
+                  </div>
 
-                  <h3
-                    class="text-sm font-semibold text-gray-900"
-                  >
-                    Location
-                  </h3>
+                  <div class="grid gap-5 sm:grid-cols-2">
+                    <!-- Street address -->
+                    <div class="sm:col-span-2">
+                      <label for="address" class="block text-sm font-medium text-gray-700">
+                        Street address
+                      </label>
 
-                  <p class="mt-1 text-xs text-gray-500">
-                    The location is stored separately in the
-                    <code>locations</code> collection and linked
-                    to this organization.
-                  </p>
-
-                </div>
-
-                <div class="grid gap-5 sm:grid-cols-2">
-
-                  <!-- Street address -->
-                  <div class="sm:col-span-2">
-
-                    <label
-                      for="address"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      Street address
-                    </label>
-
-                    <input
-                      id="address"
-                      name="address"
-                      type="text"
-                      [(ngModel)]="form.address"
-                      placeholder="123 Main Street"
-                      class="mt-1 block w-full rounded-lg
+                      <input
+                        id="address"
+                        name="address"
+                        type="text"
+                        [(ngModel)]="form.address"
+                        placeholder="123 Main Street"
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
                              px-4 py-2.5 text-sm
                              placeholder:text-gray-400
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    />
+                             focus:ring-[#007979]/20
+                             focus:bg-white
+                             bg-gray-50"
+                      />
+                    </div>
 
-                  </div>
+                    <!-- City -->
+                    <div>
+                      <label for="city" class="block text-sm font-medium text-gray-700">
+                        City
+                      </label>
 
-
-                  <!-- City -->
-                  <div>
-
-                    <label
-                      for="city"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      City
-                    </label>
-
-                    <input
-                      id="city"
-                      name="city"
-                      type="text"
-                      [(ngModel)]="form.city"
-                      placeholder="Baltimore"
-                      class="mt-1 block w-full rounded-lg
+                      <input
+                        id="city"
+                        name="city"
+                        type="text"
+                        [(ngModel)]="form.city"
+                        placeholder="Baltimore"
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
                              px-4 py-2.5 text-sm
                              placeholder:text-gray-400
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    />
+                             focus:ring-[#007979]/20
+                             focus:bg-white
+                             bg-gray-50"
+                      />
+                    </div>
 
-                  </div>
+                    <!-- State -->
+                    <div>
+                      <label for="state" class="block text-sm font-medium text-gray-700">
+                        State
+                      </label>
 
-
-                  <!-- State -->
-                  <div>
-
-                    <label
-                      for="state"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      State
-                    </label>
-
-                    <input
-                      id="state"
-                      name="state"
-                      type="text"
-                      maxlength="2"
-                      [(ngModel)]="form.state"
-                      placeholder="MD"
-                      class="mt-1 block w-full rounded-lg
+                      <input
+                        id="state"
+                        name="state"
+                        type="text"
+                        maxlength="2"
+                        [(ngModel)]="form.state"
+                        placeholder="MD"
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
                              px-4 py-2.5 text-sm
                              uppercase
@@ -456,412 +381,322 @@ import { LocationService } from '../../../../core/services/location.service';
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    />
+                             focus:ring-[#007979]/20
+                             focus:bg-white
+                             bg-gray-50"
+                      />
+                    </div>
 
-                  </div>
+                    <!-- ZIP -->
+                    <div>
+                      <label for="zipCode" class="block text-sm font-medium text-gray-700">
+                        ZIP code
+                      </label>
 
-
-                  <!-- ZIP -->
-                  <div>
-
-                    <label
-                      for="zipCode"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      ZIP code
-                    </label>
-
-                    <input
-                      id="zipCode"
-                      name="zipCode"
-                      type="text"
-                      [(ngModel)]="form.zipCode"
-                      placeholder="21201"
-                      class="mt-1 block w-full rounded-lg
+                      <input
+                        id="zipCode"
+                        name="zipCode"
+                        type="text"
+                        [(ngModel)]="form.zipCode"
+                        placeholder="21201"
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
                              px-4 py-2.5 text-sm
                              placeholder:text-gray-400
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    />
+                             focus:ring-[#007979]/20
+                             focus:bg-white
+                             bg-gray-50"
+                      />
+                    </div>
 
-                  </div>
+                    <!-- Country -->
+                    <div>
+                      <label for="country" class="block text-sm font-medium text-gray-700">
+                        Country
+                      </label>
 
-
-                  <!-- Country -->
-                  <div>
-
-                    <label
-                      for="country"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      Country
-                    </label>
-
-                    <input
-                      id="country"
-                      name="country"
-                      type="text"
-                      [(ngModel)]="form.country"
-                      placeholder="United States"
-                      class="mt-1 block w-full rounded-lg
+                      <input
+                        id="country"
+                        name="country"
+                        type="text"
+                        [(ngModel)]="form.country"
+                        placeholder="United States"
+                        class="mt-1 block w-full rounded-lg
                              border border-gray-300
                              px-4 py-2.5 text-sm
                              placeholder:text-gray-400
                              focus:border-[#007979]
                              focus:outline-none
                              focus:ring-2
-                             focus:ring-[#007979]/20"
-                    />
-
+                             focus:ring-[#007979]/20
+                             focus:bg-white
+                             bg-gray-50"
+                      />
+                    </div>
                   </div>
+                </section>
 
-                </div>
-
-              </section>
-
-
-              <!-- =================================================
+                <!-- =================================================
                    Status
                    ================================================= -->
-              <section
-                class="border-t border-gray-200 pt-6"
-              >
+                <section class="border-t border-gray-200 pt-6">
+                  <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-900">Status</h3>
+                  </div>
 
-                <div class="mb-4">
-                  <h3
-                    class="text-sm font-semibold text-gray-900"
-                  >
-                    Status
-                  </h3>
-                </div>
-
-                <div class="flex flex-wrap gap-6">
-
-                  <!-- Verified -->
-                  <label
-                    class="flex cursor-pointer items-center gap-3"
-                  >
-                    <input
-                      type="checkbox"
-                      name="verified"
-                      [(ngModel)]="form.verified"
-                      class="h-4 w-4 rounded border-gray-300
+                  <div class="flex flex-wrap gap-6">
+                    <!-- Verified -->
+                    <label class="flex cursor-pointer items-center gap-3">
+                      <input
+                        type="checkbox"
+                        name="verified"
+                        [(ngModel)]="form.verified"
+                        class="h-4 w-4 rounded border-gray-300
                              text-[#007979]
                              focus:ring-[#007979]"
-                    />
+                      />
 
-                    <span class="text-sm text-gray-700">
-                      Verified organization
-                    </span>
-                  </label>
+                      <span class="text-sm text-gray-700"> Verified organization </span>
+                    </label>
 
-
-                  <!-- Active -->
-                  <label
-                    class="flex cursor-pointer items-center gap-3"
-                  >
-                    <input
-                      type="checkbox"
-                      name="active"
-                      [(ngModel)]="form.active"
-                      class="h-4 w-4 rounded border-gray-300
+                    <!-- Active -->
+                    <label class="flex cursor-pointer items-center gap-3">
+                      <input
+                        type="checkbox"
+                        name="active"
+                        [(ngModel)]="form.active"
+                        class="h-4 w-4 rounded border-gray-300
                              text-[#007979]
                              focus:ring-[#007979]"
-                    />
+                      />
 
-                    <span class="text-sm text-gray-700">
-                      Active organization
-                    </span>
-                  </label>
+                      <span class="text-sm text-gray-700"> Active organization </span>
+                    </label>
+                  </div>
+                </section>
 
-                </div>
-
-              </section>
-
-
-              <!-- =================================================
+                <!-- =================================================
                    Error
                    ================================================= -->
-              @if (error()) {
-                <div
-                  class="rounded-lg border border-red-200
+                @if (error()) {
+                  <div
+                    class="rounded-lg border border-red-200
                          bg-red-50 px-4 py-3
                          text-sm text-red-700"
-                >
-                  {{ error() }}
-                </div>
-              }
+                  >
+                    {{ error() }}
+                  </div>
+                }
 
-
-              <!-- =================================================
+                <!-- =================================================
                    Form actions
                    ================================================= -->
-              <div
-                class="flex flex-wrap items-center
+                <div
+                  class="flex flex-wrap items-center
                        gap-2 border-t border-gray-200 pt-6"
-              >
-
-                <button
-                  type="submit"
-                  [disabled]="saving()"
-                  class="rounded-lg bg-[#032D42]
+                >
+                  <button
+                    type="submit"
+                    [disabled]="saving()"
+                    class="rounded-lg bg-[#032D42]
                          px-4 py-2 text-sm font-medium
                          text-white transition
                          hover:bg-[#032D42]/90
                          disabled:cursor-not-allowed
                          disabled:opacity-50"
-                >
-                  {{
-                    saving()
-                      ? 'Saving...'
-                      : editingId()
-                        ? 'Update organization'
-                        : 'Create organization'
-                  }}
-                </button>
+                  >
+                    {{
+                      saving()
+                        ? 'Saving...'
+                        : editingId()
+                          ? 'Update organization'
+                          : 'Create organization'
+                    }}
+                  </button>
 
-
-                @if (editingId()) {
-
-                  <button
-                    type="button"
-                    (click)="cancelEdit()"
-                    [disabled]="saving()"
-                    class="rounded-lg border border-gray-300
+                  @if (editingId()) {
+                    <button
+                      type="button"
+                      (click)="cancelEdit()"
+                      [disabled]="saving()"
+                      class="rounded-lg border border-gray-300
                            bg-white px-4 py-2
                            text-sm font-medium text-gray-700
                            transition hover:bg-gray-50
                            disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
+                    >
+                      Cancel
+                    </button>
+                  }
+                </div>
+              </form>
+            </div>
 
-                }
-
-              </div>
-
-            </form>
-
-          </div>
-
-
-          <!-- =====================================================
+            <!-- =====================================================
                EXISTING ORGANIZATIONS
                ===================================================== -->
-          <aside
-            class="border-t border-gray-200
+            <aside
+              class="border-t border-gray-200
                    bg-gray-50/60 lg:border-l lg:border-t-0"
-          >
-
-            <div class="p-6 sm:p-8">
-
-              <!-- Directory header -->
-              <div
-                class="flex items-start justify-between gap-3"
-              >
-
-                <div>
-
-                  <p
-                    class="text-xs font-semibold uppercase
+            >
+              <div class="p-6 sm:p-8">
+                <!-- Directory header -->
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p
+                      class="text-xs font-semibold uppercase
                            tracking-wide text-[#007979]"
-                  >
-                    Directory
-                  </p>
+                    >
+                      Directory
+                    </p>
 
-                  <h2
-                    class="mt-1 text-xl font-semibold
+                    <h2
+                      class="mt-1 text-xl font-semibold
                            text-[#032D42]"
-                  >
-                    Existing organizations
-                  </h2>
+                    >
+                      Existing organizations
+                    </h2>
 
-                  <p class="mt-1 text-sm text-gray-500">
-                    Select an organization to edit or delete it.
-                  </p>
+                    <p class="mt-1 text-sm text-gray-500">
+                      Select an organization to edit or delete it.
+                    </p>
+                  </div>
 
-                </div>
-
-
-                @if (!loading()) {
-                  <span
-                    class="inline-flex min-w-7 items-center
+                  @if (!loading()) {
+                    <span
+                      class="inline-flex min-w-7 items-center
                            justify-center rounded-full
                            bg-white px-2 py-1 text-xs
                            font-semibold text-gray-600
                            shadow-sm ring-1 ring-gray-200"
+                    >
+                      {{ organizations().length }}
+                    </span>
+                  }
+                </div>
+
+                <!-- Loading -->
+                @if (loading()) {
+                  <div
+                    class="mt-6 rounded-xl border
+                         border-gray-200 bg-white p-5"
                   >
-                    {{ organizations().length }}
-                  </span>
+                    <p class="text-sm text-gray-500">Loading organizations...</p>
+                  </div>
                 }
 
-              </div>
-
-
-              <!-- Loading -->
-              @if (loading()) {
-
-                <div
-                  class="mt-6 rounded-xl border
-                         border-gray-200 bg-white p-5"
-                >
-                  <p class="text-sm text-gray-500">
-                    Loading organizations...
-                  </p>
-                </div>
-
-              }
-
-
-              <!-- Empty -->
-              @if (!loading() && organizations().length === 0) {
-
-                <div
-                  class="mt-6 rounded-xl border
+                <!-- Empty -->
+                @if (!loading() && organizations().length === 0) {
+                  <div
+                    class="mt-6 rounded-xl border
                          border-dashed border-gray-300
                          bg-white p-6 text-center"
-                >
-                  <p class="text-sm font-medium text-gray-700">
-                    No organizations found.
-                  </p>
+                  >
+                    <p class="text-sm font-medium text-gray-700">No organizations found.</p>
 
-                  <p class="mt-1 text-xs text-gray-500">
-                    Create the first organization using the form.
-                  </p>
-                </div>
+                    <p class="mt-1 text-xs text-gray-500">
+                      Create the first organization using the form.
+                    </p>
+                  </div>
+                }
 
-              }
-
-
-              <!-- Organization list -->
-              @if (organizations().length > 0) {
-
-                <div
-                  class="mt-6 overflow-hidden rounded-xl
+                <!-- Organization list -->
+                @if (organizations().length > 0) {
+                  <div
+                    class="mt-6 overflow-hidden rounded-xl
                          border border-gray-200
                          bg-white shadow-sm"
-                >
-
-                  @for (
-                    organization of organizations();
-                    track organization.id
-                  ) {
-
-                    <div
-                      class="border-b border-gray-200
-                             p-4 last:border-b-0"
-                    >
-
-                      <!-- Organization name + active status -->
+                  >
+                    @for (organization of organizations(); track organization.id) {
                       <div
-                        class="flex items-start
-                               justify-between gap-3"
+                        class="border-b border-gray-200
+                             p-4 last:border-b-0"
                       >
-
-                        <div class="min-w-0">
-
-                          <h3
-                            class="truncate text-sm font-semibold
+                        <!-- Organization name + active status -->
+                        <div
+                          class="flex items-start
+                               justify-between gap-3"
+                        >
+                          <div class="min-w-0">
+                            <h3
+                              class="truncate text-sm font-semibold
                                    text-gray-900"
-                          >
-                            {{ organization.name }}
-                          </h3>
+                            >
+                              {{ organization.name }}
+                            </h3>
 
-                          <p
-                            class="mt-1 truncate text-xs
+                            <p
+                              class="mt-1 truncate text-xs
                                    text-gray-500"
-                          >
-                            {{ organization.slug }}
-                          </p>
+                            >
+                              {{ organization.slug }}
+                            </p>
+                          </div>
 
+                          <!-- Active stays top right -->
+                          <span
+                            class="shrink-0 rounded-full px-2
+                                 py-1 text-xs font-medium"
+                            [class.bg-green-100]="organization.active"
+                            [class.text-green-700]="organization.active"
+                            [class.bg-gray-100]="!organization.active"
+                            [class.text-gray-600]="!organization.active"
+                          >
+                            {{ organization.active ? 'Active' : 'Inactive' }}
+                          </span>
                         </div>
 
-
-                        <!-- Active stays top right -->
-                        <span
-                          class="shrink-0 rounded-full px-2
-                                 py-1 text-xs font-medium"
-                          [class.bg-green-100]="organization.active"
-                          [class.text-green-700]="organization.active"
-                          [class.bg-gray-100]="!organization.active"
-                          [class.text-gray-600]="!organization.active"
-                        >
-                          {{
-                            organization.active
-                              ? 'Active'
-                              : 'Inactive'
-                          }}
-                        </span>
-
-                      </div>
-
-
-                      <!-- Description -->
-                      @if (organization.description) {
-
-                        <p
-                          class="mt-3 line-clamp-2
+                        <!-- Description -->
+                        @if (organization.description) {
+                          <p
+                            class="mt-3 line-clamp-2
                                  text-sm leading-5
                                  text-gray-600"
-                        >
-                          {{ organization.description }}
-                        </p>
+                          >
+                            {{ organization.description }}
+                          </p>
+                        }
 
-                      }
-
-
-                      <!-- Bottom status/actions -->
-                      <div
-                        class="mt-4 flex items-center
+                        <!-- Bottom status/actions -->
+                        <div
+                          class="mt-4 flex items-center
                                justify-between gap-3"
-                      >
-
-                        <!-- Verified stays far left -->
-                        <div class="shrink-0">
-
-                          @if (organization.verified) {
-
-                            <span
-                              class="inline-flex rounded-full
+                        >
+                          <!-- Verified stays far left -->
+                          <div class="shrink-0">
+                            @if (organization.verified) {
+                              <span
+                                class="inline-flex rounded-full
                                      bg-[#007979]/10
                                      px-2.5 py-1
                                      text-xs font-medium
                                      text-[#007979]"
-                            >
-                              Verified
-                            </span>
-
-                          } @else {
-
-                            <span
-                              class="inline-flex rounded-full
+                              >
+                                Verified
+                              </span>
+                            } @else {
+                              <span
+                                class="inline-flex rounded-full
                                      bg-gray-100
                                      px-2.5 py-1
                                      text-xs font-medium
                                      text-gray-500"
-                            >
-                              Not verified
-                            </span>
+                              >
+                                Not verified
+                              </span>
+                            }
+                          </div>
 
-                          }
-
-                        </div>
-
-
-                        <!-- Actions stay far right -->
-                        <div
-                          class="flex shrink-0 gap-1.5"
-                        >
-
-                          <button
-                            type="button"
-                            (click)="editOrganization(organization)"
-                            [disabled]="saving()"
-                            class="rounded-md border
+                          <!-- Actions stay far right -->
+                          <div class="flex shrink-0 gap-1.5">
+                            <button
+                              type="button"
+                              (click)="editOrganization(organization)"
+                              [disabled]="saving()"
+                              class="rounded-md border
                                    border-gray-300
                                    bg-white px-2.5 py-1.5
                                    text-xs font-medium
@@ -869,85 +704,62 @@ import { LocationService } from '../../../../core/services/location.service';
                                    hover:border-[#007979]/40
                                    hover:bg-[#007979]/5
                                    disabled:opacity-50"
-                          >
-                            Edit
-                          </button>
+                            >
+                              Edit
+                            </button>
 
-
-                          <button
-                            type="button"
-                            (click)="deleteOrganization(organization)"
-                            [disabled]="saving()"
-                            class="rounded-md border
+                            <button
+                              type="button"
+                              (click)="deleteOrganization(organization)"
+                              [disabled]="saving()"
+                              class="rounded-md border
                                    border-red-200
                                    bg-white px-2.5 py-1.5
                                    text-xs font-medium
                                    text-red-600 transition
                                    hover:bg-red-50
                                    disabled:opacity-50"
-                          >
-                            Delete
-                          </button>
-
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
-
                       </div>
-
-                    </div>
-
-                  }
-
-                </div>
-
-              }
-
-            </div>
-
-          </aside>
-
-        </div>
-
-      </section>
-
-    </main>
+                    }
+                  </div>
+                }
+              </div>
+            </aside>
+          </div>
+        </section>
+      </main>
+    </div>
   `,
-
 })
 export class OrganizationAdminComponent implements OnInit {
-
   // ===============================================================
   // Services
   // ===============================================================
 
-  private readonly organizationService =
-    inject(OrganizationService);
+  private readonly organizationService = inject(OrganizationService);
 
-  private readonly locationService =
-    inject(LocationService);
+  private readonly locationService = inject(LocationService);
 
-  private readonly toast =
-    inject(HotToastService);
-
+  private readonly toast = inject(HotToastService);
 
   // ===============================================================
   // State
   // ===============================================================
 
-  protected readonly organizations =
-    signal<Organization[]>([]);
+  protected readonly organizations = signal<Organization[]>([]);
 
-  protected readonly loading =
-    signal(true);
+  protected readonly loading = signal(true);
 
-  protected readonly saving =
-    signal(false);
+  protected readonly saving = signal(false);
 
-  protected readonly error =
-    signal<string | null>(null);
+  protected readonly error = signal<string | null>(null);
 
-  protected readonly editingId =
-    signal<string | null>(null);
-
+  protected readonly editingId = signal<string | null>(null);
 
   // ===============================================================
   // Form
@@ -972,7 +784,6 @@ export class OrganizationAdminComponent implements OnInit {
     active: true,
   };
 
-
   // ===============================================================
   // Lifecycle
   // ===============================================================
@@ -981,49 +792,32 @@ export class OrganizationAdminComponent implements OnInit {
     void this.loadOrganizations();
   }
 
-
   // ===============================================================
   // Load organizations
   // ===============================================================
 
   private async loadOrganizations(): Promise<void> {
-
     this.loading.set(true);
     this.error.set(null);
 
     try {
-
-      const organizations =
-        await this.organizationService
-          .getAllOrganizations();
+      const organizations = await this.organizationService.getAllOrganizations();
 
       this.organizations.set(organizations);
-
     } catch (error) {
+      console.error('Failed to load organizations:', error);
 
-      console.error(
-        'Failed to load organizations:',
-        error,
-      );
-
-      this.error.set(
-        'Unable to load organizations. Please try again.',
-      );
-
+      this.error.set('Unable to load organizations. Please try again.');
     } finally {
-
       this.loading.set(false);
-
     }
   }
-
 
   // ===============================================================
   // Save organization
   // ===============================================================
 
   protected async saveOrganization(): Promise<void> {
-
     if (this.saving()) {
       return;
     }
@@ -1032,62 +826,43 @@ export class OrganizationAdminComponent implements OnInit {
     this.error.set(null);
 
     try {
-
-      const organization:
-        Omit<
-          Organization,
-          'id' | 'createdAt' | 'updatedAt'
-        > = {
-
+      const organization: Omit<Organization, 'id' | 'createdAt' | 'updatedAt'> = {
         name: this.form.name.trim(),
 
-        slug: this.form.slug
-          .trim()
-          .toLowerCase(),
+        slug: this.form.slug.trim().toLowerCase(),
 
         verified: this.form.verified,
 
         active: this.form.active,
       };
 
-
       // -----------------------------------------------------------
       // Optional organization fields
       // -----------------------------------------------------------
 
-      const description =
-        this.form.description.trim();
+      const description = this.form.description.trim();
 
-      const website =
-        this.form.website.trim();
+      const website = this.form.website.trim();
 
-      const phone =
-        this.form.phone.trim();
+      const phone = this.form.phone.trim();
 
-      const email =
-        this.form.email.trim();
-
+      const email = this.form.email.trim();
 
       if (description) {
-        organization.description =
-          description;
+        organization.description = description;
       }
 
       if (website) {
-        organization.website =
-          website;
+        organization.website = website;
       }
 
       if (phone) {
-        organization.phone =
-          phone;
+        organization.phone = phone;
       }
 
       if (email) {
-        organization.email =
-          email;
+        organization.email = email;
       }
-
 
       // -----------------------------------------------------------
       // Location
@@ -1096,42 +871,24 @@ export class OrganizationAdminComponent implements OnInit {
       // stores only the locationId.
       // -----------------------------------------------------------
 
-      const address =
-        this.form.address.trim();
+      const address = this.form.address.trim();
 
-      const city =
-        this.form.city.trim();
+      const city = this.form.city.trim();
 
-      const state =
-        this.form.state.trim().toUpperCase();
+      const state = this.form.state.trim().toUpperCase();
 
-      const zipCode =
-        this.form.zipCode.trim();
+      const zipCode = this.form.zipCode.trim();
 
-      const country =
-        this.form.country.trim();
+      const country = this.form.country.trim();
 
+      const hasLocation = !!(address || city || state || zipCode);
 
-      const hasLocation =
-        !!(
-          address ||
-          city ||
-          state ||
-          zipCode
-        );
-
-
-      const editingId =
-        this.editingId();
-
+      const editingId = this.editingId();
 
       if (hasLocation) {
-
         const location: Location = {
-          country:
-            country || 'United States',
+          country: country || 'United States',
         };
-
 
         // Only send fields that contain values.
         if (address) {
@@ -1150,144 +907,78 @@ export class OrganizationAdminComponent implements OnInit {
           location.zipCode = zipCode;
         }
 
-
         if (editingId) {
-
           // Find the organization currently being edited.
-          const existingOrganization =
-            this.organizations().find(
-              (item) =>
-                item.id === editingId,
-            );
+          const existingOrganization = this.organizations().find((item) => item.id === editingId);
 
-
-          if (
-            existingOrganization?.locationId
-          ) {
-
+          if (existingOrganization?.locationId) {
             // Update the existing location.
-            await this.locationService
-              .updateLocation(
-                existingOrganization.locationId,
-                location,
-              );
+            await this.locationService.updateLocation(existingOrganization.locationId, location);
 
-            organization.locationId =
-              existingOrganization.locationId;
-
+            organization.locationId = existingOrganization.locationId;
           } else {
-
             // Organization does not have a location yet.
-            const locationId =
-              await this.locationService
-                .createLocation(location);
+            const locationId = await this.locationService.createLocation(location);
 
-            organization.locationId =
-              locationId;
+            organization.locationId = locationId;
           }
-
         } else {
-
           // New organization: create its location first.
-          const locationId =
-            await this.locationService
-              .createLocation(location);
+          const locationId = await this.locationService.createLocation(location);
 
-          organization.locationId =
-            locationId;
+          organization.locationId = locationId;
         }
-
       }
-
 
       // -----------------------------------------------------------
       // Create / update organization
       // -----------------------------------------------------------
 
       if (editingId) {
+        await this.organizationService.updateOrganization(editingId, organization);
 
-        await this.organizationService
-          .updateOrganization(
-            editingId,
-            organization,
-          );
-
-        this.toast.success(
-          'Organization updated successfully.',
-        );
-
+        this.toast.success('Organization updated successfully.');
       } else {
+        await this.organizationService.createOrganization(organization);
 
-        await this.organizationService
-          .createOrganization(
-            organization,
-          );
-
-        this.toast.success(
-          'Organization created successfully.',
-        );
-
+        this.toast.success('Organization created successfully.');
       }
-
 
       // Clear the form and refresh the directory.
       this.resetForm();
 
       await this.loadOrganizations();
-
     } catch (error) {
+      console.error('Failed to save organization:', error);
 
-      console.error(
-        'Failed to save organization:',
-        error,
-      );
-
-      this.toast.error(
-        'Unable to save organization. Please try again.',
-      );
-
+      this.toast.error('Unable to save organization. Please try again.');
     } finally {
-
       this.saving.set(false);
-
     }
   }
-
 
   // ===============================================================
   // Edit organization
   // ===============================================================
 
-  protected async editOrganization(
-    organization: Organization,
-  ): Promise<void> {
-
+  protected async editOrganization(organization: Organization): Promise<void> {
     this.error.set(null);
 
-    this.editingId.set(
-      organization.id,
-    );
-
+    this.editingId.set(organization.id);
 
     // Start by loading the organization fields.
     this.form = {
-
       name: organization.name,
 
       slug: organization.slug,
 
-      description:
-        organization.description ?? '',
+      description: organization.description ?? '',
 
-      website:
-        organization.website ?? '',
+      website: organization.website ?? '',
 
-      phone:
-        organization.phone ?? '',
+      phone: organization.phone ?? '',
 
-      email:
-        organization.email ?? '',
-
+      email: organization.email ?? '',
 
       // Location starts empty and is populated below.
       address: '',
@@ -1296,69 +987,40 @@ export class OrganizationAdminComponent implements OnInit {
       zipCode: '',
       country: 'United States',
 
-      verified:
-        organization.verified,
+      verified: organization.verified,
 
-      active:
-        organization.active,
+      active: organization.active,
     };
-
 
     // -----------------------------------------------------------
     // Load the linked location
     // -----------------------------------------------------------
 
     if (organization.locationId) {
-
       try {
-
-        const location =
-          await this.locationService
-            .getLocationById(
-              organization.locationId,
-            );
-
+        const location = await this.locationService.getLocationById(organization.locationId);
 
         if (location) {
-
           this.form = {
-
             ...this.form,
 
-            address:
-              location.address ?? '',
+            address: location.address ?? '',
 
-            city:
-              location.city ?? '',
+            city: location.city ?? '',
 
-            state:
-              location.state ?? '',
+            state: location.state ?? '',
 
-            zipCode:
-              location.zipCode ?? '',
+            zipCode: location.zipCode ?? '',
 
-            country:
-              location.country ||
-              'United States',
+            country: location.country || 'United States',
           };
-
         }
-
       } catch (error) {
+        console.error('Failed to load organization location:', error);
 
-        console.error(
-          'Failed to load organization location:',
-          error,
-        );
-
-        this.error.set(
-          'Unable to load the organization location.',
-        );
-
+        this.error.set('Unable to load the organization location.');
       }
-
     }
-
 
     // Bring the form into view.
     window.scrollTo({
@@ -1366,7 +1028,6 @@ export class OrganizationAdminComponent implements OnInit {
       behavior: 'smooth',
     });
   }
-
 
   // ===============================================================
   // Cancel editing
@@ -1376,22 +1037,16 @@ export class OrganizationAdminComponent implements OnInit {
     this.resetForm();
   }
 
-
-
   // ===============================================================
   // Confirm deletion
   // ===============================================================
 
-/**
- * Show a Hot Toast confirmation before deleting
- * an organization.
- */
-protected deleteOrganization(
-  organization: Organization,
-): void {
-  this.toast.show(
-    DeleteConfirmationComponent,
-    {
+  /**
+   * Show a Hot Toast confirmation before deleting
+   * an organization.
+   */
+  protected deleteOrganization(organization: Organization): void {
+    this.toast.show(DeleteConfirmationComponent, {
       position: 'top-center',
 
       // Keep the confirmation open until the user
@@ -1402,7 +1057,7 @@ protected deleteOrganization(
       theme: 'toast',
 
       // The Hot Toast itself is the confirmation card.
-       style: {
+      style: {
         width: '360px',
         maxWidth: 'calc(100vw - 32px)',
         padding: '20px',
@@ -1413,107 +1068,67 @@ protected deleteOrganization(
 
       data: {
         title: 'Delete organization?',
-        message:
-          `${organization.name} will be permanently deleted.`,
+        message: `${organization.name} will be permanently deleted.`,
 
         onConfirm: async () => {
-          await this.confirmDeleteOrganization(
-            organization,
-          );
+          await this.confirmDeleteOrganization(organization);
         },
       },
-    },
-  );
-}
-
-/**
- * Delete the organization and its associated location.
- */
-private async confirmDeleteOrganization(
-  organization: Organization,
-): Promise<void> {
-
-  if (this.saving()) {
-    return;
+    });
   }
 
-  this.error.set(null);
-  this.saving.set(true);
-
-  try {
-
-    // Delete the organization first.
-    await this.organizationService
-      .deleteOrganization(
-        organization.id,
-      );
-
-
-    // Delete the associated location.
-    if (organization.locationId) {
-
-      await this.locationService
-        .deleteLocation(
-          organization.locationId,
-        );
-
+  /**
+   * Delete the organization and its associated location.
+   */
+  private async confirmDeleteOrganization(organization: Organization): Promise<void> {
+    if (this.saving()) {
+      return;
     }
 
+    this.error.set(null);
+    this.saving.set(true);
 
-    // If this organization was being edited,
-    // clear the form.
-    if (
-      this.editingId() ===
-      organization.id
-    ) {
-      this.resetForm();
+    try {
+      // Delete the organization first.
+      await this.organizationService.deleteOrganization(organization.id);
+
+      // Delete the associated location.
+      if (organization.locationId) {
+        await this.locationService.deleteLocation(organization.locationId);
+      }
+
+      // If this organization was being edited,
+      // clear the form.
+      if (this.editingId() === organization.id) {
+        this.resetForm();
+      }
+
+      // Refresh the directory.
+      await this.loadOrganizations();
+
+      // Tell the administrator the operation succeeded.
+      this.toast.success('Organization deleted successfully.');
+    } catch (error) {
+      console.error('Failed to delete organization:', error);
+
+      this.error.set('Unable to delete organization. Please try again.');
+
+      this.toast.error('Unable to delete organization. Please try again.');
+    } finally {
+      this.saving.set(false);
     }
-
-
-    // Refresh the directory.
-    await this.loadOrganizations();
-
-
-    // Tell the administrator the operation succeeded.
-    this.toast.success(
-      'Organization deleted successfully.',
-    );
-
-  } catch (error) {
-
-    console.error(
-      'Failed to delete organization:',
-      error,
-    );
-
-    this.error.set(
-      'Unable to delete organization. Please try again.',
-    );
-
-    this.toast.error(
-      'Unable to delete organization. Please try again.',
-    );
-
-  } finally {
-
-    this.saving.set(false);
-
   }
-}
-
 
   // ===============================================================
   // Reset form
   // ===============================================================
 
   private resetForm(): void {
-
     this.editingId.set(null);
 
     this.error.set(null);
 
     this.form = {
-
       name: '',
       slug: '',
       description: '',
@@ -1532,7 +1147,6 @@ private async confirmDeleteOrganization(
     };
   }
 
-
   // ===============================================================
   // Generate slug
   // ===============================================================
@@ -1541,17 +1155,14 @@ private async confirmDeleteOrganization(
    * Generate a URL-friendly slug from the organization name.
    */
   protected generateSlug(): void {
-
     if (this.editingId()) {
       return;
     }
 
-
-    this.form.slug =
-      this.form.name
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
+    this.form.slug = this.form.name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 }

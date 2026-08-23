@@ -134,6 +134,22 @@ export const routes: Routes = [
     // =====================================================
   // ADMIN CONTACT MAILBOX
   // =====================================================
+
+  // =====================================================
+  // ADMIN SENT EMAILS
+  // =====================================================
+  {
+    path: 'admin/contact/sent',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/contact/sent/sent-email.component'
+      ).then(
+        (m) => m.SentEmailComponent,
+      ),
+  },
+
+
   {
     path: 'admin/contact',
     canActivate: [adminGuard],

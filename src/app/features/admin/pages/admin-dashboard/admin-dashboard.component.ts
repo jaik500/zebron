@@ -1,5 +1,13 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import {
+  Component,
+  inject,
+  signal,
+} from '@angular/core';
+
+import {
+  Router,
+  RouterLink,
+} from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { HotToastService } from '@ngxpert/hot-toast';
@@ -8,480 +16,736 @@ import { HotToastService } from '@ngxpert/hot-toast';
   selector: 'app-admin-dashboard',
   standalone: true,
   imports: [RouterLink],
+
   template: `
-    <main class="mx-auto max-w-6xl p-4 sm:p-6">
+    <div class="min-h-screen bg-gray-50">
 
       <!-- =========================================================
-           Dashboard header
+           ADMIN DASHBOARD HEADER
            ========================================================= -->
-      <section
-        class="rounded-2xl bg-[#032D42]
-               px-6 py-6 text-white shadow-sm sm:px-8"
+      <header
+        class="border-b border-gray-200 bg-[#032D42]"
       >
+
         <div
-          class="flex flex-col gap-5
-                 sm:flex-row sm:items-center
-                 sm:justify-between"
+          class="mx-auto flex max-w-7xl
+                 items-center justify-between
+                 gap-4 p-5
+                 sm:px-6 lg:px-8"
         >
 
-          <div>
+          <!-- =====================================================
+               DASHBOARD TITLE
+               ===================================================== -->
+          <div class="min-w-0">
+
             <p
-              class="text-sm font-semibold uppercase
-                     tracking-wide text-blue-100"
+              class="text-xs font-semibold uppercase
+                     tracking-wider text-[#7ED6D1]"
             >
               Zebron Administration
             </p>
 
             <h1
-              class="mt-1 text-3xl font-bold tracking-tight
-                     text-white"
+              class="text-xl font-bold text-white
+                     sm:text-3xl"
             >
               Admin Dashboard
             </h1>
 
             <p
-              class="mt-3 max-w-2xl
-                     text-base leading-7 text-blue-100"
+              class="mt-1 text-sm text-white/80"
             >
               Manage Zebron resources and database content.
             </p>
-          </div>
-
-          <!-- Dashboard header actions -->
-          <div class="flex flex-wrap items-center gap-3">
-
-            <!-- Contact mailbox -->
-            <a
-              routerLink="/admin/contact"
-              class="shrink-0 rounded-lg
-                     border border-white/30
-                     bg-white/10 px-4 py-2.5
-                     text-sm font-semibold text-white
-                     transition hover:bg-white/20"
-            >
-              Contact Mailbox
-            </a>
-
-            <!-- Public site -->
-            <a
-              routerLink="/resources"
-              class="shrink-0 rounded-lg
-                     border border-white/30
-                     bg-white/10 px-4 py-2.5
-                     text-sm font-semibold text-white
-                     transition hover:bg-white/20"
-            >
-              View site
-            </a>
 
           </div>
+
+
+          <!-- =====================================================
+               DASHBOARD HEADER ACTIONS
+               ===================================================== -->
+          <div class="flex items-center">
+
+            <!-- ===================================================
+                 DESKTOP ACTIONS
+                 =================================================== -->
+            <div
+              class="hidden items-center gap-3 sm:flex"
+            >
+
+              <!-- Mailbox -->
+              <a
+                routerLink="/admin/contact"
+                class="shrink-0 rounded-lg
+                       border border-white/30
+                       bg-white/10 px-3 py-1
+                       text-sm font-semibold text-white
+                       transition hover:bg-white/20"
+              >
+                Mailbox
+              </a>
+
+
+              <!-- Public site -->
+              <a
+                routerLink="/resources"
+                class="shrink-0 rounded-md
+                       border border-white/30
+                       bg-white/10 px-3 py-1
+                       text-sm font-semibold text-white
+                       transition hover:bg-white/20"
+              >
+                View site
+              </a>
+
+
+              <!-- Sign out -->
+              <button
+                type="button"
+                (click)="signOut()"
+                [disabled]="signingOut()"
+                class="shrink-0 rounded-lg
+                       border border-white/30
+                       bg-white/10 px-3 py-1
+                       text-sm font-semibold text-white
+                       transition hover:bg-white/20
+                       disabled:cursor-not-allowed
+                       disabled:opacity-50"
+              >
+
+                @if (signingOut()) {
+
+                  Signing out...
+
+                } @else {
+
+                  Sign out
+
+                }
+
+              </button>
+
+            </div>
+
+
+            <!-- ===================================================
+                 MOBILE THREE-DOT MENU
+                 =================================================== -->
+            <div
+              class="relative sm:hidden"
+            >
+
+              <!-- Three vertical dots -->
+              <button
+                type="button"
+                (click)="toggleMoreMenu()"
+                class="flex h-10 w-10
+                       items-center justify-center
+                       rounded-lg
+                       border border-white/30
+                       bg-white/10
+                       text-2xl font-bold
+                       leading-none text-white
+                       transition hover:bg-white/20
+                       focus:outline-none
+                       focus:ring-2
+                       focus:ring-white/40"
+                aria-label="Open dashboard menu"
+                aria-haspopup="menu"
+                [attr.aria-expanded]="moreMenuOpen()"
+              >
+                ⋮
+              </button>
+
+
+              <!-- =================================================
+                   MOBILE MENU
+                   ================================================= -->
+              @if (moreMenuOpen()) {
+
+                <div
+                  class="absolute right-0 top-12 z-50
+                         w-52 overflow-hidden
+                         rounded-xl border
+                         border-gray-200
+                         bg-white shadow-xl"
+                  role="menu"
+                >
+
+                  <!-- Mailbox -->
+                  <a
+                    routerLink="/admin/contact"
+                    (click)="closeMoreMenu()"
+                    class="flex items-center gap-3
+                           px-4 py-3
+                           text-sm font-medium
+                           text-gray-700
+                           transition hover:bg-gray-50"
+                    role="menuitem"
+                  >
+
+                    <span
+                      aria-hidden="true"
+                      class="text-base"
+                    >
+                      📥
+                    </span>
+
+                    <span>
+                      Mailbox
+                    </span>
+
+                  </a>
+
+
+                  <!-- View site -->
+                  <a
+                    routerLink="/resources"
+                    (click)="closeMoreMenu()"
+                    class="flex items-center gap-3
+                           px-4 py-3
+                           text-sm font-medium
+                           text-gray-700
+                           transition hover:bg-gray-50"
+                    role="menuitem"
+                  >
+
+                    <span
+                      aria-hidden="true"
+                      class="text-base"
+                    >
+                      🌐
+                    </span>
+
+                    <span>
+                      View site
+                    </span>
+
+                  </a>
+
+
+                  <!-- Sign out -->
+                  <button
+                    type="button"
+                    (click)="signOut(); closeMoreMenu()"
+                    [disabled]="signingOut()"
+                    class="flex w-full
+                           items-center gap-3
+                           px-4 py-3
+                           text-left text-sm
+                           font-medium text-gray-700
+                           transition hover:bg-gray-50
+                           disabled:cursor-not-allowed
+                           disabled:opacity-50"
+                    role="menuitem"
+                  >
+
+                    <span
+                      aria-hidden="true"
+                      class="text-base"
+                    >
+                      ↪
+                    </span>
+
+                    @if (signingOut()) {
+
+                      <span>
+                        Signing out...
+                      </span>
+
+                    } @else {
+
+                      <span>
+                        Sign out
+                      </span>
+
+                    }
+
+                  </button>
+
+                </div>
+
+              }
+
+            </div>
+
+          </div>
+
         </div>
-      </section>
+
+      </header>
 
 
       <!-- =========================================================
-           Signed-in administrator information
+           ADMINISTRATOR INFORMATION
            ========================================================= -->
       @if (authService.user(); as user) {
 
         <section
-          class="mt-8 rounded-xl
-                 border border-[#032D42]/20
-                 bg-[#032D42]/5 p-5"
+          class="bg-[#032D42]/5 px-6 py-1"
         >
 
           <div
-            class="flex flex-col gap-4
-                   sm:flex-row sm:items-center
-                   sm:justify-between"
+            class="flex w-full
+                   items-center
+                   justify-between
+                   gap-3
+                   whitespace-nowrap"
           >
 
             <!-- Administrator information -->
-            <div>
-              <p
-                class="text-sm font-semibold uppercase
-                       tracking-wide text-[#007979]"
-              >
-                Signed in as
-              </p>
-
-              <p
-                class="mt-1 font-semibold text-[#032D42]"
-              >
-                {{ user.displayName || user.email }}
-              </p>
-
-              <p
-                class="mt-1 text-sm text-gray-600"
-              >
-                Administrator
-              </p>
+            <div
+              class="min-w-0 truncate
+                     text-sm font-semibold
+                     uppercase tracking-wide
+                     text-[#007979]"
+            >
+              {{ user.displayName || user.email }}
             </div>
 
-            <!-- Logout button on the far right -->
-            <button
-              type="button"
-              (click)="signOut()"
-              [disabled]="signingOut()"
-              class="shrink-0 rounded-lg
-                     bg-[#032D42]
-                     px-5 py-2.5
-                     text-sm font-semibold text-white
-                     transition
-                     hover:bg-[#032D42]/90
-                     disabled:cursor-not-allowed
-                     disabled:opacity-60"
+
+            <!-- Administrator label -->
+            <p
+              class="shrink-0
+                     text-sm text-gray-600"
             >
-              @if (signingOut()) {
-                Signing out...
-              } @else {
-                Sign out
-              }
-            </button>
+              Administrator
+            </p>
 
           </div>
+
         </section>
 
       }
 
 
       <!-- =========================================================
-           Administration
+           MAIN CONTENT
            ========================================================= -->
-      <section class="mt-8">
+      <main
+        class="mx-auto max-w-6xl
+               px-4 sm:p-2"
+      >
 
-        <div>
-          <p
-            class="text-sm font-semibold uppercase
-                   tracking-wide text-[#007979]"
-          >
-            Administration
-          </p>
+        <!-- =======================================================
+             MANAGE CONTENT
+             ======================================================= -->
+        <section class="mt-4">
 
-          <h2
-            class="mt-1 text-xl font-semibold text-[#032D42]"
-          >
-            Manage content
-          </h2>
-        </div>
+          <div>
 
-
-        <div
-          class="mt-4 grid gap-6
-                 sm:grid-cols-2 lg:grid-cols-4"
-        >
-
-          <!-- Categories -->
-          <a
-            routerLink="/admin/categories"
-            class="group rounded-xl
-                   border border-gray-200
-                   bg-white p-6 shadow-sm
-                   transition
-                   hover:border-[#032D42]/40
-                   hover:shadow-md"
-          >
-            <h3
-              class="text-lg font-semibold
-                     text-[#032D42]
-                     group-hover:text-[#007979]"
+            <h2
+              class="text-xl font-semibold
+                     text-[#032D42]"
             >
-              Categories
-            </h3>
+              Manage content
+            </h2>
 
-            <p
-              class="mt-2 text-sm text-gray-600"
-            >
-              Create and manage resource categories.
-            </p>
-
-            <span
-              class="mt-4 inline-block
-                     text-sm font-semibold
-                     text-[#007979]"
-            >
-              Manage →
-            </span>
-          </a>
+          </div>
 
 
-          <!-- Resources -->
-          <a
-            routerLink="/admin/resources"
-            class="group rounded-xl
-                   border border-gray-200
-                   bg-white p-6 shadow-sm
-                   transition
-                   hover:border-[#032D42]/40
-                   hover:shadow-md"
-          >
-            <h3
-              class="text-lg font-semibold
-                     text-[#032D42]
-                     group-hover:text-[#007979]"
-            >
-              Resources
-            </h3>
-
-            <p
-              class="mt-2 text-sm text-gray-600"
-            >
-              Create, edit, publish, and manage resources.
-            </p>
-
-            <span
-              class="mt-4 inline-block
-                     text-sm font-semibold
-                     text-[#007979]"
-            >
-              Manage →
-            </span>
-          </a>
-
-
-          <!-- Organizations -->
-          <a
-            routerLink="/admin/organizations"
-            class="group rounded-xl
-                   border border-gray-200
-                   bg-white p-6 shadow-sm
-                   transition
-                   hover:border-[#032D42]/40
-                   hover:shadow-md"
-          >
-            <h3
-              class="text-lg font-semibold
-                     text-[#032D42]
-                     group-hover:text-[#007979]"
-            >
-              Organizations
-            </h3>
-
-            <p
-              class="mt-2 text-sm text-gray-600"
-            >
-              Manage organizations associated with resources.
-            </p>
-
-            <span
-              class="mt-4 inline-block
-                     text-sm font-semibold
-                     text-[#007979]"
-            >
-              Manage →
-            </span>
-          </a>
-
-
-          <!-- Submissions -->
-          <a
-            routerLink="/admin/submissions"
-            class="group rounded-xl
-                   border border-gray-200
-                   bg-white p-6 shadow-sm
-                   transition
-                   hover:border-[#032D42]/40
-                   hover:shadow-md"
-          >
-            <h3
-              class="text-lg font-semibold
-                     text-[#032D42]
-                     group-hover:text-[#007979]"
-            >
-              Submissions
-            </h3>
-
-            <p
-              class="mt-2 text-sm text-gray-600"
-            >
-              Review and manage submitted resources.
-            </p>
-
-            <span
-              class="mt-4 inline-block
-                     text-sm font-semibold
-                     text-[#007979]"
-            >
-              Manage →
-            </span>
-          </a>
-
-
-          <!-- Users -->
-          <a
-            routerLink="/admin/users"
-            class="group rounded-2xl
-                   border border-gray-200
-                   bg-white p-6 shadow-sm
-                   transition
-                   hover:-translate-y-0.5
-                   hover:border-[#007979]/30
-                   hover:shadow-md"
+          <!-- =====================================================
+               MANAGEMENT CARDS
+               ===================================================== -->
+          <div
+            class="mt-2 grid gap-6
+                   sm:grid-cols-2
+                   lg:grid-cols-4"
           >
 
-            <div
-              class="flex h-12 w-12
-                     items-center justify-center
-                     rounded-xl
-                     bg-[#007979]/10
-                     text-[#007979]"
+            <!-- ===================================================
+                 CATEGORIES
+                 =================================================== -->
+            <a
+              routerLink="/admin/categories"
+              class="group rounded-xl
+                     border border-gray-200
+                     bg-white px-6 py-3
+                     shadow-sm transition
+                     hover:border-[#032D42]/40
+                     hover:shadow-md"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                class="h-6 w-6"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-                />
 
-                <circle
-                  cx="9"
-                  cy="7"
-                  r="4"
-                />
-
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M22 21v-2a4 4 0 0 0-3-3.87"
-                />
-
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M16 3.13a4 4 0 0 1 0 7.75"
-                />
-              </svg>
-            </div>
-
-            <div class="mt-5">
-              <h2
+              <h3
                 class="text-lg font-semibold
                        text-[#032D42]
                        group-hover:text-[#007979]"
               >
-                Users
-              </h2>
+                Categories
+              </h3>
 
               <p
-                class="mt-2 text-sm
-                       leading-6 text-gray-500"
+                class="mt-2 text-sm text-gray-600"
               >
-                Manage user accounts, profiles,
-                roles, and permissions.
+                Create and manage resource categories.
               </p>
-            </div>
 
-            <div
-              class="mt-5 text-sm font-semibold
-                     text-[#007979]"
-            >
-              Manage users →
-            </div>
-          </a>
-
-
-          <!-- Contact Mailbox -->
-          <a
-            routerLink="/admin/contact"
-            class="group rounded-2xl
-                   border border-gray-200
-                   bg-white p-6
-                   shadow-sm
-                   transition
-                   hover:-translate-y-0.5
-                   hover:border-[#007979]/30
-                   hover:shadow-md"
-          >
-
-            <div
-              class="flex h-12 w-12
-                     items-center justify-center
-                     rounded-xl
-                     bg-[#007979]/10
-                     text-[#007979]"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                class="h-6 w-6"
-                aria-hidden="true"
+              <span
+                class="mt-4 inline-block
+                       text-sm font-semibold
+                       text-[#007979]"
               >
-                <rect
-                  x="3"
-                  y="5"
-                  width="18"
-                  height="14"
-                  rx="2"
-                />
+                Manage →
+              </span>
 
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="m3 7 9 6 9-6"
-                />
-              </svg>
-            </div>
+            </a>
 
-            <div class="mt-5">
-              <h2
+
+            <!-- ===================================================
+                 RESOURCES
+                 =================================================== -->
+            <a
+              routerLink="/admin/resources"
+              class="group rounded-xl
+                     border border-gray-200
+                     bg-white p-6 py-3
+                     shadow-sm transition
+                     hover:border-[#032D42]/40
+                     hover:shadow-md"
+            >
+
+              <h3
                 class="text-lg font-semibold
                        text-[#032D42]
                        group-hover:text-[#007979]"
               >
-                Contact Mailbox
-              </h2>
+                Resources
+              </h3>
 
               <p
-                class="mt-2 text-sm
-                       leading-6 text-gray-500"
+                class="mt-2 text-sm text-gray-600"
               >
-                Review and manage messages
-                submitted through the contact form.
+                Create, edit, publish, and manage resources.
               </p>
-            </div>
 
-            <div
-              class="mt-5 text-sm font-semibold
-                     text-[#007979]"
+              <span
+                class="mt-4 inline-block
+                       text-sm font-semibold
+                       text-[#007979]"
+              >
+                Manage →
+              </span>
+
+            </a>
+
+
+            <!-- ===================================================
+                 ORGANIZATIONS
+                 =================================================== -->
+            <a
+              routerLink="/admin/organizations"
+              class="group rounded-xl
+                     border border-gray-200
+                     bg-white p-6 py-3
+                     shadow-sm transition
+                     hover:border-[#032D42]/40
+                     hover:shadow-md"
             >
-              Open mailbox →
-            </div>
-          </a>
 
-        </div>
-      </section>
+              <h3
+                class="text-lg font-semibold
+                       text-[#032D42]
+                       group-hover:text-[#007979]"
+              >
+                Organizations
+              </h3>
 
-    </main>
+              <p
+                class="mt-2 text-sm text-gray-600"
+              >
+                Manage organizations associated with resources.
+              </p>
+
+              <span
+                class="mt-4 inline-block
+                       text-sm font-semibold
+                       text-[#007979]"
+              >
+                Manage →
+              </span>
+
+            </a>
+
+
+            <!-- ===================================================
+                 SUBMISSIONS
+                 =================================================== -->
+            <a
+              routerLink="/admin/submissions"
+              class="group rounded-xl
+                     border border-gray-200
+                     bg-white p-6 py-3
+                     shadow-sm transition
+                     hover:border-[#032D42]/40
+                     hover:shadow-md"
+            >
+
+              <h3
+                class="text-lg font-semibold
+                       text-[#032D42]
+                       group-hover:text-[#007979]"
+              >
+                Submissions
+              </h3>
+
+              <p
+                class="mt-2 text-sm text-gray-600"
+              >
+                Review and manage submitted resources.
+              </p>
+
+              <span
+                class="mt-4 inline-block
+                       text-sm font-semibold
+                       text-[#007979]"
+              >
+                Manage →
+              </span>
+
+            </a>
+
+
+            <!-- ===================================================
+                 USERS
+                 =================================================== -->
+            <a
+              routerLink="/admin/users"
+              class="group rounded-2xl
+                     border border-gray-200
+                     bg-white p-6
+                     shadow-sm transition
+                     hover:-translate-y-0.5
+                     hover:border-[#007979]/30
+                     hover:shadow-md"
+            >
+
+              <div
+                class="flex h-12 w-12
+                       items-center justify-center
+                       rounded-xl
+                       bg-[#007979]/10
+                       text-[#007979]"
+              >
+
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  class="h-6 w-6"
+                  aria-hidden="true"
+                >
+
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                  />
+
+                  <circle
+                    cx="9"
+                    cy="7"
+                    r="4"
+                  />
+
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M22 21v-2a4 4 0 0 0-3-3.87"
+                  />
+
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M16 3.13a4 4 0 0 1 0 7.75"
+                  />
+
+                </svg>
+
+              </div>
+
+
+              <div class="mt-5">
+
+                <h2
+                  class="text-lg font-semibold
+                         text-[#032D42]
+                         group-hover:text-[#007979]"
+                >
+                  Users
+                </h2>
+
+                <p
+                  class="mt-2 text-sm
+                         leading-6 text-gray-500"
+                >
+                  Manage user accounts, profiles, roles, and permissions.
+                </p>
+
+              </div>
+
+
+              <div
+                class="mt-5 text-sm font-semibold
+                       text-[#007979]"
+              >
+                Manage users →
+              </div>
+
+            </a>
+
+
+            <!-- ===================================================
+                 CONTACT MAILBOX
+                 =================================================== -->
+            <a
+              routerLink="/admin/contact"
+              class="group rounded-2xl
+                     border border-gray-200
+                     bg-white p-6
+                     shadow-sm transition
+                     hover:-translate-y-0.5
+                     hover:border-[#007979]/30
+                     hover:shadow-md"
+            >
+
+              <div
+                class="flex h-12 w-12
+                       items-center justify-center
+                       rounded-xl
+                       bg-[#007979]/10
+                       text-[#007979]"
+              >
+
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  class="h-6 w-6"
+                  aria-hidden="true"
+                >
+
+                  <rect
+                    x="3"
+                    y="5"
+                    width="18"
+                    height="14"
+                    rx="2"
+                  />
+
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="m3 7 9 6 9-6"
+                  />
+
+                </svg>
+
+              </div>
+
+
+              <div class="mt-5">
+
+                <h2
+                  class="text-lg font-semibold
+                         text-[#032D42]
+                         group-hover:text-[#007979]"
+                >
+                  Contact Mailbox
+                </h2>
+
+                <p
+                  class="mt-2 text-sm
+                         leading-6 text-gray-500"
+                >
+                  Review and manage messages submitted through the contact form.
+                </p>
+
+              </div>
+
+
+              <div
+                class="mt-5 text-sm font-semibold
+                       text-[#007979]"
+              >
+                Open mailbox →
+              </div>
+
+            </a>
+
+          </div>
+
+        </section>
+
+      </main>
+
+    </div>
   `,
 })
 export class AdminDashboardComponent {
 
+  /**
+   * Firebase authentication service.
+   */
   protected readonly authService =
     inject(AuthService);
 
+
+  /**
+   * Angular router.
+   */
   private readonly router =
     inject(Router);
 
+
+  /**
+   * Toast notification service.
+   */
   private readonly toast =
     inject(HotToastService);
 
+
   /**
-   * Prevent duplicate sign-out requests while
-   * Firebase is processing the current request.
+   * Prevent duplicate sign-out requests
+   * while Firebase processes the request.
    */
   protected readonly signingOut =
     signal(false);
+
+
+  /**
+   * Controls the mobile dashboard
+   * three-dot menu.
+   */
+  protected readonly moreMenuOpen =
+    signal(false);
+
+
+  /**
+   * Toggle the mobile dashboard menu.
+   */
+  protected toggleMoreMenu(): void {
+
+    this.moreMenuOpen.update(
+      (open) => !open,
+    );
+
+  }
+
+
+  /**
+   * Close the mobile dashboard menu.
+   */
+  protected closeMoreMenu(): void {
+
+    this.moreMenuOpen.set(false);
+
+  }
+
 
   /**
    * Sign the administrator out of Firebase,
@@ -489,24 +753,38 @@ export class AdminDashboardComponent {
    */
   protected async signOut(): Promise<void> {
 
-    // Prevent multiple clicks while signing out.
+    /**
+     * Prevent multiple sign-out requests
+     * from repeated button clicks.
+     */
     if (this.signingOut()) {
       return;
     }
 
+
     this.signingOut.set(true);
+
 
     try {
 
-      // Sign out from Firebase Authentication.
+      /**
+       * Sign out through the existing
+       * authentication service.
+       */
       await this.authService.logout();
 
-      // Notify the administrator.
+
+      /**
+       * Show confirmation to the administrator.
+       */
       this.toast.success(
         'You have been signed out.',
       );
 
-      // Return to the login page.
+
+      /**
+       * Return to the login page.
+       */
       await this.router.navigateByUrl(
         '/login',
       );
@@ -518,6 +796,7 @@ export class AdminDashboardComponent {
         error,
       );
 
+
       this.toast.error(
         'Unable to sign out. Please try again.',
       );
@@ -527,5 +806,7 @@ export class AdminDashboardComponent {
       this.signingOut.set(false);
 
     }
+
   }
+
 }
