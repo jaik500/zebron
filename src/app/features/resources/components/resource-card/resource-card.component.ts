@@ -9,7 +9,7 @@ import { Resource } from '../../../../core/models/resource.model';
   template: `
     <a
       [routerLink]="['/resources', resource().slug]"
-      class="block rounded-xl border border-gray-200 bg-white px-5 py-2 shadow-sm
+      class="block rounded-xl border border-gray-200 bg-white px-5 py-3 shadow-sm
              transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <!-- Card Header -->
@@ -19,7 +19,7 @@ import { Resource } from '../../../../core/models/resource.model';
           <h2
             class="truncate text-base font-semibold
              leading-5 text-gray-900
-             sm:text-lg sm:leading-6"
+             sm:text-xl sm:leading-6"
             [title]="resource().name"
           >
             {{ resource().name }}
@@ -31,7 +31,7 @@ import { Resource } from '../../../../core/models/resource.model';
             <span
               class="rounded-full bg-gray-100
                px-1.5 py-0
-               text-[12px] font-medium
+               text-[13px] font-medium
                leading-3 text-gray-700"
             >
               {{ resource().resourceType }}
@@ -42,7 +42,7 @@ import { Resource } from '../../../../core/models/resource.model';
               <span
                 class="rounded-full bg-blue-50
                  px-1.5 py-0
-                 text-[12px] font-medium
+                 text-[14px] font-medium
                  leading-3 text-blue-700"
               >
                 {{ categoryName() }}
@@ -57,7 +57,7 @@ import { Resource } from '../../../../core/models/resource.model';
             class="shrink-0 rounded-full
              bg-yellow-100
              px-1.5 py-0
-             text-[9px] font-medium
+             text-[12px] font-medium
              leading-3 text-yellow-800"
           >
             Featured
@@ -74,7 +74,7 @@ import { Resource } from '../../../../core/models/resource.model';
       }
 
       @if (resource().cost) {
-        <div class="mt-2 text-sm">
+        <div class="mt-2 text-md">
           @if (resource().cost?.free) {
             <span class="font-medium text-green-600"> Free </span>
           } @else if (resource().cost?.description) {

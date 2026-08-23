@@ -15,6 +15,7 @@ import {
 } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 
@@ -46,6 +47,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
     CommonModule,
     RouterLink,
     MatIconModule,
+    MatMenuModule,
     ResourceCardComponent,
     UsefulLinksComponent,
   ],
@@ -54,11 +56,11 @@ import { HotToastService } from '@ngxpert/hot-toast';
     <!-- =========================================================
          Page Header
          ========================================================= -->
-    <header class="border-b border-gray-200 bg-[#032D42]">
+    <header class="sticky top-0 z-50 border-b border-gray-200 bg-[#032D42]">
       <div
         class="relative mx-auto flex max-w-7xl
                items-center justify-between gap-2
-               px-3 py-3
+               p-4
                sm:gap-4 sm:px-6 sm:py-6
                lg:px-8 lg:py-8"
       >
@@ -70,7 +72,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
           class="min-w-0 pr-8 sm:pr-0"
         >
           <p
-            class="text-[10px]
+            class="text-md
                    font-semibold uppercase
                    tracking-wider
                    text-[#7ED6D1]
@@ -80,8 +82,8 @@ import { HotToastService } from '@ngxpert/hot-toast';
           </p>
 
           <h1
-            class="mt-0.5 text-xl
-                   font-bold leading-6
+            class="mt-0.5 text-3xl
+                   font-bold leading-7
                    tracking-tight text-white
                    sm:mt-1 sm:text-3xl
                    sm:leading-9
@@ -93,7 +95,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
 
           <p
             class="mt-1 max-w-3xl
-                   text-[11px] leading-4
+                   text-md leading-5
                    text-blue-100
                    sm:mt-2 sm:text-base
                    sm:leading-6
@@ -112,7 +114,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
         <div class="shrink-0">
 
           <!-- =================================================
-               Desktop: Login + Sign Up
+               Desktop: Login + Register
                ================================================= -->
           <div
             class="hidden items-center
@@ -128,7 +130,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                      rounded-md
                      border border-white/40
                      px-3
-                     text-sm font-semibold
+                     text-md font-semibold
                      text-white
                      transition
                      hover:bg-white/10
@@ -150,16 +152,16 @@ import { HotToastService } from '@ngxpert/hot-toast';
               </span>
             </a>
 
-            <!-- Sign Up -->
+            <!-- Register -->
             <a
-              routerLink="/signup"
+              routerLink="/register"
               class="inline-flex h-9
                      items-center justify-center
                      gap-1.5
                      rounded-md
                      bg-white
                      px-3
-                     text-sm font-semibold
+                     text-md font-semibold
                      text-[#007979]
                      shadow-sm
                      transition
@@ -178,112 +180,79 @@ import { HotToastService } from '@ngxpert/hot-toast';
               </mat-icon>
 
               <span>
-                Sign Up
+                Register
               </span>
             </a>
           </div>
 
           <!-- =================================================
                Mobile: Three-dot Account Menu
+               Angular Material handles the popup overlay,
+               outside-click, Escape-key, and focus behavior.
                ================================================= -->
-          <div
-            class="absolute right-3 top-3
-                   sm:hidden"
-          >
+          <div class="sm:hidden">
+
             <button
-              type="button"
-              (click)="toggleMoreMenu()"
-              [attr.aria-expanded]="showMoreMenu()"
+              mat-icon-button
+              [matMenuTriggerFor]="accountMenu"
               aria-label="Account options"
               title="Account options"
-              class="flex h-8 w-8
-                     items-center
-                     justify-center
-                     rounded-md
-                     border border-white/30
-                     bg-white/10
-                     text-base font-bold
-                     text-white
-                     transition
-                     hover:bg-white/20
-                     focus:outline-none
-                     focus:ring-2
-                     focus:ring-white/40"
+              class="!flex !h-9 !w-9
+                     !items-center
+                     !justify-center
+                     !rounded-md
+                     !border !border-white/30
+                     !bg-white/10
+                     !text-white
+                     hover:!bg-white/20
+                     focus:!outline-none
+                     font-bold"
             >
-              <span
+              <mat-icon
                 aria-hidden="true"
-                class="leading-none"
+                class="!m-0 !h-6 !w-6
+                       !text-[24px]
+                       !leading-6"
               >
-                ⋮
-              </span>
+                more_vert
+              </mat-icon>
             </button>
 
-            <!-- Mobile account menu -->
-            @if (showMoreMenu()) {
-              <div
-                class="absolute right-0 z-50
-                       mt-2 w-36
-                       overflow-hidden
-                       rounded-lg
-                       border border-gray-200
-                       bg-white
-                       shadow-lg"
+            <mat-menu
+              #accountMenu="matMenu"
+              xPosition="before"
+              yPosition="below"
+            >
+              <a
+                mat-menu-item
+                routerLink="/login"
               >
-
-                <!-- Login -->
-                <a
-                  routerLink="/login"
-                  (click)="closeMoreMenu()"
-                  class="flex items-center
-                         gap-2
-                         px-3 py-2.5
-                         text-sm font-medium
-                         text-gray-700
-                         hover:bg-gray-50
-                         hover:text-[#007979]"
+                <mat-icon
+                  aria-hidden="true"
                 >
-                  <mat-icon
-                    aria-hidden="true"
-                    class="!m-0 !h-4 !w-4
-                           !text-[16px]
-                           !leading-4"
-                  >
-                    login
-                  </mat-icon>
+                  login
+                </mat-icon>
 
-                  <span>
-                    Login
-                  </span>
-                </a>
+                <span>
+                  Login
+                </span>
+              </a>
 
-                <!-- Sign Up -->
-                <a
-                  routerLink="/signup"
-                  (click)="closeMoreMenu()"
-                  class="flex items-center
-                         gap-2
-                         border-t border-gray-100
-                         px-3 py-2.5
-                         text-sm font-medium
-                         text-[#007979]
-                         hover:bg-gray-50"
+              <a
+                mat-menu-item
+                routerLink="/register"
+              >
+                <mat-icon
+                  aria-hidden="true"
                 >
-                  <mat-icon
-                    aria-hidden="true"
-                    class="!m-0 !h-4 !w-4
-                           !text-[16px]
-                           !leading-4"
-                  >
-                    person_add
-                  </mat-icon>
+                  person_add
+                </mat-icon>
 
-                  <span>
-                    Sign Up
-                  </span>
-                </a>
-
-              </div>
-            }
+                <span>
+                  Register
+                </span>
+              </a>
+            </mat-menu>
           </div>
         </div>
       </div>
@@ -320,15 +289,15 @@ import { HotToastService } from '@ngxpert/hot-toast';
                      justify-between"
             >
 
-              <h2
-                class="text-base
+              <h1
+                class="text-xl
                        font-semibold
-                       leading-5
+                       leading-6
                        text-gray-900
                        sm:text-lg"
               >
                 Browse by category
-              </h2>
+              </h1>
 
               <!-- =================================================
                    Mobile Filter Builder Toggle
@@ -364,13 +333,13 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     class="rounded-md
                            bg-[#007979]
                            px-2.5 py-1
-                           text-[10px]
+                           text-[14px]
                            font-medium
                            text-white
                            transition
                            hover:bg-[#006666]"
                   >
-                    Show Filter Builder
+                    Show Filters
                   </span>
 
                 } @else {
@@ -379,7 +348,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   <mat-icon
                     aria-hidden="true"
                     class="!m-0 !h-5 !w-10
-                           !text-[20px]
+                           !text-[30px]
                            !leading-5"
                   >
                     search
@@ -416,7 +385,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 "
                 class="rounded-full
                        px-2.5 py-1
-                       text-[11px]
+                       text-[14px]
                        font-medium
                        leading-4
                        hover:bg-blue-100
@@ -456,7 +425,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   "
                   class="rounded-full
                          px-2.5 py-1
-                         text-[11px]
+                         text-[14px]
                          font-medium
                          leading-4
                          hover:bg-blue-100
@@ -520,10 +489,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 <label
                   for="search"
                   class="mb-0.5 block
-                         text-[10px]
+                         text-[16px]
                          font-medium
                          text-[#032D42]
-                         sm:text-[11px]"
+                         sm:text-[16px]"
                 >
                   Search
                 </label>
@@ -552,15 +521,15 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     [value]="searchTerm()"
                     (input)="onSearch($event)"
                     placeholder="Search resources..."
-                    class="block h-8 w-full
+                    class="block h-9 w-full
                            rounded-md
                            border
                            border-[#007979]/20
                            bg-white
                            pl-8 pr-2.5
-                           text-xs
+                           text-md
                            text-gray-800
-                           placeholder:text-gray-400
+                           placeholder:text-gray-300
                            focus:border-[#007979]
                            focus:outline-none
                            focus:ring-1
@@ -579,10 +548,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 <label
                   for="category"
                   class="mb-0.5 block
-                         text-[10px]
+                         text-[14px]
                          font-medium
                          text-[#032D42]
-                         sm:text-[11px]"
+                         sm:text-[16px]"
                 >
                   Category
                 </label>
@@ -593,13 +562,13 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   (change)="
                     onCategoryChange($event)
                   "
-                  class="block h-8 w-full
+                  class="block h-9 w-full
                          rounded-md
                          border
                          border-[#007979]/20
                          bg-white
                          px-2
-                         text-xs
+                         text-md
                          text-gray-800
                          focus:border-[#007979]
                          focus:outline-none
@@ -633,10 +602,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 <label
                   for="resourceType"
                   class="mb-0.5 block
-                         text-[10px]
+                         text-[16px]
                          font-medium
                          text-[#032D42]
-                         sm:text-[11px]"
+                         sm:text-[16px]"
                 >
                   Type
                 </label>
@@ -647,13 +616,13 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   (change)="
                     onTypeChange($event)
                   "
-                  class="block h-8 w-full
+                  class="block h-9 w-full
                          rounded-md
                          border
                          border-[#007979]/20
                          bg-white
                          px-2
-                         text-xs
+                         text-md
                          text-gray-800
                          focus:border-[#007979]
                          focus:outline-none
@@ -697,9 +666,9 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   class="flex shrink-0
                          items-center
                          gap-1
-                         text-[10px]
+                         text-lg
                          text-[#032D42]
-                         sm:text-[11px]"
+                         sm:text-[14px]"
                 >
                   <input
                     type="checkbox"
@@ -707,7 +676,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     (change)="
                       onOnlineChange($event)
                     "
-                    class="h-3 w-3
+                    class="h-4 w-4
                            rounded
                            border-[#007979]/30
                            text-[#007979]
@@ -724,9 +693,9 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   class="flex shrink-0
                          items-center
                          gap-1
-                         text-[10px]
+                         text-lg
                          text-[#032D42]
-                         sm:text-[11px]"
+                         sm:text-[14px]"
                 >
                   <input
                     type="checkbox"
@@ -734,7 +703,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     (change)="
                       onFeaturedChange($event)
                     "
-                    class="h-3 w-3
+                    class="h-4 w-4
                            rounded
                            border-[#007979]/30
                            text-[#007979]
@@ -752,11 +721,11 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     type="button"
                     (click)="clearFilters()"
                     class="shrink-0
-                           text-[10px]
+                           text-lg
                            font-medium
                            text-[#007979]
                            hover:text-[#032D42]
-                           sm:text-[11px]"
+                           sm:text-[14px]"
                   >
                     Clear
                   </button>
@@ -767,9 +736,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
               @if (!loading()) {
                 <span
                   class="shrink-0
-                         text-[10px]
+                         text-[14px]
+                         font-bold
                          text-[#032D42]/60
-                         sm:text-[11px]"
+                         sm:text-[14px]"
                 >
                   {{ filteredResources().length }}
                 </span>
@@ -920,7 +890,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
             filteredResources().length > 0
           ) {
             <div
-              class="mt-3
+              class="mt-10
                      grid gap-3
                      sm:grid-cols-2
                      lg:grid-cols-3"
@@ -963,7 +933,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 class="rounded-md
                        bg-[#007979]
                        px-4 py-2
-                       text-xs
+                       text-md
                        font-medium
                        text-white
                        transition
@@ -991,7 +961,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
             <p
               class="mt-4
                      text-center
-                     text-xs
+                     text-md
                      text-gray-600"
             >
               No resources are currently
@@ -1096,20 +1066,6 @@ export class ResourceListComponent
   // =========================================================
 
   protected readonly showSearch =
-    signal(false);
-
-  // =========================================================
-  // Mobile Account Menu
-  // =========================================================
-
-  protected readonly showMoreMenu =
-    signal(false);
-
-  // =========================================================
-  // Authentication
-  // =========================================================
-
-  protected readonly signingOut =
     signal(false);
 
   // =========================================================
@@ -1566,52 +1522,4 @@ export class ResourceListComponent
     });
   }
 
-  // =========================================================
-  // Mobile Account Menu
-  // =========================================================
-
-  protected toggleMoreMenu(): void {
-    this.showMoreMenu.update(
-      (visible) => !visible,
-    );
-  }
-
-  protected closeMoreMenu(): void {
-    this.showMoreMenu.set(false);
-  }
-
-  // =========================================================
-  // Sign Out
-  // =========================================================
-
-  protected async signOut(): Promise<void> {
-    if (this.signingOut()) {
-      return;
-    }
-
-    this.signingOut.set(true);
-
-    try {
-      await this.authService.logout();
-
-      this.toast.success(
-        'You have been signed out.',
-      );
-
-      await this.router.navigateByUrl(
-        '/login',
-      );
-    } catch (error) {
-      console.error(
-        'Failed to sign out:',
-        error,
-      );
-
-      this.toast.error(
-        'Unable to sign out. Please try again.',
-      );
-    } finally {
-      this.signingOut.set(false);
-    }
-  }
 }

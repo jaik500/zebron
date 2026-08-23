@@ -8,6 +8,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
 import {
   ContactMessage,
@@ -38,219 +40,170 @@ type MailboxFilter =
   imports: [
     CommonModule,
     RouterLink,
+    MatIconModule,
+    MatMenuModule,
   ],
   template: `
-    <div class="min-h-screen bg-gray-50 px-4 py-4 sm:px-6 lg:px-8">
 
-      <div class="mx-auto max-w-7xl">
-
-        <!-- =====================================================
+     <!-- =====================================================
              PAGE HEADER
              ===================================================== -->
         <div
-          class="mb-4 flex flex-col gap-4
-                 rounded-xl bg-[#032D42] px-6 py-6
-                 shadow-sm sm:flex-row sm:items-center
-                 sm:justify-between"
+          class="mb-4 flex items-center justify-between gap-3 bg-[#032D42] px-4 py-4 shadow-sm sm:gap-4 sm:px-6 sm:py-6"
         >
 
-          <div>
+          <div class="min-w-0 flex-1">
             <h1
-              class="text-2xl font-bold tracking-tight text-white"
+              class="truncate text-xl font-bold tracking-tight text-white
+                     sm:text-2xl"
             >
              Zebron Mailbox
             </h1>
 
-            <p class="mt-1 text-sm text-white/80">
+            <p class="mt-1 text-xs leading-4 text-white/80 sm:text-sm">
               Manage messages submitted through the
               Zebron contact form.
             </p>
           </div>
 
           <!-- =====================================================
-               Header actions
+               HEADER ACTIONS
+               Desktop: show the primary actions directly.
+               Mobile: keep the header compact with one Material menu.
                ===================================================== -->
-          <div class="flex flex-wrap items-center gap-3">
+          <div class="hidden items-center gap-3 sm:flex">
 
-            <!-- Admin dashboard -->
             <a
               routerLink="/admin"
-              class="inline-flex items-center
-                     justify-center rounded-lg
-                     border border-gray-300
-                     bg-white px-4 py-2
-                     text-sm font-medium text-gray-700
-                     transition
-                     hover:bg-gray-50
-                     hover:text-gray-900"
+              class="inline-flex min-h-10 items-center justify-center
+                     rounded-lg border border-gray-300 bg-white
+                     px-4 py-2 text-sm font-medium text-gray-700
+                     transition hover:bg-gray-50 hover:text-gray-900"
             >
               ← Admin Dashboard
             </a>
 
-            <!-- New message -->
             <button
               type="button"
               (click)="newMessage()"
-              class="inline-flex items-center
-                     justify-center rounded-lg
-                     bg-white px-4 py-2
-                     text-sm font-semibold
-                     text-[#032D42]
-                     shadow-sm transition
-                     hover:bg-gray-100"
+              class="inline-flex min-h-10 items-center justify-center
+                     rounded-lg bg-white px-4 py-2
+                     text-sm font-semibold text-[#032D42]
+                     shadow-sm transition hover:bg-gray-100"
             >
               + New Message
             </button>
 
-            <!-- Refresh -->
             <button
               type="button"
               (click)="loadMessages()"
               [disabled]="loading()"
-              class="inline-flex items-center
-                     justify-center rounded-lg
-                     bg-gray-900 px-4 py-2
-                     text-sm font-medium text-white
-                     transition hover:bg-gray-700
-                     disabled:cursor-not-allowed
-                     disabled:opacity-50"
+              class="inline-flex min-h-10 items-center justify-center
+                     rounded-lg bg-gray-900 px-4 py-2
+                     text-sm font-medium text-white transition
+                     hover:bg-gray-700
+                     disabled:cursor-not-allowed disabled:opacity-50"
             >
               {{ loading() ? 'Refreshing...' : 'Refresh' }}
             </button>
-<!-- More mailbox options -->
-<div class="relative">
 
-  <!-- Vertical three-dot menu button -->
-  <button
-    type="button"
-    (click)="toggleMoreMenu()"
-    class="inline-flex h-10 w-10
-           items-center justify-center
-           rounded-lg bg-white/10
-           text-xl font-bold text-white
-           transition hover:bg-white/20
-           focus:outline-none
-           focus:ring-2 focus:ring-white/40"
-    aria-label="More mailbox options"
-    aria-haspopup="menu"
-    [attr.aria-expanded]="moreMenuOpen()"
-  >
-    ⋮
-  </button>
+          </div>
 
-  @if (moreMenuOpen()) {
-    <div
-      class="absolute right-0 z-50 mt-2 w-56
-             overflow-hidden rounded-xl
-             border border-gray-200
-             bg-white shadow-xl"
-      role="menu"
-    >
+          <!-- Overflow menu
+               Available on both mobile and desktop. -->
+          <div class="flex shrink-0 items-center pl-1">
 
-      <!-- Inbox -->
-      <a
-        routerLink="/admin/contact"
-        (click)="closeMoreMenu()"
-        class="flex items-center gap-3
-               px-4 py-3 text-sm font-medium
-               text-gray-700 transition
-               hover:bg-gray-50"
-        role="menuitem"
-      >
-        <span class="text-base">📥</span>
-        <span>Inbox</span>
-      </a>
+            <button
+              mat-icon-button
+              [matMenuTriggerFor]="mailboxMenu"
+              aria-label="More mailbox options"
+              title="More mailbox options"
+              class="!flex !h-10 !w-10 !items-center !justify-center
+                     !rounded-lg !border !border-white/20
+                     !bg-white/10 !text-white
+                     transition
+                     hover:!border-white/40
+                     hover:!bg-white/20
+                     focus:!outline-none focus:!ring-2
+                     focus:!ring-white/40 !mr-1"
+            >
+              <mat-icon
+                aria-hidden="true"
+                class="!m-0 !h-6 !w-6 !text-[24px]"
+              >
+                more_vert
+              </mat-icon>
+            </button>
 
-      <!-- Sent Emails -->
-      <a
-        routerLink="/admin/contact/sent"
-        (click)="closeMoreMenu()"
-        class="flex items-center gap-3
-               px-4 py-3 text-sm font-medium
-               text-gray-700 transition
-               hover:bg-gray-50"
-        role="menuitem"
-      >
-        <span class="text-base">📤</span>
-        <span>Sent Emails</span>
-      </a>
+            <mat-menu
+              #mailboxMenu="matMenu"
+              xPosition="before"
+              yPosition="below"
+            >
+              <a
+                mat-menu-item
+                routerLink="/admin/contact"
+              >
+                <mat-icon aria-hidden="true">inbox</mat-icon>
+                <span>Inbox</span>
+              </a>
 
-      <!-- Refresh -->
-      <button
-        type="button"
-        (click)="loadMessages(); closeMoreMenu()"
-        [disabled]="loading()"
-        class="flex w-full items-center gap-3
-               px-4 py-3 text-left
-               text-sm font-medium text-gray-700
-               transition hover:bg-gray-50
-               disabled:cursor-not-allowed
-               disabled:opacity-50"
-        role="menuitem"
-      >
-        <span class="text-base">🔄</span>
-        <span>
-          {{ loading() ? 'Refreshing...' : 'Refresh' }}
-        </span>
-      </button>
+              <a
+                mat-menu-item
+                routerLink="/admin/contact/sent"
+              >
+                <mat-icon aria-hidden="true">send</mat-icon>
+                <span>Sent Emails</span>
+              </a>
 
-      <!-- New Message -->
-      <button
-        type="button"
-        (click)="newMessage(); closeMoreMenu()"
-        class="flex w-full items-center gap-3
-               px-4 py-3 text-left
-               text-sm font-medium text-gray-700
-               transition hover:bg-gray-50"
-        role="menuitem"
-      >
-        <span class="text-base">✉️</span>
-        <span>New Message</span>
-      </button>
+              <button
+                mat-menu-item
+                type="button"
+                (click)="loadMessages()"
+                [disabled]="loading()"
+              >
+                <mat-icon aria-hidden="true">refresh</mat-icon>
+                <span>{{ loading() ? 'Refreshing...' : 'Refresh' }}</span>
+              </button>
 
-      <!-- Divider -->
-      <div class="border-t border-gray-100"></div>
+              <button
+                mat-menu-item
+                type="button"
+                (click)="newMessage()"
+              >
+                <mat-icon aria-hidden="true">mail</mat-icon>
+                <span>New Message</span>
+              </button>
 
-      <!-- Archived -->
-      <button
-        type="button"
-        disabled
-        class="flex w-full cursor-not-allowed
-               items-center gap-3 px-4 py-3
-               text-left text-sm font-medium
-               text-gray-400"
-        role="menuitem"
-        title="Coming soon"
-      >
-        <span class="text-base">🗄️</span>
-        <span>Archived</span>
-      </button>
+              <button
+                mat-menu-item
+                type="button"
+                disabled
+              >
+                <mat-icon aria-hidden="true">archive</mat-icon>
+                <span>Archived</span>
+              </button>
 
-      <!-- Trash -->
-      <button
-        type="button"
-        disabled
-        class="flex w-full cursor-not-allowed
-               items-center gap-3 px-4 py-3
-               text-left text-sm font-medium
-               text-gray-400"
-        role="menuitem"
-        title="Coming soon"
-      >
-        <span class="text-base">🗑️</span>
-        <span>Trash</span>
-      </button>
-
-    </div>
-  }
-
-</div>
+              <button
+                mat-menu-item
+                type="button"
+                disabled
+              >
+                <mat-icon aria-hidden="true">delete</mat-icon>
+                <span>Trash</span>
+              </button>
+            </mat-menu>
 
           </div>
 
         </div>
 
 
+    <div class="min-h-screen bg-gray-50 px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
+
+      <div class="mx-auto max-w-7xl">
+
+     
         <!-- =====================================================
              ERROR MESSAGE
              ===================================================== -->
@@ -357,25 +310,26 @@ type MailboxFilter =
              MAILBOX SUMMARY
              ===================================================== -->
         <div
-          class="mb-4 grid grid-cols-1 gap-4
-                 sm:grid-cols-2 lg:grid-cols-4"
+          class="mb-4 grid grid-cols-4 gap-2
+                 sm:gap-4"
         >
      
           <!-- All messages -->
           <button
             type="button"
             (click)="setFilter('all')"
-            class="rounded-xl border
-                   bg-white px-5 py-2 text-left
+            class="min-w-0 rounded-xl border
+                   bg-white px-2 py-3 text-left
                    shadow-sm transition
-                   hover:shadow-md"
+                   hover:shadow-md
+                   sm:px-4 sm:py-4"
             [class.ring-2]="filter() === 'all'"
           >
-            <p class="text-sm font-medium text-gray-500">
+            <p class="truncate text-[11px] font-medium leading-4 text-gray-500 sm:text-sm">
               All Messages
             </p>
 
-            <p class=" mt-1 text-3xl font-bold text-gray-900">
+            <p class="mt-1 text-lg font-bold leading-6 text-gray-900 sm:text-3xl">
               {{ messages().length }}
             </p>
           </button>
@@ -385,17 +339,18 @@ type MailboxFilter =
           <button
             type="button"
             (click)="setFilter('new')"
-            class="rounded-xl border
-                   bg-white px-5 py-2 text-left
+            class="min-w-0 rounded-xl border
+                   bg-white px-2 py-3 text-left
                    shadow-sm transition
-                   hover:shadow-md"
+                   hover:shadow-md
+                   sm:px-4 sm:py-4"
             [class.ring-2]="filter() === 'new'"
           >
-            <p class="text-sm font-medium text-gray-500">
+            <p class="truncate text-[11px] font-medium leading-4 text-gray-500 sm:text-sm">
               New
             </p>
 
-            <p class="mt-1 text-3xl font-bold text-blue-600">
+            <p class="mt-1 text-lg font-bold leading-6 text-blue-600 sm:text-3xl">
               {{ newCount() }}
             </p>
           </button>
@@ -405,17 +360,18 @@ type MailboxFilter =
           <button
             type="button"
             (click)="setFilter('read')"
-            class="rounded-xl border
-                   bg-white px-5 py-2 text-left
+            class="min-w-0 rounded-xl border
+                   bg-white px-2 py-3 text-left
                    shadow-sm transition
-                   hover:shadow-md"
+                   hover:shadow-md
+                   sm:px-4 sm:py-4"
             [class.ring-2]="filter() === 'read'"
           >
-            <p class="text-sm font-medium text-gray-500">
+            <p class="truncate text-[11px] font-medium leading-4 text-gray-500 sm:text-sm">
               Read
             </p>
 
-            <p class="mt-1 text-3xl font-bold text-green-600">
+            <p class="mt-1 text-lg font-bold leading-6 text-green-600 sm:text-3xl">
               {{ readCount() }}
             </p>
           </button>
@@ -425,17 +381,18 @@ type MailboxFilter =
           <button
             type="button"
             (click)="setFilter('archived')"
-            class="rounded-xl border
-                   bg-white px-5 py-2 text-left
+            class="min-w-0 rounded-xl border
+                   bg-white px-2 py-3 text-left
                    shadow-sm transition
-                   hover:shadow-md"
+                   hover:shadow-md
+                   sm:px-4 sm:py-4"
             [class.ring-2]="filter() === 'archived'"
           >
-            <p class="text-sm font-medium text-gray-500">
+            <p class="truncate text-[11px] font-medium leading-4 text-gray-500 sm:text-sm">
               Archived
             </p>
 
-            <p class="mt-1 text-3xl font-bold text-gray-500">
+            <p class="mt-1 text-lg font-bold leading-6 text-gray-500 sm:text-3xl">
               {{ archivedCount() }}
             </p>
           </button>
@@ -450,8 +407,8 @@ type MailboxFilter =
              MESSAGE LIST
              ===================================================== -->
         <div
-          class="overflow-hidden rounded-xl
-                 border bg-white shadow-sm"
+          class="overflow-hidden rounded-xl border border-gray-200
+                 bg-white shadow-sm"
         >
 
           <!-- Loading -->
@@ -488,8 +445,7 @@ type MailboxFilter =
               </h2>
 
               <p
-                class="mt-1 text-sm
-                       text-gray-500"
+                class="mt-0.5 text-xs text-gray-500 sm:text-sm"
               >
                 There are no messages in this mailbox view.
               </p>
@@ -501,7 +457,7 @@ type MailboxFilter =
           <!-- Desktop table -->
           @else {
 
-            <div class="overflow-x-auto">
+            <div class="hidden overflow-x-auto sm:block">
 
               <table
                 class="min-w-full
@@ -790,6 +746,160 @@ type MailboxFilter =
 
             </div>
 
+
+            <!-- =================================================
+                 Mobile message cards
+                 ================================================= -->
+            <div class="space-y-2 p-2 sm:hidden">
+
+              @for (
+                message of filteredMessages();
+                track message.id
+              ) {
+
+                <article
+                  class="rounded-lg border border-gray-200 bg-white p-3
+                         shadow-sm transition
+                         hover:shadow-md"
+                  [class.border-blue-200]="message.status === 'new'"
+                  [class.bg-blue-50]="message.status === 'new'"
+                >
+
+                  <!-- Sender + status -->
+                  <div class="flex items-start justify-between gap-2">
+
+                    <div class="min-w-0">
+
+                      <div class="flex items-center gap-2">
+
+                        @if (message.status === 'new') {
+                          <span
+                            class="h-2 w-2 shrink-0 rounded-full bg-blue-600"
+                            title="New message"
+                            aria-label="New message"
+                          ></span>
+                        }
+
+                        <p
+                          class="truncate text-sm font-semibold text-gray-900"
+                        >
+                          {{ message.name }}
+                        </p>
+
+                      </div>
+
+                      <p class="mt-0.5 truncate text-xs text-gray-500">
+                        {{ message.email }}
+                      </p>
+
+                    </div>
+
+                    <span
+                      class="shrink-0 rounded-full px-2 py-0.5
+                             text-[11px] font-semibold capitalize"
+                      [class.bg-blue-100]="message.status === 'new'"
+                      [class.text-blue-700]="message.status === 'new'"
+                      [class.bg-green-100]="message.status === 'read'"
+                      [class.text-green-700]="message.status === 'read'"
+                      [class.bg-gray-100]="message.status === 'archived'"
+                      [class.text-gray-700]="message.status === 'archived'"
+                    >
+                      {{ message.status }}
+                    </span>
+
+                  </div>
+
+                  <!-- Subject + preview -->
+                  <button
+                    type="button"
+                    (click)="openMessage(message)"
+                    class="mt-2.5 block w-full text-left"
+                  >
+
+                    <p
+                      class="line-clamp-2 text-base font-semibold
+                             text-gray-900 hover:text-blue-600"
+                      [class.font-bold]="message.status === 'new'"
+                    >
+                      {{ message.subject }}
+                    </p>
+
+                    <p
+                      class="mt-0.5 line-clamp-1 text-xs leading-4 text-gray-500"
+                    >
+                      {{ message.message }}
+                    </p>
+
+                  </button>
+
+                  <!-- Date + actions -->
+                  <div
+                    class="mt-2.5 flex items-center justify-between gap-2
+                           border-t border-gray-100 pt-2"
+                  >
+
+                    <p class="shrink-0 text-[11px] text-gray-500">
+                      {{ formatDate(message) }}
+                    </p>
+
+                    <div class="grid grid-cols-3 gap-1">
+
+                      <button
+                        type="button"
+                        (click)="openMessage(message)"
+                        class="min-h-8 rounded-md bg-blue-50 px-1.5
+                               text-[11px] font-semibold text-blue-700
+                               transition hover:bg-blue-100"
+                      >
+                        View
+                      </button>
+
+                      @if (message.status === 'archived') {
+
+                        <button
+                          type="button"
+                          (click)="unarchiveMessage(message)"
+                          class="min-h-8 rounded-md bg-gray-100 px-1.5
+                                 text-[11px] font-semibold text-gray-700
+                                 transition hover:bg-gray-200"
+                        >
+                          Restore
+                        </button>
+
+                      } @else {
+
+                        <button
+                          type="button"
+                          (click)="archiveMessage(message)"
+                          class="min-h-8 rounded-md bg-gray-100 px-1.5
+                                 text-[11px] font-semibold text-gray-700
+                                 transition hover:bg-gray-200"
+                        >
+                          Archive
+                        </button>
+
+                      }
+
+                      <button
+                        type="button"
+                        (click)="deleteMessage(message)"
+                        class="min-h-8 rounded-md bg-red-50 px-1.5
+                               text-[11px] font-semibold text-red-700
+                               transition hover:bg-red-100"
+                      >
+                        Delete
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                </article>
+
+              }
+
+            </div>
+
           }
 
         </div>
@@ -805,31 +915,27 @@ type MailboxFilter =
     @if (selectedMessage()) {
 
       <div
-        class="fixed inset-0 z-50
-               flex items-center justify-center
-               bg-black/50 p-4"
+        class="fixed inset-0 z-50 flex items-center justify-center
+               bg-black/50 p-3 sm:p-4"
         (click)="closeMessage()"
       >
 
         <div
-          class="max-h-[90vh] w-full max-w-2xl
-                 overflow-y-auto rounded-xl
-                 bg-white shadow-2xl"
+          class="max-h-[88vh] w-full max-w-xl overflow-y-auto
+                 rounded-xl bg-white shadow-2xl"
           (click)="$event.stopPropagation()"
         >
 
           <!-- Modal header -->
           <div
-            class="flex items-start
-                   justify-between
-                   border-b px-6 py-5"
+            class="flex items-start justify-between gap-2
+                   border-b px-4 py-3 sm:px-6 sm:py-4"
           >
 
             <div>
 
               <h2
-                class="text-xl font-bold
-                       text-gray-900"
+                class="text-base font-bold leading-5 text-gray-900 sm:text-xl sm:leading-6"
               >
                 {{ selectedMessage()!.subject }}
               </h2>
@@ -860,12 +966,11 @@ type MailboxFilter =
 
           <!-- Sender information -->
           <div
-            class="border-b bg-gray-50
-                   px-6 py-5"
+            class="border-b bg-gray-50 px-4 py-2.5 sm:px-6 sm:py-3"
           >
 
             <div
-              class="grid gap-4 sm:grid-cols-2"
+              class="grid grid-cols-2 gap-2 sm:gap-4"
             >
 
               <div>
@@ -879,8 +984,8 @@ type MailboxFilter =
                 </p>
 
                 <p
-                  class="mt-1 text-sm
-                         font-medium text-gray-900"
+                  class="mt-0 truncate text-xs
+                         font-medium leading-4 text-gray-900 sm:text-sm"
                 >
                   {{ selectedMessage()!.name }}
                 </p>
@@ -903,9 +1008,9 @@ type MailboxFilter =
                     'mailto:' +
                     selectedMessage()!.email
                   "
-                  class="mt-1 block text-sm
-                         font-medium text-blue-600
-                         hover:underline"
+                  class="mt-0 block truncate text-xs
+                         font-medium leading-4 text-blue-600
+                         hover:underline sm:text-sm"
                 >
                   {{ selectedMessage()!.email }}
                 </a>
@@ -918,7 +1023,7 @@ type MailboxFilter =
 
 
           <!-- Message body -->
-          <div class="px-6 py-6">
+          <div class="px-4 py-3 sm:px-6 sm:py-4">
 
             <p
               class="whitespace-pre-wrap
@@ -933,16 +1038,16 @@ type MailboxFilter =
 
           <!-- Modal actions -->
           <div
-            class="flex flex-wrap items-center justify-between
-                   gap-3 border-t px-6 py-4"
+            class="flex flex-col gap-3 border-t px-4 py-4
+                   sm:flex-row sm:items-center sm:justify-between sm:px-6"
           >
 
             <!-- Reply stays at the far left -->
             <button
               type="button"
               (click)="replyToMessage(selectedMessage()!)"
-              class="rounded-lg bg-[#032D42]
-                     px-4 py-2 text-sm font-medium
+              class="min-h-11 w-full rounded-lg bg-[#032D42]
+                     px-4 py-2 text-sm font-medium sm:w-auto
                      text-white transition
                      hover:bg-[#064B68]"
             >
@@ -964,30 +1069,30 @@ type MailboxFilter =
 
         <div
           class="fixed inset-0 z-50 flex items-center
-                 justify-center bg-black/50 px-4 py-6"
+                 justify-center bg-black/50 px-3 py-4 sm:px-4 sm:py-6"
           (click)="closeComposer()"
         >
 
           <div
-            class="w-full max-w-2xl overflow-hidden
-                   rounded-xl bg-white shadow-2xl"
+            class="max-h-[90vh] w-full max-w-xl overflow-y-auto
+                   overflow-hidden rounded-xl bg-white shadow-2xl sm:max-h-[94vh]"
             (click)="$event.stopPropagation()"
           >
 
             <!-- Composer header -->
             <div
-              class="flex items-center justify-between
-                     bg-[#032D42] px-6 py-4"
+              class="flex items-center justify-between gap-2
+                     bg-[#032D42] px-4 py-3 sm:px-6 sm:py-4"
             >
 
               <div>
-                <h2 class="text-lg font-semibold text-white">
+                <h2 class="text-base font-semibold text-white sm:text-lg">
                   {{ composeMode() === "reply"
                     ? "Reply to Message"
                     : "New Message" }}
                 </h2>
 
-                <p class="mt-1 text-sm text-white/70">
+                <p class="mt-0.5 text-xs text-white/70 sm:mt-1 sm:text-sm">
                   Send an email from Zebron.
                 </p>
               </div>
@@ -1009,7 +1114,7 @@ type MailboxFilter =
 
             <!-- Composer form -->
             <form
-              class="space-y-5 px-6 py-6"
+              class="space-y-3 px-4 py-4 sm:space-y-4 sm:px-6 sm:py-5"
               (submit)="$event.preventDefault(); sendComposedMessage()"
             >
 
@@ -1030,9 +1135,9 @@ type MailboxFilter =
                   placeholder="recipient@example.com"
                   required
                   [disabled]="sending()"
-                  class="mt-1 w-full rounded-lg border
-                         border-gray-300 px-3 py-2
-                         text-sm text-gray-900
+                  class="mt-1 min-h-10 w-full rounded-lg border
+                         border-gray-300 px-3 py-1.5
+                         text-base text-gray-900 sm:text-sm
                          outline-none focus:border-[#032D42]
                          focus:ring-2 focus:ring-[#032D42]/20
                          disabled:bg-gray-100"
@@ -1056,9 +1161,9 @@ type MailboxFilter =
                   placeholder="Message subject"
                   required
                   [disabled]="sending()"
-                  class="mt-1 w-full rounded-lg border
-                         border-gray-300 px-3 py-2
-                         text-sm text-gray-900
+                  class="mt-1 min-h-10 w-full rounded-lg border
+                         border-gray-300 px-3 py-1.5
+                         text-base text-gray-900 sm:text-sm
                          outline-none focus:border-[#032D42]
                          focus:ring-2 focus:ring-[#032D42]/20
                          disabled:bg-gray-100"
@@ -1076,15 +1181,15 @@ type MailboxFilter =
 
                 <textarea
                   id="compose-message"
-                  rows="8"
+                  rows="5"
                   [value]="composeMessage()"
                   (input)="composeMessage.set($any($event.target).value)"
                   placeholder="Write your message..."
                   required
                   [disabled]="sending()"
                   class="mt-1 w-full resize-y rounded-lg border
-                         border-gray-300 px-3 py-2
-                         text-sm leading-6 text-gray-900
+                         border-gray-300 px-3 py-1.5
+                         text-base leading-6 text-gray-900 sm:text-sm
                          outline-none focus:border-[#032D42]
                          focus:ring-2 focus:ring-[#032D42]/20
                          disabled:bg-gray-100"
@@ -1093,14 +1198,14 @@ type MailboxFilter =
 
               <!-- Composer actions -->
               <div
-                class="flex justify-end gap-3 border-t pt-5"
+                class="flex flex-row gap-2 border-t pt-3 sm:justify-end sm:pt-4"
               >
                 <button
                   type="button"
                   (click)="closeComposer()"
                   [disabled]="sending()"
-                  class="rounded-lg border border-gray-300
-                         bg-white px-4 py-2 text-sm font-medium
+                  class="min-h-10 flex-1 rounded-lg border border-gray-300
+                         bg-white px-3 py-1.5 text-sm font-medium sm:flex-none sm:px-4
                          text-gray-700 transition
                          hover:bg-gray-50
                          disabled:opacity-50"
@@ -1111,8 +1216,8 @@ type MailboxFilter =
                 <button
                   type="submit"
                   [disabled]="sending()"
-                  class="rounded-lg bg-[#032D42] px-5 py-2
-                         text-sm font-semibold text-white
+                  class="min-h-10 flex-1 rounded-lg bg-[#032D42] px-3 py-1.5
+                         text-sm font-semibold sm:flex-none sm:px-5 text-white
                          transition hover:bg-[#064B68]
                          disabled:cursor-not-allowed
                          disabled:opacity-50"
@@ -1132,11 +1237,10 @@ type MailboxFilter =
         <!-- Success toast -->
         @if (toastMessage()) {
           <div
-            class="fixed bottom-6 right-6 z-[100]
-                   flex items-center gap-3
-                   rounded-xl bg-green-600
-                   px-5 py-4 text-sm font-semibold
-                   text-white shadow-2xl"
+            class="fixed bottom-4 left-3 right-3 z-[100]
+                   flex items-center gap-3 rounded-xl bg-green-600
+                   px-4 py-3 text-sm font-semibold text-white shadow-2xl
+                   sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-md sm:px-5 sm:py-4"
             role="status"
             aria-live="polite"
           >
@@ -1153,6 +1257,48 @@ type MailboxFilter =
         }
 
   `,
+  styles: [`
+    :host ::ng-deep .mat-mdc-menu-panel {
+      min-width: 190px;
+      margin-top: 6px;
+      padding: 6px 0;
+      overflow: hidden;
+      border: 1px solid #dfe8e8;
+      border-radius: 14px;
+      background: #ffffff;
+      box-shadow:
+        0 14px 30px rgba(3, 45, 66, 0.16),
+        0 4px 10px rgba(3, 45, 66, 0.08);
+    }
+
+    :host ::ng-deep .mat-mdc-menu-panel .mat-mdc-menu-item {
+      min-height: 48px;
+      margin: 2px 6px;
+      padding: 0 12px;
+      border-radius: 9px;
+      color: #032d42;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    :host ::ng-deep .mat-mdc-menu-panel .mat-mdc-menu-item:hover,
+    :host ::ng-deep .mat-mdc-menu-panel .mat-mdc-menu-item.cdk-focused {
+      background: #e6f4f3;
+    }
+
+    :host ::ng-deep .mat-mdc-menu-panel .mat-mdc-menu-item .mat-icon {
+      margin-right: 10px;
+      color: #007979;
+    }
+
+    :host ::ng-deep .mat-mdc-menu-panel .mat-mdc-menu-item:disabled {
+      color: #9ca3af;
+    }
+
+    :host ::ng-deep .mat-mdc-menu-panel .mat-mdc-menu-item:disabled .mat-icon {
+      color: #9ca3af;
+    }
+  `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContactMailboxComponent
@@ -1560,26 +1706,6 @@ readonly filteredMessages =
     /** Indicates that an email is being sent. */
   readonly sending = signal(false);
 
-  /**
-   * Controls the vertical three-dot mailbox menu.
-   */
-  readonly moreMenuOpen = signal(false);
-
-  /**
-   * Toggle the vertical three-dot mailbox menu.
-   */
-  toggleMoreMenu(): void {
-    this.moreMenuOpen.update(
-      (open) => !open,
-    );
-  }
-
-  /**
-   * Close the vertical three-dot mailbox menu.
-   */
-  closeMoreMenu(): void {
-    this.moreMenuOpen.set(false);
-  }
 
   /** Success message displayed after an email is sent. */
   readonly toastMessage = signal<string | null>(null);
@@ -1737,18 +1863,27 @@ readonly filteredMessages =
   }
 
   /**
-   * Convert a Firestore Timestamp into a
-   * displayable JavaScript Date.
+   * Format the Firestore timestamp as a concise
+   * date and time.
+   *
+   * Example:
+   * Aug 23, 2026, 10:42 AM
    */
   formatDate(
     message: ContactMessage,
-  ): Date | string {
+  ): string {
 
     if (
       message.createdAt &&
       typeof message.createdAt.toDate === 'function'
     ) {
-      return message.createdAt.toDate();
+      return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(message.createdAt.toDate());
     }
 
     return 'Unknown date';

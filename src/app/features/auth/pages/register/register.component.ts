@@ -183,7 +183,7 @@ import { AuthService } from '../../../../core/services/auth.service';
               <button
                 type="submit"
                 [disabled]="loading()"
-                class="w-full rounded-lg bg-[#032D42]
+                class="w-full rounded-lg bg-[#007979]
                        px-5 py-3 font-medium text-white
                        shadow-sm transition
                        hover:bg-[#02405A]

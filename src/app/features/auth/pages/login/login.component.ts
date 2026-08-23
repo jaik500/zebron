@@ -10,7 +10,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
   standalone: true,
   imports: [FormsModule, RouterLink],
   template: `
-    <main class="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
+    <main class="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-4 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-md">
         <!-- Back navigation -->
         <a
@@ -23,11 +23,11 @@ import { HotToastService } from '@ngxpert/hot-toast';
 
         <!-- Login card -->
         <section
-          class="mt-6 overflow-hidden rounded-2xl border
+          class="mt-1 overflow-hidden rounded-2xl border
                  border-gray-200 bg-white shadow-lg"
         >
           <!-- Header -->
-          <div class="bg-[#032D42] px-6 py-8 text-white sm:px-8">
+          <div class="bg-[#032D42] px-6 py-6 text-white sm:px-8">
             <div
               class="flex h-12 w-12 items-center justify-center
                      rounded-xl bg-white/10"
@@ -58,8 +58,8 @@ import { HotToastService } from '@ngxpert/hot-toast';
           </div>
 
           <!-- Form -->
-          <div class="p-6 sm:p-8">
-            <form class="space-y-5" (ngSubmit)="login()">
+          <div class="p-6 sm:px-8 sm:py-4">
+            <form class="space-y-4" (ngSubmit)="login()">
               <!-- Email -->
               <div>
                 <label for="email" class="block text-sm font-semibold text-gray-800">
@@ -376,11 +376,11 @@ export class LoginComponent {
 
       // Debug authentication and role information.
       console.log('========== LOGIN DEBUG ==========');
-      console.log('Firebase user:', this.authService.firebaseUser());
-      console.log('Firestore user:', this.authService.user());
-      console.log('User role:', this.authService.user()?.role);
-      console.log('Is admin:', this.authService.isAdmin);
-      console.log('=================================');
+      // console.log('Firebase user:', this.authService.firebaseUser());
+      // console.log('Firestore user:', this.authService.user());
+      // console.log('User role:', this.authService.user()?.role);
+      // console.log('Is admin:', this.authService.isAdmin);
+      // console.log('=================================');
 
       // Administrators are given a choice after login.
       if (this.authService.isAdmin) {
@@ -389,7 +389,7 @@ export class LoginComponent {
         // Prevent a second administrator prompt
         // from being created during this login attempt.
         if (this.adminPromptShown) {
-          console.log('ADMIN PROMPT: Already displayed.');
+         // console.log('ADMIN PROMPT: Already displayed.');
 
           return;
         }

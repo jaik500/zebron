@@ -31,7 +31,7 @@ interface UsefulLink {
           </h2>
 
           <p
-            class="mt-1 text-sm text-gray-500"
+            class="mt-1 text-md text-gray-500"
           >
             Explore helpful categories and services.
           </p>
