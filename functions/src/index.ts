@@ -341,6 +341,296 @@ export const createUser = onCall(
   }
 );
 
+/**
+ * Send a password-reset email for an existing user.
+ *
+ * Only authenticated administrators may use this function.
+ *
+ * The administrator never sees or handles the user's password.
+ * Firebase generates the secure password-reset link and Resend
+ * delivers it to the user's email address.
+ */
+export const resetUserPassword = onCall(
+  {
+    region: "us-central1",
+
+    // Allow this function to access the Resend API key.
+    secrets: ["RESEND_API_KEY"],
+  },
+
+  async (request) => {
+    /**
+     * Verify that the caller is an authenticated administrator.
+     */
+    const admin = await requireAdmin(request);
+
+    /**
+     * Read the target Firebase Authentication UID.
+     */
+    const data = request.data as {
+      uid?: unknown;
+    };
+
+    const uid = clean(data.uid);
+
+    if (!uid) {
+      throw new HttpsError(
+        "invalid-argument",
+        "User ID is required."
+      );
+    }
+
+    /**
+     * Find the target Firebase Authentication account.
+     */
+    let targetUser;
+
+    try {
+      targetUser = await auth.getUser(uid);
+    } catch (error: unknown) {
+      const errorCode = getErrorCode(error);
+
+      logger.error(
+        "Failed to find Firebase user for password reset.",
+        {
+          errorCode,
+          adminUid: admin.uid,
+          uid,
+        }
+      );
+
+      if (errorCode === "auth/user-not-found") {
+        throw new HttpsError(
+          "not-found",
+          "The user account could not be found."
+        );
+      }
+
+      throw new HttpsError(
+        "internal",
+        "Unable to locate the user account."
+      );
+    }
+
+    /**
+     * The target account must have an email address.
+     */
+    const targetEmail =
+      targetUser.email?.trim().toLowerCase();
+
+    if (!targetEmail) {
+      throw new HttpsError(
+        "failed-precondition",
+        "This user does not have an email address."
+      );
+    }
+
+    /**
+     * Generate Firebase's secure password-reset link.
+     *
+     * The password itself is never exposed to the administrator.
+     */
+    let resetLink: string;
+
+    try {
+      resetLink =
+        await auth.generatePasswordResetLink(
+          targetEmail
+        );
+    } catch (error: unknown) {
+      logger.error(
+        "Failed to generate password reset link.",
+        {
+          error,
+          adminUid: admin.uid,
+          uid,
+        }
+      );
+
+      throw new HttpsError(
+        "internal",
+        "Unable to generate the password reset link."
+      );
+    }
+
+    /**
+     * Get the Resend API key from Firebase Secret Manager.
+     */
+    const apiKey =
+      process.env["RESEND_API_KEY"];
+
+    if (!apiKey) {
+      logger.error(
+        "RESEND_API_KEY is not configured."
+      );
+
+      throw new HttpsError(
+        "failed-precondition",
+        "Email service is not configured."
+      );
+    }
+
+    /**
+     * Build the password-reset email.
+     */
+    const subject =
+      "Reset your Zebron password";
+
+    const message = [
+      "Hello,",
+      "",
+      "A password reset was requested for your Zebron account.",
+      "",
+      "Click the link below to create a new password:",
+      "",
+      resetLink,
+      "",
+      "If you did not request a password reset,",
+      "you can safely ignore this email.",
+      "",
+      "Zebron",
+    ].join("\n");
+
+    /**
+     * Send the password-reset email through Resend.
+     */
+    try {
+      const response =
+        await fetch(
+          RESEND_API_URL,
+          {
+            method: "POST",
+
+            headers: {
+              "Authorization":
+                `Bearer ${apiKey}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              from:
+                ZEBRON_FROM_EMAIL,
+
+              to: [targetEmail],
+
+              subject,
+
+              text: message,
+            }),
+          }
+        );
+
+      const result =
+        await response.json()
+          .catch(() => ({}));
+
+      if (!response.ok) {
+        logger.error(
+          "Resend failed to send password reset email.",
+          {
+            status:
+              response.status,
+
+            result,
+
+            adminUid:
+              admin.uid,
+
+            targetUserUid:
+              uid,
+
+            to:
+              targetEmail,
+          }
+        );
+
+        throw new HttpsError(
+          "internal",
+          "Unable to send the password reset email."
+        );
+      }
+
+      /**
+       * Record the administrative action.
+       *
+       * Do NOT store the password-reset link in Firestore.
+       */
+      await db
+        .collection("passwordResetRequests")
+        .add({
+          userId:
+            uid,
+
+          email:
+            targetEmail,
+
+          requestedBy:
+            admin.uid,
+
+          createdAt:
+            FieldValue.serverTimestamp(),
+        });
+
+      /**
+       * Log successful delivery.
+       *
+       * The reset link itself is intentionally
+       * never written to the logs.
+       */
+      logger.info(
+        "Password reset email sent successfully.",
+        {
+          adminUid:
+            admin.uid,
+
+          targetUserUid:
+            uid,
+
+          email:
+            targetEmail,
+        }
+      );
+
+      return {
+        success: true,
+
+        email:
+          targetEmail,
+      };
+    } catch (error: unknown) {
+      /**
+       * Preserve Firebase HttpsErrors.
+       */
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      logger.error(
+        "Unexpected error while sending password reset email.",
+        {
+          error,
+
+          adminUid:
+            admin.uid,
+
+          targetUserUid:
+            uid,
+
+          email:
+            targetEmail,
+        }
+      );
+
+      throw new HttpsError(
+        "internal",
+        "Unable to send the password reset email."
+      );
+    }
+  }
+);
+
 
 /**
  * Receive a public contact form submission.

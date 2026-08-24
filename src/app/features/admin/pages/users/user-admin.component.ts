@@ -1,10 +1,4 @@
-import {
-  Component,
-  computed,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -16,13 +10,9 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
 @Component({
   selector: 'app-user-admin',
   standalone: true,
-  imports: [
-    FormsModule,
-    RouterLink,
-  ],
+  imports: [FormsModule, RouterLink],
   template: `
     <main class="mx-auto max-w-7xl p-6 sm:p-8">
-
       <!-- =========================================================
            PAGE NAVIGATION
            ========================================================= -->
@@ -49,7 +39,6 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
         </a>
       </div>
 
-
       <!-- =========================================================
            PAGE HEADER
            ========================================================= -->
@@ -65,7 +54,6 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                  sm:justify-between"
         >
           <div class="min-w-0">
-
             <p
               class="text-sm font-semibold
                      uppercase tracking-wide
@@ -86,10 +74,8 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                      text-sm leading-6
                      text-blue-100 sm:text-base"
             >
-              Manage Zebron user profiles,
-              roles, and account information.
+              Manage Zebron user profiles, roles, and account information.
             </p>
-
           </div>
 
           <!-- Total users -->
@@ -113,10 +99,8 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
               {{ users().length }}
             </p>
           </div>
-
         </div>
       </section>
-
 
       <!-- =========================================================
            SEARCH / ACTIONS
@@ -132,19 +116,11 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                  sm:items-start
                  sm:justify-between"
         >
-
           <!-- Search -->
           <div class="w-full sm:max-w-md">
-
-            <label
-              for="userSearch"
-              class="sr-only"
-            >
-              Search users
-            </label>
+            <label for="userSearch" class="sr-only"> Search users </label>
 
             <div class="relative">
-
               <input
                 id="userSearch"
                 name="userSearch"
@@ -182,25 +158,17 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   ✕
                 </button>
               }
-
             </div>
-
 
             <!-- Search result status -->
             @if (searchTerm().trim()) {
-
               @if (filteredUsers().length > 0) {
-
                 <p
                   class="mt-2 text-sm
                          text-gray-500"
                 >
                   {{ filteredUsers().length }}
-                  {{
-                    filteredUsers().length === 1
-                      ? 'user'
-                      : 'users'
-                  }}
+                  {{ filteredUsers().length === 1 ? 'user' : 'users' }}
                   found for
 
                   <span
@@ -210,9 +178,7 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                     "{{ searchTerm().trim() }}"
                   </span>
                 </p>
-
               } @else {
-
                 <p
                   class="mt-2 text-sm
                          text-gray-600"
@@ -226,23 +192,16 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                     "{{ searchTerm().trim() }}"
                   </span>
                 </p>
-
               }
-
             } @else {
-
               <p
                 class="mt-2 text-xs
                        text-gray-400"
               >
-                Search by name, email, role,
-                or location.
+                Search by name, email, role, or location.
               </p>
-
             }
-
           </div>
-
 
           <!-- Add User -->
           <button
@@ -263,16 +222,13 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
           >
             + Add User
           </button>
-
         </div>
       </section>
-
 
       <!-- =========================================================
            LOADING
            ========================================================= -->
       @if (loading()) {
-
         <section
           class="mt-6 rounded-2xl
                  border border-gray-200
@@ -282,7 +238,6 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
             class="flex items-center
                    justify-center gap-3"
           >
-
             <div
               class="h-5 w-5 animate-spin
                      rounded-full border-2
@@ -290,21 +245,15 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                      border-t-[#007979]"
             ></div>
 
-            <p class="text-sm text-gray-500">
-              Loading users...
-            </p>
-
+            <p class="text-sm text-gray-500">Loading users...</p>
           </div>
         </section>
-
       }
-
 
       <!-- =========================================================
            ERROR
            ========================================================= -->
       @if (error()) {
-
         <section
           class="mt-6 rounded-lg
                  border border-red-200
@@ -315,22 +264,18 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
             {{ error() }}
           </p>
         </section>
-
       }
-
 
       <!-- =========================================================
            USERS
            ========================================================= -->
       @if (!loading()) {
-
         <section
           class="mt-6 overflow-hidden
                  rounded-2xl
                  border border-gray-200
                  bg-white shadow-sm"
         >
-
           <!-- =====================================================
                DESKTOP TABLE
                ===================================================== -->
@@ -338,16 +283,12 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
             class="hidden overflow-x-auto
                    md:block"
           >
-
             <table
               class="min-w-full
                      divide-y divide-gray-200"
             >
-
               <thead class="bg-gray-50">
-
                 <tr>
-
                   <th
                     scope="col"
                     class="px-6 py-4 text-left
@@ -397,35 +338,24 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   >
                     Actions
                   </th>
-
                 </tr>
-
               </thead>
-
 
               <tbody
                 class="divide-y divide-gray-200
                        bg-white"
               >
-
-                @for (
-                  user of filteredUsers();
-                  track user.id
-                ) {
-
+                @for (user of filteredUsers(); track user.id) {
                   <tr
                     class="transition
                            hover:bg-gray-50"
                   >
-
                     <!-- User -->
                     <td class="px-6 py-4">
-
                       <div
                         class="flex items-center
                                gap-3"
                       >
-
                         <div
                           class="flex h-10 w-10
                                  shrink-0
@@ -436,35 +366,20 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                                  text-sm font-bold
                                  text-white"
                         >
-                          {{
-                            initials(
-                              user.preferredName ||
-                              user.displayName ||
-                              user.email
-                            )
-                          }}
+                          {{ initials(user.preferredName || user.displayName || user.email) }}
                         </div>
 
                         <div class="min-w-0">
-
                           <p
                             class="truncate
                                    text-sm
                                    font-semibold
                                    text-gray-900"
                           >
-                            {{
-                              user.preferredName ||
-                              user.displayName ||
-                              'Unnamed user'
-                            }}
+                            {{ user.preferredName || user.displayName || 'Unnamed user' }}
                           </p>
 
-                          @if (
-                            user.firstName ||
-                            user.lastName
-                          ) {
-
+                          @if (user.firstName || user.lastName) {
                             <p
                               class="text-xs
                                      text-gray-500"
@@ -472,80 +387,56 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                               {{ user.firstName }}
                               {{ user.lastName }}
                             </p>
-
                           }
-
                         </div>
-
                       </div>
-
                     </td>
-
 
                     <!-- Email -->
                     <td class="px-6 py-4">
-
                       <span
                         class="text-sm
                                text-gray-700"
                       >
                         {{ user.email }}
                       </span>
-
                     </td>
-
 
                     <!-- Role -->
                     <td class="px-6 py-4">
-
                       <span
                         class="inline-flex
                                rounded-full
                                px-2.5 py-1
                                text-xs font-semibold"
-                        [class.bg-[#007979]/10]="
-                          user.role === 'admin'
-                        "
-                        [class.text-[#007979]]="
-                          user.role === 'admin'
-                        "
-                        [class.bg-gray-100]="
-                          user.role !== 'admin'
-                        "
-                        [class.text-gray-700]="
-                          user.role !== 'admin'
-                        "
+                        [class.bg-[#007979]/10]="user.role === 'admin'"
+                        [class.text-[#007979]]="user.role === 'admin'"
+                        [class.bg-gray-100]="user.role !== 'admin'"
+                        [class.text-gray-700]="user.role !== 'admin'"
                       >
                         {{ user.role }}
                       </span>
-
                     </td>
-
 
                     <!-- Location -->
                     <td class="px-6 py-4">
-
                       <span
                         class="text-sm
                                text-gray-600"
                       >
                         {{ locationLabel(user) }}
                       </span>
-
                     </td>
-
 
                     <!-- Actions -->
                     <td
                       class="px-6 py-4
                              text-right"
                     >
-
                       <div
                         class="flex justify-end
                                gap-2"
                       >
-
                         <button
                           type="button"
                           (click)="openEditForm(user)"
@@ -564,6 +455,26 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
 
                         <button
                           type="button"
+                          (click)="resetUserPassword(user)"
+                          [disabled]="resettingUserId() === user.id"
+                          class="rounded-lg
+                            border border-[#007979]/30
+                            bg-white px-3 py-2
+                            text-xs font-semibold
+                            text-[#007979]
+                            transition
+                            hover:bg-[#007979]/5
+                            disabled:cursor-not-allowed
+                            disabled:opacity-50"
+                        >
+                          @if (resettingUserId() === user.id) {
+                            Sending...
+                          } @else {
+                            Reset Password
+                          }
+                        </button>
+                        <button
+                          type="button"
                           (click)="confirmDelete(user)"
                           class="rounded-lg
                                  border
@@ -577,25 +488,17 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                         >
                           Delete
                         </button>
-
                       </div>
-
                     </td>
-
                   </tr>
-
                 } @empty {
-
                   <tr>
-
                     <td
                       colspan="5"
                       class="px-6 py-14
                              text-center"
                     >
-
                       @if (searchTerm().trim()) {
-
                         <p
                           class="text-sm
                                  font-semibold
@@ -608,12 +511,9 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                           class="mt-1 text-sm
                                  text-gray-500"
                         >
-                          Try a different search
-                          term.
+                          Try a different search term.
                         </p>
-
                       } @else {
-
                         <p
                           class="text-sm
                                  font-semibold
@@ -621,21 +521,13 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                         >
                           No users available.
                         </p>
-
                       }
-
                     </td>
-
                   </tr>
-
                 }
-
               </tbody>
-
             </table>
-
           </div>
-
 
           <!-- =====================================================
                MOBILE CARDS
@@ -644,24 +536,16 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
             class="divide-y divide-gray-200
                    md:hidden"
           >
-
-            @for (
-              user of filteredUsers();
-              track user.id
-            ) {
-
+            @for (user of filteredUsers(); track user.id) {
               <article class="p-5">
-
                 <div
                   class="flex items-start
                          justify-between gap-4"
                 >
-
                   <div
                     class="flex min-w-0
                            items-center gap-3"
                   >
-
                     <div
                       class="flex h-10 w-10
                              shrink-0
@@ -672,28 +556,17 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              text-sm font-bold
                              text-white"
                     >
-                      {{
-                        initials(
-                          user.preferredName ||
-                          user.displayName ||
-                          user.email
-                        )
-                      }}
+                      {{ initials(user.preferredName || user.displayName || user.email) }}
                     </div>
 
                     <div class="min-w-0">
-
                       <p
                         class="truncate
                                text-sm
                                font-semibold
                                text-gray-900"
                       >
-                        {{
-                          user.preferredName ||
-                          user.displayName ||
-                          'Unnamed user'
-                        }}
+                        {{ user.preferredName || user.displayName || 'Unnamed user' }}
                       </p>
 
                       <p
@@ -703,35 +576,22 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                       >
                         {{ user.email }}
                       </p>
-
                     </div>
-
                   </div>
-
 
                   <span
                     class="shrink-0
                            rounded-full
                            px-2.5 py-1
                            text-xs font-semibold"
-                    [class.bg-[#007979]/10]="
-                      user.role === 'admin'
-                    "
-                    [class.text-[#007979]]="
-                      user.role === 'admin'
-                    "
-                    [class.bg-gray-100]="
-                      user.role !== 'admin'
-                    "
-                    [class.text-gray-700]="
-                      user.role !== 'admin'
-                    "
+                    [class.bg-[#007979]/10]="user.role === 'admin'"
+                    [class.text-[#007979]]="user.role === 'admin'"
+                    [class.bg-gray-100]="user.role !== 'admin'"
+                    [class.text-gray-700]="user.role !== 'admin'"
                   >
                     {{ user.role }}
                   </span>
-
                 </div>
-
 
                 <div
                   class="mt-4 text-sm
@@ -740,11 +600,7 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   {{ locationLabel(user) }}
                 </div>
 
-
-                <div
-                  class="mt-4 flex gap-2"
-                >
-
+                <div class="mt-4 flex gap-2">
                   <button
                     type="button"
                     (click)="openEditForm(user)"
@@ -772,20 +628,14 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   >
                     Delete
                   </button>
-
                 </div>
-
               </article>
-
             } @empty {
-
               <div
                 class="px-6 py-14
                        text-center"
               >
-
                 @if (searchTerm().trim()) {
-
                   <p
                     class="text-sm
                            font-semibold
@@ -800,9 +650,7 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   >
                     Try a different search term.
                   </p>
-
                 } @else {
-
                   <p
                     class="text-sm
                            font-semibold
@@ -810,30 +658,21 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   >
                     No users available.
                   </p>
-
                 }
-
               </div>
-
             }
-
           </div>
-
         </section>
-
       }
-
 
       <!-- =========================================================
            CREATE / EDIT USER MODAL
            ========================================================= -->
       @if (showForm()) {
-
         <div
           class="fixed inset-0 z-50
                  overflow-y-auto"
         >
-
           <!-- Backdrop -->
           <div
             class="fixed inset-0
@@ -841,13 +680,11 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
             (click)="closeForm()"
           ></div>
 
-
           <div
             class="relative flex min-h-full
                    items-start justify-center
                    p-4 sm:p-8"
           >
-
             <section
               class="relative my-8 w-full
                      max-w-3xl overflow-hidden
@@ -855,7 +692,6 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                      border border-gray-200
                      bg-white shadow-xl"
             >
-
               <!-- Form header -->
               <header
                 class="flex items-start
@@ -864,9 +700,7 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                        bg-gray-50/60
                        px-6 py-5 sm:px-8"
               >
-
                 <div>
-
                   <p
                     class="text-xs font-semibold
                            uppercase tracking-wide
@@ -880,11 +714,7 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                            font-semibold
                            text-[#032D42]"
                   >
-                    {{
-                      editingUser()
-                        ? 'Edit User'
-                        : 'Create User'
-                    }}
+                    {{ editingUser() ? 'Edit User' : 'Create User' }}
                   </h2>
 
                   <p
@@ -897,9 +727,7 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                         : 'Create a new Zebron user account.'
                     }}
                   </p>
-
                 </div>
-
 
                 <button
                   type="button"
@@ -913,9 +741,7 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                 >
                   ✕
                 </button>
-
               </header>
-
 
               <!-- =================================================
                    USER FORM
@@ -925,12 +751,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                        px-6 py-6 sm:px-8"
                 (ngSubmit)="saveUser()"
               >
-
                 <!-- =================================================
                      ACCOUNT
                      ================================================= -->
                 <div>
-
                   <h3
                     class="text-base
                            font-semibold
@@ -945,13 +769,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   >
                     Basic account information.
                   </p>
-
                 </div>
-
 
                 <!-- Display name -->
                 <div>
-
                   <label
                     for="adminDisplayName"
                     class="block text-sm
@@ -977,13 +798,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                            focus:ring-2
                            focus:ring-[#007979]/20"
                   />
-
                 </div>
-
 
                 <!-- Email -->
                 <div>
-
                   <label
                     for="adminEmail"
                     class="block text-sm
@@ -1015,30 +833,23 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   />
 
                   @if (editingUser()) {
-
                     <p
                       class="mt-1.5 text-xs
                              text-gray-500"
                     >
-                      Email changes will be handled
-                      through Firebase Authentication.
+                      Email changes will be handled through Firebase Authentication.
                     </p>
-
                   }
-
                 </div>
-
 
                 <!-- =================================================
                      PASSWORD - CREATE ONLY
                      ================================================= -->
                 @if (!editingUser()) {
-
                   <div
                     class="border-t border-gray-200
                            pt-7"
                   >
-
                     <h3
                       class="text-base font-semibold
                              text-[#032D42]"
@@ -1050,21 +861,16 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                       class="mt-1 text-sm
                              text-gray-500"
                     >
-                      Set the initial password
-                      for this user.
+                      Set the initial password for this user.
                     </p>
-
                   </div>
-
 
                   <div
                     class="grid gap-6
                            sm:grid-cols-2"
                   >
-
                     <!-- Password -->
                     <div>
-
                       <label
                         for="adminPassword"
                         class="block text-sm
@@ -1099,13 +905,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                       >
                         Minimum 6 characters.
                       </p>
-
                     </div>
-
 
                     <!-- Confirm password -->
                     <div>
-
                       <label
                         for="adminConfirmPassword"
                         class="block text-sm
@@ -1133,17 +936,12 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                                focus:ring-2
                                focus:ring-[#007979]/20"
                       />
-
                     </div>
-
                   </div>
-
                 }
-
 
                 <!-- Role -->
                 <div>
-
                   <label
                     for="adminRole"
                     class="block text-sm
@@ -1167,17 +965,11 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                            focus:ring-2
                            focus:ring-[#007979]/20"
                   >
-                    <option value="user">
-                      User
-                    </option>
+                    <option value="user">User</option>
 
-                    <option value="admin">
-                      Admin
-                    </option>
+                    <option value="admin">Admin</option>
                   </select>
-
                 </div>
-
 
                 <!-- =================================================
                      PERSONAL INFORMATION
@@ -1186,25 +978,20 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   class="border-t border-gray-200
                          pt-7"
                 >
-
                   <h3
                     class="text-base font-semibold
                            text-[#032D42]"
                   >
                     Personal information
                   </h3>
-
                 </div>
-
 
                 <div
                   class="grid gap-6
                          sm:grid-cols-2"
                 >
-
                   <!-- First name -->
                   <div>
-
                     <label
                       for="adminFirstName"
                       class="block text-sm
@@ -1230,13 +1017,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     />
-
                   </div>
-
 
                   <!-- Last name -->
                   <div>
-
                     <label
                       for="adminLastName"
                       class="block text-sm
@@ -1262,13 +1046,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     />
-
                   </div>
-
 
                   <!-- Preferred name -->
                   <div>
-
                     <label
                       for="adminPreferredName"
                       class="block text-sm
@@ -1293,13 +1074,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     />
-
                   </div>
-
 
                   <!-- Phone -->
                   <div>
-
                     <label
                       for="adminPhone"
                       class="block text-sm
@@ -1325,11 +1103,8 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     />
-
                   </div>
-
                 </div>
-
 
                 <!-- =================================================
                      LOCATION
@@ -1338,25 +1113,20 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   class="border-t border-gray-200
                          pt-7"
                 >
-
                   <h3
                     class="text-base font-semibold
                            text-[#032D42]"
                   >
                     Location
                   </h3>
-
                 </div>
-
 
                 <div
                   class="grid gap-6
                          sm:grid-cols-2"
                 >
-
                   <!-- Country of origin -->
                   <div>
-
                     <label
                       for="adminCountryOfOrigin"
                       class="block text-sm
@@ -1381,13 +1151,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     />
-
                   </div>
-
 
                   <!-- Current country -->
                   <div>
-
                     <label
                       for="adminCurrentCountry"
                       class="block text-sm
@@ -1412,13 +1179,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     />
-
                   </div>
-
 
                   <!-- City -->
                   <div>
-
                     <label
                       for="adminCity"
                       class="block text-sm
@@ -1443,13 +1207,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     />
-
                   </div>
-
 
                   <!-- State -->
                   <div>
-
                     <label
                       for="adminState"
                       class="block text-sm
@@ -1474,13 +1235,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     />
-
                   </div>
-
 
                   <!-- Postal code -->
                   <div>
-
                     <label
                       for="adminPostalCode"
                       class="block text-sm
@@ -1506,13 +1264,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     />
-
                   </div>
-
 
                   <!-- Preferred language -->
                   <div>
-
                     <label
                       for="adminLanguage"
                       class="block text-sm
@@ -1538,11 +1293,8 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     />
-
                   </div>
-
                 </div>
-
 
                 <!-- =================================================
                      PROFILE
@@ -1551,20 +1303,16 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   class="border-t border-gray-200
                          pt-7"
                 >
-
                   <h3
                     class="text-base font-semibold
                            text-[#032D42]"
                   >
                     Profile
                   </h3>
-
                 </div>
-
 
                 <!-- Bio -->
                 <div>
-
                   <label
                     for="adminBio"
                     class="block text-sm
@@ -1597,13 +1345,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   >
                     Maximum 500 characters.
                   </p>
-
                 </div>
-
 
                 <!-- Website -->
                 <div>
-
                   <label
                     for="adminWebsite"
                     class="block text-sm
@@ -1629,9 +1374,7 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                            focus:ring-2
                            focus:ring-[#007979]/20"
                   />
-
                 </div>
-
 
                 <!-- =================================================
                      FORM ACTIONS
@@ -1643,7 +1386,6 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                          pt-6 sm:flex-row
                          sm:justify-end"
                 >
-
                   <button
                     type="button"
                     (click)="closeForm()"
@@ -1677,39 +1419,26 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                     @if (saving()) {
                       Saving...
                     } @else {
-                      {{
-                        editingUser()
-                          ? 'Save Changes'
-                          : 'Create User'
-                      }}
+                      {{ editingUser() ? 'Save Changes' : 'Create User' }}
                     }
                   </button>
-
                 </div>
-
               </form>
-
             </section>
-
           </div>
-
         </div>
-
       }
-
 
       <!-- =========================================================
            DELETE CONFIRMATION
            ========================================================= -->
       @if (userToDelete(); as user) {
-
         <div
           class="fixed inset-0 z-[60]
                  flex items-center
                  justify-center
                  bg-black/40 p-4"
         >
-
           <section
             class="w-full max-w-md
                    rounded-2xl
@@ -1717,7 +1446,6 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                    bg-white p-6
                    shadow-xl"
           >
-
             <div
               class="flex h-11 w-11
                      items-center
@@ -1730,7 +1458,6 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
               !
             </div>
 
-
             <h2
               class="mt-4 text-lg
                      font-semibold
@@ -1739,24 +1466,16 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
               Delete user profile?
             </h2>
 
-
             <p
               class="mt-2 text-sm
                      leading-6 text-gray-500"
             >
-              This will remove the Firestore
-              profile for
+              This will remove the Firestore profile for
 
-              <strong
-                class="text-gray-700"
-              >
-                {{
-                  user.displayName ||
-                  user.email
-                }}
-              </strong>.
+              <strong class="text-gray-700">
+                {{ user.displayName || user.email }} </strong
+              >.
             </p>
-
 
             <div
               class="mt-3 rounded-lg
@@ -1766,14 +1485,10 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                 class="text-xs leading-5
                        text-amber-700"
               >
-                This currently removes the
-                Firestore profile only. The
-                Firebase Authentication account
-                will be handled through the secure
-                backend.
+                This currently removes the Firestore profile only. The Firebase Authentication
+                account will be handled through the secure backend.
               </p>
             </div>
-
 
             <div
               class="mt-6 flex
@@ -1781,7 +1496,6 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                      gap-3 sm:flex-row
                      sm:justify-end"
             >
-
               <button
                 type="button"
                 (click)="cancelDelete()"
@@ -1818,50 +1532,37 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                   Delete User
                 }
               </button>
-
             </div>
-
           </section>
-
         </div>
-
       }
-
     </main>
   `,
 })
 export class UserAdminComponent implements OnInit {
-
   // =============================================================
   // SERVICES
   // =============================================================
 
-  private readonly userAdminService =
-    inject(UserAdminService);
+  private readonly userAdminService = inject(UserAdminService);
 
-  private readonly toast =
-    inject(HotToastService);
-
+  private readonly toast = inject(HotToastService);
 
   // =============================================================
   // USER STATE
   // =============================================================
 
-  protected readonly users =
-    signal<User[]>([]);
+  protected readonly users = signal<User[]>([]);
 
-  protected readonly loading =
-    signal(true);
+  protected readonly loading = signal(true);
 
-  protected readonly saving =
-    signal(false);
+  protected readonly saving = signal(false);
 
-  protected readonly deleting =
-    signal(false);
+  protected readonly deleting = signal(false);
 
-  protected readonly error =
-    signal<string | null>(null);
+  protected readonly error = signal<string | null>(null);
 
+  protected readonly resettingUserId = signal<string | null>(null);
 
   // =============================================================
   // SEARCH
@@ -1872,76 +1573,53 @@ export class UserAdminComponent implements OnInit {
    * filteredUsers() value automatically
    * recalculates as the user types.
    */
-  protected readonly searchTerm =
-    signal('');
-
+  protected readonly searchTerm = signal('');
 
   /**
    * Users matching the current search.
    */
-  protected readonly filteredUsers =
-    computed(() => {
+  protected readonly filteredUsers = computed(() => {
+    const search = this.searchTerm().trim().toLowerCase();
 
-      const search =
-        this.searchTerm()
-          .trim()
-          .toLowerCase();
+    const allUsers = this.users();
 
-      const allUsers =
-        this.users();
+    // No search = return all users.
+    if (!search) {
+      return allUsers;
+    }
 
-      // No search = return all users.
-      if (!search) {
-        return allUsers;
-      }
+    return allUsers.filter((user) => {
+      const searchableValues = [
+        user.displayName,
+        user.preferredName,
+        user.firstName,
+        user.lastName,
+        user.email,
+        user.role,
+        user.phone,
+        user.countryOfOrigin,
+        user.currentCountry,
+        user.city,
+        user.state,
+        user.postalCode,
+        user.preferredLanguage,
+      ];
 
-      return allUsers.filter(
-        (user) => {
-
-          const searchableValues = [
-            user.displayName,
-            user.preferredName,
-            user.firstName,
-            user.lastName,
-            user.email,
-            user.role,
-            user.phone,
-            user.countryOfOrigin,
-            user.currentCountry,
-            user.city,
-            user.state,
-            user.postalCode,
-            user.preferredLanguage,
-          ];
-
-          return searchableValues.some(
-            (value) =>
-              value
-                ?.toString()
-                .toLowerCase()
-                .includes(search)
-          );
-        }
-      );
+      return searchableValues.some((value) => value?.toString().toLowerCase().includes(search));
     });
-
+  });
 
   // =============================================================
   // FORM STATE
   // =============================================================
 
-  protected readonly showForm =
-    signal(false);
+  protected readonly showForm = signal(false);
 
-  protected readonly editingUser =
-    signal<User | null>(null);
+  protected readonly editingUser = signal<User | null>(null);
 
-  protected readonly userToDelete =
-    signal<User | null>(null);
+  protected readonly userToDelete = signal<User | null>(null);
 
-  protected form =
-    this.createEmptyForm();
-
+  protected form = this.createEmptyForm();
 
   // =============================================================
   // INITIALIZATION
@@ -1951,7 +1629,6 @@ export class UserAdminComponent implements OnInit {
     await this.loadUsers();
   }
 
-
   // =============================================================
   // LOAD USERS
   // =============================================================
@@ -1960,38 +1637,23 @@ export class UserAdminComponent implements OnInit {
    * Load all user profiles from Firestore.
    */
   private async loadUsers(): Promise<void> {
-
     this.loading.set(true);
     this.error.set(null);
 
     try {
-
-      const users =
-        await this.userAdminService.getUsers();
+      const users = await this.userAdminService.getUsers();
 
       this.users.set(users);
-
     } catch (error) {
+      console.error('Failed to load users:', error);
 
-      console.error(
-        'Failed to load users:',
-        error
-      );
+      this.error.set('Unable to load users. Please try again.');
 
-      this.error.set(
-        'Unable to load users. Please try again.'
-      );
-
-      this.toast.error(
-        'Unable to load users.'
-      );
-
+      this.toast.error('Unable to load users.');
     } finally {
-
       this.loading.set(false);
     }
   }
-
 
   // =============================================================
   // SEARCH
@@ -2004,7 +1666,6 @@ export class UserAdminComponent implements OnInit {
     this.searchTerm.set('');
   }
 
-
   // =============================================================
   // CREATE FORM
   // =============================================================
@@ -2013,17 +1674,14 @@ export class UserAdminComponent implements OnInit {
    * Open the create-user form.
    */
   protected openCreateForm(): void {
-
     this.editingUser.set(null);
 
-    this.form =
-      this.createEmptyForm();
+    this.form = this.createEmptyForm();
 
     this.error.set(null);
 
     this.showForm.set(true);
   }
-
 
   // =============================================================
   // EDIT FORM
@@ -2032,67 +1690,48 @@ export class UserAdminComponent implements OnInit {
   /**
    * Open the edit form for an existing user.
    */
-  protected openEditForm(
-    user: User
-  ): void {
-
+  protected openEditForm(user: User): void {
     this.editingUser.set(user);
 
     this.form = {
-      displayName:
-        user.displayName ?? '',
+      displayName: user.displayName ?? '',
 
-      email:
-        user.email ?? '',
+      email: user.email ?? '',
 
-      role:
-        user.role ?? 'user',
+      role: user.role ?? 'user',
 
       password: '',
       confirmPassword: '',
 
-      firstName:
-        user.firstName ?? '',
+      firstName: user.firstName ?? '',
 
-      lastName:
-        user.lastName ?? '',
+      lastName: user.lastName ?? '',
 
-      preferredName:
-        user.preferredName ?? '',
+      preferredName: user.preferredName ?? '',
 
-      phone:
-        user.phone ?? '',
+      phone: user.phone ?? '',
 
-      countryOfOrigin:
-        user.countryOfOrigin ?? '',
+      countryOfOrigin: user.countryOfOrigin ?? '',
 
-      currentCountry:
-        user.currentCountry ?? '',
+      currentCountry: user.currentCountry ?? '',
 
-      city:
-        user.city ?? '',
+      city: user.city ?? '',
 
-      state:
-        user.state ?? '',
+      state: user.state ?? '',
 
-      postalCode:
-        user.postalCode ?? '',
+      postalCode: user.postalCode ?? '',
 
-      preferredLanguage:
-        user.preferredLanguage ?? '',
+      preferredLanguage: user.preferredLanguage ?? '',
 
-      bio:
-        user.bio ?? '',
+      bio: user.bio ?? '',
 
-      website:
-        user.website ?? '',
+      website: user.website ?? '',
     };
 
     this.error.set(null);
 
     this.showForm.set(true);
   }
-
 
   // =============================================================
   // CLOSE FORM
@@ -2102,7 +1741,6 @@ export class UserAdminComponent implements OnInit {
    * Close the create/edit form.
    */
   protected closeForm(): void {
-
     if (this.saving()) {
       return;
     }
@@ -2110,10 +1748,8 @@ export class UserAdminComponent implements OnInit {
     this.showForm.set(false);
     this.editingUser.set(null);
 
-    this.form =
-      this.createEmptyForm();
+    this.form = this.createEmptyForm();
   }
-
 
   // =============================================================
   // SAVE USER
@@ -2128,173 +1764,99 @@ export class UserAdminComponent implements OnInit {
    * Existing users update their Firestore profile.
    */
   protected async saveUser(): Promise<void> {
-
     if (this.saving()) {
       return;
     }
 
-    const displayName =
-      this.form.displayName.trim();
+    const displayName = this.form.displayName.trim();
 
-    const email =
-      this.form.email.trim();
+    const email = this.form.email.trim();
 
-    const editingUser =
-      this.editingUser();
-
+    const editingUser = this.editingUser();
 
     // -----------------------------------------------------------
     // Basic validation
     // -----------------------------------------------------------
 
     if (!displayName) {
-
-      this.toast.error(
-        'Display name is required.'
-      );
+      this.toast.error('Display name is required.');
 
       return;
     }
 
     if (!email) {
-
-      this.toast.error(
-        'Email address is required.'
-      );
+      this.toast.error('Email address is required.');
 
       return;
     }
-
 
     // -----------------------------------------------------------
     // New-user password validation
     // -----------------------------------------------------------
 
     if (!editingUser) {
-
       if (!this.form.password) {
-
-        this.toast.error(
-          'Password is required.'
-        );
+        this.toast.error('Password is required.');
 
         return;
       }
 
-      if (
-        this.form.password.length < 6
-      ) {
-
-        this.toast.error(
-          'Password must be at least 6 characters.'
-        );
+      if (this.form.password.length < 6) {
+        this.toast.error('Password must be at least 6 characters.');
 
         return;
       }
 
-      if (
-        this.form.password !==
-        this.form.confirmPassword
-      ) {
-
-        this.toast.error(
-          'Passwords do not match.'
-        );
+      if (this.form.password !== this.form.confirmPassword) {
+        this.toast.error('Passwords do not match.');
 
         return;
       }
     }
 
-
     this.saving.set(true);
 
-
     try {
-
       // =========================================================
       // CREATE
       // =========================================================
 
       if (!editingUser) {
-
         await this.userAdminService.createUser({
-
           email,
 
-          password:
-            this.form.password,
+          password: this.form.password,
 
           displayName,
 
-          role:
-            this.form.role,
+          role: this.form.role,
 
-          firstName:
-            this.clean(
-              this.form.firstName
-            ),
+          firstName: this.clean(this.form.firstName),
 
-          lastName:
-            this.clean(
-              this.form.lastName
-            ),
+          lastName: this.clean(this.form.lastName),
 
-          preferredName:
-            this.clean(
-              this.form.preferredName
-            ),
+          preferredName: this.clean(this.form.preferredName),
 
-          phone:
-            this.clean(
-              this.form.phone
-            ),
+          phone: this.clean(this.form.phone),
 
-          countryOfOrigin:
-            this.clean(
-              this.form.countryOfOrigin
-            ),
+          countryOfOrigin: this.clean(this.form.countryOfOrigin),
 
-          currentCountry:
-            this.clean(
-              this.form.currentCountry
-            ),
+          currentCountry: this.clean(this.form.currentCountry),
 
-          city:
-            this.clean(
-              this.form.city
-            ),
+          city: this.clean(this.form.city),
 
-          state:
-            this.clean(
-              this.form.state
-            ),
+          state: this.clean(this.form.state),
 
-          postalCode:
-            this.clean(
-              this.form.postalCode
-            ),
+          postalCode: this.clean(this.form.postalCode),
 
-          preferredLanguage:
-            this.clean(
-              this.form.preferredLanguage
-            ),
+          preferredLanguage: this.clean(this.form.preferredLanguage),
 
-          bio:
-            this.clean(
-              this.form.bio
-            ),
+          bio: this.clean(this.form.bio),
 
-          website:
-            this.clean(
-              this.form.website
-            ),
+          website: this.clean(this.form.website),
         });
 
-
-        this.toast.success(
-          'User created successfully.'
-        );
-
+        this.toast.success('User created successfully.');
 
         await this.loadUsers();
 
@@ -2304,114 +1866,57 @@ export class UserAdminComponent implements OnInit {
         return;
       }
 
-
       // =========================================================
       // UPDATE
       // =========================================================
 
       const profile: Partial<User> = {
-
         displayName,
 
         email,
 
-        role:
-          this.form.role,
+        role: this.form.role,
 
-        firstName:
-          this.clean(
-            this.form.firstName
-          ),
+        firstName: this.clean(this.form.firstName),
 
-        lastName:
-          this.clean(
-            this.form.lastName
-          ),
+        lastName: this.clean(this.form.lastName),
 
-        preferredName:
-          this.clean(
-            this.form.preferredName
-          ),
+        preferredName: this.clean(this.form.preferredName),
 
-        phone:
-          this.clean(
-            this.form.phone
-          ),
+        phone: this.clean(this.form.phone),
 
-        countryOfOrigin:
-          this.clean(
-            this.form.countryOfOrigin
-          ),
+        countryOfOrigin: this.clean(this.form.countryOfOrigin),
 
-        currentCountry:
-          this.clean(
-            this.form.currentCountry
-          ),
+        currentCountry: this.clean(this.form.currentCountry),
 
-        city:
-          this.clean(
-            this.form.city
-          ),
+        city: this.clean(this.form.city),
 
-        state:
-          this.clean(
-            this.form.state
-          ),
+        state: this.clean(this.form.state),
 
-        postalCode:
-          this.clean(
-            this.form.postalCode
-          ),
+        postalCode: this.clean(this.form.postalCode),
 
-        preferredLanguage:
-          this.clean(
-            this.form.preferredLanguage
-          ),
+        preferredLanguage: this.clean(this.form.preferredLanguage),
 
-        bio:
-          this.clean(
-            this.form.bio
-          ),
+        bio: this.clean(this.form.bio),
 
-        website:
-          this.clean(
-            this.form.website
-          ),
+        website: this.clean(this.form.website),
       };
 
+      await this.userAdminService.updateUser(editingUser.id, profile);
 
-      await this.userAdminService.updateUser(
-        editingUser.id,
-        profile
-      );
-
-
-      this.toast.success(
-        'User updated successfully.'
-      );
-
+      this.toast.success('User updated successfully.');
 
       await this.loadUsers();
 
       this.showForm.set(false);
-
     } catch (error) {
+      console.error('Failed to save user:', error);
 
-      console.error(
-        'Failed to save user:',
-        error
-      );
-
-      this.toast.error(
-        this.getUserErrorMessage(error)
-      );
-
+      this.toast.error(this.getUserErrorMessage(error));
     } finally {
-
       this.saving.set(false);
     }
   }
-
 
   // =============================================================
   // DELETE CONFIRMATION
@@ -2420,26 +1925,20 @@ export class UserAdminComponent implements OnInit {
   /**
    * Open the delete confirmation.
    */
-  protected confirmDelete(
-    user: User
-  ): void {
-
+  protected confirmDelete(user: User): void {
     this.userToDelete.set(user);
   }
-
 
   /**
    * Cancel delete.
    */
   protected cancelDelete(): void {
-
     if (this.deleting()) {
       return;
     }
 
     this.userToDelete.set(null);
   }
-
 
   // =============================================================
   // DELETE USER
@@ -2452,50 +1951,63 @@ export class UserAdminComponent implements OnInit {
    * connected through the secure backend later.
    */
   protected async deleteUser(): Promise<void> {
+    const user = this.userToDelete();
 
-    const user =
-      this.userToDelete();
-
-    if (
-      !user ||
-      this.deleting()
-    ) {
+    if (!user || this.deleting()) {
       return;
     }
 
     this.deleting.set(true);
 
     try {
+      await this.userAdminService.deleteUser(user.id);
 
-      await this.userAdminService.deleteUser(
-        user.id
-      );
-
-      this.toast.success(
-        'User profile deleted successfully.'
-      );
+      this.toast.success('User profile deleted successfully.');
 
       this.userToDelete.set(null);
 
       await this.loadUsers();
-
     } catch (error) {
+      console.error('Failed to delete user:', error);
 
-      console.error(
-        'Failed to delete user:',
-        error
-      );
-
-      this.toast.error(
-        'Unable to delete user profile.'
-      );
-
+      this.toast.error('Unable to delete user profile.');
     } finally {
-
       this.deleting.set(false);
     }
   }
 
+  /**
+   * Generate a password-reset link for the selected user.
+   *
+   * The secure operation is performed by the Firebase Function.
+   */
+  protected async resetUserPassword(user: User): Promise<void> {
+    if (this.resettingUserId()) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Send a password reset email to ${user.email}?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.resettingUserId.set(user.id);
+
+    try {
+      const result = await this.userAdminService.resetUserPassword(user.id);
+
+      console.log('Password reset link generated for:', result.email);
+
+      this.toast.success(`Password reset link generated for ${result.email}.`);
+    } catch (error) {
+      console.error('Failed to reset user password:', error);
+
+      this.toast.error(this.getUserErrorMessage(error));
+    } finally {
+      this.resettingUserId.set(null);
+    }
+  }
 
   // =============================================================
   // HELPERS
@@ -2505,126 +2017,72 @@ export class UserAdminComponent implements OnInit {
    * Convert Firebase Function errors
    * into user-friendly messages.
    */
-  private getUserErrorMessage(
-    error: unknown
-  ): string {
+  private getUserErrorMessage(error: unknown): string {
+    const firebaseError = error as {
+      code?: string;
+      message?: string;
+    };
 
-    const firebaseError =
-      error as {
-        code?: string;
-        message?: string;
-      };
-
-    switch (
-      firebaseError?.code
-    ) {
-
+    switch (firebaseError?.code) {
       case 'functions/already-exists':
-        return (
-          'A user with this email address already exists.'
-        );
+        return 'A user with this email address already exists.';
 
       case 'functions/invalid-argument':
-        return (
-          firebaseError.message ||
-          'The information provided is invalid.'
-        );
+        return firebaseError.message || 'The information provided is invalid.';
 
       case 'functions/permission-denied':
-        return (
-          'You do not have permission to perform this action.'
-        );
+        return 'You do not have permission to perform this action.';
 
       case 'functions/unauthenticated':
-        return (
-          'Your session has expired. Please sign in again.'
-        );
+        return 'Your session has expired. Please sign in again.';
 
       default:
-        return (
-          firebaseError?.message ||
-          'Unable to save user. Please try again.'
-        );
+        return firebaseError?.message || 'Unable to save user. Please try again.';
     }
   }
-
 
   /**
    * Return initials for a user avatar.
    */
-  protected initials(
-    value: string | null | undefined
-  ): string {
-
+  protected initials(value: string | null | undefined): string {
     if (!value) {
       return '?';
     }
 
-    const parts =
-      value
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean);
+    const parts = value.trim().split(/\s+/).filter(Boolean);
 
-    if (
-      parts.length === 0
-    ) {
+    if (parts.length === 0) {
       return '?';
     }
 
-    if (
-      parts.length === 1
-    ) {
-
-      return parts[0]
-        .substring(0, 2)
-        .toUpperCase();
+    if (parts.length === 1) {
+      return parts[0].substring(0, 2).toUpperCase();
     }
 
-    return (
-      parts[0][0] +
-      parts[parts.length - 1][0]
-    ).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
-
 
   /**
    * Format the user's location.
    */
-  protected locationLabel(
-    user: User
-  ): string {
+  protected locationLabel(user: User): string {
+    const parts = [user.city, user.state, user.currentCountry].filter(Boolean);
 
-    const parts = [
-      user.city,
-      user.state,
-      user.currentCountry,
-    ].filter(Boolean);
-
-    return parts.length > 0
-      ? parts.join(', ')
-      : '—';
+    return parts.length > 0 ? parts.join(', ') : '—';
   }
-
 
   /**
    * Remove unnecessary whitespace.
    */
-  private clean(
-    value: string
-  ): string {
-
+  private clean(value: string): string {
     return value.trim();
   }
-
 
   /**
    * Create a blank user form.
    */
   private createEmptyForm(): UserForm {
-
     return {
-
       displayName: '',
       email: '',
       role: 'user',
@@ -2651,7 +2109,6 @@ export class UserAdminComponent implements OnInit {
   }
 }
 
-
 /**
  * Form-only model.
  *
@@ -2659,7 +2116,6 @@ export class UserAdminComponent implements OnInit {
  * accidental changes to id and timestamps.
  */
 interface UserForm {
-
   displayName: string;
   email: string;
   role: 'user' | 'admin';

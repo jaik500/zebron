@@ -30,14 +30,8 @@ import { OutboundMessageService } from
     RouterLink,
   ],
   template: `
-    <div
-      class="min-h-screen bg-gray-50
-             px-4 py-8 sm:px-6 lg:px-8"
-    >
 
-      <div class="mx-auto max-w-7xl">
-
-        <!-- Page header -->
+     <!-- Page header -->
         <div
           class="mb-8 flex flex-col gap-4
                  rounded-xl bg-[#032D42]
@@ -117,6 +111,14 @@ import { OutboundMessageService } from
           </div>
 
         </div>
+    <div
+      class="min-h-screen bg-gray-50
+             px-4 py-8 sm:px-6 lg:px-8"
+    >
+
+      <div class="mx-auto max-w-7xl">
+
+     
 
         <!-- Sent email search -->
         <div class="mb-6">

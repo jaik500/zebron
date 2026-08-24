@@ -1278,6 +1278,8 @@ export class UserProfileComponent implements OnInit {
     this.toast.success('Password reset instructions will be sent to your email.');
   }
 
+  
+
   // =============================================================
   // Sign out
   // =============================================================

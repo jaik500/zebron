@@ -59,9 +59,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
     <header class="sticky top-0 z-50 border-b border-gray-200 bg-[#032D42]">
       <div
         class="relative mx-auto flex max-w-7xl
-               items-center justify-between gap-2
+               items-start justify-between gap-2
                p-4
-               sm:gap-4 sm:px-6 sm:py-6
+               sm:items-center sm:gap-4
+               sm:px-6 sm:py-6
                lg:px-8 lg:py-8"
       >
 
@@ -69,7 +70,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
              Header Content
              ===================================================== -->
         <div
-          class="min-w-0 pr-8 sm:pr-0"
+          class="min-w-0 flex-1 pr-2 sm:pr-0"
         >
           <p
             class="text-md
@@ -111,124 +112,50 @@ import { HotToastService } from '@ngxpert/hot-toast';
         <!-- =====================================================
              Authentication
              ===================================================== -->
-        <div class="shrink-0">
+        <div
+          class="ml-auto shrink-0"
+        >
 
           <!-- =================================================
-               Desktop: Login + Register
+               Desktop: Authentication / Signed-in User
                ================================================= -->
           <div
             class="hidden items-center
                    gap-2 sm:flex"
           >
 
-            <!-- Login -->
-            <a
-              routerLink="/login"
-              class="inline-flex h-9
-                     items-center justify-center
-                     gap-1.5
-                     rounded-md
-                     border border-white/40
-                     px-3
-                     text-md font-semibold
-                     text-white
-                     transition
-                     hover:bg-white/10
-                     focus:outline-none
-                     focus:ring-2
-                     focus:ring-white/40"
-            >
-              <mat-icon
-                aria-hidden="true"
-                class="!m-0 !h-4 !w-4
-                       !text-[16px]
-                       !leading-4"
+            @if (authService.user()) {
+              <!-- Signed-in user -->
+              <span
+                class="max-w-[180px] truncate
+                       text-sm font-semibold
+                       text-white"
               >
-                login
-              </mat-icon>
-
-              <span>
-                Login
+                Hey, {{ authService.user()?.displayName || 'there' }}
               </span>
-            </a>
-
-            <!-- Register -->
-            <a
-              routerLink="/register"
-              class="inline-flex h-9
-                     items-center justify-center
-                     gap-1.5
-                     rounded-md
-                     bg-white
-                     px-3
-                     text-md font-semibold
-                     text-[#007979]
-                     shadow-sm
-                     transition
-                     hover:bg-gray-100
-                     focus:outline-none
-                     focus:ring-2
-                     focus:ring-white/40"
-            >
-              <mat-icon
-                aria-hidden="true"
-                class="!m-0 !h-4 !w-4
-                       !text-[16px]
-                       !leading-4"
-              >
-                person_add
-              </mat-icon>
-
-              <span>
-                Register
-              </span>
-            </a>
-          </div>
-
-          <!-- =================================================
-               Mobile: Three-dot Account Menu
-               Angular Material handles the popup overlay,
-               outside-click, Escape-key, and focus behavior.
-               ================================================= -->
-          <div class="sm:hidden">
-
-            <button
-              mat-icon-button
-              [matMenuTriggerFor]="accountMenu"
-              aria-label="Account options"
-              title="Account options"
-              class="!flex !h-9 !w-9
-                     !items-center
-                     !justify-center
-                     !rounded-md
-                     !border !border-white/30
-                     !bg-white/10
-                     !text-white
-                     hover:!bg-white/20
-                     focus:!outline-none
-                     font-bold"
-            >
-              <mat-icon
-                aria-hidden="true"
-                class="!m-0 !h-6 !w-6
-                       !text-[24px]
-                       !leading-6"
-              >
-                more_vert
-              </mat-icon>
-            </button>
-
-            <mat-menu
-              #accountMenu="matMenu"
-              xPosition="before"
-              yPosition="below"
-            >
+            } @else {
+              <!-- Login -->
               <a
-                mat-menu-item
                 routerLink="/login"
+                class="inline-flex h-9
+                       items-center justify-center
+                       gap-1.5
+                       rounded-md
+                       border border-white/40
+                       px-3
+                       text-sm font-semibold
+                       text-white
+                       transition
+                       hover:bg-white/10
+                       focus:outline-none
+                       focus:ring-2
+                       focus:ring-white/40"
               >
                 <mat-icon
                   aria-hidden="true"
+                  class="!m-0 !h-4 !w-4
+                         !text-[16px]
+                         !leading-4"
                 >
                   login
                 </mat-icon>
@@ -238,12 +165,29 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 </span>
               </a>
 
+              <!-- Register -->
               <a
-                mat-menu-item
                 routerLink="/register"
+                class="inline-flex h-9
+                       items-center justify-center
+                       gap-1.5
+                       rounded-md
+                       bg-white
+                       px-3
+                       text-sm font-semibold
+                       text-[#007979]
+                       shadow-sm
+                       transition
+                       hover:bg-gray-100
+                       focus:outline-none
+                       focus:ring-2
+                       focus:ring-white/40"
               >
                 <mat-icon
                   aria-hidden="true"
+                  class="!m-0 !h-4 !w-4
+                         !text-[16px]
+                         !leading-4"
                 >
                   person_add
                 </mat-icon>
@@ -252,7 +196,186 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   Register
                 </span>
               </a>
-            </mat-menu>
+            }
+
+            <!-- Desktop account menu -->
+            @if (authService.user()) {
+              <button
+                mat-icon-button
+                [matMenuTriggerFor]="accountMenu"
+                aria-label="Account options"
+                title="Account options"
+                class="!flex !h-9 !w-9
+                       !items-center
+                       !justify-center
+                       !rounded-md
+                       !border !border-white/30
+                       !bg-white/10
+                       !text-white
+                       hover:!bg-white/20
+                       focus:!outline-none"
+              >
+                <mat-icon
+                  aria-hidden="true"
+                  class="!m-0 !h-6 !w-6
+                         !text-[24px]
+                         !leading-6"
+                >
+                  more_vert
+                </mat-icon>
+              </button>
+            }
+          </div>
+
+          <!-- =================================================
+               Mobile: Greeting + Three-dot Account Menu
+               ================================================= -->
+          <div
+            class="flex items-center gap-1.5 sm:hidden"
+          >
+            @if (authService.user()) {
+              <span
+                class="max-w-[140px] truncate
+                       text-sm font-semibold
+                       text-white"
+              >
+                Hey, {{ authService.user()?.displayName || 'there' }}
+              </span>
+            }
+
+            @if (!authService.user()) {
+              <button
+                mat-icon-button
+                [matMenuTriggerFor]="accountMenu"
+                aria-label="Account options"
+                title="Account options"
+                class="!flex !h-9 !w-9
+                       !items-center
+                       !justify-center
+                       !rounded-md
+                       !border !border-white/30
+                       !bg-white/10
+                       !text-white
+                       hover:!bg-white/20
+                       focus:!outline-none"
+              >
+                <mat-icon
+                  aria-hidden="true"
+                  class="!m-0 !h-6 !w-6
+                         !text-[24px]
+                         !leading-6"
+                >
+                  more_vert
+                </mat-icon>
+              </button>
+            } @else {
+              <button
+                mat-icon-button
+                [matMenuTriggerFor]="accountMenu"
+                aria-label="Account options"
+                title="Account options"
+                class="!flex !h-9 !w-9
+                       !items-center
+                       !justify-center
+                       !rounded-md
+                       !border !border-white/30
+                       !bg-white/10
+                       !text-white
+                       hover:!bg-white/20
+                       focus:!outline-none"
+              >
+                <mat-icon
+                  aria-hidden="true"
+                  class="!m-0 !h-6 !w-6
+                         !text-[24px]
+                         !leading-6"
+                >
+                  more_vert
+                </mat-icon>
+              </button>
+            }
+
+            <mat-menu
+              #accountMenu="matMenu"
+              xPosition="before"
+              yPosition="below"
+            >
+              @if (authService.user()) {
+                <a
+                  mat-menu-item
+                  routerLink="/profile"
+                >
+                  <mat-icon aria-hidden="true">
+                    person
+                  </mat-icon>
+
+                  <span>
+                    Profile
+                  </span>
+                </a>
+
+                @if (authService.isAdmin) {
+                  <a
+                    mat-menu-item
+                    routerLink="/admin"
+                  >
+                    <mat-icon aria-hidden="true">
+                      admin_panel_settings
+                    </mat-icon>
+
+                    <span>
+                      Admin Dashboard
+                    </span>
+                  </a>
+                }
+              } @else {
+                <a
+                  mat-menu-item
+                  routerLink="/login"
+                >
+                  <mat-icon aria-hidden="true">
+                    login
+                  </mat-icon>
+
+                  <span>
+                    Login
+                  </span>
+                </a>
+
+                <a
+                  mat-menu-item
+                  routerLink="/register"
+                >
+                  <mat-icon aria-hidden="true">
+                    person_add
+                  </mat-icon>
+
+                  <span>
+                    Register
+                  </span>
+                </a>
+              }
+            
+                <button
+                  mat-menu-item
+                  type="button"
+                  (click)="signOut()"
+                  [disabled]="signingOut()"
+                >
+                  <mat-icon aria-hidden="true">
+                    logout
+                  </mat-icon>
+
+                  <span>
+                    @if (signingOut()) {
+                      Signing out...
+                    } @else {
+                      Sign out
+                    }
+                  </span>
+                </button>
+
+</mat-menu>
           </div>
         </div>
       </div>
@@ -489,7 +612,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 <label
                   for="search"
                   class="mb-0.5 block
-                         text-[16px]
+                         text-[14px]
                          font-medium
                          text-[#032D42]
                          sm:text-[16px]"
@@ -602,7 +725,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 <label
                   for="resourceType"
                   class="mb-0.5 block
-                         text-[16px]
+                         text-[14px]
                          font-medium
                          text-[#032D42]
                          sm:text-[16px]"
@@ -666,7 +789,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   class="flex shrink-0
                          items-center
                          gap-1
-                         text-lg
+                         text-md
                          text-[#032D42]
                          sm:text-[14px]"
                 >
@@ -693,7 +816,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   class="flex shrink-0
                          items-center
                          gap-1
-                         text-lg
+                         text-md
                          text-[#032D42]
                          sm:text-[14px]"
                 >
@@ -736,10 +859,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
               @if (!loading()) {
                 <span
                   class="shrink-0
-                         text-[14px]
+                         text-[15px]
                          font-bold
                          text-[#032D42]/60
-                         sm:text-[14px]"
+                         sm:text-[16px]"
                 >
                   {{ filteredResources().length }}
                 </span>
@@ -1030,6 +1153,12 @@ export class ResourceListComponent
   protected readonly loading =
     signal(true);
 
+  /**
+   * Prevent duplicate sign-out requests.
+   */
+  protected readonly signingOut =
+    signal(false);
+
   protected readonly error =
     signal<string | null>(null);
 
@@ -1219,6 +1348,28 @@ export class ResourceListComponent
   // =========================================================
   // Initialization
   // =========================================================
+
+  /**
+   * Sign out the current user.
+   */
+  protected async signOut(): Promise<void> {
+    if (this.signingOut()) {
+      return;
+    }
+
+    this.signingOut.set(true);
+
+    try {
+      await this.authService.logout();
+    } catch (error) {
+      console.error(
+        'Sign out failed:',
+        error,
+      );
+    } finally {
+      this.signingOut.set(false);
+    }
+  }
 
   ngOnInit(): void {
     this.loadResources();

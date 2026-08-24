@@ -47,6 +47,16 @@ interface CreateUserResponse {
   role: 'user' | 'admin';
 }
 
+interface ResetUserPasswordRequest {
+  uid: string;
+}
+
+interface ResetUserPasswordResponse {
+  success: boolean;
+  email: string;
+  resetLink: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -145,6 +155,45 @@ export class UserAdminService {
       throw error;
     }
   }
+
+  /**
+ * Generate a secure password-reset link for a user.
+ *
+ * The request is handled by the trusted Firebase Function,
+ * which verifies that the current caller is an administrator.
+ */
+async resetUserPassword(
+  userId: string
+): Promise<ResetUserPasswordResponse> {
+
+  try {
+
+    const resetUserPasswordFunction =
+      httpsCallable<
+        ResetUserPasswordRequest,
+        ResetUserPasswordResponse
+      >(
+        this.functions,
+        'resetUserPassword'
+      );
+
+    const result =
+      await resetUserPasswordFunction({
+        uid: userId,
+      });
+
+    return result.data;
+
+  } catch (error) {
+
+    console.error(
+      'Failed to reset user password:',
+      error
+    );
+
+    throw error;
+  }
+}
 
 
   /**
