@@ -233,7 +233,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
           <div
             class="flex items-center gap-1.5 sm:hidden"
           >
-            @if (authService.user()) {
+            <!-- @if (authService.user()) {
               <span
                 class="max-w-[140px] truncate
                        text-sm font-semibold
@@ -241,7 +241,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
               >
                 Hey, {{ authService.user()?.displayName || 'there' }}
               </span>
-            }
+            } -->
 
             @if (!authService.user()) {
               <button

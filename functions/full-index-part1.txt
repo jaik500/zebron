@@ -1,0 +1,260 @@
+import {
+  onCall,
+  onRequest,
+  HttpsError,
+  CallableRequest,
+} from "firebase-functions/v2/https";
+import * as logger from "firebase-functions/logger";
+import {getAuth} from "firebase-admin/auth";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {initializeApp} from "firebase-admin/app";
+import {Resend} from "resend";
+
+initializeApp();
+
+/**
+ * Resend configuration.
+ *
+ * The API key is stored in Firebase Secret Manager.
+ * It is never exposed to the Angular application.
+ */
+const RESEND_API_URL = "https://api.resend.com/emails";
+const ZEBRON_FROM_EMAIL = "Zebron <noreply@zebron.org>";
+
+const db = getFirestore();
+const auth = getAuth();
+
+
+/**
+ * Verify that the caller is authenticated
+ * and has administrator privileges.
+ *
+ * This is used by all administrator-only
+ * email functions.
+ */
+async function requireAdmin(request: CallableRequest<unknown>): Promise<{
+  uid: string;
+  email?: string;
+}> {
+  /**
+   * Firebase Authentication must be present.
+   */
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "You must be signed in as an administrator.");
+  }
+
+  const uid = request.auth.uid;
+
+  /**
+   * Load the Zebron Firestore profile.
+   */
+  const profile = await db.collection("users").doc(uid).get();
+
+  if (!profile.exists) {
+    throw new HttpsError("permission-denied", "Administrator profile could not be found.");
+  }
+
+  const profileData = profile.data();
+
+  /**
+   * Only users with the admin role may
+   * send email through the mailbox.
+   */
+  if (profileData?.["role"] !== "admin") {
+    throw new HttpsError("permission-denied", "Only administrators can send email.");
+  }
+
+  return {
+    uid,
+    email: typeof profileData?.["email"] === "string" ? profileData["email"] : undefined,
+  };
+}
+
+/**
+ * Create a new Firebase Authentication user and
+ * corresponding Firestore user profile.
+ *
+ * This function is intended for administrator use.
+ */
+export const createUser = onCall(
+  {
+    region: "us-central1",
+  },
+  async (request) => {
+    /**
+     * Verify that the caller is authenticated.
+     */
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "You must be authenticated to create a user.");
+    }
+
+    const adminUid = request.auth.uid;
+
+    /**
+     * Retrieve the administrator's Firestore profile.
+     */
+    const adminProfile = await db.collection("users").doc(adminUid).get();
+
+    if (!adminProfile.exists) {
+      throw new HttpsError("permission-denied", "Administrator profile could not be found.");
+    }
+
+    const adminData = adminProfile.data();
+
+    /**
+     * Only administrators may create users.
+     */
+    if (adminData?.["role"] !== "admin") {
+      throw new HttpsError("permission-denied", "Only administrators can create users.");
+    }
+
+    /**
+     * Extract submitted user information.
+     */
+    const data = request.data as {
+      email?: unknown;
+      password?: unknown;
+      displayName?: unknown;
+      role?: unknown;
+    };
+
+    const email = clean(data.email);
+
+    const password = typeof data.password === "string" ? data.password : undefined;
+
+    const displayName = clean(data.displayName);
+
+    const role = clean(data.role) ?? "user";
+
+    /**
+     * Validate the email address.
+     */
+    if (!email) {
+      throw new HttpsError("invalid-argument", "Email is required.");
+    }
+
+    /**
+     * Validate the password.
+     */
+    if (!password || password.length < 6) {
+      throw new HttpsError("invalid-argument", "Password must be at least 6 characters.");
+    }
+
+    /**
+     * Validate the requested role.
+     */
+    const allowedRoles = ["user", "admin"];
+
+    if (!allowedRoles.includes(role)) {
+      throw new HttpsError("invalid-argument", "Invalid user role.");
+    }
+
+    let firebaseUser;
+
+    try {
+      /**
+       * Create the Firebase Authentication account.
+       */
+      firebaseUser = await auth.createUser({
+        email,
+        password,
+        displayName,
+      });
+    } catch (error: unknown) {
+      const errorCode = getErrorCode(error);
+
+      logger.error("Failed to create Firebase user.", {
+        errorCode,
+        email,
+      });
+
+      if (errorCode === "auth/email-already-exists") {
+        throw new HttpsError("already-exists", "A user with this email already exists.");
+      }
+
+      throw new HttpsError("internal", "Unable to create the user account.");
+    }
+
+    try {
+      /**
+       * Create the corresponding Firestore profile.
+       *
+       * Optional fields are only included when
+       * they contain actual values. This prevents
+       * Firestore from receiving undefined values.
+       */
+      const userProfile: Record<string, unknown> = {
+        uid: firebaseUser.uid,
+
+        email,
+
+        role,
+
+        createdAt: FieldValue.serverTimestamp(),
+
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+
+      if (displayName) {
+        userProfile["displayName"] = displayName;
+      }
+
+      await db.collection("users").doc(firebaseUser.uid).set(userProfile);
+    } catch (error: unknown) {
+      logger.error("Failed to create Firestore user profile.", {
+        error,
+        uid: firebaseUser.uid,
+        email,
+      });
+
+      /**
+       * If the Firestore profile cannot be created,
+       * remove the Firebase Authentication account
+       * so we do not leave an incomplete user behind.
+       */
+      try {
+        await auth.deleteUser(firebaseUser.uid);
+      } catch (deleteError: unknown) {
+        logger.error("Failed to roll back Firebase user after Firestore failure.", {
+          deleteError,
+          uid: firebaseUser.uid,
+        });
+      }
+
+      throw new HttpsError("internal", "Unable to complete user creation.");
+    }
+
+    /**
+     * Log the successful user creation.
+     */
+    logger.info("Administrator created a new Zebron user.", {
+      adminUid,
+      createdUserUid: firebaseUser.uid,
+      email,
+      role,
+    });
+
+    /**
+     * Return the newly created account information.
+     */
+    return {
+      success: true,
+      uid: firebaseUser.uid,
+      email,
+      role,
+    };
+  },
+);
+
+/**
+ * Send a password-reset email for an existing user.
+ *
+ * Only authenticated administrators may use this function.
+ *
+ * The administrator never sees or handles the user's password.
+ * Firebase generates the secure password-reset link and Resend
+ * delivers it to the user's email address.
+ */
+export const resetUserPassword = onCall(
+  {
+    region: "us-central1",

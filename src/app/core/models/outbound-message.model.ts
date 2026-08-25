@@ -8,7 +8,8 @@ import { Timestamp } from 'firebase/firestore';
  */
 export type OutboundMessageType =
   | 'new'
-  | 'reply';
+  | 'reply'
+  | 'forward';
 
 /**
  * Represents an email successfully sent through

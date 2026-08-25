@@ -1,7 +1,10 @@
+
 import { Injectable } from '@angular/core';
 
 import {
   collection,
+  deleteDoc,
+  doc,
   getDocs,
   orderBy,
   query,
@@ -14,13 +17,15 @@ import {
 } from '../models/outbound-message.model';
 
 /**
- * Service responsible for retrieving emails
- * sent through the Zebron administrator mailbox.
+ * Service responsible for retrieving and
+ * managing emails sent through the
+ * Zebron administrator mailbox.
  */
 @Injectable({
   providedIn: 'root',
 })
 export class OutboundMessageService {
+
   /**
    * Firestore outbound messages collection.
    */
@@ -38,6 +43,7 @@ export class OutboundMessageService {
   async getAllOutboundMessages(): Promise<
     OutboundMessage[]
   > {
+
     const messagesQuery =
       query(
         this.outboundMessagesCollection,
@@ -68,6 +74,29 @@ export class OutboundMessageService {
   async getMessages(): Promise<
     OutboundMessage[]
   > {
+
     return this.getAllOutboundMessages();
+
+  }
+
+  /**
+   * Permanently delete an outbound message.
+   */
+  async deleteMessage(
+    messageId: string,
+  ): Promise<void> {
+
+    const messageRef =
+      doc(
+        firestore,
+        'outboundMessages',
+        messageId,
+      );
+
+    await deleteDoc(
+      messageRef,
+    );
+
   }
 }
+

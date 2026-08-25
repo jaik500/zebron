@@ -6,6 +6,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -38,9 +39,12 @@ export class ContactMessageService {
     );
 
   /**
-   * Get all contact messages.
+   * Get all contact messages once.
    *
    * The newest messages are returned first.
+   *
+   * This method is retained for manual refreshes
+   * and backwards compatibility.
    */
   async getAllContactMessages(): Promise<
     ContactMessage[]
@@ -66,6 +70,65 @@ export class ContactMessageService {
           ...document.data(),
         }) as ContactMessage,
     );
+  }
+
+  /**
+   * Listen to contact messages in real time.
+   *
+   * The callback is executed whenever Firestore
+   * detects:
+   *
+   * - a new message
+   * - a message status change
+   * - an updated message
+   * - a deleted message
+   *
+   * Returns an unsubscribe function that should
+   * be called when the component is destroyed.
+   */
+  listenToContactMessages(
+    onMessages: (
+      messages: ContactMessage[],
+    ) => void,
+    onError?: (
+      error: Error,
+    ) => void,
+  ): () => void {
+    const messagesQuery =
+      query(
+        this.contactMessagesCollection,
+        orderBy(
+          'createdAt',
+          'desc',
+        ),
+      );
+
+    const unsubscribe =
+      onSnapshot(
+        messagesQuery,
+        (snapshot) => {
+          const messages =
+            snapshot.docs.map(
+              (document) =>
+                ({
+                  id: document.id,
+                  ...document.data(),
+                }) as ContactMessage,
+            );
+
+          onMessages(messages);
+        },
+        (error) => {
+          console.error(
+            'Contact message listener failed:',
+            error,
+          );
+
+          onError?.(error);
+        },
+      );
+
+    return unsubscribe;
   }
 
   /**

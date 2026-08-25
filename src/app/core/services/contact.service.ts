@@ -39,6 +39,12 @@ export interface NewContactMessage {
   to: string;
   subject: string;
   message: string;
+
+  /**
+   * Identifies how the administrator email
+   * was created.
+   */
+  type: 'new' | 'forward';
 }
 
 interface ContactFunctionResponse {
