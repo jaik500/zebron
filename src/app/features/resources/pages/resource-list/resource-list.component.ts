@@ -1,32 +1,22 @@
-import {
-  Component,
-  computed,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 
-import {
-  ActivatedRoute,
-  Router,
-  RouterLink,
-} from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 
-import {
-  Resource,
-  ResourceType,
-} from '../../../../core/models/resource.model';
+import { Resource, ResourceType } from '../../../../core/models/resource.model';
 
 import { Category } from '../../../../core/models/category.model';
 
 import { ResourceService } from '../../../../core/services/resource.service';
+import { Location } from '../../../../core/models/location.model';
+import { LocationService } from '../../../../core/services/location.service';
+import { PersonalizationService } from '../../../../core/services/personalization.service';
 
 import { CategoryService } from '../../../../core/services/category.service';
 
@@ -65,13 +55,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
                sm:px-6 sm:py-6
                lg:px-8 lg:py-8"
       >
-
         <!-- =====================================================
              Header Content
              ===================================================== -->
-        <div
-          class="min-w-0 flex-1 pr-2 sm:pr-0"
-        >
+        <div class="min-w-0 flex-1 pr-2 sm:pr-0">
           <p
             class="text-md
                    font-semibold uppercase
@@ -103,19 +90,15 @@ import { HotToastService } from '@ngxpert/hot-toast';
                    lg:text-lg
                    lg:leading-7"
           >
-            Browse trusted resources, services,
-            organizations, and tools available
-            to help you and your community.
+            Browse trusted resources, services, organizations, and tools available to help you and
+            your community.
           </p>
         </div>
 
         <!-- =====================================================
              Authentication
              ===================================================== -->
-        <div
-          class="ml-auto shrink-0"
-        >
-
+        <div class="ml-auto shrink-0">
           <!-- =================================================
                Desktop: Authentication / Signed-in User
                ================================================= -->
@@ -123,7 +106,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
             class="hidden items-center
                    gap-2 sm:flex"
           >
-
             @if (authService.user()) {
               <!-- Signed-in user -->
               <span
@@ -160,9 +142,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   login
                 </mat-icon>
 
-                <span>
-                  Login
-                </span>
+                <span> Login </span>
               </a>
 
               <!-- Register -->
@@ -192,9 +172,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   person_add
                 </mat-icon>
 
-                <span>
-                  Register
-                </span>
+                <span> Register </span>
               </a>
             }
 
@@ -230,9 +208,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
           <!-- =================================================
                Mobile: Greeting + Three-dot Account Menu
                ================================================= -->
-          <div
-            class="flex items-center gap-1.5 sm:hidden"
-          >
+          <div class="flex items-center gap-1.5 sm:hidden">
             <!-- @if (authService.user()) {
               <span
                 class="max-w-[140px] truncate
@@ -295,87 +271,47 @@ import { HotToastService } from '@ngxpert/hot-toast';
               </button>
             }
 
-            <mat-menu
-              #accountMenu="matMenu"
-              xPosition="before"
-              yPosition="below"
-            >
+            <mat-menu #accountMenu="matMenu" xPosition="before" yPosition="below">
               @if (authService.user()) {
-                <a
-                  mat-menu-item
-                  routerLink="/profile"
-                >
-                  <mat-icon aria-hidden="true">
-                    person
-                  </mat-icon>
+                <a mat-menu-item routerLink="/profile">
+                  <mat-icon aria-hidden="true"> person </mat-icon>
 
-                  <span>
-                    Profile
-                  </span>
+                  <span> Profile </span>
                 </a>
 
                 @if (authService.isAdmin) {
-                  <a
-                    mat-menu-item
-                    routerLink="/admin"
-                  >
-                    <mat-icon aria-hidden="true">
-                      admin_panel_settings
-                    </mat-icon>
+                  <a mat-menu-item routerLink="/admin">
+                    <mat-icon aria-hidden="true"> admin_panel_settings </mat-icon>
 
-                    <span>
-                      Admin Dashboard
-                    </span>
+                    <span> Admin Dashboard </span>
                   </a>
                 }
               } @else {
-                <a
-                  mat-menu-item
-                  routerLink="/login"
-                >
-                  <mat-icon aria-hidden="true">
-                    login
-                  </mat-icon>
+                <a mat-menu-item routerLink="/login">
+                  <mat-icon aria-hidden="true"> login </mat-icon>
 
-                  <span>
-                    Login
-                  </span>
+                  <span> Login </span>
                 </a>
 
-                <a
-                  mat-menu-item
-                  routerLink="/register"
-                >
-                  <mat-icon aria-hidden="true">
-                    person_add
-                  </mat-icon>
+                <a mat-menu-item routerLink="/register">
+                  <mat-icon aria-hidden="true"> person_add </mat-icon>
 
-                  <span>
-                    Register
-                  </span>
+                  <span> Register </span>
                 </a>
               }
-            
-                <button
-                  mat-menu-item
-                  type="button"
-                  (click)="signOut()"
-                  [disabled]="signingOut()"
-                >
-                  <mat-icon aria-hidden="true">
-                    logout
-                  </mat-icon>
 
-                  <span>
-                    @if (signingOut()) {
-                      Signing out...
-                    } @else {
-                      Sign out
-                    }
-                  </span>
-                </button>
+              <button mat-menu-item type="button" (click)="signOut()" [disabled]="signingOut()">
+                <mat-icon aria-hidden="true"> logout </mat-icon>
 
-</mat-menu>
+                <span>
+                  @if (signingOut()) {
+                    Signing out...
+                  } @else {
+                    Sign out
+                  }
+                </span>
+              </button>
+            </mat-menu>
           </div>
         </div>
       </div>
@@ -395,23 +331,19 @@ import { HotToastService } from '@ngxpert/hot-toast';
                lg:grid-cols-[minmax(0,1fr)_280px]
                lg:gap-6"
       >
-
         <!-- =====================================================
              Main Resource Directory
              ===================================================== -->
         <section class="min-w-0">
-
           <!-- ===================================================
                Browse by Category
                =================================================== -->
           <section>
-
             <!-- Heading + Mobile Filter Builder -->
             <div
               class="flex items-center
                      justify-between"
             >
-
               <h1
                 class="text-xl
                        font-semibold
@@ -430,11 +362,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 (click)="toggleSearch()"
                 [attr.aria-expanded]="showSearch()"
                 aria-label="Toggle filter builder"
-                [title]="
-                  showSearch()
-                    ? 'Hide filter builder'
-                    : 'Show filter builder'
-                "
+                [title]="showSearch() ? 'Hide filter builder' : 'Show filter builder'"
                 class="flex min-h-8
                        shrink-0
                        items-center
@@ -448,9 +376,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                        focus:ring-[#007979]/30
                        sm:hidden"
               >
-
                 @if (showSearch()) {
-
                   <!-- Show Filter Builder -->
                   <span
                     class="rounded-md
@@ -464,9 +390,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   >
                     Show Filters
                   </span>
-
                 } @else {
-
                   <!-- Filter Builder Icon -->
                   <mat-icon
                     aria-hidden="true"
@@ -476,9 +400,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   >
                     search
                   </mat-icon>
-
                 }
-
               </button>
             </div>
 
@@ -489,23 +411,14 @@ import { HotToastService } from '@ngxpert/hot-toast';
               class="mt-2 flex flex-wrap
                      gap-1.5 sm:gap-2"
             >
-
               <!-- All -->
               <button
                 type="button"
                 (click)="selectCategory('')"
-                [class.bg-[#007979]]="
-                  !selectedCategory()
-                "
-                [class.text-white]="
-                  !selectedCategory()
-                "
-                [class.bg-gray-100]="
-                  selectedCategory()
-                "
-                [class.text-gray-700]="
-                  selectedCategory()
-                "
+                [class.bg-[#007979]]="!selectedCategory()"
+                [class.text-white]="!selectedCategory()"
+                [class.bg-gray-100]="selectedCategory()"
+                [class.text-gray-700]="selectedCategory()"
                 class="rounded-full
                        px-2.5 py-1
                        text-[14px]
@@ -519,33 +432,14 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 All
               </button>
 
-              @for (
-                category of categories();
-                track category.id
-              ) {
+              @for (category of categories(); track category.id) {
                 <button
                   type="button"
-                  (click)="
-                    selectCategory(
-                      category.slug
-                    )
-                  "
-                  [class.bg-[#007979]]="
-                    selectedCategory() ===
-                    category.slug
-                  "
-                  [class.text-white]="
-                    selectedCategory() ===
-                    category.slug
-                  "
-                  [class.bg-gray-100]="
-                    selectedCategory() !==
-                    category.slug
-                  "
-                  [class.text-gray-700]="
-                    selectedCategory() !==
-                    category.slug
-                  "
+                  (click)="selectCategory(category.slug)"
+                  [class.bg-[#007979]]="selectedCategory() === category.slug"
+                  [class.text-white]="selectedCategory() === category.slug"
+                  [class.bg-gray-100]="selectedCategory() !== category.slug"
+                  [class.text-gray-700]="selectedCategory() !== category.slug"
                   class="rounded-full
                          px-2.5 py-1
                          text-[14px]
@@ -563,6 +457,272 @@ import { HotToastService } from '@ngxpert/hot-toast';
           </section>
 
           <!-- ===================================================
+               Personalization
+               =================================================== -->
+
+          <section
+            class="mt-4
+                   rounded-xl
+                   border
+                   border-[#007979]/15
+                   bg-white
+                   p-4
+                   shadow-sm
+                   sm:p-5"
+          >
+            <div
+  class="flex items-start
+         justify-between
+         gap-3
+         sm:flex-row
+         sm:items-start
+         sm:justify-between"
+>
+              <!-- Personalization heading -->
+
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <mat-icon
+                    aria-hidden="true"
+                    class="!m-0
+                           !h-5 !w-5
+                           !text-[20px]
+                           text-[#007979]"
+                  >
+                    auto_awesome
+                  </mat-icon>
+
+                  <h2
+                    class="text-base
+                           font-bold
+                           text-[#032D42]
+                           sm:text-lg"
+                  >
+                    Find resources for you
+                  </h2>
+                </div>
+
+                <p
+                  class="mt-1
+                         text-sm
+                         leading-5
+                         text-gray-500"
+                >
+                  Tell us what you need and where you are to see resources that may be more relevant
+                  to you.
+                </p>
+              </div>
+
+              <!-- Clear personalization -->
+              <!-- Personalization actions -->
+              <div
+                class="flex shrink-0
+         items-center gap-3"
+              >
+                <!-- Show / Hide -->
+                <button
+                  type="button"
+                  (click)="togglePersonalization()"
+                  [attr.aria-expanded]="showPersonalization()"
+                  [attr.aria-label]="
+                    showPersonalization()
+                      ? 'Hide personalization options'
+                      : 'Show personalization options'
+                  "
+                   class="inline-flex
+         shrink-0
+         items-center
+         gap-1
+         border-0
+         bg-transparent
+         p-0
+         text-xs
+         font-semibold
+         text-[#007979]
+         transition
+         hover:text-[#032D42]
+         focus:outline-none"
+                >
+                  <mat-icon
+                    aria-hidden="true"
+                    class="!m-0
+             !h-4 !w-4
+             !text-[18px]"
+                  >
+                    {{ showPersonalization() ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}
+                  </mat-icon>
+
+                  <span>
+                    {{ showPersonalization() ? 'Hide' : 'Show' }}
+                  </span>
+                </button>
+
+                <!-- Clear personalization -->
+                @if (hasPersonalization()) {
+                  <button
+                    type="button"
+                    (click)="clearPersonalization()"
+                    class="text-xs
+             font-semibold
+             text-[#007979]
+             hover:text-[#032D42]"
+                  >
+                    Clear
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (showPersonalization()) {
+              <!-- =================================================
+                 Interests
+                 ================================================= -->
+              <div class="mt-4">
+                <p
+                  class="mb-2
+                       text-sm
+                       font-semibold
+                       text-[#032D42]"
+                >
+                  What are you interested in?
+                </p>
+
+                <div class="flex flex-wrap gap-2">
+                  @for (category of categories(); track category.id) {
+                    <button
+                      type="button"
+                      (click)="togglePersonalizationInterest(category.slug)"
+                      [attr.aria-pressed]="isPersonalizationInterestSelected(category.slug)"
+                      class="inline-flex
+                           items-center
+                           gap-1.5
+                           rounded-full
+                           border
+                           px-3 py-1.5
+                           text-xs
+                           font-semibold
+                           transition
+                           focus:outline-none
+                           focus:ring-2
+                           focus:ring-[#007979]/30"
+                      [class.border-[#007979]]="isPersonalizationInterestSelected(category.slug)"
+                      [class.bg-[#E6F4F3]]="isPersonalizationInterestSelected(category.slug)"
+                      [class.text-[#007979]]="isPersonalizationInterestSelected(category.slug)"
+                      [class.border-gray-200]="!isPersonalizationInterestSelected(category.slug)"
+                      [class.bg-white]="!isPersonalizationInterestSelected(category.slug)"
+                      [class.text-gray-600]="!isPersonalizationInterestSelected(category.slug)"
+                    >
+                      <mat-icon
+                        aria-hidden="true"
+                        class="!m-0
+                             !h-4 !w-4
+                             !text-[16px]"
+                      >
+                        {{ category.icon }}
+                      </mat-icon>
+
+                      <span>
+                        {{ category.name }}
+                      </span>
+                    </button>
+                  }
+                </div>
+              </div>
+
+             <!-- =================================================
+     Location
+     ================================================= -->
+<div class="mt-4">
+
+  <label
+    for="personalization-location"
+    class="mb-1.5
+           block
+           text-sm
+           font-semibold
+           text-[#032D42]"
+  >
+    Where are you located?
+  </label>
+
+  <div
+    class="flex
+           items-end
+           gap-3"
+  >
+
+    <!-- Location dropdown -->
+    <div class="min-w-0 flex-1 max-w-md">
+      <select
+        id="personalization-location"
+        [value]="
+          personalizationService.preferences().locationId ?? ''
+        "
+        (change)="
+          selectPersonalizationLocation(
+            $any($event.target).value || null
+          )
+        "
+        class="block
+               h-10
+               w-full
+               rounded-lg
+               border
+               border-gray-200
+               bg-white
+               px-3
+               text-sm
+               text-gray-700
+               shadow-sm
+               focus:border-[#007979]
+               focus:outline-none
+               focus:ring-2
+               focus:ring-[#007979]/20"
+      >
+        <option value="">
+          Select your location
+        </option>
+
+        @for (
+          location of locations();
+          track location.id
+        ) {
+          <option
+            [value]="location.id"
+          >
+            {{ formatPersonalizationLocation(location) }}
+          </option>
+        }
+      </select>
+    </div>
+
+    <!-- Clear personalization -->
+    @if (hasPersonalization()) {
+      <button
+        type="button"
+        (click)="clearPersonalization()"
+        class="mb-0.5
+               shrink-0
+               text-xs
+               font-semibold
+               text-[#007979]
+               transition
+               hover:text-[#032D42]
+               focus:outline-none
+               focus:ring-2
+               focus:ring-[#007979]/30"
+      >
+        Clear
+      </button>
+    }
+
+  </div>
+
+</div>
+            }
+          </section>
+
+          <!-- ===================================================
                Search and Filters
                =================================================== -->
           <section
@@ -575,7 +735,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
                    shadow-sm
                    sm:p-2.5"
           >
-
             <!-- =================================================
                  Primary Filters
 
@@ -599,7 +758,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
                      sm:grid-cols-3
                      sm:gap-2"
             >
-
               <!-- =================================================
                    Search
                    ================================================= -->
@@ -620,9 +778,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   Search
                 </label>
 
-                <div
-                  class="relative"
-                >
+                <div class="relative">
                   <mat-icon
                     aria-hidden="true"
                     class="pointer-events-none
@@ -664,10 +820,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
               <!-- =================================================
                    Category
                    ================================================= -->
-              <div
-                [class.hidden]="showSearch()"
-                class="sm:block"
-              >
+              <div [class.hidden]="showSearch()" class="sm:block">
                 <label
                   for="category"
                   class="mb-0.5 block
@@ -682,9 +835,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 <select
                   id="category"
                   [value]="selectedCategory()"
-                  (change)="
-                    onCategoryChange($event)
-                  "
+                  (change)="onCategoryChange($event)"
                   class="block h-9 w-full
                          rounded-md
                          border
@@ -698,17 +849,10 @@ import { HotToastService } from '@ngxpert/hot-toast';
                          focus:ring-1
                          focus:ring-[#007979]/20"
                 >
-                  <option value="">
-                    All categories
-                  </option>
+                  <option value="">All categories</option>
 
-                  @for (
-                    category of categories();
-                    track category.slug
-                  ) {
-                    <option
-                      [value]="category.slug"
-                    >
+                  @for (category of categories(); track category.slug) {
+                    <option [value]="category.slug">
                       {{ category.name }}
                     </option>
                   }
@@ -718,10 +862,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
               <!-- =================================================
                    Resource Type
                    ================================================= -->
-              <div
-                [class.hidden]="showSearch()"
-                class="sm:block"
-              >
+              <div [class.hidden]="showSearch()" class="sm:block">
                 <label
                   for="resourceType"
                   class="mb-0.5 block
@@ -736,9 +877,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 <select
                   id="resourceType"
                   [value]="selectedType()"
-                  (change)="
-                    onTypeChange($event)
-                  "
+                  (change)="onTypeChange($event)"
                   class="block h-9 w-full
                          rounded-md
                          border
@@ -752,14 +891,9 @@ import { HotToastService } from '@ngxpert/hot-toast';
                          focus:ring-1
                          focus:ring-[#007979]/20"
                 >
-                  <option value="">
-                    All types
-                  </option>
+                  <option value="">All types</option>
 
-                  @for (
-                    type of resourceTypes;
-                    track type
-                  ) {
+                  @for (type of resourceTypes; track type) {
                     <option [value]="type">
                       {{ formatResourceType(type) }}
                     </option>
@@ -777,13 +911,11 @@ import { HotToastService } from '@ngxpert/hot-toast';
                      justify-between
                      gap-2"
             >
-
               <div
                 class="flex min-w-0
                        items-center
                        gap-2.5"
               >
-
                 <!-- Online -->
                 <label
                   class="flex shrink-0
@@ -796,9 +928,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   <input
                     type="checkbox"
                     [checked]="onlineOnly()"
-                    (change)="
-                      onOnlineChange($event)
-                    "
+                    (change)="onOnlineChange($event)"
                     class="h-4 w-4
                            rounded
                            border-[#007979]/30
@@ -806,9 +936,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                            focus:ring-[#007979]/20"
                   />
 
-                  <span>
-                    Online
-                  </span>
+                  <span> Online </span>
                 </label>
 
                 <!-- Featured -->
@@ -823,9 +951,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   <input
                     type="checkbox"
                     [checked]="featuredOnly()"
-                    (change)="
-                      onFeaturedChange($event)
-                    "
+                    (change)="onFeaturedChange($event)"
                     class="h-4 w-4
                            rounded
                            border-[#007979]/30
@@ -833,9 +959,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                            focus:ring-[#007979]/20"
                   />
 
-                  <span>
-                    Featured
-                  </span>
+                  <span> Featured </span>
                 </label>
 
                 <!-- Clear -->
@@ -880,10 +1004,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                      lg:grid-cols-3"
               aria-label="Loading resources"
             >
-              @for (
-                skeleton of [1, 2, 3, 4, 5, 6];
-                track skeleton
-              ) {
+              @for (skeleton of [1, 2, 3, 4, 5, 6]; track skeleton) {
                 <div
                   class="animate-pulse
                          rounded-lg
@@ -951,10 +1072,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                No Matching Resources
                =================================================== -->
           @if (
-            !loading() &&
-            !error() &&
-            resources().length > 0 &&
-            filteredResources().length === 0
+            !loading() && !error() && resources().length > 0 && filteredResources().length === 0
           ) {
             <div
               class="mt-4
@@ -980,9 +1098,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                        text-gray-600
                        sm:text-sm"
               >
-                We couldn't find any resources
-                matching your current search
-                or filters.
+                We couldn't find any resources matching your current search or filters.
               </p>
 
               @if (hasActiveFilters()) {
@@ -1007,28 +1123,17 @@ import { HotToastService } from '@ngxpert/hot-toast';
           <!-- ===================================================
                Resource Cards
                =================================================== -->
-          @if (
-            !loading() &&
-            !error() &&
-            filteredResources().length > 0
-          ) {
+          @if (!loading() && !error() && filteredResources().length > 0) {
             <div
               class="mt-10
                      grid gap-3
                      sm:grid-cols-2
                      lg:grid-cols-3"
             >
-              @for (
-                resource of filteredResources();
-                track resource.id
-              ) {
+              @for (resource of filteredResources(); track resource.id) {
                 <app-resource-card
                   [resource]="resource"
-                  [categoryName]="
-                    getCategoryName(
-                      resource.categoryId
-                    )
-                  "
+                  [categoryName]="getCategoryName(resource.categoryId)"
                 />
               }
             </div>
@@ -1037,21 +1142,14 @@ import { HotToastService } from '@ngxpert/hot-toast';
           <!-- ===================================================
                Load More
                =================================================== -->
-          @if (
-            !loading() &&
-            !error() &&
-            filteredResources().length > 0 &&
-            hasMoreResources()
-          ) {
+          @if (!loading() && !error() && filteredResources().length > 0 && hasMoreResources()) {
             <div
               class="mt-4
                      flex justify-center"
             >
               <button
                 type="button"
-                (click)="
-                  loadMoreResources()
-                "
+                (click)="loadMoreResources()"
                 [disabled]="loadingMore()"
                 class="rounded-md
                        bg-[#007979]
@@ -1076,22 +1174,16 @@ import { HotToastService } from '@ngxpert/hot-toast';
           <!-- ===================================================
                Empty Directory
                =================================================== -->
-          @if (
-            !loading() &&
-            !error() &&
-            resources().length === 0
-          ) {
+          @if (!loading() && !error() && resources().length === 0) {
             <p
               class="mt-4
                      text-center
                      text-md
                      text-gray-600"
             >
-              No resources are currently
-              available.
+              No resources are currently available.
             </p>
           }
-
         </section>
 
         <!-- =====================================================
@@ -1104,82 +1196,90 @@ import { HotToastService } from '@ngxpert/hot-toast';
         >
           <app-useful-links />
         </aside>
-
       </div>
     </main>
   `,
 
   styles: [],
 })
-export class ResourceListComponent
-  implements OnInit
-{
+export class ResourceListComponent implements OnInit {
   // =========================================================
   // Services
   // =========================================================
 
-  private readonly resourceService =
-    inject(ResourceService);
+  private readonly resourceService = inject(ResourceService);
 
-  private readonly categoryService =
-    inject(CategoryService);
+  private readonly categoryService = inject(CategoryService);
 
-  private readonly route =
-    inject(ActivatedRoute);
+  private readonly locationService = inject(LocationService);
 
-  private readonly router =
-    inject(Router);
+  protected readonly personalizationService = inject(PersonalizationService);
 
-  protected readonly authService =
-    inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
 
-  private readonly toast =
-    inject(HotToastService);
+  private readonly router = inject(Router);
+
+  protected readonly authService = inject(AuthService);
+
+  private readonly toast = inject(HotToastService);
 
   // =========================================================
   // Resource State
   // =========================================================
 
-  protected readonly resources =
-    signal<Resource[]>([]);
+  protected readonly resources = signal<Resource[]>([]);
 
-  protected readonly categories =
-    signal<Category[]>([]);
+  protected readonly categories = signal<Category[]>([]);
+
+  protected readonly showPersonalization = signal(true);
+
+  protected togglePersonalization(): void {
+    this.showPersonalization.update((visible) => !visible);
+  }
+
+  // =========================================================
+  // Personalization State
+  // =========================================================
+
+  /**
+   * Available locations for personalization.
+   */
+  protected readonly locations = signal<Location[]>([]);
+
+  /**
+   * Whether the visitor has selected
+   * at least one personalization preference.
+   */
+  protected readonly hasPersonalization = computed(() =>
+    this.personalizationService.hasPreferences(),
+  );
 
   // =========================================================
   // Loading / Error State
   // =========================================================
 
-  protected readonly loading =
-    signal(true);
+  protected readonly loading = signal(true);
 
   /**
    * Prevent duplicate sign-out requests.
    */
-  protected readonly signingOut =
-    signal(false);
+  protected readonly signingOut = signal(false);
 
-  protected readonly error =
-    signal<string | null>(null);
+  protected readonly error = signal<string | null>(null);
 
   // =========================================================
   // Filter State
   // =========================================================
 
-  protected readonly searchTerm =
-    signal('');
+  protected readonly searchTerm = signal('');
 
-  protected readonly selectedType =
-    signal<ResourceType | ''>('');
+  protected readonly selectedType = signal<ResourceType | ''>('');
 
-  protected readonly selectedCategory =
-    signal('');
+  protected readonly selectedCategory = signal('');
 
-  protected readonly onlineOnly =
-    signal(false);
+  protected readonly onlineOnly = signal(false);
 
-  protected readonly featuredOnly =
-    signal(false);
+  protected readonly featuredOnly = signal(false);
 
   // =========================================================
   // Mobile Filter Builder State
@@ -1194,21 +1294,17 @@ export class ResourceListComponent
   //   Search + Category + Type are always visible.
   // =========================================================
 
-  protected readonly showSearch =
-    signal(false);
+  protected readonly showSearch = signal(false);
 
   // =========================================================
   // Pagination
   // =========================================================
 
-  private lastResourceDocument:
-    QueryDocumentSnapshot | undefined;
+  private lastResourceDocument: QueryDocumentSnapshot | undefined;
 
-  protected readonly hasMoreResources =
-    signal(true);
+  protected readonly hasMoreResources = signal(true);
 
-  protected readonly loadingMore =
-    signal(false);
+  protected readonly loadingMore = signal(false);
 
   /**
    * Number of resources loaded per page.
@@ -1219,131 +1315,84 @@ export class ResourceListComponent
   // Resource Types
   // =========================================================
 
-  protected readonly resourceTypes:
-    ResourceType[] = [
-      'government',
-      'nonprofit',
-      'education',
-      'business',
-      'community',
-      'service',
-      'tool',
-      'other',
-    ];
+  protected readonly resourceTypes: ResourceType[] = [
+    'government',
+    'nonprofit',
+    'education',
+    'business',
+    'community',
+    'service',
+    'tool',
+    'other',
+  ];
 
   // =========================================================
   // Selected Category ID
   // =========================================================
 
-  protected readonly selectedCategoryId =
-    computed(() => {
-      const slug =
-        this.selectedCategory();
+  protected readonly selectedCategoryId = computed(() => {
+    const slug = this.selectedCategory();
 
-      if (!slug) {
-        return '';
-      }
+    if (!slug) {
+      return '';
+    }
 
-      const category =
-        this.categories().find(
-          (category) =>
-            category.slug === slug,
-        );
+    const category = this.categories().find((category) => category.slug === slug);
 
-      return category?.id ?? '';
-    });
+    return category?.id ?? '';
+  });
 
   // =========================================================
   // Category Name
   // =========================================================
 
-  protected getCategoryName(
-    categoryId: string,
-  ): string {
-    return (
-      this.categories().find(
-        (category) =>
-          category.id === categoryId,
-      )?.name ?? ''
-    );
+  protected getCategoryName(categoryId: string): string {
+    return this.categories().find((category) => category.id === categoryId)?.name ?? '';
   }
 
   // =========================================================
   // Filtered Resources
   // =========================================================
 
-  protected readonly filteredResources =
-    computed(() => {
-      const search =
-        this.searchTerm()
-          .trim()
-          .toLowerCase();
+  protected readonly filteredResources = computed(() => {
+    const search = this.searchTerm().trim().toLowerCase();
 
-      const type =
-        this.selectedType();
+    const type = this.selectedType();
 
-      const categoryId =
-        this.selectedCategoryId();
+    const categoryId = this.selectedCategoryId();
 
-      return this.resources().filter(
-        (resource) => {
-          const matchesSearch =
-            !search ||
-            resource.name
-              .toLowerCase()
-              .includes(search) ||
-            resource.description
-              .toLowerCase()
-              .includes(search) ||
-            resource.tags.some(
-              (tag) =>
-                tag
-                  .toLowerCase()
-                  .includes(search),
-            );
+    return this.resources().filter((resource) => {
+      const matchesSearch =
+        !search ||
+        resource.name.toLowerCase().includes(search) ||
+        resource.description.toLowerCase().includes(search) ||
+        resource.tags.some((tag) => tag.toLowerCase().includes(search));
 
-          const matchesType =
-            !type ||
-            resource.resourceType === type;
+      const matchesType = !type || resource.resourceType === type;
 
-          const matchesCategory =
-            !categoryId ||
-            resource.categoryId ===
-              categoryId;
+      const matchesCategory = !categoryId || resource.categoryId === categoryId;
 
-          const matchesOnline =
-            !this.onlineOnly() ||
-            resource.online;
+      const matchesOnline = !this.onlineOnly() || resource.online;
 
-          const matchesFeatured =
-            !this.featuredOnly() ||
-            resource.featured;
+      const matchesFeatured = !this.featuredOnly() || resource.featured;
 
-          return (
-            matchesSearch &&
-            matchesType &&
-            matchesCategory &&
-            matchesOnline &&
-            matchesFeatured
-          );
-        },
-      );
+      return matchesSearch && matchesType && matchesCategory && matchesOnline && matchesFeatured;
     });
+  });
 
   // =========================================================
   // Active Filters
   // =========================================================
 
-  protected readonly hasActiveFilters =
-    computed(() => {
-      return (
-        this.searchTerm().trim() !== '' ||
-        this.selectedType() !== '' ||
-        this.selectedCategory() !== '' ||
-        this.onlineOnly() ||
-        this.featuredOnly()
-      );
-    });
+  protected readonly hasActiveFilters = computed(() => {
+    return (
+      this.searchTerm().trim() !== '' ||
+      this.selectedType() !== '' ||
+      this.selectedCategory() !== '' ||
+      this.onlineOnly() ||
+      this.featuredOnly()
+    );
+  });
 
   // =========================================================
   // Initialization
@@ -1362,10 +1411,7 @@ export class ResourceListComponent
     try {
       await this.authService.logout();
     } catch (error) {
-      console.error(
-        'Sign out failed:',
-        error,
-      );
+      console.error('Sign out failed:', error);
     } finally {
       this.signingOut.set(false);
     }
@@ -1376,15 +1422,12 @@ export class ResourceListComponent
 
     this.loadCategories();
 
-    const category =
-      this.route.snapshot
-        .queryParamMap
-        .get('category');
+    this.loadLocations();
+
+    const category = this.route.snapshot.queryParamMap.get('category');
 
     if (category) {
-      this.selectedCategory.set(
-        category,
-      );
+      this.selectedCategory.set(category);
     }
   }
 
@@ -1394,18 +1437,25 @@ export class ResourceListComponent
 
   private async loadCategories(): Promise<void> {
     try {
-      const categories =
-        await this.categoryService
-          .getActiveCategories();
+      const categories = await this.categoryService.getActiveCategories();
 
-      this.categories.set(
-        categories,
-      );
+      this.categories.set(categories);
     } catch (error) {
-      console.error(
-        'Failed to load categories:',
-        error,
-      );
+      console.error('Failed to load categories:', error);
+    }
+  }
+
+  // =========================================================
+  // Load Locations
+  // =========================================================
+
+  private async loadLocations(): Promise<void> {
+    try {
+      const locations = await this.locationService.getAllLocations();
+
+      this.locations.set(locations);
+    } catch (error) {
+      console.error('Failed to load locations:', error);
     }
   }
 
@@ -1413,15 +1463,10 @@ export class ResourceListComponent
   // Search
   // =========================================================
 
-  protected onSearch(
-    event: Event,
-  ): void {
-    const input =
-      event.target as HTMLInputElement;
+  protected onSearch(event: Event): void {
+    const input = event.target as HTMLInputElement;
 
-    this.searchTerm.set(
-      input.value,
-    );
+    this.searchTerm.set(input.value);
   }
 
   // =========================================================
@@ -1429,85 +1474,58 @@ export class ResourceListComponent
   // =========================================================
 
   protected toggleSearch(): void {
-    this.showSearch.update(
-      (visible) => !visible,
-    );
+    this.showSearch.update((visible) => !visible);
   }
 
   // =========================================================
   // Resource Type
   // =========================================================
 
-  protected onTypeChange(
-    event: Event,
-  ): void {
-    const select =
-      event.target as HTMLSelectElement;
+  protected onTypeChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
 
-    this.selectedType.set(
-      select.value as
-        | ResourceType
-        | '',
-    );
+    this.selectedType.set(select.value as ResourceType | '');
   }
 
   // =========================================================
   // Online Filter
   // =========================================================
 
-  protected onOnlineChange(
-    event: Event,
-  ): void {
-    const input =
-      event.target as HTMLInputElement;
+  protected onOnlineChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
 
-    this.onlineOnly.set(
-      input.checked,
-    );
+    this.onlineOnly.set(input.checked);
   }
 
   // =========================================================
   // Featured Filter
   // =========================================================
 
-  protected onFeaturedChange(
-    event: Event,
-  ): void {
-    const input =
-      event.target as HTMLInputElement;
+  protected onFeaturedChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
 
-    this.featuredOnly.set(
-      input.checked,
-    );
+    this.featuredOnly.set(input.checked);
   }
 
   // =========================================================
   // Category Filter
   // =========================================================
 
-  protected onCategoryChange(
-    event: Event,
-  ): void {
-    const select =
-      event.target as HTMLSelectElement;
+  protected onCategoryChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
 
-    const category =
-      select.value;
+    const category = select.value;
 
-    this.selectedCategory.set(
-      category,
-    );
+    this.selectedCategory.set(category);
 
     this.router.navigate([], {
       relativeTo: this.route,
 
       queryParams: {
-        category:
-          category || null,
+        category: category || null,
       },
 
-      queryParamsHandling:
-        'merge',
+      queryParamsHandling: 'merge',
     });
   }
 
@@ -1533,22 +1551,55 @@ export class ResourceListComponent
         category: null,
       },
 
-      queryParamsHandling:
-        'merge',
+      queryParamsHandling: 'merge',
     });
+  }
+
+  // =========================================================
+  // Personalization
+  // =========================================================
+
+  /**
+   * Toggle a visitor's personalization interest.
+   */
+  protected togglePersonalizationInterest(interestId: string): void {
+    this.personalizationService.toggleInterest(interestId);
+  }
+
+  /**
+   * Determine whether an interest is selected.
+   */
+  protected isPersonalizationInterestSelected(interestId: string): boolean {
+    return this.personalizationService.preferences().interests.includes(interestId);
+  }
+
+  /**
+   * Set the visitor's preferred location.
+   */
+  protected selectPersonalizationLocation(locationId: string | null): void {
+    this.personalizationService.setLocation(locationId);
+  }
+
+  /**
+   * Clear all personalization preferences.
+   */
+  protected clearPersonalization(): void {
+    this.personalizationService.clear();
+  }
+
+  /**
+   * Format a location for display.
+   */
+  protected formatPersonalizationLocation(location: Location): string {
+    return [location.city, location.state, location.country].filter(Boolean).join(', ');
   }
 
   // =========================================================
   // Format Resource Type
   // =========================================================
 
-  protected formatResourceType(
-    type: ResourceType,
-  ): string {
-    return (
-      type.charAt(0).toUpperCase() +
-      type.slice(1)
-    );
+  protected formatResourceType(type: ResourceType): string {
+    return type.charAt(0).toUpperCase() + type.slice(1);
   }
 
   // =========================================================
@@ -1560,40 +1611,22 @@ export class ResourceListComponent
 
     this.error.set(null);
 
-    this.lastResourceDocument =
-      undefined;
+    this.lastResourceDocument = undefined;
 
-    this.hasMoreResources.set(
-      true,
-    );
+    this.hasMoreResources.set(true);
 
     try {
-      const page =
-        await this.resourceService
-          .getPublishedResourcesPage(
-            this.resourcePageSize,
-          );
+      const page = await this.resourceService.getPublishedResourcesPage(this.resourcePageSize);
 
-      this.resources.set(
-        page.resources,
-      );
+      this.resources.set(page.resources);
 
-      this.lastResourceDocument =
-        page.lastDocument ??
-        undefined;
+      this.lastResourceDocument = page.lastDocument ?? undefined;
 
-      this.hasMoreResources.set(
-        page.hasMore,
-      );
+      this.hasMoreResources.set(page.hasMore);
     } catch (error) {
-      console.error(
-        'Failed to load resources:',
-        error,
-      );
+      console.error('Failed to load resources:', error);
 
-      this.error.set(
-        'Unable to load resources. Please try again later.',
-      );
+      this.error.set('Unable to load resources. Please try again later.');
     } finally {
       this.loading.set(false);
     }
@@ -1604,46 +1637,27 @@ export class ResourceListComponent
   // =========================================================
 
   protected async loadMoreResources(): Promise<void> {
-    if (
-      this.loadingMore() ||
-      !this.hasMoreResources()
-    ) {
+    if (this.loadingMore() || !this.hasMoreResources()) {
       return;
     }
 
     this.loadingMore.set(true);
 
     try {
-      const page =
-        await this.resourceService
-          .getPublishedResourcesPage(
-            this.resourcePageSize,
-            this.lastResourceDocument,
-          );
-
-      this.resources.update(
-        (resources) => [
-          ...resources,
-          ...page.resources,
-        ],
+      const page = await this.resourceService.getPublishedResourcesPage(
+        this.resourcePageSize,
+        this.lastResourceDocument,
       );
 
-      this.lastResourceDocument =
-        page.lastDocument ??
-        undefined;
+      this.resources.update((resources) => [...resources, ...page.resources]);
 
-      this.hasMoreResources.set(
-        page.hasMore,
-      );
+      this.lastResourceDocument = page.lastDocument ?? undefined;
+
+      this.hasMoreResources.set(page.hasMore);
     } catch (error) {
-      console.error(
-        'Failed to load more resources:',
-        error,
-      );
+      console.error('Failed to load more resources:', error);
 
-      this.error.set(
-        'Unable to load more resources. Please try again.',
-      );
+      this.error.set('Unable to load more resources. Please try again.');
     } finally {
       this.loadingMore.set(false);
     }
@@ -1653,24 +1667,17 @@ export class ResourceListComponent
   // Select Category
   // =========================================================
 
-  protected selectCategory(
-    categorySlug: string,
-  ): void {
-    this.selectedCategory.set(
-      categorySlug,
-    );
+  protected selectCategory(categorySlug: string): void {
+    this.selectedCategory.set(categorySlug);
 
     this.router.navigate([], {
       relativeTo: this.route,
 
       queryParams: {
-        category:
-          categorySlug || null,
+        category: categorySlug || null,
       },
 
-      queryParamsHandling:
-        'merge',
+      queryParamsHandling: 'merge',
     });
   }
-
 }

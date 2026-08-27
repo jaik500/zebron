@@ -16,58 +16,190 @@ import { MatDividerModule } from "@angular/material/divider";
   standalone: true,
   imports: [FormsModule, RouterLink, MatIcon, MatMenuModule, MatDividerModule],
   template: `
-<!-- Header actions -->
-<div
-  class="flex
-         shrink-0
-         items-center
-         gap-2"
->
-
-  <!-- Admin Dashboard
-       Desktop only -->
-  <a
-    mat-stroked-button
-    routerLink="/admin"
-    class="hidden
-           !h-10
-           !border-white/30
-           !px-4
-           !text-sm
-           !font-semibold
-           !text-white
-           hover:!bg-white/10
-           sm:inline-flex
-           sm:items-center
-           sm:justify-center"
+ <header class="border-b border-gray-200 bg-[#032D42]">
+  <div
+    class="mx-auto flex max-w-7xl
+           items-center justify-between
+           gap-4 px-4 py-4
+           sm:px-6 lg:px-8"
   >
-    <mat-icon
-      class="!mr-1.5
-             !h-5
-             !w-5
-             !text-[19px]"
+
+    <!-- Header information -->
+    <div class="min-w-0">
+      <p
+        class="text-xs
+               font-semibold
+               uppercase
+               tracking-wider
+               text-[#7ED6D1]"
+      >
+        Administration
+      </p>
+
+      <h1
+        class="text-xl
+               font-bold
+               text-white
+               sm:text-3xl"
+      >
+        Users
+      </h1>
+
+      <p
+        class="mt-1
+               text-sm
+               text-white/80"
+      >
+        Manage Zebron user profiles, roles,
+        and account information.
+      </p>
+    </div>
+
+
+    <!-- =====================================================
+         Angular Material administration menu
+         ===================================================== -->
+    <button
+      mat-icon-button
+      [matMenuTriggerFor]="adminMenu"
+      aria-label="Open administration menu"
+      class="!shrink-0
+             !text-white
+             hover:!bg-white/10"
     >
-      dashboard
-    </mat-icon>
+      <mat-icon>
+        more_vert
+      </mat-icon>
+    </button>
 
-    Admin Dashboard
-  </a>
+
+    <!-- =====================================================
+         Administration menu
+         ===================================================== -->
+    <mat-menu
+      #adminMenu="matMenu"
+      xPosition="before"
+      yPosition="below"
+      class="admin-header-menu"
+    >
+
+      <!-- Home -->
+      <a
+        mat-menu-item
+        routerLink="/"
+      >
+        <mat-icon>
+          home
+        </mat-icon>
+
+        <span>
+          Home
+        </span>
+      </a>
 
 
-  <!-- Three vertical dots -->
-  <button
-    mat-icon-button
-    aria-label="Open administration menu"
-    class="!shrink-0
-           !text-white
-           hover:!bg-white/10"
-  >
-    <mat-icon>
-      more_vert
-    </mat-icon>
-  </button>
+      <!-- Admin Dashboard -->
+      <a
+        mat-menu-item
+        routerLink="/admin"
+      >
+        <mat-icon>
+          dashboard
+        </mat-icon>
 
-</div>
+        <span>
+          Admin Dashboard
+        </span>
+      </a>
+
+
+      <!-- Divider -->
+      <mat-divider></mat-divider>
+
+
+      <!-- Resource Types -->
+      <a
+        mat-menu-item
+        routerLink="/admin/resources"
+      >
+        <mat-icon>
+          category
+        </mat-icon>
+
+        <span>
+          Resource Types
+        </span>
+      </a>
+
+
+      <!-- Organizations -->
+      <a
+        mat-menu-item
+        routerLink="/admin/organizations"
+      >
+        <mat-icon>
+          business
+        </mat-icon>
+
+        <span>
+          Organizations
+        </span>
+      </a>
+
+
+      <!-- Categories -->
+      <a
+        mat-menu-item
+        routerLink="/admin/categories"
+      >
+        <mat-icon>
+          folder
+        </mat-icon>
+
+        <span>
+          Categories
+        </span>
+      </a>
+
+
+      <!-- Submissions -->
+      <a
+        mat-menu-item
+        routerLink="/admin/submissions"
+      >
+        <mat-icon>
+          assignment
+        </mat-icon>
+
+        <span>
+          Submissions
+        </span>
+      </a>
+
+
+      <!-- Divider -->
+      <mat-divider></mat-divider>
+
+
+      <!-- Sign Out -->
+      <button
+        mat-menu-item
+        type="button"
+        (click)="signOut()"
+      >
+        <mat-icon>
+          logout
+        </mat-icon>
+
+        <span>
+          Sign Out
+        </span>
+      </button>
+
+    </mat-menu>
+
+  </div>
+</header>
 
     <main class="mx-auto max-w-7xl p-6 sm:p-8">
       <!-- =========================================================

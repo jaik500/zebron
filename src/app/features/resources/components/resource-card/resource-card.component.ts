@@ -1,11 +1,12 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Resource } from '../../../../core/models/resource.model';
+import { TitleCasePipe } from '@angular/common';
 
 @Component({
   selector: 'app-resource-card',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TitleCasePipe],
   template: `
     <a
       [routerLink]="['/resources', resource().slug]"
@@ -32,9 +33,10 @@ import { Resource } from '../../../../core/models/resource.model';
               class="rounded-full bg-gray-100
                px-1.5 py-0
                text-[13px] font-medium
-               leading-3 text-gray-700"
+               leading-3 text-gray-700
+               capitalize"
             >
-              {{ resource().resourceType }}
+              {{ resource().resourceType | titlecase }}
             </span>
 
             <!-- Category -->
