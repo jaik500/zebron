@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { Resource, ResourceStatus, ResourceType } from '../../../../core/models/resource.model';
 
 import { Category } from '../../../../core/models/category.model';
+import { Location } from '../../../../core/models/location.model';
 
 import { ResourceService } from '../../../../core/services/resource.service';
 import { CategoryService } from '../../../../core/services/category.service';
@@ -12,6 +13,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { HotToastService } from '@ngxpert/hot-toast';
 
 import { DeleteConfirmationComponent } from '../../../../shared/components/delete-confirmation/delete-confirmation';
+import { LocationService } from '../../../../core/services/location.service';
 
 @Component({
   selector: 'app-resource-admin',
@@ -245,6 +247,44 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
                           </select>
                         </div>
                       </div>
+
+                      <!-- Location -->
+<div>
+  <label
+    for="locationId"
+    class="block text-sm font-medium text-gray-700"
+  >
+    Location
+  </label>
+
+  <select
+    id="locationId"
+    name="locationId"
+    [(ngModel)]="form.locationId"
+    class="mt-1.5 block w-full rounded-lg
+           border border-gray-300 bg-gray-50
+           px-4 py-2.5 text-sm text-gray-900
+           focus:border-[#007979]
+           focus:outline-none
+           focus:ring-2 focus:ring-[#007979]/20
+           focus:bg-white"
+  >
+    <option value="">Select a location</option>
+
+    @for (location of locations(); track location.id) {
+      <option [value]="location.id">
+        {{ location.city }}, {{ location.state }}
+        @if (location.zipCode) {
+          {{ location.zipCode }}
+        }
+      </option>
+    }
+  </select>
+
+  <p class="mt-1.5 text-xs text-gray-500">
+    Select the location where this resource is available.
+  </p>
+</div>
 
                       <!-- Description -->
                       <div>
@@ -884,11 +924,13 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
 export class ResourceAdminComponent implements OnInit {
   private readonly resourceService = inject(ResourceService);
   private readonly categoryService = inject(CategoryService);
+  private readonly locationService = inject(LocationService);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(HotToastService);
 
   protected readonly resources = signal<Resource[]>([]);
   protected readonly categories = signal<Category[]>([]);
+  protected readonly locations = signal<Location[]>([]);
 
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
@@ -922,26 +964,33 @@ export class ResourceAdminComponent implements OnInit {
   /**
    * Load resources and categories for the admin page.
    */
-  private async loadData(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
+  /**
+ * Load resources, categories, and locations for the admin page.
+ */
+private async loadData(): Promise<void> {
+  this.loading.set(true);
+  this.error.set(null);
 
-    try {
-      const [resources, categories] = await Promise.all([
-        this.resourceService.getAllResources(),
-        this.categoryService.getAllCategories(),
-      ]);
+  try {
+    const [resources, categories, locations] = await Promise.all([
+      this.resourceService.getAllResources(),
+      this.categoryService.getAllCategories(),
+      this.locationService.getAllLocations(),
+    ]);
 
-      this.resources.set(resources);
-      this.categories.set(categories);
-    } catch (error) {
-      console.error('Failed to load resource admin data:', error);
+    this.resources.set(resources);
+    this.categories.set(categories);
+    this.locations.set(locations);
+  } catch (error) {
+    console.error('Failed to load resource admin data:', error);
 
-      this.error.set('Unable to load resources. Please try again.');
-    } finally {
-      this.loading.set(false);
-    }
+    this.error.set(
+      'Unable to load resources. Please try again.'
+    );
+  } finally {
+    this.loading.set(false);
   }
+}
 
   /**
    * Automatically create a URL-friendly slug from the resource name.
@@ -1050,6 +1099,8 @@ export class ResourceAdminComponent implements OnInit {
       description: resource.description,
 
       categoryId: resource.categoryId,
+
+      locationId: resource.locationId ?? '',
 
       organizationId: resource.organizationId ?? '',
 
@@ -1184,6 +1235,8 @@ export class ResourceAdminComponent implements OnInit {
       description: '',
 
       categoryId: '',
+
+      locationId: '',
 
       organizationId: '',
 

@@ -471,13 +471,13 @@ import { HotToastService } from '@ngxpert/hot-toast';
                    sm:p-5"
           >
             <div
-  class="flex items-start
+              class="flex items-start
          justify-between
          gap-3
          sm:flex-row
          sm:items-start
          sm:justify-between"
->
+            >
               <!-- Personalization heading -->
 
               <div class="min-w-0">
@@ -529,7 +529,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                       ? 'Hide personalization options'
                       : 'Show personalization options'
                   "
-                   class="inline-flex
+                  class="inline-flex
          shrink-0
          items-center
          gap-1
@@ -612,14 +612,17 @@ import { HotToastService } from '@ngxpert/hot-toast';
                       [class.bg-white]="!isPersonalizationInterestSelected(category.slug)"
                       [class.text-gray-600]="!isPersonalizationInterestSelected(category.slug)"
                     >
-                      <mat-icon
-                        aria-hidden="true"
-                        class="!m-0
-                             !h-4 !w-4
-                             !text-[16px]"
-                      >
-                        {{ category.icon }}
-                      </mat-icon>
+                      <!-- Only show icon when the category has one -->
+                      @if (category.icon) {
+                        <mat-icon
+                          aria-hidden="true"
+                          class="!m-0
+                 !h-4 !w-4
+                 !text-[16px]"
+                        >
+                          {{ category.icon }}
+                        </mat-icon>
+                      }
 
                       <span>
                         {{ category.name }}
@@ -629,41 +632,33 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 </div>
               </div>
 
-             <!-- =================================================
+              <!-- =================================================
      Location
      ================================================= -->
-<div class="mt-4">
-
-  <label
-    for="personalization-location"
-    class="mb-1.5
+              <div class="mt-4">
+                <label
+                  for="personalization-location"
+                  class="mb-1.5
            block
            text-sm
            font-semibold
            text-[#032D42]"
-  >
-    Where are you located?
-  </label>
+                >
+                  Where are you located?
+                </label>
 
-  <div
-    class="flex
+                <div
+                  class="flex
            items-end
            gap-3"
-  >
-
-    <!-- Location dropdown -->
-    <div class="min-w-0 flex-1 max-w-md">
-      <select
-        id="personalization-location"
-        [value]="
-          personalizationService.preferences().locationId ?? ''
-        "
-        (change)="
-          selectPersonalizationLocation(
-            $any($event.target).value || null
-          )
-        "
-        class="block
+                >
+                  <!-- Location dropdown -->
+                  <div class="min-w-0 flex-1 max-w-md">
+                    <select
+                      id="personalization-location"
+                      [value]="personalizationService.preferences().locationId ?? ''"
+                      (change)="selectPersonalizationLocation($any($event.target).value || null)"
+                      class="block
                h-10
                w-full
                rounded-lg
@@ -678,30 +673,23 @@ import { HotToastService } from '@ngxpert/hot-toast';
                focus:outline-none
                focus:ring-2
                focus:ring-[#007979]/20"
-      >
-        <option value="">
-          Select your location
-        </option>
+                    >
+                      <option value="">Select your location</option>
 
-        @for (
-          location of locations();
-          track location.id
-        ) {
-          <option
-            [value]="location.id"
-          >
-            {{ formatPersonalizationLocation(location) }}
-          </option>
-        }
-      </select>
-    </div>
+                      @for (location of locations(); track location.id) {
+                        <option [value]="location.id">
+                          {{ formatPersonalizationLocation(location) }}
+                        </option>
+                      }
+                    </select>
+                  </div>
 
-    <!-- Clear personalization -->
-    @if (hasPersonalization()) {
-      <button
-        type="button"
-        (click)="clearPersonalization()"
-        class="mb-0.5
+                  <!-- Clear personalization -->
+                  @if (hasPersonalization()) {
+                    <button
+                      type="button"
+                      (click)="clearPersonalization()"
+                      class="mb-0.5
                shrink-0
                text-xs
                font-semibold
@@ -711,14 +699,12 @@ import { HotToastService } from '@ngxpert/hot-toast';
                focus:outline-none
                focus:ring-2
                focus:ring-[#007979]/30"
-      >
-        Clear
-      </button>
-    }
-
-  </div>
-
-</div>
+                    >
+                      Clear
+                    </button>
+                  }
+                </div>
+              </div>
             }
           </section>
 
@@ -907,59 +893,66 @@ import { HotToastService } from '@ngxpert/hot-toast';
                  ================================================= -->
             <div
               class="mt-1.5
-                     flex items-center
-                     justify-between
-                     gap-2"
+         flex
+         flex-nowrap
+         items-center
+         justify-between
+         gap-2"
             >
+              <!-- Filter Items -->
               <div
-                class="flex min-w-0
-                       items-center
-                       gap-2.5"
+                class="flex
+           min-w-0
+           flex-nowrap
+           items-center
+           gap-3"
               >
                 <!-- Online -->
                 <label
                   class="flex shrink-0
-                         items-center
-                         gap-1
-                         text-md
-                         text-[#032D42]
-                         sm:text-[14px]"
+             items-center
+             gap-1
+             text-md
+             text-[#032D42]
+             sm:text-[14px]"
                 >
                   <input
                     type="checkbox"
                     [checked]="onlineOnly()"
                     (change)="onOnlineChange($event)"
                     class="h-4 w-4
-                           rounded
-                           border-[#007979]/30
-                           text-[#007979]
-                           focus:ring-[#007979]/20"
+               shrink-0
+               rounded
+               border-[#007979]/30
+               text-[#007979]
+               focus:ring-[#007979]/20"
                   />
 
-                  <span> Online </span>
+                  <span>Online</span>
                 </label>
 
                 <!-- Featured -->
                 <label
                   class="flex shrink-0
-                         items-center
-                         gap-1
-                         text-md
-                         text-[#032D42]
-                         sm:text-[14px]"
+             items-center
+             gap-1
+             text-md
+             text-[#032D42]
+             sm:text-[14px]"
                 >
                   <input
                     type="checkbox"
                     [checked]="featuredOnly()"
                     (change)="onFeaturedChange($event)"
                     class="h-4 w-4
-                           rounded
-                           border-[#007979]/30
-                           text-[#007979]
-                           focus:ring-[#007979]/20"
+               shrink-0
+               rounded
+               border-[#007979]/30
+               text-[#007979]
+               focus:ring-[#007979]/20"
                   />
 
-                  <span> Featured </span>
+                  <span>Featured</span>
                 </label>
 
                 <!-- Clear -->
@@ -967,12 +960,15 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   <button
                     type="button"
                     (click)="clearFilters()"
-                    class="shrink-0
-                           text-lg
-                           font-medium
-                           text-[#007979]
-                           hover:text-[#032D42]
-                           sm:text-[14px]"
+                    class="ml-6
+               shrink-0
+               self-center
+               whitespace-nowrap
+               text-md
+               font-medium
+               text-[#007979]
+               hover:text-[#032D42]
+               sm:text-[14px]"
                   >
                     Clear
                   </button>
@@ -983,10 +979,11 @@ import { HotToastService } from '@ngxpert/hot-toast';
               @if (!loading()) {
                 <span
                   class="shrink-0
-                         text-[15px]
-                         font-bold
-                         text-[#032D42]/60
-                         sm:text-[16px]"
+             whitespace-nowrap
+             text-[15px]
+             font-bold
+             text-[#032D42]/60
+             sm:text-[16px]"
                 >
                   {{ filteredResources().length }}
                 </span>

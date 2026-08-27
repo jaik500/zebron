@@ -586,6 +586,7 @@ export class ResourceDetailComponent {
         );
 
       this.location.set(location);
+      console.log('Loaded locations:', location);
     }
 
         // Load the category associated with this resource.
