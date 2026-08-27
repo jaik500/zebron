@@ -1,10 +1,4 @@
-import {
-  Component,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,20 +7,19 @@ import { Location } from '../../../../core/models/location.model';
 import { LocationService } from '../../../../core/services/location.service';
 
 import { HotToastService } from '@ngxpert/hot-toast';
-
+import { MatDividerModule } from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
+import { AuthService } from '../../../../core/services/auth.service';
+import { MatMenuModule } from '@angular/material/menu';
 
 @Component({
   selector: 'app-location-admin',
 
   standalone: true,
 
-  imports: [
-    FormsModule,
-    RouterLink,
-  ],
+  imports: [FormsModule, RouterLink, MatDividerModule, MatIconModule, MatMenuModule],
 
   template: `
-
     <!-- =====================================================
          ADMIN HEADER
          ===================================================== -->
@@ -41,9 +34,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                sm:px-6
                lg:px-8"
       >
-
         <div>
-
           <p
             class="text-xs
                    font-semibold
@@ -70,32 +61,133 @@ import { HotToastService } from '@ngxpert/hot-toast';
           >
             Create and manage locations in the Zebron database.
           </p>
-
         </div>
 
+        <!-- =====================================================
+     Admin Header Actions
+     Desktop:
+       Admin Dashboard + 3-dot menu
 
-        <a
-          routerLink="/admin"
-          class="shrink-0
-                 rounded-lg
-                 border
-                 border-gray-300
-                 bg-white
-                 px-3
-                 py-2
-                 text-sm
-                 font-semibold
-                 text-gray-700
-                 transition
-                 hover:border-[#032D42]
-                 hover:text-[#032D42]"
+     Mobile:
+       3-dot menu only
+     ===================================================== -->
+        <div
+          class="flex shrink-0
+         items-center
+         gap-2"
         >
-          Admin Dashboard
-        </a>
+          <!-- Admin Dashboard
+       Hidden on mobile -->
+          <a
+            routerLink="/admin"
+            class="hidden
+           rounded-lg
+           border border-gray-300
+           bg-white
+           px-3 py-2
+           text-sm
+           font-semibold
+           text-gray-700
+           transition
+           hover:border-[#032D42]
+           hover:text-[#032D42]
+           sm:inline-flex"
+          >
+            Admin Dashboard
+          </a>
 
+          <!-- =====================================================
+       Three-dot navigation menu
+       ===================================================== -->
+          <button
+            type="button"
+            [matMenuTriggerFor]="adminMenu"
+            aria-label="Open navigation menu"
+            class="flex
+           h-10
+           w-10
+           shrink-0
+           items-center
+           justify-center
+           rounded-full
+           text-white
+           transition
+           hover:bg-white/10
+           focus:outline-none
+           focus:ring-2
+           focus:ring-white/30"
+          >
+            <mat-icon
+              aria-hidden="true"
+              class="!m-0
+             !h-6
+             !w-6
+             !text-[26px]"
+            >
+              more_vert
+            </mat-icon>
+          </button>
+        </div>
+
+        <mat-menu #adminMenu="matMenu" xPosition="before" yPosition="below">
+          <!-- Home -->
+          <button mat-menu-item routerLink="/">
+            <mat-icon>home</mat-icon>
+            <span>Home</span>
+          </button>
+
+          <!-- Dashboard -->
+          <button mat-menu-item routerLink="/admin">
+            <mat-icon>dashboard</mat-icon>
+            <span>Dashboard</span>
+          </button>
+
+          <!-- Categories -->
+          <button mat-menu-item routerLink="/admin/categories">
+            <mat-icon>category</mat-icon>
+            <span>Categories</span>
+          </button>
+
+          <!-- Submissions -->
+          <button mat-menu-item routerLink="/admin/submissions">
+            <mat-icon>assignment</mat-icon>
+            <span>Submissions</span>
+          </button>
+
+          <!-- Users -->
+          <button mat-menu-item routerLink="/admin/users">
+            <mat-icon>group</mat-icon>
+            <span>Users</span>
+          </button>
+
+          <!-- Resource Types -->
+          <button mat-menu-item routerLink="/admin/resource-types">
+            <mat-icon>list_alt</mat-icon>
+            <span>Resource Types</span>
+          </button>
+
+          <!-- Locations -->
+          <button mat-menu-item routerLink="/admin/resources">
+            <mat-icon>library_books</mat-icon>
+            <span>Resources</span>
+          </button>
+
+          <!-- Mailbox -->
+          <button mat-menu-item routerLink="/admin/contact">
+            <mat-icon>mail</mat-icon>
+            <span>Mailbox</span>
+          </button>
+
+          <mat-divider></mat-divider>
+
+          <!-- Sign out -->
+          <button mat-menu-item type="button" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            <span>Sign out</span>
+          </button>
+        </mat-menu>
       </div>
     </header>
-
 
     <!-- =====================================================
          PAGE CONTENT
@@ -104,38 +196,35 @@ import { HotToastService } from '@ngxpert/hot-toast';
       class="min-h-screen
              bg-gray-50"
     >
-
       <div
         class="mx-auto
                max-w-7xl
                px-4
-               py-6
+               py-2
                sm:px-6
                lg:px-8"
       >
-
         <!-- ===================================================
              TWO COLUMN ADMIN LAYOUT
              =================================================== -->
         <div
           class="grid
+                 items-start
                  gap-6
                  lg:grid-cols-3"
         >
-
-
           <!-- ================================================
                CREATE / EDIT FORM
                ================================================ -->
-          <section
-            class="rounded-2xl
-                   border
-                   border-gray-200
-                   bg-white
-                   shadow-sm
-                   lg:col-span-2"
-          >
-
+          <div class="lg:col-span-2">
+            <section
+              class="overflow-hidden
+                     rounded-2xl
+                     border
+                     border-gray-200
+                     bg-white
+                     shadow-sm"
+            >
             <!-- Form header -->
             <div
               class="border-b
@@ -144,16 +233,13 @@ import { HotToastService } from '@ngxpert/hot-toast';
                      py-4
                      sm:px-6"
             >
-
               <div
                 class="flex
                        items-start
                        justify-between
                        gap-4"
               >
-
                 <div>
-
                   <p
                     class="text-xs
                            font-semibold
@@ -170,9 +256,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                            font-semibold
                            text-[#032D42]"
                   >
-                    {{ editingId()
-                      ? 'Update Location'
-                      : 'Add a New Location' }}
+                    {{ editingId() ? 'Update Location' : 'Add a New Location' }}
                   </h2>
 
                   <p
@@ -186,59 +270,147 @@ import { HotToastService } from '@ngxpert/hot-toast';
                         : 'Enter the location details below.'
                     }}
                   </p>
-
                 </div>
 
+                <!-- =====================================================
+     Form Header Actions
+     ===================================================== -->
 
                 @if (editingId()) {
+                  <!-- Edit mode -->
+                  <div
+                    class="flex shrink-0
+           flex-col
+           items-stretch
+           gap-1.5
+           sm:flex-row
+           sm:items-center"
+                  >
+                    <!-- Cancel -->
+                    <button
+                      type="button"
+                      (click)="cancelEdit()"
+                      [disabled]="saving()"
+                      class="rounded-md
+             border border-gray-300
+             bg-white
+             px-2.5 py-1
+             text-[11px]
+             font-medium
+             text-gray-700
+             transition
+             hover:border-[#007979]/40
+             hover:bg-[#007979]/5
+             focus:outline-none
+             disabled:cursor-not-allowed
+             disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
 
+                    <!-- Update -->
+                    <button
+                      type="submit"
+                      form="locationForm"
+                      [disabled]="saving()"
+                      class="rounded-md
+             bg-[#007979]
+             px-2.5 py-1
+             text-[11px]
+             font-semibold
+             text-white
+             transition
+             hover:bg-[#032D42]
+             focus:outline-none
+             disabled:cursor-not-allowed
+             disabled:opacity-50"
+                    >
+                      {{ saving() ? 'Saving...' : 'Update' }}
+                    </button>
+
+                    <!-- Editing -->
+                    <span
+                      class="hidden
+             rounded-full
+             bg-[#007979]/10
+             px-2.5 py-1
+             text-[11px]
+             font-semibold
+             text-[#007979]
+             sm:inline-flex"
+                    >
+                      Editing
+                    </span>
+                  </div>
+                } @else {
+                  <!-- Create mode: Hide / Show form -->
                   <button
                     type="button"
-                    (click)="cancelEdit()"
-                    class="shrink-0
-                           text-sm
-                           font-semibold
-                           text-[#007979]
-                           hover:text-[#032D42]"
+                    (click)="toggleLocationForm()"
+                    [attr.aria-expanded]="showLocationForm()"
+                    [attr.aria-label]="
+                      showLocationForm() ? 'Hide location form' : 'Show location form'
+                    "
+                    class="inline-flex
+           shrink-0
+           items-center
+           gap-1
+           border-0
+           bg-transparent
+           p-0
+           text-xs
+           font-semibold
+           text-[#007979]
+           transition
+           hover:text-[#032D42]
+           focus:outline-none"
                   >
-                    Cancel edit
+                    <span>
+                      {{ showLocationForm() ? 'Hide' : 'Show' }}
+                    </span>
+
+                    <mat-icon
+                      aria-hidden="true"
+                      class="!m-0
+             !h-4
+             !w-4
+             !text-[18px]"
+                    >
+                      {{ showLocationForm() ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}
+                    </mat-icon>
                   </button>
-
                 }
-
               </div>
-
             </div>
-
 
             <!-- Form -->
             <form
+              id="locationForm"
+              class="space-y-1 p-5 sm:p-6"
               (ngSubmit)="saveLocation()"
-              class="space-y-5
-                     p-5
-                     sm:p-6"
             >
 
-              <!-- Address -->
-              <div>
-
-                <label
-                  for="address"
-                  class="block
+              @if (editingId() || showLocationForm()) {
+             
+                <!-- Address -->
+                <div>
+                  <label
+                    for="address"
+                    class="block
                          text-sm
                          font-semibold
                          text-[#032D42]"
-                >
-                  Address
-                </label>
+                  >
+                    Address
+                  </label>
 
-                <input
-                  id="address"
-                  name="address"
-                  type="text"
-                  [(ngModel)]="form.address"
-                  placeholder="123 Main Street"
-                  class="mt-1.5
+                  <input
+                    id="address"
+                    name="address"
+                    type="text"
+                    [(ngModel)]="form.address"
+                    placeholder="123 Main Street"
+                    class="mt-1.5
                          block
                          w-full
                          rounded-lg
@@ -254,323 +426,315 @@ import { HotToastService } from '@ngxpert/hot-toast';
                          focus:outline-none
                          focus:ring-2
                          focus:ring-[#007979]/20"
-                />
-
-              </div>
-
-
-              <!-- City / State -->
-              <div
-                class="grid
-                       gap-4
-                       sm:grid-cols-2"
-              >
-
-                <div>
-
-                  <label
-                    for="city"
-                    class="block
-                           text-sm
-                           font-semibold
-                           text-[#032D42]"
-                  >
-                    City
-                  </label>
-
-                  <input
-                    id="city"
-                    name="city"
-                    type="text"
-                    [(ngModel)]="form.city"
-                    placeholder="Upper Marlboro"
-                    required
-                    class="mt-1.5
-                           block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3.5
-                           py-2.5
-                           text-sm
-                           text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   />
-
                 </div>
 
-
-                <div>
-
-                  <label
-                    for="state"
-                    class="block
-                           text-sm
-                           font-semibold
-                           text-[#032D42]"
-                  >
-                    State
-                  </label>
-
-                  <input
-                    id="state"
-                    name="state"
-                    type="text"
-                    [(ngModel)]="form.state"
-                    placeholder="MD"
-                    required
-                    class="mt-1.5
-                           block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3.5
-                           py-2.5
-                           text-sm
-                           text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
-                  />
-
-                </div>
-
-              </div>
-
-
-              <!-- ZIP / Country -->
-              <div
-                class="grid
-                       gap-4
-                       sm:grid-cols-2"
-              >
-
-                <div>
-
-                  <label
-                    for="zipCode"
-                    class="block
-                           text-sm
-                           font-semibold
-                           text-[#032D42]"
-                  >
-                    ZIP Code
-                  </label>
-
-                  <input
-                    id="zipCode"
-                    name="zipCode"
-                    type="text"
-                    [(ngModel)]="form.zipCode"
-                    placeholder="20774"
-                    required
-                    class="mt-1.5
-                           block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3.5
-                           py-2.5
-                           text-sm
-                           text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
-                  />
-
-                </div>
-
-
-                <div>
-
-                  <label
-                    for="country"
-                    class="block
-                           text-sm
-                           font-semibold
-                           text-[#032D42]"
-                  >
-                    Country
-                  </label>
-
-                  <input
-                    id="country"
-                    name="country"
-                    type="text"
-                    [(ngModel)]="form.country"
-                    placeholder="United States"
-                    required
-                    class="mt-1.5
-                           block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3.5
-                           py-2.5
-                           text-sm
-                           text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
-                  />
-
-                </div>
-
-              </div>
-
-
-              <!-- Coordinates -->
-              <div>
-
-                <div
-                  class="mb-2"
-                >
-
-                  <p
-                    class="text-sm
-                           font-semibold
-                           text-[#032D42]"
-                  >
-                    Coordinates
-                  </p>
-
-                  <p
-                    class="mt-0.5
-                           text-xs
-                           text-gray-500"
-                  >
-                    Optional. Useful for location-based personalization.
-                  </p>
-
-                </div>
-
-
+                <!-- City / State -->
                 <div
                   class="grid
-                         gap-4
-                         sm:grid-cols-2"
+                       gap-4
+                       sm:grid-cols-2"
                 >
-
                   <div>
-
                     <label
-                      for="latitude"
+                      for="city"
                       class="block
-                             text-xs
-                             font-medium
-                             text-gray-600"
+                           text-sm
+                           font-semibold
+                           text-[#032D42]"
                     >
-                      Latitude
+                      City
                     </label>
 
                     <input
-                      id="latitude"
-                      name="latitude"
-                      type="number"
-                      step="any"
-                      [(ngModel)]="form.latitude"
-                      placeholder="38.8151"
+                      id="city"
+                      name="city"
+                      type="text"
+                      [(ngModel)]="form.city"
+                      placeholder="Upper Marlboro"
+                      required
                       class="mt-1.5
-                             block
-                             w-full
-                             rounded-lg
-                             border
-                             border-gray-300
-                             bg-white
-                             px-3.5
-                             py-2.5
-                             text-sm
-                             text-gray-900
-                             placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
+                           block
+                           w-full
+                           rounded-lg
+                           border
+                           border-gray-300
+                           bg-white
+                           px-3.5
+                           py-2.5
+                           text-sm
+                           text-gray-900
+                           placeholder:text-gray-400
+                           focus:border-[#007979]
+                           focus:outline-none
+                           focus:ring-2
+                           focus:ring-[#007979]/20"
                     />
-
                   </div>
 
-
                   <div>
-
-                    <label
-                      for="longitude"
-                      class="block
-                             text-xs
-                             font-medium
-                             text-gray-600"
-                    >
-                      Longitude
+                    <label for="county" class="block text-sm font-semibold text-[#032D42]">
+                      County
                     </label>
 
                     <input
-                      id="longitude"
-                      name="longitude"
-                      type="number"
-                      step="any"
-                      [(ngModel)]="form.longitude"
-                      placeholder="-76.7497"
+                      id="county"
+                      name="county"
+                      type="text"
+                      [(ngModel)]="form.county"
+                      placeholder="County"
                       class="mt-1.5
-                             block
-                             w-full
-                             rounded-lg
-                             border
-                             border-gray-300
-                             bg-white
-                             px-3.5
-                             py-2.5
-                             text-sm
-                             text-gray-900
-                             placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
+           block
+           w-full
+           rounded-lg
+           border
+           border-gray-200
+           bg-white
+           px-3.5
+           py-2.5
+           text-sm
+           text-gray-700
+           focus:border-[#007979]
+           focus:outline-none
+           focus:ring-2
+           focus:ring-[#007979]/20"
                     />
-
                   </div>
 
+                  <div>
+                    <label
+                      for="state"
+                      class="block
+                           text-sm
+                           font-semibold
+                           text-[#032D42]"
+                    >
+                      State/Province/Region
+                    </label>
+
+                    <input
+                      id="state"
+                      name="state"
+                      type="text"
+                      [(ngModel)]="form.state"
+                      placeholder="MD"
+                      class="mt-1.5
+                           block
+                           w-full
+                           rounded-lg
+                           border
+                           border-gray-300
+                           bg-white
+                           px-3.5
+                           py-2.5
+                           text-sm
+                           text-gray-900
+                           placeholder:text-gray-400
+                           focus:border-[#007979]
+                           focus:outline-none
+                           focus:ring-2
+                           focus:ring-[#007979]/20"
+                    />
+                  </div>
                 </div>
 
-              </div>
+                <!-- ZIP / Country -->
+                <div
+                  class="grid
+                       gap-4
+                       sm:grid-cols-2"
+                >
+                  <div>
+                    <label
+                      for="zipCode"
+                      class="block
+                           text-sm
+                           font-semibold
+                           text-[#032D42]"
+                    >
+                      ZIP Code
+                    </label>
 
+                    <input
+                      id="zipCode"
+                      name="zipCode"
+                      type="text"
+                      [(ngModel)]="form.zipCode"
+                      placeholder="20774"
+                      class="mt-1.5
+                           block
+                           w-full
+                           rounded-lg
+                           border
+                           border-gray-300
+                           bg-white
+                           px-3.5
+                           py-2.5
+                           text-sm
+                           text-gray-900
+                           placeholder:text-gray-400
+                           focus:border-[#007979]
+                           focus:outline-none
+                           focus:ring-2
+                           focus:ring-[#007979]/20"
+                    />
+                  </div>
 
-              <!-- Actions -->
-              <div
-                class="flex
-                       flex-col-reverse
-                       gap-3
-                       border-t
-                       border-gray-100
-                       pt-5
-                       sm:flex-row
-                       sm:items-center
-                       sm:justify-end"
-              >
+                  <div>
+                    <label
+                      for="country"
+                      class="block
+                           text-sm
+                           font-semibold
+                           text-[#032D42]"
+                    >
+                      Country
+                    </label>
 
-                <button
-                  type="button"
-                  (click)="clearForm()"
-                  [disabled]="saving()"
-                  class="rounded-lg
+                    <input
+                      id="country"
+                      name="country"
+                      type="text"
+                      [(ngModel)]="form.country"
+                      placeholder="United States"
+                      required
+                      class="mt-1.5
+                           block
+                           w-full
+                           rounded-lg
+                           border
+                           border-gray-300
+                           bg-white
+                           px-3.5
+                           py-2.5
+                           text-sm
+                           text-gray-900
+                           placeholder:text-gray-400
+                           focus:border-[#007979]
+                           focus:outline-none
+                           focus:ring-2
+                           focus:ring-[#007979]/20"
+                    />
+                  </div>
+                </div>
+
+                <!-- Coordinates -->
+                <div>
+                  <div class="mb-2">
+                    <p
+                      class="text-sm
+                           font-semibold
+                           text-[#032D42]"
+                    >
+                      Coordinates
+                    </p>
+
+                    <p
+                      class="mt-0.5
+                           text-xs
+                           text-gray-500"
+                    >
+                      Optional. Useful for location-based personalization.
+                    </p>
+                  </div>
+
+                  <div
+                    class="grid
+                         gap-4
+                         sm:grid-cols-2"
+                  >
+                    <div>
+                      <label
+                        for="latitude"
+                        class="block
+                             text-xs
+                             font-medium
+                             text-gray-600"
+                      >
+                        Latitude
+                      </label>
+
+                      <input
+                        id="latitude"
+                        name="latitude"
+                        type="number"
+                        step="any"
+                        [(ngModel)]="form.latitude"
+                        placeholder="38.8151"
+                        class="mt-1.5
+                             block
+                             w-full
+                             rounded-lg
+                             border
+                             border-gray-300
+                             bg-white
+                             px-3.5
+                             py-2.5
+                             text-sm
+                             text-gray-900
+                             placeholder:text-gray-400
+                             focus:border-[#007979]
+                             focus:outline-none
+                             focus:ring-2
+                             focus:ring-[#007979]/20"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        for="longitude"
+                        class="block
+                             text-xs
+                             font-medium
+                             text-gray-600"
+                      >
+                        Longitude
+                      </label>
+
+                      <input
+                        id="longitude"
+                        name="longitude"
+                        type="number"
+                        step="any"
+                        [(ngModel)]="form.longitude"
+                        placeholder="-76.7497"
+                        class="mt-1.5
+                             block
+                             w-full
+                             rounded-lg
+                             border
+                             border-gray-300
+                             bg-white
+                             px-3.5
+                             py-2.5
+                             text-sm
+                             text-gray-900
+                             placeholder:text-gray-400
+                             focus:border-[#007979]
+                             focus:outline-none
+                             focus:ring-2
+                             focus:ring-[#007979]/20"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div
+                  class="flex
+         flex-row
+         items-center
+         justify-end
+         gap-2
+         border-t
+         border-gray-100
+         pt-5"
+                >
+                  <button
+                    type="button"
+                    (click)="clearForm()"
+                    [disabled]="saving()"
+                    class="rounded-lg
                          border
                          border-gray-300
                          bg-white
@@ -583,15 +747,14 @@ import { HotToastService } from '@ngxpert/hot-toast';
                          hover:bg-gray-50
                          disabled:cursor-not-allowed
                          disabled:opacity-50"
-                >
-                  Clear
-                </button>
+                  >
+                    Clear
+                  </button>
 
-
-                <button
-                  type="submit"
-                  [disabled]="saving()"
-                  class="rounded-lg
+                  <button
+                    type="submit"
+                    [disabled]="saving()"
+                    class="rounded-lg
                          bg-[#007979]
                          px-5
                          py-2.5
@@ -602,20 +765,19 @@ import { HotToastService } from '@ngxpert/hot-toast';
                          hover:bg-[#032D42]
                          disabled:cursor-not-allowed
                          disabled:opacity-50"
-                >
-                  @if (saving()) {
-                    Saving...
-                  } @else {
-                    {{ editingId() ? 'Update Location' : 'Create Location' }}
-                  }
-                </button>
+                  >
+                    @if (saving()) {
+                      Saving...
+                    } @else {
+                      {{ editingId() ? 'Update Location' : 'Create Location' }}
+                    }
+                  </button>
+                </div>
 
-              </div>
-
+              }
             </form>
-
-          </section>
-
+            </section>
+          </div>
 
           <!-- ================================================
                DIRECTORY
@@ -625,7 +787,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
                    lg:top-6
                    lg:self-start"
           >
-
             <section
               class="overflow-hidden
                      rounded-2xl
@@ -634,25 +795,18 @@ import { HotToastService } from '@ngxpert/hot-toast';
                      bg-white
                      shadow-sm"
             >
-
               <!-- Directory header -->
               <div
-                class="border-b
-                       border-gray-200
-                       bg-gray-50
-                       px-5
-                       py-4"
-              >
-
+                  class="border-b border-gray-200 bg-[#66BB6A]/80
+                   px-5 py-2"
+                >
                 <div
                   class="flex
                          items-start
                          justify-between
                          gap-3"
                 >
-
                   <div>
-
                     <p
                       class="text-xs
                              font-semibold
@@ -676,20 +830,17 @@ import { HotToastService } from '@ngxpert/hot-toast';
                       class="mt-1
                              text-sm
                              leading-5
-                             text-gray-500"
+                             text-white"
                     >
                       Select a location to edit or delete it.
                     </p>
-
                   </div>
 
-
                   @if (!loading()) {
-
                     <span
                       class="shrink-0
                              rounded-full
-                             bg-[#007979]/10
+                             bg-gray-100
                              px-2.5
                              py-1
                              text-xs
@@ -698,27 +849,17 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     >
                       {{ locations().length }}
                     </span>
-
                   }
-
                 </div>
-
               </div>
-
 
               <!-- Search -->
               <div
                 class="border-b
                        border-gray-100
-                       p-4"
+                       px-4 py-1"
               >
-
-                <label
-                  for="location-search"
-                  class="sr-only"
-                >
-                  Search locations
-                </label>
+                <label for="location-search" class="sr-only"> Search locations </label>
 
                 <input
                   id="location-search"
@@ -743,9 +884,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                          focus:ring-2
                          focus:ring-[#007979]/20"
                 />
-
               </div>
-
 
               <!-- Directory content -->
               <div
@@ -753,9 +892,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                        overflow-y-auto
                        p-4"
               >
-
                 @if (loading()) {
-
                   <div
                     class="py-8
                            text-center
@@ -764,9 +901,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   >
                     Loading locations...
                   </div>
-
                 } @else if (filteredLocations().length === 0) {
-
                   <div
                     class="rounded-xl
                            border
@@ -775,7 +910,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
                            p-6
                            text-center"
                   >
-
                     <div
                       class="mx-auto
                              flex
@@ -787,7 +921,6 @@ import { HotToastService } from '@ngxpert/hot-toast';
                              bg-gray-100
                              text-gray-500"
                     >
-
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -797,26 +930,18 @@ import { HotToastService } from '@ngxpert/hot-toast';
                         class="h-5 w-5"
                         aria-hidden="true"
                       >
-
                         <path
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"
                         />
 
-                        <circle
-                          cx="12"
-                          cy="9"
-                          r="2.25"
-                        />
-
+                        <circle cx="12" cy="9" r="2.25" />
                       </svg>
-
                     </div>
 
-
                     <p
-                      class="mt-3
+                      class="mt-2
                              text-sm
                              font-semibold
                              text-gray-700"
@@ -828,9 +953,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                       }
                     </p>
 
-
                     @if (searchTerm()) {
-
                       <button
                         type="button"
                         (click)="clearSearch()"
@@ -842,52 +965,37 @@ import { HotToastService } from '@ngxpert/hot-toast';
                       >
                         Clear search
                       </button>
-
                     }
-
                   </div>
-
                 } @else {
-
-                  <div
-                    class="space-y-3"
-                  >
-
-                    @for (
-                      location of filteredLocations();
-                      track location.id
-                    ) {
-
+                  <div class="space-y-1">
+                    @for (location of filteredLocations(); track location.id) {
                       <article
                         class="rounded-xl
-                               border
-                               border-gray-200
-                               bg-white
-                               p-4
-                               transition
-                               hover:border-[#007979]/30
-                               hover:shadow-sm"
+                        border border-gray-200
+                        bg-white
+                        px-4 py-2
+                        transition
+                        hover:border-[#007979]/30
+                        hover:shadow-sm"
                       >
-
                         <div
-                          class="flex
-                                 items-start
-                                 gap-3"
+                          class="flex items-start
+           gap-3"
                         >
-
                           <!-- Location icon -->
                           <div
                             class="flex
-                                   h-9
-                                   w-9
-                                   shrink-0
-                                   items-center
-                                   justify-center
-                                   rounded-lg
-                                   bg-[#007979]/10
-                                   text-[#007979]"
+             h-9
+             w-9
+             shrink-0
+             items-center
+             justify-center
+             rounded-lg
+             bg-[#007979]/10
+             text-[#007979]"
                           >
-
+                            <!-- Keep your existing location SVG here -->
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 24 24"
@@ -897,264 +1005,278 @@ import { HotToastService } from '@ngxpert/hot-toast';
                               class="h-5 w-5"
                               aria-hidden="true"
                             >
-
                               <path
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"
                               />
-
-                              <circle
-                                cx="12"
-                                cy="9"
-                                r="2.25"
-                              />
-
+                              <circle cx="12" cy="9" r="2.25" />
                             </svg>
-
                           </div>
 
-
-                          <!-- Location information -->
+                          <!-- Location content -->
                           <div
                             class="min-w-0
-                                   flex-1"
+             flex-1"
                           >
-
-                            <h3
-                              class="font-semibold
-                                     text-[#032D42]"
-                            >
-                              {{ location.city || 'Location' }}
-                            </h3>
-
-                            <p
-                              class="mt-0.5
-                                     text-sm
-                                     text-gray-500"
-                            >
-                              {{ location.state || '' }}
-                              @if (location.zipCode) {
-                                {{ location.zipCode }}
-                              }
-                            </p>
-
-
-                            @if (location.address) {
-
-                              <p
-                                class="mt-2
-                                       text-sm
-                                       leading-5
-                                       text-gray-600"
-                              >
-                                {{ location.address }}
-                              </p>
-
-                            }
-
-
-                            <p
-                              class="mt-0.5
-                                     text-sm
-                                     text-gray-600"
-                            >
-                              {{ location.country }}
-                            </p>
-
-
-                            <!-- Actions -->
+                            <!-- =====================================================
+           Location name + Show / Hide
+           ===================================================== -->
                             <div
-                              class="mt-3
-                                     flex
-                                     items-center
-                                     gap-2"
+                              class="flex items-center
+               justify-between
+               gap-3"
                             >
+                              <h3
+                                class="min-w-0
+                 truncate
+                 font-semibold
+                 text-[#032D42]"
+                              >
+                                {{ location.city || 'Location' }}
+                              </h3>
 
                               <button
                                 type="button"
-                                (click)="editLocation(location)"
-                                class="rounded-lg
-                                       bg-[#007979]/10
-                                       px-3
-                                       py-1.5
-                                       text-xs
-                                       font-semibold
-                                       text-[#007979]
-                                       transition
-                                       hover:bg-[#007979]
-                                       hover:text-white"
+                                (click)="toggleExistingLocation(location.id!)"
+                                [attr.aria-expanded]="isExistingLocationExpanded(location.id!)"
+                                class="inline-flex
+                 shrink-0
+                 items-center
+                 gap-1
+                 border-0
+                 bg-transparent
+                 p-0
+                 text-xs
+                 font-semibold
+                 text-[#007979]
+                 transition
+                 hover:text-[#032D42]
+                 focus:outline-none"
                               >
-                                Edit
+                                <span>
+                                  {{ isExistingLocationExpanded(location.id!) ? 'Hide' : 'Show' }}
+                                </span>
+
+                                <span aria-hidden="true" class="text-base leading-none">
+                                  {{ isExistingLocationExpanded(location.id!) ? '▲' : '▼' }}
+                                </span>
                               </button>
-
-
-                              <button
-                                type="button"
-                                (click)="deleteLocation(location)"
-                                class="rounded-lg
-                                       px-3
-                                       py-1.5
-                                       text-xs
-                                       font-semibold
-                                       text-red-600
-                                       transition
-                                       hover:bg-red-50"
-                              >
-                                Delete
-                              </button>
-
                             </div>
 
+                            <!-- =====================================================
+           Existing location details
+           ===================================================== -->
+                            @if (isExistingLocationExpanded(location.id!)) {
+                              <!-- State / ZIP -->
+                              <p
+                                class="mt-0.5
+                 text-sm
+                 text-gray-500"
+                              >
+                                {{ location.state || '' }}
+
+                                @if (location.zipCode) {
+                                  {{ location.zipCode }}
+                                }
+                              </p>
+
+                              <!-- Address -->
+                              @if (location.address) {
+                                <p
+                                  class="mt-2
+                   text-sm
+                   leading-5
+                   text-gray-600"
+                                >
+                                  {{ location.address }}
+                                </p>
+                              }
+
+                              <!-- Country -->
+                              <p
+                                class="mt-0.5
+                 text-sm
+                 text-gray-600"
+                              >
+                                {{ location.country }}
+                              </p>
+
+                              <!-- Actions -->
+                              <div
+                                class="mt-3
+                 flex
+                 items-center
+                 gap-2"
+                              >
+                                <button
+                                  type="button"
+                                  (click)="editLocation(location)"
+                                  class="rounded-lg
+                   bg-[#007979]/10
+                   px-3
+                   py-1.5
+                   text-xs
+                   font-semibold
+                   text-[#007979]
+                   transition
+                   hover:bg-[#007979]
+                   hover:text-white"
+                                >
+                                  Edit
+                                </button>
+
+                                <button
+                                  type="button"
+                                  (click)="deleteLocation(location)"
+                                  class="rounded-lg
+                   px-3
+                   py-1.5
+                   text-xs
+                   font-semibold
+                   text-red-600
+                   transition
+                   hover:bg-red-50"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            }
                           </div>
-
                         </div>
-
                       </article>
-
                     }
-
                   </div>
-
                 }
-
               </div>
-
             </section>
-
           </aside>
-
         </div>
-
       </div>
-
     </main>
   `,
 })
-export class LocationAdminComponent
-  implements OnInit {
+export class LocationAdminComponent implements OnInit {
+  private readonly locationService = inject(LocationService);
 
-  private readonly locationService =
-    inject(LocationService);
+  private readonly authService = inject(AuthService);
 
-  private readonly toast =
-    inject(HotToastService);
+  private readonly toast = inject(HotToastService);
 
+  protected readonly locations = signal<Location[]>([]);
 
-  protected readonly locations =
-    signal<Location[]>([]);
+  protected readonly loading = signal(false);
 
-  protected readonly loading =
-    signal(false);
+  protected readonly saving = signal(false);
 
-  protected readonly saving =
-    signal(false);
+  protected readonly searchTerm = signal('');
 
-  protected readonly searchTerm =
-    signal('');
+  protected readonly editingId = signal<string | null>(null);
 
-  protected readonly editingId =
-    signal<string | null>(null);
+  // =========================================================
+  // Location Form Visibility
+  // =========================================================
 
+  /**
+   * Controls whether the location form fields
+   * are visible.
+   *
+   * The form starts open by default.
+   */
+  protected readonly showLocationForm = signal(true);
 
-  protected form: Partial<Location> =
-    this.emptyForm();
+  /**
+   * Toggle the location form fields.
+   */
+  protected toggleLocationForm(): void {
+    this.showLocationForm.update((visible) => !visible);
+  }
 
+  // =========================================================
+  // Existing Location Expand / Collapse State
+  // =========================================================
 
-  protected readonly filteredLocations =
-    computed(() => {
+  /**
+   * Tracks which existing location records are expanded.
+   */
+  protected readonly expandedLocations = signal<Set<string>>(new Set());
 
-      const search =
-        this.searchTerm()
-          .trim()
-          .toLowerCase();
+  /**
+   * Toggle the details for one existing location.
+   */
+  protected toggleExistingLocation(locationId: string): void {
+    this.expandedLocations.update((expanded) => {
+      const next = new Set(expanded);
 
-      if (!search) {
-        return this.locations();
+      if (next.has(locationId)) {
+        next.delete(locationId);
+      } else {
+        next.add(locationId);
       }
 
-      return this.locations().filter(
-        (location) => {
+      return next;
+    });
+  }
 
-          return (
-            location.address
-              ?.toLowerCase()
-              .includes(search) ||
+  /**
+   * Determine whether an existing location
+   * is currently expanded.
+   */
+  protected isExistingLocationExpanded(locationId: string): boolean {
+    return this.expandedLocations().has(locationId);
+  }
 
-            location.city
-              ?.toLowerCase()
-              .includes(search) ||
+  protected form: Partial<Location> = this.emptyForm();
 
-            location.state
-              ?.toLowerCase()
-              .includes(search) ||
+  protected readonly filteredLocations = computed(() => {
+    const search = this.searchTerm().trim().toLowerCase();
 
-            location.zipCode
-              ?.toLowerCase()
-              .includes(search) ||
+    if (!search) {
+      return this.locations();
+    }
 
-            location.country
-              ?.toLowerCase()
-              .includes(search)
-          );
-        }
+    return this.locations().filter((location) => {
+      return (
+        location.address?.toLowerCase().includes(search) ||
+        location.city?.toLowerCase().includes(search) ||
+        location.state?.toLowerCase().includes(search) ||
+        location.zipCode?.toLowerCase().includes(search) ||
+        location.country?.toLowerCase().includes(search)
       );
     });
-
+  });
 
   async ngOnInit(): Promise<void> {
     await this.loadLocations();
   }
 
-
   /**
    * Load all locations.
    */
   private async loadLocations(): Promise<void> {
-
     this.loading.set(true);
 
     try {
-
-      const locations =
-        await this.locationService.getAllLocations();
+      const locations = await this.locationService.getAllLocations();
 
       this.locations.set(locations);
-
     } catch (error) {
+      console.error('Failed to load locations:', error);
 
-      console.error(
-        'Failed to load locations:',
-        error,
-      );
-
-      this.toast.error(
-        'Unable to load locations.',
-      );
-
+      this.toast.error('Unable to load locations.');
     } finally {
-
       this.loading.set(false);
-
     }
   }
-
 
   /**
    * Search locations.
    */
-  protected onSearch(
-    event: Event,
-  ): void {
+  protected onSearch(event: Event): void {
+    const input = event.target as HTMLInputElement;
 
-    const input =
-      event.target as HTMLInputElement;
-
-    this.searchTerm.set(
-      input.value,
-    );
+    this.searchTerm.set(input.value);
   }
-
 
   /**
    * Clear search.
@@ -1163,177 +1285,149 @@ export class LocationAdminComponent
     this.searchTerm.set('');
   }
 
-
   /**
    * Save a new or existing location.
    */
   protected async saveLocation(): Promise<void> {
+    // =========================================================
+    // Basic validation
+    // =========================================================
 
-    const city =
-      this.form.city?.trim() || '';
+    const address = this.form.address?.trim() || '';
 
-    const state =
-      this.form.state?.trim() || '';
+    const city = this.form.city?.trim() || '';
 
-    const zipCode =
-      this.form.zipCode?.trim() || '';
+    const county = this.form.county?.trim() || '';
 
-    const country =
-      this.form.country?.trim() || '';
+    const state = this.form.state?.trim() || '';
 
-    if (
-      !city ||
-      !state ||
-      !zipCode ||
-      !country
-    ) {
+    const zipCode = this.form.zipCode?.trim() || '';
 
-      this.toast.error(
-        'Please complete the city, state, ZIP code, and country.',
-      );
+    const country = this.form.country?.trim() || '';
 
+    if (!address) {
+      this.toast.error('Address is required.');
       return;
     }
 
-
-    if (this.saving()) {
+    if (!city) {
+      this.toast.error('City is required.');
       return;
     }
 
+    if (!country) {
+      this.toast.error('Country is required.');
+      return;
+    }
+
+    // =========================================================
+    // U.S.-specific validation
+    // =========================================================
+
+    const normalizedCountry = country.toLowerCase();
+
+    const isUnitedStates =
+      normalizedCountry === 'united states' ||
+      normalizedCountry === 'usa' ||
+      normalizedCountry === 'us';
+
+    if (isUnitedStates && !state) {
+      this.toast.error('State is required for United States locations.');
+      return;
+    }
+
+    if (isUnitedStates && !zipCode) {
+      this.toast.error('ZIP Code is required for United States locations.');
+      return;
+    }
+
+    // =========================================================
+    // Build location
+    // =========================================================
+
+    const location: Location = {
+      address,
+      city,
+      county,
+      state,
+      zipCode,
+      country,
+
+      ...(this.form.latitude != null
+        ? {
+            latitude: Number(this.form.latitude),
+          }
+        : {}),
+
+      ...(this.form.longitude != null
+        ? {
+            longitude: Number(this.form.longitude),
+          }
+        : {}),
+    };
+
+    // =========================================================
+    // Save
+    // =========================================================
 
     this.saving.set(true);
 
+    const editingId = this.editingId();
 
     try {
+      if (editingId) {
+        await this.locationService.updateLocation(editingId, location);
 
-      const location: Location = {
-
-        address:
-          this.form.address?.trim() || '',
-
-        city,
-
-        state,
-
-        zipCode,
-
-        country,
-
-        ...(this.form.latitude != null
-          ? {
-              latitude:
-                Number(this.form.latitude),
-            }
-          : {}),
-
-        ...(this.form.longitude != null
-          ? {
-              longitude:
-                Number(this.form.longitude),
-            }
-          : {}),
-      };
-
-
-      const id =
-        this.editingId();
-
-
-      if (id) {
-
-        await this.locationService.updateLocation(
-          id,
-          location,
-        );
-
-        this.toast.success(
-          'Location updated successfully.',
-        );
-
+        this.toast.success('Location updated successfully.');
       } else {
+        await this.locationService.createLocation(location);
 
-        await this.locationService.createLocation(
-          location,
-        );
-
-        this.toast.success(
-          'Location created successfully.',
-        );
-
+        this.toast.success('Location created successfully.');
       }
-
 
       this.clearForm();
 
       await this.loadLocations();
-
     } catch (error) {
+      console.error('Failed to save location:', error);
 
-      console.error(
-        'Failed to save location:',
-        error,
-      );
-
-      this.toast.error(
-        'Unable to save location.',
-      );
-
+      this.toast.error(editingId ? 'Unable to update location.' : 'Unable to create location.');
     } finally {
-
       this.saving.set(false);
-
     }
   }
-
 
   /**
    * Load a location into the form for editing.
    */
-  protected editLocation(
-    location: Location,
-  ): void {
-
+  protected editLocation(location: Location): void {
     if (!location.id) {
       return;
     }
 
-
-    this.editingId.set(
-      location.id,
-    );
-
+    this.editingId.set(location.id);
 
     this.form = {
+      address: location.address || '',
 
-      address:
-        location.address || '',
+      city: location.city || '',
 
-      city:
-        location.city || '',
+      state: location.state || '',
 
-      state:
-        location.state || '',
+      zipCode: location.zipCode || '',
 
-      zipCode:
-        location.zipCode || '',
+      country: location.country || 'United States',
 
-      country:
-        location.country || 'United States',
+      latitude: location.latitude,
 
-      latitude:
-        location.latitude,
-
-      longitude:
-        location.longitude,
+      longitude: location.longitude,
     };
-
 
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
     });
   }
-
 
   /**
    * Cancel editing.
@@ -1342,94 +1436,58 @@ export class LocationAdminComponent
     this.clearForm();
   }
 
-
   /**
    * Delete a location.
    */
-  protected async deleteLocation(
-    location: Location,
-  ): Promise<void> {
-
+  protected async deleteLocation(location: Location): Promise<void> {
     if (!location.id) {
       return;
     }
 
+    const name = [location.city, location.state, location.zipCode].filter(Boolean).join(', ');
 
-    const name =
-      [
-        location.city,
-        location.state,
-        location.zipCode,
-      ]
-        .filter(Boolean)
-        .join(', ');
-
-
-    const confirmed =
-      window.confirm(
-        `Delete the location "${name || 'Location'}"?`
-      );
-
+    const confirmed = window.confirm(`Delete the location "${name || 'Location'}"?`);
 
     if (!confirmed) {
       return;
     }
 
-
     try {
+      await this.locationService.deleteLocation(location.id);
 
-      await this.locationService.deleteLocation(
-        location.id,
-      );
-
-
-      if (
-        this.editingId() === location.id
-      ) {
+      if (this.editingId() === location.id) {
         this.clearForm();
       }
 
-
-      this.toast.success(
-        'Location deleted successfully.',
-      );
-
+      this.toast.success('Location deleted successfully.');
 
       await this.loadLocations();
-
     } catch (error) {
+      console.error('Failed to delete location:', error);
 
-      console.error(
-        'Failed to delete location:',
-        error,
-      );
-
-      this.toast.error(
-        'Unable to delete location.',
-      );
+      this.toast.error('Unable to delete location.');
     }
   }
-
 
   /**
    * Reset the form.
    */
-  protected clearForm(): void {
+ protected clearForm(): void {
+  this.form =
+    this.emptyForm();
 
-    this.form =
-      this.emptyForm();
+  this.editingId.set(null);
 
-    this.editingId.set(null);
-  }
-
+  // Always reopen the create form after
+  // canceling or completing an action.
+  this.showLocationForm.set(true);
+}
 
   /**
    * Create a clean form object.
    */
   private emptyForm(): Partial<Location> {
-
     return {
-
       address: '',
 
       city: '',
@@ -1443,8 +1501,19 @@ export class LocationAdminComponent
       latitude: undefined,
 
       longitude: undefined,
-
     };
   }
 
+  /**
+   * Sign the current administrator out.
+   */
+  protected async logout(): Promise<void> {
+    try {
+      await this.authService.logout();
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+
+      this.toast.error('Unable to sign out. Please try again.');
+    }
+  }
 }

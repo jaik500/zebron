@@ -593,7 +593,7 @@ import { ResourceTypeService } from '../../../../core/services/resource-type.ser
                @for (category of categories(); track category.id) {
   <button
     type="button"
-    (click)="togglePersonalizationInterest(category.id)"
+    (click)="togglePersonalizationInterest(category.slug)"
     [attr.aria-pressed]="
       isPersonalizationInterestSelected(category.id)
     "

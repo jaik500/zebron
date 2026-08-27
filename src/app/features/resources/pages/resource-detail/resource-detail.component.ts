@@ -9,11 +9,12 @@ import { Location } from '../../../../core/models/location.model';
 import { LocationService } from '../../../../core/services/location.service';
 import { Category } from '../../../../core/models/category.model';
 import { CategoryService } from '../../../../core/services/category.service';
+import { MatIconModule } from "@angular/material/icon";
 
 @Component({
   selector: 'app-resource-detail',
   standalone: true,
-  imports: [RouterLink, ResourceCardComponent, CommonModule],
+  imports: [RouterLink, ResourceCardComponent, CommonModule, MatIconModule],
   template: `
    <main class="mx-auto max-w-7xl p-8">
   <a
@@ -486,18 +487,113 @@ import { CategoryService } from '../../../../core/services/category.service';
       <aside class="lg:col-span-1">
 
         @if (relatedLoading()) {
-          <div
-            class="rounded-xl border border-gray-200
-                   bg-white p-5 shadow-sm"
-          >
-            <h2 class="text-xl font-semibold text-gray-900">
-              Related Resources
-            </h2>
+         <div
+  class="rounded-xl border border-gray-200
+         bg-white p-5 shadow-sm"
+>
+  <!-- Related Resources Header -->
+  <div
+    class="flex items-center
+           justify-between
+           gap-3"
+  >
+    <h2
+      class="min-w-0
+             text-xl
+             font-semibold
+             text-gray-900"
+    >
+      Related Resources
+    </h2>
 
-            <p class="mt-3 text-sm text-gray-500">
-              Loading related resources...
-            </p>
-          </div>
+    <!-- Borderless Show / Hide Toggle -->
+    <button
+      type="button"
+      (click)="toggleRelatedResourceDetails()"
+      [attr.aria-expanded]="showRelatedResourceDetails()"
+      class="inline-flex
+             shrink-0
+             items-center
+             gap-1
+             border-0
+             bg-transparent
+             p-0
+             text-xs
+             font-semibold
+             text-[#007979]
+             transition
+             hover:text-[#032D42]
+             focus:outline-none"
+    >
+      <span>
+        {{
+          showRelatedResourceDetails()
+            ? 'Hide'
+            : 'Show'
+        }}
+      </span>
+
+      <mat-icon
+        aria-hidden="true"
+        class="!m-0
+               !h-4 !w-4
+               !text-[18px]"
+      >
+        {{
+          showRelatedResourceDetails()
+            ? 'keyboard_arrow_up'
+            : 'keyboard_arrow_down'
+        }}
+      </mat-icon>
+    </button>
+  </div>
+
+  <p
+    class="mt-2 text-sm text-gray-600"
+  >
+    Other resources in this category.
+  </p>
+
+  <div class="mt-6 grid gap-2">
+
+    @for (
+      relatedResource of relatedResources();
+      track relatedResource.id
+    ) {
+
+      @if (showRelatedResourceDetails()) {
+
+        <!-- Existing full resource card -->
+        <app-resource-card
+          [resource]="relatedResource"
+        />
+
+      } @else {
+
+        <!-- Compact name-only view -->
+        <a
+          [routerLink]="[
+            '/resources',
+            relatedResource.slug
+          ]"
+          class="block
+                 rounded-lg
+                 px-3 py-2
+                 text-sm
+                 font-medium
+                 text-[#032D42]
+                 transition
+                 hover:bg-gray-50
+                 hover:text-[#007979]"
+        >
+          {{ relatedResource.name }}
+        </a>
+
+      }
+    }
+
+  </div>
+</div>
         }
 
         @if (
@@ -552,6 +648,23 @@ export class ResourceDetailComponent {
   protected readonly category = signal<Category | null>(null);
   protected readonly relatedResources = signal<Resource[]>([]);
   protected readonly relatedLoading = signal(false);
+  /**
+ * Controls whether related resource details are displayed.
+ *
+ * Default is collapsed so the sidebar remains compact.
+ */
+protected readonly showRelatedResourceDetails =
+  signal(false);
+
+/**
+ * Toggle related resource details.
+ */
+protected toggleRelatedResourceDetails(): void {
+  this.showRelatedResourceDetails.update(
+    (visible) => !visible,
+  );
+}
+
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
 

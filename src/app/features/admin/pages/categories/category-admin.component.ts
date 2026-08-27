@@ -7,11 +7,12 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
 
 import { Category } from '../../../../core/models/category.model';
 import { CategoryService } from '../../../../core/services/category.service';
-
+import { Resource } from '../../../../core/models/resource.model';
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-category-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, MatIconModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -61,7 +62,6 @@ import { CategoryService } from '../../../../core/services/category.service';
         <!-- =========================================================
            Page header
            ========================================================= -->
-        
 
         <!-- =========================================================
            Main category management area
@@ -354,168 +354,196 @@ import { CategoryService } from '../../../../core/services/category.service';
                EXISTING CATEGORIES / DIRECTORY
                ===================================================== -->
             <aside
-              class="border-t border-gray-200
-                   bg-gray-50/60 lg:border-l lg:border-t-0"
+              class="rounded-tr-2xl
+         border-t border-gray-200
+         bg-gray-50/60
+         lg:border-l lg:border-t-0"
             >
-              <div class="p-6 sm:p-8">
-                <!-- Directory header -->
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p
-                      class="text-xs font-semibold uppercase
-                           tracking-wide text-[#007979]"
-                    >
-                      Directory
-                    </p>
+              <div
+                class="flex items-center
+       justify-between
+       gap-3
+       rounded-tr-2xl
+       border-b border-gray-200
+       bg-[#66BB6A]/80
+       p-3"
+              >
+                <div class="min-w-0">
+                  <h1
+                    class="text-lg
+             font-semibold
+             text-[#032D42]"
+                  >
+                    Existing Records
+                  </h1>
 
-                    <h2
-                      class="mt-1 text-xl font-semibold
-                           text-[#032D42]"
-                    >
-                      Existing categories
-                    </h2>
-
-                    <p class="mt-1 text-sm text-gray-500">
-                      Select a category to edit or delete it.
-                    </p>
-                  </div>
-
-                  @if (!loading()) {
-                    <span
-                      class="inline-flex min-w-7 items-center
-                           justify-center rounded-full
-                           bg-white px-2 py-1 text-xs
-                           font-semibold text-gray-600
-                           shadow-sm ring-1 ring-gray-200"
-                    >
-                      {{ categories().length }}
-                    </span>
-                  }
+                  <p
+                    class="mt-0.5 text-xs
+             text-white"
+                  >
+                    Categories currently in the directory.
+                  </p>
                 </div>
 
-                <!-- Loading -->
-                @if (loading()) {
-                  <div
-                    class="mt-6 rounded-xl border
-                         border-gray-200 bg-white p-5"
+                <!-- Live record count -->
+                @if (!loading()) {
+                  <span
+                    class="inline-flex
+             shrink-0
+             min-w-7
+             items-center
+             justify-center
+             rounded-full
+             bg-[#E6F4F3]
+             px-2
+             py-1
+             text-xs
+             font-semibold
+             text-[#007979]"
                   >
-                    <p class="text-sm text-gray-500">Loading categories...</p>
-                  </div>
-                }
-
-                <!-- Empty -->
-                @if (!loading() && categories().length === 0) {
-                  <div
-                    class="mt-6 rounded-xl border
-                         border-dashed border-gray-300
-                         bg-white p-6 text-center"
-                  >
-                    <p class="text-sm font-medium text-gray-700">No categories found.</p>
-
-                    <p class="mt-1 text-xs text-gray-500">
-                      Create the first category using the form.
-                    </p>
-                  </div>
-                }
-
-                <!-- Category list -->
-                @if (categories().length > 0) {
-                  <div
-                    class="mt-6 overflow-hidden rounded-xl
-                         border border-gray-200
-                         bg-white shadow-sm"
-                  >
-                    @for (category of categories(); track category.id) {
-                      <div
-                        class="border-b border-gray-200
-                             p-4 last:border-b-0"
-                      >
-                        <!-- Category name + status -->
-                        <div
-                          class="flex items-start
-                               justify-between gap-3"
-                        >
-                          <div class="min-w-0">
-                            <h3
-                              class="truncate text-sm font-semibold
-                                   text-gray-900"
-                            >
-                              {{ category.name }}
-                            </h3>
-
-                            <p
-                              class="mt-1 truncate text-xs
-                                   text-gray-500"
-                            >
-                              {{ category.slug }}
-                            </p>
-                          </div>
-
-                          <span
-                            class="shrink-0 rounded-full px-2
-                                 py-1 text-xs font-medium"
-                            [class.bg-green-100]="category.active"
-                            [class.text-green-700]="category.active"
-                            [class.bg-gray-100]="!category.active"
-                            [class.text-gray-600]="!category.active"
-                          >
-                            {{ category.active ? 'Active' : 'Inactive' }}
-                          </span>
-                        </div>
-
-                        <!-- Description -->
-                        @if (category.description) {
-                          <p
-                            class="mt-3 line-clamp-2
-                                 text-xs leading-5 text-gray-600"
-                          >
-                            {{ category.description }}
-                          </p>
-                        }
-
-                        <!-- Metadata + actions -->
-                        <div
-                          class="mt-3 flex items-center
-                               justify-between gap-3"
-                        >
-                          <span class="text-xs text-gray-400">
-                            Sort order: {{ category.sortOrder }}
-                          </span>
-
-                          <div class="flex gap-1.5">
-                            <button
-                              type="button"
-                              (click)="editCategory(category)"
-                              class="rounded-md border
-                                   border-gray-300 bg-white
-                                   px-2.5 py-1.5 text-xs
-                                   font-medium text-gray-700
-                                   transition
-                                   hover:border-[#007979]/40
-                                   hover:bg-[#007979]/5"
-                            >
-                              Edit
-                            </button>
-
-                            <button
-                              type="button"
-                              (click)="deleteCategory(category)"
-                              class="rounded-md border
-                                   border-red-200
-                                   px-2.5 py-1.5 text-xs
-                                   font-medium text-red-600
-                                   transition
-                                   hover:bg-red-50"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    }
-                  </div>
+                    {{ categories().length }}
+                  </span>
                 }
               </div>
+              @for (category of categories(); track category.id) {
+                <div
+                  class="border-b border-gray-200
+           p-4 last:border-b-0"
+                >
+                  <!-- =====================================================
+         Category name + Show / Hide toggle
+         ===================================================== -->
+                  <div
+                    class="flex items-center
+             justify-between gap-3"
+                  >
+                    <div class="min-w-0">
+                      <h3
+                        class="truncate text-sm font-semibold
+                 text-gray-900"
+                      >
+                        {{ category.name }}
+                      </h3>
+                    </div>
+
+                    <!-- Individual record Show / Hide -->
+                    <button
+                      type="button"
+                      (click)="toggleExistingRecord(category.id)"
+                      [attr.aria-expanded]="isExistingRecordExpanded(category.id)"
+                      class="inline-flex
+               shrink-0
+               items-center
+               gap-1
+               border-0
+               bg-transparent
+               p-0
+               text-xs
+               font-semibold
+               text-[#007979]
+               transition
+               hover:text-[#032D42]
+               focus:outline-none"
+                    >
+                      <span>
+                        {{ isExistingRecordExpanded(category.id) ? 'Hide' : 'Show' }}
+                      </span>
+
+                      <mat-icon
+                        aria-hidden="true"
+                        class="!m-0
+                 !h-4
+                 !w-4
+                 !text-[18px]"
+                      >
+                        {{
+                          isExistingRecordExpanded(category.id)
+                            ? 'keyboard_arrow_up'
+                            : 'keyboard_arrow_down'
+                        }}
+                      </mat-icon>
+                    </button>
+                  </div>
+
+                  <!-- =====================================================
+         Existing category details
+         ===================================================== -->
+                  @if (isExistingRecordExpanded(category.id)) {
+                    <!-- Slug + status -->
+                    <div
+                      class="mt-1 flex items-start
+               justify-between gap-3"
+                    >
+                      <p
+                        class="min-w-0 truncate text-xs
+                 text-gray-500"
+                      >
+                        {{ category.slug }}
+                      </p>
+
+                      <span
+                        class="shrink-0 rounded-full px-2
+                 py-1 text-xs font-medium"
+                        [class.bg-green-100]="category.active"
+                        [class.text-green-700]="category.active"
+                        [class.bg-gray-100]="!category.active"
+                        [class.text-gray-600]="!category.active"
+                      >
+                        {{ category.active ? 'Active' : 'Inactive' }}
+                      </span>
+                    </div>
+
+                    <!-- Description -->
+                    @if (category.description) {
+                      <p
+                        class="mt-3 line-clamp-2
+                 text-xs leading-5 text-gray-600"
+                      >
+                        {{ category.description }}
+                      </p>
+                    }
+
+                    <!-- Metadata + actions -->
+                    <div
+                      class="mt-3 flex items-center
+               justify-between gap-3"
+                    >
+                      <span class="text-xs text-gray-400">
+                        Sort order: {{ category.sortOrder }}
+                      </span>
+
+                      <div class="flex gap-1.5">
+                        <button
+                          type="button"
+                          (click)="editCategory(category)"
+                          class="rounded-md border
+                   border-gray-300 bg-white
+                   px-2.5 py-1.5 text-xs
+                   font-medium text-gray-700
+                   transition
+                   hover:border-[#007979]/40
+                   hover:bg-[#007979]/5"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="deleteCategory(category)"
+                          class="rounded-md border
+                   border-red-200
+                   px-2.5 py-1.5 text-xs
+                   font-medium text-red-600
+                   transition
+                   hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
             </aside>
           </div>
         </section>
@@ -532,6 +560,30 @@ export class CategoryAdminComponent implements OnInit {
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly editingId = signal<string | null>(null);
+
+  // =========================================================
+  // Related Records
+  // =========================================================
+
+  protected readonly expandedRecords = signal<Set<string>>(new Set());
+
+  protected toggleExistingRecord(categoryId: string): void {
+    this.expandedRecords.update((expanded) => {
+      const next = new Set(expanded);
+
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+
+      return next;
+    });
+  }
+
+  protected isExistingRecordExpanded(categoryId: string): boolean {
+    return this.expandedRecords().has(categoryId);
+  }
 
   protected form = this.createEmptyForm();
 
@@ -550,6 +602,13 @@ export class CategoryAdminComponent implements OnInit {
       const categories = await this.categoryService.getAllCategories();
 
       this.categories.set(categories);
+
+      // Automatically populate the next sort order
+      // for a new category. Editing an existing category
+      // keeps its current sort order.
+      if (!this.editingId()) {
+        this.form.sortOrder = this.getNextSortOrder();
+      }
     } catch (error) {
       console.error('Failed to load categories:', error);
 
@@ -563,48 +622,120 @@ export class CategoryAdminComponent implements OnInit {
    * Create a new category or update an existing category.
    */
   protected async saveCategory(): Promise<void> {
+    // ===============================================================
+    // Prevent duplicate submissions
+    // ===============================================================
+
     if (this.saving()) {
       return;
     }
 
+    // ===============================================================
+    // Normalize form values
+    // ===============================================================
+
+    const name = this.form.name?.trim() || '';
+
+    const slug = this.form.slug?.trim().toLowerCase() || '';
+
+    const sortOrder = Number(this.form.sortOrder);
+
+    // ===============================================================
+    // Validate required fields
+    // ===============================================================
+
+    if (!name) {
+      this.toast.error('Category name is required.');
+
+      return;
+    }
+
+    if (!slug) {
+      this.toast.error('Category slug is required.');
+
+      return;
+    }
+
+    // ===============================================================
+    // Validate sort order
+    // ===============================================================
+
+    if (!Number.isFinite(sortOrder) || sortOrder < 0) {
+      this.toast.error('Sort order must be 0 or greater.');
+
+      return;
+    }
+
+    // ===============================================================
+    // Begin save
+    // ===============================================================
+
     this.saving.set(true);
+
     this.error.set(null);
 
     try {
+      // =============================================================
+      // Build category
+      // =============================================================
+
       const category: Omit<Category, 'id' | 'createdAt' | 'updatedAt'> = {
-        name: this.form.name.trim(),
-        slug: this.form.slug.trim().toLowerCase(),
+        name,
+
+        slug,
+
         active: this.form.active,
-        sortOrder: Number(this.form.sortOrder),
+
+        sortOrder,
       };
 
-      // Only add optional fields when they contain a value.
-      if (this.form.description.trim()) {
-        category.description = this.form.description.trim();
+      // =============================================================
+      // Optional description
+      // =============================================================
+
+      const description = this.form.description?.trim() || '';
+
+      if (description) {
+        category.description = description;
       }
 
-      if (this.form.icon.trim()) {
-        category.icon = this.form.icon.trim();
+      // =============================================================
+      // Optional icon
+      // =============================================================
+
+      const icon = this.form.icon?.trim() || '';
+
+      if (icon) {
+        category.icon = icon;
       }
+
+      // =============================================================
+      // Create / update
+      // =============================================================
 
       const editingId = this.editingId();
 
       if (editingId) {
-        // Update the existing category.
         await this.categoryService.updateCategory(editingId, category);
 
         this.toast.success('Category updated successfully.');
       } else {
-        // Create the new category.
         await this.categoryService.createCategory(category);
 
         this.toast.success('Category created successfully.');
       }
 
+      // =============================================================
+      // Reset and refresh
+      // =============================================================
+
       this.resetForm();
+
       await this.loadCategories();
     } catch (error: any) {
       console.error('Failed to save category:', error);
+
+      this.error.set('Unable to save category. Please try again.');
 
       this.toast.error(`Unable to save category: ${error?.message ?? 'Unknown error'}`);
     } finally {
@@ -631,6 +762,22 @@ export class CategoryAdminComponent implements OnInit {
       top: 0,
       behavior: 'smooth',
     });
+  }
+
+  /**
+   * Controls the amount of detail shown
+   * for existing category records.
+   *
+   * Default is collapsed so the directory
+   * remains compact.
+   */
+  protected readonly showExistingRecords = signal(false);
+
+  /**
+   * Toggle existing category record details.
+   */
+  protected toggleExistingRecords(): void {
+    this.showExistingRecords.update((visible) => !visible);
   }
 
   /**
@@ -709,6 +856,7 @@ export class CategoryAdminComponent implements OnInit {
    */
   private resetForm(): void {
     this.editingId.set(null);
+
     this.form = this.createEmptyForm();
   }
 
@@ -722,8 +870,28 @@ export class CategoryAdminComponent implements OnInit {
       description: '',
       icon: '',
       active: true,
-      sortOrder: 0,
+      sortOrder: this.getNextSortOrder(),
     };
+  }
+
+  /**
+   * Calculate the default sort order for a new category.
+   *
+   * The next category is placed after the current highest
+   * sort order. The administrator can still manually change
+   * this value before saving.
+   */
+  private getNextSortOrder(): number {
+    if (this.categories().length === 0) {
+      return 0;
+    }
+
+    const highestSortOrder = this.categories().reduce(
+      (highest, category) => Math.max(highest, Number(category.sortOrder) || 0),
+      -1,
+    );
+
+    return highestSortOrder + 1;
   }
 
   /**

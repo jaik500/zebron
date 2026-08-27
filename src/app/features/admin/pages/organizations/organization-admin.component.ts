@@ -817,145 +817,389 @@ export class OrganizationAdminComponent implements OnInit {
   // Save organization
   // ===============================================================
 
-  protected async saveOrganization(): Promise<void> {
-    if (this.saving()) {
-      return;
-    }
+ protected async saveOrganization(): Promise<void> {
+  // ===============================================================
+  // Prevent duplicate submissions
+  // ===============================================================
 
-    this.saving.set(true);
-    this.error.set(null);
+  if (this.saving()) {
+    return;
+  }
 
-    try {
-      const organization: Omit<Organization, 'id' | 'createdAt' | 'updatedAt'> = {
-        name: this.form.name.trim(),
 
-        slug: this.form.slug.trim().toLowerCase(),
+  // ===============================================================
+  // Normalize required organization fields
+  // ===============================================================
 
-        verified: this.form.verified,
+  const name =
+    this.form.name?.trim() || '';
 
-        active: this.form.active,
+  const slug =
+    this.form.slug?.trim().toLowerCase() || '';
+
+
+  // ===============================================================
+  // Validate required organization fields
+  // ===============================================================
+
+  if (!name) {
+    this.toast.error(
+      'Organization name is required.',
+    );
+
+    return;
+  }
+
+
+  if (!slug) {
+    this.toast.error(
+      'Organization slug is required.',
+    );
+
+    return;
+  }
+
+
+  // ===============================================================
+  // Normalize optional organization fields
+  // ===============================================================
+
+  const description =
+    this.form.description?.trim() || '';
+
+  const website =
+    this.form.website?.trim() || '';
+
+  const phone =
+    this.form.phone?.trim() || '';
+
+  const email =
+    this.form.email?.trim() || '';
+
+
+  // ===============================================================
+  // Location fields
+  // ===============================================================
+
+  const address =
+    this.form.address?.trim() || '';
+
+  const city =
+    this.form.city?.trim() || '';
+
+  const state =
+    this.form.state?.trim().toUpperCase() || '';
+
+  const zipCode =
+    this.form.zipCode?.trim() || '';
+
+  const country =
+    this.form.country?.trim() || '';
+
+
+  // ===============================================================
+  // Country is required when a location is being provided.
+  // ===============================================================
+
+  const hasLocation =
+    !!(
+      address ||
+      city ||
+      state ||
+      zipCode ||
+      country
+    );
+
+
+  if (hasLocation && !country) {
+    this.toast.error(
+      'Country is required for a location.',
+    );
+
+    return;
+  }
+
+
+  // ===============================================================
+  // U.S.-specific location validation
+  // ===============================================================
+
+  const normalizedCountry =
+    country.toLowerCase();
+
+
+  const isUnitedStates =
+    normalizedCountry === 'united states' ||
+    normalizedCountry === 'usa' ||
+    normalizedCountry === 'us';
+
+
+  if (hasLocation && !address) {
+    this.toast.error(
+      'Street address is required when adding a location.',
+    );
+
+    return;
+  }
+
+
+  if (hasLocation && !city) {
+    this.toast.error(
+      'City is required when adding a location.',
+    );
+
+    return;
+  }
+
+
+  if (
+    hasLocation &&
+    isUnitedStates &&
+    !state
+  ) {
+    this.toast.error(
+      'State is required for United States locations.',
+    );
+
+    return;
+  }
+
+
+  if (
+    hasLocation &&
+    isUnitedStates &&
+    !zipCode
+  ) {
+    this.toast.error(
+      'ZIP code is required for United States locations.',
+    );
+
+    return;
+  }
+
+
+  // ===============================================================
+  // Prevent duplicate submissions after validation
+  // ===============================================================
+
+  this.saving.set(true);
+
+  this.error.set(null);
+
+
+  const editingId =
+    this.editingId();
+
+
+  try {
+
+    // =============================================================
+    // Build organization
+    // =============================================================
+
+    const organization:
+      Omit<
+        Organization,
+        'id' | 'createdAt' | 'updatedAt'
+      > = {
+        name,
+
+        slug,
+
+        verified:
+          this.form.verified,
+
+        active:
+          this.form.active,
       };
 
-      // -----------------------------------------------------------
-      // Optional organization fields
-      // -----------------------------------------------------------
 
-      const description = this.form.description.trim();
+    // =============================================================
+    // Optional organization fields
+    // =============================================================
 
-      const website = this.form.website.trim();
+    if (description) {
+      organization.description =
+        description;
+    }
 
-      const phone = this.form.phone.trim();
 
-      const email = this.form.email.trim();
+    if (website) {
+      organization.website =
+        website;
+    }
 
-      if (description) {
-        organization.description = description;
+
+    if (phone) {
+      organization.phone =
+        phone;
+    }
+
+
+    if (email) {
+      organization.email =
+        email;
+    }
+
+
+    // =============================================================
+    // Location
+    //
+    // Locations are stored separately.
+    // The organization stores only locationId.
+    // =============================================================
+
+    if (hasLocation) {
+
+      const location: Location = {
+        country,
+      };
+
+
+      if (address) {
+        location.address =
+          address;
       }
 
-      if (website) {
-        organization.website = website;
+
+      if (city) {
+        location.city =
+          city;
       }
 
-      if (phone) {
-        organization.phone = phone;
+
+      if (state) {
+        location.state =
+          state;
       }
 
-      if (email) {
-        organization.email = email;
+
+      if (zipCode) {
+        location.zipCode =
+          zipCode;
       }
 
-      // -----------------------------------------------------------
-      // Location
-      //
-      // Locations are stored separately and the organization
-      // stores only the locationId.
-      // -----------------------------------------------------------
 
-      const address = this.form.address.trim();
-
-      const city = this.form.city.trim();
-
-      const state = this.form.state.trim().toUpperCase();
-
-      const zipCode = this.form.zipCode.trim();
-
-      const country = this.form.country.trim();
-
-      const hasLocation = !!(address || city || state || zipCode);
-
-      const editingId = this.editingId();
-
-      if (hasLocation) {
-        const location: Location = {
-          country: country || 'United States',
-        };
-
-        // Only send fields that contain values.
-        if (address) {
-          location.address = address;
-        }
-
-        if (city) {
-          location.city = city;
-        }
-
-        if (state) {
-          location.state = state;
-        }
-
-        if (zipCode) {
-          location.zipCode = zipCode;
-        }
-
-        if (editingId) {
-          // Find the organization currently being edited.
-          const existingOrganization = this.organizations().find((item) => item.id === editingId);
-
-          if (existingOrganization?.locationId) {
-            // Update the existing location.
-            await this.locationService.updateLocation(existingOrganization.locationId, location);
-
-            organization.locationId = existingOrganization.locationId;
-          } else {
-            // Organization does not have a location yet.
-            const locationId = await this.locationService.createLocation(location);
-
-            organization.locationId = locationId;
-          }
-        } else {
-          // New organization: create its location first.
-          const locationId = await this.locationService.createLocation(location);
-
-          organization.locationId = locationId;
-        }
-      }
-
-      // -----------------------------------------------------------
-      // Create / update organization
-      // -----------------------------------------------------------
+      // ===========================================================
+      // Existing organization
+      // ===========================================================
 
       if (editingId) {
-        await this.organizationService.updateOrganization(editingId, organization);
 
-        this.toast.success('Organization updated successfully.');
+        const existingOrganization =
+          this.organizations().find(
+            (item) =>
+              item.id === editingId,
+          );
+
+
+        if (
+          existingOrganization?.locationId
+        ) {
+
+          await this.locationService.updateLocation(
+            existingOrganization.locationId,
+            location,
+          );
+
+
+          organization.locationId =
+            existingOrganization.locationId;
+
+        } else {
+
+          const locationId =
+            await this.locationService.createLocation(
+              location,
+            );
+
+
+          organization.locationId =
+            locationId;
+        }
+
+
+      // ===========================================================
+      // New organization
+      // ===========================================================
+
       } else {
-        await this.organizationService.createOrganization(organization);
 
-        this.toast.success('Organization created successfully.');
+        const locationId =
+          await this.locationService.createLocation(
+            location,
+          );
+
+
+        organization.locationId =
+          locationId;
       }
-
-      // Clear the form and refresh the directory.
-      this.resetForm();
-
-      await this.loadOrganizations();
-    } catch (error) {
-      console.error('Failed to save organization:', error);
-
-      this.toast.error('Unable to save organization. Please try again.');
-    } finally {
-      this.saving.set(false);
     }
+
+
+    // =============================================================
+    // Create / update organization
+    // =============================================================
+
+    if (editingId) {
+
+      await this.organizationService.updateOrganization(
+        editingId,
+        organization,
+      );
+
+
+      this.toast.success(
+        'Organization updated successfully.',
+      );
+
+    } else {
+
+      await this.organizationService.createOrganization(
+        organization,
+      );
+
+
+      this.toast.success(
+        'Organization created successfully.',
+      );
+    }
+
+
+    // =============================================================
+    // Reset and refresh
+    // =============================================================
+
+    this.resetForm();
+
+    await this.loadOrganizations();
+
+  } catch (error) {
+
+    console.error(
+      'Failed to save organization:',
+      error,
+    );
+
+
+    this.error.set(
+      'Unable to save organization. Please try again.',
+    );
+
+
+    this.toast.error(
+      `Unable to save organization: ${
+        error instanceof Error
+          ? error.message
+          : 'Unknown error'
+      }`,
+    );
+
+  } finally {
+
+    this.saving.set(false);
   }
+}
 
   // ===============================================================
   // Edit organization
