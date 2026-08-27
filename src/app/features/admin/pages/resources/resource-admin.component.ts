@@ -2,8 +2,8 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import { Resource, ResourceStatus, ResourceType } from '../../../../core/models/resource.model';
-
+import { Resource, ResourceStatus } from '../../../../core/models/resource.model';
+import { ResourceType } from '../../../../core/models/resource-type.model';
 import { Category } from '../../../../core/models/category.model';
 import { Location } from '../../../../core/models/location.model';
 
@@ -14,6 +14,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
 
 import { DeleteConfirmationComponent } from '../../../../shared/components/delete-confirmation/delete-confirmation';
 import { LocationService } from '../../../../core/services/location.service';
+import { ResourceTypeService } from '../../../../core/services/resource-type.service';
 
 @Component({
   selector: 'app-resource-admin',
@@ -239,9 +240,9 @@ import { LocationService } from '../../../../core/services/location.service';
                              focus:ring-2 focus:ring-[#007979]/20
                              focus:bg-white"
                           >
-                            @for (type of resourceTypes; track type) {
-                              <option [value]="type">
-                                {{ formatLabel(type) }}
+                            @for (type of resourceTypes(); track type.id) {
+                              <option [value]="type.id">
+                                {{ type.name }}
                               </option>
                             }
                           </select>
@@ -249,42 +250,39 @@ import { LocationService } from '../../../../core/services/location.service';
                       </div>
 
                       <!-- Location -->
-<div>
-  <label
-    for="locationId"
-    class="block text-sm font-medium text-gray-700"
-  >
-    Location
-  </label>
+                      <div>
+                        <label for="locationId" class="block text-sm font-medium text-gray-700">
+                          Location
+                        </label>
 
-  <select
-    id="locationId"
-    name="locationId"
-    [(ngModel)]="form.locationId"
-    class="mt-1.5 block w-full rounded-lg
+                        <select
+                          id="locationId"
+                          name="locationId"
+                          [(ngModel)]="form.locationId"
+                          class="mt-1.5 block w-full rounded-lg
            border border-gray-300 bg-gray-50
            px-4 py-2.5 text-sm text-gray-900
            focus:border-[#007979]
            focus:outline-none
            focus:ring-2 focus:ring-[#007979]/20
            focus:bg-white"
-  >
-    <option value="">Select a location</option>
+                        >
+                          <option value="">Select a location</option>
 
-    @for (location of locations(); track location.id) {
-      <option [value]="location.id">
-        {{ location.city }}, {{ location.state }}
-        @if (location.zipCode) {
-          {{ location.zipCode }}
-        }
-      </option>
-    }
-  </select>
+                          @for (location of locations(); track location.id) {
+                            <option [value]="location.id">
+                              {{ location.city }}, {{ location.state }}
+                              @if (location.zipCode) {
+                                {{ location.zipCode }}
+                              }
+                            </option>
+                          }
+                        </select>
 
-  <p class="mt-1.5 text-xs text-gray-500">
-    Select the location where this resource is available.
-  </p>
-</div>
+                        <p class="mt-1.5 text-xs text-gray-500">
+                          Select the location where this resource is available.
+                        </p>
+                      </div>
 
                       <!-- Description -->
                       <div>
@@ -925,6 +923,7 @@ export class ResourceAdminComponent implements OnInit {
   private readonly resourceService = inject(ResourceService);
   private readonly categoryService = inject(CategoryService);
   private readonly locationService = inject(LocationService);
+  private readonly resourceTypeService = inject(ResourceTypeService);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(HotToastService);
 
@@ -937,16 +936,7 @@ export class ResourceAdminComponent implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly editingId = signal<string | null>(null);
 
-  protected readonly resourceTypes: ResourceType[] = [
-    'government',
-    'nonprofit',
-    'education',
-    'business',
-    'community',
-    'service',
-    'tool',
-    'other',
-  ];
+  protected readonly resourceTypes = signal<ResourceType[]>([]);
 
   protected readonly resourceStatuses: ResourceStatus[] = [
     'draft',
@@ -965,32 +955,32 @@ export class ResourceAdminComponent implements OnInit {
    * Load resources and categories for the admin page.
    */
   /**
- * Load resources, categories, and locations for the admin page.
- */
-private async loadData(): Promise<void> {
-  this.loading.set(true);
-  this.error.set(null);
+   * Load resources, categories, and locations for the admin page.
+   */
+  private async loadData(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
 
-  try {
-    const [resources, categories, locations] = await Promise.all([
-      this.resourceService.getAllResources(),
-      this.categoryService.getAllCategories(),
-      this.locationService.getAllLocations(),
-    ]);
+    try {
+      const [resources, categories, locations, resourceTypes] = await Promise.all([
+        this.resourceService.getAllResources(),
+        this.categoryService.getAllCategories(),
+        this.locationService.getAllLocations(),
+        this.resourceTypeService.getActiveResourceTypes(),
+      ]);
 
-    this.resources.set(resources);
-    this.categories.set(categories);
-    this.locations.set(locations);
-  } catch (error) {
-    console.error('Failed to load resource admin data:', error);
+      this.resources.set(resources);
+      this.categories.set(categories);
+      this.locations.set(locations);
+      this.resourceTypes.set(resourceTypes);
+    } catch (error) {
+      console.error('Failed to load resource admin data:', error);
 
-    this.error.set(
-      'Unable to load resources. Please try again.'
-    );
-  } finally {
-    this.loading.set(false);
+      this.error.set('Unable to load resources. Please try again.');
+    } finally {
+      this.loading.set(false);
+    }
   }
-}
 
   /**
    * Automatically create a URL-friendly slug from the resource name.
@@ -1240,7 +1230,7 @@ private async loadData(): Promise<void> {
 
       organizationId: '',
 
-      resourceType: 'other' as ResourceType,
+     resourceType: '',
 
       website: '',
       phone: '',

@@ -132,6 +132,20 @@ export const routes: Routes = [
   },
 
     // =====================================================
+  // ADMIN RESOURCE TYPE MANAGEMENT
+  // =====================================================
+  {
+    path: 'admin/resource-types',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/resource-types/resource-type-admin.component'
+      ).then(
+        (m) => m.ResourceTypeAdminComponent,
+      ),
+  },
+
+    // =====================================================
   // ADMIN CONTACT MAILBOX
   // =====================================================
 
@@ -163,6 +177,20 @@ export const routes: Routes = [
 
   // =====================================================
   // ADMIN DASHBOARD
+  // =====================================================
+  // ADMIN LOCATION MANAGEMENT
+  // =====================================================
+  {
+    path: 'admin/locations',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/locations/location-admin.component'
+      ).then(
+        (m) => m.LocationAdminComponent,
+      ),
+  },
+
   // =====================================================
   {
     path: 'admin',

@@ -1,15 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { Availability } from './availability.model';
 
-export type ResourceType =
-  | 'government'
-  | 'nonprofit'
-  | 'education'
-  | 'business'
-  | 'community'
-  | 'service'
-  | 'tool'
-  | 'other';
+
 
 export type ResourceStatus =
   | 'draft'
@@ -32,7 +24,7 @@ export interface Resource {
   categoryId: string;
   organizationId?: string;
 
-  resourceType: ResourceType;
+  resourceType: string;
 
   website?: string;
   phone?: string;

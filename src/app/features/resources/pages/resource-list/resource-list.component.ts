@@ -9,7 +9,8 @@ import { MatMenuModule } from '@angular/material/menu';
 
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 
-import { Resource, ResourceType } from '../../../../core/models/resource.model';
+import { Resource } from '../../../../core/models/resource.model';
+import { ResourceType } from '../../../../core/models/resource-type.model';
 
 import { Category } from '../../../../core/models/category.model';
 
@@ -27,6 +28,7 @@ import { ResourceCardComponent } from '../../components/resource-card/resource-c
 import { UsefulLinksComponent } from '../../components/useful-links/useful-links.component';
 
 import { HotToastService } from '@ngxpert/hot-toast';
+import { ResourceTypeService } from '../../../../core/services/resource-type.service';
 
 @Component({
   selector: 'app-resource-list',
@@ -588,47 +590,84 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 </p>
 
                 <div class="flex flex-wrap gap-2">
-                  @for (category of categories(); track category.id) {
-                    <button
-                      type="button"
-                      (click)="togglePersonalizationInterest(category.slug)"
-                      [attr.aria-pressed]="isPersonalizationInterestSelected(category.slug)"
-                      class="inline-flex
-                           items-center
-                           gap-1.5
-                           rounded-full
-                           border
-                           px-3 py-1.5
-                           text-xs
-                           font-semibold
-                           transition
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/30"
-                      [class.border-[#007979]]="isPersonalizationInterestSelected(category.slug)"
-                      [class.bg-[#E6F4F3]]="isPersonalizationInterestSelected(category.slug)"
-                      [class.text-[#007979]]="isPersonalizationInterestSelected(category.slug)"
-                      [class.border-gray-200]="!isPersonalizationInterestSelected(category.slug)"
-                      [class.bg-white]="!isPersonalizationInterestSelected(category.slug)"
-                      [class.text-gray-600]="!isPersonalizationInterestSelected(category.slug)"
-                    >
-                      <!-- Only show icon when the category has one -->
-                      @if (category.icon) {
-                        <mat-icon
-                          aria-hidden="true"
-                          class="!m-0
-                 !h-4 !w-4
-                 !text-[16px]"
-                        >
-                          {{ category.icon }}
-                        </mat-icon>
-                      }
+               @for (category of categories(); track category.id) {
+  <button
+    type="button"
+    (click)="togglePersonalizationInterest(category.id)"
+    [attr.aria-pressed]="
+      isPersonalizationInterestSelected(category.id)
+    "
 
-                      <span>
-                        {{ category.name }}
-                      </span>
-                    </button>
-                  }
+    [class.border-[#007979]]="
+      isPersonalizationInterestSelected(category.id)
+    "
+
+    [class.bg-[#007979]/10]="
+      isPersonalizationInterestSelected(category.id)
+    "
+
+    [class.text-[#007979]]="
+      isPersonalizationInterestSelected(category.id)
+    "
+
+    [class.shadow-sm]="
+      isPersonalizationInterestSelected(category.id)
+    "
+
+    [class.border-gray-200]="
+      !isPersonalizationInterestSelected(category.id)
+    "
+
+    [class.bg-white]="
+      !isPersonalizationInterestSelected(category.id)
+    "
+
+    [class.text-[#032D42]]="
+      !isPersonalizationInterestSelected(category.id)
+    "
+
+    class="
+      inline-flex
+      items-center
+      gap-1
+      rounded-lg
+      border
+      px-2.5
+      py-1
+      text-xs
+      font-medium
+      transition-all
+      duration-150
+      hover:border-[#007979]/50
+      hover:bg-[#007979]/5
+      focus:outline-none
+      focus:ring-2
+      focus:ring-[#007979]/20
+    "
+  >
+    <span>
+      {{ category.name }}
+    </span>
+
+    @if (isPersonalizationInterestSelected(category.id)) {
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        class="h-3 w-3 shrink-0"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="m5 12 4 4L19 6"
+        />
+      </svg>
+    }
+  </button>
+}
                 </div>
               </div>
 
@@ -879,9 +918,9 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 >
                   <option value="">All types</option>
 
-                  @for (type of resourceTypes; track type) {
-                    <option [value]="type">
-                      {{ formatResourceType(type) }}
+                  @for (type of resourceTypes(); track type.id) {
+                    <option [value]="type.id">
+                      {{ type.name }}
                     </option>
                   }
                 </select>
@@ -1210,6 +1249,8 @@ export class ResourceListComponent implements OnInit {
 
   private readonly locationService = inject(LocationService);
 
+  private readonly resourceTypeService = inject(ResourceTypeService);
+
   protected readonly personalizationService = inject(PersonalizationService);
 
   private readonly route = inject(ActivatedRoute);
@@ -1270,7 +1311,7 @@ export class ResourceListComponent implements OnInit {
 
   protected readonly searchTerm = signal('');
 
-  protected readonly selectedType = signal<ResourceType | ''>('');
+  protected readonly selectedType = signal<string>('');
 
   protected readonly selectedCategory = signal('');
 
@@ -1312,16 +1353,7 @@ export class ResourceListComponent implements OnInit {
   // Resource Types
   // =========================================================
 
-  protected readonly resourceTypes: ResourceType[] = [
-    'government',
-    'nonprofit',
-    'education',
-    'business',
-    'community',
-    'service',
-    'tool',
-    'other',
-  ];
+  protected readonly resourceTypes = signal<ResourceType[]>([]);
 
   // =========================================================
   // Selected Category ID
@@ -1358,23 +1390,106 @@ export class ResourceListComponent implements OnInit {
 
     const categoryId = this.selectedCategoryId();
 
-    return this.resources().filter((resource) => {
-      const matchesSearch =
-        !search ||
-        resource.name.toLowerCase().includes(search) ||
-        resource.description.toLowerCase().includes(search) ||
-        resource.tags.some((tag) => tag.toLowerCase().includes(search));
+    const preferences = this.personalizationService.preferences();
 
-      const matchesType = !type || resource.resourceType === type;
+    const interests = preferences.interests;
 
-      const matchesCategory = !categoryId || resource.categoryId === categoryId;
+    const preferredLocationId = preferences.locationId;
 
-      const matchesOnline = !this.onlineOnly() || resource.online;
+    return this.resources()
+      .filter((resource) => {
+        // =====================================================
+        // Explicit search filter
+        // =====================================================
 
-      const matchesFeatured = !this.featuredOnly() || resource.featured;
+        const matchesSearch =
+          !search ||
+          resource.name.toLowerCase().includes(search) ||
+          resource.description.toLowerCase().includes(search) ||
+          resource.tags.some((tag) => tag.toLowerCase().includes(search));
 
-      return matchesSearch && matchesType && matchesCategory && matchesOnline && matchesFeatured;
-    });
+        // =====================================================
+        // Explicit Resource Type filter
+        // =====================================================
+
+        const matchesType = !type || resource.resourceType === type;
+
+        // =====================================================
+        // Explicit Category filter
+        // =====================================================
+
+        const matchesCategory = !categoryId || resource.categoryId === categoryId;
+
+        // =====================================================
+        // Explicit Online filter
+        // =====================================================
+
+        const matchesOnline = !this.onlineOnly() || resource.online;
+
+        // =====================================================
+        // Explicit Featured filter
+        // =====================================================
+
+        const matchesFeatured = !this.featuredOnly() || resource.featured;
+
+        return matchesSearch && matchesType && matchesCategory && matchesOnline && matchesFeatured;
+      })
+      .map((resource, index) => {
+        // =====================================================
+        // Personalization Score
+        //
+        // Each matching personalization signal contributes
+        // one point.
+        //
+        // 0 = no personalization match
+        // 1 = one matching signal
+        // 2 = interest + location match
+        // =====================================================
+
+        let score = 0;
+
+        const matchesInterest = interests.includes(resource.categoryId);
+
+        const matchesLocation =
+          !!preferredLocationId && resource.locationId === preferredLocationId;
+
+        if (matchesInterest) {
+          score++;
+        }
+
+        if (matchesLocation) {
+          score++;
+        }
+
+        console.log('[Personalization]', {
+          resource: resource.name,
+          resourceId: resource.id,
+          categoryId: resource.categoryId,
+          locationId: resource.locationId,
+          interests,
+          preferredLocationId,
+          matchesInterest,
+          matchesLocation,
+          score,
+        });
+
+        return {
+          resource,
+          score,
+          index,
+        };
+      })
+      .sort((a, b) => {
+        // Higher personalization score first.
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+
+        // Preserve the original Firestore order
+        // when scores are equal.
+        return a.index - b.index;
+      })
+      .map(({ resource }) => resource);
   });
 
   // =========================================================
@@ -1420,6 +1535,8 @@ export class ResourceListComponent implements OnInit {
     this.loadCategories();
 
     this.loadLocations();
+
+    this.loadResourceTypes();
 
     const category = this.route.snapshot.queryParamMap.get('category');
 
@@ -1481,7 +1598,7 @@ export class ResourceListComponent implements OnInit {
   protected onTypeChange(event: Event): void {
     const select = event.target as HTMLSelectElement;
 
-    this.selectedType.set(select.value as ResourceType | '');
+    this.selectedType.set(select.value);
   }
 
   // =========================================================
@@ -1595,8 +1712,12 @@ export class ResourceListComponent implements OnInit {
   // Format Resource Type
   // =========================================================
 
-  protected formatResourceType(type: ResourceType): string {
-    return type.charAt(0).toUpperCase() + type.slice(1);
+  protected formatResourceType(type: ResourceType | string): string {
+    if (typeof type === 'string') {
+      return type;
+    }
+
+    return type.name;
   }
 
   // =========================================================
@@ -1676,5 +1797,15 @@ export class ResourceListComponent implements OnInit {
 
       queryParamsHandling: 'merge',
     });
+  }
+
+  private async loadResourceTypes(): Promise<void> {
+    try {
+      const resourceTypes = await this.resourceTypeService.getActiveResourceTypes();
+
+      this.resourceTypes.set(resourceTypes);
+    } catch (error) {
+      console.error('Failed to load resource types:', error);
+    }
   }
 }
