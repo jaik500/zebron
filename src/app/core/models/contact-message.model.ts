@@ -8,7 +8,7 @@ import { Timestamp } from 'firebase/firestore';
  * archived  - Message has been archived.
  */
 export type ContactMessageStatus =
-  | 'new'
+  | 'unread'
   | 'read'
   | 'archived';
 

@@ -13,6 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { jsPDF } from 'jspdf';
+import { Router } from '@angular/router';
 
 import {
   ContactMessage,
@@ -21,10 +22,11 @@ import {
 
 import { ContactMessageService } from '../../../../core/services/contact-message.service';
 import { ContactService } from '../../../../core/services/contact.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
-type MailboxFilter = 'all' | 'new' | 'read' | 'archived';
+type MailboxFilter = 'all' | 'unread' | 'read' | 'archived';
 
-type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
+type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
 
 @Component({
   selector: 'app-contact-mailbox',
@@ -51,15 +53,15 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
           <!-- Header title -->
           <div class="min-w-0">
             <h1
-              class="truncate text-xl font-bold
+              class="truncate text-3xl font-bold
                      tracking-tight sm:text-2xl"
             >
               Zebron Mailbox
             </h1>
 
             <p
-              class="mt-1 text-xs text-white/80
-                     sm:text-sm"
+              class="mt-1 text-md text-white/80
+                     sm:text-md"
             >
               Manage messages submitted through the Zebron contact form.
             </p>
@@ -108,24 +110,25 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
               type="button"
               (click)="loadMessages()"
               [disabled]="loading()"
-              class="inline-flex min-h-10
-                     items-center justify-center
-                     rounded-lg border
-                     border-white/30
-                     bg-white/5 px-3 py-2
-                     text-sm font-medium
-                     text-white
-                     transition
-                     hover:bg-white/10
-                     disabled:cursor-not-allowed
-                     disabled:opacity-50"
+              class="hidden min-h-10
+         items-center justify-center
+         rounded-lg border
+         border-white/30
+         bg-white/5 px-3 py-2
+         text-sm font-medium
+         text-white
+         transition
+         hover:bg-white/10
+         disabled:cursor-not-allowed
+         disabled:opacity-50
+         sm:inline-flex"
               aria-label="Refresh mailbox"
             >
               <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]" [class.animate-spin]="loading()">
                 refresh
               </mat-icon>
 
-              <span class="ml-1 hidden sm:inline">
+              <span class="ml-1">
                 {{ loading() ? 'Refreshing...' : 'Refresh' }}
               </span>
             </button>
@@ -181,6 +184,29 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
               <button mat-menu-item type="button" (click)="loadMessages()">
                 <mat-icon>refresh</mat-icon>
                 <span>Refresh</span>
+              </button>
+              <div class="my-1 border-t border-gray-100"></div>
+              <!-- Logout -->
+              <button
+                type="button"
+                (click)="logout()"
+                class="flex w-full
+         items-center gap-3
+         px-4 py-2.5
+         text-left text-sm
+         font-medium
+         text-red-600
+         transition
+         hover:bg-red-50"
+              >
+                <mat-icon
+                  class="!m-0 !h-5
+           !w-5 !text-[20px]"
+                >
+                  logout
+                </mat-icon>
+
+                <span>Logout</span>
               </button>
             </mat-menu>
           </div>
@@ -289,8 +315,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                ===================================================== -->
 
           <section
-            class="mb-5 grid grid-cols-2
-                   gap-3 lg:grid-cols-4"
+            class="mb-3 grid grid-cols-4
+         gap-2 sm:gap-3"
           >
             <!-- All -->
             <button
@@ -312,7 +338,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                   class="text-sm font-medium
                          text-gray-500"
                 >
-                  All Messages
+                  All
                 </p>
 
                 <span
@@ -327,7 +353,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
               </div>
 
               <p
-                class="mt-2 text-3xl font-bold
+                class="mt-1 text-3xl font-bold
                        leading-none text-gray-900"
               >
                 {{ messages().length }}
@@ -337,14 +363,14 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
             <!-- New -->
             <button
               type="button"
-              (click)="setFilter('new')"
+              (click)="setFilter('unread')"
               class="rounded-xl border
                      border-gray-200 bg-white
                      px-4 py-4 text-left
                      shadow-sm transition
                      hover:shadow-md"
-              [class.ring-2]="filter() === 'new'"
-              [class.ring-blue-500/20]="filter() === 'new'"
+              [class.ring-2]="filter() === 'unread'"
+              [class.ring-blue-500/20]="filter() === 'unread'"
             >
               <div
                 class="flex items-center
@@ -467,8 +493,10 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
 
           <section
             class="overflow-hidden rounded-xl
-                   border border-gray-200
-                   bg-white shadow-sm"
+         border border-gray-200
+         bg-[#007979]/30
+         shadow-sm
+         md:bg-white"
           >
             @if (loading()) {
               <div
@@ -587,16 +615,16 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                       <tr
                         class="transition
                                hover:bg-gray-50"
-                        [class.bg-blue-50]="message.status === 'new'"
+                        [class.bg-blue-50]="message.status === 'unread'"
                       >
                         <!-- Sender -->
-                        <td class="px-5 py-4 align-middle">
+                        <td class="px-5 py-2 align-middle">
                           <div class="min-w-0">
                             <div
                               class="flex items-center
                                      gap-2"
                             >
-                              @if (message.status === 'new') {
+                              @if (message.status === 'unread') {
                                 <span
                                   class="h-2 w-2
                                          shrink-0
@@ -636,7 +664,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                             (click)="openMessage(message)"
                             class="block w-full
                                    min-w-0
-                                   text-left"
+                                   text-left
+                                   cursor-pointer"
                           >
                             <p
                               class="break-words
@@ -645,7 +674,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                                      leading-5
                                      text-gray-900
                                      hover:text-blue-600"
-                              [class.font-bold]="message.status === 'new'"
+                              [class.font-bold]="message.status === 'unread'"
                             >
                               {{ message.subject }}
                             </p>
@@ -685,8 +714,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                                    text-xs
                                    font-medium
                                    capitalize"
-                            [class.bg-blue-100]="message.status === 'new'"
-                            [class.text-blue-700]="message.status === 'new'"
+                            [class.bg-blue-100]="message.status === 'unread'"
+                            [class.text-blue-700]="message.status === 'unread'"
                             [class.bg-green-100]="message.status === 'read'"
                             [class.text-green-700]="message.status === 'read'"
                             [class.bg-gray-100]="message.status === 'archived'"
@@ -826,8 +855,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                            border border-gray-200
                            bg-white p-3
                            shadow-sm"
-                    [class.border-blue-200]="message.status === 'new'"
-                    [class.bg-blue-50]="message.status === 'new'"
+                    [class.border-blue-200]="message.status === 'unread'"
+                    [class.bg-blue-50]="message.status === 'unread'"
                   >
                     <div
                       class="flex items-start
@@ -859,8 +888,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                                text-[10px]
                                font-semibold
                                capitalize"
-                        [class.bg-blue-100]="message.status === 'new'"
-                        [class.text-blue-700]="message.status === 'new'"
+                        [class.bg-blue-100]="message.status === 'unread'"
+                        [class.text-blue-700]="message.status === 'unread'"
                         [class.bg-green-100]="message.status === 'read'"
                         [class.text-green-700]="message.status === 'read'"
                         [class.bg-gray-100]="message.status === 'archived'"
@@ -1159,100 +1188,223 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
           (click)="$event.stopPropagation()"
         >
           <!-- Modal header -->
-          <div
-            class="border-b px-4 py-4
-                   sm:px-6"
+<!-- View modal header -->
+<div
+  class="border-b
+         bg-[#032D42]
+         px-4 py-2
+         sm:px-6"
+>
+  <div
+    class="flex items-start
+           justify-between
+           gap-3"
+  >
+
+    <!-- Subject + Date -->
+    <div class="min-w-0 flex-1">
+
+      <!-- Subject -->
+      <h2
+        class="break-words
+               text-base
+               font-bold
+               leading-5
+               text-white
+               sm:text-lg
+               sm:leading-6
+               pl-2"
+      >
+        {{ selectedMessage()!.subject }}
+      </h2>
+
+      <!-- Date line -->
+      <div
+        class="relative
+               mt-1
+               h-7
+               w-full"
+      >
+
+        <!-- Date -->
+        <p
+          class="absolute
+       left-2
+       top-1/2
+       -translate-y-1/2
+       text-[10px]
+       font-medium
+       leading-4
+       text-[#F7F4ED]
+       sm:left-4
+       sm:text-xs"
+        >
+          {{ formatDate(selectedMessage()!) }}
+        </p>
+
+        <!-- Print icon centered on date line -->
+        <button
+          type="button"
+          (click)="printContactMessage()"
+          class="absolute
+                 left-1/2
+                 top-1/2
+                 inline-flex
+                 h-7
+                 w-7
+                 -translate-x-1/2
+                 -translate-y-1/2
+                 items-center
+                 justify-center
+                 rounded-md
+                 text-[#F7F4ED]
+                 transition
+                 hover:bg-white/10
+                 hover:text-white
+                 focus:outline-none
+                 focus:ring-2
+                 focus:ring-white/30"
+          aria-label="Print message"
+          title="Print message"
+        >
+          <mat-icon
+            class="!m-0
+                   !h-4
+                   !w-4
+                   !text-[17px]"
           >
-            <div
-              class="flex items-start
-                     justify-between gap-4"
-            >
-              <div class="min-w-0">
-                <h2
-                  class="break-words
-                         text-lg font-bold
-                         leading-6 text-gray-900"
-                >
-                  {{ selectedMessage()!.subject }}
-                </h2>
+            print
+          </mat-icon>
+        </button>
 
-                <p
-                  class="mt-1 text-xs
-                         text-gray-500 sm:text-sm"
-                >
-                  {{ formatDate(selectedMessage()!) }}
-                </p>
-              </div>
+      </div>
+    </div>
 
-              <button
-                type="button"
-                (click)="closeMessage()"
-                class="flex h-8 w-8
-                       shrink-0
-                       items-center
-                       justify-center
-                       rounded-md
-                       text-gray-400
-                       hover:bg-gray-100
-                       hover:text-gray-700"
-                aria-label="Close message"
-              >
-                <mat-icon>close</mat-icon>
-              </button>
-            </div>
-          </div>
+    <!-- Close -->
+    <button
+      type="button"
+      (click)="closeMessage()"
+      class="inline-flex
+             h-8
+             w-8
+             shrink-0
+             items-center
+             justify-center
+             rounded-md
+             text-gray-300
+             transition
+             hover:bg-white/10
+             hover:text-white
+             focus:outline-none
+             focus:ring-2
+             focus:ring-white/30"
+      aria-label="Close message"
+    >
+      <mat-icon
+        class="!m-0
+               !h-5
+               !w-5"
+      >
+        close
+      </mat-icon>
+    </button>
+
+  </div>
+</div>
 
           <!-- Sender -->
           <div
             class="border-b
                    bg-gray-50
-                   px-4 py-3
+                   px-4 py-1
                    sm:px-6"
           >
             <div
-              class="grid grid-cols-1
-                     gap-3 sm:grid-cols-2 sm:gap-4"
+              class="space-y-1.5
+         rounded-lg
+         bg-gray-50
+         px-3 py-1
+         sm:space-y-1
+         sm:px-4 sm:py-1"
             >
-              <div class="min-w-0">
-                <p
-                  class="text-[11px]
-                         font-semibold
-                         uppercase
-                         tracking-wide
-                         text-gray-500"
+              <!-- From -->
+              <div
+                class="flex items-center
+           gap-2"
+              >
+                <span
+                  class="w-12 shrink-0
+             text-[13px]
+             font-semibold
+             text-gray-500
+             sm:w-14
+             sm:text-md"
                 >
                   From
-                </p>
+                </span>
 
-                <p
-                  class="mt-1 truncate
-                         text-sm font-medium
-                         text-gray-900"
+                <span
+                  class="min-w-0 truncate
+             text-md
+             font-medium
+             text-gray-900
+             sm:text-md"
                 >
                   {{ selectedMessage()!.name }}
-                </p>
+                </span>
               </div>
 
-              <div class="min-w-0">
-                <p
-                  class="text-[11px]
-                         font-semibold
-                         uppercase
-                         tracking-wide
-                         text-gray-500"
+              <!-- Email -->
+              <div
+                class="flex items-center
+           gap-2"
+              >
+                <span
+                  class="w-12 shrink-0
+             text-[13px]
+             font-semibold
+             text-gray-500
+             sm:w-14
+             sm:text-md"
                 >
                   Email
-                </p>
+                </span>
 
-                <a
-                  [href]="'mailto:' + selectedMessage()!.email"
-                  class="mt-1 block truncate
-                         text-sm font-medium
-                         text-blue-600
-                         hover:underline"
+                <span
+                  class="min-w-0 truncate
+             text-md
+             text-gray-700
+             sm:text-md"
                 >
                   {{ selectedMessage()!.email }}
-                </a>
+                </span>
+              </div>
+
+              <!-- Subject -->
+              <div
+                class="flex items-center
+           gap-2"
+              >
+                <span
+                  class="w-12 shrink-0
+             text-[13px]
+             font-semibold
+             text-gray-500
+             sm:w-14
+             sm:text-md"
+                >
+                  Subject
+                </span>
+
+                <span
+                  class="min-w-0 truncate
+             text-xs
+             font-medium
+             text-gray-900
+             sm:text-sm"
+                >
+                  {{ selectedMessage()!.subject }}
+                </span>
               </div>
             </div>
           </div>
@@ -1269,136 +1421,124 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
             </p>
           </div>
 
-         <!-- Modal actions -->
-<div
-  class="grid grid-cols-2
-         gap-2 border-t bg-gray-50
-         px-4 py-3 sm:flex sm:items-center
-         sm:px-6"
->
-  <!-- Reply -->
-  <button
-    type="button"
-    (click)="replyToMessage(selectedMessage()!)"
-    class="inline-flex h-9
-           items-center gap-1.5
-           rounded-md
+          <!-- Modal actions -->
+          <!-- Modal actions -->
+          <div
+            class="flex w-full items-center
+         gap-1.5 border-t
+         px-3 py-3
+         sm:gap-2 sm:px-6
+         bg-[#2A835F]/80"
+          >
+            <!-- Reply -->
+            <button
+              type="button"
+              (click)="replyToMessage(selectedMessage()!)"
+              class="inline-flex min-w-0 flex-1
+           h-9 items-center justify-center
+           gap-1 rounded-md
            bg-[#032D42]
-           px-3
-           text-xs font-semibold
+           px-2
+           text-[11px] font-semibold
            text-white
-           w-full justify-center
-           transition sm:w-auto
-           hover:bg-[#064B68]"
-  >
-    <mat-icon
-      class="!m-0 !h-4
-             !w-4 !text-[17px]"
-    >
-      reply
-    </mat-icon>
+           transition
+           hover:bg-[#064B68]
+           sm:flex-none sm:px-3
+           sm:text-xs"
+            >
+              <mat-icon
+                class="!m-0 !h-4 !w-4
+             !text-[16px]"
+              >
+                reply
+              </mat-icon>
 
-    Reply
-  </button>
+              <span>Reply</span>
+            </button>
 
-  <!-- Forward -->
-  <button
-    type="button"
-    (click)="forwardMessage(selectedMessage()!)"
-    class="inline-flex h-9
-           items-center gap-1.5
-           rounded-md
+            <!-- Forward -->
+            <button
+              type="button"
+              (click)="forwardMessage(selectedMessage()!)"
+              class="inline-flex min-w-0 flex-1
+           h-9 items-center justify-center
+           gap-1 rounded-md
            border border-gray-200
-           bg-white px-3
-           text-xs font-semibold
+           bg-white
+           px-2
+           text-[11px] font-semibold
            text-gray-700
            transition
-           hover:bg-gray-50"
-  >
-    <mat-icon
-      class="!m-0 !h-4
-             !w-4 !text-[17px]"
-    >
-      send
-    </mat-icon>
+           hover:bg-gray-50
+           sm:flex-none sm:px-3
+           sm:text-xs"
+            >
+              <mat-icon
+                class="!m-0 !h-4 !w-4
+             !text-[16px]"
+              >
+                send
+              </mat-icon>
 
-    Forward
-  </button>
+              <span>Forward</span>
+            </button>
 
-  <!-- Print -->
-  <button
-    type="button"
-    (click)="printContactMessage()"
-    class="inline-flex h-9
-           items-center gap-1.5
-           rounded-md
-           border border-gray-200
-           bg-white px-3
-           text-xs font-semibold
-           text-gray-700
-           transition
-           hover:bg-gray-50"
-  >
-    <mat-icon
-      class="!m-0 !h-4
-             !w-4 !text-[17px]"
-    >
-      print
-    </mat-icon>
+         
 
-    Print
-  </button>
-
-  <!-- Delete -->
-  <button
-    type="button"
-    (click)="deleteMessage(selectedMessage()!)"
-    class="inline-flex h-9
-           items-center gap-1.5
-           rounded-md
-           bg-red-50 px-3
-           text-xs font-semibold
+            <!-- Delete -->
+            <button
+              type="button"
+              (click)="deleteMessage(selectedMessage()!)"
+              class="inline-flex min-w-0 flex-1
+           h-9 items-center justify-center
+           gap-1 rounded-md
+           bg-red-50
+           px-2
+           text-[11px] font-semibold
            text-red-700
            transition
            hover:bg-red-100
-           sm:ml-auto"
-  >
-    <mat-icon
-      class="!m-0 !h-4
-             !w-4 !text-[17px]"
-    >
-      delete
-    </mat-icon>
+           sm:ml-auto
+           sm:flex-none sm:px-3
+           sm:text-xs"
+            >
+              <mat-icon
+                class="!m-0 !h-4 !w-4
+             !text-[16px]"
+              >
+                delete
+              </mat-icon>
 
-    Delete
-  </button>
+              <span>Delete</span>
+            </button>
 
-  <!-- Close -->
-  <button
-    type="button"
-    (click)="closeMessageModal()"
-    class="inline-flex h-9
-           items-center gap-1.5
-           rounded-md
+            <!-- Close -->
+            <button
+              type="button"
+              (click)="closeMessageModal()"
+              class="inline-flex min-w-0 flex-1
+           h-9 items-center justify-center
+           gap-1 rounded-md
            border border-gray-300
            bg-white
-           px-3
-           text-xs font-semibold
+           px-2
+           text-[11px] font-semibold
            text-gray-700
-           w-full justify-center
            transition
-           hover:bg-gray-50 sm:w-auto"
-  >
-    <mat-icon
-      class="!m-0 !h-4
-             !w-4 !text-[17px]"
-    >
-      close
-    </mat-icon>
+           hover:bg-gray-50
+           sm:flex-none sm:px-3
+           sm:text-xs"
+            >
+              <mat-icon
+                class="!m-0 !h-4 !w-4
+             !text-[16px]"
+              >
+                close
+              </mat-icon>
 
-    Close
-  </button>
-</div>
+              <span>Close</span>
+            </button>
+          </div>
         </section>
       </div>
     }
@@ -1762,6 +1902,10 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
 
   private readonly contactMessageService = inject(ContactMessageService);
 
+  private readonly router = inject(Router);
+
+  private readonly authService = inject(AuthService);
+
   /**
    * All messages.
    */
@@ -1818,7 +1962,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
    * Number of new messages.
    */
   readonly newCount = computed(
-    () => this.messages().filter((message) => message.status === 'new').length,
+    () => this.messages().filter((message) => message.status === 'unread').length,
   );
 
   /**
@@ -1838,30 +1982,40 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   /**
    * Apply status and search filters.
    */
-  readonly filteredMessages = computed(() => {
-    const currentFilter = this.filter();
+ readonly filteredMessages = computed(() => {
+  const currentFilter = this.filter();
 
-    const search = this.searchQuery().trim().toLowerCase();
+  const search =
+    this.searchQuery()
+      .trim()
+      .toLowerCase();
 
-    return this.messages().filter((message) => {
-      const matchesStatus = currentFilter === 'all' || message.status === currentFilter;
+  return this.messages().filter((message) => {
+    /**
+     * Firestore uses "unread" for newly received
+     * messages. The mailbox therefore uses "unread"
+     * as its New state.
+     */
+    const matchesStatus =
+      currentFilter === 'all' ||
+      message.status === currentFilter;
 
-      if (!matchesStatus) {
-        return false;
-      }
+    if (!matchesStatus) {
+      return false;
+    }
 
-      if (!search) {
-        return true;
-      }
+    if (!search) {
+      return true;
+    }
 
-      return (
-        message.name?.toLowerCase().includes(search) ||
-        message.email?.toLowerCase().includes(search) ||
-        message.subject?.toLowerCase().includes(search) ||
-        message.message?.toLowerCase().includes(search)
-      );
-    });
+    return (
+      message.name?.toLowerCase().includes(search) ||
+      message.email?.toLowerCase().includes(search) ||
+      message.subject?.toLowerCase().includes(search) ||
+      message.message?.toLowerCase().includes(search)
+    );
   });
+});
 
   ngOnInit(): void {
     this.startMessageListener();
@@ -1871,26 +2025,62 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
    * Start the real-time Firestore mailbox listener.
    */
   private startMessageListener(): void {
-    this.loading.set(true);
-    this.error.set(null);
+  this.loading.set(true);
+  this.error.set(null);
 
-    this.unsubscribeMessages?.();
+  // Remove any previous listener before creating a new one.
+  this.unsubscribeMessages?.();
 
-    this.unsubscribeMessages =
-      this.contactMessageService.listenToContactMessages(
-        (messages) => {
-          this.messages.set(messages);
-          this.loading.set(false);
-        },
-        (error) => {
-          console.error('Contact mailbox listener failed:', error);
-          this.loading.set(false);
-          this.error.set(
-            'Unable to load contact messages. Please try again.',
-          );
-        },
-      );
-  }
+  this.unsubscribeMessages =
+    this.contactMessageService.listenToContactMessages(
+      (messages) => {
+        /**
+         * Normalize legacy "new" records to the mailbox's
+         * current "unread" status.
+         *
+         * This is important because older contact-form
+         * messages may have been stored as:
+         *
+         *   status: "new"
+         *
+         * while inbound Resend emails are stored as:
+         *
+         *   status: "unread"
+         *
+         * The mailbox uses "unread" as its canonical
+         * new-message state.
+         */
+        const normalizedMessages =
+          messages.map((message) => ({
+            ...message,
+
+            status:
+              message.status === 'unread'
+                ? 'unread'
+                : message.status,
+          }));
+
+        this.messages.set(
+          normalizedMessages as ContactMessage[],
+        );
+
+        this.loading.set(false);
+      },
+
+      (error) => {
+        console.error(
+          'Contact mailbox listener failed:',
+          error,
+        );
+
+        this.loading.set(false);
+
+        this.error.set(
+          'Unable to load contact messages. Please try again.',
+        );
+      },
+    );
+}
 
   /**
    * Manual refresh. The real-time listener remains active.
@@ -1900,14 +2090,28 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
     this.error.set(null);
 
     try {
-      const messages =
-        await this.contactMessageService.getAllContactMessages();
-      this.messages.set(messages);
+     const messages =
+  await this.contactMessageService.getAllContactMessages();
+
+/**
+ * Normalize legacy "new" messages to "unread".
+ */
+const normalizedMessages =
+  messages.map((message) => ({
+    ...message,
+
+    status:
+      message.status === 'unread'
+        ? 'unread'
+        : message.status,
+  }));
+
+this.messages.set(
+  normalizedMessages as ContactMessage[],
+);
     } catch (error) {
       console.error('Failed to load contact messages:', error);
-      this.error.set(
-        'Unable to load contact messages. Please try again.',
-      );
+      this.error.set('Unable to load contact messages. Please try again.');
     } finally {
       this.loading.set(false);
     }
@@ -1941,7 +2145,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   async openMessage(message: ContactMessage): Promise<void> {
     this.selectedMessage.set(message);
 
-    if (message.status !== 'new') {
+    if (message.status !== 'unread') {
       return;
     }
 
@@ -2101,7 +2305,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   newMessage(): void {
     this.selectedMessage.set(null);
 
-    this.composeMode.set('new');
+    this.composeMode.set('unread');
 
     this.composeTo.set('');
     this.composeSubject.set('');
@@ -2170,17 +2374,16 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
         });
 
         this.showSuccessToast('Reply sent successfully.');
-      } else if (mode === 'new' || mode === 'forward') {
-
-      /*
-       * New email and Forward both use
-       * the administrator new-message
-       * backend function.
-       *
-       * Forwarding has already been prepared
-       * by forwardMessage(), including the
-       * Fwd: subject and forwarded content.
-       */
+      } else if (mode === 'unread' || mode === 'forward') {
+        /*
+         * New email and Forward both use
+         * the administrator new-message
+         * backend function.
+         *
+         * Forwarding has already been prepared
+         * by forwardMessage(), including the
+         * Fwd: subject and forwarded content.
+         */
         await this.contactService.sendNewMessage({
           to,
           subject,
@@ -2191,10 +2394,9 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
           mode === 'forward' ? 'Message forwarded successfully.' : 'Message sent successfully.',
         );
       } else {
-
-      /*
-       * No active compose mode.
-       */
+        /*
+         * No active compose mode.
+         */
         return;
       }
 
@@ -2284,165 +2486,142 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   }
 
   /**
- * Generate a PDF containing the records currently displayed
- * in the mailbox.
- *
- * The PDF follows the current search and status filters because
- * it uses filteredMessages().
- */
-generateContactMessagesPdf(): void {
-  const records = this.filteredMessages();
-
-  if (records.length === 0) {
-    this.error.set('There are no displayed records to export.');
-    return;
-  }
-
-  const pdf = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: 'a4',
-  });
-
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-
-  const margin = 12;
-  const usableWidth = pageWidth - margin * 2;
-
-  /*
-   * Header
+   * Generate a PDF containing the records currently displayed
+   * in the mailbox.
+   *
+   * The PDF follows the current search and status filters because
+   * it uses filteredMessages().
    */
-  pdf.setFillColor(3, 45, 66);
-  pdf.rect(0, 0, pageWidth, 24, 'F');
+  generateContactMessagesPdf(): void {
+    const records = this.filteredMessages();
 
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(16);
-  pdf.setFont('helvetica', 'bold');
-
-  pdf.text(
-    'Zebron Contact Mailbox',
-    margin,
-    10,
-  );
-
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-
-  pdf.text(
-    `Generated: ${new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(new Date())}`,
-    margin,
-    17,
-  );
-
-  /*
-   * Summary
-   */
-  pdf.setTextColor(60, 60, 60);
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-
-  pdf.text(
-    `Records displayed: ${records.length}`,
-    margin,
-    32,
-  );
-
-  /*
-   * Table configuration.
-   */
-  const columns = [
-    {
-      title: '#',
-      width: 10,
-    },
-    {
-      title: 'Sender',
-      width: 42,
-    },
-    {
-      title: 'Email',
-      width: 55,
-    },
-    {
-      title: 'Subject',
-      width: 70,
-    },
-    {
-      title: 'Date',
-      width: 42,
-    },
-    {
-      title: 'Status',
-      width: 25,
-    },
-  ];
-
-  /*
-   * Make sure the column widths fit the page.
-   */
-  const totalColumnWidth = columns.reduce(
-    (total, column) => total + column.width,
-    0,
-  );
-
-  const widthScale =
-    usableWidth / totalColumnWidth;
-
-  columns.forEach((column) => {
-    column.width *= widthScale;
-  });
-
-  let y = 40;
-
-  const rowHeight = 9;
-  const headerHeight = 10;
-
-  /*
-   * Draw table header.
-   */
-  const drawTableHeader = (): void => {
-    let x = margin;
-
-    pdf.setFillColor(238, 243, 245);
-    pdf.rect(
-      margin,
-      y - 7,
-      usableWidth,
-      headerHeight,
-      'F',
-    );
-
-    pdf.setTextColor(3, 45, 66);
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'bold');
-
-    for (const column of columns) {
-      pdf.text(
-        column.title,
-        x + 2,
-        y,
-      );
-
-      x += column.width;
+    if (records.length === 0) {
+      this.error.set('There are no displayed records to export.');
+      return;
     }
 
-    y += rowHeight;
-  };
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+    });
 
-  drawTableHeader();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-  /*
-   * Draw each record.
-   */
-  records.forEach(
-    (message, index) => {
+    const margin = 12;
+    const usableWidth = pageWidth - margin * 2;
+
+    /*
+     * Header
+     */
+    pdf.setFillColor(3, 45, 66);
+    pdf.rect(0, 0, pageWidth, 24, 'F');
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+
+    pdf.text('Zebron Contact Mailbox', margin, 10);
+
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+
+    pdf.text(
+      `Generated: ${new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(new Date())}`,
+      margin,
+      17,
+    );
+
+    /*
+     * Summary
+     */
+    pdf.setTextColor(60, 60, 60);
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+
+    pdf.text(`Records displayed: ${records.length}`, margin, 32);
+
+    /*
+     * Table configuration.
+     */
+    const columns = [
+      {
+        title: '#',
+        width: 10,
+      },
+      {
+        title: 'Sender',
+        width: 42,
+      },
+      {
+        title: 'Email',
+        width: 55,
+      },
+      {
+        title: 'Subject',
+        width: 70,
+      },
+      {
+        title: 'Date',
+        width: 42,
+      },
+      {
+        title: 'Status',
+        width: 25,
+      },
+    ];
+
+    /*
+     * Make sure the column widths fit the page.
+     */
+    const totalColumnWidth = columns.reduce((total, column) => total + column.width, 0);
+
+    const widthScale = usableWidth / totalColumnWidth;
+
+    columns.forEach((column) => {
+      column.width *= widthScale;
+    });
+
+    let y = 40;
+
+    const rowHeight = 9;
+    const headerHeight = 10;
+
+    /*
+     * Draw table header.
+     */
+    const drawTableHeader = (): void => {
+      let x = margin;
+
+      pdf.setFillColor(238, 243, 245);
+      pdf.rect(margin, y - 7, usableWidth, headerHeight, 'F');
+
+      pdf.setTextColor(3, 45, 66);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+
+      for (const column of columns) {
+        pdf.text(column.title, x + 2, y);
+
+        x += column.width;
+      }
+
+      y += rowHeight;
+    };
+
+    drawTableHeader();
+
+    /*
+     * Draw each record.
+     */
+    records.forEach((message, index) => {
       /*
        * Start a new page when necessary.
        */
@@ -2471,13 +2650,7 @@ generateContactMessagesPdf(): void {
       if (index % 2 === 0) {
         pdf.setFillColor(249, 250, 251);
 
-        pdf.rect(
-          margin,
-          y - 6,
-          usableWidth,
-          rowHeight,
-          'F',
-        );
+        pdf.rect(margin, y - 6, usableWidth, rowHeight, 'F');
       }
 
       pdf.setTextColor(55, 65, 81);
@@ -2486,90 +2659,76 @@ generateContactMessagesPdf(): void {
 
       let x = margin;
 
-      row.forEach(
-        (value, columnIndex) => {
-          const column =
-            columns[columnIndex];
+      row.forEach((value, columnIndex) => {
+        const column = columns[columnIndex];
 
-          /*
-           * Limit text to the available column width.
-           */
-          const maxWidth =
-            column.width - 4;
+        /*
+         * Limit text to the available column width.
+         */
+        const maxWidth = column.width - 4;
 
-          const lines =
-            pdf.splitTextToSize(
-              value,
-              maxWidth,
-            );
+        const lines = pdf.splitTextToSize(value, maxWidth);
 
-          const displayText =
-            lines.length > 0
-              ? lines[0]
-              : '';
+        const displayText = lines.length > 0 ? lines[0] : '';
 
-          pdf.text(
-            displayText,
-            x + 2,
-            y,
-          );
+        pdf.text(displayText, x + 2, y);
 
-          x += column.width;
-        },
-      );
+        x += column.width;
+      });
 
       y += rowHeight;
-    },
-  );
+    });
 
-  /*
-   * Footer on every page.
-   */
-  const pageCount =
-    pdf.getNumberOfPages();
+    /*
+     * Footer on every page.
+     */
+    const pageCount = pdf.getNumberOfPages();
 
-  for (
-    let page = 1;
-    page <= pageCount;
-    page++
-  ) {
-    pdf.setPage(page);
+    for (let page = 1; page <= pageCount; page++) {
+      pdf.setPage(page);
 
-    pdf.setTextColor(120, 120, 120);
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(120, 120, 120);
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
 
-    pdf.text(
-      `Zebron Contact Mailbox • Page ${page} of ${pageCount}`,
-      margin,
-      pageHeight - 7,
-    );
+      pdf.text(`Zebron Contact Mailbox • Page ${page} of ${pageCount}`, margin, pageHeight - 7);
+    }
+
+    /*
+     * Create a safe filename.
+     */
+    const datePart = new Date().toISOString().slice(0, 10);
+
+    pdf.save(`zebron-contact-mailbox-${datePart}.pdf`);
   }
 
-  /*
-   * Create a safe filename.
+  /**
+   * Print the currently viewed contact message.
    */
-  const datePart =
-    new Date()
-      .toISOString()
-      .slice(0, 10);
+  printContactMessage(): void {
+    window.print();
+  }
 
-  pdf.save(
-    `zebron-contact-mailbox-${datePart}.pdf`,
-  );
-}
+  /**
+   * Close the message view modal.
+   */
+  closeMessageModal(): void {
+    this.selectedMessage.set(null);
+  }
 
-/**
- * Print the currently viewed contact message.
- */
-printContactMessage(): void {
-  window.print();
-}
+  /**
+   * Sign the administrator out and return to
+   * the login page.
+   */
+  async logout(): Promise<void> {
+    try {
+      await this.authService.logout();
 
-/**
- * Close the message view modal.
- */
-closeMessageModal(): void {
-  this.selectedMessage.set(null);
-}
+      this.router.navigate(['/login']);
+    } catch (error) {
+      console.error('Failed to log out:', error);
+
+      this.error.set('Unable to log out. Please try again.');
+    }
+  }
 }

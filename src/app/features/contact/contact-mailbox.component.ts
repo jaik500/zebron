@@ -564,7 +564,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                       <tr
                         class="transition
                                hover:bg-gray-50"
-                        [class.bg-blue-50]="message.status === 'new'"
+                        [class.bg-blue-50]="message.status === 'unread'"
                       >
                         <!-- Sender -->
                         <td class="px-5 py-4 align-middle">
@@ -573,7 +573,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                               class="flex items-center
                                      gap-2"
                             >
-                              @if (message.status === 'new') {
+                              @if (message.status === 'unread') {
                                 <span
                                   class="h-2 w-2
                                          shrink-0
@@ -622,7 +622,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                                      leading-5
                                      text-gray-900
                                      hover:text-blue-600"
-                              [class.font-bold]="message.status === 'new'"
+                              [class.font-bold]="message.status === 'unread'"
                             >
                               {{ message.subject }}
                             </p>
@@ -662,8 +662,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                                    text-xs
                                    font-medium
                                    capitalize"
-                            [class.bg-blue-100]="message.status === 'new'"
-                            [class.text-blue-700]="message.status === 'new'"
+                            [class.bg-blue-100]="message.status === 'unread'"
+                            [class.text-blue-700]="message.status === 'unread'"
                             [class.bg-green-100]="message.status === 'read'"
                             [class.text-green-700]="message.status === 'read'"
                             [class.bg-gray-100]="message.status === 'archived'"
@@ -803,8 +803,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                            border border-gray-200
                            bg-white p-3
                            shadow-sm"
-                    [class.border-blue-200]="message.status === 'new'"
-                    [class.bg-blue-50]="message.status === 'new'"
+                    [class.border-blue-200]="message.status === 'unread'"
+                    [class.bg-blue-50]="message.status === 'unread'"
                   >
                     <div
                       class="flex items-start
@@ -836,8 +836,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'new';
                                text-[10px]
                                font-semibold
                                capitalize"
-                        [class.bg-blue-100]="message.status === 'new'"
-                        [class.text-blue-700]="message.status === 'new'"
+                        [class.bg-blue-100]="message.status === 'unread'"
+                        [class.text-blue-700]="message.status === 'unread'"
                         [class.bg-green-100]="message.status === 'read'"
                         [class.text-green-700]="message.status === 'read'"
                         [class.bg-gray-100]="message.status === 'archived'"
@@ -1700,7 +1700,7 @@ export class ContactMailboxComponent implements OnInit {
    * Number of new messages.
    */
   readonly newCount = computed(
-    () => this.messages().filter((message) => message.status === 'new').length,
+    () => this.messages().filter((message) => message.status === 'unread').length,
   );
 
   /**
@@ -1784,7 +1784,7 @@ export class ContactMailboxComponent implements OnInit {
   async openMessage(message: ContactMessage): Promise<void> {
     this.selectedMessage.set(message);
 
-    if (message.status === 'new') {
+    if (message.status === 'unread') {
       await this.markAsRead(message);
     }
   }

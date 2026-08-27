@@ -1,17 +1,74 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
 import { User } from '../../../../core/models/user.model';
 import { UserAdminService } from '../../../../core/services/user-admin.service';
+import { MatIcon } from '@angular/material/icon';
+import { AuthService } from '../../../../core/services/auth.service';
+import { MatMenuModule } from "@angular/material/menu";
+import { MatDividerModule } from "@angular/material/divider";
 
 @Component({
   selector: 'app-user-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, MatIcon, MatMenuModule, MatDividerModule],
   template: `
+<!-- Header actions -->
+<div
+  class="flex
+         shrink-0
+         items-center
+         gap-2"
+>
+
+  <!-- Admin Dashboard
+       Desktop only -->
+  <a
+    mat-stroked-button
+    routerLink="/admin"
+    class="hidden
+           !h-10
+           !border-white/30
+           !px-4
+           !text-sm
+           !font-semibold
+           !text-white
+           hover:!bg-white/10
+           sm:inline-flex
+           sm:items-center
+           sm:justify-center"
+  >
+    <mat-icon
+      class="!mr-1.5
+             !h-5
+             !w-5
+             !text-[19px]"
+    >
+      dashboard
+    </mat-icon>
+
+    Admin Dashboard
+  </a>
+
+
+  <!-- Three vertical dots -->
+  <button
+    mat-icon-button
+    aria-label="Open administration menu"
+    class="!shrink-0
+           !text-white
+           hover:!bg-white/10"
+  >
+    <mat-icon>
+      more_vert
+    </mat-icon>
+  </button>
+
+</div>
+
     <main class="mx-auto max-w-7xl p-6 sm:p-8">
       <!-- =========================================================
            PAGE NAVIGATION
@@ -42,71 +99,12 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
       <!-- =========================================================
            PAGE HEADER
            ========================================================= -->
-      <section
-        class="rounded-2xl bg-[#032D42]
-               px-6 py-7 text-white
-               shadow-sm sm:px-8"
-      >
-        <div
-          class="flex flex-col gap-5
-                 sm:flex-row
-                 sm:items-center
-                 sm:justify-between"
-        >
-          <div class="min-w-0">
-            <p
-              class="text-sm font-semibold
-                     uppercase tracking-wide
-                     text-blue-100"
-            >
-              Administration
-            </p>
-
-            <h1
-              class="mt-1 text-3xl font-bold
-                     tracking-tight text-white"
-            >
-              Users
-            </h1>
-
-            <p
-              class="mt-2 max-w-2xl
-                     text-sm leading-6
-                     text-blue-100 sm:text-base"
-            >
-              Manage Zebron user profiles, roles, and account information.
-            </p>
-          </div>
-
-          <!-- Total users -->
-          <div
-            class="shrink-0 rounded-xl
-                   border border-white/20
-                   bg-white/10 px-5 py-3"
-          >
-            <p
-              class="text-xs font-semibold
-                     uppercase tracking-wide
-                     text-blue-100"
-            >
-              Total users
-            </p>
-
-            <p
-              class="mt-1 text-2xl font-bold
-                     text-white"
-            >
-              {{ users().length }}
-            </p>
-          </div>
-        </div>
-      </section>
 
       <!-- =========================================================
            SEARCH / ACTIONS
            ========================================================= -->
       <section
-        class="mt-6 rounded-2xl
+        class="mt-4 rounded-2xl
                border border-gray-200
                bg-white p-5 shadow-sm"
       >
@@ -121,6 +119,17 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
             <label for="userSearch" class="sr-only"> Search users </label>
 
             <div class="relative">
+                <mat-icon
+                  class="pointer-events-none
+               absolute left-3 top-1/2
+               -translate-y-1/2
+               !h-5 !w-5
+               !text-[20px]
+               text-gray-400"
+                >
+                  search
+                </mat-icon>
+
               <input
                 id="userSearch"
                 name="userSearch"
@@ -133,7 +142,7 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
                        rounded-lg border
                        border-gray-300
                        bg-white px-4 py-2.5
-                       pr-10 text-sm
+                       pr-10 pl-10 text-sm
                        text-gray-900
                        placeholder:text-gray-400
                        focus:border-[#007979]
@@ -203,25 +212,85 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
             }
           </div>
 
-          <!-- Add User -->
-          <button
-            type="button"
-            (click)="openCreateForm()"
-            class="inline-flex shrink-0
-                   items-center justify-center
-                   rounded-lg
-                   bg-[#032D42]
-                   px-4 py-2.5
-                   text-sm font-semibold
-                   text-white
-                   transition
-                   hover:bg-[#032D42]/90
-                   focus:outline-none
-                   focus:ring-2
-                   focus:ring-[#032D42]/20"
+          <div
+            class="flex flex-col gap-3
+         sm:flex-row
+         sm:items-center
+         sm:justify-between"
           >
-            + Add User
-          </button>
+          
+            <!-- =====================================================
+       RIGHT SIDE: Add User + Total Users
+       Opposite the search bar
+       ===================================================== -->
+            <div
+              class="flex
+           shrink-0
+           items-center
+           justify-end
+           gap-2"
+            >
+              <!-- Add User -->
+              <button
+                type="button"
+                (click)="openCreateForm()"
+                class="inline-flex
+             h-10
+             items-center
+             justify-center
+             gap-1.5
+             rounded-lg
+             bg-[#032D42]
+             px-4
+             text-sm
+             font-semibold
+             text-white
+             shadow-sm
+             transition
+             hover:bg-[#064b68]"
+              >
+                <mat-icon
+                  class="!m-0
+               !h-5
+               !w-5
+               !text-[20px]"
+                >
+                  person_add
+                </mat-icon>
+
+                Add User
+              </button>
+
+              <!-- Total Users -->
+              <div
+                class="flex
+             h-10
+             items-center
+             gap-2
+             rounded-lg
+             border border-gray-200
+             bg-white
+             px-4
+             shadow-sm"
+              >
+                <span
+                  class="text-xs
+               font-medium
+               text-gray-500"
+                >
+                  Total Users
+                </span>
+
+                <span
+                  class="text-sm
+               font-bold
+               text-[#032D42]"
+                >
+                  {{ users().length }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1472,9 +1541,7 @@ import { UserAdminService } from '../../../../core/services/user-admin.service';
             >
               This will remove the Firestore profile for
 
-              <strong class="text-gray-700">
-                {{ user.displayName || user.email }} </strong
-              >.
+              <strong class="text-gray-700"> {{ user.displayName || user.email }} </strong>.
             </p>
 
             <div
@@ -1548,6 +1615,21 @@ export class UserAdminComponent implements OnInit {
 
   private readonly toast = inject(HotToastService);
 
+   /**
+   * Firebase authentication service.
+   */
+  protected readonly authService =
+    inject(AuthService);
+
+
+  /**
+   * Angular router.
+   */
+  private readonly router =
+    inject(Router);
+
+
+  
   // =============================================================
   // USER STATE
   // =============================================================
@@ -1563,6 +1645,15 @@ export class UserAdminComponent implements OnInit {
   protected readonly error = signal<string | null>(null);
 
   protected readonly resettingUserId = signal<string | null>(null);
+
+
+/**
+   * Prevent duplicate sign-out requests
+   * while Firebase processes the request.
+   */
+  protected readonly signingOut =
+    signal(false);
+
 
   // =============================================================
   // SEARCH
@@ -2007,6 +2098,69 @@ export class UserAdminComponent implements OnInit {
     } finally {
       this.resettingUserId.set(null);
     }
+  }
+
+
+ /**
+   * Sign the administrator out of Firebase,
+   * show feedback, and return to the login page.
+   */
+  protected async signOut(): Promise<void> {
+
+    /**
+     * Prevent multiple sign-out requests
+     * from repeated button clicks.
+     */
+    if (this.signingOut()) {
+      return;
+    }
+
+
+    this.signingOut.set(true);
+
+
+    try {
+
+      /**
+       * Sign out through the existing
+       * authentication service.
+       */
+      await this.authService.logout();
+
+
+      /**
+       * Show confirmation to the administrator.
+       */
+      this.toast.success(
+        'You have been signed out.',
+      );
+
+
+      /**
+       * Return to the login page.
+       */
+      await this.router.navigateByUrl(
+        '/login',
+      );
+
+    } catch (error) {
+
+      console.error(
+        'Failed to sign out:',
+        error,
+      );
+
+
+      this.toast.error(
+        'Unable to sign out. Please try again.',
+      );
+
+    } finally {
+
+      this.signingOut.set(false);
+
+    }
+
   }
 
   // =============================================================

@@ -72,64 +72,7 @@ export class ContactMessageService {
     );
   }
 
-  /**
-   * Listen to contact messages in real time.
-   *
-   * The callback is executed whenever Firestore
-   * detects:
-   *
-   * - a new message
-   * - a message status change
-   * - an updated message
-   * - a deleted message
-   *
-   * Returns an unsubscribe function that should
-   * be called when the component is destroyed.
-   */
-  listenToContactMessages(
-    onMessages: (
-      messages: ContactMessage[],
-    ) => void,
-    onError?: (
-      error: Error,
-    ) => void,
-  ): () => void {
-    const messagesQuery =
-      query(
-        this.contactMessagesCollection,
-        orderBy(
-          'createdAt',
-          'desc',
-        ),
-      );
 
-    const unsubscribe =
-      onSnapshot(
-        messagesQuery,
-        (snapshot) => {
-          const messages =
-            snapshot.docs.map(
-              (document) =>
-                ({
-                  id: document.id,
-                  ...document.data(),
-                }) as ContactMessage,
-            );
-
-          onMessages(messages);
-        },
-        (error) => {
-          console.error(
-            'Contact message listener failed:',
-            error,
-          );
-
-          onError?.(error);
-        },
-      );
-
-    return unsubscribe;
-  }
 
   /**
    * Backwards-compatible method for retrieving
@@ -275,4 +218,49 @@ export class ContactMessageService {
       messageRef,
     );
   }
+
+  /**
+ * Listen for contact messages in real time.
+ *
+ * Any new inbound message, status change,
+ * update, or deletion is immediately delivered
+ * to the mailbox component.
+ */
+listenToContactMessages(
+  onMessages: (
+    messages: ContactMessage[],
+  ) => void,
+  onError?: (
+    error: Error,
+  ) => void,
+): () => void {
+  const messagesQuery = query(
+    this.contactMessagesCollection,
+    orderBy('createdAt', 'desc'),
+  );
+
+  return onSnapshot(
+    messagesQuery,
+    (snapshot) => {
+      const messages =
+        snapshot.docs.map(
+          (document) =>
+            ({
+              id: document.id,
+              ...document.data(),
+            }) as ContactMessage,
+        );
+
+      onMessages(messages);
+    },
+    (error) => {
+      console.error(
+        'Contact message listener failed:',
+        error,
+      );
+
+      onError?.(error);
+    },
+  );
+}
 }
