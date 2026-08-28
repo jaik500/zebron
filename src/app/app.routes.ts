@@ -59,6 +59,16 @@ export const routes: Routes = [
       ).then((m) => m.RegisterComponent),
   },
 
+  {
+  path: 'donate',
+  loadComponent: () =>
+    import(
+      './features/donate/pages/donate/donate.component'
+    ).then(
+      (m) => m.DonateComponent
+    ),
+},
+
   // =====================================================
   // PROTECTED USER PROFILE
   // =====================================================

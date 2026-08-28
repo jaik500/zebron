@@ -11,7 +11,7 @@ import {getAuth} from "firebase-admin/auth";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {initializeApp} from "firebase-admin/app";
 import {randomUUID} from "node:crypto";
-
+import Stripe from "stripe";
 
 initializeApp();
 
@@ -1427,3 +1427,113 @@ function clean(value: unknown): string | undefined {
 
   return trimmed || undefined;
 }
+
+
+export const createDonationCheckout = onCall(
+  {
+    region: "us-central1",
+    secrets: ["STRIPE_SECRET_KEY"],
+  },
+  async (request) => {
+    const data = request.data as {
+      amount?: unknown;
+      email?: unknown;
+    };
+
+    const amount =
+      typeof data.amount === "number" ?
+        data.amount :
+        Number(data.amount);
+
+    const email =
+      typeof data.email === "string" ?
+        data.email.trim().toLowerCase() :
+        undefined;
+
+    /*
+     * Validate donation amount.
+     *
+     * Keep the minimum donation at $1.00.
+     */
+    if (!Number.isFinite(amount)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A valid donation amount is required.",
+      );
+    }
+
+    if (amount < 1) {
+      throw new HttpsError(
+        "invalid-argument",
+        "The minimum donation is $1.",
+      );
+    }
+
+    if (amount > 10000) {
+      throw new HttpsError(
+        "invalid-argument",
+        "The maximum donation is $10,000.",
+      );
+    }
+
+    /*
+     * Convert dollars to cents.
+     */
+    const amountInCents =
+      Math.round(amount * 100);
+
+    const stripe = new Stripe(
+      process.env.STRIPE_SECRET_KEY ?? "",
+    );
+
+    /*
+     * Create the Stripe Checkout session.
+     */
+    const session =
+      await stripe.checkout.sessions.create({
+        mode: "payment",
+
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+
+              product_data: {
+                name: "Donation to Zebron",
+                description:
+                  "Support Zebron's mission to connect people with trusted resources and opportunities.",
+              },
+
+              unit_amount: amountInCents,
+            },
+
+            quantity: 1,
+          },
+        ],
+
+        submit_type: "donate",
+
+        customer_email: email,
+
+        success_url:
+          "https://zebron.org/donate/success?session_id={CHECKOUT_SESSION_ID}",
+
+        cancel_url:
+          "https://zebron.org/donate/cancel",
+
+        metadata: {
+          donationAmount: amount.toFixed(2),
+
+          ...(request.auth?.uid ?
+            {
+              userId: request.auth.uid,
+            } :
+            {}),
+        },
+      });
+
+    return {
+      url: session.url,
+    };
+  },
+);

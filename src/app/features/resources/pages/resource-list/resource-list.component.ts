@@ -96,6 +96,37 @@ import { ResourceTypeService } from '../../../../core/services/resource-type.ser
             your community.
           </p>
         </div>
+        <!-- Donate -->
+        <a
+          routerLink="/donate"
+          class="inline-flex h-9
+         items-center justify-center
+         gap-1.5
+         rounded-md
+         bg-[#16A34A]
+         px-3
+         text-sm
+         font-semibold
+         text-white
+         shadow-sm
+         transition
+         hover:bg-[#15803D]
+         focus:outline-none
+         focus:ring-2
+         focus:ring-white/40"
+        >
+          <mat-icon
+            aria-hidden="true"
+            class="!m-0
+           !h-4 !w-4
+           !text-[18px]
+           !leading-4"
+          >
+            volunteer_activism
+          </mat-icon>
+
+          <span>Donate</span>
+        </a>
 
         <!-- =====================================================
              Authentication
@@ -463,14 +494,16 @@ import { ResourceTypeService } from '../../../../core/services/resource-type.ser
                =================================================== -->
 
           <section
-            class="mt-4
+            class="hidden 
+                   mt-4
                    rounded-xl
                    border
                    border-[#007979]/15
                    bg-white
                    p-4
                    shadow-sm
-                   sm:p-5"
+                   sm:p-5
+                   sm-block"
           >
             <div
               class="flex items-start
@@ -590,43 +623,19 @@ import { ResourceTypeService } from '../../../../core/services/resource-type.ser
                 </p>
 
                 <div class="flex flex-wrap gap-2">
-               @for (category of categories(); track category.id) {
-  <button
-    type="button"
-    (click)="togglePersonalizationInterest(category.slug)"
-    [attr.aria-pressed]="
-      isPersonalizationInterestSelected(category.id)
-    "
-
-    [class.border-[#007979]]="
-      isPersonalizationInterestSelected(category.id)
-    "
-
-    [class.bg-[#007979]/10]="
-      isPersonalizationInterestSelected(category.id)
-    "
-
-    [class.text-[#007979]]="
-      isPersonalizationInterestSelected(category.id)
-    "
-
-    [class.shadow-sm]="
-      isPersonalizationInterestSelected(category.id)
-    "
-
-    [class.border-gray-200]="
-      !isPersonalizationInterestSelected(category.id)
-    "
-
-    [class.bg-white]="
-      !isPersonalizationInterestSelected(category.id)
-    "
-
-    [class.text-[#032D42]]="
-      !isPersonalizationInterestSelected(category.id)
-    "
-
-    class="
+                  @for (category of categories(); track category.id) {
+                    <button
+                      type="button"
+                      (click)="togglePersonalizationInterest(category.id)"
+                      [attr.aria-pressed]="isPersonalizationInterestSelected(category.id)"
+                      [class.border-[#007979]]="isPersonalizationInterestSelected(category.id)"
+                      [class.bg-[#007979]/10]="isPersonalizationInterestSelected(category.id)"
+                      [class.text-[#007979]]="isPersonalizationInterestSelected(category.id)"
+                      [class.shadow-sm]="isPersonalizationInterestSelected(category.id)"
+                      [class.border-gray-200]="!isPersonalizationInterestSelected(category.id)"
+                      [class.bg-white]="!isPersonalizationInterestSelected(category.id)"
+                      [class.text-[#032D42]]="!isPersonalizationInterestSelected(category.id)"
+                      class="
       inline-flex
       items-center
       gap-1
@@ -644,30 +653,26 @@ import { ResourceTypeService } from '../../../../core/services/resource-type.ser
       focus:ring-2
       focus:ring-[#007979]/20
     "
-  >
-    <span>
-      {{ category.name }}
-    </span>
+                    >
+                      <span>
+                        {{ category.name }}
+                      </span>
 
-    @if (isPersonalizationInterestSelected(category.id)) {
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        class="h-3 w-3 shrink-0"
-        aria-hidden="true"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="m5 12 4 4L19 6"
-        />
-      </svg>
-    }
-  </button>
-}
+                      @if (isPersonalizationInterestSelected(category.id)) {
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          class="h-3 w-3 shrink-0"
+                          aria-hidden="true"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" />
+                        </svg>
+                      }
+                    </button>
+                  }
                 </div>
               </div>
 

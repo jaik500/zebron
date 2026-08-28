@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 512 512"
+     width="512"
+     height="512"
+     role="img"
+     aria-labelledby="title desc">
+  <title id="title">Zebron</title>
+  <desc id="desc">Zebron green circular logo with a white stylized Z.</desc>
+
+  <defs>
+    <radialGradient id="green" cx="35%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#18B889"/>
+      <stop offset="55%" stop-color="#079B73"/>
+      <stop offset="100%" stop-color="#007979"/>
+    </radialGradient>
+
+    <linearGradient id="zHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E8FFFA"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10"
+                    flood-color="#003F3F" flood-opacity=".22"/>
+    </filter>
+  </defs>
+
+  <!-- Green circular badge -->
+  <circle cx="256" cy="256" r="238"
+          fill="url(#green)"
+          filter="url(#shadow)"/>
+
+  <!-- Subtle inner highlight -->
+  <circle cx="256" cy="256" r="219"
+          fill="none"
+          stroke="#FFFFFF"
+          stroke-opacity=".10"
+          stroke-width="12"/>
+
+  <!-- Clean white border -->
+  <circle cx="256" cy="256" r="205"
+          fill="none"
+          stroke="#FFFFFF"
+          stroke-width="11"/>
+
+  <!-- Stylized Z -->
+  <path
+    d="M151 166
+       Q151 151 166 151
+       H345
+       Q361 151 357 166
+       L351 192
+       Q348 202 338 210
+       L209 326
+       H346
+       Q361 326 357 341
+       L351 367
+       Q348 378 336 378
+       H166
+       Q151 378 155 363
+       L161 337
+       Q164 326 174 318
+       L303 202
+       H166
+       Q151 202 155 187
+       Z"
+    fill="url(#zHighlight)"/>
+
+  <!-- Motion/swoosh cut through the Z -->
+  <path
+    d="M172 319
+       C214 270 259 234 321 205
+       C287 239 247 275 207 322
+       C195 336 183 349 171 363
+       C184 343 190 331 172 319 Z"
+    fill="#007979"
+    opacity=".72"/>
+
+  <!-- Small glossy highlight -->
+  <path
+    d="M166 166 H329
+       C311 173 292 181 275 192
+       H166
+       Q154 192 157 181
+       L160 170
+       Q161 166 166 166 Z"
+    fill="#FFFFFF"
+    opacity=".18"/>
+</svg>

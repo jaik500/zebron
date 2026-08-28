@@ -1,12 +1,11 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Resource } from '../../../../core/models/resource.model';
-import { TitleCasePipe } from '@angular/common';
 
 @Component({
   selector: 'app-resource-card',
   standalone: true,
-  imports: [RouterLink, TitleCasePipe],
+  imports: [RouterLink],
   template: `
     <a
       [routerLink]="['/resources', resource().slug]"
@@ -29,7 +28,7 @@ import { TitleCasePipe } from '@angular/common';
           <!-- Resource metadata -->
           <div class="mt-0.5 flex flex-wrap items-center gap-1">
             <!-- Resource type -->
-            <span
+            <!-- <span
               class="rounded-full bg-gray-100
                px-1.5 py-0
                text-[13px] font-medium
@@ -37,7 +36,7 @@ import { TitleCasePipe } from '@angular/common';
                capitalize"
             >
               {{ resource().resourceType | titlecase }}
-            </span>
+            </span> -->
 
             <!-- Category -->
             @if (categoryName()) {
@@ -71,21 +70,28 @@ import { TitleCasePipe } from '@angular/common';
         {{ resource().description }}
       </p>
 
-      @if (resource().online) {
-        <div class="mt-4 text-sm text-gray-500">Available online</div>
-      }
+    <!-- Availability + Cost -->
+<div class="mt-4 flex items-center justify-between text-sm">
+  <!-- Available online -->
+  <div class="text-gray-500">
+    @if (resource().online) {
+      Available online
+    }
+  </div>
 
-      @if (resource().cost) {
-        <div class="mt-2 text-md">
-          @if (resource().cost?.free) {
-            <span class="font-medium text-green-600"> Free </span>
-          } @else if (resource().cost?.description) {
-            <span class="text-gray-600">
-              {{ resource().cost?.description }}
-            </span>
-          }
-        </div>
-      }
+  <!-- Cost -->
+  <div class="text-right">
+    @if (resource().cost?.free) {
+      <span class="font-medium text-green-600">
+        Free
+      </span>
+    } @else if (resource().cost?.description) {
+      <span class="text-gray-600">
+        {{ resource().cost?.description }}
+      </span>
+    }
+  </div>
+</div>
     </a>
   `,
   styles: [],
