@@ -501,7 +501,7 @@ import { ResourceTypeService } from '../../../../core/services/resource-type.ser
                    border-[#007979]/15
                    bg-white
                    p-4
-                   shadow-sm
+                   sm:block
                    sm:p-5
                    sm-block"
           >
