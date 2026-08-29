@@ -275,10 +275,10 @@ export class UsefulLinksComponent {
       route: '/resources?category=education',
     },
     {
-      title: 'Jobs & Careers',
+      title: 'Find a Job or Training',
       description:
-        'Explore employment and career resources.',
-      route: '/resources?category=jobs',
+        'Explore training, employment and career resources.',
+      route: '/find',
     },
     {
       title: 'Housing',
