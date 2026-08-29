@@ -1,226 +1,180 @@
-import { Injectable } from '@angular/core';
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  QueryDocumentSnapshot,
-  serverTimestamp,
-  startAfter,
-  updateDoc,
-  where,
-} from 'firebase/firestore';
+import { Injectable, inject } from '@angular/core';
 
-import { firestore } from './firebase-config';
+import { QueryDocumentSnapshot } from 'firebase/firestore';
+
 import { Resource } from '../models/resource.model';
 
-/**
- * Represents one page of published resources.
- *
- * The lastDocument is used by Firestore to determine
- * where the next page should begin.
- */
-export interface ResourcePage {
-  resources: Resource[];
-  lastDocument: QueryDocumentSnapshot | null;
-  hasMore: boolean;
-}
+import {
+  ResourcePage,
+} from '../repositories/resource.repository';
+
+import {
+  FirestoreResourceRepository,
+} from '../repositories/firestore-resource.repository';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ResourceService {
-  private readonly resourcesCollection = collection(firestore, 'resources');
+
+  private readonly repository =
+    inject(
+      FirestoreResourceRepository,
+    );
+
+
+  // =========================================================
+  // PUBLIC RESOURCES
+  // =========================================================
 
   async getPublishedResources(): Promise<Resource[]> {
-    const q = query(
-      this.resourcesCollection,
-      where('status', '==', 'published'),
-      orderBy('createdAt', 'desc'),
-    );
 
-    const snapshot = await getDocs(q);
+    return this.repository
+      .getPublishedResources();
 
-    return snapshot.docs.map(
-      (document) =>
-        ({
-          id: document.id,
-          ...document.data(),
-        }) as Resource,
-    );
   }
 
-  /**
-   * Get one page of published resources.
-   *
-   * Firestore uses the last document from the previous page
-   * to continue loading resources without downloading the
-   * entire collection again.
-   */
+
+  // =========================================================
+  // PUBLIC RESOURCE PAGE
+  // =========================================================
+
   async getPublishedResourcesPage(
     pageSize = 12,
+
     lastDocument?: QueryDocumentSnapshot,
   ): Promise<ResourcePage> {
-    const resourcesQuery = lastDocument
-      ? query(
-          this.resourcesCollection,
-          where('status', '==', 'published'),
-          orderBy('createdAt', 'desc'),
-          startAfter(lastDocument),
-          limit(pageSize),
-        )
-      : query(
-          this.resourcesCollection,
-          where('status', '==', 'published'),
-          orderBy('createdAt', 'desc'),
-          limit(pageSize),
-        );
 
-    const snapshot = await getDocs(resourcesQuery);
+    return this.repository
+      .getPublishedResourcesPage(
+        pageSize,
+        lastDocument,
+      );
 
-    const resources = snapshot.docs.map(
-      (document) =>
-        ({
-          id: document.id,
-          ...document.data(),
-        }) as Resource,
-    );
-
-    return {
-      resources,
-      lastDocument: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,
-      hasMore: snapshot.docs.length === pageSize,
-    };
   }
 
-  async getResourceById(resourceId: string): Promise<Resource | null> {
-    const resourceRef = doc(firestore, 'resources', resourceId);
 
-    const snapshot = await getDoc(resourceRef);
+  // =========================================================
+  // RESOURCE BY ID
+  // =========================================================
 
-    if (!snapshot.exists()) {
-      return null;
-    }
+  async getResourceById(
+    resourceId: string,
+  ): Promise<Resource | null> {
 
-    return {
-      id: snapshot.id,
-      ...snapshot.data(),
-    } as Resource;
+    return this.repository
+      .getResourceById(
+        resourceId,
+      );
+
   }
 
-  async getResourceBySlug(slug: string): Promise<Resource | null> {
-    const q = query(
-      this.resourcesCollection,
-      where('slug', '==', slug),
-      where('status', '==', 'published'),
-      limit(1),
-    );
 
-    const snapshot = await getDocs(q);
+  // =========================================================
+  // RESOURCE BY SLUG
+  // =========================================================
 
-    if (snapshot.empty) {
-      return null;
-    }
+  async getResourceBySlug(
+    slug: string,
+  ): Promise<Resource | null> {
 
-    const document = snapshot.docs[0];
+    return this.repository
+      .getResourceBySlug(
+        slug,
+      );
 
-    return {
-      id: document.id,
-      ...document.data(),
-    } as Resource;
   }
 
-  /**
-   * Get published resources that belong to the same category.
-   *
-   * The current resource is excluded from the results.
-   */
+
+  // =========================================================
+  // RELATED RESOURCES
+  // =========================================================
+
   async getRelatedResources(
     categoryId: string,
+
     currentResourceId: string,
+
     limitCount = 3,
   ): Promise<Resource[]> {
-    const resourcesRef = collection(firestore, 'resources');
 
-    const resourcesQuery = query(
-      resourcesRef,
-      where('categoryId', '==', categoryId),
-      where('status', '==', 'published'),
-      limit(limitCount + 1),
-    );
+    return this.repository
+      .getRelatedResources(
+        categoryId,
+        currentResourceId,
+        limitCount,
+      );
 
-    const snapshot = await getDocs(resourcesQuery);
-
-    return snapshot.docs
-      .map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-          }) as Resource,
-      )
-      .filter((resource) => resource.id !== currentResourceId)
-      .slice(0, limitCount);
   }
 
-  /**
-   * Get all resources for the admin dashboard.
-   *
-   * Unlike the public resource list, this includes
-   * draft, pending, published, and archived resources.
-   */
+
+  // =========================================================
+  // ADMIN RESOURCES
+  // =========================================================
+
   async getAllResources(): Promise<Resource[]> {
-    const resourcesQuery = query(this.resourcesCollection, orderBy('createdAt', 'desc'));
 
-    const snapshot = await getDocs(resourcesQuery);
+    return this.repository
+      .getAllResources();
 
-    return snapshot.docs.map((document) => ({
-      id: document.id,
-      ...document.data(),
-    })) as Resource[];
   }
 
-  /**
-   * Create a new resource.
-   */
+
+  // =========================================================
+  // CREATE
+  // =========================================================
+
   async createResource(
-    resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>,
+    resource: Omit<
+      Resource,
+      'id' | 'createdAt' | 'updatedAt'
+    >,
   ): Promise<string> {
-    const document = await addDoc(this.resourcesCollection, {
-      ...resource,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
 
-    return document.id;
+    return this.repository
+      .createResource(
+        resource,
+      );
+
   }
 
-  /**
-   * Update an existing resource.
-   */
+
+  // =========================================================
+  // UPDATE
+  // =========================================================
+
   async updateResource(
     resourceId: string,
-    resource: Partial<Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>>,
-  ): Promise<void> {
-    const resourceRef = doc(firestore, 'resources', resourceId);
 
-    await updateDoc(resourceRef, {
-      ...resource,
-      updatedAt: serverTimestamp(),
-    });
+    resource: Partial<
+      Omit<
+        Resource,
+        'id' | 'createdAt' | 'updatedAt'
+      >
+    >,
+  ): Promise<void> {
+
+    return this.repository
+      .updateResource(
+        resourceId,
+        resource,
+      );
+
   }
 
-  /**
-   * Delete an existing resource.
-   */
-  async deleteResource(resourceId: string): Promise<void> {
-    const resourceRef = doc(firestore, 'resources', resourceId);
 
-    await deleteDoc(resourceRef);
+  // =========================================================
+  // DELETE
+  // =========================================================
+
+  async deleteResource(
+    resourceId: string,
+  ): Promise<void> {
+
+    return this.repository
+      .deleteResource(
+        resourceId,
+      );
+
   }
 }

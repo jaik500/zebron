@@ -14,7 +14,6 @@ import { ResourceType } from '../../../../core/models/resource-type.model';
 
 import { Category } from '../../../../core/models/category.model';
 
-import { ResourceService } from '../../../../core/services/resource.service';
 import { Location } from '../../../../core/models/location.model';
 import { LocationService } from '../../../../core/services/location.service';
 import { PersonalizationService } from '../../../../core/services/personalization.service';
@@ -29,8 +28,7 @@ import { UsefulLinksComponent } from '../../components/useful-links/useful-links
 
 import { HotToastService } from '@ngxpert/hot-toast';
 import { ResourceTypeService } from '../../../../core/services/resource-type.service';
-
-@Component({
+import { ResourceStore } from '../../stores/resource.store';@Component({
   selector: 'app-resource-list',
 
   standalone: true,
@@ -1248,7 +1246,6 @@ export class ResourceListComponent implements OnInit {
   // Services
   // =========================================================
 
-  private readonly resourceService = inject(ResourceService);
 
   private readonly categoryService = inject(CategoryService);
 
@@ -1270,7 +1267,7 @@ export class ResourceListComponent implements OnInit {
   // Resource State
   // =========================================================
 
-  protected readonly resources = signal<Resource[]>([]);
+
 
   protected readonly categories = signal<Category[]>([]);
 
@@ -1297,24 +1294,20 @@ export class ResourceListComponent implements OnInit {
     this.personalizationService.hasPreferences(),
   );
 
-  // =========================================================
-  // Loading / Error State
-  // =========================================================
-
-  protected readonly loading = signal(true);
+  
 
   /**
    * Prevent duplicate sign-out requests.
    */
   protected readonly signingOut = signal(false);
 
-  protected readonly error = signal<string | null>(null);
+
 
   // =========================================================
   // Filter State
   // =========================================================
 
-  protected readonly searchTerm = signal('');
+
 
   protected readonly selectedType = signal<string>('');
 
@@ -1345,9 +1338,8 @@ export class ResourceListComponent implements OnInit {
 
   private lastResourceDocument: QueryDocumentSnapshot | undefined;
 
-  protected readonly hasMoreResources = signal(true);
+  
 
-  protected readonly loadingMore = signal(false);
 
   /**
    * Number of resources loaded per page.
@@ -1383,6 +1375,33 @@ export class ResourceListComponent implements OnInit {
   protected getCategoryName(categoryId: string): string {
     return this.categories().find((category) => category.id === categoryId)?.name ?? '';
   }
+
+  // ============================================================
+// RESOURCE STORE
+// ============================================================
+
+private readonly resourceStore =
+  inject(ResourceStore);
+
+
+// ============================================================
+// Resource state
+// ============================================================
+
+protected readonly resources =
+  this.resourceStore.resources;
+
+protected readonly loading =
+  this.resourceStore.loading;
+
+protected readonly error =
+  this.resourceStore.error;
+
+protected readonly searchTerm =
+  this.resourceStore.searchTerm;
+
+protected readonly loadingMore =
+  signal(false);
 
   // =========================================================
   // Filtered Resources
@@ -1583,10 +1602,17 @@ export class ResourceListComponent implements OnInit {
   // =========================================================
 
   protected onSearch(event: Event): void {
-    const input = event.target as HTMLInputElement;
+  const input =
+    event.target as HTMLInputElement;
 
-    this.searchTerm.set(input.value);
-  }
+  this.resourceStore.setSearchTerm(
+    input.value,
+  );
+}
+
+// load more resources
+protected readonly hasMoreResources =
+  this.resourceStore.hasMore;
 
   // =========================================================
   // Toggle Mobile Filter Builder
@@ -1653,7 +1679,7 @@ export class ResourceListComponent implements OnInit {
   // =========================================================
 
   protected clearFilters(): void {
-    this.searchTerm.set('');
+    this.resourceStore.setSearchTerm('');
 
     this.selectedType.set('');
 
@@ -1729,62 +1755,34 @@ export class ResourceListComponent implements OnInit {
   // Load Resources
   // =========================================================
 
-  private async loadResources(): Promise<void> {
-    this.loading.set(true);
-
-    this.error.set(null);
-
-    this.lastResourceDocument = undefined;
-
-    this.hasMoreResources.set(true);
-
-    try {
-      const page = await this.resourceService.getPublishedResourcesPage(this.resourcePageSize);
-
-      this.resources.set(page.resources);
-
-      this.lastResourceDocument = page.lastDocument ?? undefined;
-
-      this.hasMoreResources.set(page.hasMore);
-    } catch (error) {
-      console.error('Failed to load resources:', error);
-
-      this.error.set('Unable to load resources. Please try again later.');
-    } finally {
-      this.loading.set(false);
-    }
-  }
+ private async loadResources(): Promise<void> {
+  await this.resourceStore.loadPublishedResources(
+    this.resourcePageSize,
+  );
+}
 
   // =========================================================
   // Load More Resources
   // =========================================================
 
-  protected async loadMoreResources(): Promise<void> {
-    if (this.loadingMore() || !this.hasMoreResources()) {
-      return;
-    }
-
-    this.loadingMore.set(true);
-
-    try {
-      const page = await this.resourceService.getPublishedResourcesPage(
-        this.resourcePageSize,
-        this.lastResourceDocument,
-      );
-
-      this.resources.update((resources) => [...resources, ...page.resources]);
-
-      this.lastResourceDocument = page.lastDocument ?? undefined;
-
-      this.hasMoreResources.set(page.hasMore);
-    } catch (error) {
-      console.error('Failed to load more resources:', error);
-
-      this.error.set('Unable to load more resources. Please try again.');
-    } finally {
-      this.loadingMore.set(false);
-    }
+ protected async loadMoreResources(): Promise<void> {
+  if (
+    this.loadingMore() ||
+    !this.hasMoreResources()
+  ) {
+    return;
   }
+
+  this.loadingMore.set(true);
+
+  try {
+    await this.resourceStore.loadNextPublishedPage(
+      this.resourcePageSize,
+    );
+  } finally {
+    this.loadingMore.set(false);
+  }
+}
 
   // =========================================================
   // Select Category
