@@ -1,13 +1,12 @@
 import {
   Component,
-  computed,
   inject,
   OnInit,
-  signal,
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+
 
 import {
   Job,
@@ -15,7 +14,7 @@ import {
   WorkArrangement,
 } from '../../../../core/models/job.model';
 
-import { JobService } from '../../../../core/services/job.service';
+import { JobStore } from '../../../jobs/stores/job.store';
 
 @Component({
   selector: 'app-find',
@@ -989,356 +988,175 @@ import { JobService } from '../../../../core/services/job.service';
 export class FindComponent
   implements OnInit {
 
-  // =========================================================
-  // Service
+
+   // =========================================================
+  // JOB STORE
   // =========================================================
 
-  private readonly jobService =
-    inject(JobService);
+  protected readonly jobStore =
+    inject(JobStore);
 
 
   // =========================================================
-  // State
+  // JOB STATE
+  //
+  // These properties intentionally expose the JobStore
+  // to the existing template. This allows us to migrate
+  // the state-management architecture without having to
+  // redesign the Find page.
   // =========================================================
 
   protected readonly jobs =
-    signal<Job[]>([]);
+    this.jobStore.jobs;
 
   protected readonly loading =
-    signal(true);
+    this.jobStore.loading;
 
   protected readonly error =
-    signal('');
+    this.jobStore.error;
 
 
   // =========================================================
-  // Filters
+  // JOB FILTERS
   // =========================================================
 
   protected readonly searchTerm =
-    signal('');
+    this.jobStore.searchTerm;
 
   protected readonly categoryFilter =
-    signal('');
+    this.jobStore.selectedCategory;
 
   protected readonly employmentTypeFilter =
-    signal<
-      EmploymentType | ''
-    >('');
+    this.jobStore.selectedEmploymentType;
 
   protected readonly workArrangementFilter =
-    signal<
-      WorkArrangement | ''
-    >('');
+    this.jobStore.selectedWorkArrangement;
 
   protected readonly locationFilter =
-    signal('');
+    this.jobStore.selectedLocation;
 
 
   // =========================================================
-  // Categories
+  // JOB DERIVED STATE
   // =========================================================
 
   protected readonly categories =
-    computed(() => {
-
-      const values =
-        this.jobs()
-          .map(
-            (job) =>
-              job.categoryName?.trim()
-          )
-          .filter(
-            (
-              category
-            ): category is string =>
-              Boolean(category)
-          );
-
-      return [
-        ...new Set(values),
-      ].sort(
-        (a, b) =>
-          a.localeCompare(b)
-      );
-
-    });
-
-
-  // =========================================================
-  // Filtered jobs
-  // =========================================================
+    this.jobStore.categories;
 
   protected readonly filteredJobs =
-    computed(() => {
+    this.jobStore.filteredJobs;
 
-      const search =
-        this.searchTerm()
-          .trim()
-          .toLowerCase();
+  protected readonly resultCount =
+    this.jobStore.resultCount;
 
-      const category =
-        this.categoryFilter()
-          .trim()
-          .toLowerCase();
-
-      const employmentType =
-        this.employmentTypeFilter();
-
-      const workArrangement =
-        this.workArrangementFilter();
-
-      const location =
-        this.locationFilter()
-          .trim()
-          .toLowerCase();
-
-
-      return this.jobs().filter(
-        (job) => {
-
-          // ---------------------------------------------------
-          // Search
-          // ---------------------------------------------------
-
-          if (search) {
-
-            const searchable =
-              [
-                job.title,
-                job.organizationName,
-                job.description,
-                job.categoryName,
-                job.location?.city,
-                job.location?.state,
-                job.location?.country,
-                job.employmentType,
-                job.workArrangement,
-                ...(job.skills ?? []),
-                ...(job.tags ?? []),
-              ]
-                .filter(Boolean)
-                .join(' ')
-                .toLowerCase();
-
-            if (
-              !searchable.includes(search)
-            ) {
-              return false;
-            }
-
-          }
-
-
-          // ---------------------------------------------------
-          // Category
-          // ---------------------------------------------------
-
-          if (
-            category &&
-            (
-              job.categoryName ??
-              ''
-            )
-              .toLowerCase() !==
-              category
-          ) {
-            return false;
-          }
-
-
-          // ---------------------------------------------------
-          // Employment type
-          // ---------------------------------------------------
-
-          if (
-            employmentType &&
-            job.employmentType !==
-              employmentType
-          ) {
-            return false;
-          }
-
-
-          // ---------------------------------------------------
-          // Work arrangement
-          // ---------------------------------------------------
-
-          if (
-            workArrangement &&
-            job.workArrangement !==
-              workArrangement
-          ) {
-            return false;
-          }
-
-
-          // ---------------------------------------------------
-          // Location
-          // ---------------------------------------------------
-
-          if (location) {
-
-            const jobLocation =
-              [
-                job.location?.city,
-                job.location?.state,
-                job.location?.country,
-                job.workArrangement,
-              ]
-                .filter(Boolean)
-                .join(' ')
-                .toLowerCase();
-
-            if (
-              !jobLocation.includes(
-                location
-              )
-            ) {
-              return false;
-            }
-
-          }
-
-
-          return true;
-
-        }
-      );
-
-    });
+  protected readonly hasActiveFilters =
+    this.jobStore.hasActiveFilters;
 
 
   // =========================================================
-  // Lifecycle
+  // LIFECYCLE
   // =========================================================
 
   ngOnInit(): void {
+
     void this.loadJobs();
+
   }
 
 
   // =========================================================
-  // Load active jobs
+  // LOAD ACTIVE JOBS
   // =========================================================
 
   protected async loadJobs(): Promise<void> {
 
-    this.loading.set(true);
-    this.error.set('');
-
-    try {
-
-      /*
-       * Only active/published jobs are exposed
-       * on the public Find page.
-       */
-      const jobs =
-        await this.jobService.getActiveJobs();
-
-      this.jobs.set(jobs);
-
-    } catch (error) {
-
-      console.error(
-        'Failed to load public jobs:',
-        error
-      );
-
-      this.error.set(
-        'Unable to load available jobs. Please try again.'
-      );
-
-    } finally {
-
-      this.loading.set(false);
-
-    }
+    await this.jobStore.loadActiveJobs();
 
   }
 
 
   // =========================================================
-  // Search
+  // SEARCH
   // =========================================================
 
   protected setSearchTerm(
-    value: string
+    value: string,
   ): void {
 
-    this.searchTerm.set(value);
+    this.jobStore.setSearchTerm(
+      value,
+    );
 
   }
 
 
   // =========================================================
-  // Filters
+  // CATEGORY FILTER
   // =========================================================
 
   protected setCategoryFilter(
-    value: string
+    value: string,
   ): void {
 
-    this.categoryFilter.set(value);
-
-  }
-
-
-  protected setEmploymentTypeFilter(
-    value: string
-  ): void {
-
-    this.employmentTypeFilter.set(
-      value as EmploymentType | ''
+    this.jobStore.setCategory(
+      value,
     );
-
-  }
-
-
-  protected setWorkArrangementFilter(
-    value: string
-  ): void {
-
-    this.workArrangementFilter.set(
-      value as WorkArrangement | ''
-    );
-
-  }
-
-
-  protected setLocationFilter(
-    value: string
-  ): void {
-
-    this.locationFilter.set(value);
 
   }
 
 
   // =========================================================
-  // Clear filters
+  // EMPLOYMENT TYPE FILTER
+  // =========================================================
+
+  protected setEmploymentTypeFilter(
+    value: string,
+  ): void {
+
+    this.jobStore.setEmploymentType(
+      value,
+    );
+
+  }
+
+
+  // =========================================================
+  // WORK ARRANGEMENT FILTER
+  // =========================================================
+
+  protected setWorkArrangementFilter(
+    value: string,
+  ): void {
+
+    this.jobStore.setWorkArrangement(
+      value,
+    );
+
+  }
+
+
+  // =========================================================
+  // LOCATION FILTER
+  // =========================================================
+
+  protected setLocationFilter(
+    value: string,
+  ): void {
+
+    this.jobStore.setLocation(
+      value,
+    );
+
+  }
+
+
+  // =========================================================
+  // CLEAR FILTERS
   // =========================================================
 
   protected clearFilters(): void {
 
-    this.searchTerm.set('');
-    this.categoryFilter.set('');
-    this.employmentTypeFilter.set('');
-    this.workArrangementFilter.set('');
-    this.locationFilter.set('');
-
-  }
-
-
-  protected hasActiveFilters(): boolean {
-
-    return Boolean(
-      this.searchTerm().trim() ||
-      this.categoryFilter().trim() ||
-      this.employmentTypeFilter() ||
-      this.workArrangementFilter() ||
-      this.locationFilter().trim()
-    );
+    this.jobStore.clearFilters();
 
   }
 

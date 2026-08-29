@@ -1,57 +1,32 @@
-import { Injectable } from '@angular/core';
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
-} from 'firebase/firestore';
+import { Injectable, inject } from '@angular/core';
 
-import { firestore } from './firebase-config';
 import { Job } from '../models/job.model';
+
+import {
+  JOB_REPOSITORY,
+  JobRepository,
+} from '../repositories/job.repository';
+import { FirestoreJobRepository } from '../repositories/firestore/firestore-job.repository';
 
 @Injectable({
   providedIn: 'root',
 })
 export class JobService {
 
-  private readonly jobsCollection =
-    collection(firestore, 'jobs');
-
   /**
-   * Create a new job.
+   * Repository responsible for job persistence.
    *
-   * createdBy is supplied by the caller so the
-   * authenticated administrator can be recorded.
+   * The service does not know how jobs are stored.
+   * Today the implementation is Firestore, but the
+   * repository contract allows us to change the
+   * persistence technology later without changing
+   * components or stores.
    */
-  async createJob(
-    job: Omit<
-      Job,
-      'id' | 'createdAt' | 'updatedAt'
-    >,
-  ): Promise<string> {
+ private readonly jobRepository =
+  inject<JobRepository>(
+    JOB_REPOSITORY,
+  );
 
-    const docRef = await addDoc(
-      this.jobsCollection,
-      {
-        ...job,
-
-        createdAt:
-          serverTimestamp(),
-
-        updatedAt:
-          serverTimestamp(),
-      },
-    );
-
-    return docRef.id;
-  }
 
   /**
    * Get a single job by document ID.
@@ -60,108 +35,72 @@ export class JobService {
     id: string,
   ): Promise<Job | null> {
 
-    const jobRef = doc(
-      firestore,
-      'jobs',
-      id,
-    );
+    return this.jobRepository.getJob(id);
 
-    const snapshot =
-      await getDoc(jobRef);
-
-    if (!snapshot.exists()) {
-      return null;
-    }
-
-    return {
-      id: snapshot.id,
-      ...(snapshot.data() as Omit<Job, 'id'>),
-    };
   }
 
+
   /**
-   * Get all jobs.
-   *
-   * Ordered by creation date so the newest
-   * jobs appear first.
+   * Get all jobs for administrative use.
    */
   async getJobs(): Promise<Job[]> {
 
-    const jobsQuery = query(
-      this.jobsCollection,
-      orderBy(
-        'createdAt',
-        'desc',
-      ),
-    );
+    return this.jobRepository.getJobs();
 
-    const snapshot =
-      await getDocs(jobsQuery);
-
-    return snapshot.docs.map(
-      (item) => ({
-        id: item.id,
-        ...(item.data() as Omit<Job, 'id'>),
-      }),
-    );
   }
 
+
   /**
-   * Get only active jobs.
+   * Get only publicly available jobs.
    *
-   * This is the query the public Job Finder
-   * will eventually use.
+   * The repository is responsible for the
+   * Firestore query.
    */
   async getActiveJobs(): Promise<Job[]> {
 
-    const jobsQuery = query(
-      this.jobsCollection,
-      where(
-        'status',
-        '==',
-        'active',
-      ),
-      orderBy(
-        'createdAt',
-        'desc',
-      ),
-    );
+    return this.jobRepository.getActiveJobs();
 
-    const snapshot =
-      await getDocs(jobsQuery);
-
-    return snapshot.docs.map(
-      (item) => ({
-        id: item.id,
-        ...(item.data() as Omit<Job, 'id'>),
-      }),
-    );
   }
+
+
+  /**
+   * Create a new job.
+   */
+  async createJob(
+    job: Omit<
+      Job,
+      'id' | 'createdAt' | 'updatedAt'
+    >,
+  ): Promise<string> {
+
+    return this.jobRepository.createJob(
+      job,
+    );
+
+  }
+
 
   /**
    * Update an existing job.
    */
   async updateJob(
     id: string,
-    changes: Partial<Job>,
+
+    changes: Partial<
+      Omit<
+        Job,
+        'id' | 'createdAt' | 'updatedAt'
+      >
+    >,
   ): Promise<void> {
 
-    const jobRef = doc(
-      firestore,
-      'jobs',
+    return this.jobRepository.updateJob(
       id,
+      changes,
     );
 
-    await updateDoc(
-      jobRef,
-      {
-        ...changes,
-
-        updatedAt:
-          serverTimestamp(),
-      },
-    );
   }
+
 
   /**
    * Delete a job.
@@ -170,12 +109,10 @@ export class JobService {
     id: string,
   ): Promise<void> {
 
-    const jobRef = doc(
-      firestore,
-      'jobs',
+    return this.jobRepository.deleteJob(
       id,
     );
 
-    await deleteDoc(jobRef);
   }
+
 }

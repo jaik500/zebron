@@ -6,6 +6,13 @@ import { routes } from './app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
+import {
+  JOB_REPOSITORY,
+} from './core/repositories/job.repository';
+
+import {
+  FirestoreJobRepository,
+} from './core/repositories/firestore/firestore-job.repository';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -29,5 +36,9 @@ export const appConfig: ApplicationConfig = {
         floatLabel: 'never',
       },
     },
+    {
+  provide: JOB_REPOSITORY,
+  useExisting: FirestoreJobRepository,
+},
   ],
 };
