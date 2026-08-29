@@ -6,7 +6,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
 import { DeleteConfirmationComponent } from '../../../../shared/components/delete-confirmation/delete-confirmation';
 
 import { Organization } from '../../../../core/models/organization.model';
-import { OrganizationService } from '../../../../core/services/organization.service';
+import { OrganizationStore } from '../../../organizations/stores/organization.store';
 
 import { Location } from '../../../../core/models/location.model';
 import { LocationService } from '../../../../core/services/location.service';
@@ -741,25 +741,44 @@ export class OrganizationAdminComponent implements OnInit {
   // Services
   // ===============================================================
 
-  private readonly organizationService = inject(OrganizationService);
-
   private readonly locationService = inject(LocationService);
 
   private readonly toast = inject(HotToastService);
 
   // ===============================================================
-  // State
-  // ===============================================================
+// Organization Store
+// ===============================================================
 
-  protected readonly organizations = signal<Organization[]>([]);
+protected readonly organizationStore =
+  inject(OrganizationStore);
 
-  protected readonly loading = signal(true);
 
-  protected readonly saving = signal(false);
+// ===============================================================
+// Organization state exposed to the existing template
+// ===============================================================
 
-  protected readonly error = signal<string | null>(null);
+protected readonly organizations =
+  this.organizationStore.organizations;
 
-  protected readonly editingId = signal<string | null>(null);
+protected readonly loading =
+  this.organizationStore.loading;
+
+protected readonly storeError =
+  this.organizationStore.error;
+
+protected readonly error =
+  signal<string | null>(null);
+
+
+// ===============================================================
+// Local UI state
+// ===============================================================
+
+protected readonly saving =
+  signal(false);
+
+protected readonly editingId =
+  signal<string | null>(null);
 
   // ===============================================================
   // Form
@@ -797,22 +816,11 @@ export class OrganizationAdminComponent implements OnInit {
   // ===============================================================
 
   private async loadOrganizations(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
 
-    try {
-      const organizations = await this.organizationService.getAllOrganizations();
+  await this.organizationStore.loadOrganizations();
 
-      this.organizations.set(organizations);
-    } catch (error) {
-      console.error('Failed to load organizations:', error);
-
-      this.error.set('Unable to load organizations. Please try again.');
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
+}
+  
   // ===============================================================
   // Save organization
   // ===============================================================
@@ -1143,10 +1151,10 @@ export class OrganizationAdminComponent implements OnInit {
 
     if (editingId) {
 
-      await this.organizationService.updateOrganization(
-        editingId,
-        organization,
-      );
+      await this.organizationStore.updateOrganization(
+  editingId,
+  organization,
+);
 
 
       this.toast.success(
@@ -1155,9 +1163,9 @@ export class OrganizationAdminComponent implements OnInit {
 
     } else {
 
-      await this.organizationService.createOrganization(
-        organization,
-      );
+      await this.organizationStore.createOrganization(
+  organization,
+);
 
 
       this.toast.success(
@@ -1172,7 +1180,7 @@ export class OrganizationAdminComponent implements OnInit {
 
     this.resetForm();
 
-    await this.loadOrganizations();
+    //await this.loadOrganizations();
 
   } catch (error) {
 
@@ -1334,7 +1342,9 @@ export class OrganizationAdminComponent implements OnInit {
 
     try {
       // Delete the organization first.
-      await this.organizationService.deleteOrganization(organization.id);
+     await this.organizationStore.deleteOrganization(
+  organization.id,
+);
 
       // Delete the associated location.
       if (organization.locationId) {
@@ -1348,7 +1358,7 @@ export class OrganizationAdminComponent implements OnInit {
       }
 
       // Refresh the directory.
-      await this.loadOrganizations();
+     // await this.loadOrganizations();
 
       // Tell the administrator the operation succeeded.
       this.toast.success('Organization deleted successfully.');

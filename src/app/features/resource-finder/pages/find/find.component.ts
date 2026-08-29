@@ -143,9 +143,8 @@ import { JobStore } from '../../../jobs/stores/job.store';
           <!-- ===================================================
                FIND A JOB
                =================================================== -->
-          <button
-            type="button"
-            (click)="scrollToJobs()"
+          <a
+            routerLink="/find/job"
             class="group
                    flex
                    min-h-[150px]
@@ -211,14 +210,14 @@ import { JobStore } from '../../../jobs/stores/job.store';
               Find jobs →
             </span>
 
-          </button>
+</a>
 
 
           <!-- ===================================================
                FIND TRAINING
                =================================================== -->
           <a
-            routerLink="/training"
+            routerLink="/find/training"
             class="group
                    flex
                    min-h-[150px]
@@ -1159,25 +1158,6 @@ export class FindComponent
     this.jobStore.clearFilters();
 
   }
-
-
-  // =========================================================
-  // Scroll to job board
-  // =========================================================
-
-  protected scrollToJobs(): void {
-
-    document
-      .getElementById(
-        'job-opportunities'
-      )
-      ?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-
-  }
-
 
   // =========================================================
   // Formatting
