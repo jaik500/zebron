@@ -596,6 +596,63 @@ export const JobStore = signalStore(
 
       },
 
+      // ========================================================
+      // LOAD PUBLIC JOB
+       async loadPublicJob(
+        id: string,
+      ): Promise<void> {
+        patchState(store, {
+          loading: true,
+          error: null,
+          selectedJob: null,
+        });
+      
+        try {
+          const job =
+            await jobService.getJob(id);
+      
+          if (!job) {
+            patchState(store, {
+              loading: false,
+              selectedJob: null,
+              error: 'This job opportunity no longer exists.',
+            });
+      
+            return;
+          }
+      
+          if (job.status !== 'active') {
+            patchState(store, {
+              loading: false,
+              selectedJob: null,
+              error: 'This job opportunity is no longer available.',
+            });
+      
+            return;
+          }
+      
+          patchState(store, {
+            loading: false,
+            selectedJob: job,
+            error: null,
+          });
+      
+        } catch (error) {
+      
+          console.error(
+            'Failed to load public job:',
+            error,
+          );
+      
+          patchState(store, {
+            loading: false,
+            selectedJob: null,
+            error:
+              'Unable to load this job opportunity. Please try again.',
+          });
+        }
+      },
+
 
       // ========================================================
       // SEARCH

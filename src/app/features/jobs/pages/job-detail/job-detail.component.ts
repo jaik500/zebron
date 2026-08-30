@@ -22,9 +22,7 @@ import {
   WorkArrangement,
 } from '../../../../core/models/job.model';
 
-import {
-  JobService,
-} from '../../../../core/services/job.service';
+import { JobStore } from '../../stores/job.store';
 
 @Component({
   selector: 'app-job-detail',
@@ -980,8 +978,8 @@ export class JobDetailComponent
   // Services
   // =========================================================
 
-  private readonly jobService =
-    inject(JobService);
+private readonly jobStore =
+  inject(JobStore);
 
   private readonly route =
     inject(ActivatedRoute);
@@ -994,14 +992,14 @@ export class JobDetailComponent
   // State
   // =========================================================
 
-  protected readonly job =
-    signal<Job | null>(null);
+protected readonly job =
+  this.jobStore.selectedJob;
 
-  protected readonly loading =
-    signal(true);
+protected readonly loading =
+  this.jobStore.loading;
 
-  protected readonly error =
-    signal('');
+protected readonly error =
+  this.jobStore.error;
 
 
   // =========================================================
@@ -1019,98 +1017,19 @@ export class JobDetailComponent
   // Load Job
   // =========================================================
 
-  protected async loadJob(): Promise<void> {
+ 
 
-    this.loading.set(true);
-    this.error.set('');
-    this.job.set(null);
+//  =========================================================
 
+  private async loadJob(): Promise<void> {
+  const id = this.route.snapshot.paramMap.get('id');
 
-    const id =
-      this.route.snapshot.paramMap.get(
-        'id'
-      );
-
-
-    // ---------------------------------------------------------
-    // Validate ID
-    // ---------------------------------------------------------
-
-    if (!id) {
-
-      this.error.set(
-        'The requested job could not be found.'
-      );
-
-      this.loading.set(false);
-
-      return;
-
-    }
-
-
-    try {
-
-      const job =
-        await this.jobService.getJob(id);
-
-
-      // -------------------------------------------------------
-      // Job does not exist
-      // -------------------------------------------------------
-
-      if (!job) {
-
-        this.error.set(
-          'This job opportunity no longer exists.'
-        );
-
-        return;
-
-      }
-
-
-      // -------------------------------------------------------
-      // Only active jobs are public
-      // -------------------------------------------------------
-
-      if (
-        job.status !== 'active'
-      ) {
-
-        this.error.set(
-          'This job opportunity is no longer available.'
-        );
-
-        return;
-
-      }
-
-
-      // -------------------------------------------------------
-      // Store job
-      // -------------------------------------------------------
-
-      this.job.set(job);
-
-    } catch (error) {
-
-      console.error(
-        'Failed to load job details:',
-        error
-      );
-
-      this.error.set(
-        'Unable to load this job opportunity. Please try again.'
-      );
-
-    } finally {
-
-      this.loading.set(false);
-
-    }
-
+  if (!id) {
+    return;
   }
+
+  await this.jobStore.loadPublicJob(id);
+}
 
 
   // =========================================================
