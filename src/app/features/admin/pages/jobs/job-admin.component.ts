@@ -1,59 +1,30 @@
-import {
-  Component,
-  computed,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
-import {
-  Router,
-  RouterLink,
-} from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
-import {
-  AuthService,
-} from '../../../../core/services/auth.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
-import {
-  Job,
-} from '../../../../core/models/job.model';
+import { Job } from '../../../../core/models/job.model';
 
-import {
-  JobService,
-} from '../../../../core/services/job.service';
+import { MatMenuModule } from '@angular/material/menu';
 
-import {
-  MatMenuModule,
-} from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 
-import {
-  MatDividerModule,
-} from '@angular/material/divider';
-
-import {
-  HotToastService,
-} from '@ngxpert/hot-toast';
-
+import { HotToastService } from '@ngxpert/hot-toast';
+import { JobStore } from '../../../jobs/stores/job.store';
 
 @Component({
   selector: 'app-job-admin',
 
   standalone: true,
 
-  imports: [
-    RouterLink,
-    MatMenuModule,
-    MatDividerModule,
-  ],
+  imports: [RouterLink, MatMenuModule, MatDividerModule],
 
   template: `
-
     <main
       class="min-h-screen
              bg-gray-50"
     >
-
       <!-- =====================================================
            Header
            ===================================================== -->
@@ -62,7 +33,6 @@ import {
                border-gray-200
                bg-[#032D42]"
       >
-
         <div
           class="mx-auto flex
                  max-w-7xl
@@ -73,10 +43,8 @@ import {
                  sm:px-6
                  lg:px-8"
         >
-
           <!-- Title -->
           <div class="min-w-0">
-
             <p
               class="text-xs
                      font-semibold
@@ -101,12 +69,9 @@ import {
                      text-sm
                      text-white/80"
             >
-              Manage the opportunities available
-              through the Zebron Job Finder.
+              Manage the opportunities available through the Zebron Job Finder.
             </p>
-
           </div>
-
 
           <!-- =================================================
                Header Actions
@@ -117,6 +82,33 @@ import {
                    items-center
                    gap-2"
           >
+           <!-- Job Board -->
+            <div class="flex flex-wrap items-center gap-3">
+              <a
+                routerLink="/find"
+                class="inline-flex
+           items-center
+           justify-center
+           gap-2
+           rounded-lg
+           border
+           border-[#007979]
+           bg-white
+           px-4
+           py-2.5
+           text-sm
+           font-medium
+           text-[#007979]
+           transition
+           hover:bg-[#007979]/5
+           focus:outline-none
+           focus:ring-2
+           focus:ring-[#007979]/20"
+              >
+                <span>💼</span>
+                Job Board
+              </a>
+            </div>
 
             <!-- Dashboard -->
             <a
@@ -139,7 +131,6 @@ import {
               ← Dashboard
             </a>
 
-
             <!-- Add Job -->
             <a
               routerLink="/admin/jobs/new"
@@ -159,7 +150,6 @@ import {
               + Add Job
             </a>
 
-
             <!-- =================================================
                  Three-dot Menu
                  ================================================= -->
@@ -171,7 +161,6 @@ import {
                      !w-10
                      !text-white"
             >
-
               <span
                 class="text-2xl
                        font-bold
@@ -180,107 +169,49 @@ import {
               >
                 ⋮
               </span>
-
             </button>
 
-
-            <mat-menu
-              #adminMenu="matMenu"
-              xPosition="before"
-            >
-
+            <mat-menu #adminMenu="matMenu" xPosition="before">
               <!-- Dashboard -->
-              <a
-                mat-menu-item
-                routerLink="/admin"
-              >
-                <span>
-                  Dashboard
-                </span>
+              <a mat-menu-item routerLink="/admin">
+                <span> Dashboard </span>
               </a>
-
 
               <!-- Resources -->
-              <a
-                mat-menu-item
-                routerLink="/admin/resources"
-              >
-                <span>
-                  Resources
-                </span>
+              <a mat-menu-item routerLink="/admin/resources">
+                <span> Resources </span>
               </a>
-
 
               <!-- Categories -->
-              <a
-                mat-menu-item
-                routerLink="/admin/categories"
-              >
-                <span>
-                  Categories
-                </span>
+              <a mat-menu-item routerLink="/admin/categories">
+                <span> Categories </span>
               </a>
-
 
               <!-- Organizations -->
-              <a
-                mat-menu-item
-                routerLink="/admin/organizations"
-              >
-                <span>
-                  Organizations
-                </span>
+              <a mat-menu-item routerLink="/admin/organizations">
+                <span> Organizations </span>
               </a>
-
 
               <!-- Contact Messages -->
-              <a
-                mat-menu-item
-                routerLink="/admin/contact"
-              >
-                <span>
-                  Contact Messages
-                </span>
+              <a mat-menu-item routerLink="/admin/contact">
+                <span> Contact Messages </span>
               </a>
-
 
               <!-- Add Jobs -->
-              <a
-                mat-menu-item
-                routerLink="/admin/jobs/new"
-              >
-                <span>
-                  Add Jobs
-                </span>
+              <a mat-menu-item routerLink="/admin/jobs/new">
+                <span> Add Jobs </span>
               </a>
-
 
               <mat-divider></mat-divider>
 
-
               <!-- Sign Out -->
-              <button
-                mat-menu-item
-                type="button"
-                (click)="signOut()"
-              >
-
-                <span
-                  class="text-red-600"
-                >
-                  Sign out
-                </span>
-
+              <button mat-menu-item type="button" (click)="signOut()">
+                <span class="text-red-600"> Sign out </span>
               </button>
-
             </mat-menu>
-
           </div>
-
         </div>
-
       </header>
-
 
       <!-- =====================================================
            Content
@@ -292,12 +223,10 @@ import {
                sm:px-6
                lg:px-8"
       >
-
         <!-- ===================================================
              Loading
              =================================================== -->
         @if (loading()) {
-
           <div
             class="rounded-xl
                    border
@@ -307,7 +236,6 @@ import {
                    text-center
                    shadow-sm"
           >
-
             <div
               class="mx-auto
                      h-8 w-8
@@ -318,7 +246,6 @@ import {
                      border-t-[#007979]"
             ></div>
 
-
             <p
               class="mt-4
                      text-sm
@@ -326,16 +253,13 @@ import {
             >
               Loading jobs...
             </p>
-
           </div>
-
         }
 
         <!-- ===================================================
              Error
              =================================================== -->
         @else if (error()) {
-
           <div
             class="rounded-xl
                    border
@@ -343,7 +267,6 @@ import {
                    bg-red-50
                    px-5 py-4"
           >
-
             <p
               class="text-sm
                      font-medium
@@ -351,7 +274,6 @@ import {
             >
               {{ error() }}
             </p>
-
 
             <button
               type="button"
@@ -365,16 +287,13 @@ import {
             >
               Try again
             </button>
-
           </div>
-
         }
 
         <!-- ===================================================
              No Jobs At All
              =================================================== -->
         @else if (jobs().length === 0) {
-
           <section
             class="rounded-xl
                    border
@@ -385,7 +304,6 @@ import {
                    text-center
                    shadow-sm"
           >
-
             <div
               class="mx-auto
                      flex
@@ -400,7 +318,6 @@ import {
               💼
             </div>
 
-
             <h2
               class="mt-4
                      text-lg
@@ -410,7 +327,6 @@ import {
               No jobs yet
             </h2>
 
-
             <p
               class="mx-auto
                      mt-2
@@ -419,10 +335,8 @@ import {
                      leading-6
                      text-gray-600"
             >
-              Add your first job opportunity to
-              make it available to the Zebron Job Finder.
+              Add your first job opportunity to make it available to the Zebron Job Finder.
             </p>
-
 
             <a
               routerLink="/admin/jobs/new"
@@ -441,16 +355,13 @@ import {
             >
               + Add Job
             </a>
-
           </section>
-
         }
 
         <!-- ===================================================
              Jobs
              =================================================== -->
         @else {
-
           <!-- =================================================
                Search & Filters
                ================================================= -->
@@ -464,7 +375,6 @@ import {
                    shadow-sm
                    sm:px-5"
           >
-
             <!-- Search Row -->
             <div
               class="flex
@@ -473,14 +383,12 @@ import {
                      lg:flex-row
                      lg:items-center"
             >
-
               <!-- Search -->
               <div
                 class="relative
                        min-w-0
                        flex-1"
               >
-
                 <span
                   class="pointer-events-none
                          absolute
@@ -493,15 +401,10 @@ import {
                   🔎
                 </span>
 
-
                 <input
                   type="search"
                   [value]="searchTerm()"
-                  (input)="
-                    setSearchTerm(
-                      $any($event.target).value
-                    )
-                  "
+                  (input)="setSearchTerm($any($event.target).value)"
                   placeholder="Search jobs, organizations, locations, skills, tags..."
                   aria-label="Search jobs"
                   class="block
@@ -523,9 +426,7 @@ import {
                          focus:ring-[#007979]/20"
                 />
 
-
                 @if (searchTerm()) {
-
                   <button
                     type="button"
                     (click)="clearSearch()"
@@ -539,15 +440,11 @@ import {
                   >
                     ×
                   </button>
-
                 }
-
               </div>
-
 
               <!-- Clear Filters -->
               @if (hasActiveFilters()) {
-
                 <button
                   type="button"
                   (click)="clearFilters()"
@@ -569,11 +466,8 @@ import {
                 >
                   Clear Filters
                 </button>
-
               }
-
             </div>
-
 
             <!-- Filter heading -->
             <div
@@ -583,9 +477,7 @@ import {
                      justify-between
                      gap-3"
             >
-
               <div>
-
                 <p
                   class="text-xs
                          font-semibold
@@ -603,9 +495,7 @@ import {
                 >
                   Narrow the job listing by column.
                 </p>
-
               </div>
-
 
               <p
                 class="text-xs
@@ -617,9 +507,7 @@ import {
                 of
                 {{ jobs().length }}
               </p>
-
             </div>
-
 
             <!-- =================================================
                  Mobile / Tablet Filter Grid
@@ -631,10 +519,8 @@ import {
                      sm:grid-cols-2
                      lg:hidden"
             >
-
               <!-- Job Filter -->
               <div>
-
                 <label
                   for="mobileJobFilter"
                   class="mb-1
@@ -650,11 +536,7 @@ import {
                   id="mobileJobFilter"
                   type="text"
                   [value]="jobFilter()"
-                  (input)="
-                    setJobFilter(
-                      $any($event.target).value
-                    )
-                  "
+                  (input)="setJobFilter($any($event.target).value)"
                   placeholder="Filter job title"
                   class="block
                          w-full
@@ -668,13 +550,10 @@ import {
                          focus:ring-2
                          focus:ring-[#007979]/20"
                 />
-
               </div>
-
 
               <!-- Organization Filter -->
               <div>
-
                 <label
                   for="mobileOrganizationFilter"
                   class="mb-1
@@ -690,11 +569,7 @@ import {
                   id="mobileOrganizationFilter"
                   type="text"
                   [value]="organizationFilter()"
-                  (input)="
-                    setOrganizationFilter(
-                      $any($event.target).value
-                    )
-                  "
+                  (input)="setOrganizationFilter($any($event.target).value)"
                   placeholder="Filter organization"
                   class="block
                          w-full
@@ -708,13 +583,10 @@ import {
                          focus:ring-2
                          focus:ring-[#007979]/20"
                 />
-
               </div>
-
 
               <!-- Type -->
               <div>
-
                 <label
                   for="mobileTypeFilter"
                   class="mb-1
@@ -729,11 +601,7 @@ import {
                 <select
                   id="mobileTypeFilter"
                   [value]="employmentTypeFilter()"
-                  (change)="
-                    setEmploymentTypeFilter(
-                      $any($event.target).value
-                    )
-                  "
+                  (change)="setEmploymentTypeFilter($any($event.target).value)"
                   class="block
                          w-full
                          rounded-lg
@@ -747,39 +615,22 @@ import {
                          focus:ring-2
                          focus:ring-[#007979]/20"
                 >
+                  <option value="">All types</option>
 
-                  <option value="">
-                    All types
-                  </option>
+                  <option value="full-time">Full-time</option>
 
-                  <option value="full-time">
-                    Full-time
-                  </option>
+                  <option value="part-time">Part-time</option>
 
-                  <option value="part-time">
-                    Part-time
-                  </option>
+                  <option value="contract">Contract</option>
 
-                  <option value="contract">
-                    Contract
-                  </option>
+                  <option value="internship">Internship</option>
 
-                  <option value="internship">
-                    Internship
-                  </option>
-
-                  <option value="temporary">
-                    Temporary
-                  </option>
-
+                  <option value="temporary">Temporary</option>
                 </select>
-
               </div>
-
 
               <!-- Location -->
               <div>
-
                 <label
                   for="mobileLocationFilter"
                   class="mb-1
@@ -795,11 +646,7 @@ import {
                   id="mobileLocationFilter"
                   type="text"
                   [value]="locationFilter()"
-                  (input)="
-                    setLocationFilter(
-                      $any($event.target).value
-                    )
-                  "
+                  (input)="setLocationFilter($any($event.target).value)"
                   placeholder="City or state"
                   class="block
                          w-full
@@ -813,13 +660,10 @@ import {
                          focus:ring-2
                          focus:ring-[#007979]/20"
                 />
-
               </div>
-
 
               <!-- Status -->
               <div>
-
                 <label
                   for="mobileStatusFilter"
                   class="mb-1
@@ -834,11 +678,7 @@ import {
                 <select
                   id="mobileStatusFilter"
                   [value]="statusFilter()"
-                  (change)="
-                    setStatusFilter(
-                      $any($event.target).value
-                    )
-                  "
+                  (change)="setStatusFilter($any($event.target).value)"
                   class="block
                          w-full
                          rounded-lg
@@ -852,31 +692,18 @@ import {
                          focus:ring-2
                          focus:ring-[#007979]/20"
                 >
+                  <option value="">All statuses</option>
 
-                  <option value="">
-                    All statuses
-                  </option>
+                  <option value="active">Active</option>
 
-                  <option value="active">
-                    Active
-                  </option>
+                  <option value="draft">Draft</option>
 
-                  <option value="draft">
-                    Draft
-                  </option>
-
-                  <option value="closed">
-                    Closed
-                  </option>
-
+                  <option value="closed">Closed</option>
                 </select>
-
               </div>
-
 
               <!-- Featured -->
               <div>
-
                 <label
                   for="mobileFeaturedFilter"
                   class="mb-1
@@ -891,11 +718,7 @@ import {
                 <select
                   id="mobileFeaturedFilter"
                   [value]="featuredFilter()"
-                  (change)="
-                    setFeaturedFilter(
-                      $any($event.target).value
-                    )
-                  "
+                  (change)="setFeaturedFilter($any($event.target).value)"
                   class="block
                          w-full
                          rounded-lg
@@ -909,27 +732,15 @@ import {
                          focus:ring-2
                          focus:ring-[#007979]/20"
                 >
+                  <option value="">All jobs</option>
 
-                  <option value="">
-                    All jobs
-                  </option>
+                  <option value="featured">Featured</option>
 
-                  <option value="featured">
-                    Featured
-                  </option>
-
-                  <option value="not-featured">
-                    Not featured
-                  </option>
-
+                  <option value="not-featured">Not featured</option>
                 </select>
-
               </div>
-
             </div>
-
           </section>
-
 
           <!-- =================================================
                Summary
@@ -943,9 +754,7 @@ import {
                    sm:items-center
                    sm:justify-between"
           >
-
             <div>
-
               <h2
                 class="text-lg
                        font-bold
@@ -959,9 +768,7 @@ import {
                        text-sm
                        text-gray-500"
               >
-
                 @if (hasActiveFilters()) {
-
                   Showing
                   <span
                     class="font-semibold
@@ -972,19 +779,13 @@ import {
                   of
                   {{ jobs().length }}
                   jobs.
-
                 } @else {
-
                   {{ jobs().length }}
                   {{ jobs().length === 1 ? 'job' : 'jobs' }}
                   onboarded.
-
                 }
-
               </p>
-
             </div>
-
 
             <!-- Status summary -->
             <div
@@ -992,7 +793,6 @@ import {
                      flex-wrap
                      gap-2"
             >
-
               <span
                 class="rounded-full
                        bg-green-100
@@ -1004,7 +804,6 @@ import {
                 {{ activeCount() }}
                 Active
               </span>
-
 
               <span
                 class="rounded-full
@@ -1018,7 +817,6 @@ import {
                 Draft
               </span>
 
-
               <span
                 class="rounded-full
                        bg-gray-100
@@ -1030,19 +828,13 @@ import {
                 {{ closedCount() }}
                 Closed
               </span>
-
             </div>
-
           </div>
-
 
           <!-- =================================================
                No Filter Results
                ================================================= -->
-          @if (
-            filteredJobs().length === 0
-          ) {
-
+          @if (filteredJobs().length === 0) {
             <section
               class="rounded-xl
                      border
@@ -1053,7 +845,6 @@ import {
                      text-center
                      shadow-sm"
             >
-
               <div
                 class="mx-auto
                        flex
@@ -1068,7 +859,6 @@ import {
                 🔎
               </div>
 
-
               <h2
                 class="mt-4
                        text-lg
@@ -1078,7 +868,6 @@ import {
                 No matching jobs
               </h2>
 
-
               <p
                 class="mx-auto
                        mt-2
@@ -1087,10 +876,8 @@ import {
                        leading-6
                        text-gray-600"
               >
-                No jobs match the current search
-                and filter criteria.
+                No jobs match the current search and filter criteria.
               </p>
-
 
               <button
                 type="button"
@@ -1109,13 +896,9 @@ import {
               >
                 Clear Filters
               </button>
-
             </section>
 
-          }
-
-          @else {
-
+          } @else {
             <!-- =================================================
                  Desktop Table
                  ================================================= -->
@@ -1129,23 +912,14 @@ import {
                      shadow-sm
                      md:block"
             >
-
-              <div
-                class="overflow-x-auto"
-              >
-
+              <div class="overflow-x-auto">
                 <table
                   class="min-w-full
                          divide-y
                          divide-gray-200"
                 >
-
-                  <thead
-                    class="bg-[#66BB6A]/80"
-                  >
-
+                  <thead class="bg-[#66BB6A]/80">
                     <tr>
-
                       <!-- =====================================
                            Job Column
                            ===================================== -->
@@ -1155,7 +929,6 @@ import {
                                text-left
                                align-top"
                       >
-
                         <div
                           class="text-xs
                                  font-semibold
@@ -1165,15 +938,10 @@ import {
                           Job
                         </div>
 
-
                         <input
                           type="text"
                           [value]="jobFilter()"
-                          (input)="
-                            setJobFilter(
-                              $any($event.target).value
-                            )
-                          "
+                          (input)="setJobFilter($any($event.target).value)"
                           placeholder="Filter job..."
                           aria-label="Filter jobs by title"
                           class="mt-2
@@ -1195,9 +963,7 @@ import {
                                  focus:ring-1
                                  focus:ring-[#007979]"
                         />
-
                       </th>
-
 
                       <!-- =====================================
                            Organization
@@ -1208,7 +974,6 @@ import {
                                text-left
                                align-top"
                       >
-
                         <div
                           class="text-xs
                                  font-semibold
@@ -1218,15 +983,10 @@ import {
                           Organization
                         </div>
 
-
                         <input
                           type="text"
                           [value]="organizationFilter()"
-                          (input)="
-                            setOrganizationFilter(
-                              $any($event.target).value
-                            )
-                          "
+                          (input)="setOrganizationFilter($any($event.target).value)"
                           placeholder="Filter organization..."
                           aria-label="Filter by organization"
                           class="mt-2
@@ -1248,9 +1008,7 @@ import {
                                  focus:ring-1
                                  focus:ring-[#007979]"
                         />
-
                       </th>
-
 
                       <!-- =====================================
                            Type
@@ -1261,7 +1019,6 @@ import {
                                text-left
                                align-top"
                       >
-
                         <div
                           class="text-xs
                                  font-semibold
@@ -1271,14 +1028,9 @@ import {
                           Type
                         </div>
 
-
                         <select
                           [value]="employmentTypeFilter()"
-                          (change)="
-                            setEmploymentTypeFilter(
-                              $any($event.target).value
-                            )
-                          "
+                          (change)="setEmploymentTypeFilter($any($event.target).value)"
                           aria-label="Filter by employment type"
                           class="mt-2
                                  block
@@ -1298,35 +1050,19 @@ import {
                                  focus:ring-1
                                  focus:ring-[#007979]"
                         >
+                          <option value="">All</option>
 
-                          <option value="">
-                            All
-                          </option>
+                          <option value="full-time">Full-time</option>
 
-                          <option value="full-time">
-                            Full-time
-                          </option>
+                          <option value="part-time">Part-time</option>
 
-                          <option value="part-time">
-                            Part-time
-                          </option>
+                          <option value="contract">Contract</option>
 
-                          <option value="contract">
-                            Contract
-                          </option>
+                          <option value="internship">Internship</option>
 
-                          <option value="internship">
-                            Internship
-                          </option>
-
-                          <option value="temporary">
-                            Temporary
-                          </option>
-
+                          <option value="temporary">Temporary</option>
                         </select>
-
                       </th>
-
 
                       <!-- =====================================
                            Location
@@ -1337,7 +1073,6 @@ import {
                                text-left
                                align-top"
                       >
-
                         <div
                           class="text-xs
                                  font-semibold
@@ -1347,15 +1082,10 @@ import {
                           Location
                         </div>
 
-
                         <input
                           type="text"
                           [value]="locationFilter()"
-                          (input)="
-                            setLocationFilter(
-                              $any($event.target).value
-                            )
-                          "
+                          (input)="setLocationFilter($any($event.target).value)"
                           placeholder="City / state..."
                           aria-label="Filter by location"
                           class="mt-2
@@ -1377,9 +1107,7 @@ import {
                                  focus:ring-1
                                  focus:ring-[#007979]"
                         />
-
                       </th>
-
 
                       <!-- =====================================
                            Status
@@ -1390,7 +1118,6 @@ import {
                                text-left
                                align-top"
                       >
-
                         <div
                           class="text-xs
                                  font-semibold
@@ -1400,14 +1127,9 @@ import {
                           Status
                         </div>
 
-
                         <select
                           [value]="statusFilter()"
-                          (change)="
-                            setStatusFilter(
-                              $any($event.target).value
-                            )
-                          "
+                          (change)="setStatusFilter($any($event.target).value)"
                           aria-label="Filter by status"
                           class="mt-2
                                  block
@@ -1427,27 +1149,15 @@ import {
                                  focus:ring-1
                                  focus:ring-[#007979]"
                         >
+                          <option value="">All</option>
 
-                          <option value="">
-                            All
-                          </option>
+                          <option value="active">Active</option>
 
-                          <option value="active">
-                            Active
-                          </option>
+                          <option value="draft">Draft</option>
 
-                          <option value="draft">
-                            Draft
-                          </option>
-
-                          <option value="closed">
-                            Closed
-                          </option>
-
+                          <option value="closed">Closed</option>
                         </select>
-
                       </th>
-
 
                       <!-- =====================================
                            Featured
@@ -1458,7 +1168,6 @@ import {
                                text-left
                                align-top"
                       >
-
                         <div
                           class="text-xs
                                  font-semibold
@@ -1468,14 +1177,9 @@ import {
                           Featured
                         </div>
 
-
                         <select
                           [value]="featuredFilter()"
-                          (change)="
-                            setFeaturedFilter(
-                              $any($event.target).value
-                            )
-                          "
+                          (change)="setFeaturedFilter($any($event.target).value)"
                           aria-label="Filter featured jobs"
                           class="mt-2
                                  block
@@ -1495,23 +1199,13 @@ import {
                                  focus:ring-1
                                  focus:ring-[#007979]"
                         >
+                          <option value="">All</option>
 
-                          <option value="">
-                            All
-                          </option>
+                          <option value="featured">Featured</option>
 
-                          <option value="featured">
-                            Featured
-                          </option>
-
-                          <option value="not-featured">
-                            Not featured
-                          </option>
-
+                          <option value="not-featured">Not featured</option>
                         </select>
-
                       </th>
-
 
                       <!-- Actions -->
                       <th
@@ -1525,40 +1219,26 @@ import {
                       >
                         Actions
                       </th>
-
                     </tr>
-
                   </thead>
-
 
                   <tbody
                     class="divide-y
                            divide-gray-100"
                   >
-
-                    @for (
-                      job of filteredJobs();
-                      track job.id
-                    ) {
-
+                    @for (job of filteredJobs(); track job.id) {
                       <tr
                         class="transition
                                hover:bg-gray-50"
                       >
-
                         <!-- Job -->
-                        <td
-                          class="px-5 py-4"
-                        >
-
+                        <td class="px-5 py-4">
                           <div>
-
                             <div
                               class="flex
                                      items-center
                                      gap-2"
                             >
-
                               <span
                                 class="font-semibold
                                        text-gray-900"
@@ -1566,9 +1246,7 @@ import {
                                 {{ job.title }}
                               </span>
 
-
                               @if (job.featured) {
-
                                 <span
                                   class="rounded-full
                                          bg-yellow-100
@@ -1579,11 +1257,8 @@ import {
                                 >
                                   Featured
                                 </span>
-
                               }
-
                             </div>
-
 
                             <p
                               class="mt-1
@@ -1591,16 +1266,10 @@ import {
                                      text-sm
                                      text-gray-500"
                             >
-                              {{ truncate(
-                                job.description,
-                                100
-                              ) }}
+                              {{ truncate(job.description, 100) }}
                             </p>
-
                           </div>
-
                         </td>
-
 
                         <!-- Organization -->
                         <td
@@ -1611,18 +1280,14 @@ import {
                           {{ job.organizationName }}
                         </td>
 
-
                         <!-- Type -->
                         <td
                           class="px-5 py-4
                                  text-sm
                                  text-gray-600"
                         >
-                          {{ formatEmploymentType(
-                            job.employmentType
-                          ) }}
+                          {{ formatEmploymentType(job.employmentType) }}
                         </td>
-
 
                         <!-- Location -->
                         <td
@@ -1633,34 +1298,16 @@ import {
                           {{ formatLocation(job) }}
                         </td>
 
-
                         <!-- Status -->
-                        <td
-                          class="px-5 py-4"
-                        >
-
-                          <span
-                            [class]="
-                              statusClasses(
-                                job.status
-                              )
-                            "
-                          >
-                            {{ formatStatus(
-                              job.status
-                            ) }}
+                        <td class="px-5 py-4">
+                          <span [class]="statusClasses(job.status)">
+                            {{ formatStatus(job.status) }}
                           </span>
-
                         </td>
 
-
                         <!-- Featured -->
-                        <td
-                          class="px-5 py-4"
-                        >
-
+                        <td class="px-5 py-4">
                           @if (job.featured) {
-
                             <span
                               class="text-sm
                                      font-medium
@@ -1668,39 +1315,28 @@ import {
                             >
                               Yes
                             </span>
-
                           } @else {
-
                             <span
                               class="text-sm
                                      text-gray-400"
                             >
                               No
                             </span>
-
                           }
-
                         </td>
-
 
                         <!-- Actions -->
                         <td
                           class="px-5 py-4
                                  text-right"
                         >
-
                           <div
                             class="flex
                                    justify-end
                                    gap-3"
                           >
-
                             <a
-                              [routerLink]="[
-                                '/admin/jobs',
-                                job.id,
-                                'edit'
-                              ]"
+                              [routerLink]="['/admin/jobs', job.id, 'edit']"
                               class="text-sm
                                      font-semibold
                                      text-[#007979]
@@ -1709,12 +1345,9 @@ import {
                               Edit
                             </a>
 
-
                             <button
                               type="button"
-                              (click)="
-                                deleteJob(job)
-                              "
+                              (click)="deleteJob(job)"
                               class="text-sm
                                      font-semibold
                                      text-red-600
@@ -1722,23 +1355,14 @@ import {
                             >
                               Delete
                             </button>
-
                           </div>
-
                         </td>
-
                       </tr>
-
                     }
-
                   </tbody>
-
                 </table>
-
               </div>
-
             </div>
-
 
             <!-- =================================================
                  Mobile Cards
@@ -1747,12 +1371,7 @@ import {
               class="space-y-3
                      md:hidden"
             >
-
-              @for (
-                job of filteredJobs();
-                track job.id
-              ) {
-
+              @for (job of filteredJobs(); track job.id) {
                 <article
                   class="rounded-xl
                          border
@@ -1761,25 +1380,19 @@ import {
                          p-4
                          shadow-sm"
                 >
-
                   <div
                     class="flex
                            items-start
                            justify-between
                            gap-3"
                   >
-
-                    <div
-                      class="min-w-0"
-                    >
-
+                    <div class="min-w-0">
                       <div
                         class="flex
                                flex-wrap
                                items-center
                                gap-2"
                       >
-
                         <h3
                           class="font-semibold
                                  text-gray-900"
@@ -1787,9 +1400,7 @@ import {
                           {{ job.title }}
                         </h3>
 
-
                         @if (job.featured) {
-
                           <span
                             class="rounded-full
                                    bg-yellow-100
@@ -1800,11 +1411,8 @@ import {
                           >
                             Featured
                           </span>
-
                         }
-
                       </div>
-
 
                       <p
                         class="mt-1
@@ -1813,24 +1421,12 @@ import {
                       >
                         {{ job.organizationName }}
                       </p>
-
                     </div>
 
-
-                    <span
-                      [class]="
-                        statusClasses(
-                          job.status
-                        )
-                      "
-                    >
-                      {{ formatStatus(
-                        job.status
-                      ) }}
+                    <span [class]="statusClasses(job.status)">
+                      {{ formatStatus(job.status) }}
                     </span>
-
                   </div>
-
 
                   <div
                     class="mt-4
@@ -1839,9 +1435,7 @@ import {
                            gap-3
                            text-sm"
                   >
-
                     <div>
-
                       <p
                         class="text-xs
                                text-gray-400"
@@ -1853,16 +1447,11 @@ import {
                         class="mt-0.5
                                text-gray-700"
                       >
-                        {{ formatEmploymentType(
-                          job.employmentType
-                        ) }}
+                        {{ formatEmploymentType(job.employmentType) }}
                       </p>
-
                     </div>
 
-
                     <div>
-
                       <p
                         class="text-xs
                                text-gray-400"
@@ -1876,14 +1465,9 @@ import {
                       >
                         {{ formatLocation(job) }}
                       </p>
-
                     </div>
 
-
-                    <div
-                      class="col-span-2"
-                    >
-
+                    <div class="col-span-2">
                       <p
                         class="text-xs
                                text-gray-400"
@@ -1897,16 +1481,10 @@ import {
                                leading-5
                                text-gray-600"
                       >
-                        {{ truncate(
-                          job.description,
-                          150
-                        ) }}
+                        {{ truncate(job.description, 150) }}
                       </p>
-
                     </div>
-
                   </div>
-
 
                   <div
                     class="mt-4
@@ -1917,13 +1495,8 @@ import {
                            border-gray-100
                            pt-3"
                   >
-
                     <a
-                      [routerLink]="[
-                        '/admin/jobs',
-                        job.id,
-                        'edit'
-                      ]"
+                      [routerLink]="['/admin/jobs', job.id, 'edit']"
                       class="text-sm
                              font-semibold
                              text-[#007979]"
@@ -1931,467 +1504,268 @@ import {
                       Edit
                     </a>
 
-
                     <button
                       type="button"
-                      (click)="
-                        deleteJob(job)
-                      "
+                      (click)="deleteJob(job)"
                       class="text-sm
                              font-semibold
                              text-red-600"
                     >
                       Delete
                     </button>
-
                   </div>
-
                 </article>
-
               }
-
             </div>
-
           }
-
         }
-
       </div>
-
     </main>
-
   `,
 })
-export class JobAdminComponent
-  implements OnInit {
-
+export class JobAdminComponent implements OnInit {
   // =========================================================
   // Services
   // =========================================================
 
-  private readonly router =
-    inject(Router);
+  private readonly router = inject(Router);
 
-  private readonly jobService =
-    inject(JobService);
+private readonly jobStore = inject(JobStore);
 
-  private readonly authService =
-    inject(AuthService);
+  private readonly authService = inject(AuthService);
 
-  private readonly toast =
-    inject(HotToastService);
-
+  private readonly toast = inject(HotToastService);
 
   // =========================================================
   // Job State
   // =========================================================
 
-  protected readonly jobs =
-    signal<Job[]>([]);
+ protected readonly jobs =
+  this.jobStore.jobs;
 
-  protected readonly loading =
-    signal(true);
+protected readonly loading =
+  this.jobStore.loading;
 
-  protected readonly error =
-    signal('');
-
-
+protected readonly error =
+  this.jobStore.error;
   // =========================================================
   // Search / Filter State
   // =========================================================
 
-  protected readonly searchTerm =
-    signal('');
+  protected readonly searchTerm = signal('');
 
-  protected readonly jobFilter =
-    signal('');
+  protected readonly jobFilter = signal('');
 
-  protected readonly organizationFilter =
-    signal('');
+  protected readonly organizationFilter = signal('');
 
-  protected readonly employmentTypeFilter =
-    signal('');
+  protected readonly employmentTypeFilter = signal('');
 
-  protected readonly locationFilter =
-    signal('');
+  protected readonly locationFilter = signal('');
 
-  protected readonly statusFilter =
-    signal('');
+  protected readonly statusFilter = signal('');
 
-  protected readonly featuredFilter =
-    signal('');
-
+  protected readonly featuredFilter = signal('');
 
   // =========================================================
   // Filtered Jobs
   // =========================================================
 
-  protected readonly filteredJobs =
-    computed(() => {
+  protected readonly filteredJobs = computed(() => {
+    const jobs = this.jobs();
 
-      const jobs =
-        this.jobs();
+    const search = this.searchTerm().trim().toLowerCase();
 
-      const search =
-        this.searchTerm()
-          .trim()
+    const jobFilter = this.jobFilter().trim().toLowerCase();
+
+    const organizationFilter = this.organizationFilter().trim().toLowerCase();
+
+    const employmentTypeFilter = this.employmentTypeFilter().trim().toLowerCase();
+
+    const locationFilter = this.locationFilter().trim().toLowerCase();
+
+    const statusFilter = this.statusFilter().trim().toLowerCase();
+
+    const featuredFilter = this.featuredFilter().trim().toLowerCase();
+
+    return jobs.filter((job) => {
+      // ---------------------------------------------------
+      // Global Search
+      // ---------------------------------------------------
+
+      if (search) {
+        const searchableText = [
+          job.title,
+
+          job.organizationName,
+
+          job.description,
+
+          job.categoryName,
+
+          job.location?.city,
+
+          job.location?.state,
+
+          job.location?.country,
+
+          ...(job.skills ?? []),
+
+          ...(job.tags ?? []),
+
+          job.employmentType,
+
+          job.workArrangement,
+
+          job.status,
+        ]
+          .filter(Boolean)
+          .join(' ')
           .toLowerCase();
 
-      const jobFilter =
-        this.jobFilter()
-          .trim()
-          .toLowerCase();
-
-      const organizationFilter =
-        this.organizationFilter()
-          .trim()
-          .toLowerCase();
-
-      const employmentTypeFilter =
-        this.employmentTypeFilter()
-          .trim()
-          .toLowerCase();
-
-      const locationFilter =
-        this.locationFilter()
-          .trim()
-          .toLowerCase();
-
-      const statusFilter =
-        this.statusFilter()
-          .trim()
-          .toLowerCase();
-
-      const featuredFilter =
-        this.featuredFilter()
-          .trim()
-          .toLowerCase();
-
-
-      return jobs.filter(
-        (job) => {
-
-          // ---------------------------------------------------
-          // Global Search
-          // ---------------------------------------------------
-
-          if (search) {
-
-            const searchableText =
-              [
-                job.title,
-
-                job.organizationName,
-
-                job.description,
-
-                job.categoryName,
-
-                job.location?.city,
-
-                job.location?.state,
-
-                job.location?.country,
-
-                ...(job.skills ?? []),
-
-                ...(job.tags ?? []),
-
-                job.employmentType,
-
-                job.workArrangement,
-
-                job.status,
-
-              ]
-                .filter(Boolean)
-                .join(' ')
-                .toLowerCase();
-
-
-            if (
-              !searchableText.includes(
-                search
-              )
-            ) {
-              return false;
-            }
-
-          }
-
-
-          // ---------------------------------------------------
-          // Job Column
-          // ---------------------------------------------------
-
-          if (
-            jobFilter &&
-            !job.title
-              .toLowerCase()
-              .includes(jobFilter)
-          ) {
-            return false;
-          }
-
-
-          // ---------------------------------------------------
-          // Organization Column
-          // ---------------------------------------------------
-
-          if (
-            organizationFilter &&
-            !job.organizationName
-              .toLowerCase()
-              .includes(
-                organizationFilter
-              )
-          ) {
-            return false;
-          }
-
-
-          // ---------------------------------------------------
-          // Employment Type
-          // ---------------------------------------------------
-
-          if (
-            employmentTypeFilter &&
-            job.employmentType !==
-              employmentTypeFilter
-          ) {
-            return false;
-          }
-
-
-          // ---------------------------------------------------
-          // Location
-          // ---------------------------------------------------
-
-          if (
-            locationFilter
-          ) {
-
-            const location =
-              [
-                job.location?.city,
-
-                job.location?.state,
-
-                job.location?.country,
-
-                job.workArrangement,
-
-              ]
-                .filter(Boolean)
-                .join(' ')
-                .toLowerCase();
-
-
-            if (
-              !location.includes(
-                locationFilter
-              )
-            ) {
-              return false;
-            }
-
-          }
-
-
-          // ---------------------------------------------------
-          // Status
-          // ---------------------------------------------------
-
-          if (
-            statusFilter &&
-            job.status !==
-              statusFilter
-          ) {
-            return false;
-          }
-
-
-          // ---------------------------------------------------
-          // Featured
-          // ---------------------------------------------------
-
-          if (
-            featuredFilter ===
-            'featured' &&
-            !job.featured
-          ) {
-            return false;
-          }
-
-
-          if (
-            featuredFilter ===
-            'not-featured' &&
-            job.featured
-          ) {
-            return false;
-          }
-
-
-          return true;
-
+        if (!searchableText.includes(search)) {
+          return false;
         }
-      );
+      }
 
+      // ---------------------------------------------------
+      // Job Column
+      // ---------------------------------------------------
+
+      if (jobFilter && !job.title.toLowerCase().includes(jobFilter)) {
+        return false;
+      }
+
+      // ---------------------------------------------------
+      // Organization Column
+      // ---------------------------------------------------
+
+      if (organizationFilter && !job.organizationName.toLowerCase().includes(organizationFilter)) {
+        return false;
+      }
+
+      // ---------------------------------------------------
+      // Employment Type
+      // ---------------------------------------------------
+
+      if (employmentTypeFilter && job.employmentType !== employmentTypeFilter) {
+        return false;
+      }
+
+      // ---------------------------------------------------
+      // Location
+      // ---------------------------------------------------
+
+      if (locationFilter) {
+        const location = [
+          job.location?.city,
+
+          job.location?.state,
+
+          job.location?.country,
+
+          job.workArrangement,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        if (!location.includes(locationFilter)) {
+          return false;
+        }
+      }
+
+      // ---------------------------------------------------
+      // Status
+      // ---------------------------------------------------
+
+      if (statusFilter && job.status !== statusFilter) {
+        return false;
+      }
+
+      // ---------------------------------------------------
+      // Featured
+      // ---------------------------------------------------
+
+      if (featuredFilter === 'featured' && !job.featured) {
+        return false;
+      }
+
+      if (featuredFilter === 'not-featured' && job.featured) {
+        return false;
+      }
+
+      return true;
     });
-
+  });
 
   // =========================================================
   // Lifecycle
   // =========================================================
 
   ngOnInit(): void {
-
     void this.loadJobs();
-
   }
-
 
   // =========================================================
   // Load Jobs
   // =========================================================
 
-  protected async loadJobs(): Promise<void> {
+ protected async loadJobs(): Promise<void> {
+  await this.jobStore.loadJobs();
 
-    this.loading.set(true);
-
-    this.error.set('');
-
-
-    try {
-
-      const jobs =
-        await this.jobService.getJobs();
-
-      this.jobs.set(jobs);
-
-    } catch (error) {
-
-      console.error(
-        'Failed to load jobs:',
-        error
-      );
-
-      this.error.set(
-        'Unable to load jobs. Please try again.'
-      );
-
-      this.toast.error(
-        'Unable to load jobs. Please try again.'
-      );
-
-    } finally {
-
-      this.loading.set(false);
-
-    }
-
+  if (this.jobStore.error()) {
+    this.toast.error(
+      this.jobStore.error() ??
+        'Unable to load jobs. Please try again.',
+    );
   }
-
+}
 
   // =========================================================
   // Search
   // =========================================================
 
-  protected setSearchTerm(
-    value: string
-  ): void {
-
-    this.searchTerm.set(
-      value
-    );
-
+  protected setSearchTerm(value: string): void {
+    this.searchTerm.set(value);
   }
-
 
   protected clearSearch(): void {
-
     this.searchTerm.set('');
-
   }
-
 
   // =========================================================
   // Filters
   // =========================================================
 
-  protected setJobFilter(
-    value: string
-  ): void {
-
-    this.jobFilter.set(
-      value
-    );
-
+  protected setJobFilter(value: string): void {
+    this.jobFilter.set(value);
   }
 
-
-  protected setOrganizationFilter(
-    value: string
-  ): void {
-
-    this.organizationFilter.set(
-      value
-    );
-
+  protected setOrganizationFilter(value: string): void {
+    this.organizationFilter.set(value);
   }
 
-
-  protected setEmploymentTypeFilter(
-    value: string
-  ): void {
-
-    this.employmentTypeFilter.set(
-      value
-    );
-
+  protected setEmploymentTypeFilter(value: string): void {
+    this.employmentTypeFilter.set(value);
   }
 
-
-  protected setLocationFilter(
-    value: string
-  ): void {
-
-    this.locationFilter.set(
-      value
-    );
-
+  protected setLocationFilter(value: string): void {
+    this.locationFilter.set(value);
   }
 
-
-  protected setStatusFilter(
-    value: string
-  ): void {
-
-    this.statusFilter.set(
-      value
-    );
-
+  protected setStatusFilter(value: string): void {
+    this.statusFilter.set(value);
   }
 
-
-  protected setFeaturedFilter(
-    value: string
-  ): void {
-
-    this.featuredFilter.set(
-      value
-    );
-
+  protected setFeaturedFilter(value: string): void {
+    this.featuredFilter.set(value);
   }
-
 
   // =========================================================
   // Clear Filters
   // =========================================================
 
   protected clearFilters(): void {
-
     this.searchTerm.set('');
 
     this.jobFilter.set('');
@@ -2405,230 +1779,114 @@ export class JobAdminComponent
     this.statusFilter.set('');
 
     this.featuredFilter.set('');
-
   }
-
 
   // =========================================================
   // Active Filters
   // =========================================================
 
   protected hasActiveFilters(): boolean {
-
     return Boolean(
-
       this.searchTerm().trim() ||
-
       this.jobFilter().trim() ||
-
       this.organizationFilter().trim() ||
-
       this.employmentTypeFilter().trim() ||
-
       this.locationFilter().trim() ||
-
       this.statusFilter().trim() ||
-
-      this.featuredFilter().trim()
-
+      this.featuredFilter().trim(),
     );
-
   }
-
 
   // =========================================================
   // Delete Job
   // =========================================================
 
-  protected async deleteJob(
-    job: Job
-  ): Promise<void> {
-
+  protected async deleteJob(job: Job): Promise<void> {
     if (!job.id) {
-
-      this.toast.error(
-        'Unable to delete this job because its ID is missing.'
-      );
+      this.toast.error('Unable to delete this job because its ID is missing.');
 
       return;
     }
-
 
     /*
      * Confirm destructive action before
      * touching Firestore.
      */
-    const confirmed =
-      window.confirm(
-        `Delete "${job.title}"?\n\nThis action cannot be undone.`
-      );
-
+    const confirmed = window.confirm(`Delete "${job.title}"?\n\nThis action cannot be undone.`);
 
     if (!confirmed) {
-
-      this.toast.info(
-        'Job deletion cancelled.'
-      );
+      this.toast.info('Job deletion cancelled.');
 
       return;
     }
 
-
     try {
-
       /*
        * Inform the administrator that
        * the operation has started.
        */
-      this.toast.info(
-        'Deleting job...'
-      );
+      this.toast.info('Deleting job...');
 
+      await this.jobStore.deleteJob(job.id);
 
-      await this.jobService.deleteJob(
-        job.id
-      );
-
-
-      /*
-       * Remove the deleted job from
-       * the local signal immediately.
-       */
-      this.jobs.update(
-        (jobs) =>
-          jobs.filter(
-            (item) =>
-              item.id !== job.id
-          )
-      );
-
-
-      this.toast.success(
-        'Job deleted successfully.'
-      );
-
+      this.toast.success('Job deleted successfully.');
     } catch (error) {
+      console.error('Failed to delete job:', error);
 
-      console.error(
-        'Failed to delete job:',
-        error
-      );
-
-
-      this.toast.error(
-        'Unable to delete the job. Please try again.'
-      );
-
+      this.toast.error('Unable to delete the job. Please try again.');
     }
-
   }
-
 
   // =========================================================
   // Status Counts
   // =========================================================
 
   protected activeCount(): number {
-
-    return this.jobs().filter(
-      (job) =>
-        job.status === 'active'
-    ).length;
-
+    return this.jobs().filter((job) => job.status === 'active').length;
   }
-
 
   protected draftCount(): number {
-
-    return this.jobs().filter(
-      (job) =>
-        job.status === 'draft'
-    ).length;
-
+    return this.jobs().filter((job) => job.status === 'draft').length;
   }
-
 
   protected closedCount(): number {
-
-    return this.jobs().filter(
-      (job) =>
-        job.status === 'closed'
-    ).length;
-
+    return this.jobs().filter((job) => job.status === 'closed').length;
   }
-
 
   // =========================================================
   // Display Helpers
   // =========================================================
 
-  protected formatEmploymentType(
-    value: Job['employmentType']
-  ): string {
+  protected formatEmploymentType(value: Job['employmentType']): string {
+    const labels: Record<Job['employmentType'], string> = {
+      'full-time': 'Full-time',
 
-    const labels: Record<
-      Job['employmentType'],
-      string
-    > = {
+      'part-time': 'Part-time',
 
-      'full-time':
-        'Full-time',
+      contract: 'Contract',
 
-      'part-time':
-        'Part-time',
+      internship: 'Internship',
 
-      contract:
-        'Contract',
-
-      internship:
-        'Internship',
-
-      temporary:
-        'Temporary',
-
+      temporary: 'Temporary',
     };
 
-
     return labels[value];
-
   }
 
+  protected formatStatus(value: Job['status']): string {
+    const labels: Record<Job['status'], string> = {
+      draft: 'Draft',
 
-  protected formatStatus(
-    value: Job['status']
-  ): string {
+      active: 'Active',
 
-    const labels: Record<
-      Job['status'],
-      string
-    > = {
-
-      draft:
-        'Draft',
-
-      active:
-        'Active',
-
-      closed:
-        'Closed',
-
+      closed: 'Closed',
     };
 
-
     return labels[value];
-
   }
 
-
-  protected statusClasses(
-    value: Job['status']
-  ): string {
-
-    if (
-      value ===
-      'active'
-    ) {
-
+  protected statusClasses(value: Job['status']): string {
+    if (value === 'active') {
       return `
         inline-flex
         rounded-full
@@ -2638,15 +1896,9 @@ export class JobAdminComponent
         font-semibold
         text-green-700
       `;
-
     }
 
-
-    if (
-      value ===
-      'draft'
-    ) {
-
+    if (value === 'draft') {
       return `
         inline-flex
         rounded-full
@@ -2656,9 +1908,7 @@ export class JobAdminComponent
         font-semibold
         text-yellow-700
       `;
-
     }
-
 
     return `
       inline-flex
@@ -2669,131 +1919,61 @@ export class JobAdminComponent
       font-semibold
       text-gray-600
     `;
-
   }
 
+  protected formatLocation(job: Job): string {
+    const city = job.location?.city?.trim();
 
-  protected formatLocation(
-    job: Job
-  ): string {
+    const state = job.location?.state?.trim();
 
-    const city =
-      job.location?.city?.trim();
-
-    const state =
-      job.location?.state?.trim();
-
-
-    if (
-      city &&
-      state
-    ) {
-
+    if (city && state) {
       return `${city}, ${state}`;
-
     }
-
 
     if (city) {
-
       return city;
-
     }
-
 
     if (state) {
-
       return state;
-
     }
 
-
-    if (
-      job.workArrangement ===
-      'remote'
-    ) {
-
+    if (job.workArrangement === 'remote') {
       return 'Remote';
-
     }
-
 
     return 'Not specified';
-
   }
 
-
-  protected truncate(
-    value: string | undefined,
-    maxLength: number
-  ): string {
-
+  protected truncate(value: string | undefined, maxLength: number): string {
     if (!value) {
-
       return '';
-
     }
 
+    const text = value.trim();
 
-    const text =
-      value.trim();
-
-
-    if (
-      text.length <=
-      maxLength
-    ) {
-
+    if (text.length <= maxLength) {
       return text;
-
     }
 
-
-    return (
-      text.substring(
-        0,
-        maxLength
-      ).trimEnd() +
-      '...'
-    );
-
+    return text.substring(0, maxLength).trimEnd() + '...';
   }
-
 
   // =========================================================
   // Sign Out
   // =========================================================
 
   protected async signOut(): Promise<void> {
-
     try {
-
       await this.authService.logout();
 
+      this.toast.success('You have been signed out.');
 
-      this.toast.success(
-        'You have been signed out.'
-      );
-
-
-      await this.router.navigate(
-        ['/login']
-      );
-
+      await this.router.navigate(['/login']);
     } catch (error) {
+      console.error('Failed to sign out:', error);
 
-      console.error(
-        'Failed to sign out:',
-        error
-      );
-
-
-      this.toast.error(
-        'Unable to sign out. Please try again.'
-      );
-
+      this.toast.error('Unable to sign out. Please try again.');
     }
-
   }
-
 }

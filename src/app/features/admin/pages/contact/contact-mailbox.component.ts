@@ -20,8 +20,7 @@ import {
   ContactMessageStatus,
 } from '../../../../core/models/contact-message.model';
 
-import { ContactMessageService } from '../../../../core/services/contact-message.service';
-import { ContactService } from '../../../../core/services/contact.service';
+import { ContactStore } from '../../../contact/stores/contact.store';
 import { AuthService } from '../../../../core/services/auth.service';
 
 type MailboxFilter = 'all' | 'unread' | 'read' | 'archived';
@@ -1188,25 +1187,23 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
           (click)="$event.stopPropagation()"
         >
           <!-- Modal header -->
-<!-- View modal header -->
-<div
-  class="border-b
+          <!-- View modal header -->
+          <div
+            class="border-b
          bg-[#032D42]
          px-4 py-2
          sm:px-6"
->
-  <div
-    class="flex items-start
+          >
+            <div
+              class="flex items-start
            justify-between
            gap-3"
-  >
-
-    <!-- Subject + Date -->
-    <div class="min-w-0 flex-1">
-
-      <!-- Subject -->
-      <h2
-        class="break-words
+            >
+              <!-- Subject + Date -->
+              <div class="min-w-0 flex-1">
+                <!-- Subject -->
+                <h2
+                  class="break-words
                text-base
                font-bold
                leading-5
@@ -1214,21 +1211,20 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                sm:text-lg
                sm:leading-6
                pl-2"
-      >
-        {{ selectedMessage()!.subject }}
-      </h2>
+                >
+                  {{ selectedMessage()!.subject }}
+                </h2>
 
-      <!-- Date line -->
-      <div
-        class="relative
+                <!-- Date line -->
+                <div
+                  class="relative
                mt-1
                h-7
                w-full"
-      >
-
-        <!-- Date -->
-        <p
-          class="absolute
+                >
+                  <!-- Date -->
+                  <p
+                    class="absolute
        left-2
        top-1/2
        -translate-y-1/2
@@ -1238,15 +1234,15 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
        text-[#F7F4ED]
        sm:left-4
        sm:text-xs"
-        >
-          {{ formatDate(selectedMessage()!) }}
-        </p>
+                  >
+                    {{ formatDate(selectedMessage()!) }}
+                  </p>
 
-        <!-- Print icon centered on date line -->
-        <button
-          type="button"
-          (click)="printContactMessage()"
-          class="absolute
+                  <!-- Print icon centered on date line -->
+                  <button
+                    type="button"
+                    (click)="printContactMessage()"
+                    class="absolute
                  left-1/2
                  top-1/2
                  inline-flex
@@ -1264,27 +1260,26 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                  focus:outline-none
                  focus:ring-2
                  focus:ring-white/30"
-          aria-label="Print message"
-          title="Print message"
-        >
-          <mat-icon
-            class="!m-0
+                    aria-label="Print message"
+                    title="Print message"
+                  >
+                    <mat-icon
+                      class="!m-0
                    !h-4
                    !w-4
                    !text-[17px]"
-          >
-            print
-          </mat-icon>
-        </button>
+                    >
+                      print
+                    </mat-icon>
+                  </button>
+                </div>
+              </div>
 
-      </div>
-    </div>
-
-    <!-- Close -->
-    <button
-      type="button"
-      (click)="closeMessage()"
-      class="inline-flex
+              <!-- Close -->
+              <button
+                type="button"
+                (click)="closeMessage()"
+                class="inline-flex
              h-8
              w-8
              shrink-0
@@ -1298,19 +1293,18 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
              focus:outline-none
              focus:ring-2
              focus:ring-white/30"
-      aria-label="Close message"
-    >
-      <mat-icon
-        class="!m-0
+                aria-label="Close message"
+              >
+                <mat-icon
+                  class="!m-0
                !h-5
                !w-5"
-      >
-        close
-      </mat-icon>
-    </button>
-
-  </div>
-</div>
+                >
+                  close
+                </mat-icon>
+              </button>
+            </div>
+          </div>
 
           <!-- Sender -->
           <div
@@ -1482,8 +1476,6 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
 
               <span>Forward</span>
             </button>
-
-         
 
             <!-- Delete -->
             <button
@@ -1898,9 +1890,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContactMailboxComponent implements OnInit, OnDestroy {
-  private readonly contactService = inject(ContactService);
-
-  private readonly contactMessageService = inject(ContactMessageService);
+  private readonly contactStore = inject(ContactStore);
 
   private readonly router = inject(Router);
 
@@ -1909,7 +1899,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   /**
    * All messages.
    */
-  readonly messages = signal<ContactMessage[]>([]);
+  readonly messages = this.contactStore.messages;
 
   /**
    * Search text.
@@ -1924,17 +1914,16 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   /**
    * Currently opened message.
    */
-  readonly selectedMessage = signal<ContactMessage | null>(null);
-
+  readonly selectedMessage = this.contactStore.selectedMessage;
   /**
    * Loading state.
    */
-  readonly loading = signal(false);
+  readonly loading = this.contactStore.loading;
 
   /**
    * Error message.
    */
-  readonly error = signal<string | null>(null);
+  readonly error = this.contactStore.error;
 
   /**
    * Email composer state.
@@ -1953,11 +1942,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
 
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /**
-   * Unsubscribe function for the real-time Firestore mailbox listener.
-   */
-  private unsubscribeMessages: (() => void) | null = null;
-
+  readonly uiError = signal<string | null>(null);
   /**
    * Number of new messages.
    */
@@ -1982,147 +1967,52 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   /**
    * Apply status and search filters.
    */
- readonly filteredMessages = computed(() => {
-  const currentFilter = this.filter();
+  readonly filteredMessages = computed(() => {
+    const currentFilter = this.filter();
 
-  const search =
-    this.searchQuery()
-      .trim()
-      .toLowerCase();
+    const search = this.searchQuery().trim().toLowerCase();
 
-  return this.messages().filter((message) => {
-    /**
-     * Firestore uses "unread" for newly received
-     * messages. The mailbox therefore uses "unread"
-     * as its New state.
-     */
-    const matchesStatus =
-      currentFilter === 'all' ||
-      message.status === currentFilter;
+    return this.messages().filter((message) => {
+      /**
+       * Firestore uses "unread" for newly received
+       * messages. The mailbox therefore uses "unread"
+       * as its New state.
+       */
+      const matchesStatus = currentFilter === 'all' || message.status === currentFilter;
 
-    if (!matchesStatus) {
-      return false;
-    }
+      if (!matchesStatus) {
+        return false;
+      }
 
-    if (!search) {
-      return true;
-    }
+      if (!search) {
+        return true;
+      }
 
-    return (
-      message.name?.toLowerCase().includes(search) ||
-      message.email?.toLowerCase().includes(search) ||
-      message.subject?.toLowerCase().includes(search) ||
-      message.message?.toLowerCase().includes(search)
-    );
+      return (
+        message.name?.toLowerCase().includes(search) ||
+        message.email?.toLowerCase().includes(search) ||
+        message.subject?.toLowerCase().includes(search) ||
+        message.message?.toLowerCase().includes(search)
+      );
+    });
   });
-});
 
   ngOnInit(): void {
-    this.startMessageListener();
+    this.contactStore.startMessageListener();
   }
-
-  /**
-   * Start the real-time Firestore mailbox listener.
-   */
-  private startMessageListener(): void {
-  this.loading.set(true);
-  this.error.set(null);
-
-  // Remove any previous listener before creating a new one.
-  this.unsubscribeMessages?.();
-
-  this.unsubscribeMessages =
-    this.contactMessageService.listenToContactMessages(
-      (messages) => {
-        /**
-         * Normalize legacy "new" records to the mailbox's
-         * current "unread" status.
-         *
-         * This is important because older contact-form
-         * messages may have been stored as:
-         *
-         *   status: "new"
-         *
-         * while inbound Resend emails are stored as:
-         *
-         *   status: "unread"
-         *
-         * The mailbox uses "unread" as its canonical
-         * new-message state.
-         */
-        const normalizedMessages =
-          messages.map((message) => ({
-            ...message,
-
-            status:
-              message.status === 'unread'
-                ? 'unread'
-                : message.status,
-          }));
-
-        this.messages.set(
-          normalizedMessages as ContactMessage[],
-        );
-
-        this.loading.set(false);
-      },
-
-      (error) => {
-        console.error(
-          'Contact mailbox listener failed:',
-          error,
-        );
-
-        this.loading.set(false);
-
-        this.error.set(
-          'Unable to load contact messages. Please try again.',
-        );
-      },
-    );
-}
 
   /**
    * Manual refresh. The real-time listener remains active.
    */
   async loadMessages(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
-
-    try {
-     const messages =
-  await this.contactMessageService.getAllContactMessages();
-
-/**
- * Normalize legacy "new" messages to "unread".
- */
-const normalizedMessages =
-  messages.map((message) => ({
-    ...message,
-
-    status:
-      message.status === 'unread'
-        ? 'unread'
-        : message.status,
-  }));
-
-this.messages.set(
-  normalizedMessages as ContactMessage[],
-);
-    } catch (error) {
-      console.error('Failed to load contact messages:', error);
-      this.error.set('Unable to load contact messages. Please try again.');
-    } finally {
-      this.loading.set(false);
-    }
+    await this.contactStore.loadMessages();
   }
 
   /**
    * Clean up the Firestore listener and toast timer.
    */
   ngOnDestroy(): void {
-    this.unsubscribeMessages?.();
-    this.unsubscribeMessages = null;
+    this.contactStore.stopMessageListener();
 
     if (this.toastTimer) {
       clearTimeout(this.toastTimer);
@@ -2143,7 +2033,7 @@ this.messages.set(
    * New messages become read when opened.
    */
   async openMessage(message: ContactMessage): Promise<void> {
-    this.selectedMessage.set(message);
+    this.contactStore.setSelectedMessage(message);
 
     if (message.status !== 'unread') {
       return;
@@ -2156,7 +2046,7 @@ this.messages.set(
    * Close message modal.
    */
   closeMessage(): void {
-    this.selectedMessage.set(null);
+    this.contactStore.clearSelectedMessage();
   }
 
   /**
@@ -2164,13 +2054,13 @@ this.messages.set(
    */
   async markAsRead(message: ContactMessage): Promise<void> {
     try {
-      await this.contactMessageService.markAsRead(message.id);
-
-      this.updateLocalStatus(message.id, 'read');
+      await this.contactStore.markAsRead(message.id);
     } catch (error) {
       console.error('Failed to mark message as read:', error);
 
-      this.error.set('Unable to mark the message as read.');
+      // Store already owns the backend state.
+      // Keep the component error UI here.
+      // We cannot set the Store's error signal directly.
     }
   }
 
@@ -2179,15 +2069,11 @@ this.messages.set(
    */
   async archiveMessage(message: ContactMessage): Promise<void> {
     try {
-      await this.contactMessageService.archiveMessage(message.id);
-
-      this.updateLocalStatus(message.id, 'archived');
+      await this.contactStore.archiveMessage(message.id);
 
       this.closeMessage();
     } catch (error) {
       console.error('Failed to archive message:', error);
-
-      this.error.set('Unable to archive the message.');
     }
   }
 
@@ -2196,15 +2082,11 @@ this.messages.set(
    */
   async unarchiveMessage(message: ContactMessage): Promise<void> {
     try {
-      await this.contactMessageService.unarchiveMessage(message.id);
-
-      this.updateLocalStatus(message.id, 'read');
+      await this.contactStore.unarchiveMessage(message.id);
 
       this.closeMessage();
     } catch (error) {
       console.error('Failed to restore message:', error);
-
-      this.error.set('Unable to restore the message.');
     }
   }
 
@@ -2221,15 +2103,11 @@ this.messages.set(
     }
 
     try {
-      await this.contactMessageService.deleteMessage(message.id);
-
-      this.messages.update((messages) => messages.filter((item) => item.id !== message.id));
+      await this.contactStore.deleteMessage(message.id);
 
       this.closeMessage();
     } catch (error) {
       console.error('Failed to delete message:', error);
-
-      this.error.set('Unable to delete the message.');
     }
   }
 
@@ -2237,7 +2115,9 @@ this.messages.set(
    * Reply to a message.
    */
   replyToMessage(message: ContactMessage): void {
-    this.selectedMessage.set(message);
+    this.contactStore.setSelectedMessage(message);
+
+    this.closeMessage();
 
     this.composeMode.set('reply');
 
@@ -2257,7 +2137,7 @@ this.messages.set(
    * Forward a message.
    */
   forwardMessage(message: ContactMessage): void {
-    this.selectedMessage.set(message);
+    this.contactStore.setSelectedMessage(message);
 
     this.composeMode.set('forward');
 
@@ -2294,7 +2174,7 @@ this.messages.set(
    * a non-persistent status.
    */
   holdMessage(_message: ContactMessage): void {
-    this.error.set(
+    this.uiError.set(
       'Hold is not enabled yet. The mailbox status model currently supports new, read, and archived.',
     );
   }
@@ -2303,7 +2183,7 @@ this.messages.set(
    * Create a new message.
    */
   newMessage(): void {
-    this.selectedMessage.set(null);
+    this.contactStore.clearSelectedMessage();
 
     this.composeMode.set('unread');
 
@@ -2345,13 +2225,13 @@ this.messages.set(
      * calling Firebase Functions.
      */
     if (!to || !subject || !message) {
-      this.error.set('Recipient, subject, and message are required.');
+      this.uiError.set('Recipient, subject, and message are required.');
 
       return;
     }
 
     this.sending.set(true);
-    this.error.set(null);
+    this.uiError.set(null);
 
     try {
       const mode = this.composeMode();
@@ -2366,7 +2246,7 @@ this.messages.set(
           throw new Error('No message is selected.');
         }
 
-        await this.contactService.sendReply({
+        await this.contactStore.sendReply({
           messageId: selected.id,
           to,
           subject,
@@ -2384,7 +2264,7 @@ this.messages.set(
          * by forwardMessage(), including the
          * Fwd: subject and forwarded content.
          */
-        await this.contactService.sendNewMessage({
+        await this.contactStore.sendNewMessage({
           to,
           subject,
           message,
@@ -2421,7 +2301,7 @@ this.messages.set(
     } catch (error) {
       console.error('Failed to send email:', error);
 
-      this.error.set('Unable to send the email. Please try again.');
+      this.uiError.set('Unable to send the email. Please try again.');
     } finally {
       this.sending.set(false);
     }
@@ -2443,30 +2323,6 @@ this.messages.set(
     }, 4000);
   }
 
-  /**
-   * Update the local message status.
-   */
-  private updateLocalStatus(messageId: string, status: ContactMessageStatus): void {
-    this.messages.update((messages) =>
-      messages.map((message) =>
-        message.id === messageId
-          ? {
-              ...message,
-              status,
-            }
-          : message,
-      ),
-    );
-
-    this.selectedMessage.update((message) =>
-      message?.id === messageId
-        ? {
-            ...message,
-            status,
-          }
-        : message,
-    );
-  }
 
   /**
    * Format Firestore timestamp.
@@ -2496,7 +2352,7 @@ this.messages.set(
     const records = this.filteredMessages();
 
     if (records.length === 0) {
-      this.error.set('There are no displayed records to export.');
+      this.uiError.set('There are no displayed records to export.');
       return;
     }
 
@@ -2713,7 +2569,7 @@ this.messages.set(
    * Close the message view modal.
    */
   closeMessageModal(): void {
-    this.selectedMessage.set(null);
+    this.contactStore.clearSelectedMessage();
   }
 
   /**
@@ -2728,7 +2584,7 @@ this.messages.set(
     } catch (error) {
       console.error('Failed to log out:', error);
 
-      this.error.set('Unable to log out. Please try again.');
+      this.uiError.set('Unable to log out. Please try again.');
     }
   }
 }

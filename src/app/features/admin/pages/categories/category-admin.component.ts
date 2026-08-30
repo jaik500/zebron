@@ -6,8 +6,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
 import { DeleteConfirmationComponent } from '../../../../shared/components/delete-confirmation/delete-confirmation';
 
 import { Category } from '../../../../core/models/category.model';
-import { CategoryService } from '../../../../core/services/category.service';
-import { Resource } from '../../../../core/models/resource.model';
+import { CategoryStore } from '../../../categories/stores/category.store';
 import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-category-admin',
@@ -552,10 +551,12 @@ import { MatIconModule } from '@angular/material/icon';
   `,
 })
 export class CategoryAdminComponent implements OnInit {
-  private readonly categoryService = inject(CategoryService);
+  private readonly categoryStore =
+  inject(CategoryStore);
   private readonly toast = inject(HotToastService);
 
-  protected readonly categories = signal<Category[]>([]);
+  protected readonly categories =
+  this.categoryStore.categories;
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -591,24 +592,28 @@ export class CategoryAdminComponent implements OnInit {
     this.loadCategories();
   }
 
-  /**
-   * Load all categories for the admin directory.
-   */
-  private async loadCategories(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
+ /**
+ * Load all categories and initialize the next
+ * sort order when creating a new category.
+ */
+private async loadCategories(): Promise<void> {
+  this.loading.set(true);
+  this.error.set(null);
 
-    try {
-      const categories = await this.categoryService.getAllCategories();
+  try {
+    await this.categoryStore.loadCategories();
 
-      this.categories.set(categories);
-
-      // Automatically populate the next sort order
-      // for a new category. Editing an existing category
-      // keeps its current sort order.
-      if (!this.editingId()) {
-        this.form.sortOrder = this.getNextSortOrder();
-      }
+    /*
+     * Automatically assign the next sort order
+     * for a new category.
+     *
+     * When editing an existing category, preserve
+     * its current sort order.
+     */
+    if (!this.editingId()) {
+      this.form.sortOrder =
+        this.getNextSortOrder();
+    }
     } catch (error) {
       console.error('Failed to load categories:', error);
 
@@ -716,11 +721,11 @@ export class CategoryAdminComponent implements OnInit {
       const editingId = this.editingId();
 
       if (editingId) {
-        await this.categoryService.updateCategory(editingId, category);
+        await this.categoryStore.updateCategory(editingId, category);
 
         this.toast.success('Category updated successfully.');
       } else {
-        await this.categoryService.createCategory(category);
+        await this.categoryStore.createCategory(category);
 
         this.toast.success('Category created successfully.');
       }
@@ -831,7 +836,7 @@ export class CategoryAdminComponent implements OnInit {
     this.error.set(null);
 
     try {
-      await this.categoryService.deleteCategory(category.id);
+      await this.categoryStore.deleteCategory(category.id);
 
       this.toast.success('Category deleted successfully.');
 

@@ -687,13 +687,18 @@ protected toggleRelatedResourceDetails(): void {
   });
 }
 
- private async loadResource(): Promise<void> {
+private async loadResource(): Promise<void> {
 
   const slug = this.slug();
 
   if (!slug) {
     return;
   }
+
+  // Clear lookup data from the previous resource
+  // while the new resource is loading.
+  this.category.set(null);
+  this.location.set(null);
 
   const resource =
     await this.resourceStore.loadResourceBySlug(
@@ -704,9 +709,77 @@ protected toggleRelatedResourceDetails(): void {
     return;
   }
 
-  await this.loadRelatedResources(
-    resource,
-  );
+  await Promise.all([
+    this.loadCategory(
+      resource.categoryId,
+    ),
+
+    this.loadLocation(
+      resource.locationId,
+    ),
+
+    this.loadRelatedResources(
+      resource,
+    ),
+  ]);
+}
+
+private async loadCategory(
+  categoryId?: string,
+): Promise<void> {
+
+  if (!categoryId) {
+    this.category.set(null);
+    return;
+  }
+
+  try {
+
+    const category =
+      await this.categoryService.getCategoryById(
+        categoryId,
+      );
+
+    this.category.set(category);
+
+  } catch (error) {
+
+    console.error(
+      'Failed to load resource category:',
+      error,
+    );
+
+    this.category.set(null);
+  }
+}
+
+private async loadLocation(
+  locationId?: string,
+): Promise<void> {
+
+  if (!locationId) {
+    this.location.set(null);
+    return;
+  }
+
+  try {
+
+    const location =
+      await this.locationService.getLocationById(
+        locationId,
+      );
+
+    this.location.set(location);
+
+  } catch (error) {
+
+    console.error(
+      'Failed to load resource location:',
+      error,
+    );
+
+    this.location.set(null);
+  }
 }
 
   private async loadRelatedResources(

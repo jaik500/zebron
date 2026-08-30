@@ -390,6 +390,112 @@ export const OrganizationStore = signalStore(
 
       },
 
+            // ======================================================
+      // GET ORGANIZATION BY ID
+      // ======================================================
+
+      /**
+       * Get an organization by its Firestore document ID.
+       *
+       * This method returns the organization directly for
+       * consumers such as Job Form that need the record
+       * immediately without changing selectedOrganization.
+       */
+      async getOrganizationById(
+        id: string,
+      ): Promise<Organization | null> {
+
+        try {
+
+          return await organizationService
+            .getOrganizationById(id);
+
+        } catch (error) {
+
+          console.error(
+            'Failed to get organization:',
+            error,
+          );
+
+          throw error;
+
+        }
+
+      },
+
+
+      // ======================================================
+      // FIND BY COMPANY NUMBER
+      // ======================================================
+
+      /**
+       * Find an organization by company or registration number.
+       *
+       * This is used by Job Form to determine whether an
+       * organization already exists before creating or
+       * updating the organization relationship.
+       */
+      async findOrganizationByCompanyNumber(
+        companyNumber: string,
+      ): Promise<Organization | null> {
+
+        try {
+
+          return await organizationService
+            .findOrganizationByCompanyNumber(
+              companyNumber,
+            );
+
+        } catch (error) {
+
+          console.error(
+            'Failed to find organization by company number:',
+            error,
+          );
+
+          throw error;
+
+        }
+
+      },
+
+            // ======================================================
+      // FIND OR CREATE ORGANIZATION
+      // ======================================================
+
+      /**
+       * Find an existing organization by company number,
+       * or create a new organization when no match exists.
+       *
+       * This method is used by Job Form when creating
+       * a job and establishing its organization relationship.
+       */
+      async findOrCreateOrganization(
+        name: string,
+        companyNumber?: string,
+      ): Promise<Organization> {
+
+        try {
+
+          return await organizationService
+            .findOrCreateOrganization(
+              name,
+              companyNumber,
+            );
+
+        } catch (error) {
+
+          console.error(
+            'Failed to find or create organization:',
+            error,
+          );
+
+          throw error;
+
+        }
+
+      },
+
 
       // ======================================================
       // CREATE

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { Location } from '../../../../core/models/location.model';
-import { LocationService } from '../../../../core/services/location.service';
+import { LocationStore } from '../../../locations/stores/location.store';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 import { MatDividerModule } from '@angular/material/divider';
@@ -1157,13 +1157,15 @@ import { MatMenuModule } from '@angular/material/menu';
   `,
 })
 export class LocationAdminComponent implements OnInit {
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore =
+  inject(LocationStore);
 
   private readonly authService = inject(AuthService);
 
   private readonly toast = inject(HotToastService);
 
-  protected readonly locations = signal<Location[]>([]);
+  protected readonly locations =
+  this.locationStore.locations;
 
   protected readonly loading = signal(false);
 
@@ -1257,9 +1259,8 @@ export class LocationAdminComponent implements OnInit {
     this.loading.set(true);
 
     try {
-      const locations = await this.locationService.getAllLocations();
+      await this.locationStore.loadLocations();
 
-      this.locations.set(locations);
     } catch (error) {
       console.error('Failed to load locations:', error);
 
@@ -1376,11 +1377,11 @@ export class LocationAdminComponent implements OnInit {
 
     try {
       if (editingId) {
-        await this.locationService.updateLocation(editingId, location);
+        await this.locationStore.updateLocation(editingId, location);
 
         this.toast.success('Location updated successfully.');
       } else {
-        await this.locationService.createLocation(location);
+        await this.locationStore.createLocation(location);
 
         this.toast.success('Location created successfully.');
       }
@@ -1453,7 +1454,7 @@ export class LocationAdminComponent implements OnInit {
     }
 
     try {
-      await this.locationService.deleteLocation(location.id);
+      await this.locationStore.deleteLocation(location.id);
 
       if (this.editingId() === location.id) {
         this.clearForm();

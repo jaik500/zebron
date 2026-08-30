@@ -7,14 +7,14 @@ import { ResourceType } from '../../../../core/models/resource-type.model';
 import { Category } from '../../../../core/models/category.model';
 import { Location } from '../../../../core/models/location.model';
 
-import { ResourceService } from '../../../../core/services/resource.service';
-import { CategoryService } from '../../../../core/services/category.service';
+import { ResourceStore } from '../../../resources/stores/resource.store';
+import { CategoryStore } from '../../../categories/stores/category.store';
+import { LocationStore } from '../../../locations/stores/location.store';
+import { ResourceTypeStore } from '../../../resource-types/stores/resource-type.store';
 import { AuthService } from '../../../../core/services/auth.service';
 import { HotToastService } from '@ngxpert/hot-toast';
 
 import { DeleteConfirmationComponent } from '../../../../shared/components/delete-confirmation/delete-confirmation';
-import { LocationService } from '../../../../core/services/location.service';
-import { ResourceTypeService } from '../../../../core/services/resource-type.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatMenuModule } from '@angular/material/menu';
@@ -1271,16 +1271,18 @@ import { MatMenuModule } from '@angular/material/menu';
   `,
 })
 export class ResourceAdminComponent implements OnInit {
-  private readonly resourceService = inject(ResourceService);
-  private readonly categoryService = inject(CategoryService);
-  private readonly locationService = inject(LocationService);
-  private readonly resourceTypeService = inject(ResourceTypeService);
+  private readonly resourceStore = inject(ResourceStore);
+  private readonly categoryStore = inject(CategoryStore);
+  private readonly locationStore = inject(LocationStore);
+  private readonly resourceTypeStore = inject(ResourceTypeStore);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(HotToastService);
 
-  protected readonly resources = signal<Resource[]>([]);
-  protected readonly categories = signal<Category[]>([]);
-  protected readonly locations = signal<Location[]>([]);
+  protected readonly resources = this.resourceStore.resources;
+  protected readonly categories = this.categoryStore.categories;
+  protected readonly locations = this.locationStore.locations;
+ protected readonly resourceTypes =
+  this.resourceTypeStore.activeResourceTypes;
 
   /**
    * Search text used to filter existing resources.
@@ -1370,8 +1372,6 @@ export class ResourceAdminComponent implements OnInit {
     return this.expandedResources().has(resourceId);
   }
 
-  protected readonly resourceTypes = signal<ResourceType[]>([]);
-
   protected readonly resourceStatuses: ResourceStatus[] = [
     'draft',
     'pending',
@@ -1386,9 +1386,6 @@ export class ResourceAdminComponent implements OnInit {
   }
 
   /**
-   * Load resources and categories for the admin page.
-   */
-  /**
    * Load resources, categories, and locations for the admin page.
    */
   private async loadData(): Promise<void> {
@@ -1396,17 +1393,12 @@ export class ResourceAdminComponent implements OnInit {
     this.error.set(null);
 
     try {
-      const [resources, categories, locations, resourceTypes] = await Promise.all([
-        this.resourceService.getAllResources(),
-        this.categoryService.getAllCategories(),
-        this.locationService.getAllLocations(),
-        this.resourceTypeService.getActiveResourceTypes(),
+      await Promise.all([
+        this.resourceStore.loadAllResources(),
+        this.categoryStore.loadCategories(),
+        this.locationStore.loadLocations(),
+        this.resourceTypeStore.loadResourceTypes(),
       ]);
-
-      this.resources.set(resources);
-      this.categories.set(categories);
-      this.locations.set(locations);
-      this.resourceTypes.set(resourceTypes);
     } catch (error) {
       console.error('Failed to load resource admin data:', error);
 
@@ -1608,11 +1600,11 @@ export class ResourceAdminComponent implements OnInit {
 
     try {
       if (editingId) {
-        await this.resourceService.updateResource(editingId, resource);
+        await this.resourceStore.updateResource(editingId, resource);
 
         this.toast.success('Resource updated successfully.');
       } else {
-        await this.resourceService.createResource(resource);
+        await this.resourceStore.createResource(resource);
 
         this.toast.success('Resource created successfully.');
       }
@@ -1774,7 +1766,7 @@ export class ResourceAdminComponent implements OnInit {
     this.error.set(null);
 
     try {
-      await this.resourceService.deleteResource(resource.id);
+      await this.resourceStore.deleteResource(resource.id);
 
       // Clear the form if the deleted resource
       // was currently being edited.

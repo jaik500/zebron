@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { ResourceType } from '../../../../core/models/resource-type.model';
-import { ResourceTypeService } from '../../../../core/services/resource-type.service';
+import { ResourceTypeStore } from '../../../resource-types/stores/resource-type.store';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
@@ -681,11 +681,13 @@ import { HotToastService } from '@ngxpert/hot-toast';
   `,
 })
 export class ResourceTypeAdminComponent implements OnInit {
-  private readonly resourceTypeService = inject(ResourceTypeService);
+  private readonly resourceTypeStore =
+  inject(ResourceTypeStore);
 
   private readonly toast = inject(HotToastService);
 
-  protected readonly resourceTypes = signal<ResourceType[]>([]);
+  protected readonly resourceTypes =
+  this.resourceTypeStore.resourceTypes;
 
   protected readonly loading = signal(false);
 
@@ -720,9 +722,8 @@ export class ResourceTypeAdminComponent implements OnInit {
     this.loading.set(true);
 
     try {
-      const types = await this.resourceTypeService.getAllResourceTypes();
+      await this.resourceTypeStore.loadResourceTypes();
 
-      this.resourceTypes.set(types);
     } catch (error) {
       console.error('Failed to load resource types:', error);
 
@@ -771,11 +772,11 @@ export class ResourceTypeAdminComponent implements OnInit {
       const id = this.editingId();
 
       if (id) {
-        await this.resourceTypeService.updateResourceType(id, resourceType);
+        await this.resourceTypeStore.updateResourceType(id, resourceType);
 
         this.toast.success('Resource type updated successfully.');
       } else {
-        await this.resourceTypeService.createResourceType(resourceType);
+        await this.resourceTypeStore.createResourceType(resourceType);
 
         this.toast.success('Resource type created successfully.');
       }
@@ -833,7 +834,7 @@ export class ResourceTypeAdminComponent implements OnInit {
     }
 
     try {
-      await this.resourceTypeService.deleteResourceType(type.id);
+      await this.resourceTypeStore.deleteResourceType(type.id);
 
       if (this.editingId() === type.id) {
         this.clearForm();

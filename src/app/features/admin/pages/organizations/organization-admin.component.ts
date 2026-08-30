@@ -9,7 +9,7 @@ import { Organization } from '../../../../core/models/organization.model';
 import { OrganizationStore } from '../../../organizations/stores/organization.store';
 
 import { Location } from '../../../../core/models/location.model';
-import { LocationService } from '../../../../core/services/location.service';
+import { LocationStore } from '../../../locations/stores/location.store';
 
 @Component({
   selector: 'app-organization-admin',
@@ -741,7 +741,7 @@ export class OrganizationAdminComponent implements OnInit {
   // Services
   // ===============================================================
 
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
 
   private readonly toast = inject(HotToastService);
 
@@ -1105,7 +1105,7 @@ protected readonly editingId =
           existingOrganization?.locationId
         ) {
 
-          await this.locationService.updateLocation(
+          await this.locationStore.updateLocation(
             existingOrganization.locationId,
             location,
           );
@@ -1117,7 +1117,7 @@ protected readonly editingId =
         } else {
 
           const locationId =
-            await this.locationService.createLocation(
+            await this.locationStore.createLocation(
               location,
             );
 
@@ -1134,7 +1134,7 @@ protected readonly editingId =
       } else {
 
         const locationId =
-          await this.locationService.createLocation(
+          await this.locationStore.createLocation(
             location,
           );
 
@@ -1250,7 +1250,7 @@ protected readonly editingId =
 
     if (organization.locationId) {
       try {
-        const location = await this.locationService.getLocationById(organization.locationId);
+        const location = await this.locationStore.getLocation(organization.locationId);
 
         if (location) {
           this.form = {
@@ -1348,7 +1348,7 @@ protected readonly editingId =
 
       // Delete the associated location.
       if (organization.locationId) {
-        await this.locationService.deleteLocation(organization.locationId);
+        await this.locationStore.deleteLocation(organization.locationId);
       }
 
       // If this organization was being edited,

@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { JobStore } from '../../../jobs/stores/job.store';
 
 @Component({
   selector: 'app-job-finder',
@@ -394,6 +395,8 @@ import { Router, RouterLink } from '@angular/router';
 export class JobFinderComponent {
   private readonly router = inject(Router);
 
+  private readonly jobStore = inject(JobStore);
+
   protected readonly step = signal(1);
 
   protected readonly selectedJobType = signal('');
@@ -474,30 +477,76 @@ export class JobFinderComponent {
     return !!this.selectedPreference();
   }
 
-  protected nextStep(): void {
-    if (!this.canContinue()) {
-      return;
-    }
+  protected async nextStep(): Promise<void> {
+  if (!this.canContinue()) {
+    return;
+  }
 
-    if (this.step() < 3) {
-      this.step.update((value) => value + 1);
+  if (this.step() < 3) {
+    this.step.update((value) => value + 1);
+    return;
+  }
 
-      return;
-    }
+  /*
+   * Transfer the Finder criteria into the Job Store.
+   */
 
-    /*
-     * Matching logic will be connected here
-     * in the next step.
-     */
+  this.jobStore.setCategory(
+    this.selectedJobType(),
+  );
 
-    this.router.navigate(['/find/job/results'], {
+  this.jobStore.setLocation(
+    this.location.trim(),
+  );
+
+  /*
+   * Clear the previous preference filters first.
+   *
+   * This prevents a previous search from leaking
+   * into a new search.
+   */
+  this.jobStore.setEmploymentType('');
+
+  this.jobStore.setWorkArrangement('');
+
+  switch (this.selectedPreference()) {
+
+    case 'full-time':
+      this.jobStore.setEmploymentType('full-time');
+      break;
+
+    case 'part-time':
+      this.jobStore.setEmploymentType('part-time');
+      break;
+
+    case 'remote':
+      this.jobStore.setWorkArrangement('remote');
+      break;
+
+    case 'any':
+      break;
+  }
+
+  /*
+   * Load active jobs through the Store.
+   */
+  await this.jobStore.loadActiveJobs();
+
+  /*
+   * Keep the search criteria in the URL so the
+   * results page remains shareable/bookmarkable.
+   */
+  await this.router.navigate(
+    ['/find/job/results'],
+    {
       queryParams: {
         type: this.selectedJobType(),
         location: this.location.trim(),
         preference: this.selectedPreference(),
       },
-    });
-  }
+    },
+  );
+}
 
   //   console.log('Job Finder criteria:', {
   //     jobType: this.selectedJobType(),

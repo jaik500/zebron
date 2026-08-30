@@ -140,6 +140,10 @@ export const JobStore = signalStore(
       // Filtered jobs
       // --------------------------------------------------------
 
+           // --------------------------------------------------------
+      // Filtered jobs
+      // --------------------------------------------------------
+
       const filteredJobs = computed(() => {
 
         const search =
@@ -170,6 +174,71 @@ export const JobStore = signalStore(
           selectedLocation()
             .trim()
             .toLowerCase();
+
+
+        /*
+         * The Job Finder uses short category slugs,
+         * while Job records store human-readable
+         * category names.
+         *
+         * Normalize both representations here so
+         * the Finder and Job data can use different
+         * display formats without breaking matching.
+         */
+        const categoryAliases: Record<string, string[]> = {
+
+          technology: [
+            'technology',
+            'technology & it',
+            'it',
+            'information technology',
+          ],
+
+          healthcare: [
+            'healthcare',
+            'health care',
+            'medical',
+          ],
+
+          business: [
+            'business',
+            'business & finance',
+            'finance',
+          ],
+
+          'skilled-trades': [
+            'skilled trades',
+            'skilled-trade',
+            'trades',
+          ],
+
+          administrative: [
+            'administrative',
+            'administration',
+            'office administration',
+          ],
+
+          'customer-service': [
+            'customer service',
+            'customer support',
+          ],
+        };
+
+
+        /*
+         * Convert the selected Finder category
+         * into the possible category names stored
+         * on Job records.
+         */
+        const categoryMatches =
+          category
+            ? (
+                categoryAliases[category] ?? [category]
+              ).map(
+                (value) =>
+                  value.trim().toLowerCase(),
+              )
+            : [];
 
 
         return activeJobs()
@@ -236,11 +305,41 @@ export const JobStore = signalStore(
               }
 
 
-              return (
+              const jobCategory =
                 job.categoryName
                   ?.trim()
-                  .toLowerCase() ===
-                category
+                  .toLowerCase() ?? '';
+
+
+              /*
+               * First try the explicit aliases.
+               */
+              if (
+                categoryMatches.includes(
+                  jobCategory,
+                )
+              ) {
+                return true;
+              }
+
+
+              /*
+               * Also allow the selected category to
+               * match the beginning of a stored category.
+               *
+               * Example:
+               *
+               * "technology"
+               * matches
+               * "technology & it"
+               */
+              return (
+                jobCategory.startsWith(
+                  category,
+                ) ||
+                category.startsWith(
+                  jobCategory,
+                )
               );
 
             },
@@ -248,7 +347,7 @@ export const JobStore = signalStore(
 
 
           // ----------------------------------------------------
-          // Employment type
+          // Employment Type
           // ----------------------------------------------------
 
           .filter(
@@ -271,7 +370,7 @@ export const JobStore = signalStore(
 
 
           // ----------------------------------------------------
-          // Work arrangement
+          // Work Arrangement
           // ----------------------------------------------------
 
           .filter(
@@ -305,7 +404,7 @@ export const JobStore = signalStore(
               }
 
 
-              const jobLocation = [
+              const jobLocationParts = [
 
                 job.location?.city,
 
@@ -313,16 +412,39 @@ export const JobStore = signalStore(
 
                 job.location?.country,
 
-                job.workArrangement,
-
               ]
                 .filter(Boolean)
-                .join(' ')
-                .toLowerCase();
+                .map(
+                  (value) =>
+                    value!
+                      .trim()
+                      .toLowerCase(),
+                );
 
 
-              return jobLocation.includes(
-                location,
+              /*
+               * A location entered by the user may be:
+               *
+               * Atlanta
+               * Atlanta, GA
+               * GA
+               * Georgia
+               * United States
+               *
+               * Match against the complete location
+               * as well as individual location parts.
+               */
+              const jobLocation =
+                jobLocationParts.join(' ');
+
+
+              return (
+                jobLocation.includes(location) ||
+                jobLocationParts.some(
+                  (part) =>
+                    part.includes(location) ||
+                    location.includes(part),
+                )
               );
 
             },
@@ -772,7 +894,7 @@ export const JobStore = signalStore(
 
 
       // ========================================================
-      // CLEAR SELECTED JOB
+      // CLEAR SELECTED JO dB
       // ========================================================
 
       clearSelectedJob(): void {
@@ -786,7 +908,129 @@ export const JobStore = signalStore(
 
       },
 
+      // DELETE JOB
+      // ========================================================
+// DELETE JOB
+// ========================================================
+
+async deleteJob(
+  id: string,
+): Promise<void> {
+
+  try {
+
+    await jobService.deleteJob(id);
+
+    /*
+     * Remove the deleted job from the Store immediately
+     * so every component using JobStore receives the
+     * updated state.
+     */
+    patchState(
+      store,
+      {
+        jobs: store.jobs().filter(
+          (job) => job.id !== id,
+        ),
+      },
+    );
+
+  } catch (error) {
+
+    console.error(
+      'Failed to delete job:',
+      error,
+    );
+
+    throw error;
+  }
+},
+
+// ========================================================
+// CREATE JOB
+// ========================================================
+
+async createJob(
+  job: Omit<
+    Job,
+    'id' | 'createdAt' | 'updatedAt'
+  >,
+): Promise<string> {
+
+  try {
+
+    const jobId =
+      await jobService.createJob(job);
+
+    return jobId;
+
+  } catch (error) {
+
+    console.error(
+      'Failed to create job:',
+      error,
+    );
+
+    throw error;
+  }
+},
+
+
+// ========================================================
+// UPDATE JOB
+// ========================================================
+
+async updateJob(
+  id: string,
+  changes: Partial<
+    Omit<
+      Job,
+      'id' | 'createdAt' | 'updatedAt'
+    >
+  >,
+): Promise<void> {
+
+  try {
+
+    await jobService.updateJob(
+      id,
+      changes,
+    );
+
+  } catch (error) {
+
+    console.error(
+      'Failed to update job:',
+      error,
+    );
+
+    throw error;
+  }
+},
+
+// ========================================================
+// GET JOB
+// ========================================================
+
+async getJob(
+  id: string,
+): Promise<Job | null> {
+
+  try {
+
+    return await jobService.getJob(id);
+
+  } catch (error) {
+
+    console.error(
+      'Failed to get job:',
+      error,
+    );
+
+    throw error;
+  }
+},
+
     }),
   ),
-
 );

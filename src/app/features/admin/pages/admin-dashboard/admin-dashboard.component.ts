@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
-import { LocationService } from '../../../../core/services/location.service';
+import { LocationStore } from '../../../locations/stores/location.store';
 import { Location } from '../../../../core/models/location.model';
 import { HotToastService } from '@ngxpert/hot-toast';
 
@@ -722,7 +722,7 @@ export class AdminDashboardComponent {
    * Location service used to create
    * resource locations.
    */
-  private readonly locationService = inject(LocationService);
+  private readonly locationStore = inject(LocationStore);
 
   /**
    * Prevent duplicate location submissions.
@@ -824,7 +824,7 @@ export class AdminDashboardComponent {
           : {}),
       };
 
-      await this.locationService.createLocation(location);
+      await this.locationStore.createLocation(location);
 
       this.toast.success('Location created successfully.');
 

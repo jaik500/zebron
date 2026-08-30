@@ -8,18 +8,19 @@ import { Timestamp } from 'firebase/firestore';
 
 import {
   Job,
+  JobCompensation,
+  JobStatus,
   EmploymentType,
   WorkArrangement,
-  JobStatus,
 } from '../../../../../core/models/job.model';
 
 import { Organization } from '../../../../../core/models/organization.model';
 
-import { JobService } from '../../../../../core/services/job.service';
+import { JobStore } from '../../../../jobs/stores/job.store';
 
 import { AuthService } from '../../../../../core/services/auth.service';
 
-import { OrganizationService } from '../../../../../core/services/organization.service';
+import { OrganizationStore } from '../../../../organizations/stores/organization.store';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
@@ -91,6 +92,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
           </div>
 
           <!-- Header Actions -->
+
           <div
             class="flex
                    shrink-0
@@ -252,14 +254,15 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               <div
                 class="border-b
+                       bg-[#66BB6A]/80
+                       rounded-t-xl
                        border-gray-100
                        px-5 py-4
                        sm:px-6"
               >
                 <h2
                   class="text-base
-                         font-semibold
-                         text-[#032D42]"
+                         font-semibold"
                 >
                   Job Details
                 </h2>
@@ -267,7 +270,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 <p
                   class="mt-1
                          text-sm
-                         text-gray-500"
+                         text-[#032D42]"
                 >
                   Provide the basic information about the opportunity.
                 </p>
@@ -845,14 +848,15 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               <div
                 class="border-b
+                bg-[#66BB6A]/80
+                       rounded-t-xl
                        border-gray-100
                        px-5 py-4
                        sm:px-6"
               >
                 <h2
                   class="text-base
-                         font-semibold
-                         text-[#032D42]"
+                         font-semibold"
                 >
                   Employment
                 </h2>
@@ -860,7 +864,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 <p
                   class="mt-1
                          text-sm
-                         text-gray-500"
+                         text-[#032D42]"
                 >
                   Define how and where the job is performed.
                 </p>
@@ -1016,37 +1020,30 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               <div
                 class="border-b
+                bg-[#66BB6A]/80
+                       rounded-t-xl
                        border-gray-100
                        px-5 py-4
                        sm:px-6"
               >
                 <h2
                   class="text-base
-                         font-semibold
-                         text-[#032D42]"
+                         font-semibold"
                 >
                   Location & Compensation
                 </h2>
               </div>
-
               <div
                 class="grid
-                       gap-5
-                       px-5 py-5
-                       sm:grid-cols-2
-                       lg:grid-cols-4
-                       sm:px-6"
+         grid-cols-1
+         py-4 px-6
+         gap-4
+         sm:grid-cols-2
+         lg:grid-cols-[0.5fr_0.5fr_180px_180px_150px]"
               >
+                <!-- City -->
                 <div>
-                  <label
-                    for="city"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    City
-                  </label>
+                  <label for="city" class="block text-sm font-medium text-gray-700"> City </label>
 
                   <input
                     id="city"
@@ -1054,29 +1051,22 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     formControlName="city"
                     placeholder="e.g. Washington"
                     class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+             w-full
+             rounded-lg
+             border
+             border-gray-300
+             px-3 py-2.5
+             text-sm
+             outline-none
+             focus:border-[#007979]
+             focus:ring-2
+             focus:ring-[#007979]/20"
                   />
                 </div>
 
+                <!-- State -->
                 <div>
-                  <label
-                    for="state"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    State
-                  </label>
+                  <label for="state" class="block text-sm font-medium text-gray-700"> State </label>
 
                   <input
                     id="state"
@@ -1084,27 +1074,22 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     formControlName="state"
                     placeholder="e.g. DC"
                     class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+             w-full
+             rounded-lg
+             border
+             border-gray-300
+             px-3 py-2.5
+             text-sm
+             outline-none
+             focus:border-[#007979]
+             focus:ring-2
+             focus:ring-[#007979]/20"
                   />
                 </div>
 
+                <!-- Minimum Salary -->
                 <div>
-                  <label
-                    for="salaryMin"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
+                  <label for="salaryMin" class="block text-sm font-medium text-gray-700">
                     Minimum salary
                   </label>
 
@@ -1115,27 +1100,22 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     formControlName="salaryMin"
                     placeholder="e.g. 60000"
                     class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+             w-full
+             rounded-lg
+             border
+             border-gray-300
+             px-3 py-2.5
+             text-sm
+             outline-none
+             focus:border-[#007979]
+             focus:ring-2
+             focus:ring-[#007979]/20"
                   />
                 </div>
 
+                <!-- Maximum Salary -->
                 <div>
-                  <label
-                    for="salaryMax"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
+                  <label for="salaryMax" class="block text-sm font-medium text-gray-700">
                     Maximum salary
                   </label>
 
@@ -1146,17 +1126,44 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     formControlName="salaryMax"
                     placeholder="e.g. 90000"
                     class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+             w-full
+             rounded-lg
+             border
+             border-gray-300
+             px-3 py-2.5
+             text-sm
+             outline-none
+             focus:border-[#007979]
+             focus:ring-2
+             focus:ring-[#007979]/20"
                   />
+                </div>
+
+                <!-- Pay Period -->
+                <div>
+                  <label for="salaryPeriod" class="block text-sm font-medium text-gray-700">
+                    Pay period
+                  </label>
+
+                  <select
+                    id="salaryPeriod"
+                    formControlName="salaryPeriod"
+                    class="mt-1.5 block
+             w-full
+             rounded-lg
+             border
+             border-gray-300
+             bg-white
+             px-3 py-2.5
+             text-sm
+             outline-none
+             focus:border-[#007979]
+             focus:ring-2
+             focus:ring-[#007979]/20"
+                  >
+                    <option value="year">Yearly</option>
+                    <option value="hour">Hourly</option>
+                  </select>
                 </div>
               </div>
             </section>
@@ -1173,14 +1180,15 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               <div
                 class="border-b
+                bg-[#66BB6A]/80
+                       rounded-t-xl
                        border-gray-100
                        px-5 py-4
                        sm:px-6"
               >
                 <h2
                   class="text-base
-                         font-semibold
-                         text-[#032D42]"
+                         font-semibold"
                 >
                   Skills & Application
                 </h2>
@@ -1342,14 +1350,15 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               <div
                 class="border-b
+                bg-[#66BB6A]/80
+                       rounded-t-xl
                        border-gray-100
                        px-5 py-4
                        sm:px-6"
               >
                 <h2
                   class="text-base
-                         font-semibold
-                         text-[#032D42]"
+                         font-semibold"
                 >
                   Publishing
                 </h2>
@@ -1531,11 +1540,13 @@ export class JobFormComponent implements OnInit {
 
   private readonly route = inject(ActivatedRoute);
 
-  private readonly jobService = inject(JobService);
+ private readonly jobStore =
+  inject(JobStore);
 
   private readonly authService = inject(AuthService);
 
-  private readonly organizationService = inject(OrganizationService);
+  private readonly organizationStore =
+  inject(OrganizationStore);
 
   private readonly toast = inject(HotToastService);
 
@@ -1608,6 +1619,8 @@ export class JobFormComponent implements OnInit {
 
     salaryMax: [''],
 
+    salaryPeriod: [''],
+
     skills: [''],
 
     tags: [''],
@@ -1657,7 +1670,7 @@ export class JobFormComponent implements OnInit {
     this.loadError.set('');
 
     try {
-      const job = await this.jobService.getJob(id);
+      const job = await this.jobStore.getJob(id);
 
       if (!job) {
         this.loadError.set('The requested job could not be found.');
@@ -1691,6 +1704,8 @@ export class JobFormComponent implements OnInit {
 
         salaryMax: job.compensation?.max != null ? String(job.compensation.max) : '',
 
+        salaryPeriod: job.compensation?.period ?? 'year',
+
         skills: (job.skills ?? []).join(', '),
 
         tags: (job.tags ?? []).join(', '),
@@ -1708,7 +1723,7 @@ export class JobFormComponent implements OnInit {
        * Load the organization attached to the job.
        */
       if (job.organizationId) {
-        const organization = await this.organizationService.getOrganizationById(job.organizationId);
+        const organization = await this.organizationStore.getOrganizationById(job.organizationId);
 
         if (organization) {
           this.organization.set(organization);
@@ -1772,7 +1787,7 @@ export class JobFormComponent implements OnInit {
 
     try {
       const organization =
-        await this.organizationService.findOrganizationByCompanyNumber(companyNumber);
+        await this.organizationStore.findOrganizationByCompanyNumber(companyNumber);
 
       if (!organization) {
         this.organization.set(null);
@@ -1913,7 +1928,7 @@ export class JobFormComponent implements OnInit {
          * Retrieve the existing job so we preserve
          * organizationId and createdBy.
          */
-        const existingJob = await this.jobService.getJob(id);
+        const existingJob = await this.jobStore.getJob(id);
 
         if (!existingJob) {
           throw new Error('The job being edited no longer exists.');
@@ -1937,7 +1952,7 @@ export class JobFormComponent implements OnInit {
           formValue.companyNumber.trim() !== (this.organization()?.companyNumber ?? '')
         ) {
           const replacementOrganization =
-            await this.organizationService.findOrganizationByCompanyNumber(
+            await this.organizationStore.findOrganizationByCompanyNumber(
               formValue.companyNumber.trim(),
             );
 
@@ -1968,18 +1983,19 @@ export class JobFormComponent implements OnInit {
 
           categoryName: formValue.categoryName || undefined,
 
-         location: {
-          city:
-            formValue.city?.trim() ?? '',
+          location: {
+            city: formValue.city?.trim() ?? '',
 
-          state:
-            formValue.state?.trim() ?? '',
+            state: formValue.state?.trim() ?? '',
 
-          country:
-            'United States',
-        },
+            country: 'United States',
+          },
 
-          compensation: this.buildCompensation(formValue.salaryMin, formValue.salaryMax),
+          compensation: this.buildCompensation(
+            formValue.salaryMin,
+            formValue.salaryMax,
+            formValue.salaryPeriod,
+          ),
 
           skills: this.parseList(formValue.skills),
 
@@ -1999,7 +2015,7 @@ export class JobFormComponent implements OnInit {
         /*
          * Update the job.
          */
-        await this.jobService.updateJob(id, changes);
+        await this.jobStore.updateJob(id, changes);
 
         /*
          * If organization information was explicitly
@@ -2008,7 +2024,7 @@ export class JobFormComponent implements OnInit {
         if (this.organizationEditing() && this.organization()) {
           const organization = this.organization();
 
-          await this.organizationService.updateOrganization(organization!.id, {
+          await this.organizationStore.updateOrganization(organization!.id, {
             name: formValue.companyName.trim(),
 
             companyNumber: formValue.companyNumber.trim(),
@@ -2034,7 +2050,7 @@ export class JobFormComponent implements OnInit {
        * =====================================================
        */
 
-      const organization = await this.organizationService.findOrCreateOrganization(
+      const organization = await this.organizationStore.findOrCreateOrganization(
         formValue.companyName.trim(),
         formValue.companyNumber.trim(),
       );
@@ -2054,18 +2070,19 @@ export class JobFormComponent implements OnInit {
 
         categoryName: formValue.categoryName || undefined,
 
-       location: {
-        city:
-          formValue.city?.trim() ?? '',
+        location: {
+          city: formValue.city?.trim() ?? '',
 
-        state:
-          formValue.state?.trim() ?? '',
+          state: formValue.state?.trim() ?? '',
 
-        country:
-          'United States',
-      },
+          country: 'United States',
+        },
 
-        compensation: this.buildCompensation(formValue.salaryMin, formValue.salaryMax),
+        compensation: this.buildCompensation(
+          formValue.salaryMin,
+          formValue.salaryMax,
+          formValue.salaryPeriod,
+        ),
 
         skills: this.parseList(formValue.skills),
 
@@ -2084,7 +2101,7 @@ export class JobFormComponent implements OnInit {
         createdBy: firebaseUser.uid,
       };
 
-      const jobId = await this.jobService.createJob(job);
+      const jobId = await this.jobStore.createJob(job);
 
       // console.log(
       //   'Job created successfully:',
@@ -2111,30 +2128,77 @@ export class JobFormComponent implements OnInit {
   // Compensation
   // =========================================================
 
-  private buildCompensation(salaryMin: string, salaryMax: string): Job['compensation'] {
-    const min = salaryMin.trim() ? Number(salaryMin) : undefined;
+  private buildCompensation(
+    salaryMin: string | number | null | undefined,
+    salaryMax: string | number | null | undefined,
+    salaryPeriod: string | null | undefined,
+  ): JobCompensation | undefined {
+    /*
+     * Form controls can return strings or numbers.
+     * Normalize both values before validation.
+     */
 
-    const max = salaryMax.trim() ? Number(salaryMax) : undefined;
+    const minText = salaryMin === null || salaryMin === undefined ? '' : String(salaryMin).trim();
+
+    const maxText = salaryMax === null || salaryMax === undefined ? '' : String(salaryMax).trim();
+
+    const minValue = minText !== '' ? Number(minText) : undefined;
+
+    const maxValue = maxText !== '' ? Number(maxText) : undefined;
 
     /*
-     * Avoid undefined properties being sent to
-     * Firestore.
+     * No compensation information was provided.
      */
-    if (min === undefined && max === undefined) {
-      return {
-        currency: 'USD',
-        period: 'year',
-      };
+    if (minValue === undefined && maxValue === undefined) {
+      return undefined;
     }
 
+    /*
+     * Validate salary values.
+     */
+    if (
+      (minValue !== undefined && !Number.isFinite(minValue)) ||
+      (maxValue !== undefined && !Number.isFinite(maxValue))
+    ) {
+      throw new Error('Salary amounts must be valid numbers.');
+    }
+
+    /*
+     * Prevent negative salary values.
+     */
+    if ((minValue !== undefined && minValue < 0) || (maxValue !== undefined && maxValue < 0)) {
+      throw new Error('Salary amounts cannot be negative.');
+    }
+
+    /*
+     * Make sure maximum is not less than minimum.
+     */
+    if (minValue !== undefined && maxValue !== undefined && maxValue < minValue) {
+      throw new Error('Maximum salary cannot be less than minimum salary.');
+    }
+
+    /*
+     * Normalize the selected pay period.
+     */
+    const period = salaryPeriod === 'hour' || salaryPeriod === 'year' ? salaryPeriod : 'year';
+
+    /*
+     * Build the compensation object.
+     */
     return {
-      ...(min !== undefined ? { min } : {}),
+      ...(minValue !== undefined
+        ? {
+            min: minValue,
+          }
+        : {}),
 
-      ...(max !== undefined ? { max } : {}),
+      ...(maxValue !== undefined
+        ? {
+            max: maxValue,
+          }
+        : {}),
 
-      currency: 'USD',
-
-      period: 'year',
+      period,
     };
   }
 

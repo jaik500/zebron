@@ -8,7 +8,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
 
 import { ResourceSubmission, SubmissionStatus } from '../../../../core/models/submission.model';
 
-import { SubmissionService } from '../../../../core/services/submission.service';
+import { SubmissionStore } from '../../../submissions/stores/submission.store';
 
 @Component({
   selector: 'app-submission-admin',
@@ -666,11 +666,13 @@ import { SubmissionService } from '../../../../core/services/submission.service'
   `,
 })
 export class SubmissionAdminComponent implements OnInit {
-  private readonly submissionService = inject(SubmissionService);
+  private readonly submissionStore =
+  inject(SubmissionStore);
 
   private readonly toast = inject(HotToastService);
 
-  readonly submissions = signal<ResourceSubmission[]>([]);
+  readonly submissions =
+  this.submissionStore.submissions;
 
   readonly loading = signal(false);
 
@@ -727,9 +729,8 @@ export class SubmissionAdminComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      const submissions = await this.submissionService.getSubmissions();
+      await this.submissionStore.loadSubmissions();
 
-      this.submissions.set(submissions);
     } catch (error) {
       console.error('Failed to load submissions:', error);
 
@@ -764,7 +765,7 @@ export class SubmissionAdminComponent implements OnInit {
         throw new Error('No authenticated administrator found.');
       }
 
-      await this.submissionService.updateSubmissionStatus(submission.id, 'approved', reviewerId);
+      await this.submissionStore.updateSubmissionStatus(submission.id, 'approved', reviewerId);
 
       this.toast.success('Submission approved successfully.');
 
@@ -801,7 +802,7 @@ export class SubmissionAdminComponent implements OnInit {
         throw new Error('No authenticated administrator found.');
       }
 
-      await this.submissionService.updateSubmissionStatus(submission.id, 'rejected', reviewerId);
+      await this.submissionStore.updateSubmissionStatus(submission.id, 'rejected', reviewerId);
 
       this.toast.success('Submission rejected successfully.');
 
@@ -832,7 +833,7 @@ export class SubmissionAdminComponent implements OnInit {
     this.processingId.set(submission.id);
 
     try {
-      await this.submissionService.deleteSubmission(submission.id);
+      await this.submissionStore.deleteSubmission(submission.id);
 
       this.toast.success('Submission deleted successfully.');
 

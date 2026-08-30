@@ -5,16 +5,16 @@ import { Router, RouterLink } from '@angular/router';
 import { HotToastService } from '@ngxpert/hot-toast';
 
 import { User } from '../../../../core/models/user.model';
-import { UserAdminService } from '../../../../core/services/user-admin.service';
-import { MatIcon } from '@angular/material/icon';
+import { UserStore } from '../../../users/stores/user.store';
 import { AuthService } from '../../../../core/services/auth.service';
 import { MatMenuModule } from "@angular/material/menu";
 import { MatDividerModule } from "@angular/material/divider";
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-user-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatIcon, MatMenuModule, MatDividerModule],
+  imports: [FormsModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule],
   template: `
  <header class="border-b border-gray-200 bg-[#032D42]">
   <div
@@ -1743,7 +1743,7 @@ export class UserAdminComponent implements OnInit {
   // SERVICES
   // =============================================================
 
-  private readonly userAdminService = inject(UserAdminService);
+  private readonly userStore = inject(UserStore);
 
   private readonly toast = inject(HotToastService);
 
@@ -1766,15 +1766,15 @@ export class UserAdminComponent implements OnInit {
   // USER STATE
   // =============================================================
 
-  protected readonly users = signal<User[]>([]);
+  readonly users = this.userStore.users;
 
-  protected readonly loading = signal(true);
+readonly loading = this.userStore.loading;
 
   protected readonly saving = signal(false);
 
   protected readonly deleting = signal(false);
 
-  protected readonly error = signal<string | null>(null);
+  readonly error = this.userStore.error;
 
   protected readonly resettingUserId = signal<string | null>(null);
 
@@ -1857,26 +1857,17 @@ export class UserAdminComponent implements OnInit {
   // =============================================================
 
   /**
-   * Load all user profiles from Firestore.
-   */
-  private async loadUsers(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
+ * Load all user profiles from the User Store.
+ */
+private async loadUsers(): Promise<void> {
+  try {
+    await this.userStore.loadUsers();
+  } catch (error) {
+    console.error('Failed to load users:', error);
 
-    try {
-      const users = await this.userAdminService.getUsers();
-
-      this.users.set(users);
-    } catch (error) {
-      console.error('Failed to load users:', error);
-
-      this.error.set('Unable to load users. Please try again.');
-
-      this.toast.error('Unable to load users.');
-    } finally {
-      this.loading.set(false);
-    }
+    this.toast.error('Unable to load users.');
   }
+}
 
   // =============================================================
   // SEARCH
@@ -1901,7 +1892,7 @@ export class UserAdminComponent implements OnInit {
 
     this.form = this.createEmptyForm();
 
-    this.error.set(null);
+    this.userStore.clearError();
 
     this.showForm.set(true);
   }
@@ -1951,7 +1942,7 @@ export class UserAdminComponent implements OnInit {
       website: user.website ?? '',
     };
 
-    this.error.set(null);
+    this.userStore.clearError();
 
     this.showForm.set(true);
   }
@@ -2045,7 +2036,7 @@ export class UserAdminComponent implements OnInit {
       // =========================================================
 
       if (!editingUser) {
-        await this.userAdminService.createUser({
+        await this.userStore.createUser({
           email,
 
           password: this.form.password,
@@ -2125,7 +2116,7 @@ export class UserAdminComponent implements OnInit {
         website: this.clean(this.form.website),
       };
 
-      await this.userAdminService.updateUser(editingUser.id, profile);
+      await this.userStore.updateUser(editingUser.id, profile);
 
       this.toast.success('User updated successfully.');
 
@@ -2183,7 +2174,7 @@ export class UserAdminComponent implements OnInit {
     this.deleting.set(true);
 
     try {
-      await this.userAdminService.deleteUser(user.id);
+      await this.userStore.deleteUser(user.id);
 
       this.toast.success('User profile deleted successfully.');
 
@@ -2218,7 +2209,7 @@ export class UserAdminComponent implements OnInit {
     this.resettingUserId.set(user.id);
 
     try {
-      const result = await this.userAdminService.resetUserPassword(user.id);
+      const result = await this.userStore.resetUserPassword(user.id);
 
       console.log('Password reset link generated for:', result.email);
 
