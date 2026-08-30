@@ -7,8 +7,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
-import { QueryDocumentSnapshot } from 'firebase/firestore';
-
 import { Resource } from '../../../../core/models/resource.model';
 import { ResourceType } from '../../../../core/models/resource-type.model';
 
@@ -28,7 +26,8 @@ import { UsefulLinksComponent } from '../../components/useful-links/useful-links
 
 import { HotToastService } from '@ngxpert/hot-toast';
 import { ResourceTypeService } from '../../../../core/services/resource-type.service';
-import { ResourceStore } from '../../stores/resource.store';@Component({
+import { ResourceStore } from '../../stores/resource.store';
+@Component({
   selector: 'app-resource-list',
 
   standalone: true,
@@ -1246,7 +1245,6 @@ export class ResourceListComponent implements OnInit {
   // Services
   // =========================================================
 
-
   private readonly categoryService = inject(CategoryService);
 
   private readonly locationService = inject(LocationService);
@@ -1266,8 +1264,6 @@ export class ResourceListComponent implements OnInit {
   // =========================================================
   // Resource State
   // =========================================================
-
-
 
   protected readonly categories = signal<Category[]>([]);
 
@@ -1294,28 +1290,10 @@ export class ResourceListComponent implements OnInit {
     this.personalizationService.hasPreferences(),
   );
 
-  
-
   /**
    * Prevent duplicate sign-out requests.
    */
   protected readonly signingOut = signal(false);
-
-
-
-  // =========================================================
-  // Filter State
-  // =========================================================
-
-
-
-  protected readonly selectedType = signal<string>('');
-
-  protected readonly selectedCategory = signal('');
-
-  protected readonly onlineOnly = signal(false);
-
-  protected readonly featuredOnly = signal(false);
 
   // =========================================================
   // Mobile Filter Builder State
@@ -1331,14 +1309,6 @@ export class ResourceListComponent implements OnInit {
   // =========================================================
 
   protected readonly showSearch = signal(false);
-
-  // =========================================================
-  // Pagination
-  // =========================================================
-
-  private lastResourceDocument: QueryDocumentSnapshot | undefined;
-
-  
 
 
   /**
@@ -1377,158 +1347,36 @@ export class ResourceListComponent implements OnInit {
   }
 
   // ============================================================
-// RESOURCE STORE
-// ============================================================
+  // RESOURCE STORE
+  // ============================================================
 
-private readonly resourceStore =
-  inject(ResourceStore);
+  private readonly resourceStore = inject(ResourceStore);
 
+  // ============================================================
+  // Resource state
+  // ============================================================
 
-// ============================================================
-// Resource state
-// ============================================================
+  protected readonly resources = this.resourceStore.resources;
 
-protected readonly resources =
-  this.resourceStore.resources;
+  protected readonly loading = this.resourceStore.loading;
 
-protected readonly loading =
-  this.resourceStore.loading;
+  protected readonly error = this.resourceStore.error;
 
-protected readonly error =
-  this.resourceStore.error;
+  protected readonly searchTerm = this.resourceStore.searchTerm;
 
-protected readonly searchTerm =
-  this.resourceStore.searchTerm;
-
-protected readonly loadingMore =
-  signal(false);
+  protected readonly loadingMore = signal(false);
 
   // =========================================================
   // Filtered Resources
   // =========================================================
 
-  protected readonly filteredResources = computed(() => {
-    const search = this.searchTerm().trim().toLowerCase();
-
-    const type = this.selectedType();
-
-    const categoryId = this.selectedCategoryId();
-
-    const preferences = this.personalizationService.preferences();
-
-    const interests = preferences.interests;
-
-    const preferredLocationId = preferences.locationId;
-
-    return this.resources()
-      .filter((resource) => {
-        // =====================================================
-        // Explicit search filter
-        // =====================================================
-
-        const matchesSearch =
-          !search ||
-          resource.name.toLowerCase().includes(search) ||
-          resource.description.toLowerCase().includes(search) ||
-          resource.tags.some((tag) => tag.toLowerCase().includes(search));
-
-        // =====================================================
-        // Explicit Resource Type filter
-        // =====================================================
-
-        const matchesType = !type || resource.resourceType === type;
-
-        // =====================================================
-        // Explicit Category filter
-        // =====================================================
-
-        const matchesCategory = !categoryId || resource.categoryId === categoryId;
-
-        // =====================================================
-        // Explicit Online filter
-        // =====================================================
-
-        const matchesOnline = !this.onlineOnly() || resource.online;
-
-        // =====================================================
-        // Explicit Featured filter
-        // =====================================================
-
-        const matchesFeatured = !this.featuredOnly() || resource.featured;
-
-        return matchesSearch && matchesType && matchesCategory && matchesOnline && matchesFeatured;
-      })
-      .map((resource, index) => {
-        // =====================================================
-        // Personalization Score
-        //
-        // Each matching personalization signal contributes
-        // one point.
-        //
-        // 0 = no personalization match
-        // 1 = one matching signal
-        // 2 = interest + location match
-        // =====================================================
-
-        let score = 0;
-
-        const matchesInterest = interests.includes(resource.categoryId);
-
-        const matchesLocation =
-          !!preferredLocationId && resource.locationId === preferredLocationId;
-
-        if (matchesInterest) {
-          score++;
-        }
-
-        if (matchesLocation) {
-          score++;
-        }
-
-        console.log('[Personalization]', {
-          resource: resource.name,
-          resourceId: resource.id,
-          categoryId: resource.categoryId,
-          locationId: resource.locationId,
-          interests,
-          preferredLocationId,
-          matchesInterest,
-          matchesLocation,
-          score,
-        });
-
-        return {
-          resource,
-          score,
-          index,
-        };
-      })
-      .sort((a, b) => {
-        // Higher personalization score first.
-        if (b.score !== a.score) {
-          return b.score - a.score;
-        }
-
-        // Preserve the original Firestore order
-        // when scores are equal.
-        return a.index - b.index;
-      })
-      .map(({ resource }) => resource);
-  });
+  protected readonly filteredResources = this.resourceStore.filteredResources;
 
   // =========================================================
   // Active Filters
   // =========================================================
 
-  protected readonly hasActiveFilters = computed(() => {
-    return (
-      this.searchTerm().trim() !== '' ||
-      this.selectedType() !== '' ||
-      this.selectedCategory() !== '' ||
-      this.onlineOnly() ||
-      this.featuredOnly()
-    );
-  });
+  protected readonly hasActiveFilters = this.resourceStore.hasActiveFilters;
 
   // =========================================================
   // Initialization
@@ -1554,6 +1402,8 @@ protected readonly loadingMore =
   }
 
   ngOnInit(): void {
+    this.syncPersonalizationToStore();
+
     this.loadResources();
 
     this.loadCategories();
@@ -1566,8 +1416,22 @@ protected readonly loadingMore =
 
     if (category) {
       this.selectedCategory.set(category);
+
+      this.resourceStore.setCategory(this.selectedCategoryId());
     }
   }
+
+  // =========================================================
+  // Filter State
+  // =========================================================
+
+  protected readonly selectedType = this.resourceStore.selectedResourceType;
+
+  protected readonly selectedCategory = signal('');
+
+  protected readonly onlineOnly = this.resourceStore.selectedOnlineOnly;
+
+  protected readonly featuredOnly = this.resourceStore.selectedFeaturedOnly;
 
   // =========================================================
   // Load Categories
@@ -1602,17 +1466,13 @@ protected readonly loadingMore =
   // =========================================================
 
   protected onSearch(event: Event): void {
-  const input =
-    event.target as HTMLInputElement;
+    const input = event.target as HTMLInputElement;
 
-  this.resourceStore.setSearchTerm(
-    input.value,
-  );
-}
+    this.resourceStore.setSearchTerm(input.value);
+  }
 
-// load more resources
-protected readonly hasMoreResources =
-  this.resourceStore.hasMore;
+  // load more resources
+  protected readonly hasMoreResources = this.resourceStore.hasMore;
 
   // =========================================================
   // Toggle Mobile Filter Builder
@@ -1629,7 +1489,7 @@ protected readonly hasMoreResources =
   protected onTypeChange(event: Event): void {
     const select = event.target as HTMLSelectElement;
 
-    this.selectedType.set(select.value);
+    this.resourceStore.setResourceType(select.value);
   }
 
   // =========================================================
@@ -1639,7 +1499,7 @@ protected readonly hasMoreResources =
   protected onOnlineChange(event: Event): void {
     const input = event.target as HTMLInputElement;
 
-    this.onlineOnly.set(input.checked);
+    this.resourceStore.setOnlineOnly(input.checked);
   }
 
   // =========================================================
@@ -1649,7 +1509,7 @@ protected readonly hasMoreResources =
   protected onFeaturedChange(event: Event): void {
     const input = event.target as HTMLInputElement;
 
-    this.featuredOnly.set(input.checked);
+    this.resourceStore.setFeaturedOnly(input.checked);
   }
 
   // =========================================================
@@ -1661,7 +1521,7 @@ protected readonly hasMoreResources =
 
     const category = select.value;
 
-    this.selectedCategory.set(category);
+    this.resourceStore.setCategory(category);
 
     this.router.navigate([], {
       relativeTo: this.route,
@@ -1679,15 +1539,7 @@ protected readonly hasMoreResources =
   // =========================================================
 
   protected clearFilters(): void {
-    this.resourceStore.setSearchTerm('');
-
-    this.selectedType.set('');
-
-    this.selectedCategory.set('');
-
-    this.onlineOnly.set(false);
-
-    this.featuredOnly.set(false);
+    this.resourceStore.clearFilters();
 
     this.router.navigate([], {
       relativeTo: this.route,
@@ -1709,6 +1561,8 @@ protected readonly hasMoreResources =
    */
   protected togglePersonalizationInterest(interestId: string): void {
     this.personalizationService.toggleInterest(interestId);
+
+    this.syncPersonalizationToStore();
   }
 
   /**
@@ -1723,6 +1577,8 @@ protected readonly hasMoreResources =
    */
   protected selectPersonalizationLocation(locationId: string | null): void {
     this.personalizationService.setLocation(locationId);
+
+    this.syncPersonalizationToStore();
   }
 
   /**
@@ -1730,6 +1586,8 @@ protected readonly hasMoreResources =
    */
   protected clearPersonalization(): void {
     this.personalizationService.clear();
+
+    this.syncPersonalizationToStore();
   }
 
   /**
@@ -1755,34 +1613,27 @@ protected readonly hasMoreResources =
   // Load Resources
   // =========================================================
 
- private async loadResources(): Promise<void> {
-  await this.resourceStore.loadPublishedResources(
-    this.resourcePageSize,
-  );
-}
+  private async loadResources(): Promise<void> {
+    await this.resourceStore.loadPublishedResources(this.resourcePageSize);
+  }
 
   // =========================================================
   // Load More Resources
   // =========================================================
 
- protected async loadMoreResources(): Promise<void> {
-  if (
-    this.loadingMore() ||
-    !this.hasMoreResources()
-  ) {
-    return;
-  }
+  protected async loadMoreResources(): Promise<void> {
+    if (this.loadingMore() || !this.hasMoreResources()) {
+      return;
+    }
 
-  this.loadingMore.set(true);
+    this.loadingMore.set(true);
 
-  try {
-    await this.resourceStore.loadNextPublishedPage(
-      this.resourcePageSize,
-    );
-  } finally {
-    this.loadingMore.set(false);
+    try {
+      await this.resourceStore.loadNextPublishedPage(this.resourcePageSize);
+    } finally {
+      this.loadingMore.set(false);
+    }
   }
-}
 
   // =========================================================
   // Select Category
@@ -1810,5 +1661,11 @@ protected readonly hasMoreResources =
     } catch (error) {
       console.error('Failed to load resource types:', error);
     }
+  }
+
+  private syncPersonalizationToStore(): void {
+    const preferences = this.personalizationService.preferences();
+
+    this.resourceStore.setPersonalization(preferences.interests, preferences.locationId ?? '');
   }
 }

@@ -1,12 +1,6 @@
 import { computed, inject } from '@angular/core';
 
-import {
-  patchState,
-  signalStore,
-  withComputed,
-  withMethods,
-  withState,
-} from '@ngrx/signals';
+import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 
 import { QueryDocumentSnapshot } from 'firebase/firestore';
 
@@ -14,13 +8,11 @@ import { Resource } from '../../../core/models/resource.model';
 
 import { ResourceService } from '../../../core/services/resource.service';
 
-
 // ============================================================
 // RESOURCE STATE
 // ============================================================
 
 type ResourceState = {
-
   /**
    * Resources currently held by the store.
    *
@@ -44,8 +36,7 @@ type ResourceState = {
   /**
    * Last Firestore document returned by pagination.
    */
-  lastDocument:
-    QueryDocumentSnapshot | null;
+  lastDocument: QueryDocumentSnapshot | null;
 
   /**
    * Whether another public-resource page is available.
@@ -82,15 +73,18 @@ type ResourceState = {
    */
   selectedLocation: string;
 
-};
+  selectedOnlineOnly: boolean;
+  selectedFeaturedOnly: boolean;
 
+  personalizationInterests: string[];
+  personalizationLocationId: string;
+};
 
 // ============================================================
 // INITIAL STATE
 // ============================================================
 
 const initialState: ResourceState = {
-
   resources: [],
 
   selectedResource: null,
@@ -113,26 +107,29 @@ const initialState: ResourceState = {
 
   selectedLocation: '',
 
-};
+  selectedOnlineOnly: false,
 
+  selectedFeaturedOnly: false,
+
+  personalizationInterests: [],
+
+  personalizationLocationId: '',
+};
 
 // ============================================================
 // RESOURCE STORE
 // ============================================================
 
 export const ResourceStore = signalStore(
-
   {
     providedIn: 'root',
   },
-
 
   // ==========================================================
   // STATE
   // ==========================================================
 
   withState(initialState),
-
 
   // ==========================================================
   // COMPUTED STATE
@@ -145,1002 +142,617 @@ export const ResourceStore = signalStore(
       selectedCategory,
       selectedResourceType,
       selectedLocation,
+      selectedOnlineOnly,
+      selectedFeaturedOnly,
+      personalizationInterests,
+      personalizationLocationId,
     }) => {
+      const filteredResources = computed(() => {
+        const search = searchTerm().trim().toLowerCase();
 
-      // ------------------------------------------------------
-      // Filter resources
-      // ------------------------------------------------------
+        const type = selectedResourceType();
 
-      const filteredResources =
-        computed(() => {
+        const categoryId = selectedCategory();
 
-          const search =
-            searchTerm()
-              .trim()
-              .toLowerCase();
+        const locationId = selectedLocation();
 
-          const category =
-            selectedCategory();
+        const interests = personalizationInterests();
 
-          const resourceType =
-            selectedResourceType();
+        const preferredLocationId = personalizationLocationId();
 
-          const location =
-            selectedLocation();
+        return (
+          resources()
+            // =================================================
+            // Explicit filters
+            // =================================================
 
+            .filter((resource) => {
+              const matchesSearch =
+                !search ||
+                resource.name.toLowerCase().includes(search) ||
+                resource.description.toLowerCase().includes(search) ||
+                resource.tags.some((tag) => tag.toLowerCase().includes(search));
 
-          return resources().filter(
-            (resource) => {
+              const matchesType = !type || resource.resourceType === type;
 
-              // ----------------------------------------------
-              // Category
-              // ----------------------------------------------
+              const matchesCategory = !categoryId || resource.categoryId === categoryId;
 
-              if (
-                category &&
-                resource.categoryId !== category
-              ) {
-                return false;
-              }
+              const matchesLocation = !locationId || resource.locationId === locationId;
 
+              const matchesOnline = !selectedOnlineOnly() || resource.online;
 
-              // ----------------------------------------------
-              // Resource type
-              // ----------------------------------------------
+              const matchesFeatured = !selectedFeaturedOnly() || resource.featured;
 
-              if (
-                resourceType &&
-                resource.resourceType !==
-                  resourceType
-              ) {
-                return false;
-              }
-
-
-              // ----------------------------------------------
-              // Location
-              // ----------------------------------------------
-
-              if (
-                location &&
-                resource.locationId !== location
-              ) {
-                return false;
-              }
-
-
-              // ----------------------------------------------
-              // Search
-              // ----------------------------------------------
-
-              if (!search) {
-                return true;
-              }
-
-
-              const searchableText = [
-
-                resource.name,
-
-                resource.description,
-
-                resource.resourceType,
-
-                resource.categoryId,
-
-                resource.organizationId,
-
-                resource.locationId,
-
-                resource.website,
-
-                resource.phone,
-
-                resource.email,
-
-                ...resource.tags,
-
-              ]
-                .filter(Boolean)
-                .join(' ')
-                .toLowerCase();
-
-
-              return searchableText.includes(
-                search,
+              return (
+                matchesSearch &&
+                matchesType &&
+                matchesCategory &&
+                matchesLocation &&
+                matchesOnline &&
+                matchesFeatured
               );
+            })
 
-            },
-          );
+            // =================================================
+            // Personalization scoring
+            // =================================================
 
-        });
+            .map((resource, index) => {
+              let score = 0;
 
+              const matchesInterest = interests.includes(resource.categoryId);
 
-      // ------------------------------------------------------
-      // Result count
-      // ------------------------------------------------------
+              const matchesLocationPreference =
+                !!preferredLocationId && resource.locationId === preferredLocationId;
 
-      const resultCount =
-        computed(
-          () =>
-            filteredResources().length,
+              if (matchesInterest) {
+                score++;
+              }
+
+              if (matchesLocationPreference) {
+                score++;
+              }
+
+              return {
+                resource,
+                score,
+                index,
+              };
+            })
+
+            // =================================================
+            // Personalization ordering
+            // =================================================
+
+            .sort((a, b) => {
+              if (b.score !== a.score) {
+                return b.score - a.score;
+              }
+
+              return a.index - b.index;
+            })
+
+            // =================================================
+            // Return resources only
+            // =================================================
+
+            .map((item) => item.resource)
         );
+      });
 
+      const resultCount = computed(() => filteredResources().length);
 
-      // ------------------------------------------------------
-      // Active filter state
-      // ------------------------------------------------------
+      const hasActiveFilters = computed(
+        () =>
+          searchTerm().trim() !== '' ||
+          selectedCategory() !== '' ||
+          selectedResourceType() !== '' ||
+          selectedLocation() !== '' ||
+          selectedOnlineOnly() ||
+          selectedFeaturedOnly(),
+      );
 
-      const hasActiveFilters =
-        computed(
-          () =>
-            searchTerm().trim() !== '' ||
-            selectedCategory() !== '' ||
-            selectedResourceType() !== '' ||
-            selectedLocation() !== '',
-        );
+      const featuredResources = computed(() => resources().filter((resource) => resource.featured));
 
+      const publishedResources = computed(() =>
+        resources().filter((resource) => resource.status === 'published'),
+      );
 
-      // ------------------------------------------------------
-      // Featured resources
-      // ------------------------------------------------------
-
-      const featuredResources =
-        computed(() =>
-          resources().filter(
-            (resource) =>
-              resource.featured,
-          ),
-        );
-
-
-      // ------------------------------------------------------
-      // Published resources
-      // ------------------------------------------------------
-
-      const publishedResources =
-        computed(() =>
-          resources().filter(
-            (resource) =>
-              resource.status === 'published',
-          ),
-        );
-
-
-      // ------------------------------------------------------
-      // Verified resources
-      // ------------------------------------------------------
-
-      const verifiedResources =
-        computed(() =>
-          resources().filter(
-            (resource) =>
-              resource.verified,
-          ),
-        );
-
+      const verifiedResources = computed(() => resources().filter((resource) => resource.verified));
 
       return {
-
         filteredResources,
-
         resultCount,
-
         hasActiveFilters,
-
         featuredResources,
-
         publishedResources,
-
         verifiedResources,
-
       };
-
     },
   ),
-
 
   // ==========================================================
   // METHODS
   // ==========================================================
 
-  withMethods(
-    (
-      store,
-      resourceService =
-        inject(ResourceService),
-    ) => ({
+  withMethods((store, resourceService = inject(ResourceService)) => ({
+    // ======================================================
+    // LOAD PUBLISHED RESOURCES
+    // ======================================================
 
-      // ======================================================
-      // LOAD PUBLISHED RESOURCES
-      // ======================================================
+    async loadPublishedResources(pageSize = 12): Promise<void> {
+      patchState(store, {
+        loading: true,
 
-      async loadPublishedResources(
-        pageSize = 12,
-      ): Promise<void> {
+        error: null,
 
-        patchState(
-          store,
-          {
-            loading: true,
+        resources: [],
 
-            error: null,
+        lastDocument: null,
 
-            resources: [],
+        hasMore: false,
+      });
 
-            lastDocument: null,
+      try {
+        const page = await resourceService.getPublishedResourcesPage(pageSize);
 
-            hasMore: false,
-          },
+        patchState(store, {
+          resources: page.resources,
+
+          lastDocument: page.lastDocument,
+
+          hasMore: page.hasMore,
+
+          loading: false,
+
+          error: null,
+        });
+      } catch (error) {
+        console.error('Failed to load published resources:', error);
+
+        patchState(store, {
+          resources: [],
+
+          lastDocument: null,
+
+          hasMore: false,
+
+          loading: false,
+
+          error: 'Unable to load resources. Please try again.',
+        });
+      }
+    },
+
+    // ======================================================
+    // LOAD NEXT PUBLIC PAGE
+    // ======================================================
+
+    async loadNextPublishedPage(pageSize = 12): Promise<void> {
+      if (store.loading() || !store.hasMore() || !store.lastDocument()) {
+        return;
+      }
+
+      patchState(store, {
+        loading: true,
+
+        error: null,
+      });
+
+      try {
+        const page = await resourceService.getPublishedResourcesPage(
+          pageSize,
+
+          store.lastDocument()!,
         );
 
+        patchState(store, (state) => ({
+          resources: [...state.resources, ...page.resources],
 
-        try {
+          lastDocument: page.lastDocument,
 
-          const page =
-            await resourceService
-              .getPublishedResourcesPage(
-                pageSize,
-              );
+          hasMore: page.hasMore,
 
+          loading: false,
 
-          patchState(
-            store,
-            {
-              resources:
-                page.resources,
+          error: null,
+        }));
+      } catch (error) {
+        console.error('Failed to load more resources:', error);
 
-              lastDocument:
-                page.lastDocument,
+        patchState(store, {
+          loading: false,
 
-              hasMore:
-                page.hasMore,
+          error: 'Unable to load more resources. Please try again.',
+        });
+      }
+    },
 
-              loading: false,
+    // ======================================================
+    // LOAD ALL RESOURCES
+    // ======================================================
 
-              error: null,
-            },
-          );
+    async loadAllResources(): Promise<void> {
+      patchState(store, {
+        loading: true,
 
-        } catch (error) {
+        error: null,
+      });
 
-          console.error(
-            'Failed to load published resources:',
-            error,
-          );
+      try {
+        const resources = await resourceService.getAllResources();
 
+        patchState(store, {
+          resources,
 
-          patchState(
-            store,
-            {
-              resources: [],
+          lastDocument: null,
 
-              lastDocument: null,
+          hasMore: false,
 
-              hasMore: false,
+          loading: false,
 
-              loading: false,
+          error: null,
+        });
+      } catch (error) {
+        console.error('Failed to load all resources:', error);
 
-              error:
-                'Unable to load resources. Please try again.',
-            },
-          );
+        patchState(store, {
+          loading: false,
 
-        }
+          error: 'Unable to load resources. Please try again.',
+        });
+      }
+    },
 
-      },
+    // ======================================================
+    // LOAD RESOURCE BY ID
+    // ======================================================
 
+    async loadResourceById(resourceId: string): Promise<Resource | null> {
+      patchState(store, {
+        loading: true,
 
-      // ======================================================
-      // LOAD NEXT PUBLIC PAGE
-      // ======================================================
+        error: null,
 
-      async loadNextPublishedPage(
-        pageSize = 12,
-      ): Promise<void> {
+        selectedResource: null,
 
-        if (
-          store.loading() ||
-          !store.hasMore() ||
-          !store.lastDocument()
-        ) {
-          return;
-        }
+        relatedResources: [],
+      });
 
+      try {
+        const resource = await resourceService.getResourceById(resourceId);
 
-        patchState(
-          store,
-          {
-            loading: true,
-
-            error: null,
-          },
-        );
-
-
-        try {
-
-          const page =
-            await resourceService
-              .getPublishedResourcesPage(
-                pageSize,
-
-                store.lastDocument()!,
-              );
-
-
-          patchState(
-            store,
-            (state) => ({
-              resources: [
-                ...state.resources,
-                ...page.resources,
-              ],
-
-              lastDocument:
-                page.lastDocument,
-
-              hasMore:
-                page.hasMore,
-
-              loading: false,
-
-              error: null,
-            }),
-          );
-
-        } catch (error) {
-
-          console.error(
-            'Failed to load more resources:',
-            error,
-          );
-
-
-          patchState(
-            store,
-            {
-              loading: false,
-
-              error:
-                'Unable to load more resources. Please try again.',
-            },
-          );
-
-        }
-
-      },
-
-
-      // ======================================================
-      // LOAD ALL RESOURCES
-      // ======================================================
-
-      async loadAllResources(): Promise<void> {
-
-        patchState(
-          store,
-          {
-            loading: true,
-
-            error: null,
-          },
-        );
-
-
-        try {
-
-          const resources =
-            await resourceService
-              .getAllResources();
-
-
-          patchState(
-            store,
-            {
-              resources,
-
-              lastDocument: null,
-
-              hasMore: false,
-
-              loading: false,
-
-              error: null,
-            },
-          );
-
-        } catch (error) {
-
-          console.error(
-            'Failed to load all resources:',
-            error,
-          );
-
-
-          patchState(
-            store,
-            {
-              loading: false,
-
-              error:
-                'Unable to load resources. Please try again.',
-            },
-          );
-
-        }
-
-      },
-
-
-      // ======================================================
-      // LOAD RESOURCE BY ID
-      // ======================================================
-
-      async loadResourceById(
-        resourceId: string,
-      ): Promise<Resource | null> {
-
-        patchState(
-          store,
-          {
-            loading: true,
-
-            error: null,
+        if (!resource) {
+          patchState(store, {
+            loading: false,
 
             selectedResource: null,
 
-            relatedResources: [],
-          },
-        );
-
-
-        try {
-
-          const resource =
-            await resourceService
-              .getResourceById(
-                resourceId,
-              );
-
-
-          if (!resource) {
-
-            patchState(
-              store,
-              {
-                loading: false,
-
-                selectedResource: null,
-
-                error:
-                  'Resource not found.',
-              },
-            );
-
-            return null;
-          }
-
-
-          patchState(
-            store,
-            {
-              loading: false,
-
-              selectedResource:
-                resource,
-
-              error: null,
-            },
-          );
-
-
-          return resource;
-
-        } catch (error) {
-
-          console.error(
-            'Failed to load resource:',
-            error,
-          );
-
-
-          patchState(
-            store,
-            {
-              loading: false,
-
-              selectedResource: null,
-
-              error:
-                'Unable to load resource. Please try again.',
-            },
-          );
-
+            error: 'Resource not found.',
+          });
 
           return null;
-
         }
 
-      },
+        patchState(store, {
+          loading: false,
 
+          selectedResource: resource,
 
-      // ======================================================
-      // LOAD RESOURCE BY SLUG
-      // ======================================================
+          error: null,
+        });
 
-      async loadResourceBySlug(
-        slug: string,
-      ): Promise<Resource | null> {
+        return resource;
+      } catch (error) {
+        console.error('Failed to load resource:', error);
 
-        patchState(
-          store,
-          {
-            loading: true,
+        patchState(store, {
+          loading: false,
 
-            error: null,
+          selectedResource: null,
+
+          error: 'Unable to load resource. Please try again.',
+        });
+
+        return null;
+      }
+    },
+
+    // ======================================================
+    // LOAD RESOURCE BY SLUG
+    // ======================================================
+
+    async loadResourceBySlug(slug: string): Promise<Resource | null> {
+      patchState(store, {
+        loading: true,
+
+        error: null,
+
+        selectedResource: null,
+
+        relatedResources: [],
+      });
+
+      try {
+        const resource = await resourceService.getResourceBySlug(slug);
+
+        if (!resource) {
+          patchState(store, {
+            loading: false,
 
             selectedResource: null,
 
-            relatedResources: [],
-          },
-        );
-
-
-        try {
-
-          const resource =
-            await resourceService
-              .getResourceBySlug(
-                slug,
-              );
-
-
-          if (!resource) {
-
-            patchState(
-              store,
-              {
-                loading: false,
-
-                selectedResource: null,
-
-                error:
-                  'Resource not found.',
-              },
-            );
-
-            return null;
-          }
-
-
-          patchState(
-            store,
-            {
-              loading: false,
-
-              selectedResource:
-                resource,
-
-              error: null,
-            },
-          );
-
-
-          return resource;
-
-        } catch (error) {
-
-          console.error(
-            'Failed to load resource by slug:',
-            error,
-          );
-
-
-          patchState(
-            store,
-            {
-              loading: false,
-
-              selectedResource: null,
-
-              error:
-                'Unable to load resource. Please try again.',
-            },
-          );
-
+            error: 'Resource not found.',
+          });
 
           return null;
-
         }
 
-      },
+        patchState(store, {
+          loading: false,
 
+          selectedResource: resource,
 
-      // ======================================================
-      // LOAD RELATED RESOURCES
-      // ======================================================
+          error: null,
+        });
 
-      async loadRelatedResources(
-        categoryId: string,
+        return resource;
+      } catch (error) {
+        console.error('Failed to load resource by slug:', error);
 
-        currentResourceId: string,
+        patchState(store, {
+          loading: false,
 
-        limitCount = 3,
-      ): Promise<void> {
+          selectedResource: null,
 
-        try {
+          error: 'Unable to load resource. Please try again.',
+        });
 
-          const relatedResources =
-            await resourceService
-              .getRelatedResources(
-                categoryId,
+        return null;
+      }
+    },
 
-                currentResourceId,
+    // ======================================================
+    // LOAD RELATED RESOURCES
+    // ======================================================
 
-                limitCount,
-              );
+    async loadRelatedResources(
+      categoryId: string,
 
+      currentResourceId: string,
 
-          patchState(
-            store,
-            {
-              relatedResources,
-            },
-          );
+      limitCount = 3,
+    ): Promise<void> {
+      try {
+        const relatedResources = await resourceService.getRelatedResources(
+          categoryId,
 
-        } catch (error) {
+          currentResourceId,
 
-          console.error(
-            'Failed to load related resources:',
-            error,
-          );
-
-
-          patchState(
-            store,
-            {
-              relatedResources: [],
-
-              error:
-                'Unable to load related resources.',
-            },
-          );
-
-        }
-
-      },
-
-
-      // ======================================================
-      // CREATE RESOURCE
-      // ======================================================
-
-      async createResource(
-        resource: Omit<
-          Resource,
-          'id' | 'createdAt' | 'updatedAt'
-        >,
-      ): Promise<string> {
-
-        patchState(
-          store,
-          {
-            loading: true,
-
-            error: null,
-          },
+          limitCount,
         );
 
+        patchState(store, {
+          relatedResources,
+        });
+      } catch (error) {
+        console.error('Failed to load related resources:', error);
 
-        try {
+        patchState(store, {
+          relatedResources: [],
 
-          const id =
-            await resourceService
-              .createResource(
-                resource,
-              );
+          error: 'Unable to load related resources.',
+        });
+      }
+    },
 
+    // ======================================================
+    // CREATE RESOURCE
+    // ======================================================
 
-          await this.loadAllResources();
+    async createResource(
+      resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>,
+    ): Promise<string> {
+      patchState(store, {
+        loading: true,
 
+        error: null,
+      });
 
-          return id;
+      try {
+        const id = await resourceService.createResource(resource);
 
-        } catch (error) {
+        await this.loadAllResources();
 
-          console.error(
-            'Failed to create resource:',
-            error,
-          );
+        return id;
+      } catch (error) {
+        console.error('Failed to create resource:', error);
 
+        patchState(store, {
+          loading: false,
 
-          patchState(
-            store,
-            {
-              loading: false,
+          error: 'Unable to create resource. Please try again.',
+        });
 
-              error:
-                'Unable to create resource. Please try again.',
-            },
-          );
+        throw error;
+      }
+    },
 
+    // ======================================================
+    // UPDATE RESOURCE
+    // ======================================================
 
-          throw error;
+    async updateResource(
+      resourceId: string,
 
-        }
+      changes: Partial<Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>>,
+    ): Promise<void> {
+      patchState(store, {
+        loading: true,
 
-      },
+        error: null,
+      });
 
+      try {
+        await resourceService.updateResource(resourceId, changes);
 
-      // ======================================================
-      // UPDATE RESOURCE
-      // ======================================================
+        await this.loadAllResources();
+      } catch (error) {
+        console.error('Failed to update resource:', error);
 
-      async updateResource(
-        resourceId: string,
+        patchState(store, {
+          loading: false,
 
-        changes: Partial<
-          Omit<
-            Resource,
-            'id' | 'createdAt' | 'updatedAt'
-          >
-        >,
-      ): Promise<void> {
+          error: 'Unable to update resource. Please try again.',
+        });
 
-        patchState(
-          store,
-          {
-            loading: true,
+        throw error;
+      }
+    },
 
-            error: null,
-          },
-        );
+    // ======================================================
+    // DELETE RESOURCE
+    // ======================================================
 
+    async deleteResource(resourceId: string): Promise<void> {
+      patchState(store, {
+        loading: true,
 
-        try {
+        error: null,
+      });
 
-          await resourceService
-            .updateResource(
-              resourceId,
-              changes,
-            );
+      try {
+        await resourceService.deleteResource(resourceId);
 
+        patchState(store, (state) => ({
+          resources: state.resources.filter((resource) => resource.id !== resourceId),
 
-          await this.loadAllResources();
+          selectedResource:
+            state.selectedResource?.id === resourceId ? null : state.selectedResource,
 
-        } catch (error) {
+          loading: false,
 
-          console.error(
-            'Failed to update resource:',
-            error,
-          );
-
-
-          patchState(
-            store,
-            {
-              loading: false,
-
-              error:
-                'Unable to update resource. Please try again.',
-            },
-          );
-
-
-          throw error;
-
-        }
-
-      },
-
-
-      // ======================================================
-      // DELETE RESOURCE
-      // ======================================================
-
-      async deleteResource(
-        resourceId: string,
-      ): Promise<void> {
-
-        patchState(
-          store,
-          {
-            loading: true,
-
-            error: null,
-          },
-        );
-
-
-        try {
-
-          await resourceService
-            .deleteResource(
-              resourceId,
-            );
-
-
-          patchState(
-            store,
-            (state) => ({
-              resources:
-                state.resources.filter(
-                  (resource) =>
-                    resource.id !==
-                    resourceId,
-                ),
-
-              selectedResource:
-                state.selectedResource?.id ===
-                resourceId
-                  ? null
-                  : state.selectedResource,
-
-              loading: false,
-
-              error: null,
-            }),
-          );
-
-        } catch (error) {
-
-          console.error(
-            'Failed to delete resource:',
-            error,
-          );
-
-
-          patchState(
-            store,
-            {
-              loading: false,
-
-              error:
-                'Unable to delete resource. Please try again.',
-            },
-          );
-
-
-          throw error;
-
-        }
-
-      },
-
-
-      // ======================================================
-      // SEARCH
-      // ======================================================
-
-      setSearchTerm(
-        value: string,
-      ): void {
-
-        patchState(
-          store,
-          {
-            searchTerm: value,
-          },
-        );
-
-      },
-
-
-      // ======================================================
-      // CATEGORY
-      // ======================================================
-
-      setCategory(
-        value: string,
-      ): void {
-
-        patchState(
-          store,
-          {
-            selectedCategory: value,
-          },
-        );
-
-      },
-
-
-      // ======================================================
-      // RESOURCE TYPE
-      // ======================================================
-
-      setResourceType(
-        value: string,
-      ): void {
-
-        patchState(
-          store,
-          {
-            selectedResourceType: value,
-          },
-        );
-
-      },
-
-
-      // ======================================================
-      // LOCATION
-      // ======================================================
-
-      setLocation(
-        value: string,
-      ): void {
-
-        patchState(
-          store,
-          {
-            selectedLocation: value,
-          },
-        );
-
-      },
-
-
-      // ======================================================
-      // CLEAR FILTERS
-      // ======================================================
-
-      clearFilters(): void {
-
-        patchState(
-          store,
-          {
-            searchTerm: '',
-
-            selectedCategory: '',
-
-            selectedResourceType: '',
-
-            selectedLocation: '',
-          },
-        );
-
-      },
-
-
-      // ======================================================
-      // CLEAR SELECTED RESOURCE
-      // ======================================================
-
-      clearSelectedResource(): void {
-
-        patchState(
-          store,
-          {
-            selectedResource: null,
-
-            relatedResources: [],
-          },
-        );
-
-      },
-
-
-      // ======================================================
-      // RESET PUBLIC PAGINATION
-      // ======================================================
-
-      resetPagination(): void {
-
-        patchState(
-          store,
-          {
-            resources: [],
-
-            lastDocument: null,
-
-            hasMore: false,
-          },
-        );
-
-      },
-
-    }),
-  ),
-
+          error: null,
+        }));
+      } catch (error) {
+        console.error('Failed to delete resource:', error);
+
+        patchState(store, {
+          loading: false,
+
+          error: 'Unable to delete resource. Please try again.',
+        });
+
+        throw error;
+      }
+    },
+
+    // ======================================================
+    // SEARCH
+    // ======================================================
+
+    setSearchTerm(value: string): void {
+      patchState(store, {
+        searchTerm: value,
+      });
+    },
+
+    // ======================================================
+    // CATEGORY
+    // ======================================================
+
+    setCategory(value: string): void {
+      patchState(store, {
+        selectedCategory: value,
+      });
+    },
+
+    // ======================================================
+    // RESOURCE TYPE
+    // ======================================================
+
+    setResourceType(value: string): void {
+      patchState(store, {
+        selectedResourceType: value,
+      });
+    },
+
+    // ======================================================
+    // LOCATION
+    // ======================================================
+
+    setLocation(value: string): void {
+      patchState(store, {
+        selectedLocation: value,
+      });
+    },
+
+    // ======================================================
+    // CLEAR FILTERS
+    // ======================================================
+
+    clearFilters(): void {
+      patchState(store, {
+        searchTerm: '',
+
+        selectedCategory: '',
+
+        selectedResourceType: '',
+
+        selectedLocation: '',
+      });
+    },
+
+    // ======================================================
+    // CLEAR SELECTED RESOURCE
+    // ======================================================
+
+    clearSelectedResource(): void {
+      patchState(store, {
+        selectedResource: null,
+
+        relatedResources: [],
+      });
+    },
+
+    // ======================================================
+    // RESET PUBLIC PAGINATION
+    // ======================================================
+
+    resetPagination(): void {
+      patchState(store, {
+        resources: [],
+
+        lastDocument: null,
+
+        hasMore: false,
+      });
+    },
+
+    // selectedOnlineOnly
+    setOnlineOnly(value: boolean): void {
+      patchState(store, {
+        selectedOnlineOnly: value,
+      });
+    },
+
+    // selectedFeaturedOnly
+    setFeaturedOnly(value: boolean): void {
+      patchState(store, {
+        selectedFeaturedOnly: value,
+      });
+    },
+
+    setPersonalization(interests: string[], locationId: string): void {
+      patchState(store, {
+        personalizationInterests: interests,
+
+        personalizationLocationId: locationId,
+      });
+    },
+
+    
+
+
+  })),
 );
