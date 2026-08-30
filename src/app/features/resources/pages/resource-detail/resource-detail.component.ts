@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 
 import { ResourceCardComponent } from '../../components/resource-card/resource-card.component';
 import { Resource } from '../../../../core/models/resource.model';
-import { ResourceService } from '../../../../core/services/resource.service';
+import { ResourceStore } from '../../stores/resource.store';
 import { Location } from '../../../../core/models/location.model';
 import { LocationService } from '../../../../core/services/location.service';
 import { Category } from '../../../../core/models/category.model';
@@ -637,17 +637,29 @@ import { MatIconModule } from "@angular/material/icon";
   styles: [],
 })
 export class ResourceDetailComponent {
-  private readonly resourceService = inject(ResourceService);
+  private readonly resourceStore =
+  inject(ResourceStore);
   private readonly locationService = inject(LocationService);
   private readonly categoryService = inject(CategoryService);
 
   readonly slug = input.required<string>();
 
-  protected readonly resource = signal<Resource | null>(null);
+ 
   protected readonly location = signal<Location | null>(null);
   protected readonly category = signal<Category | null>(null);
-  protected readonly relatedResources = signal<Resource[]>([]);
+  
   protected readonly relatedLoading = signal(false);
+  protected readonly resource =
+  this.resourceStore.selectedResource;
+
+protected readonly relatedResources =
+  this.resourceStore.relatedResources;
+
+protected readonly loading =
+  this.resourceStore.loading;
+
+protected readonly error =
+  this.resourceStore.error;
   /**
  * Controls whether related resource details are displayed.
  *
@@ -665,8 +677,7 @@ protected toggleRelatedResourceDetails(): void {
   );
 }
 
-  protected readonly loading = signal(true);
-  protected readonly error = signal<string | null>(null);
+
 
   constructor() {
   // Reload the resource whenever the route slug changes.
@@ -677,78 +688,60 @@ protected toggleRelatedResourceDetails(): void {
 }
 
  private async loadResource(): Promise<void> {
-  this.loading.set(true);
-  this.error.set(null);
 
-  try {
-    const resource =
-      await this.resourceService.getResourceBySlug(this.slug());
+  const slug = this.slug();
 
-    if (!resource) {
-      this.error.set('Resource not found.');
-      return;
-    }
-
-    this.resource.set(resource);
-
-    // Load the location associated with this resource.
-    if (resource.locationId) {
-      const location =
-        await this.locationService.getLocationById(
-          resource.locationId
-        );
-
-      this.location.set(location);
-      console.log('Loaded locations:', location);
-    }
-
-        // Load the category associated with this resource.
-    if (resource.categoryId) {
-      const category =
-        await this.categoryService.getCategoryById(
-          resource.categoryId
-        );
-
-      this.category.set(category);
-    }
-
-    // Load other published resources from the same category.
-    await this.loadRelatedResources(resource);
-  } catch (error) {
-    console.error('Failed to load resource:', error);
-
-    this.error.set(
-      'Unable to load this resource. Please try again later.'
-    );
-  } finally {
-    this.loading.set(false);
+  if (!slug) {
+    return;
   }
+
+  const resource =
+    await this.resourceStore.loadResourceBySlug(
+      slug,
+    );
+
+  if (!resource) {
+    return;
+  }
+
+  await this.loadRelatedResources(
+    resource,
+  );
 }
 
   private async loadRelatedResources(
-    resource: Resource
-  ): Promise<void> {
-    if (!resource.categoryId) {
-      return;
-    }
+  resource: Resource,
+): Promise<void> {
 
-    this.relatedLoading.set(true);
-
-    try {
-      const related =
-        await this.resourceService.getRelatedResources(
-          resource.categoryId,
-          resource.id
-        );
-
-      this.relatedResources.set(related);
-    } catch (error) {
-      console.error(
-        'Failed to load related resources:',
-        error
-      );
-    } finally {
-      this.relatedLoading.set(false);
-    }
+  if (
+    !resource.categoryId ||
+    !resource.id
+  ) {
+    return;
   }
+
+  this.relatedLoading.set(true);
+
+  try {
+
+    await this.resourceStore
+      .loadRelatedResources(
+        resource.categoryId,
+        resource.id,
+        3,
+      );
+
+  } catch (error) {
+
+    console.error(
+      'Failed to load related resources:',
+      error,
+    );
+
+  } finally {
+
+    this.relatedLoading.set(false);
+
+  }
+}
 }
