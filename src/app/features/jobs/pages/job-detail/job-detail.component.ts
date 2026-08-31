@@ -1,26 +1,12 @@
-import {
-  Component,
-  DestroyRef,
-  OnInit,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 
-import {
-  CommonModule,
-} from '@angular/common';
+import { Meta, Title } from '@angular/platform-browser';
 
-import {
-  ActivatedRoute,
-  Router,
-  RouterLink,
-} from '@angular/router';
+import { CommonModule } from '@angular/common';
 
-import {
-  Job,
-  EmploymentType,
-  WorkArrangement,
-} from '../../../../core/models/job.model';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+
+import { Job, EmploymentType, WorkArrangement } from '../../../../core/models/job.model';
 
 import { JobStore } from '../../stores/job.store';
 
@@ -29,10 +15,7 @@ import { JobStore } from '../../stores/job.store';
 
   standalone: true,
 
-  imports: [
-    CommonModule,
-    RouterLink,
-  ],
+  imports: [CommonModule, RouterLink],
 
   template: `
     <!-- =========================================================
@@ -42,7 +25,6 @@ import { JobStore } from '../../stores/job.store';
       class="min-h-screen
              bg-gray-50"
     >
-
       <!-- =======================================================
            HEADER
            ======================================================= -->
@@ -51,7 +33,6 @@ import { JobStore } from '../../stores/job.store';
                border-gray-200
                bg-[#032D42]"
       >
-
         <div
           class="mx-auto
                  max-w-6xl
@@ -60,7 +41,6 @@ import { JobStore } from '../../stores/job.store';
                  sm:px-6
                  lg:px-8"
         >
-
           <div
             class="flex
                    flex-col
@@ -69,9 +49,7 @@ import { JobStore } from '../../stores/job.store';
                    sm:items-center
                    sm:justify-between"
           >
-
             <div>
-
               <p
                 class="text-xs
                        font-semibold
@@ -92,9 +70,7 @@ import { JobStore } from '../../stores/job.store';
               >
                 Job Details
               </h1>
-
             </div>
-
 
             <!-- Back to jobs -->
             <a
@@ -118,13 +94,9 @@ import { JobStore } from '../../stores/job.store';
             >
               ← Back to Jobs
             </a>
-
           </div>
-
         </div>
-
       </header>
-
 
       <!-- =======================================================
            CONTENT
@@ -138,12 +110,10 @@ import { JobStore } from '../../stores/job.store';
                sm:py-8
                lg:px-8"
       >
-
         <!-- =====================================================
              LOADING
              ===================================================== -->
         @if (loading()) {
-
           <section
             class="rounded-xl
                    border
@@ -154,7 +124,6 @@ import { JobStore } from '../../stores/job.store';
                    text-center
                    shadow-sm"
           >
-
             <div
               class="mx-auto
                      h-10
@@ -173,17 +142,13 @@ import { JobStore } from '../../stores/job.store';
             >
               Loading job details...
             </p>
-
           </section>
-
         }
-
 
         <!-- =====================================================
              ERROR
              ===================================================== -->
         @else if (error()) {
-
           <section
             class="rounded-xl
                    border
@@ -194,7 +159,6 @@ import { JobStore } from '../../stores/job.store';
                    text-center
                    shadow-sm"
           >
-
             <div
               class="mx-auto
                      flex
@@ -248,23 +212,18 @@ import { JobStore } from '../../stores/job.store';
             >
               ← Browse Jobs
             </a>
-
           </section>
-
         }
-
 
         <!-- =====================================================
              JOB
              ===================================================== -->
         @else if (job(); as currentJob) {
-
           <div
             class="grid
                    gap-6
                    lg:grid-cols-[minmax(0,1fr)_320px]"
           >
-
             <!-- =================================================
                  MAIN JOB CONTENT
                  ================================================= -->
@@ -276,7 +235,6 @@ import { JobStore } from '../../stores/job.store';
                      bg-white
                      shadow-sm"
             >
-
               <!-- =================================================
                    JOB HEADER
                    ================================================= -->
@@ -286,10 +244,8 @@ import { JobStore } from '../../stores/job.store';
                        p-6
                        sm:p-8"
               >
-
                 <!-- Featured -->
                 @if (currentJob.featured) {
-
                   <span
                     class="inline-flex
                            items-center
@@ -303,9 +259,7 @@ import { JobStore } from '../../stores/job.store';
                   >
                     ⭐ Featured Opportunity
                   </span>
-
                 }
-
 
                 <!-- Title -->
                 <h2
@@ -320,7 +274,6 @@ import { JobStore } from '../../stores/job.store';
                   {{ currentJob.title }}
                 </h2>
 
-
                 <!-- Organization -->
                 <p
                   class="mt-2
@@ -331,7 +284,6 @@ import { JobStore } from '../../stores/job.store';
                   {{ currentJob.organizationName }}
                 </p>
 
-
                 <!-- Quick information -->
                 <div
                   class="mt-5
@@ -339,7 +291,6 @@ import { JobStore } from '../../stores/job.store';
                          flex-wrap
                          gap-2"
                 >
-
                   <span
                     class="inline-flex
                            items-center
@@ -351,11 +302,8 @@ import { JobStore } from '../../stores/job.store';
                            font-medium
                            text-[#007979]"
                   >
-                    {{ formatEmploymentType(
-                      currentJob.employmentType
-                    ) }}
+                    {{ formatEmploymentType(currentJob.employmentType) }}
                   </span>
-
 
                   <span
                     class="inline-flex
@@ -368,16 +316,10 @@ import { JobStore } from '../../stores/job.store';
                            font-medium
                            text-gray-700"
                   >
-                    {{ formatWorkArrangement(
-                      currentJob.workArrangement
-                    ) }}
+                    {{ formatWorkArrangement(currentJob.workArrangement) }}
                   </span>
 
-
-                  @if (
-                    currentJob.categoryName
-                  ) {
-
+                  @if (currentJob.categoryName) {
                     <span
                       class="inline-flex
                              items-center
@@ -391,9 +333,7 @@ import { JobStore } from '../../stores/job.store';
                     >
                       {{ currentJob.categoryName }}
                     </span>
-
                   }
-
 
                   <span
                     class="inline-flex
@@ -409,11 +349,8 @@ import { JobStore } from '../../stores/job.store';
                     📍
                     {{ formatLocation(currentJob) }}
                   </span>
-
                 </div>
-
               </div>
-
 
               <!-- =================================================
                    JOB DESCRIPTION
@@ -422,9 +359,7 @@ import { JobStore } from '../../stores/job.store';
                 class="p-6
                        sm:p-8"
               >
-
                 <section>
-
                   <h3
                     class="text-lg
                            font-bold
@@ -442,24 +377,18 @@ import { JobStore } from '../../stores/job.store';
                   >
                     {{ currentJob.description }}
                   </div>
-
                 </section>
-
 
                 <!-- =================================================
                      SKILLS
                      ================================================= -->
-                @if (
-                  currentJob.skills.length
-                ) {
-
+                @if (currentJob.skills.length) {
                   <section
                     class="mt-8
                            border-t
                            border-gray-100
                            pt-8"
                   >
-
                     <h3
                       class="text-lg
                              font-bold
@@ -474,12 +403,7 @@ import { JobStore } from '../../stores/job.store';
                              flex-wrap
                              gap-2"
                     >
-
-                      @for (
-                        skill of currentJob.skills;
-                        track skill
-                      ) {
-
+                      @for (skill of currentJob.skills; track skill) {
                         <span
                           class="rounded-full
                                  border
@@ -492,30 +416,21 @@ import { JobStore } from '../../stores/job.store';
                         >
                           {{ skill }}
                         </span>
-
                       }
-
                     </div>
-
                   </section>
-
                 }
-
 
                 <!-- =================================================
                      TAGS
                      ================================================= -->
-                @if (
-                  currentJob.tags.length
-                ) {
-
+                @if (currentJob.tags.length) {
                   <section
                     class="mt-8
                            border-t
                            border-gray-100
                            pt-8"
                   >
-
                     <h3
                       class="text-lg
                              font-bold
@@ -530,12 +445,7 @@ import { JobStore } from '../../stores/job.store';
                              flex-wrap
                              gap-2"
                     >
-
-                      @for (
-                        tag of currentJob.tags;
-                        track tag
-                      ) {
-
+                      @for (tag of currentJob.tags; track tag) {
                         <span
                           class="rounded-full
                                  bg-[#007979]/10
@@ -546,15 +456,10 @@ import { JobStore } from '../../stores/job.store';
                         >
                           #{{ tag }}
                         </span>
-
                       }
-
                     </div>
-
                   </section>
-
                 }
-
 
                 <!-- =================================================
                      MOBILE APPLY
@@ -566,15 +471,9 @@ import { JobStore } from '../../stores/job.store';
                          pt-8
                          lg:hidden"
                 >
-
-                  @if (
-                    currentJob.applicationUrl
-                  ) {
-
+                  @if (currentJob.applicationUrl) {
                     <a
-                      [href]="
-                        currentJob.applicationUrl
-                      "
+                      [href]="currentJob.applicationUrl"
                       target="_blank"
                       rel="noopener noreferrer"
                       class="flex
@@ -594,9 +493,7 @@ import { JobStore } from '../../stores/job.store';
                     >
                       Apply Now →
                     </a>
-
                   } @else {
-
                     <div
                       class="rounded-lg
                              bg-gray-50
@@ -605,26 +502,17 @@ import { JobStore } from '../../stores/job.store';
                              text-sm
                              text-gray-500"
                     >
-                      Application information is
-                      not currently available.
+                      Application information is not currently available.
                     </div>
-
                   }
-
                 </div>
-
               </div>
-
             </article>
-
 
             <!-- =================================================
                  SIDEBAR
                  ================================================= -->
-            <aside
-              class="space-y-4"
-            >
-
+            <aside class="space-y-4">
               <!-- =================================================
                    APPLY CARD
                    ================================================= -->
@@ -636,7 +524,6 @@ import { JobStore } from '../../stores/job.store';
                        p-5
                        shadow-sm"
               >
-
                 <h3
                   class="text-base
                          font-bold
@@ -651,19 +538,12 @@ import { JobStore } from '../../stores/job.store';
                          leading-6
                          text-gray-500"
                 >
-                  Review the requirements and submit
-                  your application through the employer.
+                  Review the requirements and submit your application through the employer.
                 </p>
 
-
-                @if (
-                  currentJob.applicationUrl
-                ) {
-
+                @if (currentJob.applicationUrl) {
                   <a
-                    [href]="
-                      currentJob.applicationUrl
-                    "
+                    [href]="currentJob.applicationUrl"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="mt-5
@@ -684,9 +564,7 @@ import { JobStore } from '../../stores/job.store';
                   >
                     Apply Now →
                   </a>
-
                 } @else {
-
                   <div
                     class="mt-5
                            rounded-lg
@@ -698,11 +576,8 @@ import { JobStore } from '../../stores/job.store';
                   >
                     No application link provided.
                   </div>
-
                 }
-
               </section>
-
 
               <!-- =================================================
                    JOB INFORMATION
@@ -715,7 +590,6 @@ import { JobStore } from '../../stores/job.store';
                        p-5
                        shadow-sm"
               >
-
                 <h3
                   class="text-base
                          font-bold
@@ -724,15 +598,12 @@ import { JobStore } from '../../stores/job.store';
                   Job Information
                 </h3>
 
-
                 <dl
                   class="mt-4
                          space-y-4"
                 >
-
                   <!-- Organization -->
                   <div>
-
                     <dt
                       class="text-xs
                              font-semibold
@@ -751,13 +622,10 @@ import { JobStore } from '../../stores/job.store';
                     >
                       {{ currentJob.organizationName }}
                     </dd>
-
                   </div>
-
 
                   <!-- Location -->
                   <div>
-
                     <dt
                       class="text-xs
                              font-semibold
@@ -773,17 +641,12 @@ import { JobStore } from '../../stores/job.store';
                              text-sm
                              text-gray-700"
                     >
-                      {{ formatLocation(
-                        currentJob
-                      ) }}
+                      {{ formatLocation(currentJob) }}
                     </dd>
-
                   </div>
-
 
                   <!-- Employment -->
                   <div>
-
                     <dt
                       class="text-xs
                              font-semibold
@@ -799,17 +662,12 @@ import { JobStore } from '../../stores/job.store';
                              text-sm
                              text-gray-700"
                     >
-                      {{ formatEmploymentType(
-                        currentJob.employmentType
-                      ) }}
+                      {{ formatEmploymentType(currentJob.employmentType) }}
                     </dd>
-
                   </div>
-
 
                   <!-- Work arrangement -->
                   <div>
-
                     <dt
                       class="text-xs
                              font-semibold
@@ -825,21 +683,13 @@ import { JobStore } from '../../stores/job.store';
                              text-sm
                              text-gray-700"
                     >
-                      {{ formatWorkArrangement(
-                        currentJob.workArrangement
-                      ) }}
+                      {{ formatWorkArrangement(currentJob.workArrangement) }}
                     </dd>
-
                   </div>
 
-
                   <!-- Category -->
-                  @if (
-                    currentJob.categoryName
-                  ) {
-
+                  @if (currentJob.categoryName) {
                     <div>
-
                       <dt
                         class="text-xs
                                font-semibold
@@ -857,19 +707,12 @@ import { JobStore } from '../../stores/job.store';
                       >
                         {{ currentJob.categoryName }}
                       </dd>
-
                     </div>
-
                   }
 
-
                   <!-- Compensation -->
-                  @if (
-                    hasCompensation(currentJob)
-                  ) {
-
+                  @if (hasCompensation(currentJob)) {
                     <div>
-
                       <dt
                         class="text-xs
                                font-semibold
@@ -886,23 +729,14 @@ import { JobStore } from '../../stores/job.store';
                                font-medium
                                text-gray-700"
                       >
-                        {{ formatCompensation(
-                          currentJob
-                        ) }}
+                        {{ formatCompensation(currentJob) }}
                       </dd>
-
                     </div>
-
                   }
 
-
                   <!-- Application deadline -->
-                  @if (
-                    currentJob.applicationDeadline
-                  ) {
-
+                  @if (currentJob.applicationDeadline) {
                     <div>
-
                       <dt
                         class="text-xs
                                font-semibold
@@ -918,21 +752,12 @@ import { JobStore } from '../../stores/job.store';
                                text-sm
                                text-gray-700"
                       >
-                        {{
-                          formatDeadline(
-                            currentJob.applicationDeadline
-                          )
-                        }}
+                        {{ formatDeadline(currentJob.applicationDeadline) }}
                       </dd>
-
                     </div>
-
                   }
-
                 </dl>
-
               </section>
-
 
               <!-- =================================================
                    BACK TO JOBS
@@ -958,316 +783,181 @@ import { JobStore } from '../../stores/job.store';
               >
                 ← Browse All Jobs
               </a>
-
             </aside>
-
           </div>
-
         }
-
       </div>
-
     </main>
   `,
-
 })
-export class JobDetailComponent
-  implements OnInit {
-
+export class JobDetailComponent implements OnInit {
   // =========================================================
   // Services
   // =========================================================
 
-private readonly jobStore =
-  inject(JobStore);
+  private readonly jobStore = inject(JobStore);
 
-  private readonly route =
-    inject(ActivatedRoute);
+  private readonly title = inject(Title);
 
-  private readonly router =
-    inject(Router);
+  private readonly meta = inject(Meta);
 
+  private readonly route = inject(ActivatedRoute);
+
+  private readonly router = inject(Router);
 
   // =========================================================
   // State
   // =========================================================
 
-protected readonly job =
-  this.jobStore.selectedJob;
+  protected readonly job = this.jobStore.selectedJob;
 
-protected readonly loading =
-  this.jobStore.loading;
+  protected readonly loading = this.jobStore.loading;
 
-protected readonly error =
-  this.jobStore.error;
-
+  protected readonly error = this.jobStore.error;
 
   // =========================================================
   // Lifecycle
   // =========================================================
 
   ngOnInit(): void {
-
     void this.loadJob();
-
   }
-
 
   // =========================================================
   // Load Job
   // =========================================================
 
- 
-
-//  =========================================================
+  //  =========================================================
 
   private async loadJob(): Promise<void> {
-  const id = this.route.snapshot.paramMap.get('id');
+    const id = this.route.snapshot.paramMap.get('id');
 
-  if (!id) {
-    return;
+    if (!id) {
+      return;
+    }
+
+    await this.jobStore.loadPublicJob(id);
+
+    const job = this.jobStore.selectedJob();
+
+    if (job) {
+      this.updateSeoMetadata(job);
+    }
   }
-
-  await this.jobStore.loadPublicJob(id);
-}
-
 
   // =========================================================
   // Employment Type
   // =========================================================
 
-  protected formatEmploymentType(
-    value: EmploymentType
-  ): string {
+  protected formatEmploymentType(value: EmploymentType): string {
+    const labels: Record<EmploymentType, string> = {
+      'full-time': 'Full-time',
 
-    const labels:
-      Record<
-        EmploymentType,
-        string
-      > = {
+      'part-time': 'Part-time',
 
-      'full-time':
-        'Full-time',
+      contract: 'Contract',
 
-      'part-time':
-        'Part-time',
+      internship: 'Internship',
 
-      contract:
-        'Contract',
-
-      internship:
-        'Internship',
-
-      temporary:
-        'Temporary',
-
+      temporary: 'Temporary',
     };
 
-
-    return labels[value] ??
-      value;
-
+    return labels[value] ?? value;
   }
-
 
   // =========================================================
   // Work Arrangement
   // =========================================================
 
-  protected formatWorkArrangement(
-    value: WorkArrangement
-  ): string {
+  protected formatWorkArrangement(value: WorkArrangement): string {
+    const labels: Record<WorkArrangement, string> = {
+      'on-site': 'On-site',
 
-    const labels:
-      Record<
-        WorkArrangement,
-        string
-      > = {
+      hybrid: 'Hybrid',
 
-      'on-site':
-        'On-site',
-
-      hybrid:
-        'Hybrid',
-
-      remote:
-        'Remote',
-
+      remote: 'Remote',
     };
 
-
-    return labels[value] ??
-      value;
-
+    return labels[value] ?? value;
   }
-
 
   // =========================================================
   // Location
   // =========================================================
 
-  protected formatLocation(
-    job: Job
-  ): string {
+  protected formatLocation(job: Job): string {
+    const city = job.location?.city?.trim();
 
-    const city =
-      job.location?.city?.trim();
+    const state = job.location?.state?.trim();
 
-    const state =
-      job.location?.state?.trim();
+    const country = job.location?.country?.trim();
 
-    const country =
-      job.location?.country?.trim();
+    const parts = [city, state, country].filter(Boolean);
 
-
-    const parts =
-      [
-        city,
-        state,
-        country,
-      ].filter(
-        Boolean
-      );
-
-
-    if (
-      parts.length
-    ) {
-
+    if (parts.length) {
       return parts.join(', ');
-
     }
 
-
-    if (
-      job.workArrangement ===
-      'remote'
-    ) {
-
+    if (job.workArrangement === 'remote') {
       return 'Remote';
-
     }
-
 
     return 'Location not specified';
-
   }
-
 
   // =========================================================
   // Compensation Check
   // =========================================================
 
-  protected hasCompensation(
-    job: Job
-  ): boolean {
-
-    return Boolean(
-      job.compensation?.min !== undefined ||
-      job.compensation?.max !== undefined
-    );
-
+  protected hasCompensation(job: Job): boolean {
+    return Boolean(job.compensation?.min !== undefined || job.compensation?.max !== undefined);
   }
-
 
   // =========================================================
   // Compensation Formatting
   // =========================================================
 
-  protected formatCompensation(
-    job: Job
-  ): string {
-
-    const compensation =
-      job.compensation;
-
+  protected formatCompensation(job: Job): string {
+    const compensation = job.compensation;
 
     if (!compensation) {
       return '';
     }
 
+    const currency = compensation.currency ?? 'USD';
 
-    const currency =
-      compensation.currency ??
-      'USD';
+    const period = compensation.period === 'hour' ? '/hour' : '/year';
 
+    const formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    });
 
-    const period =
-      compensation.period ===
-      'hour'
-        ? '/hour'
-        : '/year';
+    const min = compensation.min;
 
+    const max = compensation.max;
 
-    const formatter =
-      new Intl.NumberFormat(
-        'en-US',
-        {
-          style: 'currency',
-          currency,
-          maximumFractionDigits: 0,
-        }
-      );
-
-
-    const min =
-      compensation.min;
-
-    const max =
-      compensation.max;
-
-
-    if (
-      min !== undefined &&
-      max !== undefined
-    ) {
-
-      return `${formatter.format(
-        min
-      )} – ${formatter.format(
-        max
-      )}${period}`;
-
+    if (min !== undefined && max !== undefined) {
+      return `${formatter.format(min)} – ${formatter.format(max)}${period}`;
     }
 
-
-    if (
-      min !== undefined
-    ) {
-
-      return `${formatter.format(
-        min
-      )}+${period}`;
-
+    if (min !== undefined) {
+      return `${formatter.format(min)}+${period}`;
     }
 
-
-    if (
-      max !== undefined
-    ) {
-
-      return `Up to ${formatter.format(
-        max
-      )}${period}`;
-
+    if (max !== undefined) {
+      return `Up to ${formatter.format(max)}${period}`;
     }
-
 
     return '';
-
   }
-
 
   // =========================================================
   // Deadline Formatting
   // =========================================================
 
-  protected formatDeadline(
-    deadline: NonNullable<
-      Job['applicationDeadline']
-    >
-  ): string {
-
+  protected formatDeadline(deadline: NonNullable<Job['applicationDeadline']>): string {
     /*
      * Firestore Timestamp provides
      * toDate(). This also keeps the
@@ -1275,27 +965,73 @@ protected readonly error =
      * existing Job model.
      */
 
-    if (
-      typeof deadline.toDate !==
-      'function'
-    ) {
-
+    if (typeof deadline.toDate !== 'function') {
       return '';
-
     }
 
-
-    return new Intl.DateTimeFormat(
-      'en-US',
-      {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      }
-    ).format(
-      deadline.toDate()
-    );
-
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(deadline.toDate());
   }
 
+  /**
+   * Update document metadata for the public job page.
+   */
+  private updateSeoMetadata(job: Job): void {
+    const title = job.title?.trim() || 'Job Opportunity';
+
+    const organization = job.organizationName?.trim();
+
+    const pageTitle = organization ? `${title} at ${organization} | Zebron` : `${title} | Zebron`;
+
+    const description = job.description?.trim() || `View this job opportunity on Zebron.`;
+
+    const id = job.id;
+
+    const canonicalUrl = `https://zebron.org/jobs/${id}`;
+
+    this.title.setTitle(pageTitle);
+
+    this.meta.updateTag({
+      name: 'description',
+      content: description.substring(0, 160),
+    });
+
+    this.meta.updateTag({
+      property: 'og:title',
+      content: pageTitle,
+    });
+
+    this.meta.updateTag({
+      property: 'og:description',
+      content: description.substring(0, 160),
+    });
+
+    this.meta.updateTag({
+      property: 'og:type',
+      content: 'website',
+    });
+
+    this.meta.updateTag({
+      property: 'og:url',
+      content: canonicalUrl,
+    });
+
+    this.meta.updateTag({
+      name: 'twitter:card',
+      content: 'summary',
+    });
+
+    this.meta.updateTag({
+      name: 'twitter:title',
+      content: pageTitle,
+    });
+
+    this.meta.updateTag({
+      name: 'twitter:description',
+      content: description.substring(0, 160),
+    });
+  }
 }

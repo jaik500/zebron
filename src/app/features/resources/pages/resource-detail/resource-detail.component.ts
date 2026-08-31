@@ -1,4 +1,5 @@
-import { Component, inject, input, effect, signal } from '@angular/core';
+import { Component, DOCUMENT, effect, inject, input, signal } from '@angular/core';
+import { Meta, Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
@@ -9,509 +10,436 @@ import { Location } from '../../../../core/models/location.model';
 import { LocationService } from '../../../../core/services/location.service';
 import { Category } from '../../../../core/models/category.model';
 import { CategoryService } from '../../../../core/services/category.service';
-import { MatIconModule } from "@angular/material/icon";
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-resource-detail',
   standalone: true,
   imports: [RouterLink, ResourceCardComponent, CommonModule, MatIconModule],
   template: `
-   <main class="mx-auto max-w-7xl p-8">
-  <a
-    routerLink="/resources"
-    class="text-sm text-gray-600 hover:text-gray-900"
-  >
-    ← Back to resources
-  </a>
+    <main class="mx-auto max-w-7xl p-8">
+      <a routerLink="/resources" class="text-sm text-gray-600 hover:text-gray-900">
+        ← Back to resources
+      </a>
 
-  @if (loading()) {
-    <p class="mt-8 text-gray-600">
-      Loading resource...
-    </p>
-  }
+      @if (loading()) {
+        <p class="mt-8 text-gray-600">Loading resource...</p>
+      }
 
-  @if (error()) {
-    <div class="mt-8 rounded-lg border border-red-200 bg-red-50 p-4">
-      <p class="text-red-700">
-        {{ error() }}
-      </p>
-    </div>
-  }
+      @if (error()) {
+        <div class="mt-8 rounded-lg border border-red-200 bg-red-50 p-4">
+          <p class="text-red-700">
+            {{ error() }}
+          </p>
+        </div>
+      }
 
-  @if (!loading() && !error() && resource()) {
-    <!-- Main content + right sidebar -->
-    <div class="mt-6 grid gap-8 lg:grid-cols-3">
+      @if (!loading() && !error() && resource()) {
+        <!-- Main content + right sidebar -->
+        <div class="mt-6 grid gap-8 lg:grid-cols-3">
+          <!-- Main resource content -->
+          <article class="lg:col-span-2">
+            <!-- Resource header -->
+            <div class="flex items-start justify-between gap-6">
+              <div>
+                <h1 class="text-4xl font-bold text-gray-900">
+                  {{ resource()!.name }}
+                </h1>
 
-      <!-- Main resource content -->
-      <article class="lg:col-span-2">
-
-        <!-- Resource header -->
-        <div class="flex items-start justify-between gap-6">
-          <div>
-            <h1 class="text-4xl font-bold text-gray-900">
-              {{ resource()!.name }}
-            </h1>
-
-            @if (category()) {
-              <a
-                [routerLink]="['/resources']"
-                [queryParams]="{ category: category()!.slug }"
-                class="mt-2 inline-block text-sm font-medium text-blue-600
+                @if (category()) {
+                  <a
+                    [routerLink]="['/resources']"
+                    [queryParams]="{ category: category()!.slug }"
+                    class="mt-2 inline-block text-sm font-medium text-blue-600
                       hover:text-blue-800 hover:underline"
-              >
-                {{ category()!.name }}
-              </a>
-            }
+                  >
+                    {{ category()!.name }}
+                  </a>
+                }
 
-            <p class="mt-1 text-gray-500">
-              {{ resource()!.resourceType }}
-            </p>
-          </div>
-
-          @if (resource()!.featured) {
-            <span
-              class="rounded-full bg-yellow-100 px-3 py-1 text-sm
-                     font-medium text-yellow-800"
-            >
-              Featured
-            </span>
-          }
-        </div>
-
-        @if (resource()!.verified) {
-          <div
-            class="mt-4 inline-flex items-center gap-2 rounded-full
-                  bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700"
-          >
-            <span
-              class="flex h-5 w-5 items-center justify-center rounded-full
-                    bg-green-600 text-xs text-white"
-            >
-              ✓
-            </span>
-
-            Verified resource
-          </div>
-        } @else {
-          <div
-            class="mt-4 inline-flex items-center gap-2 rounded-full
-                  bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600"
-          >
-            <span
-              class="flex h-5 w-5 items-center justify-center rounded-full
-                    bg-gray-400 text-xs text-white"
-            >
-              ?
-            </span>
-
-            Not yet verified
-          </div>
-        }
-
-        @if (resource()!.lastVerifiedAt) {
-          <p class="mt-2 text-sm text-gray-500">
-            Last verified
-            {{ resource()!.lastVerifiedAt!.toDate() | date:'MMMM d, y' }}
-          </p>
-        }
-
-        <!-- About -->
-        <div class="mt-8">
-          <h2 class="text-xl font-semibold">
-            About this resource
-          </h2>
-
-          <p class="mt-3 leading-7 text-gray-600">
-            {{ resource()!.description }}
-          </p>
-        </div>
-
-        <!-- Contact and availability -->
-        <div class="mt-8 grid gap-6 sm:grid-cols-2">
-
-          @if (resource()!.website) {
-            <div>
-              <h3 class="font-semibold">
-                Website
-              </h3>
-
-              <a
-                [href]="resource()!.website"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="mt-1 block text-blue-600 hover:underline"
-              >
-                Visit website
-              </a>
-            </div>
-          }
-
-          @if (resource()!.phone) {
-            <div>
-              <h3 class="font-semibold">
-                Phone
-              </h3>
-
-              <a
-                [href]="'tel:' + resource()!.phone"
-                class="mt-1 block text-blue-600 hover:underline"
-              >
-                {{ resource()!.phone }}
-              </a>
-            </div>
-          }
-
-          @if (resource()!.email) {
-            <div>
-              <h3 class="font-semibold">
-                Email
-              </h3>
-
-              <a
-                [href]="'mailto:' + resource()!.email"
-                class="mt-1 block text-blue-600 hover:underline"
-              >
-                {{ resource()!.email }}
-              </a>
-            </div>
-          }
-
-          @if (resource()!.online) {
-            <div>
-              <h3 class="font-semibold">
-                Availability
-              </h3>
-
-              <p class="mt-1 text-gray-600">
-                Available online
-              </p>
-            </div>
-          }
-
-        </div>
-
-        <!-- Location -->
-        @if (location()) {
-          <div class="mt-8">
-            <h2 class="text-xl font-semibold text-gray-900">
-              Location
-            </h2>
-
-            <div
-              class="mt-4 rounded-xl border border-gray-200
-                     bg-gray-50 p-5"
-            >
-
-              @if (location()?.address) {
-                <p class="text-gray-700">
-                  {{ location()?.address }}
+                <p class="mt-1 text-gray-500">
+                  {{ resource()!.resourceType }}
                 </p>
-              }
+              </div>
 
-              @if (
-                location()?.city ||
-                location()?.state ||
-                location()?.zipCode
-              ) {
-                <p class="mt-1 text-gray-600">
-
-                  @if (location()?.city) {
-                    {{ location()?.city }}
-                  }
-
-                  @if (
-                    location()?.city &&
-                    location()?.state
-                  ) {
-                    ,
-                  }
-
-                  @if (location()?.state) {
-                    {{ location()?.state }}
-                  }
-
-                  @if (location()?.zipCode) {
-                    {{ location()?.zipCode }}
-                  }
-
-                </p>
-              }
-
-              @if (location()?.country) {
-                <p class="mt-1 text-gray-600">
-                  {{ location()?.country }}
-                </p>
-              }
-
-              @if (
-                location()?.latitude !== undefined &&
-                location()?.longitude !== undefined
-              ) {
-                <a
-                  class="mt-4 inline-block text-blue-600 hover:underline"
-                  [href]="
-                    'https://www.google.com/maps/search/?api=1&query=' +
-                    location()?.latitude +
-                    ',' +
-                    location()?.longitude
-                  "
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View on map
-                </a>
-              }
-
-            </div>
-          </div>
-        }
-
-        <!-- Cost -->
-        @if (resource()!.cost) {
-          <div class="mt-8">
-            <h2 class="text-xl font-semibold text-gray-900">
-              Cost
-            </h2>
-
-            <div
-              class="mt-3 rounded-xl border border-gray-200
-                     bg-gray-50 p-5"
-            >
-
-              @if (resource()!.cost!.free) {
-                <p class="font-medium text-green-700">
-                  Free
-                </p>
-              } @else {
-                <p class="font-medium text-gray-700">
-                  Cost information available
-                </p>
-              }
-
-              @if (resource()!.cost!.description) {
-                <p class="mt-2 text-gray-600">
-                  {{ resource()!.cost!.description }}
-                </p>
-              }
-
-            </div>
-          </div>
-        }
-
-        <!-- Availability -->
-        @if (resource()!.availability) {
-          <div class="mt-8">
-            <h2 class="text-xl font-semibold text-gray-900">
-              Availability
-            </h2>
-
-            <div
-              class="mt-4 rounded-xl border border-gray-200
-                    bg-gray-50 p-5"
-            >
-
-              @if (resource()!.availability!.alwaysAvailable) {
-                <p class="font-medium text-green-700">
-                  Available 24/7
-                </p>
-              }
-
-              @if (resource()!.availability!.byAppointment) {
-                <p class="font-medium text-blue-700">
-                  Available by appointment
-                </p>
-              }
-
-              @if (
-                !resource()!.availability!.alwaysAvailable &&
-                !resource()!.availability!.byAppointment
-              ) {
-                <div class="space-y-2 text-sm">
-
-                  @if (resource()!.availability!.monday) {
-                    <div class="flex justify-between gap-4">
-                      <span class="font-medium text-gray-700">
-                        Monday
-                      </span>
-
-                      <span class="text-gray-600">
-                        @if (resource()!.availability!.monday!.open) {
-                          {{ resource()!.availability!.monday!.openTime }}
-                          –
-                          {{ resource()!.availability!.monday!.closeTime }}
-                        } @else {
-                          Closed
-                        }
-                      </span>
-                    </div>
-                  }
-
-                  @if (resource()!.availability!.tuesday) {
-                    <div class="flex justify-between gap-4">
-                      <span class="font-medium text-gray-700">
-                        Tuesday
-                      </span>
-
-                      <span class="text-gray-600">
-                        @if (resource()!.availability!.tuesday!.open) {
-                          {{ resource()!.availability!.tuesday!.openTime }}
-                          –
-                          {{ resource()!.availability!.tuesday!.closeTime }}
-                        } @else {
-                          Closed
-                        }
-                      </span>
-                    </div>
-                  }
-
-                  @if (resource()!.availability!.wednesday) {
-                    <div class="flex justify-between gap-4">
-                      <span class="font-medium text-gray-700">
-                        Wednesday
-                      </span>
-
-                      <span class="text-gray-600">
-                        @if (resource()!.availability!.wednesday!.open) {
-                          {{ resource()!.availability!.wednesday!.openTime }}
-                          –
-                          {{ resource()!.availability!.wednesday!.closeTime }}
-                        } @else {
-                          Closed
-                        }
-                      </span>
-                    </div>
-                  }
-
-                  @if (resource()!.availability!.thursday) {
-                    <div class="flex justify-between gap-4">
-                      <span class="font-medium text-gray-700">
-                        Thursday
-                      </span>
-
-                      <span class="text-gray-600">
-                        @if (resource()!.availability!.thursday!.open) {
-                          {{ resource()!.availability!.thursday!.openTime }}
-                          –
-                          {{ resource()!.availability!.thursday!.closeTime }}
-                        } @else {
-                          Closed
-                        }
-                      </span>
-                    </div>
-                  }
-
-                  @if (resource()!.availability!.friday) {
-                    <div class="flex justify-between gap-4">
-                      <span class="font-medium text-gray-700">
-                        Friday
-                      </span>
-
-                      <span class="text-gray-600">
-                        @if (resource()!.availability!.friday!.open) {
-                          {{ resource()!.availability!.friday!.openTime }}
-                          –
-                          {{ resource()!.availability!.friday!.closeTime }}
-                        } @else {
-                          Closed
-                        }
-                      </span>
-                    </div>
-                  }
-
-                  @if (resource()!.availability!.saturday) {
-                    <div class="flex justify-between gap-4">
-                      <span class="font-medium text-gray-700">
-                        Saturday
-                      </span>
-
-                      <span class="text-gray-600">
-                        @if (resource()!.availability!.saturday!.open) {
-                          {{ resource()!.availability!.saturday!.openTime }}
-                          –
-                          {{ resource()!.availability!.saturday!.closeTime }}
-                        } @else {
-                          Closed
-                        }
-                      </span>
-                    </div>
-                  }
-
-                  @if (resource()!.availability!.sunday) {
-                    <div class="flex justify-between gap-4">
-                      <span class="font-medium text-gray-700">
-                        Sunday
-                      </span>
-
-                      <span class="text-gray-600">
-                        @if (resource()!.availability!.sunday!.open) {
-                          {{ resource()!.availability!.sunday!.openTime }}
-                          –
-                          {{ resource()!.availability!.sunday!.closeTime }}
-                        } @else {
-                          Closed
-                        }
-                      </span>
-                    </div>
-                  }
-
-                </div>
-              }
-
-            </div>
-          </div>
-        }
-
-        <!-- Tags -->
-        @if (resource()!.tags.length > 0) {
-          <div class="mt-8">
-            <h2 class="font-semibold">
-              Tags
-            </h2>
-
-            <div class="mt-3 flex flex-wrap gap-2">
-              @for (tag of resource()!.tags; track tag) {
+              @if (resource()!.featured) {
                 <span
-                  class="rounded-full bg-gray-100 px-3 py-1 text-sm
-                         text-gray-700"
+                  class="rounded-full bg-yellow-100 px-3 py-1 text-sm
+                     font-medium text-yellow-800"
                 >
-                  {{ tag }}
+                  Featured
                 </span>
               }
             </div>
-          </div>
-        }
 
-      </article>
+            @if (resource()!.verified) {
+              <div
+                class="mt-4 inline-flex items-center gap-2 rounded-full
+                  bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700"
+              >
+                <span
+                  class="flex h-5 w-5 items-center justify-center rounded-full
+                    bg-green-600 text-xs text-white"
+                >
+                  ✓
+                </span>
 
-      <!-- Right sidebar -->
-      <aside class="lg:col-span-1">
+                Verified resource
+              </div>
+            } @else {
+              <div
+                class="mt-4 inline-flex items-center gap-2 rounded-full
+                  bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600"
+              >
+                <span
+                  class="flex h-5 w-5 items-center justify-center rounded-full
+                    bg-gray-400 text-xs text-white"
+                >
+                  ?
+                </span>
 
-        @if (relatedLoading()) {
-         <div
-  class="rounded-xl border border-gray-200
+                Not yet verified
+              </div>
+            }
+
+            @if (resource()!.lastVerifiedAt) {
+              <p class="mt-2 text-sm text-gray-500">
+                Last verified
+                {{ resource()!.lastVerifiedAt!.toDate() | date: 'MMMM d, y' }}
+              </p>
+            }
+
+            <!-- About -->
+            <div class="mt-8">
+              <h2 class="text-xl font-semibold">About this resource</h2>
+
+              <p class="mt-3 leading-7 text-gray-600">
+                {{ resource()!.description }}
+              </p>
+            </div>
+
+            <!-- Contact and availability -->
+            <div class="mt-8 grid gap-6 sm:grid-cols-2">
+              @if (resource()!.website) {
+                <div>
+                  <h3 class="font-semibold">Website</h3>
+
+                  <a
+                    [href]="resource()!.website"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="mt-1 block text-blue-600 hover:underline"
+                  >
+                    Visit website
+                  </a>
+                </div>
+              }
+
+              @if (resource()!.phone) {
+                <div>
+                  <h3 class="font-semibold">Phone</h3>
+
+                  <a
+                    [href]="'tel:' + resource()!.phone"
+                    class="mt-1 block text-blue-600 hover:underline"
+                  >
+                    {{ resource()!.phone }}
+                  </a>
+                </div>
+              }
+
+              @if (resource()!.email) {
+                <div>
+                  <h3 class="font-semibold">Email</h3>
+
+                  <a
+                    [href]="'mailto:' + resource()!.email"
+                    class="mt-1 block text-blue-600 hover:underline"
+                  >
+                    {{ resource()!.email }}
+                  </a>
+                </div>
+              }
+
+              @if (resource()!.online) {
+                <div>
+                  <h3 class="font-semibold">Availability</h3>
+
+                  <p class="mt-1 text-gray-600">Available online</p>
+                </div>
+              }
+            </div>
+
+            <!-- Location -->
+            @if (location()) {
+              <div class="mt-8">
+                <h2 class="text-xl font-semibold text-gray-900">Location</h2>
+
+                <div
+                  class="mt-4 rounded-xl border border-gray-200
+                     bg-gray-50 p-5"
+                >
+                  @if (location()?.address) {
+                    <p class="text-gray-700">
+                      {{ location()?.address }}
+                    </p>
+                  }
+
+                  @if (location()?.city || location()?.state || location()?.zipCode) {
+                    <p class="mt-1 text-gray-600">
+                      @if (location()?.city) {
+                        {{ location()?.city }}
+                      }
+
+                      @if (location()?.city && location()?.state) {
+                        ,
+                      }
+
+                      @if (location()?.state) {
+                        {{ location()?.state }}
+                      }
+
+                      @if (location()?.zipCode) {
+                        {{ location()?.zipCode }}
+                      }
+                    </p>
+                  }
+
+                  @if (location()?.country) {
+                    <p class="mt-1 text-gray-600">
+                      {{ location()?.country }}
+                    </p>
+                  }
+
+                  @if (location()?.latitude !== undefined && location()?.longitude !== undefined) {
+                    <a
+                      class="mt-4 inline-block text-blue-600 hover:underline"
+                      [href]="
+                        'https://www.google.com/maps/search/?api=1&query=' +
+                        location()?.latitude +
+                        ',' +
+                        location()?.longitude
+                      "
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View on map
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Cost -->
+            @if (resource()!.cost) {
+              <div class="mt-8">
+                <h2 class="text-xl font-semibold text-gray-900">Cost</h2>
+
+                <div
+                  class="mt-3 rounded-xl border border-gray-200
+                     bg-gray-50 p-5"
+                >
+                  @if (resource()!.cost!.free) {
+                    <p class="font-medium text-green-700">Free</p>
+                  } @else {
+                    <p class="font-medium text-gray-700">Cost information available</p>
+                  }
+
+                  @if (resource()!.cost!.description) {
+                    <p class="mt-2 text-gray-600">
+                      {{ resource()!.cost!.description }}
+                    </p>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Availability -->
+            @if (resource()!.availability) {
+              <div class="mt-8">
+                <h2 class="text-xl font-semibold text-gray-900">Availability</h2>
+
+                <div
+                  class="mt-4 rounded-xl border border-gray-200
+                    bg-gray-50 p-5"
+                >
+                  @if (resource()!.availability!.alwaysAvailable) {
+                    <p class="font-medium text-green-700">Available 24/7</p>
+                  }
+
+                  @if (resource()!.availability!.byAppointment) {
+                    <p class="font-medium text-blue-700">Available by appointment</p>
+                  }
+
+                  @if (
+                    !resource()!.availability!.alwaysAvailable &&
+                    !resource()!.availability!.byAppointment
+                  ) {
+                    <div class="space-y-2 text-sm">
+                      @if (resource()!.availability!.monday) {
+                        <div class="flex justify-between gap-4">
+                          <span class="font-medium text-gray-700"> Monday </span>
+
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.monday!.open) {
+                              {{ resource()!.availability!.monday!.openTime }}
+                              –
+                              {{ resource()!.availability!.monday!.closeTime }}
+                            } @else {
+                              Closed
+                            }
+                          </span>
+                        </div>
+                      }
+
+                      @if (resource()!.availability!.tuesday) {
+                        <div class="flex justify-between gap-4">
+                          <span class="font-medium text-gray-700"> Tuesday </span>
+
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.tuesday!.open) {
+                              {{ resource()!.availability!.tuesday!.openTime }}
+                              –
+                              {{ resource()!.availability!.tuesday!.closeTime }}
+                            } @else {
+                              Closed
+                            }
+                          </span>
+                        </div>
+                      }
+
+                      @if (resource()!.availability!.wednesday) {
+                        <div class="flex justify-between gap-4">
+                          <span class="font-medium text-gray-700"> Wednesday </span>
+
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.wednesday!.open) {
+                              {{ resource()!.availability!.wednesday!.openTime }}
+                              –
+                              {{ resource()!.availability!.wednesday!.closeTime }}
+                            } @else {
+                              Closed
+                            }
+                          </span>
+                        </div>
+                      }
+
+                      @if (resource()!.availability!.thursday) {
+                        <div class="flex justify-between gap-4">
+                          <span class="font-medium text-gray-700"> Thursday </span>
+
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.thursday!.open) {
+                              {{ resource()!.availability!.thursday!.openTime }}
+                              –
+                              {{ resource()!.availability!.thursday!.closeTime }}
+                            } @else {
+                              Closed
+                            }
+                          </span>
+                        </div>
+                      }
+
+                      @if (resource()!.availability!.friday) {
+                        <div class="flex justify-between gap-4">
+                          <span class="font-medium text-gray-700"> Friday </span>
+
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.friday!.open) {
+                              {{ resource()!.availability!.friday!.openTime }}
+                              –
+                              {{ resource()!.availability!.friday!.closeTime }}
+                            } @else {
+                              Closed
+                            }
+                          </span>
+                        </div>
+                      }
+
+                      @if (resource()!.availability!.saturday) {
+                        <div class="flex justify-between gap-4">
+                          <span class="font-medium text-gray-700"> Saturday </span>
+
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.saturday!.open) {
+                              {{ resource()!.availability!.saturday!.openTime }}
+                              –
+                              {{ resource()!.availability!.saturday!.closeTime }}
+                            } @else {
+                              Closed
+                            }
+                          </span>
+                        </div>
+                      }
+
+                      @if (resource()!.availability!.sunday) {
+                        <div class="flex justify-between gap-4">
+                          <span class="font-medium text-gray-700"> Sunday </span>
+
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.sunday!.open) {
+                              {{ resource()!.availability!.sunday!.openTime }}
+                              –
+                              {{ resource()!.availability!.sunday!.closeTime }}
+                            } @else {
+                              Closed
+                            }
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Tags -->
+            @if (resource()!.tags.length > 0) {
+              <div class="mt-8">
+                <h2 class="font-semibold">Tags</h2>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                  @for (tag of resource()!.tags; track tag) {
+                    <span
+                      class="rounded-full bg-gray-100 px-3 py-1 text-sm
+                         text-gray-700"
+                    >
+                      {{ tag }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </article>
+
+          <!-- Right sidebar -->
+          <aside class="lg:col-span-1">
+            @if (relatedLoading()) {
+              <div
+                class="rounded-xl border border-gray-200
          bg-white p-5 shadow-sm"
->
-  <!-- Related Resources Header -->
-  <div
-    class="flex items-center
+              >
+                <!-- Related Resources Header -->
+                <div
+                  class="flex items-center
            justify-between
            gap-3"
-  >
-    <h2
-      class="min-w-0
+                >
+                  <h2
+                    class="min-w-0
              text-xl
              font-semibold
              text-gray-900"
-    >
-      Related Resources
-    </h2>
+                  >
+                    Related Resources
+                  </h2>
 
-    <!-- Borderless Show / Hide Toggle -->
-    <button
-      type="button"
-      (click)="toggleRelatedResourceDetails()"
-      [attr.aria-expanded]="showRelatedResourceDetails()"
-      class="inline-flex
+                  <!-- Borderless Show / Hide Toggle -->
+                  <button
+                    type="button"
+                    (click)="toggleRelatedResourceDetails()"
+                    [attr.aria-expanded]="showRelatedResourceDetails()"
+                    class="inline-flex
              shrink-0
              items-center
              gap-1
@@ -524,59 +452,36 @@ import { MatIconModule } from "@angular/material/icon";
              transition
              hover:text-[#032D42]
              focus:outline-none"
-    >
-      <span>
-        {{
-          showRelatedResourceDetails()
-            ? 'Hide'
-            : 'Show'
-        }}
-      </span>
+                  >
+                    <span>
+                      {{ showRelatedResourceDetails() ? 'Hide' : 'Show' }}
+                    </span>
 
-      <mat-icon
-        aria-hidden="true"
-        class="!m-0
+                    <mat-icon
+                      aria-hidden="true"
+                      class="!m-0
                !h-4 !w-4
                !text-[18px]"
-      >
-        {{
-          showRelatedResourceDetails()
-            ? 'keyboard_arrow_up'
-            : 'keyboard_arrow_down'
-        }}
-      </mat-icon>
-    </button>
-  </div>
+                    >
+                      {{
+                        showRelatedResourceDetails() ? 'keyboard_arrow_up' : 'keyboard_arrow_down'
+                      }}
+                    </mat-icon>
+                  </button>
+                </div>
 
-  <p
-    class="mt-2 text-sm text-gray-600"
-  >
-    Other resources in this category.
-  </p>
+                <p class="mt-2 text-sm text-gray-600">Other resources in this category.</p>
 
-  <div class="mt-6 grid gap-2">
-
-    @for (
-      relatedResource of relatedResources();
-      track relatedResource.id
-    ) {
-
-      @if (showRelatedResourceDetails()) {
-
-        <!-- Existing full resource card -->
-        <app-resource-card
-          [resource]="relatedResource"
-        />
-
-      } @else {
-
-        <!-- Compact name-only view -->
-        <a
-          [routerLink]="[
-            '/resources',
-            relatedResource.slug
-          ]"
-          class="block
+                <div class="mt-6 grid gap-2">
+                  @for (relatedResource of relatedResources(); track relatedResource.id) {
+                    @if (showRelatedResourceDetails()) {
+                      <!-- Existing full resource card -->
+                      <app-resource-card [resource]="relatedResource" />
+                    } @else {
+                      <!-- Compact name-only view -->
+                      <a
+                        [routerLink]="['/resources', relatedResource.slug]"
+                        class="block
                  rounded-lg
                  px-3 py-2
                  text-sm
@@ -585,236 +490,319 @@ import { MatIconModule } from "@angular/material/icon";
                  transition
                  hover:bg-gray-50
                  hover:text-[#007979]"
-        >
-          {{ relatedResource.name }}
-        </a>
-
-      }
-    }
-
-  </div>
-</div>
-        }
-
-        @if (
-          !relatedLoading() &&
-          relatedResources().length > 0
-        ) {
-          <div class="lg:sticky lg:top-6">
-            <div
-              class="rounded-xl border border-gray-200
-                     bg-white p-5 shadow-sm"
-            >
-              <h2 class="text-xl font-semibold text-gray-900">
-                Related Resources
-              </h2>
-
-              <p class="mt-2 text-sm text-gray-600">
-                Other resources in this category.
-              </p>
-
-              <div class="mt-6 grid gap-2">
-                @for (
-                  relatedResource of relatedResources();
-                  track relatedResource.id
-                ) {
-                  <app-resource-card
-                    [resource]="relatedResource"
-                  />
-                }
+                      >
+                        {{ relatedResource.name }}
+                      </a>
+                    }
+                  }
+                </div>
               </div>
+            }
 
-            </div>
-          </div>
-        }
+            @if (!relatedLoading() && relatedResources().length > 0) {
+              <div class="lg:sticky lg:top-6">
+                <div
+                  class="rounded-xl border border-gray-200
+                     bg-white p-5 shadow-sm"
+                >
+                  <h2 class="text-xl font-semibold text-gray-900">Related Resources</h2>
 
-      </aside>
+                  <p class="mt-2 text-sm text-gray-600">Other resources in this category.</p>
 
-    </div>
-  }
-</main>
+                  <div class="mt-6 grid gap-2">
+                    @for (relatedResource of relatedResources(); track relatedResource.id) {
+                      <app-resource-card [resource]="relatedResource" />
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </aside>
+        </div>
+      }
+    </main>
   `,
   styles: [],
 })
 export class ResourceDetailComponent {
-  private readonly resourceStore =
-  inject(ResourceStore);
+  private readonly resourceStore = inject(ResourceStore);
+  private readonly title = inject(Title);
+  private readonly document = inject(DOCUMENT);
+  private readonly meta = inject(Meta);
   private readonly locationService = inject(LocationService);
   private readonly categoryService = inject(CategoryService);
 
   readonly slug = input.required<string>();
 
- 
   protected readonly location = signal<Location | null>(null);
   protected readonly category = signal<Category | null>(null);
-  
+
   protected readonly relatedLoading = signal(false);
-  protected readonly resource =
-  this.resourceStore.selectedResource;
+  protected readonly resource = this.resourceStore.selectedResource;
 
-protected readonly relatedResources =
-  this.resourceStore.relatedResources;
+  protected readonly relatedResources = this.resourceStore.relatedResources;
 
-protected readonly loading =
-  this.resourceStore.loading;
+  protected readonly loading = this.resourceStore.loading;
 
-protected readonly error =
-  this.resourceStore.error;
+  protected readonly error = this.resourceStore.error;
   /**
- * Controls whether related resource details are displayed.
- *
- * Default is collapsed so the sidebar remains compact.
- */
-protected readonly showRelatedResourceDetails =
-  signal(false);
+   * Controls whether related resource details are displayed.
+   *
+   * Default is collapsed so the sidebar remains compact.
+   */
+  protected readonly showRelatedResourceDetails = signal(false);
 
-/**
- * Toggle related resource details.
- */
-protected toggleRelatedResourceDetails(): void {
-  this.showRelatedResourceDetails.update(
-    (visible) => !visible,
-  );
-}
-
-
+  /**
+   * Toggle related resource details.
+   */
+  protected toggleRelatedResourceDetails(): void {
+    this.showRelatedResourceDetails.update((visible) => !visible);
+  }
 
   constructor() {
-  // Reload the resource whenever the route slug changes.
-  effect(() => {
-    this.slug();
-    this.loadResource();
-  });
-}
+    effect(() => {
+      const resource = this.resourceStore.selectedResource();
 
-private async loadResource(): Promise<void> {
+      if (!resource) {
+        return;
+      }
 
-  const slug = this.slug();
+      this.updateSeoMetadata(resource);
+      this.updateStructuredData(resource);
 
-  if (!slug) {
-    return;
+      this.loadCategory(resource.categoryId);
+
+      this.loadLocation(resource.locationId);
+
+      this.loadRelatedResources(resource);
+    });
   }
 
-  // Clear lookup data from the previous resource
-  // while the new resource is loading.
-  this.category.set(null);
-  this.location.set(null);
+  private async loadCategory(categoryId?: string): Promise<void> {
+    if (!categoryId) {
+      this.category.set(null);
+      return;
+    }
 
-  const resource =
-    await this.resourceStore.loadResourceBySlug(
-      slug,
-    );
+    try {
+      const category = await this.categoryService.getCategoryById(categoryId);
 
-  if (!resource) {
-    return;
+      this.category.set(category);
+    } catch (error) {
+      console.error('Failed to load resource category:', error);
+
+      this.category.set(null);
+    }
   }
 
-  await Promise.all([
-    this.loadCategory(
-      resource.categoryId,
-    ),
+  private async loadLocation(locationId?: string): Promise<void> {
+    if (!locationId) {
+      this.location.set(null);
+      return;
+    }
 
-    this.loadLocation(
-      resource.locationId,
-    ),
+    try {
+      const location = await this.locationService.getLocationById(locationId);
 
-    this.loadRelatedResources(
-      resource,
-    ),
-  ]);
-}
+      this.location.set(location);
+    } catch (error) {
+      console.error('Failed to load resource location:', error);
 
-private async loadCategory(
-  categoryId?: string,
-): Promise<void> {
-
-  if (!categoryId) {
-    this.category.set(null);
-    return;
+      this.location.set(null);
+    }
   }
 
-  try {
+  private async loadRelatedResources(resource: Resource): Promise<void> {
+    if (!resource.categoryId || !resource.id) {
+      return;
+    }
 
-    const category =
-      await this.categoryService.getCategoryById(
-        categoryId,
-      );
+    this.relatedLoading.set(true);
 
-    this.category.set(category);
-
-  } catch (error) {
-
-    console.error(
-      'Failed to load resource category:',
-      error,
-    );
-
-    this.category.set(null);
-  }
-}
-
-private async loadLocation(
-  locationId?: string,
-): Promise<void> {
-
-  if (!locationId) {
-    this.location.set(null);
-    return;
+    try {
+      await this.resourceStore.loadRelatedResources(resource.categoryId, resource.id, 3);
+    } catch (error) {
+      console.error('Failed to load related resources:', error);
+    } finally {
+      this.relatedLoading.set(false);
+    }
   }
 
-  try {
+  /**
+   * Create an SEO-friendly description without cutting
+   * a word in the middle.
+   */
+  private createSeoDescription(description: string, maxLength = 160): string {
+    const text = description.trim();
 
-    const location =
-      await this.locationService.getLocationById(
-        locationId,
-      );
+    if (text.length <= maxLength) {
+      return text;
+    }
 
-    this.location.set(location);
+    const truncated = text.substring(0, maxLength);
 
-  } catch (error) {
+    const lastSpace = truncated.lastIndexOf(' ');
 
-    console.error(
-      'Failed to load resource location:',
-      error,
-    );
+    if (lastSpace <= 0) {
+      return truncated;
+    }
 
-    this.location.set(null);
+    return `${truncated.substring(0, lastSpace)}…`;
   }
-}
 
-  private async loadRelatedResources(
+  /**
+ * Add structured data for the resource detail page.
+ *
+ * The JSON-LD is rendered into the server-generated HTML so
+ * search engines can discover it without relying on browser
+ * JavaScript execution.
+ */
+private updateStructuredData(
   resource: Resource,
-): Promise<void> {
+): void {
+  const name =
+    resource.name?.trim() || 'Resource';
 
-  if (
-    !resource.categoryId ||
-    !resource.id
-  ) {
-    return;
-  }
+  const description =
+    resource.description?.trim() ||
+    `Learn more about ${name} on Zebron.`;
 
-  this.relatedLoading.set(true);
+  const canonicalUrl =
+    `https://zebron.org/resources/${resource.slug}`;
 
-  try {
-
-    await this.resourceStore
-      .loadRelatedResources(
-        resource.categoryId,
-        resource.id,
-        3,
-      );
-
-  } catch (error) {
-
-    console.error(
-      'Failed to load related resources:',
-      error,
+  const existingScript =
+    this.document.head.querySelector(
+      'script[data-zebron-structured-data="resource"]',
     );
 
-  } finally {
+  const script =
+    existingScript ??
+    this.document.createElement('script');
 
-    this.relatedLoading.set(false);
+  script.setAttribute(
+    'type',
+    'application/ld+json',
+  );
 
+  script.setAttribute(
+    'data-zebron-structured-data',
+    'resource',
+  );
+
+  const structuredData: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+
+    '@type': 'WebPage',
+
+    name,
+
+    description:
+      this.createSeoDescription(description),
+
+    url: canonicalUrl,
+
+    isPartOf: {
+      '@type': 'WebSite',
+
+      name: 'Zebron',
+
+      url: 'https://zebron.org/',
+    },
+
+    publisher: {
+      '@type': 'Organization',
+
+      name: 'Zebron',
+
+      url: 'https://zebron.org/',
+    },
+  };
+
+  if (resource.website) {
+    structuredData['mainEntity'] = {
+      '@type': 'Thing',
+      name,
+      url: resource.website,
+    };
+  }
+
+  script.textContent =
+    JSON.stringify(structuredData);
+
+  if (!existingScript) {
+    this.document.head.appendChild(script);
   }
 }
+
+  /**
+   * Update document metadata for search engines and
+   * social-media link previews.
+   */
+  private updateSeoMetadata(resource: Resource): void {
+    const name = resource.name?.trim() || 'Resource';
+
+    const description = resource.description?.trim() || `Learn more about ${name} on Zebron.`;
+
+    const seoDescription = this.createSeoDescription(description);
+
+    const pageTitle = `${name} | Zebron`;
+
+    const canonicalUrl = `https://zebron.org/resources/${resource.slug}`;
+
+    this.title.setTitle(pageTitle);
+
+    this.meta.updateTag({
+      name: 'description',
+      content: seoDescription,
+    });
+
+    const canonicalLink = this.document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+
+    if (canonicalLink) {
+      canonicalLink.setAttribute('href', canonicalUrl);
+    } else {
+      const link = this.document.createElement('link');
+
+      link.setAttribute('rel', 'canonical');
+
+      link.setAttribute('href', canonicalUrl);
+
+      this.document.head.appendChild(link);
+    }
+
+    this.meta.updateTag({
+      property: 'og:title',
+      content: pageTitle,
+    });
+
+    this.meta.updateTag({
+      property: 'og:description',
+      content: seoDescription,
+    });
+
+    this.meta.updateTag({
+      property: 'og:type',
+      content: 'website',
+    });
+
+    this.meta.updateTag({
+      property: 'og:url',
+      content: canonicalUrl,
+    });
+
+    this.meta.updateTag({
+      name: 'twitter:card',
+      content: 'summary',
+    });
+
+    this.meta.updateTag({
+      name: 'twitter:title',
+      content: pageTitle,
+    });
+
+    this.meta.updateTag({
+      name: 'twitter:description',
+      content: seoDescription,
+    });
+  }
 }

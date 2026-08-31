@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
+import { resourceResolver } from './features/resources/resolvers/resource.resolver';
 
 export const routes: Routes = [
 
@@ -37,15 +38,16 @@ export const routes: Routes = [
   // =====================================================
   // PUBLIC RESOURCE DETAIL
   // =====================================================
-  {
-    path: 'resources/:slug',
-    loadComponent: () =>
-      import(
-        './features/resources/pages/resource-detail/resource-detail.component'
-      ).then(
-        (m) => m.ResourceDetailComponent,
-      ),
+ {
+  path: 'resources/:slug',
+  resolve: {
+    resource: resourceResolver,
   },
+  loadComponent: () =>
+    import(
+      './features/resources/pages/resource-detail/resource-detail.component'
+    ).then((m) => m.ResourceDetailComponent),
+},
 
 
   // =====================================================
