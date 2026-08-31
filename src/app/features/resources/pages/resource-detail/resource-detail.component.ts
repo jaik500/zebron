@@ -65,70 +65,64 @@ import {
     <!-- =========================================================
          ZEBRON HEADER
          ========================================================= -->
-
-    <header
+     <header
       class="border-b
-             border-gray-200
-             bg-white"
+         border-white/10
+         bg-[#032D42]"
     >
       <div
         class="mx-auto
-               flex
-               max-w-7xl
-               items-center
-               justify-between
-               px-5
-               py-3
-               sm:px-6
-               lg:px-8"
+           flex
+           max-w-7xl
+           items-center
+           justify-between
+           px-5
+           py-3
+           sm:px-6
+           lg:px-8"
       >
-
         <!-- Logo -->
 
         <a
           routerLink="/"
           class="flex
-                 items-center
-                 gap-2
-                 text-[#032D42]"
+             items-center
+             gap-2
+             text-white"
           aria-label="Zebron home"
         >
-
           <img
             src="/zebron-favicon.svg"
             alt=""
-            class="h-8
-                   w-8"
+            class="h-7
+               w-7"
           />
 
           <span
-            class="text-xl
-                   font-bold
-                   tracking-tight"
+            class="text-lg
+               font-bold
+               tracking-tight"
           >
             Zebron
           </span>
-
         </a>
-
 
         <!-- Desktop navigation -->
 
         <nav
           class="hidden
-                 items-center
-                 gap-7
-                 md:flex"
+             items-center
+             gap-6
+             md:flex"
           aria-label="Primary navigation"
         >
-
           <a
             routerLink="/resources"
             class="text-sm
-                   font-medium
-                   text-[#032D42]
-                   transition
-                   hover:text-[#007979]"
+               font-medium
+               text-white
+               transition
+               hover:text-[#12BFC3]"
           >
             Resources
           </a>
@@ -136,10 +130,10 @@ import {
           <a
             routerLink="/find"
             class="text-sm
-                   font-medium
-                   text-[#032D42]
-                   transition
-                   hover:text-[#007979]"
+               font-medium
+               text-white
+               transition
+               hover:text-[#12BFC3]"
           >
             Find Jobs
           </a>
@@ -147,10 +141,10 @@ import {
           <a
             routerLink="/about"
             class="text-sm
-                   font-medium
-                   text-[#032D42]
-                   transition
-                   hover:text-[#007979]"
+               font-medium
+               text-white
+               transition
+               hover:text-[#12BFC3]"
           >
             About
           </a>
@@ -158,15 +152,15 @@ import {
           <a
             routerLink="/contact"
             class="text-sm
-                   font-medium
-                   text-[#032D42]
-                   transition
-                   hover:text-[#007979]"
+               font-medium
+               text-white
+               transition
+               hover:text-[#12BFC3]"
           >
             Contact
           </a>
 
-          <a
+             <a
             routerLink="/submit"
             class="rounded-lg
                    bg-[#007979]
@@ -181,9 +175,7 @@ import {
           >
             Add Resource
           </a>
-
         </nav>
-
       </div>
     </header>
 

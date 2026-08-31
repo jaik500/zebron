@@ -9,8 +9,8 @@ import { Resource } from '../../../../core/models/resource.model';
   template: `
     <a
       [routerLink]="['/resources', resource().slug]"
-      class="block rounded-xl border border-gray-200 bg-white px-5 py-3 shadow-sm
-             transition hover:-translate-y-0.5 hover:shadow-md"
+      class="block rounded-xl border border-gray-200 bg-[#E5F4F4] px-5 py-3 shadow-sm
+             transition hover:-translate-y-0.5 hover:bg-[#d2eeee] hover:shadow-md"
     >
       <!-- Card Header -->
       <div class="flex items-start justify-between gap-1">

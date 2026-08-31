@@ -30,81 +30,116 @@ import {
 
   template: `
 
-    <header class="border-b border-gray-200 bg-white">
+   <header
+  class="border-b
+         border-white/10
+         bg-[#032D42]"
+>
+  <div
+    class="mx-auto
+           flex
+           max-w-7xl
+           items-center
+           justify-between
+           px-5
+           py-2
+           sm:px-6
+           lg:px-8"
+  >
 
-      <div
-        class="mx-auto flex max-w-7xl items-center justify-between
-               px-5 py-3 sm:px-6 lg:px-8"
+    <!-- Logo -->
+
+    <a
+      routerLink="/"
+      class="flex
+             items-center
+             gap-2
+             text-white"
+      aria-label="Zebron home"
+    >
+
+      <img
+        src="/zebron-favicon.svg"
+        alt=""
+        class="h-7
+               w-7"
+      />
+
+      <span
+        class="text-lg
+               font-bold
+               tracking-tight"
       >
+        Zebron
+      </span>
 
-        <a
-          routerLink="/"
-          aria-label="Zebron home"
-          class="flex items-center gap-2 text-[#032D42]"
-        >
+    </a>
 
-          <img
-            src="/zebron-favicon.svg"
-            alt=""
-            class="h-8 w-8"
-          />
+    <!-- Desktop navigation -->
 
-          <span class="text-xl font-bold tracking-tight">
-            Zebron
-          </span>
+    <nav
+      class="hidden
+             items-center
+             gap-6
+             md:flex"
+      aria-label="Primary navigation"
+    >
 
-        </a>
+      <a
+        routerLink="/resources"
+        class="text-sm
+               font-medium
+               text-white
+               transition
+               hover:text-[#12BFC3]"
+      >
+        Resources
+      </a>
 
+      <a
+        routerLink="/find"
+        class="text-sm
+               font-medium
+               text-white
+               transition
+               hover:text-[#12BFC3]"
+      >
+        Find Jobs
+      </a>
 
-        <nav
-          class="hidden items-center gap-7 md:flex"
-          aria-label="Primary navigation"
-        >
+      <a
+        routerLink="/about"
+        class="text-sm
+               font-medium
+               text-white
+               transition
+               hover:text-[#12BFC3]"
+      >
+        About
+      </a>
 
-          <a
-            routerLink="/resources"
-            class="text-sm font-medium text-[#032D42]
-                   hover:text-[#007979]"
-          >
-            Resources
-          </a>
+      <a
+        routerLink="/contact"
+        class="text-sm
+               font-medium
+               text-white
+               transition
+               hover:text-[#12BFC3]"
+      >
+        Contact
+      </a>
 
-          <a
-            routerLink="/find"
-            class="text-sm font-medium text-[#032D42]
-                   hover:text-[#007979]"
-          >
-            Find Jobs
-          </a>
+    </nav>
 
-          <a
-            routerLink="/about"
-            class="text-sm font-medium text-[#032D42]
-                   hover:text-[#007979]"
-          >
-            About
-          </a>
-
-          <a
-            routerLink="/contact"
-            class="text-sm font-medium text-[#032D42]
-                   hover:text-[#007979]"
-          >
-            Contact
-          </a>
-
-        </nav>
-
-      </div>
-
-    </header>
+  </div>
+</header>
 
 
     <main class="bg-gray-50">
 
       <div
-        class="mx-auto max-w-4xl px-5 py-12
-               sm:px-6 sm:py-16 lg:px-8"
+        class="mx-auto max-w-4xl px-5 py-4
+               sm:px-6 sm:py-4 lg:px-8"
       >
 
         <!-- Intro -->

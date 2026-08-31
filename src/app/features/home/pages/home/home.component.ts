@@ -237,7 +237,7 @@ import { MatIconModule } from '@angular/material/icon';
               routerLink="/resources"
               class="group rounded-2xl
                      border border-gray-200
-                     bg-white p-6
+                     bg-[#E5F4F4] p-6
                      shadow-sm
                      transition
                      hover:-translate-y-1
@@ -294,7 +294,7 @@ import { MatIconModule } from '@angular/material/icon';
               routerLink="/find"
               class="group rounded-2xl
                      border border-gray-200
-                     bg-white p-6
+                     bg-[#E5F4F4] p-6
                      shadow-sm
                      transition
                      hover:-translate-y-1
@@ -351,7 +351,7 @@ import { MatIconModule } from '@angular/material/icon';
               routerLink="/find"
               class="group rounded-2xl
                      border border-gray-200
-                     bg-white p-6
+                     bg-[#E5F4F4] p-6
                      shadow-sm
                      transition
                      hover:-translate-y-1
@@ -364,7 +364,7 @@ import { MatIconModule } from '@angular/material/icon';
                        rounded-xl
                        bg-[#E5F4F4]"
               >
-                <mat-icon aria-hidden="true" class="!text-[#007979]"> school </mat-icon>
+                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]"> school </mat-icon>
               </div>
 
               <h3

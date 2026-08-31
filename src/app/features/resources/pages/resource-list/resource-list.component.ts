@@ -757,7 +757,7 @@ import { ResourceStore } from '../../stores/resource.store';
                    rounded-lg
                    border
                    border-[#007979]/15
-                   bg-[#E6F4F3]
+                   bg-[#032D42]/80
                    p-2
                    shadow-sm
                    sm:p-2.5"
@@ -799,7 +799,7 @@ import { ResourceStore } from '../../stores/resource.store';
                   class="mb-0.5 block
                          text-[14px]
                          font-medium
-                         text-[#032D42]
+                         text-white
                          sm:text-[16px]"
                 >
                   Search
@@ -853,7 +853,7 @@ import { ResourceStore } from '../../stores/resource.store';
                   class="mb-0.5 block
                          text-[14px]
                          font-medium
-                         text-[#032D42]
+                         text-white
                          sm:text-[16px]"
                 >
                   Category
@@ -895,7 +895,7 @@ import { ResourceStore } from '../../stores/resource.store';
                   class="mb-0.5 block
                          text-[14px]
                          font-medium
-                         text-[#032D42]
+                         text-white
                          sm:text-[16px]"
                 >
                   Type
@@ -954,7 +954,7 @@ import { ResourceStore } from '../../stores/resource.store';
              items-center
              gap-1
              text-md
-             text-[#032D42]
+             text-white
              sm:text-[14px]"
                 >
                   <input
@@ -978,7 +978,7 @@ import { ResourceStore } from '../../stores/resource.store';
              items-center
              gap-1
              text-md
-             text-[#032D42]
+             text-white
              sm:text-[14px]"
                 >
                   <input
@@ -1023,7 +1023,7 @@ import { ResourceStore } from '../../stores/resource.store';
              whitespace-nowrap
              text-[15px]
              font-bold
-             text-[#032D42]/60
+             text-white
              sm:text-[16px]"
                 >
                   {{ filteredResources().length }}

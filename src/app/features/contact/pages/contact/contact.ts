@@ -1,19 +1,8 @@
-import {
-  Component,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import {
-  Router,
-  RouterLink,
-} from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
@@ -29,83 +18,96 @@ import { ContactMessageService } from '../../../../core/services/contact-message
   selector: 'app-contact',
   standalone: true,
 
-  imports: [
-    ReactiveFormsModule,
-    RouterLink,
-  ],
+  imports: [ReactiveFormsModule, RouterLink],
 
   template: `
     <main class="min-h-screen bg-gray-50">
-
       <!-- =====================================================
            Zebron Contact Header
            ===================================================== -->
       <section
         class="bg-[#032D42]
-               px-4 py-10
-               text-white
-               sm:px-6
-               lg:px-8"
+         px-4 py-6
+         text-white
+         sm:px-6
+         sm:py-7
+         lg:px-8"
       >
-
         <div class="mx-auto max-w-5xl">
+          <!-- Header row -->
 
-          <a
-            routerLink="/resources"
-            class="text-sm font-semibold
-                   text-white/80
-                   transition
-                   hover:text-white"
+          <div
+            class="flex
+             items-center
+             justify-between
+             gap-4"
           >
-            ← Resource Directory
-          </a>
+            <!-- Title -->
 
-          <div class="mt-8 max-w-3xl">
+            <div class="min-w-0">
+              <p
+                class="text-xs
+                 font-bold
+                 uppercase
+                 tracking-[0.18em]
+                 text-[#7DD3D3]"
+              >
+                Get in touch
+              </p>
 
-            <p
-              class="text-xs font-bold
-                     uppercase
-                     tracking-[0.18em]
-                     text-[#7DD3D3]"
+              <h1
+                class="mt-1.5
+                 text-2xl
+                 font-bold
+                 tracking-tight
+                 text-white
+                 sm:text-3xl"
+              >
+                Contact Zebron
+              </h1>
+            </div>
+
+            <!-- Resource Directory -->
+
+            <a
+              routerLink="/resources"
+              class="shrink-0
+               text-sm
+               font-semibold
+               text-white/80
+               transition
+               hover:text-[#12BFC3]"
             >
-              Get in touch
-            </p>
-
-            <h1
-              class="mt-2 text-3xl
-                     font-bold
-                     tracking-tight
-                     text-white
-                     sm:text-4xl"
-            >
-              Contact Zebron
-            </h1>
-
-            <p
-              class="mt-4 max-w-2xl
-                     text-sm
-                     leading-6
-                     text-blue-100
-                     sm:text-lg
-                     sm:leading-7"
-            >
-              Have a question, suggestion, partnership
-              idea, or need help with something on
-              Zebron? Send us a message.
-            </p>
-
-            <div
-              class="mt-6 h-1 w-16
-                     rounded-full
-                     bg-[#007979]"
-            ></div>
-
+              ← Resource Directory
+            </a>
           </div>
 
+          <!-- Description -->
+
+          <p
+            class="mt-3
+             max-w-2xl
+             text-sm
+             leading-5
+             text-blue-100
+             sm:text-base
+             sm:leading-6"
+          >
+            Have a question, suggestion, partnership idea, or need help with something on Zebron?
+            Send us a message.
+          </p>
+
+          <!-- Accent -->
+
+          <div
+            class="mt-4
+             h-1
+             w-12
+             rounded-full
+             bg-[#007979]"
+          ></div>
         </div>
-
       </section>
-
 
       <!-- =====================================================
            Main Content
@@ -117,19 +119,14 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                sm:py-10
                lg:px-8"
       >
-
         <div
           class="grid gap-6
                  lg:grid-cols-3"
         >
-
           <!-- =================================================
                Contact Information
                ================================================= -->
-          <aside
-            class="lg:col-span-1"
-          >
-
+          <aside class="lg:col-span-1">
             <section
               class="rounded-2xl
                      border border-gray-200
@@ -137,7 +134,6 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                      p-6
                      shadow-sm"
             >
-
               <p
                 class="text-xs
                        font-bold
@@ -163,12 +159,9 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                        leading-6
                        text-gray-600"
               >
-                Whether you're suggesting a resource,
-                reporting an issue, exploring a
-                partnership, or simply have a question,
-                we're here to listen.
+                Whether you're suggesting a resource, reporting an issue, exploring a partnership,
+                or simply have a question, we're here to listen.
               </p>
-
 
               <!-- Resource suggestion -->
               <div
@@ -179,7 +172,6 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                        bg-[#007979]/5
                        p-4"
               >
-
                 <h3
                   class="text-sm
                          font-bold
@@ -194,8 +186,7 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                          leading-5
                          text-gray-600"
                 >
-                  Use our dedicated resource submission
-                  form so our team can review it.
+                  Use our dedicated resource submission form so our team can review it.
                 </p>
 
                 <a
@@ -209,9 +200,7 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                 >
                   Submit a resource →
                 </a>
-
               </div>
-
 
               <!-- Help -->
               <div
@@ -222,7 +211,6 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                        bg-gray-50
                        p-4"
               >
-
                 <h3
                   class="text-sm
                          font-bold
@@ -237,9 +225,8 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                          leading-5
                          text-gray-600"
                 >
-                  Browse the Zebron Resource Directory
-                  to find organizations, programs,
-                  services, and tools.
+                  Browse the Zebron Resource Directory to find organizations, programs, services,
+                  and tools.
                 </p>
 
                 <a
@@ -253,13 +240,9 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                 >
                   Browse resources →
                 </a>
-
               </div>
-
             </section>
-
           </aside>
-
 
           <!-- =================================================
                Contact Form
@@ -272,7 +255,6 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                    shadow-sm
                    lg:col-span-2"
           >
-
             <!-- Form header -->
             <div
               class="border-b
@@ -282,7 +264,6 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                      text-white
                      sm:px-8"
             >
-
               <p
                 class="text-xs
                        font-bold
@@ -310,23 +291,14 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                 <span class="text-[#7DD3D3]">*</span>
                 are required.
               </p>
-
             </div>
 
-
-            <form
-              [formGroup]="form"
-              (ngSubmit)="submit()"
-              class="p-6 sm:p-8"
-            >
-
+            <form [formGroup]="form" (ngSubmit)="submit()" class="p-6 sm:p-8">
               <div class="space-y-6">
-
                 <!-- =================================================
                      Name
                      ================================================= -->
                 <div>
-
                   <label
                     for="name"
                     class="mb-2 block
@@ -358,9 +330,7 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                            focus:ring-[#007979]/10"
                   />
 
-                  @if (
-                    invalid('name')
-                  ) {
+                  @if (invalid('name')) {
                     <p
                       class="mt-2
                              text-sm
@@ -369,15 +339,12 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                       Please enter your name.
                     </p>
                   }
-
                 </div>
-
 
                 <!-- =================================================
                      Email
                      ================================================= -->
                 <div>
-
                   <label
                     for="email"
                     class="mb-2 block
@@ -409,9 +376,7 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                            focus:ring-[#007979]/10"
                   />
 
-                  @if (
-                    invalid('email')
-                  ) {
+                  @if (invalid('email')) {
                     <p
                       class="mt-2
                              text-sm
@@ -420,15 +385,12 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                       Please enter a valid email address.
                     </p>
                   }
-
                 </div>
-
 
                 <!-- =================================================
                      Subject
                      ================================================= -->
                 <div>
-
                   <label
                     for="subject"
                     class="mb-2 block
@@ -459,9 +421,7 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                            focus:ring-[#007979]/10"
                   />
 
-                  @if (
-                    invalid('subject')
-                  ) {
+                  @if (invalid('subject')) {
                     <p
                       class="mt-2
                              text-sm
@@ -470,22 +430,18 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                       Please enter a subject.
                     </p>
                   }
-
                 </div>
-
 
                 <!-- =================================================
                      Message
                      ================================================= -->
                 <div>
-
                   <div
                     class="flex
                            items-center
                            justify-between
                            gap-4"
                   >
-
                     <label
                       for="message"
                       class="mb-2 block
@@ -501,11 +457,8 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                       class="text-xs
                              text-gray-400"
                     >
-                      {{
-                        form.controls.message.value.length
-                      }}/5000
+                      {{ form.controls.message.value.length }}/5000
                     </span>
-
                   </div>
 
                   <textarea
@@ -530,9 +483,7 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                            focus:ring-[#007979]/10"
                   ></textarea>
 
-                  @if (
-                    invalid('message')
-                  ) {
+                  @if (invalid('message')) {
                     <p
                       class="mt-2
                              text-sm
@@ -541,9 +492,7 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                       Please enter a message.
                     </p>
                   }
-
                 </div>
-
 
                 <!-- =================================================
                      Honeypot
@@ -556,12 +505,7 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                          overflow-hidden"
                   aria-hidden="true"
                 >
-
-                  <label
-                    for="website"
-                  >
-                    Website
-                  </label>
+                  <label for="website"> Website </label>
 
                   <input
                     id="website"
@@ -570,9 +514,7 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                     tabindex="-1"
                     autocomplete="off"
                   />
-
                 </div>
-
 
                 <!-- =================================================
                      Privacy notice
@@ -584,19 +526,15 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                          bg-[#032D42]/5
                          p-4"
                 >
-
                   <p
                     class="text-sm
                            leading-6
                            text-gray-600"
                   >
-                    Your message will be securely
-                    received by Zebron and used only
-                    to respond to your inquiry.
+                    Your message will be securely received by Zebron and used only to respond to
+                    your inquiry.
                   </p>
-
                 </div>
-
 
                 <!-- =================================================
                      Submit
@@ -608,7 +546,6 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                          sm:flex-row
                          sm:justify-end"
                 >
-
                   <a
                     routerLink="/resources"
                     class="rounded-xl
@@ -627,10 +564,7 @@ import { ContactMessageService } from '../../../../core/services/contact-message
 
                   <button
                     type="submit"
-                    [disabled]="
-                      submitting() ||
-                      form.invalid
-                    "
+                    [disabled]="submitting() || form.invalid"
                     class="rounded-xl
                            bg-[#007979]
                            px-7 py-3
@@ -645,16 +579,13 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                            disabled:cursor-not-allowed
                            disabled:opacity-50"
                   >
-
                     @if (submitting()) {
-
                       <span
                         class="flex
                                items-center
                                justify-center
                                gap-2"
                       >
-
                         <span
                           class="h-4 w-4
                                  animate-spin
@@ -665,100 +596,53 @@ import { ContactMessageService } from '../../../../core/services/contact-message
                         ></span>
 
                         Sending...
-
                       </span>
-
                     } @else {
-
                       Send Message
-
                     }
-
                   </button>
-
                 </div>
-
               </div>
-
             </form>
-
           </section>
-
         </div>
-
       </div>
-
     </main>
   `,
 })
 export class ContactComponent {
-  private readonly fb =
-    inject(FormBuilder);
+  private readonly fb = inject(FormBuilder);
 
-  private readonly router =
-    inject(Router);
+  private readonly router = inject(Router);
 
-  private readonly toast =
-    inject(HotToastService);
+  private readonly toast = inject(HotToastService);
 
-  private readonly contactService =
-    inject(ContactService);
-
+  private readonly contactService = inject(ContactService);
 
   /**
    * Prevent duplicate submissions.
    */
-  readonly submitting =
-    signal(false);
-
+  readonly submitting = signal(false);
 
   /**
    * Contact form.
    */
-  readonly form =
-    this.fb.nonNullable.group({
+  readonly form = this.fb.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(100)]],
 
-      name: [
-        '',
-        [
-          Validators.required,
-          Validators.maxLength(100),
-        ],
-      ],
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
 
-      email: [
-        '',
-        [
-          Validators.required,
-          Validators.email,
-          Validators.maxLength(254),
-        ],
-      ],
+    subject: ['', [Validators.required, Validators.maxLength(200)]],
 
-      subject: [
-        '',
-        [
-          Validators.required,
-          Validators.maxLength(200),
-        ],
-      ],
+    message: ['', [Validators.required, Validators.maxLength(5000)]],
 
-      message: [
-        '',
-        [
-          Validators.required,
-          Validators.maxLength(5000),
-        ],
-      ],
-
-      /**
-       * Honeypot field.
-       *
-       * Humans never see or fill this field.
-       */
-      website: [''],
-    });
-
+    /**
+     * Honeypot field.
+     *
+     * Humans never see or fill this field.
+     */
+    website: [''],
+  });
 
   /**
    * Submit the contact message.
@@ -767,22 +651,16 @@ export class ContactComponent {
     this.form.markAllAsTouched();
 
     if (this.form.invalid) {
-      this.toast.error(
-        'Please complete the required fields.',
-      );
+      this.toast.error('Please complete the required fields.');
 
       return;
     }
-
 
     if (this.submitting()) {
       return;
     }
 
-
-    const value =
-      this.form.getRawValue();
-
+    const value = this.form.getRawValue();
 
     // Bots that fill the hidden honeypot
     // are silently rejected.
@@ -791,64 +669,38 @@ export class ContactComponent {
       return;
     }
 
-
     this.submitting.set(true);
 
     try {
+      await this.contactService.sendMessage({
+        name: value.name.trim(),
+        email: value.email.trim(),
+        subject: value.subject.trim(),
+        message: value.message.trim(),
+        website: '',
+      });
 
-      await this.contactService
-        .sendMessage({
-          name: value.name.trim(),
-          email: value.email.trim(),
-          subject: value.subject.trim(),
-          message: value.message.trim(),
-          website: '',
-        });
-
-
-      this.toast.success(
-        'Your message has been sent successfully.',
-      );
-
+      this.toast.success('Your message has been sent successfully.');
 
       this.form.reset();
 
-
-      await this.router.navigate([
-        '/resources',
-      ]);
-
+      await this.router.navigate(['/resources']);
     } catch (error) {
+      console.error('Failed to send contact message:', error);
 
-      console.error(
-        'Failed to send contact message:',
-        error,
-      );
-
-      this.toast.error(
-        'Unable to send your message. Please try again.',
-      );
-
+      this.toast.error('Unable to send your message. Please try again.');
     } finally {
-
       this.submitting.set(false);
-
     }
   }
-
 
   /**
    * Determine whether a form control
    * should display a validation error.
    */
-  invalid(
-    controlName: string,
-  ): boolean {
-    const control =
-      this.form.get(controlName);
+  invalid(controlName: string): boolean {
+    const control = this.form.get(controlName);
 
-    return !!control &&
-      control.invalid &&
-      control.touched;
+    return !!control && control.invalid && control.touched;
   }
 }
