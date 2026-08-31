@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 import { resourceResolver } from './features/resources/resolvers/resource.resolver';
+import { AboutComponent } from './features/about/pages/about/about.component';
 
 export const routes: Routes = [
 
@@ -173,6 +174,11 @@ export const routes: Routes = [
         (m) => m.TrainingResultsComponent,
       ),
   },
+
+  {
+  path: 'about',
+  component: AboutComponent,
+},
 
 
   // =====================================================
@@ -403,10 +409,80 @@ export const routes: Routes = [
   // =====================================================
   // DEFAULT ROUTE
   // =====================================================
+
+{
+  path: '',
+  pathMatch: 'full',
+  loadComponent: () =>
+    import(
+      './features/home/pages/home/home.component'
+    ).then(
+      (m) => m.HomeComponent,
+    ),
+},
+
+// =====================================================
+// PUBLIC DONATE
+// =====================================================
+{
+  path: 'donate',
+  loadComponent: () =>
+    import(
+      './features/donate/pages/donate/donate.component'
+    ).then(
+      (m) => m.DonateComponent,
+    ),
+},
+
   {
-    path: '',
-    pathMatch: 'full',
-    redirectTo: '/resources',
-  },
+  path: 'privacy',
+  loadComponent: () =>
+    import(
+      './features/privacy/pages/privacy/privacy.component'
+    ).then(
+      (m) => m.PrivacyComponent,
+    ),
+},
+
+{
+  path: 'terms',
+  loadComponent: () =>
+    import(
+      './features/terms/pages/terms/terms.component'
+    ).then(
+      (m) => m.TermsComponent,
+    ),
+},
+
+{
+  path: 'faq',
+  loadComponent: () =>
+    import(
+      './features/faq/pages/faq/faq.component'
+    ).then(
+      (m) => m.FaqComponent,
+    ),
+},
+
+{
+  path: 'accessibility',
+  loadComponent: () =>
+    import(
+      './features/accessibility/pages/accessibility/accessibility.component'
+    ).then(
+      (m) => m.AccessibilityComponent,
+    ),
+},
+
+  {
+  path: '**',
+  loadComponent: () =>
+    import(
+      './features/errors/pages/not-found/not-found.component'
+    ).then(
+      (m) => m.NotFoundComponent,
+    ),
+},
 
 ];
+
