@@ -102,7 +102,13 @@ app.get('/sitemap.xml', async (_req, res) => {
 });
 
 const angularApp = new AngularNodeAppEngine({
-  allowedHosts: ['localhost', '127.0.0.1'],
+  allowedHosts: [
+    'localhost',
+    '127.0.0.1',
+    'zebron.org',
+    '*.zebron.org',
+  ],
+  trustProxyHeaders: true,
 });
 
 /**
