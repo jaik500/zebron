@@ -53,12 +53,12 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss",
-              "@ngxpert/hot-toast/styles.css"
-            ],
+            "styles": ["src/styles.scss", "@ngxpert/hot-toast/styles.css"],
             "server": "src/main.server.ts",
             "outputMode": "server",
+            "security": {
+              "allowedHosts": ["zebron.org", "*.zebron.org"]
+            },
             "ssr": {
               "entry": "src/server.ts"
             }
