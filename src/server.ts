@@ -107,6 +107,7 @@ const angularApp = new AngularNodeAppEngine({
     '127.0.0.1',
     'zebron.org',
     '*.zebron.org',
+    'zebron-web-427124681171.us-east4.run.app',
   ],
   trustProxyHeaders: true,
 });
