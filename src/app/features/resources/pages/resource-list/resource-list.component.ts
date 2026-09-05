@@ -93,37 +93,29 @@ import { ResourceStore } from '../../stores/resource.store';
             your community.
           </p>
         </div>
-        <!-- Donate -->
-        <a
-          routerLink="/donate"
-          class="inline-flex h-9
-         items-center justify-center
-         gap-1.5
-         rounded-md
-         bg-[#16A34A]
-         px-3
-         text-sm
-         font-semibold
-         text-white
-         shadow-sm
-         transition
-         hover:bg-[#15803D]
-         focus:outline-none
-         focus:ring-2
-         focus:ring-white/40"
-        >
-          <mat-icon
-            aria-hidden="true"
-            class="!m-0
-           !h-4 !w-4
-           !text-[18px]
-           !leading-4"
-          >
-            volunteer_activism
-          </mat-icon>
 
-          <span>Donate</span>
-        </a>
+         <!-- Home -->
+          <a
+            routerLink="/"
+            class="inline-flex
+                   shrink-0
+                   items-center
+                   rounded-lg
+                   border
+                   border-gray-300
+                   bg-white
+                   px-3 py-2
+                   text-sm
+                   font-semibold
+                   text-gray-700
+                   shadow-sm
+                   transition
+                   hover:border-[#7ED6D1]
+                   hover:text-[#032D42]"
+          >
+            ← Home
+          </a>
+
 
         <!-- =====================================================
              Authentication

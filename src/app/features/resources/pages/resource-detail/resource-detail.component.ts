@@ -1,71 +1,37 @@
-import {
-  Component,
-  DOCUMENT,
-  effect,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { Component, DOCUMENT, effect, inject, input, signal } from '@angular/core';
 
-import {
-  Meta,
-  Title,
-} from '@angular/platform-browser';
+import { Meta, Title } from '@angular/platform-browser';
 
-import {
-  CommonModule,
-} from '@angular/common';
+import { CommonModule } from '@angular/common';
 
-import {
-  RouterLink,
-} from '@angular/router';
+import { RouterLink } from '@angular/router';
 
-import {
-  Resource,
-} from '../../../../core/models/resource.model';
+import { Resource } from '../../../../core/models/resource.model';
 
-import {
-  ResourceStore,
-} from '../../stores/resource.store';
+import { ResourceStore } from '../../stores/resource.store';
 
-import {
-  Location,
-} from '../../../../core/models/location.model';
+import { Location } from '../../../../core/models/location.model';
 
-import {
-  LocationService,
-} from '../../../../core/services/location.service';
+import { LocationService } from '../../../../core/services/location.service';
 
-import {
-  Category,
-} from '../../../../core/models/category.model';
+import { Category } from '../../../../core/models/category.model';
 
-import {
-  CategoryService,
-} from '../../../../core/services/category.service';
+import { CategoryService } from '../../../../core/services/category.service';
 
-import {
-  MatIconModule,
-} from '@angular/material/icon';
-
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-resource-detail',
 
   standalone: true,
 
-  imports: [
-    CommonModule,
-    RouterLink,
-    MatIconModule,
-  ],
+  imports: [CommonModule, RouterLink, MatIconModule],
 
   template: `
-
     <!-- =========================================================
          ZEBRON HEADER
          ========================================================= -->
-     <header
+    <header
       class="border-b
          border-white/10
          bg-[#032D42]"
@@ -139,6 +105,17 @@ import {
           </a>
 
           <a
+            routerLink="/test-center"
+            class="text-sm
+         font-medium
+         text-white
+         transition
+         hover:text-[#12BFC3]"
+          >
+            Test Center
+          </a>
+
+          <a
             routerLink="/about"
             class="text-sm
                font-medium
@@ -160,7 +137,7 @@ import {
             Contact
           </a>
 
-             <a
+          <a
             routerLink="/submit"
             class="rounded-lg
                    bg-[#007979]
@@ -179,7 +156,6 @@ import {
       </div>
     </header>
 
-
     <!-- =========================================================
          PAGE
          ========================================================= -->
@@ -193,13 +169,11 @@ import {
              lg:px-8
              lg:py-10"
     >
-
       <!-- =======================================================
            LOADING
            ======================================================= -->
 
       @if (loading()) {
-
         <div
           class="py-16
                  text-center
@@ -208,16 +182,13 @@ import {
         >
           Loading resource...
         </div>
-
       }
-
 
       <!-- =======================================================
            ERROR
            ======================================================= -->
 
       @if (error()) {
-
         <div
           class="rounded-xl
                  border
@@ -232,33 +203,24 @@ import {
             {{ error() }}
           </p>
         </div>
-
       }
-
 
       <!-- =======================================================
            RESOURCE CONTENT
            ======================================================= -->
 
-      @if (
-        !loading() &&
-        !error() &&
-        resource()
-      ) {
-
+      @if (!loading() && !error() && resource()) {
         <div
           class="grid
                  gap-8
                  lg:grid-cols-[minmax(0,2fr)_minmax(280px,0.9fr)]
                  lg:items-start"
         >
-
           <!-- ===================================================
                MAIN RESOURCE
                =================================================== -->
 
           <article>
-
             <!-- =================================================
                  RESOURCE HEADER
                  ================================================= -->
@@ -268,7 +230,6 @@ import {
                      border-gray-200
                      pb-6"
             >
-
               <div
                 class="flex
                        flex-wrap
@@ -276,12 +237,10 @@ import {
                        justify-between
                        gap-4"
               >
-
                 <div
                   class="min-w-0
                          flex-1"
                 >
-
                   <h1
                     class="text-3xl
                            font-bold
@@ -292,15 +251,13 @@ import {
                     {{ resource()!.name }}
                   </h1>
 
-
                   <!-- Category -->
 
                   @if (category()) {
-
                     <a
                       [routerLink]="['/resources']"
                       [queryParams]="{
-                        category: category()!.slug
+                        category: category()!.slug,
                       }"
                       class="mt-2
                              inline-block
@@ -311,16 +268,12 @@ import {
                     >
                       {{ category()!.name }}
                     </a>
-
                   }
-
                 </div>
-
 
                 <!-- Featured -->
 
                 @if (resource()!.featured) {
-
                   <span
                     class="shrink-0
                            rounded-full
@@ -335,16 +288,12 @@ import {
                   >
                     Featured
                   </span>
-
                 }
-
               </div>
-
 
               <!-- Verification -->
 
               @if (resource()!.verified) {
-
                 <div
                   class="mt-4
                          inline-flex
@@ -358,7 +307,6 @@ import {
                          font-medium
                          text-green-700"
                 >
-
                   <span
                     class="flex
                            h-5
@@ -375,11 +323,8 @@ import {
                   </span>
 
                   Verified resource
-
                 </div>
-
               } @else {
-
                 <div
                   class="mt-4
                          inline-flex
@@ -393,7 +338,6 @@ import {
                          font-medium
                          text-gray-600"
                 >
-
                   <span
                     class="flex
                            h-5
@@ -410,29 +354,22 @@ import {
                   </span>
 
                   Not yet verified
-
                 </div>
-
               }
-
 
               <!-- Last verified -->
 
               @if (resource()!.lastVerifiedAt) {
-
                 <p
                   class="mt-2
                          text-xs
                          text-gray-500"
                 >
                   Last verified
-                  {{ resource()!.lastVerifiedAt!.toDate() | date:'MMMM d, y' }}
+                  {{ resource()!.lastVerifiedAt!.toDate() | date: 'MMMM d, y' }}
                 </p>
-
               }
-
             </header>
-
 
             <!-- =================================================
                  ABOUT
@@ -443,7 +380,6 @@ import {
                      border-gray-200
                      py-6"
             >
-
               <h2
                 class="text-lg
                        font-bold
@@ -460,9 +396,7 @@ import {
               >
                 {{ resource()!.description }}
               </p>
-
             </section>
-
 
             <!-- =================================================
                  CONTACT / AVAILABILITY
@@ -476,25 +410,16 @@ import {
                      py-6
                      sm:grid-cols-2"
             >
-
               <!-- Website -->
 
               @if (resource()!.website) {
-
                 <div
                   class="flex
                          gap-3"
                 >
-
-                  <mat-icon
-                    aria-hidden="true"
-                    class="!text-[#007979]"
-                  >
-                    language
-                  </mat-icon>
+                  <mat-icon aria-hidden="true" class="!text-[#007979]"> language </mat-icon>
 
                   <div>
-
                     <h3
                       class="text-sm
                              font-bold
@@ -527,32 +452,20 @@ import {
                         open_in_new
                       </mat-icon>
                     </a>
-
                   </div>
-
                 </div>
-
               }
-
 
               <!-- Phone -->
 
               @if (resource()!.phone) {
-
                 <div
                   class="flex
                          gap-3"
                 >
-
-                  <mat-icon
-                    aria-hidden="true"
-                    class="!text-[#007979]"
-                  >
-                    phone
-                  </mat-icon>
+                  <mat-icon aria-hidden="true" class="!text-[#007979]"> phone </mat-icon>
 
                   <div>
-
                     <h3
                       class="text-sm
                              font-bold
@@ -572,32 +485,20 @@ import {
                     >
                       {{ resource()!.phone }}
                     </a>
-
                   </div>
-
                 </div>
-
               }
-
 
               <!-- Email -->
 
               @if (resource()!.email) {
-
                 <div
                   class="flex
                          gap-3"
                 >
-
-                  <mat-icon
-                    aria-hidden="true"
-                    class="!text-[#007979]"
-                  >
-                    mail_outline
-                  </mat-icon>
+                  <mat-icon aria-hidden="true" class="!text-[#007979]"> mail_outline </mat-icon>
 
                   <div>
-
                     <h3
                       class="text-sm
                              font-bold
@@ -618,32 +519,20 @@ import {
                     >
                       {{ resource()!.email }}
                     </a>
-
                   </div>
-
                 </div>
-
               }
-
 
               <!-- Online -->
 
               @if (resource()!.online) {
-
                 <div
                   class="flex
                          gap-3"
                 >
-
-                  <mat-icon
-                    aria-hidden="true"
-                    class="!text-[#007979]"
-                  >
-                    computer
-                  </mat-icon>
+                  <mat-icon aria-hidden="true" class="!text-[#007979]"> computer </mat-icon>
 
                   <div>
-
                     <h3
                       class="text-sm
                              font-bold
@@ -659,28 +548,21 @@ import {
                     >
                       Available online
                     </p>
-
                   </div>
-
                 </div>
-
               }
-
             </section>
-
 
             <!-- =================================================
                  LOCATION
                  ================================================= -->
 
             @if (location()) {
-
               <section
                 class="border-b
                        border-gray-200
                        py-6"
               >
-
                 <h2
                   class="text-lg
                          font-bold
@@ -688,7 +570,6 @@ import {
                 >
                   Location
                 </h2>
-
 
                 <div
                   class="mt-3
@@ -702,50 +583,31 @@ import {
                          bg-gray-50
                          p-4"
                 >
-
                   <div
                     class="flex
                            min-w-0
                            gap-3"
                   >
-
-                    <mat-icon
-                      aria-hidden="true"
-                      class="!text-[#007979]"
-                    >
-                      location_on
-                    </mat-icon>
+                    <mat-icon aria-hidden="true" class="!text-[#007979]"> location_on </mat-icon>
 
                     <div
                       class="text-sm
                              leading-6
                              text-gray-600"
                     >
-
                       @if (location()?.address) {
-
                         <p>
                           {{ location()?.address }}
                         </p>
-
                       }
 
-                      @if (
-                        location()?.city ||
-                        location()?.state ||
-                        location()?.zipCode
-                      ) {
-
+                      @if (location()?.city || location()?.state || location()?.zipCode) {
                         <p>
-
                           @if (location()?.city) {
                             {{ location()?.city }}
                           }
 
-                          @if (
-                            location()?.city &&
-                            location()?.state
-                          ) {
+                          @if (location()?.city && location()?.state) {
                             ,
                           }
 
@@ -756,29 +618,18 @@ import {
                           @if (location()?.zipCode) {
                             {{ location()?.zipCode }}
                           }
-
                         </p>
-
                       }
 
                       @if (location()?.country) {
-
                         <p>
                           {{ location()?.country }}
                         </p>
-
                       }
-
                     </div>
-
                   </div>
 
-
-                  @if (
-                    location()?.latitude !== undefined &&
-                    location()?.longitude !== undefined
-                  ) {
-
+                  @if (location()?.latitude !== undefined && location()?.longitude !== undefined) {
                     <a
                       class="shrink-0
                              text-xs
@@ -806,28 +657,21 @@ import {
                         open_in_new
                       </mat-icon>
                     </a>
-
                   }
-
                 </div>
-
               </section>
-
             }
-
 
             <!-- =================================================
                  COST
                  ================================================= -->
 
             @if (resource()!.cost) {
-
               <section
                 class="border-b
                        border-gray-200
                        py-6"
               >
-
                 <h2
                   class="text-lg
                          font-bold
@@ -844,13 +688,11 @@ import {
                          bg-green-50
                          p-4"
                 >
-
                   <div
                     class="flex
                            items-center
                            gap-3"
                   >
-
                     <span
                       class="flex
                              h-7
@@ -867,9 +709,7 @@ import {
                     </span>
 
                     <div>
-
                       @if (resource()!.cost!.free) {
-
                         <p
                           class="text-sm
                                  font-bold
@@ -877,9 +717,7 @@ import {
                         >
                           Free
                         </p>
-
                       } @else {
-
                         <p
                           class="text-sm
                                  font-semibold
@@ -887,11 +725,9 @@ import {
                         >
                           Cost information available
                         </p>
-
                       }
 
                       @if (resource()!.cost!.description) {
-
                         <p
                           class="mt-1
                                  text-xs
@@ -899,32 +735,23 @@ import {
                         >
                           {{ resource()!.cost!.description }}
                         </p>
-
                       }
-
                     </div>
-
                   </div>
-
                 </div>
-
               </section>
-
             }
-
 
             <!-- =================================================
                  AVAILABILITY
                  ================================================= -->
 
             @if (resource()!.availability) {
-
               <section
                 class="border-b
                        border-gray-200
                        py-6"
               >
-
                 <h2
                   class="text-lg
                          font-bold
@@ -932,7 +759,6 @@ import {
                 >
                   Availability
                 </h2>
-
 
                 <div
                   class="mt-3
@@ -942,11 +768,7 @@ import {
                          bg-gray-50
                          p-4"
                 >
-
-                  @if (
-                    resource()!.availability!.alwaysAvailable
-                  ) {
-
+                  @if (resource()!.availability!.alwaysAvailable) {
                     <p
                       class="text-sm
                              font-semibold
@@ -954,14 +776,9 @@ import {
                     >
                       Available 24/7
                     </p>
-
                   }
 
-
-                  @if (
-                    resource()!.availability!.byAppointment
-                  ) {
-
+                  @if (resource()!.availability!.byAppointment) {
                     <p
                       class="text-sm
                              font-semibold
@@ -969,22 +786,17 @@ import {
                     >
                       Available by appointment
                     </p>
-
                   }
-
 
                   @if (
                     !resource()!.availability!.alwaysAvailable &&
                     !resource()!.availability!.byAppointment
                   ) {
-
                     <div
                       class="space-y-2
                              text-sm"
                     >
-
                       @if (resource()!.availability!.monday) {
-
                         <div
                           class="flex
                                  justify-between
@@ -997,12 +809,8 @@ import {
                             Monday
                           </span>
 
-                          <span
-                            class="text-gray-600"
-                          >
-                            @if (
-                              resource()!.availability!.monday!.open
-                            ) {
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.monday!.open) {
                               {{ resource()!.availability!.monday!.openTime }}
                               –
                               {{ resource()!.availability!.monday!.closeTime }}
@@ -1011,12 +819,9 @@ import {
                             }
                           </span>
                         </div>
-
                       }
 
-
                       @if (resource()!.availability!.tuesday) {
-
                         <div
                           class="flex
                                  justify-between
@@ -1029,12 +834,8 @@ import {
                             Tuesday
                           </span>
 
-                          <span
-                            class="text-gray-600"
-                          >
-                            @if (
-                              resource()!.availability!.tuesday!.open
-                            ) {
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.tuesday!.open) {
                               {{ resource()!.availability!.tuesday!.openTime }}
                               –
                               {{ resource()!.availability!.tuesday!.closeTime }}
@@ -1043,12 +844,9 @@ import {
                             }
                           </span>
                         </div>
-
                       }
 
-
                       @if (resource()!.availability!.wednesday) {
-
                         <div
                           class="flex
                                  justify-between
@@ -1061,12 +859,8 @@ import {
                             Wednesday
                           </span>
 
-                          <span
-                            class="text-gray-600"
-                          >
-                            @if (
-                              resource()!.availability!.wednesday!.open
-                            ) {
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.wednesday!.open) {
                               {{ resource()!.availability!.wednesday!.openTime }}
                               –
                               {{ resource()!.availability!.wednesday!.closeTime }}
@@ -1075,12 +869,9 @@ import {
                             }
                           </span>
                         </div>
-
                       }
 
-
                       @if (resource()!.availability!.thursday) {
-
                         <div
                           class="flex
                                  justify-between
@@ -1093,12 +884,8 @@ import {
                             Thursday
                           </span>
 
-                          <span
-                            class="text-gray-600"
-                          >
-                            @if (
-                              resource()!.availability!.thursday!.open
-                            ) {
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.thursday!.open) {
                               {{ resource()!.availability!.thursday!.openTime }}
                               –
                               {{ resource()!.availability!.thursday!.closeTime }}
@@ -1107,12 +894,9 @@ import {
                             }
                           </span>
                         </div>
-
                       }
 
-
                       @if (resource()!.availability!.friday) {
-
                         <div
                           class="flex
                                  justify-between
@@ -1125,12 +909,8 @@ import {
                             Friday
                           </span>
 
-                          <span
-                            class="text-gray-600"
-                          >
-                            @if (
-                              resource()!.availability!.friday!.open
-                            ) {
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.friday!.open) {
                               {{ resource()!.availability!.friday!.openTime }}
                               –
                               {{ resource()!.availability!.friday!.closeTime }}
@@ -1139,12 +919,9 @@ import {
                             }
                           </span>
                         </div>
-
                       }
 
-
                       @if (resource()!.availability!.saturday) {
-
                         <div
                           class="flex
                                  justify-between
@@ -1157,12 +934,8 @@ import {
                             Saturday
                           </span>
 
-                          <span
-                            class="text-gray-600"
-                          >
-                            @if (
-                              resource()!.availability!.saturday!.open
-                            ) {
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.saturday!.open) {
                               {{ resource()!.availability!.saturday!.openTime }}
                               –
                               {{ resource()!.availability!.saturday!.closeTime }}
@@ -1171,12 +944,9 @@ import {
                             }
                           </span>
                         </div>
-
                       }
 
-
                       @if (resource()!.availability!.sunday) {
-
                         <div
                           class="flex
                                  justify-between
@@ -1189,12 +959,8 @@ import {
                             Sunday
                           </span>
 
-                          <span
-                            class="text-gray-600"
-                          >
-                            @if (
-                              resource()!.availability!.sunday!.open
-                            ) {
+                          <span class="text-gray-600">
+                            @if (resource()!.availability!.sunday!.open) {
                               {{ resource()!.availability!.sunday!.openTime }}
                               –
                               {{ resource()!.availability!.sunday!.closeTime }}
@@ -1203,30 +969,19 @@ import {
                             }
                           </span>
                         </div>
-
                       }
-
                     </div>
-
                   }
-
                 </div>
-
               </section>
-
             }
-
 
             <!-- =================================================
                  TAGS
                  ================================================= -->
 
             @if (resource()!.tags.length > 0) {
-
-              <section
-                class="py-6"
-              >
-
+              <section class="py-6">
                 <h2
                   class="text-lg
                          font-bold
@@ -1241,12 +996,7 @@ import {
                          flex-wrap
                          gap-2"
                 >
-
-                  @for (
-                    tag of resource()!.tags;
-                    track tag
-                  ) {
-
+                  @for (tag of resource()!.tags; track tag) {
                     <span
                       class="rounded-full
                              bg-gray-100
@@ -1258,32 +1008,21 @@ import {
                     >
                       {{ tag }}
                     </span>
-
                   }
-
                 </div>
-
               </section>
-
             }
-
           </article>
-
 
           <!-- ===================================================
                RELATED RESOURCES
                =================================================== -->
 
-          @if (
-            !relatedLoading() &&
-            relatedResources().length > 0
-          ) {
-
+          @if (!relatedLoading() && relatedResources().length > 0) {
             <aside
               class="lg:sticky
                      lg:top-6"
             >
-
               <section
                 class="rounded-xl
                        border
@@ -1292,7 +1031,6 @@ import {
                        p-5
                        shadow-sm"
               >
-
                 <!-- Header -->
 
                 <div
@@ -1301,9 +1039,7 @@ import {
                          justify-between
                          gap-3"
                 >
-
                   <div>
-
                     <h2
                       class="text-lg
                              font-bold
@@ -1319,9 +1055,7 @@ import {
                     >
                       Other resources in this category.
                     </p>
-
                   </div>
-
 
                   <span
                     class="flex
@@ -1333,18 +1067,9 @@ import {
                            rounded-full
                            bg-[#E8F4F4]"
                   >
-
-                    <mat-icon
-                      aria-hidden="true"
-                      class="!text-[#007979]"
-                    >
-                      hub
-                    </mat-icon>
-
+                    <mat-icon aria-hidden="true" class="!text-[#007979]"> hub </mat-icon>
                   </span>
-
                 </div>
-
 
                 <!-- Related resources -->
 
@@ -1353,17 +1078,9 @@ import {
                          divide-y
                          divide-gray-200"
                 >
-
-                  @for (
-                    relatedResource of relatedResources();
-                    track relatedResource.id
-                  ) {
-
+                  @for (relatedResource of relatedResources(); track relatedResource.id) {
                     <a
-                      [routerLink]="[
-                        '/resources',
-                        relatedResource.slug
-                      ]"
+                      [routerLink]="['/resources', relatedResource.slug]"
                       class="block
                              py-4
                              first:pt-0
@@ -1371,14 +1088,12 @@ import {
                              transition
                              hover:bg-gray-50"
                     >
-
                       <div
                         class="flex
                                items-start
                                justify-between
                                gap-2"
                       >
-
                         <h3
                           class="min-w-0
                                  text-sm
@@ -1389,11 +1104,7 @@ import {
                           {{ relatedResource.name }}
                         </h3>
 
-
-                        @if (
-                          relatedResource.featured
-                        ) {
-
+                        @if (relatedResource.featured) {
                           <span
                             class="shrink-0
                                    rounded-full
@@ -1406,16 +1117,10 @@ import {
                           >
                             Featured
                           </span>
-
                         }
-
                       </div>
 
-
-                      @if (
-                        relatedResource.description
-                      ) {
-
+                      @if (relatedResource.description) {
                         <p
                           class="mt-2
                                  line-clamp-3
@@ -1425,9 +1130,7 @@ import {
                         >
                           {{ relatedResource.description }}
                         </p>
-
                       }
-
 
                       <div
                         class="mt-2
@@ -1438,17 +1141,12 @@ import {
                                text-[11px]
                                text-gray-500"
                       >
-
-                        @if (
-                          relatedResource.online
-                        ) {
-
+                        @if (relatedResource.online) {
                           <span
                             class="inline-flex
                                    items-center
                                    gap-1"
                           >
-
                             <mat-icon
                               aria-hidden="true"
                               class="!m-0
@@ -1460,44 +1158,30 @@ import {
                             </mat-icon>
 
                             Available online
-
                           </span>
-
                         } @else {
-
                           <span></span>
-
                         }
 
-
-                        @if (
-                          relatedResource.cost?.free
-                        ) {
-
+                        @if (relatedResource.cost?.free) {
                           <span
                             class="font-semibold
                                    text-green-700"
                           >
                             Free
                           </span>
-
                         }
-
                       </div>
-
                     </a>
-
                   }
-
                 </div>
-
 
                 <!-- More resources -->
 
                 <a
                   [routerLink]="['/resources']"
                   [queryParams]="{
-                    category: category()?.slug
+                    category: category()?.slug,
                   }"
                   class="mt-4
                          flex
@@ -1523,270 +1207,153 @@ import {
                   >
                     arrow_forward
                   </mat-icon>
-
                 </a>
-
               </section>
-
             </aside>
-
           }
-
         </div>
-
       }
-
     </main>
   `,
-
 
   styles: [],
 })
 export class ResourceDetailComponent {
-
   // =========================================================
   // SERVICES
   // =========================================================
 
-  private readonly resourceStore =
-    inject(ResourceStore);
+  private readonly resourceStore = inject(ResourceStore);
 
-  private readonly title =
-    inject(Title);
+  private readonly title = inject(Title);
 
-  private readonly document =
-    inject(DOCUMENT);
+  private readonly document = inject(DOCUMENT);
 
-  private readonly meta =
-    inject(Meta);
+  private readonly meta = inject(Meta);
 
-  private readonly locationService =
-    inject(LocationService);
+  private readonly locationService = inject(LocationService);
 
-  private readonly categoryService =
-    inject(CategoryService);
-
+  private readonly categoryService = inject(CategoryService);
 
   // =========================================================
   // ROUTE INPUT
   // =========================================================
 
-  readonly slug =
-    input.required<string>();
-
+  readonly slug = input.required<string>();
 
   // =========================================================
   // VIEW STATE
   // =========================================================
 
-  protected readonly location =
-    signal<Location | null>(null);
+  protected readonly location = signal<Location | null>(null);
 
-  protected readonly category =
-    signal<Category | null>(null);
+  protected readonly category = signal<Category | null>(null);
 
-  protected readonly relatedLoading =
-    signal(false);
-
+  protected readonly relatedLoading = signal(false);
 
   // =========================================================
   // RESOURCE STORE STATE
   // =========================================================
 
-  protected readonly resource =
-    this.resourceStore.selectedResource;
+  protected readonly resource = this.resourceStore.selectedResource;
 
-  protected readonly relatedResources =
-    this.resourceStore.relatedResources;
+  protected readonly relatedResources = this.resourceStore.relatedResources;
 
-  protected readonly loading =
-    this.resourceStore.loading;
+  protected readonly loading = this.resourceStore.loading;
 
-  protected readonly error =
-    this.resourceStore.error;
-
+  protected readonly error = this.resourceStore.error;
 
   // =========================================================
   // INITIALIZATION
   // =========================================================
 
   constructor() {
-
     effect(() => {
-
-      const resource =
-        this.resourceStore.selectedResource();
+      const resource = this.resourceStore.selectedResource();
 
       if (!resource) {
         return;
       }
 
-
       // Update SEO whenever the selected resource changes.
 
-      this.updateSeoMetadata(
-        resource,
-      );
+      this.updateSeoMetadata(resource);
 
-      this.updateStructuredData(
-        resource,
-      );
-
+      this.updateStructuredData(resource);
 
       // Load supporting data.
 
-      this.loadCategory(
-        resource.categoryId,
-      );
+      this.loadCategory(resource.categoryId);
 
-      this.loadLocation(
-        resource.locationId,
-      );
+      this.loadLocation(resource.locationId);
 
-      this.loadRelatedResources(
-        resource,
-      );
-
+      this.loadRelatedResources(resource);
     });
-
   }
-
 
   // =========================================================
   // CATEGORY
   // =========================================================
 
-  private async loadCategory(
-    categoryId?: string,
-  ): Promise<void> {
-
+  private async loadCategory(categoryId?: string): Promise<void> {
     if (!categoryId) {
-
       this.category.set(null);
 
       return;
-
     }
-
 
     try {
+      const category = await this.categoryService.getCategoryById(categoryId);
 
-      const category =
-        await this.categoryService
-          .getCategoryById(
-            categoryId,
-          );
-
-      this.category.set(
-        category,
-      );
-
+      this.category.set(category);
     } catch (error) {
-
-      console.error(
-        'Failed to load resource category:',
-        error,
-      );
+      console.error('Failed to load resource category:', error);
 
       this.category.set(null);
-
     }
-
   }
-
 
   // =========================================================
   // LOCATION
   // =========================================================
 
-  private async loadLocation(
-    locationId?: string,
-  ): Promise<void> {
-
+  private async loadLocation(locationId?: string): Promise<void> {
     if (!locationId) {
-
       this.location.set(null);
 
       return;
-
     }
-
 
     try {
+      const location = await this.locationService.getLocationById(locationId);
 
-      const location =
-        await this.locationService
-          .getLocationById(
-            locationId,
-          );
-
-      this.location.set(
-        location,
-      );
-
+      this.location.set(location);
     } catch (error) {
-
-      console.error(
-        'Failed to load resource location:',
-        error,
-      );
+      console.error('Failed to load resource location:', error);
 
       this.location.set(null);
-
     }
-
   }
-
 
   // =========================================================
   // RELATED RESOURCES
   // =========================================================
 
-  private async loadRelatedResources(
-    resource: Resource,
-  ): Promise<void> {
-
-    if (
-      !resource.categoryId ||
-      !resource.id
-    ) {
-
+  private async loadRelatedResources(resource: Resource): Promise<void> {
+    if (!resource.categoryId || !resource.id) {
       return;
-
     }
 
-
-    this.relatedLoading.set(
-      true,
-    );
-
+    this.relatedLoading.set(true);
 
     try {
-
-      await this.resourceStore
-        .loadRelatedResources(
-          resource.categoryId,
-          resource.id,
-          3,
-        );
-
+      await this.resourceStore.loadRelatedResources(resource.categoryId, resource.id, 3);
     } catch (error) {
-
-      console.error(
-        'Failed to load related resources:',
-        error,
-      );
-
+      console.error('Failed to load related resources:', error);
     } finally {
-
-      this.relatedLoading.set(
-        false,
-      );
-
+      this.relatedLoading.set(false);
     }
-
   }
-
 
   // =========================================================
   // SEO DESCRIPTION
@@ -1797,55 +1364,23 @@ export class ResourceDetailComponent {
    * without cutting a word in the middle.
    */
 
-  private createSeoDescription(
-    description: string,
-    maxLength = 160,
-  ): string {
+  private createSeoDescription(description: string, maxLength = 160): string {
+    const text = description.trim();
 
-    const text =
-      description.trim();
-
-
-    if (
-      text.length <= maxLength
-    ) {
-
+    if (text.length <= maxLength) {
       return text;
-
     }
 
+    const truncated = text.substring(0, maxLength);
 
-    const truncated =
-      text.substring(
-        0,
-        maxLength,
-      );
+    const lastSpace = truncated.lastIndexOf(' ');
 
-
-    const lastSpace =
-      truncated.lastIndexOf(
-        ' ',
-      );
-
-
-    if (
-      lastSpace <= 0
-    ) {
-
+    if (lastSpace <= 0) {
       return truncated;
-
     }
 
-
-    return (
-      `${truncated.substring(
-        0,
-        lastSpace,
-      )}…`
-    );
-
+    return `${truncated.substring(0, lastSpace)}…`;
   }
-
 
   // =========================================================
   // STRUCTURED DATA
@@ -1856,307 +1391,155 @@ export class ResourceDetailComponent {
    * server-generated document.
    */
 
-  private updateStructuredData(
-    resource: Resource,
-  ): void {
+  private updateStructuredData(resource: Resource): void {
+    const name = resource.name?.trim() || 'Resource';
 
-    const name =
-      resource.name?.trim() ||
-      'Resource';
+    const description = resource.description?.trim() || `Learn more about ${name} on Zebron.`;
 
+    const canonicalUrl = `https://zebron.org/resources/${resource.slug}`;
 
-    const description =
-      resource.description?.trim() ||
-      `Learn more about ${name} on Zebron.`;
-
-
-    const canonicalUrl =
-      `https://zebron.org/resources/${resource.slug}`;
-
-
-    const existingScript =
-      this.document.head.querySelector(
-        'script[data-zebron-structured-data="resource"]',
-      );
-
-
-    const script =
-      existingScript ??
-      this.document.createElement(
-        'script',
-      );
-
-
-    script.setAttribute(
-      'type',
-      'application/ld+json',
+    const existingScript = this.document.head.querySelector(
+      'script[data-zebron-structured-data="resource"]',
     );
 
+    const script = existingScript ?? this.document.createElement('script');
 
-    script.setAttribute(
-      'data-zebron-structured-data',
-      'resource',
-    );
+    script.setAttribute('type', 'application/ld+json');
 
+    script.setAttribute('data-zebron-structured-data', 'resource');
 
-    const structuredData:
-      Record<string, unknown> = {
+    const structuredData: Record<string, unknown> = {
+      '@context': 'https://schema.org',
 
-      '@context':
-        'https://schema.org',
-
-      '@type':
-        'WebPage',
+      '@type': 'WebPage',
 
       name,
 
-      description:
-        this.createSeoDescription(
-          description,
-        ),
+      description: this.createSeoDescription(description),
 
-      url:
-        canonicalUrl,
+      url: canonicalUrl,
 
       isPartOf: {
+        '@type': 'WebSite',
 
-        '@type':
-          'WebSite',
+        name: 'Zebron',
 
-        name:
-          'Zebron',
-
-        url:
-          'https://zebron.org/',
-
+        url: 'https://zebron.org/',
       },
 
       publisher: {
+        '@type': 'Organization',
 
-        '@type':
-          'Organization',
+        name: 'Zebron',
 
-        name:
-          'Zebron',
-
-        url:
-          'https://zebron.org/',
-
+        url: 'https://zebron.org/',
       },
-
     };
 
-
-    if (
-      resource.website
-    ) {
-
-      structuredData[
-        'mainEntity'
-      ] = {
-
-        '@type':
-          'Thing',
+    if (resource.website) {
+      structuredData['mainEntity'] = {
+        '@type': 'Thing',
 
         name,
 
-        url:
-          resource.website,
-
+        url: resource.website,
       };
-
     }
 
-
-    script.textContent =
-      JSON.stringify(
-        structuredData,
-      );
-
+    script.textContent = JSON.stringify(structuredData);
 
     if (!existingScript) {
-
-      this.document.head
-        .appendChild(
-          script,
-        );
-
+      this.document.head.appendChild(script);
     }
-
   }
-
 
   // =========================================================
   // SEO METADATA
   // =========================================================
 
-  private updateSeoMetadata(
-    resource: Resource,
-  ): void {
+  private updateSeoMetadata(resource: Resource): void {
+    const name = resource.name?.trim() || 'Resource';
 
-    const name =
-      resource.name?.trim() ||
-      'Resource';
+    const description = resource.description?.trim() || `Learn more about ${name} on Zebron.`;
 
+    const seoDescription = this.createSeoDescription(description);
 
-    const description =
-      resource.description?.trim() ||
-      `Learn more about ${name} on Zebron.`;
+    const pageTitle = `${name} | Zebron`;
 
-
-    const seoDescription =
-      this.createSeoDescription(
-        description,
-      );
-
-
-    const pageTitle =
-      `${name} | Zebron`;
-
-
-    const canonicalUrl =
-      `https://zebron.org/resources/${resource.slug}`;
-
+    const canonicalUrl = `https://zebron.org/resources/${resource.slug}`;
 
     // Browser / search title.
 
-    this.title.setTitle(
-      pageTitle,
-    );
-
+    this.title.setTitle(pageTitle);
 
     // Description.
 
     this.meta.updateTag({
+      name: 'description',
 
-      name:
-        'description',
-
-      content:
-        seoDescription,
-
+      content: seoDescription,
     });
-
 
     // Canonical URL.
 
-    const canonicalLink =
-      this.document.querySelector<HTMLLinkElement>(
-        'link[rel="canonical"]',
-      );
-
+    const canonicalLink = this.document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
 
     if (canonicalLink) {
-
-      canonicalLink.setAttribute(
-        'href',
-        canonicalUrl,
-      );
-
+      canonicalLink.setAttribute('href', canonicalUrl);
     } else {
+      const link = this.document.createElement('link');
 
-      const link =
-        this.document.createElement(
-          'link',
-        );
+      link.setAttribute('rel', 'canonical');
 
-      link.setAttribute(
-        'rel',
-        'canonical',
-      );
+      link.setAttribute('href', canonicalUrl);
 
-      link.setAttribute(
-        'href',
-        canonicalUrl,
-      );
-
-      this.document.head.appendChild(
-        link,
-      );
-
+      this.document.head.appendChild(link);
     }
-
 
     // Open Graph.
 
     this.meta.updateTag({
+      property: 'og:title',
 
-      property:
-        'og:title',
-
-      content:
-        pageTitle,
-
+      content: pageTitle,
     });
-
 
     this.meta.updateTag({
+      property: 'og:description',
 
-      property:
-        'og:description',
-
-      content:
-        seoDescription,
-
+      content: seoDescription,
     });
-
 
     this.meta.updateTag({
+      property: 'og:type',
 
-      property:
-        'og:type',
-
-      content:
-        'website',
-
+      content: 'website',
     });
-
 
     this.meta.updateTag({
+      property: 'og:url',
 
-      property:
-        'og:url',
-
-      content:
-        canonicalUrl,
-
+      content: canonicalUrl,
     });
-
 
     // Twitter.
 
     this.meta.updateTag({
+      name: 'twitter:card',
 
-      name:
-        'twitter:card',
-
-      content:
-        'summary',
-
+      content: 'summary',
     });
-
 
     this.meta.updateTag({
+      name: 'twitter:title',
 
-      name:
-        'twitter:title',
-
-      content:
-        pageTitle,
-
+      content: pageTitle,
     });
-
 
     this.meta.updateTag({
+      name: 'twitter:description',
 
-      name:
-        'twitter:description',
-
-      content:
-        seoDescription,
-
+      content: seoDescription,
     });
-
   }
-
 }

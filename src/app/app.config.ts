@@ -6,6 +6,7 @@ import { routes } from './app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import {
   JOB_REPOSITORY,
 } from './core/repositories/job.repository';
@@ -43,5 +44,6 @@ export const appConfig: ApplicationConfig = {
   provide: JOB_REPOSITORY,
   useExisting: FirestoreJobRepository,
 },
+provideNativeDateAdapter() // 👈 Adds native date support globally
   ],
 };

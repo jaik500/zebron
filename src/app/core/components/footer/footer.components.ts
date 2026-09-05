@@ -107,7 +107,7 @@ import { RouterLink } from '@angular/router';
                          transition
                          hover:text-white"
                 >
-                  Find Jobs
+                  Find Jobs and opportunities
                 </a>
               </li>
 
@@ -168,13 +168,14 @@ import { RouterLink } from '@angular/router';
 
               <li>
                 <a
-                  routerLink="/find"
+                  routerLink="/test-center"
                   class="text-sm
-               text-white/70
-               transition
-               hover:text-white"
+                  font-medium
+                  text-white/70
+                  transition
+                  hover:text-[#12BFC3]"
                 >
-                  Find Opportunities
+                  Test Center
                 </a>
               </li>
 

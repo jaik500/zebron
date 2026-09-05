@@ -180,6 +180,124 @@ export const routes: Routes = [
   component: AboutComponent,
 },
 
+// =====================================================
+// TEST CENTER
+// =====================================================
+{
+  path: 'test-center',
+  loadComponent: () =>
+    import(
+      './features/test-center/pages/test-center-home/test-center-home.component'
+    ).then(
+      (m) => m.TestCenterHomeComponent,
+    ),
+},
+
+// =====================================================
+// TEST CENTER COURSE
+// =====================================================
+{
+  path: 'test-center/courses/:slug',
+  loadComponent: () =>
+    import(
+      './features/test-center/pages/course-detail/course-detail.component'
+    ).then(
+      (m) => m.TestCourseDetailComponent,
+    ),
+},
+
+// =====================================================
+// TEST CENTER SETUP
+// =====================================================
+{
+  path: 'test-center/setup',
+  loadComponent: () =>
+    import(
+      './features/test-center/pages/test-setup/test-setup.component'
+    ).then(
+      (m) => m.TestSetupComponent,
+    ),
+},
+
+// =====================================================
+// TEST CENTER PRACTICE
+// =====================================================
+{
+  path: 'test-center/practice',
+  loadComponent: () =>
+    import(
+      './features/test-center/pages/test-practice/test-practice.component'
+    ).then(
+      (m) => m.TestPracticeComponent,
+    ),
+},
+
+// =====================================================
+// TEST CENTER COURSES
+// =====================================================
+{
+  path: 'test-center/courses',
+  loadComponent: () =>
+    import(
+      './features/test-center/pages/course-list/course-list.component'
+    ).then(
+      (m) => m.CourseListComponent,
+    ),
+},
+
+// =====================================================
+// ADMIN TEST CENTER TOPICS
+// =====================================================
+{
+  path: 'admin/test-center/topics',
+  loadComponent: () =>
+    import(
+      './features/admin/pages/test-topics/test-topic-admin.component'
+    ).then(
+      (m) => m.TestTopicAdminComponent,
+    ),
+},
+
+{
+  path: 'admin/test-center',
+  loadComponent: () =>
+    import(
+      './features/admin/pages/test-center/test-center-admin-component'
+    ).then(
+      (m) => m.TestCenterAdminComponent,
+    ),
+},
+
+  {
+    path: 'admin/test-center/questions',
+    loadComponent: () =>
+      import('./features/admin/pages/test-questions/test-question-admin.component')
+        .then((m) => m.TestQuestionAdminComponent),
+  },
+
+  {
+  path: 'test-center/results',
+  loadComponent: () =>
+    import(
+      './features/test-center/pages/test-results/test-results.component'
+    ).then(
+      m => m.TestResultsComponent,
+    ),
+},
+
+{
+  path: 'community',
+  canActivate: [authGuard],
+  loadComponent: () =>
+    import(
+      './features/community/pages/community-home/community-home.component'
+    ).then(
+      (m) => m.CommunityHomeComponent,
+    ),
+},
+
+///////////////////////////////////////////////////////////////////////////
+
 
   // =====================================================
   // PROTECTED USER PROFILE
@@ -284,6 +402,17 @@ export const routes: Routes = [
         (m) => m.JobFormComponent,
       ),
   },
+
+  {
+  path: 'admin/test-center/courses',
+  canActivate: [adminGuard],
+  loadComponent: () =>
+    import(
+      './features/admin/pages/test-courses/test-course-admin.component'
+    ).then(
+      (m) => m.TestCourseAdminComponent,
+    ),
+},
 
 
   // =====================================================
@@ -404,6 +533,33 @@ export const routes: Routes = [
         (m) => m.CategoryAdminComponent,
       ),
   },
+
+  // BUSINESS
+  {
+  path: 'admin/business',
+
+  canActivate: [adminGuard],
+
+  loadComponent: () =>
+    import(
+      './features/business/pages/business-dashboard/business-dashboard.component'
+    ).then(
+      (m) =>
+        m.BusinessDashboardComponent,
+    ),
+},
+
+// BUSINESS PROFILE
+{
+  path: 'admin/business/profile',
+  canActivate: [adminGuard],
+  loadComponent: () =>
+    import(
+      './features/business/pages/business-profile/business-profile.component'
+    ).then(
+      (m) => m.BusinessProfileComponent,
+    ),
+},
 
 
   // =====================================================

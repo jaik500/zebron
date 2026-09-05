@@ -648,6 +648,83 @@ import { HotToastService } from '@ngxpert/hot-toast';
             </a>
 
             <!-- ===================================================
+     TEST CENTER
+     =================================================== -->
+            <a
+              routerLink="/admin/test-center"
+              class="group rounded-2xl
+         border border-gray-200
+         bg-white p-6
+         shadow-sm transition
+         hover:-translate-y-0.5
+         hover:border-[#007979]/30
+         hover:shadow-md"
+            >
+              <!-- Icon -->
+              <div
+                class="flex h-12 w-12
+           items-center justify-center
+           rounded-xl
+           bg-[#007979]/10
+           text-[#007979]"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  class="h-6 w-6"
+                  aria-hidden="true"
+                >
+                  <!-- Clipboard -->
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5h6" />
+
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"
+                  />
+
+                  <rect x="5" y="4" width="14" height="17" rx="2" />
+
+                  <!-- Checklist -->
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 10h6" />
+
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6" />
+
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 18h4" />
+                </svg>
+              </div>
+
+              <!-- Content -->
+              <div class="mt-5">
+                <h2
+                  class="text-lg font-semibold
+             text-[#032D42]
+             group-hover:text-[#007979]"
+                >
+                  Test Center
+                </h2>
+
+                <p
+                  class="mt-2 text-sm
+             leading-6 text-gray-500"
+                >
+                  Manage test courses, topics, questions, and question banks.
+                </p>
+              </div>
+
+              <!-- Action -->
+              <div
+                class="mt-5 text-sm font-semibold
+           text-[#007979]"
+              >
+                Open Test Center →
+              </div>
+            </a>
+
+            <!-- ===================================================
                  CONTACT MAILBOX
                  =================================================== -->
             <a
@@ -706,6 +783,80 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 Open mailbox →
               </div>
             </a>
+
+            <!-- ===================================================
+                 BUSINESS OPERATIONS
+                 =================================================== -->
+            <a
+              routerLink="/admin/business"
+              class="group rounded-2xl
+                     border border-gray-200
+                     bg-white p-6
+                     shadow-sm transition
+                     hover:-translate-y-0.5
+                     hover:border-[#007979]/30
+                     hover:shadow-md"
+            >
+              <!-- Icon -->
+              <div
+                class="flex h-12 w-12
+                       items-center justify-center
+                       rounded-xl
+                       bg-[#007979]/10
+                       text-[#007979]"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  class="h-6 w-6"
+                  aria-hidden="true"
+                >
+                  <!-- Building -->
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18" />
+
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 21V5l7-3 7 3v16" />
+
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 21v-4h6v4" />
+
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M8 8h1M8 11h1M8 14h1M15 8h1M15 11h1M15 14h1"
+                  />
+                </svg>
+              </div>
+
+              <!-- Content -->
+              <div class="mt-5">
+                <h2
+                  class="text-lg font-semibold
+                         text-[#032D42]
+                         group-hover:text-[#007979]"
+                >
+                  Business Operations
+                </h2>
+
+                <p
+                  class="mt-2 text-sm
+                         leading-6 text-gray-500"
+                >
+                  Manage business finances, revenue, expenses, compliance, activities, documents,
+                  and reports.
+                </p>
+              </div>
+
+              <!-- Action -->
+              <div
+                class="mt-5 text-sm font-semibold
+                       text-[#007979]"
+              >
+                Open Business Operations →
+              </div>
+            </a>
+            
           </div>
         </section>
       </main>
