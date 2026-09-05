@@ -2,6 +2,8 @@ import { computed, inject } from '@angular/core';
 
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 
+import { Timestamp } from 'firebase/firestore';
+
 import { Business } from '../models/business.model';
 
 import { BusinessTransaction } from '../models/business-transaction.model';
@@ -10,12 +12,12 @@ import { BusinessActivity } from '../models/business-activity.model';
 
 import { BusinessComplianceRequirement } from '../models/business-compliance.model';
 
-import { BusinessDocument } from '../models/business-document.model';
+import { BusinessDocument, BusinessDocumentInput } from '../models/business-document.model';
 
 import { BusinessService } from '../services/business.service';
 
-import { Timestamp } from 'firebase/firestore';
-
+// ============================================================
+// STATE
 // ============================================================
 
 /**
@@ -47,6 +49,10 @@ interface BusinessState {
   complianceFilter: 'all' | 'current' | 'upcoming' | 'action_required' | 'overdue' | 'expired';
 }
 
+// ============================================================
+// INITIAL STATE
+// ============================================================
+
 /**
  * Initial Business Operations state.
  */
@@ -76,8 +82,23 @@ const initialState: BusinessState = {
   complianceFilter: 'all',
 };
 
+// ============================================================
+// STORE
+// ============================================================
+
 /**
  * Business Operations Signal Store.
+ *
+ * Responsibilities:
+ *
+ * - Maintain Business Operations state.
+ * - Manage selected business.
+ * - Manage transaction filters.
+ * - Manage compliance filters.
+ * - Coordinate CRUD operations.
+ * - Coordinate document uploads/replacements/deletions.
+ *
+ * BusinessService remains responsible for Firebase persistence.
  */
 export const BusinessStore = signalStore(
   {
@@ -132,9 +153,17 @@ export const BusinessStore = signalStore(
       const type = transactionType();
 
       return transactions().filter((transaction) => {
+        // --------------------------------------------------
+        // Transaction type filter
+        // --------------------------------------------------
+
         if (type !== 'all' && transaction.type !== type) {
           return false;
         }
+
+        // --------------------------------------------------
+        // Search filter
+        // --------------------------------------------------
 
         if (!search) {
           return true;
@@ -142,10 +171,15 @@ export const BusinessStore = signalStore(
 
         const searchableText = [
           transaction.description,
+
           transaction.categoryId,
+
           transaction.vendorId,
+
           transaction.customerId,
+
           transaction.referenceNumber,
+
           transaction.paymentMethod,
         ]
           .filter(Boolean)
@@ -205,6 +239,9 @@ export const BusinessStore = signalStore(
     // LOAD EVERYTHING
     // ======================================================
 
+    /**
+     * Load all Business Operations data.
+     */
     async loadBusinessData(): Promise<void> {
       patchState(store, {
         loading: true,
@@ -239,6 +276,8 @@ export const BusinessStore = signalStore(
           documents,
 
           loading: false,
+
+          error: null,
         });
       } catch (error) {
         console.error('Failed to load Business Operations data:', error);
@@ -257,12 +296,18 @@ export const BusinessStore = signalStore(
     // TRANSACTION FILTERS
     // ======================================================
 
+    /**
+     * Set transaction search text.
+     */
     setTransactionSearch(value: string): void {
       patchState(store, {
         transactionSearch: value,
       });
     },
 
+    /**
+     * Set transaction type filter.
+     */
     setTransactionType(value: 'all' | 'revenue' | 'expense'): void {
       patchState(store, {
         transactionType: value,
@@ -273,6 +318,9 @@ export const BusinessStore = signalStore(
     // COMPLIANCE FILTER
     // ======================================================
 
+    /**
+     * Set compliance filter.
+     */
     setComplianceFilter(
       value: 'all' | 'current' | 'upcoming' | 'action_required' | 'overdue' | 'expired',
     ): void {
@@ -285,13 +333,19 @@ export const BusinessStore = signalStore(
     // SELECT BUSINESS
     // ======================================================
 
+    /**
+     * Select the active business.
+     */
     selectBusiness(business: Business): void {
       patchState(store, {
         selectedBusiness: business,
       });
     },
 
-    // Create a transaction
+    // ======================================================
+    // CREATE TRANSACTION
+    // ======================================================
+
     createTransaction: async (
       transaction: Omit<BusinessTransaction, 'id' | 'createdAt' | 'updatedAt'>,
     ) => {
@@ -305,14 +359,20 @@ export const BusinessStore = signalStore(
 
         const createdTransaction: BusinessTransaction = {
           ...transaction,
+
           id,
+
           createdAt: Timestamp.now(),
+
           updatedAt: Timestamp.now(),
         };
 
         patchState(store, {
           transactions: [createdTransaction, ...store.transactions()],
+
           saving: false,
+
+          error: null,
         });
 
         return createdTransaction;
@@ -321,6 +381,7 @@ export const BusinessStore = signalStore(
 
         patchState(store, {
           saving: false,
+
           error: message,
         });
 
@@ -328,7 +389,10 @@ export const BusinessStore = signalStore(
       }
     },
 
-    // Update a transaction
+    // ======================================================
+    // UPDATE TRANSACTION
+    // ======================================================
+
     updateTransaction: async (id: string, changes: Partial<BusinessTransaction>) => {
       patchState(store, {
         saving: true,
@@ -342,7 +406,9 @@ export const BusinessStore = signalStore(
           transaction.id === id
             ? {
                 ...transaction,
+
                 ...changes,
+
                 updatedAt: Timestamp.now(),
               }
             : transaction,
@@ -350,13 +416,17 @@ export const BusinessStore = signalStore(
 
         patchState(store, {
           transactions: updatedTransactions,
+
           saving: false,
+
+          error: null,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to update transaction.';
 
         patchState(store, {
           saving: false,
+
           error: message,
         });
 
@@ -364,7 +434,10 @@ export const BusinessStore = signalStore(
       }
     },
 
-    // Delete a transaction
+    // ======================================================
+    // DELETE TRANSACTION
+    // ======================================================
+
     deleteTransaction: async (id: string) => {
       patchState(store, {
         saving: true,
@@ -376,13 +449,17 @@ export const BusinessStore = signalStore(
 
         patchState(store, {
           transactions: store.transactions().filter((transaction) => transaction.id !== id),
+
           saving: false,
+
+          error: null,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to delete transaction.';
 
         patchState(store, {
           saving: false,
+
           error: message,
         });
 
@@ -419,6 +496,8 @@ export const BusinessStore = signalStore(
           selectedBusiness: createdBusiness,
 
           saving: false,
+
+          error: null,
         });
 
         return createdBusiness;
@@ -427,6 +506,7 @@ export const BusinessStore = signalStore(
 
         patchState(store, {
           saving: false,
+
           error: message,
         });
 
@@ -451,7 +531,9 @@ export const BusinessStore = signalStore(
           business.id === id
             ? {
                 ...business,
+
                 ...changes,
+
                 updatedAt: Timestamp.now(),
               }
             : business,
@@ -465,18 +547,25 @@ export const BusinessStore = signalStore(
           selectedBusiness: updatedBusiness,
 
           saving: false,
+
+          error: null,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to update business.';
 
         patchState(store, {
           saving: false,
+
           error: message,
         });
 
         throw error;
       }
     },
+
+    // ======================================================
+    // CREATE ACTIVITY
+    // ======================================================
 
     createActivity: async (activity: Omit<BusinessActivity, 'id' | 'createdAt' | 'updatedAt'>) => {
       patchState(store, {
@@ -489,20 +578,202 @@ export const BusinessStore = signalStore(
 
         const createdActivity: BusinessActivity = {
           ...activity,
+
           id,
+
           createdAt: Timestamp.now(),
+
           updatedAt: Timestamp.now(),
         };
 
         patchState(store, {
           activities: [createdActivity, ...store.activities()],
+
           saving: false,
+
+          error: null,
         });
 
         return createdActivity;
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Unable to create business activity.';
+
+        patchState(store, {
+          saving: false,
+
+          error: message,
+        });
+
+        throw error;
+      }
+    },
+
+    // ======================================================
+    // UPDATE ACTIVITY
+    // ======================================================
+
+    updateActivity: async (id: string, changes: Partial<BusinessActivity>) => {
+      patchState(store, {
+        saving: true,
+
+        error: null,
+      });
+
+      try {
+        await businessService.updateActivity(id, changes);
+
+        const updatedActivities = store.activities().map((activity) =>
+          activity.id === id
+            ? {
+                ...activity,
+
+                ...changes,
+
+                updatedAt: Timestamp.now(),
+              }
+            : activity,
+        );
+
+        patchState(store, {
+          activities: updatedActivities,
+
+          saving: false,
+
+          error: null,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unable to update business activity.';
+
+        patchState(store, {
+          saving: false,
+
+          error: message,
+        });
+
+        throw error;
+      }
+    },
+
+    // ======================================================
+    // DELETE ACTIVITY
+    // ======================================================
+
+    deleteActivity: async (id: string) => {
+      patchState(store, {
+        saving: true,
+
+        error: null,
+      });
+
+      try {
+        await businessService.deleteActivity(id);
+
+        patchState(store, {
+          activities: store.activities().filter((activity) => activity.id !== id),
+
+          saving: false,
+
+          error: null,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unable to delete business activity.';
+
+        patchState(store, {
+          saving: false,
+
+          error: message,
+        });
+
+        throw error;
+      }
+    },
+
+    // ======================================================
+    // CREATE COMPLIANCE REQUIREMENT
+    // ======================================================
+
+    createComplianceRequirement: async (
+      requirement: Omit<BusinessComplianceRequirement, 'id' | 'createdAt' | 'updatedAt'>,
+    ) => {
+      patchState(store, {
+        saving: true,
+
+        error: null,
+      });
+
+      try {
+        const id = await businessService.createComplianceRequirement(requirement);
+
+        const createdRequirement: BusinessComplianceRequirement = {
+          ...requirement,
+
+          id,
+
+          createdAt: Timestamp.now(),
+
+          updatedAt: Timestamp.now(),
+        };
+
+        patchState(store, {
+          complianceItems: [createdRequirement, ...store.complianceItems()],
+
+          saving: false,
+
+          error: null,
+        });
+
+        return createdRequirement;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unable to create compliance requirement.';
+
+        patchState(store, {
+          saving: false,
+
+          error: message,
+        });
+
+        throw error;
+      }
+    },
+
+    // ======================================================
+    // UPDATE COMPLIANCE REQUIREMENT
+    // ======================================================
+
+    updateComplianceRequirement: async (
+      id: string,
+      changes: Partial<BusinessComplianceRequirement>,
+    ) => {
+      patchState(store, {
+        saving: true,
+        error: null,
+      });
+
+      try {
+        await businessService.updateComplianceRequirement(id, changes);
+
+        const updatedItems = store.complianceItems().map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                ...changes,
+                updatedAt: Timestamp.now(),
+              }
+            : item,
+        );
+
+        patchState(store, {
+          complianceItems: updatedItems,
+          saving: false,
+          error: null,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unable to update compliance requirement.';
 
         patchState(store, {
           saving: false,
@@ -513,11 +784,55 @@ export const BusinessStore = signalStore(
       }
     },
 
-    // Update a business activity
-  updateActivity: async (
-  id: string,
-  changes: Partial<BusinessActivity>,
-) => {
+    // ======================================================
+    // DELETE COMPLIANCE REQUIREMENT
+    // ======================================================
+
+    deleteComplianceRequirement: async (id: string) => {
+      patchState(store, {
+        saving: true,
+
+        error: null,
+      });
+
+      try {
+        await businessService.deleteComplianceRequirement(id);
+
+        patchState(store, {
+          complianceItems: store.complianceItems().filter((item) => item.id !== id),
+
+          saving: false,
+
+          error: null,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unable to delete compliance requirement.';
+
+        patchState(store, {
+          saving: false,
+
+          error: message,
+        });
+
+        throw error;
+      }
+    },
+
+  // ======================================================
+// CREATE BUSINESS DOCUMENT
+// ======================================================
+
+/**
+ * Create a business document.
+ *
+ * BusinessService uploads the physical file to Firebase
+ * Storage and creates the corresponding Firestore metadata.
+ */
+createDocument: async (
+  document: BusinessDocumentInput,
+  file: File,
+): Promise<BusinessDocument> => {
 
   patchState(store, {
     saving: true,
@@ -526,131 +841,37 @@ export const BusinessStore = signalStore(
 
   try {
 
-    await businessService.updateActivity(
-      id,
-      changes,
-    );
-
-    const updatedActivities =
-      store.activities().map(
-        (activity) =>
-          activity.id === id
-            ? {
-                ...activity,
-                ...changes,
-                updatedAt: Timestamp.now(),
-              }
-            : activity,
+    /*
+     * BusinessService returns the complete BusinessDocument,
+     * not just the Firestore document ID.
+     */
+    const createdDocument =
+      await businessService.createDocument(
+        document,
+        file,
       );
 
+    /*
+     * Add the newly created document to the beginning
+     * of the current Store collection.
+     */
     patchState(store, {
-      activities: updatedActivities,
-      saving: false,
-    });
-
-  } catch (error) {
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unable to update business activity.';
-
-    patchState(store, {
-      saving: false,
-      error: message,
-    });
-
-    throw error;
-  }
-},
-
-// Delete a business activity
-deleteActivity: async (
-  id: string,
-) => {
-
-  patchState(store, {
-    saving: true,
-    error: null,
-  });
-
-  try {
-
-    await businessService.deleteActivity(
-      id,
-    );
-
-    patchState(store, {
-      activities:
-        store.activities().filter(
-          (activity) =>
-            activity.id !== id,
-        ),
-      saving: false,
-    });
-
-  } catch (error) {
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unable to delete business activity.';
-
-    patchState(store, {
-      saving: false,
-      error: message,
-    });
-
-    throw error;
-  }
-},
-
-createComplianceRequirement: async (
-  requirement: Omit<
-    BusinessComplianceRequirement,
-    'id' | 'createdAt' | 'updatedAt'
-  >,
-) => {
-
-  patchState(store, {
-    saving: true,
-    error: null,
-  });
-
-  try {
-
-    const id =
-      await businessService
-        .createComplianceRequirement(
-          requirement,
-        );
-
-    const createdRequirement:
-      BusinessComplianceRequirement = {
-      ...requirement,
-      id,
-      createdAt:
-        Timestamp.now(),
-      updatedAt:
-        Timestamp.now(),
-    };
-
-    patchState(store, {
-      complianceItems: [
-        createdRequirement,
-        ...store.complianceItems(),
+      documents: [
+        createdDocument,
+        ...store.documents(),
       ],
       saving: false,
+      error: null,
     });
 
-    return createdRequirement;
+    return createdDocument;
 
   } catch (error) {
 
     const message =
       error instanceof Error
         ? error.message
-        : 'Unable to create compliance requirement.';
+        : 'Unable to create business document.';
 
     patchState(store, {
       saving: false,
@@ -661,104 +882,101 @@ createComplianceRequirement: async (
   }
 },
 
+    // ======================================================
+    // UPDATE BUSINESS DOCUMENT
+    // ======================================================
 
-updateComplianceRequirement: async (
-  id: string,
-  changes: Partial<
-    BusinessComplianceRequirement
-  >,
-) => {
+    /**
+     * Update business document metadata.
+     *
+     * replacementFile is optional. When supplied, the existing
+     * Firebase Storage file is replaced.
+     */
+    updateDocument: async (
+      id: string,
+      changes: Partial<BusinessDocumentInput>,
+      replacementFile?: File,
+    ): Promise<void> => {
+      patchState(store, {
+        saving: true,
 
-  patchState(store, {
-    saving: true,
-    error: null,
-  });
+        error: null,
+      });
 
-  try {
+      try {
+        await businessService.updateDocument(id, changes, replacementFile);
 
-    await businessService
-      .updateComplianceRequirement(
-        id,
-        changes,
-      );
+        /*
+         * Reload documents after an update so that a replacement
+         * file receives the authoritative Storage metadata.
+         */
+        const documents = await businessService.getDocuments();
 
-    const updatedItems =
-      store.complianceItems().map(
-        (item) =>
-          item.id === id
-            ? {
-                ...item,
-                ...changes,
-                updatedAt:
-                  Timestamp.now(),
-              }
-            : item,
-      );
+        patchState(store, {
+          documents,
 
-    patchState(store, {
-      complianceItems:
-        updatedItems,
-      saving: false,
-    });
+          saving: false,
 
-  } catch (error) {
+          error: null,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unable to update business document.';
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unable to update compliance requirement.';
+        patchState(store, {
+          saving: false,
 
-    patchState(store, {
-      saving: false,
-      error: message,
-    });
+          error: message,
+        });
 
-    throw error;
-  }
-},
+        throw error;
+      }
+    },
 
+    // ======================================================
+    // DELETE BUSINESS DOCUMENT
+    // ======================================================
 
-deleteComplianceRequirement: async (
-  id: string,
-) => {
+    /**
+     * Delete a business document.
+     *
+     * BusinessService removes both the Firestore metadata and
+     * associated Firebase Storage file.
+     */
+    deleteDocument: async (id: string): Promise<void> => {
+      patchState(store, {
+        saving: true,
 
-  patchState(store, {
-    saving: true,
-    error: null,
-  });
+        error: null,
+      });
 
-  try {
+      try {
+        await businessService.deleteDocument(id);
 
-    await businessService
-      .deleteComplianceRequirement(
-        id,
-      );
+        patchState(store, {
+          documents: store.documents().filter((document) => document.id !== id),
 
-    patchState(store, {
-      complianceItems:
-        store.complianceItems()
-          .filter(
-            (item) =>
-              item.id !== id,
-          ),
-      saving: false,
-    });
+          saving: false,
 
-  } catch (error) {
+          error: null,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unable to delete business document.';
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unable to delete compliance requirement.';
+        patchState(store, {
+          saving: false,
 
-    patchState(store, {
-      saving: false,
-      error: message,
-    });
+          error: message,
+        });
 
-    throw error;
-  }
-},
+        throw error;
+      }
+    },
+
+    // ======================================================
+    // REFRESH COMPLIANCE STATUSES
+    // ======================================================
 
     /**
      * Refresh compliance statuses through BusinessService.
@@ -772,20 +990,16 @@ deleteComplianceRequirement: async (
       });
 
       try {
-        const complianceItems =
-          await businessService.refreshComplianceStatuses();
+        const complianceItems = await businessService.refreshComplianceStatuses();
 
         patchState(store, {
           complianceItems,
+
           error: null,
         });
-      }
-
-      catch (error) {
+      } catch (error) {
         const message =
-          error instanceof Error
-            ? error.message
-            : 'Unable to refresh compliance statuses.';
+          error instanceof Error ? error.message : 'Unable to refresh compliance statuses.';
 
         patchState(store, {
           error: message,
@@ -794,9 +1008,5 @@ deleteComplianceRequirement: async (
         throw error;
       }
     },
-
-    /////////////////////////////////////////////
-
-
   })),
 );

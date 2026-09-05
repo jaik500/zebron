@@ -3,11 +3,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
-import {
-  CdkDragDrop,
-  CdkDropList,
-  moveItemInArray,
-} from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatCardModule } from '@angular/material/card';
@@ -45,6 +41,10 @@ import { BusinessComplianceDialogComponent } from '../../components/compliance-d
 
 import { CollapsibleRecord } from '../../../../shared/components/collapsible-record/collapsible-record';
 
+import { BusinessDocumentsComponent } from '../business-documents/business-documents.component';
+
+import { BusinessReportsComponent } from '../business-reports/business-reports.component';
+
 @Component({
   selector: 'app-business-dashboard',
 
@@ -72,6 +72,8 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
 
     // Shared Zebron components
     CollapsibleRecord,
+    BusinessDocumentsComponent,
+    BusinessReportsComponent,
   ],
 
   template: `
@@ -144,7 +146,7 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
 
       <div
         class="mx-auto max-w-7xl
-               px-4 py-6
+               px-4 py-4
                sm:px-6
                lg:px-8"
       >
@@ -219,7 +221,7 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                 </div>
 
                 <mat-icon
-                  class="!text-3xl
+                  class="!text-2xl
                          !text-[#007979]"
                 >
                   trending_up
@@ -251,7 +253,7 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                 </div>
 
                 <mat-icon
-                  class="!text-3xl
+                  class="!text-2xl
                          !text-orange-600"
                 >
                   trending_down
@@ -283,7 +285,7 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                 </div>
 
                 <mat-icon
-                  class="!text-3xl
+                  class="!text-2xl
                          !text-[#007979]"
                 >
                   account_balance
@@ -315,7 +317,7 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                 </div>
 
                 <mat-icon
-                  class="!text-3xl
+                  class="!text-2xl
                          !text-[#007979]"
                 >
                   verified_user
@@ -803,19 +805,56 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                       </p>
                     </div>
 
-                    <button
-                      mat-flat-button
-                      color="primary"
-                      type="button"
-                      (click)="openAddActivity()"
+                    <div
+                      class="flex
+                             flex-col
+                             gap-3
+                             sm:flex-row
+                             sm:items-center"
                     >
-                      <mat-icon> add </mat-icon>
+                      <!-- Activity Search -->
+                      <mat-form-field appearance="outline" class="w-full sm:w-80">
+                        <mat-label>Search activities</mat-label>
 
-                      Add Activity
-                    </button>
+                        <mat-icon matPrefix>search</mat-icon>
+
+                        <input
+                          matInput
+                          type="text"
+                          placeholder="Name, category, status..."
+                          [value]="activitySearch()"
+                          (input)="setActivitySearch($any($event.target).value)"
+                        />
+
+                        @if (activitySearch()) {
+                          <button
+                            mat-icon-button
+                            matSuffix
+                            type="button"
+                            aria-label="Clear activity search"
+                            matTooltip="Clear search"
+                            (click)="clearActivitySearch()"
+                          >
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        }
+                      </mat-form-field>
+
+                      <button
+                        mat-flat-button
+                        color="primary"
+                        type="button"
+                        class="shrink-0"
+                        (click)="openAddActivity()"
+                      >
+                        <mat-icon>add</mat-icon>
+
+                        Add Activity
+                      </button>
+                    </div>
                   </div>
 
-                  @if (store.activities().length > 0) {
+                  @if (filteredActivities().length > 0) {
                     <!-- =================================================
                          REUSABLE ACTIVITY RECORDS
                          =================================================
@@ -835,108 +874,108 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                         md:grid-cols-2
                         lg:grid-cols-3
                       "
-                      [cdkDropListData]="orderedActivities()"
+                      [cdkDropListData]="filteredActivities()"
                       (cdkDropListDropped)="dropActivity($event)"
                     >
-                      @for (activity of orderedActivities(); track activity.id) {
+                      @for (activity of filteredActivities(); track activity.id) {
                         <app-collapsible-record
-                              [title]="activity.name"
-                              [subtitle]="activity.category | titlecase"
-                              [showDragHandle]="true"
-                              [dragData]="activity"
-                              [dropTargetActive]="activeDropTargetKey() === 'activity:' + activity.id"
-                              [expanded]="false"
-                              (dragEntered)="setDropTarget('activity', activity.id)"
-                              (dragExited)="clearDropTarget('activity', activity.id)"
-                              (edit)="openEditActivity(activity)"
-                              (remove)="deleteActivity(activity)"
-                            >
-                            <!-- Status -->
+                          [title]="activity.name"
+                          [subtitle]="activity.category | titlecase"
+                          [showDragHandle]="true"
+                          [dragData]="activity"
+                          [dropTargetActive]="activeDropTargetKey() === 'activity:' + activity.id"
+                          [expanded]="false"
+                          (dragEntered)="setDropTarget('activity', activity.id)"
+                          (dragExited)="clearDropTarget('activity', activity.id)"
+                          (edit)="openEditActivity(activity)"
+                          (remove)="deleteActivity(activity)"
+                        >
+                          <!-- Status -->
 
-                            <div record-header-meta>
-                              <mat-chip>
-                                {{ activity.status | titlecase }}
-                              </mat-chip>
-                            </div>
+                          <div record-header-meta>
+                            <mat-chip>
+                              {{ activity.status | titlecase }}
+                            </mat-chip>
+                          </div>
 
-                            <!-- Description -->
+                          <!-- Description -->
 
-                            @if (activity.description) {
-                              <div class="mb-4">
-                                <p
-                                  class="text-xs
+                          @if (activity.description) {
+                            <div class="mb-4">
+                              <p
+                                class="text-xs
                                        font-medium
                                        uppercase
                                        tracking-wide
                                        text-gray-400"
+                              >
+                                Description
+                              </p>
+
+                              <p
+                                class="mt-1
+                                       text-sm
+                                       leading-6
+                                       text-gray-700"
+                              >
+                                {{ activity.description }}
+                              </p>
+                            </div>
+                          }
+
+                          <!-- Dates -->
+
+                          <div
+                            class="grid
+                                   grid-cols-1
+                                   gap-4
+                                   sm:grid-cols-2"
+                          >
+                            @if (activity.startDate) {
+                              <div>
+                                <p
+                                  class="text-xs
+                                         font-medium
+                                         uppercase
+                                         tracking-wide
+                                         text-gray-400"
                                 >
-                                  Description
+                                  Start Date
                                 </p>
 
                                 <p
                                   class="mt-1
-                                       text-sm
-                                       leading-6
-                                       text-gray-700"
+                                         text-sm
+                                         text-gray-700"
                                 >
-                                  {{ activity.description }}
+                                  {{ activity.startDate.toDate() | date: 'MMM d, yyyy' }}
                                 </p>
                               </div>
                             }
 
-                            <!-- Dates -->
-
-                            <div
-                              class="grid
-                                   grid-cols-1
-                                   gap-4
-                                   sm:grid-cols-2"
-                            >
-                              @if (activity.startDate) {
-                                <div>
-                                  <p
-                                    class="text-xs
+                            @if (activity.endDate) {
+                              <div>
+                                <p
+                                  class="text-xs
                                          font-medium
                                          uppercase
                                          tracking-wide
                                          text-gray-400"
-                                  >
-                                    Start Date
-                                  </p>
+                                >
+                                  End Date
+                                </p>
 
-                                  <p
-                                    class="mt-1
+                                <p
+                                  class="mt-1
                                          text-sm
                                          text-gray-700"
-                                  >
-                                    {{ activity.startDate.toDate() | date: 'MMM d, yyyy' }}
-                                  </p>
-                                </div>
-                              }
-
-                              @if (activity.endDate) {
-                                <div>
-                                  <p
-                                    class="text-xs
-                                         font-medium
-                                         uppercase
-                                         tracking-wide
-                                         text-gray-400"
-                                  >
-                                    End Date
-                                  </p>
-
-                                  <p
-                                    class="mt-1
-                                         text-sm
-                                         text-gray-700"
-                                  >
-                                    {{ activity.endDate.toDate() | date: 'MMM d, yyyy' }}
-                                  </p>
-                                </div>
-                              }
-                            </div>
-                          </app-collapsible-record>
+                                >
+                                  {{ activity.endDate.toDate() | date: 'MMM d, yyyy' }}
+                                </p>
+                              </div>
+                            }
+                          </div>
+                        </app-collapsible-record>
                       }
                     </div>
                   } @else {
@@ -956,7 +995,9 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                                  text-lg
                                  font-semibold"
                         >
-                          No business activities
+                          {{
+                            activitySearch() ? 'No matching activities' : 'No business activities'
+                          }}
                         </h3>
 
                         <p
@@ -964,7 +1005,11 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                                  text-sm
                                  text-gray-500"
                         >
-                          Add your first business activity to begin tracking operations.
+                          @if (activitySearch()) {
+                            No business activities match "{{ activitySearch() }}".
+                          } @else {
+                            Add your first business activity to begin tracking operations.
+                          }
                         </p>
 
                         <button
@@ -1003,9 +1048,9 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                            flex
                            flex-col
                            gap-4
-                           sm:flex-row
-                           sm:items-center
-                           sm:justify-between"
+                           lg:flex-row
+                           lg:items-end
+                           lg:justify-between"
                   >
                     <div>
                       <h2
@@ -1021,19 +1066,59 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                       </p>
                     </div>
 
-                    <button
-                      mat-flat-button
-                      color="primary"
-                      type="button"
-                      (click)="openAddCompliance()"
+                    <div
+                      class="flex
+                             w-full
+                             flex-col
+                             gap-3
+                             sm:flex-row
+                             sm:items-center
+                             lg:w-auto"
                     >
-                      <mat-icon> add </mat-icon>
+                      <!-- Compliance Search -->
 
-                      Add Requirement
-                    </button>
+                      <mat-form-field appearance="outline" class="w-full sm:w-80">
+                        <mat-label>Search compliance</mat-label>
+
+                        <mat-icon matPrefix>search</mat-icon>
+
+                        <input
+                          matInput
+                          type="text"
+                          placeholder="Name, category, authority..."
+                          [value]="complianceSearch()"
+                          (input)="setComplianceSearch($any($event.target).value)"
+                        />
+
+                        @if (complianceSearch()) {
+                          <button
+                            mat-icon-button
+                            matSuffix
+                            type="button"
+                            aria-label="Clear compliance search"
+                            matTooltip="Clear search"
+                            (click)="clearComplianceSearch()"
+                          >
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        }
+                      </mat-form-field>
+
+                      <button
+                        mat-flat-button
+                        color="primary"
+                        type="button"
+                        class="shrink-0"
+                        (click)="openAddCompliance()"
+                      >
+                        <mat-icon>add</mat-icon>
+
+                        Add Requirement
+                      </button>
+                    </div>
                   </div>
 
-                  @if (store.complianceItems().length > 0) {
+                  @if (filteredComplianceItems().length > 0) {
                     <!-- =================================================
                          REUSABLE COMPLIANCE RECORDS
                          =================================================
@@ -1053,10 +1138,10 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                         md:grid-cols-2
                         lg:grid-cols-3
                       "
-                      [cdkDropListData]="orderedComplianceItems()"
+                      [cdkDropListData]="filteredComplianceItems()"
                       (cdkDropListDropped)="dropCompliance($event)"
                     >
-                      @for (item of orderedComplianceItems(); track item.id) {
+                      @for (item of filteredComplianceItems(); track item.id) {
                         <app-collapsible-record
                           [title]="item.name"
                           [showDragHandle]="true"
@@ -1226,11 +1311,11 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                               </p>
                             </div>
                           }
-                          </app-collapsible-record>
+                        </app-collapsible-record>
                       }
                     </div>
                   } @else {
-                    <!-- Empty State -->
+                    <!-- Empty / No Search Results State -->
 
                     <mat-card class="rounded-2xl">
                       <mat-card-content class="py-12 text-center">
@@ -1238,7 +1323,7 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                           class="!text-5xl
                                  !text-gray-400"
                         >
-                          verified
+                          {{ complianceSearch() ? 'search_off' : 'verified' }}
                         </mat-icon>
 
                         <h3
@@ -1246,7 +1331,11 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                                  text-lg
                                  font-semibold"
                         >
-                          No compliance requirements
+                          {{
+                            complianceSearch()
+                              ? 'No matching requirements'
+                              : 'No compliance requirements'
+                          }}
                         </h3>
 
                         <p
@@ -1254,20 +1343,36 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                                  text-sm
                                  text-gray-500"
                         >
-                          Add your first compliance requirement to begin tracking deadlines.
+                          @if (complianceSearch()) {
+                            No compliance requirements match "{{ complianceSearch() }}".
+                          } @else {
+                            Add your first compliance requirement to begin tracking deadlines.
+                          }
                         </p>
 
-                        <button
-                          mat-flat-button
-                          color="primary"
-                          class="mt-5"
-                          type="button"
-                          (click)="openAddCompliance()"
-                        >
-                          <mat-icon> add </mat-icon>
+                        @if (complianceSearch()) {
+                          <button
+                            mat-button
+                            color="primary"
+                            class="mt-5"
+                            type="button"
+                            (click)="clearComplianceSearch()"
+                          >
+                            Clear Search
+                          </button>
+                        } @else {
+                          <button
+                            mat-flat-button
+                            color="primary"
+                            class="mt-5"
+                            type="button"
+                            (click)="openAddCompliance()"
+                          >
+                            <mat-icon>add</mat-icon>
 
-                          Add Requirement
-                        </button>
+                            Add Requirement
+                          </button>
+                        }
                       </mat-card-content>
                     </mat-card>
                   }
@@ -1275,8 +1380,8 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
               </mat-tab>
 
               <!-- =================================================
-                   DOCUMENTS
-                   ================================================= -->
+     DOCUMENTS
+     ================================================= -->
 
               <mat-tab>
                 <ng-template mat-tab-label>
@@ -1286,113 +1391,7 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                 </ng-template>
 
                 <div class="p-4 sm:p-6">
-                  <div
-                    class="flex
-                           items-center
-                           justify-between"
-                  >
-                    <div>
-                      <h2
-                        class="text-xl
-                               font-semibold
-                               text-[#032D42]"
-                      >
-                        Business Documents
-                      </h2>
-
-                      <p
-                        class="text-sm
-                               text-gray-500"
-                      >
-                        Legal, financial, compliance, and business records.
-                      </p>
-                    </div>
-
-                    <button
-                      mat-flat-button
-                      color="primary"
-                      type="button"
-                      (click)="documentComingSoon()"
-                    >
-                      <mat-icon> upload_file </mat-icon>
-
-                      Upload Document
-                    </button>
-                  </div>
-
-                  <div class="mt-6">
-                    @if (store.documents().length === 0) {
-                      <div
-                        class="rounded-xl
-                               border
-                               border-dashed
-                               p-8
-                               text-center"
-                      >
-                        <mat-icon
-                          class="!text-4xl
-                                 !text-gray-400"
-                        >
-                          folder_open
-                        </mat-icon>
-
-                        <p
-                          class="mt-3
-                                 font-semibold
-                                 text-gray-700"
-                        >
-                          No documents
-                        </p>
-
-                        <p
-                          class="mt-1
-                                 text-sm
-                                 text-gray-500"
-                        >
-                          Business documents will be stored here.
-                        </p>
-                      </div>
-                    } @else {
-                      <div
-                        class="grid
-                               grid-cols-1
-                               gap-4
-                               md:grid-cols-2
-                               lg:grid-cols-3"
-                      >
-                        @for (document of store.documents(); track document.id) {
-                          <mat-card
-                            class="!border
-                                   !shadow-none"
-                          >
-                            <mat-card-content>
-                              <div class="flex gap-3">
-                                <mat-icon
-                                  class="!text-3xl
-                                         !text-[#007979]"
-                                >
-                                  description
-                                </mat-icon>
-
-                                <div>
-                                  <h3 class="font-semibold">
-                                    {{ document.name }}
-                                  </h3>
-
-                                  <p
-                                    class="text-sm
-                                           text-gray-500"
-                                  >
-                                    {{ document.category }}
-                                  </p>
-                                </div>
-                              </div>
-                            </mat-card-content>
-                          </mat-card>
-                        }
-                      </div>
-                    }
-                  </div>
+                  <app-business-documents />
                 </div>
               </mat-tab>
 
@@ -1408,76 +1407,9 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
                 </ng-template>
 
                 <div class="p-4 sm:p-6">
-                  <h2
-                    class="text-xl
-                           font-semibold
-                           text-[#032D42]"
-                  >
-                    Business Reports
-                  </h2>
-
-                  <p
-                    class="mt-1
-                           text-sm
-                           text-gray-500"
-                  >
-                    Financial and operational reporting will be managed from this section.
-                  </p>
-
-                  <div
-                    class="mt-6
-                           grid
-                           grid-cols-1
-                           gap-4
-                           sm:grid-cols-2
-                           lg:grid-cols-4"
-                  >
-                    @for (report of reports; track report.title) {
-                      <mat-card
-                        class="!border
-                               !shadow-none"
-                      >
-                        <mat-card-content>
-                          <mat-icon
-                            class="!text-3xl
-                                   !text-[#007979]"
-                          >
-                            {{ report.icon }}
-                          </mat-icon>
-
-                          <h3
-                            class="mt-3
-                                   font-semibold
-                                   text-[#032D42]"
-                          >
-                            {{ report.title }}
-                          </h3>
-
-                          <p
-                            class="mt-1
-                                   text-sm
-                                   text-gray-500"
-                          >
-                            {{ report.description }}
-                          </p>
-
-                          <button
-                            mat-button
-                            class="mt-3
-                                   !px-0
-                                   !text-[#007979]"
-                            type="button"
-                            (click)="reportComingSoon(report.title)"
-                          >
-                            View Report
-                          </button>
-                        </mat-card-content>
-                      </mat-card>
-                    }
-                  </div>
+                  <app-business-reports />
                 </div>
               </mat-tab>
-
               <!-- =================================================
                    SETTINGS
                    ================================================= -->
@@ -1702,7 +1634,6 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
       .cdk-drop-list-dragging {
         cursor: grabbing;
       }
-
     `,
   ],
 })
@@ -1736,8 +1667,7 @@ export class BusinessDashboardComponent implements OnInit {
    * The business ID is included so different businesses keep
    * independent ordering preferences on the same browser.
    */
-  private readonly dashboardOrderStoragePrefix =
-    'zebron.business-dashboard.order';
+  private readonly dashboardOrderStoragePrefix = 'zebron.business-dashboard.order';
 
   /**
    * Restores the saved Activity and Compliance ordering.
@@ -1753,9 +1683,7 @@ export class BusinessDashboardComponent implements OnInit {
     }
 
     try {
-      const raw = localStorage.getItem(
-        `${this.dashboardOrderStoragePrefix}.${business.id}`,
-      );
+      const raw = localStorage.getItem(`${this.dashboardOrderStoragePrefix}.${business.id}`);
 
       if (!raw) {
         return;
@@ -1768,34 +1696,24 @@ export class BusinessDashboardComponent implements OnInit {
 
       if (Array.isArray(saved.activities)) {
         this.activityOrder.set(
-          saved.activities.filter(
-            (id): id is string => typeof id === 'string',
-          ),
+          saved.activities.filter((id): id is string => typeof id === 'string'),
         );
       }
 
       if (Array.isArray(saved.compliance)) {
         this.complianceOrder.set(
-          saved.compliance.filter(
-            (id): id is string => typeof id === 'string',
-          ),
+          saved.compliance.filter((id): id is string => typeof id === 'string'),
         );
       }
     } catch (error) {
-      console.warn(
-        'Unable to restore Business Operations dashboard order:',
-        error,
-      );
+      console.warn('Unable to restore Business Operations dashboard order:', error);
     }
   }
 
   /**
    * Saves both ordering arrays after a successful drag/drop operation.
    */
-  private persistDashboardOrder(
-    activities: string[],
-    compliance: string[],
-  ): void {
+  private persistDashboardOrder(activities: string[], compliance: string[]): void {
     const business = this.store.selectedBusiness();
 
     if (!business || typeof localStorage === 'undefined') {
@@ -1811,10 +1729,7 @@ export class BusinessDashboardComponent implements OnInit {
         }),
       );
     } catch (error) {
-      console.warn(
-        'Unable to save Business Operations dashboard order:',
-        error,
-      );
+      console.warn('Unable to save Business Operations dashboard order:', error);
     }
   }
 
@@ -1845,6 +1760,80 @@ export class BusinessDashboardComponent implements OnInit {
   protected readonly orderedComplianceItems = computed(() => {
     return this.orderRecords(this.store.complianceItems(), this.complianceOrder());
   });
+
+  /**
+   * Search text for the Activities section.
+   *
+   * Filtering is performed against the records already loaded by the
+   * BusinessStore, so typing in the search box does not create another
+   * Firestore request.
+   */
+  protected readonly activitySearch = signal('');
+
+  /**
+   * Activity records displayed after applying the search filter.
+   *
+   * The user's saved dashboard order is preserved because filtering is
+   * applied after orderedActivities() has been calculated.
+   */
+  protected readonly filteredActivities = computed(() => {
+    const search = this.activitySearch().trim().toLowerCase();
+
+    if (!search) {
+      return this.orderedActivities();
+    }
+
+    return this.orderedActivities().filter((activity) =>
+      [activity.name, activity.category, activity.status, activity.description]
+        .filter((value): value is string => typeof value === 'string')
+        .some((value) => value.toLowerCase().includes(search)),
+    );
+  });
+
+  protected setActivitySearch(value: string): void {
+    this.activitySearch.set(value);
+  }
+
+  protected clearActivitySearch(): void {
+    this.activitySearch.set('');
+  }
+
+  /**
+   * Search text for the Compliance section.
+   *
+   * Filtering is performed against the records already loaded by the
+   * BusinessStore, so typing in the search box does not create another
+   * Firestore request.
+   */
+  protected readonly complianceSearch = signal('');
+
+  /**
+   * Compliance records displayed after applying the search filter.
+   *
+   * The user's saved dashboard order is preserved because filtering is
+   * applied after orderedComplianceItems() has been calculated.
+   */
+  protected readonly filteredComplianceItems = computed(() => {
+    const search = this.complianceSearch().trim().toLowerCase();
+
+    if (!search) {
+      return this.orderedComplianceItems();
+    }
+
+    return this.orderedComplianceItems().filter((item) =>
+      [item.name, item.category, item.jurisdiction, item.authority, item.status, item.notes]
+        .filter((value): value is string => typeof value === 'string')
+        .some((value) => value.toLowerCase().includes(search)),
+    );
+  });
+
+  protected setComplianceSearch(value: string): void {
+    this.complianceSearch.set(value);
+  }
+
+  protected clearComplianceSearch(): void {
+    this.complianceSearch.set('');
+  }
 
   // ============================================================
   // TOAST
@@ -2166,16 +2155,71 @@ export class BusinessDashboardComponent implements OnInit {
    * Handles reordering of Business Activity cards.
    */
   protected dropActivity(event: CdkDragDrop<BusinessActivity[]>): void {
-    const currentOrder = [...this.orderedActivities().map((item) => item.id)];
+    /*
+     * When no search is active, CDK indexes map directly to the complete
+     * Activity collection, so the normal move operation is sufficient.
+     */
+    if (!this.activitySearch().trim()) {
+      const currentOrder = [...this.orderedActivities().map((item) => item.id)];
 
-    moveItemInArray(currentOrder, event.previousIndex, event.currentIndex);
+      moveItemInArray(currentOrder, event.previousIndex, event.currentIndex);
 
-    this.activityOrder.set(currentOrder);
+      this.activityOrder.set(currentOrder);
 
-    this.persistDashboardOrder(
-      currentOrder,
-      this.complianceOrder(),
-    );
+      this.persistDashboardOrder(currentOrder, this.complianceOrder());
+
+      this.clearActiveDropTarget();
+
+      return;
+    }
+
+    /*
+     * When a search is active, CDK indexes belong to the filtered
+     * collection rather than the complete Activity collection. Rebuild
+     * the full order so filtering never corrupts the saved ordering.
+     */
+    const visibleItems = this.filteredActivities();
+    const draggedItem = event.item.data as BusinessActivity | undefined;
+
+    const draggedId = draggedItem?.id ?? visibleItems[event.previousIndex]?.id;
+
+    if (!draggedId) {
+      this.clearActiveDropTarget();
+      return;
+    }
+
+    const fullOrder = [...this.orderedActivities().map((item) => item.id)];
+    const withoutDragged = fullOrder.filter((id) => id !== draggedId);
+
+    const visibleIdsAfterRemoval = visibleItems
+      .map((item) => item.id)
+      .filter((id) => id !== draggedId);
+
+    const targetVisibleId = visibleIdsAfterRemoval[event.currentIndex];
+
+    let insertionIndex: number;
+
+    if (targetVisibleId) {
+      insertionIndex = withoutDragged.indexOf(targetVisibleId);
+
+      if (insertionIndex < 0) {
+        insertionIndex = withoutDragged.length;
+      }
+    } else {
+      const lastVisibleId = visibleIdsAfterRemoval[visibleIdsAfterRemoval.length - 1];
+
+      if (lastVisibleId) {
+        insertionIndex = withoutDragged.indexOf(lastVisibleId) + 1;
+      } else {
+        insertionIndex = withoutDragged.length;
+      }
+    }
+
+    withoutDragged.splice(insertionIndex, 0, draggedId);
+
+    this.activityOrder.set(withoutDragged);
+
+    this.persistDashboardOrder(withoutDragged, this.complianceOrder());
 
     this.clearActiveDropTarget();
   }
@@ -2184,16 +2228,79 @@ export class BusinessDashboardComponent implements OnInit {
    * Handles reordering of Compliance cards.
    */
   protected dropCompliance(event: CdkDragDrop<BusinessComplianceRequirement[]>): void {
-    const currentOrder = [...this.orderedComplianceItems().map((item) => item.id)];
+    /*
+     * When no search is active, CDK indexes map directly to the complete
+     * Compliance collection, so the normal move operation is sufficient.
+     */
+    if (!this.complianceSearch().trim()) {
+      const currentOrder = [...this.orderedComplianceItems().map((item) => item.id)];
 
-    moveItemInArray(currentOrder, event.previousIndex, event.currentIndex);
+      moveItemInArray(currentOrder, event.previousIndex, event.currentIndex);
 
-    this.complianceOrder.set(currentOrder);
+      this.complianceOrder.set(currentOrder);
 
-    this.persistDashboardOrder(
-      this.activityOrder(),
-      currentOrder,
-    );
+      this.persistDashboardOrder(this.activityOrder(), currentOrder);
+
+      this.clearActiveDropTarget();
+
+      return;
+    }
+
+    /*
+     * When a search is active, the CDK indexes belong to the filtered
+     * collection rather than the complete Compliance collection.
+     *
+     * Rebuild the full order using the dragged record and the visible
+     * filtered records so searching never corrupts the saved ordering.
+     */
+    const visibleItems = this.filteredComplianceItems();
+    const draggedItem = event.item.data as BusinessComplianceRequirement | undefined;
+
+    const draggedId = draggedItem?.id ?? visibleItems[event.previousIndex]?.id;
+
+    if (!draggedId) {
+      this.clearActiveDropTarget();
+      return;
+    }
+
+    const fullOrder = [...this.orderedComplianceItems().map((item) => item.id)];
+
+    const withoutDragged = fullOrder.filter((id) => id !== draggedId);
+
+    const visibleIdsAfterRemoval = visibleItems
+      .map((item) => item.id)
+      .filter((id) => id !== draggedId);
+
+    /*
+     * The current CDK index identifies the visible item at the target
+     * position. Insert immediately before it. If the item was moved to
+     * the end of the filtered list, place it after the last visible item.
+     */
+    const targetVisibleId = visibleIdsAfterRemoval[event.currentIndex];
+
+    let insertionIndex: number;
+
+    if (targetVisibleId) {
+      insertionIndex = withoutDragged.indexOf(targetVisibleId);
+
+      if (insertionIndex < 0) {
+        insertionIndex = withoutDragged.length;
+      }
+    } else {
+      const lastVisibleId = visibleIdsAfterRemoval[visibleIdsAfterRemoval.length - 1];
+
+      if (lastVisibleId) {
+        insertionIndex = withoutDragged.indexOf(lastVisibleId) + 1;
+      } else {
+        insertionIndex = withoutDragged.length;
+      }
+    }
+
+    withoutDragged.splice(insertionIndex, 0, draggedId);
+
+    this.complianceOrder.set(withoutDragged);
+
+    this.persistDashboardOrder(this.activityOrder(), withoutDragged);
 
     this.clearActiveDropTarget();
   }
@@ -2450,10 +2557,6 @@ export class BusinessDashboardComponent implements OnInit {
   // ============================================================
   // TEMPORARY ACTIONS
   // ============================================================
-
-  protected documentComingSoon(): void {
-    this.toast.info('Document upload will be added next.');
-  }
 
   protected reportComingSoon(reportName: string): void {
     this.toast.info(`${reportName} reporting will be added next.`);
