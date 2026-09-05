@@ -338,63 +338,199 @@ import { BusinessReportsComponent } from '../business-reports/business-reports.c
                    OVERVIEW
                    ================================================= -->
 
+              <!-- =================================================
+                   OVERVIEW
+                   ================================================= -->
+
               <mat-tab>
                 <ng-template mat-tab-label>
-                  <mat-icon class="mr-2"> dashboard </mat-icon>
-
+                  <mat-icon class="mr-2">dashboard</mat-icon>
                   Overview
                 </ng-template>
 
                 <div class="p-4 sm:p-6">
-                  <div
-                    class="grid
-                           grid-cols-1
-                           gap-6
-                           lg:grid-cols-2"
-                  >
-                    <!-- Financial Summary -->
+                  <!-- =================================================
+                       FINANCIAL KPIs
+                       ================================================= -->
 
-                    <mat-card
-                      class="!border
-                             !shadow-none"
-                    >
+                  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <!-- Revenue -->
+                    <mat-card class="!border !shadow-none">
+                      <mat-card-content>
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                              Revenue
+                            </p>
+
+                            <p class="mt-1 text-2xl font-bold text-[#032D42]">
+                              {{ store.totalRevenue() | currency: 'USD' }}
+                            </p>
+
+                            <p class="mt-1 text-xs text-gray-500">Total recorded revenue</p>
+                          </div>
+
+                          <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50"
+                          >
+                            <mat-icon class="!text-emerald-600"> trending_up </mat-icon>
+                          </div>
+                        </div>
+                      </mat-card-content>
+                    </mat-card>
+
+                    <!-- Expenses -->
+                    <mat-card class="!border !shadow-none">
+                      <mat-card-content>
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                              Expenses
+                            </p>
+
+                            <p class="mt-1 text-2xl font-bold text-[#032D42]">
+                              {{ store.totalExpenses() | currency: 'USD' }}
+                            </p>
+
+                            <p class="mt-1 text-xs text-gray-500">Total recorded expenses</p>
+                          </div>
+
+                          <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50"
+                          >
+                            <mat-icon class="!text-orange-600"> trending_down </mat-icon>
+                          </div>
+                        </div>
+                      </mat-card-content>
+                    </mat-card>
+
+                    <!-- Net Income -->
+                    <mat-card class="!border !shadow-none">
+                      <mat-card-content>
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                              Net Income
+                            </p>
+
+                            <p
+                              class="mt-1 text-2xl font-bold"
+                              [class.text-emerald-700]="isProfitable()"
+                              [class.text-red-700]="!isProfitable()"
+                            >
+                              {{ store.netIncome() | currency: 'USD' }}
+                            </p>
+
+                            <p class="mt-1 text-xs text-gray-500">Revenue less expenses</p>
+                          </div>
+
+                          <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                            [class.bg-emerald-50]="isProfitable()"
+                            [class.bg-red-50]="!isProfitable()"
+                          >
+                            <mat-icon
+                              [class.!text-emerald-600]="isProfitable()"
+                              [class.!text-red-600]="!isProfitable()"
+                            >
+                              account_balance
+                            </mat-icon>
+                          </div>
+                        </div>
+                      </mat-card-content>
+                    </mat-card>
+
+                    <!-- Compliance -->
+                    <mat-card class="!border !shadow-none">
+                      <mat-card-content>
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                              Compliance
+                            </p>
+
+                            <p class="mt-1 text-2xl font-bold text-[#032D42]">
+                              {{ complianceHealthPercentage() }}%
+                            </p>
+
+                            <p class="mt-1 text-xs text-gray-500">
+                              {{ complianceCurrentCount() }} of {{ complianceTotalCount() }} current
+                            </p>
+                          </div>
+
+                          <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50"
+                          >
+                            <mat-icon class="!text-[#007979]"> verified_user </mat-icon>
+                          </div>
+                        </div>
+                      </mat-card-content>
+                    </mat-card>
+                  </section>
+
+                  <!-- =================================================
+                       FINANCIAL + COMPLIANCE HEALTH
+                       ================================================= -->
+
+                  <section class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <!-- Financial Health -->
+                    <mat-card class="!border !shadow-none">
                       <mat-card-header>
-                        <mat-card-title> Financial Summary </mat-card-title>
+                        <mat-card-title> Financial Health </mat-card-title>
+
+                        <mat-card-subtitle> Current business financial position </mat-card-subtitle>
                       </mat-card-header>
 
                       <mat-card-content class="mt-4">
                         <div class="space-y-4">
-                          <div
-                            class="flex
-                                   justify-between"
-                          >
-                            <span class="text-gray-600"> Revenue </span>
+                          <div>
+                            <div class="mb-1 flex items-center justify-between text-sm">
+                              <span class="text-gray-600"> Revenue </span>
 
-                            <strong>
-                              {{ store.totalRevenue() | currency: 'USD' }}
-                            </strong>
+                              <strong class="text-gray-800">
+                                {{ store.totalRevenue() | currency: 'USD' }}
+                              </strong>
+                            </div>
+
+                            <mat-progress-bar
+                              mode="determinate"
+                              [value]="store.totalRevenue() > 0 ? 100 : 0"
+                            />
+                          </div>
+
+                          <div>
+                            <div class="mb-1 flex items-center justify-between text-sm">
+                              <span class="text-gray-600"> Expenses </span>
+
+                              <strong class="text-gray-800">
+                                {{ store.totalExpenses() | currency: 'USD' }}
+                              </strong>
+                            </div>
+
+                            <mat-progress-bar
+                              mode="determinate"
+                              [value]="
+                                store.totalRevenue() > 0
+                                  ? (store.totalExpenses() / store.totalRevenue()) * 100
+                                  : 0
+                              "
+                            />
                           </div>
 
                           <div
-                            class="flex
-                                   justify-between"
+                            class="flex items-center justify-between border-t border-gray-100 pt-4"
                           >
-                            <span class="text-gray-600"> Expenses </span>
+                            <div>
+                              <p class="text-sm font-semibold text-gray-700">Net Income</p>
 
-                            <strong>
-                              {{ store.totalExpenses() | currency: 'USD' }}
-                            </strong>
-                          </div>
+                              <p class="mt-0.5 text-xs text-gray-500">Current recorded position</p>
+                            </div>
 
-                          <div
-                            class="flex
-                                   justify-between
-                                   border-t
-                                   pt-4"
-                          >
-                            <span class="font-semibold"> Net Income </span>
-
-                            <strong class="text-[#007979]">
+                            <strong
+                              class="text-lg"
+                              [class.text-emerald-700]="isProfitable()"
+                              [class.text-red-700]="!isProfitable()"
+                            >
                               {{ store.netIncome() | currency: 'USD' }}
                             </strong>
                           </div>
@@ -402,97 +538,685 @@ import { BusinessReportsComponent } from '../business-reports/business-reports.c
                       </mat-card-content>
                     </mat-card>
 
-                    <!-- Compliance Summary -->
-
-                    <mat-card
-                      class="!border
-                             !shadow-none"
-                    >
+                    <!-- Compliance Health -->
+                    <mat-card class="!border !shadow-none">
                       <mat-card-header>
-                        <mat-card-title> Compliance Summary </mat-card-title>
+                        <mat-card-title> Compliance Health </mat-card-title>
+
+                        <mat-card-subtitle> Items requiring attention </mat-card-subtitle>
                       </mat-card-header>
 
                       <mat-card-content class="mt-4">
-                        <div
-                          class="grid
-                                 grid-cols-3
-                                 gap-3"
-                        >
-                          <div
-                            class="rounded-xl
-                                   bg-green-50
-                                   p-4
-                                   text-center"
-                          >
-                            <p
-                              class="text-2xl
-                                     font-bold
-                                     text-green-700"
-                            >
-                              {{ complianceCurrentCount() }}
+                        <div class="mb-4 flex items-center justify-between">
+                          <div>
+                            <p class="text-3xl font-bold text-[#032D42]">
+                              {{ complianceHealthPercentage() }}%
                             </p>
 
-                            <p
-                              class="mt-1
-                                     text-xs
-                                     text-gray-600"
-                            >
-                              Current
-                            </p>
+                            <p class="text-xs text-gray-500">Current compliance rate</p>
                           </div>
 
-                          <div
-                            class="rounded-xl
-                                   bg-yellow-50
-                                   p-4
-                                   text-center"
-                          >
-                            <p
-                              class="text-2xl
-                                     font-bold
-                                     text-yellow-700"
-                            >
-                              {{ store.upcomingCompliance() }}
-                            </p>
-
-                            <p
-                              class="mt-1
-                                     text-xs
-                                     text-gray-600"
-                            >
-                              Upcoming
-                            </p>
-                          </div>
-
-                          <div
-                            class="rounded-xl
-                                   bg-red-50
-                                   p-4
-                                   text-center"
-                          >
-                            <p
-                              class="text-2xl
-                                     font-bold
-                                     text-red-700"
-                            >
+                          <div class="text-right">
+                            <p class="text-sm font-semibold text-red-600">
                               {{ store.overdueCompliance() }}
                             </p>
 
-                            <p
-                              class="mt-1
-                                     text-xs
-                                     text-gray-600"
-                            >
-                              Overdue
+                            <p class="text-xs text-gray-500">Overdue</p>
+                          </div>
+                        </div>
+
+                        <mat-progress-bar
+                          mode="determinate"
+                          [value]="complianceHealthPercentage()"
+                        />
+
+                        <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+                          <div class="rounded-lg bg-emerald-50 p-3">
+                            <p class="text-lg font-bold text-emerald-700">
+                              {{ complianceCurrentCount() }}
                             </p>
+
+                            <p class="text-[11px] text-gray-600">Current</p>
+                          </div>
+
+                          <div class="rounded-lg bg-amber-50 p-3">
+                            <p class="text-lg font-bold text-amber-700">
+                              {{ store.upcomingCompliance() }}
+                            </p>
+
+                            <p class="text-[11px] text-gray-600">Upcoming</p>
+                          </div>
+
+                          <div class="rounded-lg bg-red-50 p-3">
+                            <p class="text-lg font-bold text-red-700">
+                              {{ store.overdueCompliance() }}
+                            </p>
+
+                            <p class="text-[11px] text-gray-600">Overdue</p>
                           </div>
                         </div>
                       </mat-card-content>
                     </mat-card>
+                  </section>
+
+                  <!-- =================================================
+                       QUICK ACTIONS
+                       ================================================= -->
+
+                  <section class="mt-4">
+                    <mat-card class="!border !shadow-none">
+                      <mat-card-header>
+                        <mat-card-title> Quick Actions </mat-card-title>
+
+                        <mat-card-subtitle> Common business operations </mat-card-subtitle>
+                      </mat-card-header>
+
+                      <mat-card-content class="mt-4">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                          <button
+                            mat-stroked-button
+                            type="button"
+                            class="!justify-start"
+                            (click)="openAddTransaction()"
+                          >
+                            <mat-icon>add_card</mat-icon>
+                            Add Transaction
+                          </button>
+
+                          <button
+                            mat-stroked-button
+                            type="button"
+                            class="!justify-start"
+                            (click)="openAddActivity()"
+                          >
+                            <mat-icon>business_center</mat-icon>
+                            Add Activity
+                          </button>
+
+                          <button
+                            mat-stroked-button
+                            type="button"
+                            class="!justify-start"
+                            (click)="openAddCompliance()"
+                          >
+                            <mat-icon>verified_user</mat-icon>
+                            Add Compliance Requirement
+                          </button>
+                        </div>
+                      </mat-card-content>
+                    </mat-card>
+                  </section>
+
+                  <!-- ============================================================
+     FINANCIAL TREND
+     ============================================================ -->
+
+                  <mat-card class="!rounded-xl !border !border-slate-200 !shadow-sm">
+                    <mat-card-header class="!px-5 !pt-5">
+                      <div class="flex w-full items-start justify-between gap-4">
+                        <div>
+                          <mat-card-title class="!text-base !font-semibold !text-slate-900">
+                            Financial Trend
+                          </mat-card-title>
+
+                          <mat-card-subtitle class="!mt-1 !text-xs !text-slate-500">
+                            Revenue, expenses, and net income over the last six months.
+                          </mat-card-subtitle>
+                        </div>
+
+                        <div class="hidden items-center gap-4 sm:flex">
+                          <div class="flex items-center gap-1.5">
+                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                            <span class="text-[11px] text-slate-500">Revenue</span>
+                          </div>
+
+                          <div class="flex items-center gap-1.5">
+                            <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+                            <span class="text-[11px] text-slate-500">Expenses</span>
+                          </div>
+
+                          <div class="flex items-center gap-1.5">
+                            <span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                            <span class="text-[11px] text-slate-500">Net Income</span>
+                          </div>
+                        </div>
+                      </div>
+                    </mat-card-header>
+
+                    <mat-card-content class="!px-5 !pb-5 !pt-5">
+                      @if (financialTrend().length > 0) {
+                        <div class="space-y-5">
+                          @for (month of financialTrend(); track month.key) {
+                            <div>
+                              <!-- Month header -->
+                              <div class="mb-2 flex items-center justify-between gap-3">
+                                <span class="w-10 text-xs font-semibold text-slate-700">
+                                  {{ month.label }}
+                                </span>
+
+                                <div class="flex flex-1 items-center justify-end gap-3">
+                                  <span
+                                    class="text-[11px] font-medium text-emerald-700"
+                                    [matTooltip]="'Revenue: ' + formatCurrency(month.revenue)"
+                                  >
+                                    {{ formatCurrency(month.revenue) }}
+                                  </span>
+
+                                  <span
+                                    class="text-[11px] font-medium text-amber-700"
+                                    [matTooltip]="'Expenses: ' + formatCurrency(month.expenses)"
+                                  >
+                                    {{ formatCurrency(month.expenses) }}
+                                  </span>
+
+                                  <span
+                                    class="min-w-[90px] text-right text-[11px] font-semibold"
+                                    [class.text-blue-700]="month.netIncome >= 0"
+                                    [class.text-red-700]="month.netIncome < 0"
+                                    [matTooltip]="'Net Income: ' + formatCurrency(month.netIncome)"
+                                  >
+                                    {{ formatCurrency(month.netIncome) }}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <!-- Revenue -->
+                              <div class="mb-1 flex items-center gap-2">
+                                <span class="w-10 text-[10px] text-slate-400"> Rev </span>
+
+                                <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                  <div
+                                    class="h-full rounded-full bg-emerald-500 transition-all"
+                                    [style.width.%]="financialTrendWidth(month.revenue)"
+                                  ></div>
+                                </div>
+                              </div>
+
+                              <!-- Expenses -->
+                              <div class="mb-1 flex items-center gap-2">
+                                <span class="w-10 text-[10px] text-slate-400"> Exp </span>
+
+                                <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                  <div
+                                    class="h-full rounded-full bg-amber-500 transition-all"
+                                    [style.width.%]="financialTrendWidth(month.expenses)"
+                                  ></div>
+                                </div>
+                              </div>
+
+                              <!-- Net Income -->
+                              <div class="flex items-center gap-2">
+                                <span class="w-10 text-[10px] text-slate-400"> Net </span>
+
+                                <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                  @if (month.netIncome >= 0) {
+                                    <div
+                                      class="h-full rounded-full bg-blue-500 transition-all"
+                                      [style.width.%]="financialTrendWidth(month.netIncome)"
+                                    ></div>
+                                  } @else {
+                                    <div
+                                      class="h-full rounded-full bg-red-500 transition-all"
+                                      [style.width.%]="financialTrendWidth(-month.netIncome)"
+                                    ></div>
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <div class="flex flex-col items-center justify-center py-10 text-center">
+                          <mat-icon class="!mb-2 !h-10 !w-10 !text-[40px] !text-slate-300">
+                            show_chart
+                          </mat-icon>
+
+                          <p class="text-sm font-medium text-slate-700">No financial data yet</p>
+
+                          <p class="mt-1 max-w-sm text-xs text-slate-500">
+                            Add revenue or expense transactions to start tracking your financial
+                            trend.
+                          </p>
+
+                          <button
+                            mat-stroked-button
+                            type="button"
+                            class="!mt-4"
+                            (click)="openAddTransaction()"
+                          >
+                            <mat-icon class="mr-1">add</mat-icon>
+                            Add Transaction
+                          </button>
+                        </div>
+                      }
+                    </mat-card-content>
+                  </mat-card>
+
+                  <!-- ============================================================
+     MONTH-OVER-MONTH COMPARISON
+     ============================================================ -->
+
+                  <div class="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <!-- Header -->
+                    <div
+                      class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <h3 class="text-base font-semibold text-slate-900">Month-over-Month</h3>
+
+                        <p class="text-xs text-slate-500">
+                          Comparing
+                          {{ monthComparison().currentMonthLabel }}
+                          with
+                          {{ monthComparison().previousMonthLabel }}
+                        </p>
+                      </div>
+
+                      <div class="flex items-center gap-1 text-xs text-slate-500">
+                        <mat-icon class="!h-4 !w-4 !text-[16px]"> compare_arrows </mat-icon>
+
+                        <span>Current vs previous month</span>
+                      </div>
+                    </div>
+
+                    <!-- Comparison Cards -->
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <!-- Revenue -->
+                      <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                              Revenue
+                            </p>
+
+                            <p class="mt-1 text-xl font-semibold text-slate-900">
+                              {{ formatCurrency(monthComparison().current.revenue) }}
+                            </p>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                              Previous:
+                              {{ formatCurrency(monthComparison().previous.revenue) }}
+                            </p>
+                          </div>
+
+                          <div
+                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100"
+                          >
+                            <mat-icon class="!h-5 !w-5 !text-[20px] text-emerald-600">
+                              trending_up
+                            </mat-icon>
+                          </div>
+                        </div>
+
+                        <div class="mt-3 flex items-center gap-1.5">
+                          <span
+                            class="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                            [class.bg-emerald-50]="
+                              comparisonIsPositive(monthComparison().revenueChange, 'revenue')
+                            "
+                            [class.text-emerald-700]="
+                              comparisonIsPositive(monthComparison().revenueChange, 'revenue')
+                            "
+                            [class.bg-red-50]="
+                              !comparisonIsPositive(monthComparison().revenueChange, 'revenue')
+                            "
+                            [class.text-red-700]="
+                              !comparisonIsPositive(monthComparison().revenueChange, 'revenue')
+                            "
+                          >
+                            <mat-icon class="!h-3.5 !w-3.5 !text-[14px]">
+                              {{ comparisonIcon(monthComparison().revenueChange) }}
+                            </mat-icon>
+
+                            {{ comparisonChangeLabel(monthComparison().revenueChange) }}
+                          </span>
+
+                          <span class="text-xs text-slate-500"> vs previous month </span>
+                        </div>
+                      </div>
+
+                      <!-- Expenses -->
+                      <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                              Expenses
+                            </p>
+
+                            <p class="mt-1 text-xl font-semibold text-slate-900">
+                              {{ formatCurrency(monthComparison().current.expenses) }}
+                            </p>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                              Previous:
+                              {{ formatCurrency(monthComparison().previous.expenses) }}
+                            </p>
+                          </div>
+
+                          <div
+                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100"
+                          >
+                            <mat-icon class="!h-5 !w-5 !text-[20px] text-amber-600">
+                              payments
+                            </mat-icon>
+                          </div>
+                        </div>
+
+                        <div class="mt-3 flex items-center gap-1.5">
+                          <span
+                            class="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                            [class.bg-emerald-50]="
+                              comparisonIsPositive(monthComparison().expensesChange, 'expenses')
+                            "
+                            [class.text-emerald-700]="
+                              comparisonIsPositive(monthComparison().expensesChange, 'expenses')
+                            "
+                            [class.bg-red-50]="
+                              !comparisonIsPositive(monthComparison().expensesChange, 'expenses')
+                            "
+                            [class.text-red-700]="
+                              !comparisonIsPositive(monthComparison().expensesChange, 'expenses')
+                            "
+                          >
+                            <mat-icon class="!h-3.5 !w-3.5 !text-[14px]">
+                              {{ comparisonIcon(monthComparison().expensesChange) }}
+                            </mat-icon>
+
+                            {{ comparisonChangeLabel(monthComparison().expensesChange) }}
+                          </span>
+
+                          <span class="text-xs text-slate-500"> vs previous month </span>
+                        </div>
+                      </div>
+
+                      <!-- Net Income -->
+                      <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                              Net Income
+                            </p>
+
+                            <p
+                              class="mt-1 text-xl font-semibold"
+                              [class.text-emerald-600]="monthComparison().current.netIncome >= 0"
+                              [class.text-red-600]="monthComparison().current.netIncome < 0"
+                            >
+                              {{ formatCurrency(monthComparison().current.netIncome) }}
+                            </p>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                              Previous:
+                              {{ formatCurrency(monthComparison().previous.netIncome) }}
+                            </p>
+                          </div>
+
+                          <div
+                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                            [class.bg-emerald-100]="monthComparison().current.netIncome >= 0"
+                            [class.bg-red-100]="monthComparison().current.netIncome < 0"
+                          >
+                            <mat-icon
+                              class="!h-5 !w-5 !text-[20px]"
+                              [class.text-emerald-600]="monthComparison().current.netIncome >= 0"
+                              [class.text-red-600]="monthComparison().current.netIncome < 0"
+                            >
+                              account_balance
+                            </mat-icon>
+                          </div>
+                        </div>
+
+                        <div class="mt-3 flex items-center gap-1.5">
+                          <span
+                            class="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                            [class.bg-emerald-50]="
+                              comparisonIsPositive(monthComparison().netIncomeChange, 'netIncome')
+                            "
+                            [class.text-emerald-700]="
+                              comparisonIsPositive(monthComparison().netIncomeChange, 'netIncome')
+                            "
+                            [class.bg-red-50]="
+                              !comparisonIsPositive(monthComparison().netIncomeChange, 'netIncome')
+                            "
+                            [class.text-red-700]="
+                              !comparisonIsPositive(monthComparison().netIncomeChange, 'netIncome')
+                            "
+                          >
+                            <mat-icon class="!h-3.5 !w-3.5 !text-[14px]">
+                              {{ comparisonIcon(monthComparison().netIncomeChange) }}
+                            </mat-icon>
+
+                            {{ comparisonChangeLabel(monthComparison().netIncomeChange) }}
+                          </span>
+
+                          <span class="text-xs text-slate-500"> vs previous month </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
+                  <!-- =================================================
+                       RECENT OPERATIONS
+                       ================================================= -->
+
+                  <section class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+                    <!-- Recent Transactions -->
+                    <mat-card class="!border !shadow-none">
+                      <mat-card-header>
+                        <div class="flex w-full items-start justify-between gap-4">
+                          <div>
+                            <mat-card-title> Recent Transactions </mat-card-title>
+
+                            <mat-card-subtitle> Latest financial activity </mat-card-subtitle>
+                          </div>
+
+                          <span class="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">
+                            {{ store.transactionCount() }}
+                          </span>
+                        </div>
+                      </mat-card-header>
+
+                      <mat-card-content class="mt-4">
+                        @if (recentTransactions().length > 0) {
+                          <div class="divide-y divide-gray-100">
+                            @for (transaction of recentTransactions(); track transaction.id) {
+                              <div class="flex items-center justify-between gap-3 py-3">
+                                <div class="min-w-0">
+                                  <p class="truncate text-sm font-medium text-gray-800">
+                                    {{ transaction.description || 'Transaction' }}
+                                  </p>
+
+                                  <p class="mt-0.5 text-xs text-gray-500">
+                                    {{ transaction.date.toDate() | date: 'MMM d, yyyy' }}
+                                    ·
+                                    {{ transaction.categoryId || 'Uncategorized' }}
+                                  </p>
+                                </div>
+
+                                <span
+                                  class="shrink-0 text-sm font-semibold"
+                                  [class.text-emerald-700]="transaction.type === 'revenue'"
+                                  [class.text-orange-700]="transaction.type === 'expense'"
+                                >
+                                  {{ transaction.type === 'expense' ? '-' : '+' }}
+                                  {{ transaction.amount | currency: 'USD' }}
+                                </span>
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <div class="py-8 text-center">
+                            <mat-icon class="!text-4xl !text-gray-300"> receipt_long </mat-icon>
+
+                            <p class="mt-2 text-sm text-gray-500">No transactions recorded yet.</p>
+                          </div>
+                        }
+                      </mat-card-content>
+                    </mat-card>
+
+                    <!-- Compliance Attention -->
+                    <mat-card class="!border !shadow-none">
+                      <mat-card-header>
+                        <mat-card-title> Compliance Attention </mat-card-title>
+
+                        <mat-card-subtitle> Requirements that may need action </mat-card-subtitle>
+                      </mat-card-header>
+
+                      <mat-card-content class="mt-4">
+                        @if (priorityCompliance().length > 0) {
+                          <div class="divide-y divide-gray-100">
+                            @for (item of priorityCompliance(); track item.id) {
+                              <div class="flex items-center justify-between gap-3 py-3">
+                                <div class="min-w-0">
+                                  <p class="truncate text-sm font-medium text-gray-800">
+                                    {{ item.name }}
+                                  </p>
+
+                                  @if (item.authority) {
+                                    <p class="mt-0.5 truncate text-xs text-gray-500">
+                                      {{ item.authority }}
+                                    </p>
+                                  }
+                                </div>
+
+                                <span
+                                  class="shrink-0 rounded-full px-2 py-1 text-[11px] font-medium"
+                                  [class.bg-red-50]="
+                                    item.status === 'overdue' || item.status === 'expired'
+                                  "
+                                  [class.text-red-700]="
+                                    item.status === 'overdue' || item.status === 'expired'
+                                  "
+                                  [class.bg-amber-50]="item.status === 'action_required'"
+                                  [class.text-amber-700]="item.status === 'action_required'"
+                                >
+                                  {{ item.status | titlecase }}
+                                </span>
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <div class="py-8 text-center">
+                            <mat-icon class="!text-4xl !text-emerald-500"> verified </mat-icon>
+
+                            <p class="mt-2 text-sm font-medium text-gray-700">
+                              No compliance items require immediate attention.
+                            </p>
+
+                            <p class="mt-1 text-xs text-gray-500">
+                              Your current compliance records look good.
+                            </p>
+                          </div>
+                        }
+                      </mat-card-content>
+                    </mat-card>
+                  </section>
+
+                  <!-- =================================================
+                       ACTIVITY + DOCUMENTS
+                       ================================================= -->
+
+                  <section class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+                    <!-- Recent Activities -->
+                    <mat-card class="!border !shadow-none">
+                      <mat-card-header>
+                        <mat-card-title> Recent Activities </mat-card-title>
+
+                        <mat-card-subtitle> Latest business operations </mat-card-subtitle>
+                      </mat-card-header>
+
+                      <mat-card-content class="mt-4">
+                        @if (recentActivities().length > 0) {
+                          <div class="divide-y divide-gray-100">
+                            @for (activity of recentActivities(); track activity.id) {
+                              <div class="py-3">
+                                <div class="flex items-center justify-between gap-3">
+                                  <p class="truncate text-sm font-medium text-gray-800">
+                                    {{ activity.name }}
+                                  </p>
+
+                                  <mat-chip>
+                                    {{ activity.status | titlecase }}
+                                  </mat-chip>
+                                </div>
+
+                                <p class="mt-1 text-xs text-gray-500">
+                                  {{ activity.category | titlecase }}
+                                </p>
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <div class="py-8 text-center">
+                            <mat-icon class="!text-4xl !text-gray-300"> business_center </mat-icon>
+
+                            <p class="mt-2 text-sm text-gray-500">
+                              No business activities recorded yet.
+                            </p>
+                          </div>
+                        }
+                      </mat-card-content>
+                    </mat-card>
+
+                    <!-- Recent Documents -->
+                    <mat-card class="!border !shadow-none">
+                      <mat-card-header>
+                        <mat-card-title> Recent Documents </mat-card-title>
+
+                        <mat-card-subtitle> Latest uploaded business documents </mat-card-subtitle>
+                      </mat-card-header>
+
+                      <mat-card-content class="mt-4">
+                        @if (recentDocuments().length > 0) {
+                          <div class="divide-y divide-gray-100">
+                            @for (document of recentDocuments(); track document.id) {
+                              <div class="flex items-center gap-3 py-3">
+                                <div
+                                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100"
+                                >
+                                  <mat-icon class="!text-[#032D42]"> description </mat-icon>
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+                                  <p
+                                    class="truncate text-sm font-medium text-gray-800"
+                                    [matTooltip]="document.fileName"
+                                  >
+                                    {{ document.fileName }}
+                                  </p>
+
+                                  <p class="mt-0.5 text-xs text-gray-500">
+                                    {{ document.category | titlecase }}
+                                    ·
+                                    {{ document.uploadedAt.toDate() | date: 'MMM d, yyyy' }}
+                                  </p>
+                                </div>
+
+                                @if (document.verified) {
+                                  <mat-icon
+                                    class="!text-emerald-600"
+                                    matTooltip="Verified document"
+                                  >
+                                    verified
+                                  </mat-icon>
+                                }
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <div class="py-8 text-center">
+                            <mat-icon class="!text-4xl !text-gray-300"> folder </mat-icon>
+
+                            <p class="mt-2 text-sm text-gray-500">
+                              No business documents uploaded yet.
+                            </p>
+                          </div>
+                        }
+                      </mat-card-content>
+                    </mat-card>
+                  </section>
                 </div>
               </mat-tab>
-
               <!-- =================================================
                    TRANSACTIONS
                    ================================================= -->
@@ -1940,6 +2664,333 @@ export class BusinessDashboardComponent implements OnInit {
   protected complianceCurrentCount(): number {
     return this.store.complianceItems().filter((item) => item.status === 'current').length;
   }
+
+  // ============================================================
+  // OVERVIEW DASHBOARD
+  // ============================================================
+
+  protected readonly isProfitable = computed(() => {
+    return this.store.netIncome() >= 0;
+  });
+
+  protected readonly complianceTotalCount = computed(() => {
+    return this.store.complianceItems().length;
+  });
+
+  protected readonly complianceHealthPercentage = computed(() => {
+    const total = this.complianceTotalCount();
+
+    if (total === 0) {
+      return 100;
+    }
+
+    return Math.round((this.complianceCurrentCount() / total) * 100);
+  });
+
+  protected readonly recentTransactions = computed(() => {
+    return [...this.store.transactions()]
+      .filter((transaction) => transaction.status !== 'void')
+      .sort((a, b) => {
+        const aTime = a.date?.toMillis?.() ?? 0;
+        const bTime = b.date?.toMillis?.() ?? 0;
+
+        return bTime - aTime;
+      })
+      .slice(0, 5);
+  });
+
+  protected readonly priorityCompliance = computed(() => {
+    return this.store
+      .complianceItems()
+      .filter(
+        (item) =>
+          item.status === 'overdue' ||
+          item.status === 'expired' ||
+          item.status === 'action_required',
+      )
+      .slice(0, 5);
+  });
+
+  protected readonly recentActivities = computed(() => {
+    return [...this.store.activities()]
+      .sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() ?? 0;
+        const bTime = b.createdAt?.toMillis?.() ?? 0;
+
+        return bTime - aTime;
+      })
+      .slice(0, 5);
+  });
+
+  protected readonly recentDocuments = computed(() => {
+    return [...this.store.documents()]
+      .sort((a, b) => {
+        const aTime = a.uploadedAt?.toMillis?.() ?? 0;
+        const bTime = b.uploadedAt?.toMillis?.() ?? 0;
+
+        return bTime - aTime;
+      })
+      .slice(0, 5);
+  });
+
+  // ============================================================
+  // FINANCIAL TREND
+  // ============================================================
+
+  protected readonly financialTrend = computed(() => {
+    const transactions = this.store
+      .transactions()
+      .filter((transaction) => transaction.status !== 'void');
+
+    const months: {
+      key: string;
+      label: string;
+      revenue: number;
+      expenses: number;
+      netIncome: number;
+    }[] = [];
+
+    const now = new Date();
+
+    // Show the last 6 calendar months, including the current month.
+    for (let index = 5; index >= 0; index--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      const label = date.toLocaleDateString('en-US', {
+        month: 'short',
+      });
+
+      months.push({
+        key,
+        label,
+        revenue: 0,
+        expenses: 0,
+        netIncome: 0,
+      });
+    }
+
+    for (const transaction of transactions) {
+      const date = transaction.date.toDate();
+
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      const month = months.find((item) => item.key === key);
+
+      if (!month) {
+        continue;
+      }
+
+      if (transaction.type === 'revenue') {
+        month.revenue += Number(transaction.amount) || 0;
+      }
+
+      if (transaction.type === 'expense') {
+        month.expenses += Number(transaction.amount) || 0;
+      }
+    }
+
+    for (const month of months) {
+      month.netIncome = month.revenue - month.expenses;
+    }
+
+    return months;
+  });
+
+  protected readonly financialTrendMaximum = computed(() => {
+    let maximum = 0;
+
+    for (const month of this.financialTrend()) {
+      if (month.revenue > maximum) {
+        maximum = month.revenue;
+      }
+
+      if (month.expenses > maximum) {
+        maximum = month.expenses;
+      }
+
+      const absoluteNet = month.netIncome < 0 ? -month.netIncome : month.netIncome;
+
+      if (absoluteNet > maximum) {
+        maximum = absoluteNet;
+      }
+    }
+
+    return maximum > 0 ? maximum : 1;
+  });
+
+  protected financialTrendWidth(value: number): number {
+    const maximum = this.financialTrendMaximum();
+
+    if (maximum <= 0 || value <= 0) {
+      return 0;
+    }
+
+    const percentage = (value / maximum) * 100;
+
+    return percentage > 100 ? 100 : percentage;
+  }
+
+  // ============================================================
+  // MONTH-OVER-MONTH COMPARISON
+  // ============================================================
+
+  protected readonly monthComparison = computed(() => {
+    const transactions = this.store
+      .transactions()
+      .filter((transaction) => transaction.status !== 'void');
+
+    const now = new Date();
+
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    let currentRevenue = 0;
+    let currentExpenses = 0;
+
+    let previousRevenue = 0;
+    let previousExpenses = 0;
+
+    for (const transaction of transactions) {
+      const transactionDate = transaction.date.toDate();
+      const amount = Number(transaction.amount) || 0;
+
+      if (transactionDate >= currentMonthStart && transactionDate < nextMonthStart) {
+        if (transaction.type === 'revenue') {
+          currentRevenue += amount;
+        }
+
+        if (transaction.type === 'expense') {
+          currentExpenses += amount;
+        }
+      }
+
+      if (transactionDate >= previousMonthStart && transactionDate < currentMonthStart) {
+        if (transaction.type === 'revenue') {
+          previousRevenue += amount;
+        }
+
+        if (transaction.type === 'expense') {
+          previousExpenses += amount;
+        }
+      }
+    }
+
+    const currentNetIncome = currentRevenue - currentExpenses;
+
+    const previousNetIncome = previousRevenue - previousExpenses;
+
+    return {
+      current: {
+        revenue: currentRevenue,
+        expenses: currentExpenses,
+        netIncome: currentNetIncome,
+      },
+
+      previous: {
+        revenue: previousRevenue,
+        expenses: previousExpenses,
+        netIncome: previousNetIncome,
+      },
+
+      revenueChange: this.calculatePercentageChange(previousRevenue, currentRevenue),
+
+      expensesChange: this.calculatePercentageChange(previousExpenses, currentExpenses),
+
+      netIncomeChange: this.calculatePercentageChange(previousNetIncome, currentNetIncome),
+
+      currentMonthLabel: currentMonthStart.toLocaleDateString('en-US', { month: 'long' }),
+
+      previousMonthLabel: previousMonthStart.toLocaleDateString('en-US', { month: 'long' }),
+    };
+  });
+
+  protected calculatePercentageChange(
+  previous: number,
+  current: number,
+): number | null {
+  // No change when both periods are zero.
+  if (previous === 0 && current === 0) {
+    return 0;
+  }
+
+  // No meaningful percentage can be calculated when
+  // the previous period was zero and the current period
+  // has a value. Return null so the UI can display "New".
+  if (previous === 0) {
+    return null;
+  }
+
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+  protected comparisonChangeLabel(
+  value: number | null,
+): string {
+  if (value === null) {
+    return 'New';
+  }
+
+  if (value === 0) {
+    return '0%';
+  }
+
+  const rounded =
+    Math.round(Math.abs(value) * 10) / 10;
+
+  return value > 0
+    ? `+${rounded}%`
+    : `−${rounded}%`;
+}
+
+  protected comparisonIsPositive(
+  value: number | null,
+  metric: 'revenue' | 'expenses' | 'netIncome',
+): boolean {
+  // "New" activity is treated as positive.
+  if (value === null) {
+    return true;
+  }
+
+  if (value === 0) {
+    return true;
+  }
+
+  // Revenue and net income:
+  // increase = positive
+  if (
+    metric === 'revenue' ||
+    metric === 'netIncome'
+  ) {
+    return value > 0;
+  }
+
+  // Expenses:
+  // decrease = positive
+  return value < 0;
+}
+
+ protected comparisonIcon(
+  value: number | null,
+): string {
+  if (value === null) {
+    return 'auto_awesome';
+  }
+
+  if (value > 0) {
+    return 'trending_up';
+  }
+
+  if (value < 0) {
+    return 'trending_down';
+  }
+
+  return 'remove';
+}
 
   // ============================================================
   // CURRENCY
