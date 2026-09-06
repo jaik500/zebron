@@ -288,12 +288,47 @@ export const routes: Routes = [
 {
   path: 'community',
   canActivate: [authGuard],
-  loadComponent: () =>
-    import(
-      './features/community/pages/community-home/community-home.component'
-    ).then(
-      (m) => m.CommunityHomeComponent,
-    ),
+  children: [
+    {
+      path: '',
+      loadComponent: () =>
+        import(
+          './features/community/pages/community-home/community-home.component'
+        ).then(
+          m => m.CommunityHomeComponent,
+        ),
+    },
+
+    {
+      path: 'post/:id',
+      loadComponent: () =>
+        import(
+          './features/community/pages/post-detail/community-post-detail.component'
+        ).then(
+          m => m.CommunityPostDetailComponent,
+        ),
+    },
+
+    {
+      path: 'new',
+      loadComponent: () =>
+        import(
+          './features/community/pages/create-post/community-create-post.component',
+        ).then(
+          m => m.CommunityCreatePostComponent,
+        ),
+    },
+
+    {
+      path: 'my-posts',
+      loadComponent: () =>
+        import(
+          './features/community/pages/my-posts/my-posts.component'
+        ).then(
+          m => m.MyPostsComponent,
+        ),
+    },
+  ],
 },
 
 ///////////////////////////////////////////////////////////////////////////
