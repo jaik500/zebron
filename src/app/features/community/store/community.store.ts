@@ -1,1451 +1,611 @@
-
-// ============================================================
-// COMMUNITY SIGNAL STORE
-// ============================================================
-//
-// Centralized state management for the Zebron Community feature.
-//
-// Architecture:
-//
-//   Community Components
-//          ↓
-//   CommunityStore
-//          ↓
-//   CommunityService
-//          ↓
-//      Firestore
-//
-// ============================================================
-
 import { computed, inject } from '@angular/core';
+import { DocumentData, DocumentSnapshot } from 'firebase/firestore';
 
-import {
-  patchState,
-  signalStore,
-  withComputed,
-  withMethods,
-  withState,
-} from '@ngrx/signals';
+import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 
 import { AuthService } from '../../../core/services/auth.service';
-import { CommunityService } from '../../../core/services/community.service';
 
-import {
-  CommunityPost,
-  CommunityPostStatus,
-  CommunityPostType,
-} from '../../../core/models/community/community-post.model';
+import { CommunityPost } from '../models/community-post.model';
+import { CommunityTopic } from '../models/community-topic.model';
 
-import { CommunityComment } from '../../../core/models/community/community-comment.model';
-import { CommunityCategory } from '../../../core/models/community/community-category.model';
+import { CommunityPostService } from '../services/community-post.service';
+import { CommunityTopicService } from '../services/community-topic.service';
 
-import {
-  CommunityReportReason,
-} from '../../../core/models/community/community-report.model';
+// ============================================================
+// TYPES
+// ============================================================
 
+export type CommunitySortMode = 'latest' | 'popular' | 'trending';
 
 // ============================================================
 // STATE
 // ============================================================
 
 interface CommunityState {
-
+  // Feed
   posts: CommunityPost[];
 
-  selectedPost: CommunityPost | null;
+  // Topics
+  topics: CommunityTopic[];
 
-  comments: CommunityComment[];
+  // Active filters
+  selectedTopicId: string | null;
+  searchTerm: string;
+  sortMode: CommunitySortMode;
 
-  categories: CommunityCategory[];
-
-  myPosts: CommunityPost[];
-
+  // Loading states
   loading: boolean;
+  loadingMore: boolean;
+  refreshing: boolean;
 
-  loadingPost: boolean;
-
-  loadingComments: boolean;
-
-  saving: boolean;
-
+  // Error
   error: string | null;
 
-  searchTerm: string;
-
-  selectedPostType: CommunityPostType | null;
-
-  selectedCategoryId: string | null;
+  // Pagination
+  hasMore: boolean;
+  lastDocument: DocumentSnapshot<DocumentData> | null;
 }
-
 
 // ============================================================
 // INITIAL STATE
 // ============================================================
 
 const initialState: CommunityState = {
-
   posts: [],
 
-  selectedPost: null,
+  topics: [],
 
-  comments: [],
-
-  categories: [],
-
-  myPosts: [],
-
-  loading: false,
-
-  loadingPost: false,
-
-  loadingComments: false,
-
-  saving: false,
-
-  error: null,
+  selectedTopicId: null,
 
   searchTerm: '',
 
-  selectedPostType: null,
+  sortMode: 'latest',
 
-  selectedCategoryId: null,
+  loading: false,
+
+  loadingMore: false,
+
+  refreshing: false,
+
+  error: null,
+
+  hasMore: true,
+
+  lastDocument: null,
 };
 
-
 // ============================================================
-// FILTER HELPER
-// ============================================================
-
-function filterCommunityPosts(
-
-  posts: CommunityPost[],
-
-  searchTerm: string,
-
-  postType: CommunityPostType | null,
-
-  categoryId: string | null,
-
-): CommunityPost[] {
-
-  const search =
-    searchTerm
-      .trim()
-      .toLowerCase();
-
-
-  return posts
-
-    // --------------------------------------------------------
-    // Only published posts
-    // --------------------------------------------------------
-
-    .filter(
-      (post: CommunityPost) =>
-        post.status === 'published',
-    )
-
-    // --------------------------------------------------------
-    // Post type
-    // --------------------------------------------------------
-
-    .filter(
-      (post: CommunityPost) =>
-        !postType ||
-        post.postType === postType,
-    )
-
-    // --------------------------------------------------------
-    // Category
-    // --------------------------------------------------------
-
-    .filter(
-      (post: CommunityPost) =>
-        !categoryId ||
-        post.categoryId === categoryId,
-    )
-
-    // --------------------------------------------------------
-    // Search
-    // --------------------------------------------------------
-
-    .filter(
-      (post: CommunityPost) => {
-
-        if (!search) {
-          return true;
-        }
-
-
-        const searchableText = [
-
-          post.title,
-
-          post.content,
-
-          post.authorName,
-
-          ...(post.tags ?? []),
-
-        ]
-          .join(' ')
-          .toLowerCase();
-
-
-        return searchableText.includes(search);
-      },
-    );
-}
-
-
-// ============================================================
-// SIGNAL STORE
+// COMMUNITY STORE
 // ============================================================
 
 export const CommunityStore = signalStore(
-
-  // ============================================================
-  // PROVIDER
-  // ============================================================
-
   {
     providedIn: 'root',
   },
-
-  // ============================================================
+  // ==========================================================
   // STATE
-  // ============================================================
+  // ==========================================================
 
   withState(initialState),
 
-
-  // ============================================================
+  // ==========================================================
   // COMPUTED STATE
-  // ============================================================
+  // ==========================================================
 
   withComputed((store) => {
+    const authService = inject(AuthService);
 
-    const authService =
-      inject(AuthService);
+    // --------------------------------------------------------
+    // Filtered posts
+    // --------------------------------------------------------
 
+    const filteredPosts = computed(() => {
+      const posts = store.posts();
+
+      const searchTerm = store.searchTerm().trim().toLowerCase();
+
+      if (!searchTerm) {
+        return posts;
+      }
+
+      return posts.filter((post) => {
+        const title = post.title?.toLowerCase() ?? '';
+
+        const content = post.content?.toLowerCase() ?? '';
+
+        const topicName = post.topicName?.toLowerCase() ?? '';
+
+        const tags = post.tags?.join(' ').toLowerCase() ?? '';
+
+        return (
+          title.includes(searchTerm) ||
+          content.includes(searchTerm) ||
+          topicName.includes(searchTerm) ||
+          tags.includes(searchTerm)
+        );
+      });
+    });
+
+    // --------------------------------------------------------
+    // Selected topic
+    // --------------------------------------------------------
+
+    const selectedTopic = computed(() => {
+      const topicId = store.selectedTopicId();
+
+      if (!topicId) {
+        return null;
+      }
+
+      return store.topics().find((topic) => topic.id === topicId) ?? null;
+    });
+
+    // --------------------------------------------------------
+    // Active filters
+    // --------------------------------------------------------
+
+    const hasActiveFilters = computed(() => {
+      return (
+        !!store.selectedTopicId() || !!store.searchTerm().trim() || store.sortMode() !== 'latest'
+      );
+    });
+
+    // --------------------------------------------------------
+    // Current user
+    // --------------------------------------------------------
+
+    const currentUser = computed(() => {
+      return authService.user();
+    });
+
+    // --------------------------------------------------------
+    // Post count
+    //
+    // IMPORTANT:
+    // Do not call filteredPosts() here because filteredPosts
+    // is a sibling computed property in this same factory.
+    // Calculate from the same source instead.
+    // --------------------------------------------------------
+
+    const postCount = computed(() => {
+      const posts = store.posts();
+
+      const searchTerm = store.searchTerm().trim().toLowerCase();
+
+      if (!searchTerm) {
+        return posts.length;
+      }
+
+      return posts.filter((post) => {
+        const title = post.title?.toLowerCase() ?? '';
+
+        const content = post.content?.toLowerCase() ?? '';
+
+        const topicName = post.topicName?.toLowerCase() ?? '';
+
+        const tags = post.tags?.join(' ').toLowerCase() ?? '';
+
+        return (
+          title.includes(searchTerm) ||
+          content.includes(searchTerm) ||
+          topicName.includes(searchTerm) ||
+          tags.includes(searchTerm)
+        );
+      }).length;
+    });
+
+    // --------------------------------------------------------
+    // Empty state
+    // --------------------------------------------------------
+
+    const isEmpty = computed(() => {
+      return !store.loading() && !store.loadingMore() && postCount() === 0;
+    });
 
     return {
+      filteredPosts,
 
-      // ========================================================
-      // CURRENT USER
-      // ========================================================
+      selectedTopic,
 
-      currentUser: computed(
-        () =>
-          authService.user(),
-      ),
+      hasActiveFilters,
 
+      currentUser,
 
-      // ========================================================
-      // PUBLISHED POSTS
-      // ========================================================
+      postCount,
 
-      publishedPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published',
-          ),
-      ),
-
-
-      // ========================================================
-      // OFFICIAL POSTS
-      // ========================================================
-
-      officialPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              (
-                post.postType === 'announcement' ||
-                post.postType === 'news' ||
-                post.postType === 'notice'
-              ),
-          ),
-      ),
-
-
-      // ========================================================
-      // DISCUSSIONS
-      // ========================================================
-
-      discussionPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              post.postType === 'discussion',
-          ),
-      ),
-
-
-      // ========================================================
-      // QUESTIONS
-      // ========================================================
-
-      questionPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              post.postType === 'question',
-          ),
-      ),
-
-
-      // ========================================================
-      // NEWS
-      // ========================================================
-
-      newsPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              post.postType === 'news',
-          ),
-      ),
-
-
-      // ========================================================
-      // ANNOUNCEMENTS
-      // ========================================================
-
-      announcementPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              post.postType === 'announcement',
-          ),
-      ),
-
-
-      // ========================================================
-      // EVENTS
-      // ========================================================
-
-      eventPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              post.postType === 'event',
-          ),
-      ),
-
-
-      // ========================================================
-      // OPPORTUNITIES
-      // ========================================================
-
-      opportunityPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              post.postType === 'opportunity',
-          ),
-      ),
-
-
-      // ========================================================
-      // NOTICES
-      // ========================================================
-
-      noticePosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              post.postType === 'notice',
-          ),
-      ),
-
-
-      // ========================================================
-      // FEATURED
-      // ========================================================
-
-      featuredPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              post.featured === true,
-          ),
-      ),
-
-
-      // ========================================================
-      // PINNED
-      // ========================================================
-
-      pinnedPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              post.pinned === true,
-          ),
-      ),
-
-
-      // ========================================================
-      // IMPORTANT
-      // ========================================================
-
-      importantPosts: computed(
-        () =>
-          store.posts().filter(
-            (post: CommunityPost) =>
-              post.status === 'published' &&
-              post.important === true,
-          ),
-      ),
-
-
-      // ========================================================
-      // FILTERED POSTS
-      // ========================================================
-
-      filteredPosts: computed(
-        () =>
-          filterCommunityPosts(
-
-            store.posts(),
-
-            store.searchTerm(),
-
-            store.selectedPostType(),
-
-            store.selectedCategoryId(),
-
-          ),
-      ),
-
-
-      // ========================================================
-      // RESULT COUNT
-      // ========================================================
-
-      resultCount: computed(
-        () =>
-          filterCommunityPosts(
-
-            store.posts(),
-
-            store.searchTerm(),
-
-            store.selectedPostType(),
-
-            store.selectedCategoryId(),
-
-          ).length,
-      ),
-
-
-      // ========================================================
-      // ACTIVE FILTERS
-      // ========================================================
-
-      hasActiveFilters: computed(
-        () =>
-          store.searchTerm().trim().length > 0 ||
-          store.selectedPostType() !== null ||
-          store.selectedCategoryId() !== null,
-      ),
-
-
-      // ========================================================
-      // CURRENT USER POSTS
-      // ========================================================
-
-      currentUserPosts: computed(
-        () => {
-
-          const user =
-            authService.user();
-
-
-          if (!user) {
-            return [];
-          }
-
-
-          return store.posts().filter(
-            (post: CommunityPost) =>
-              post.authorId === user.id,
-          );
-        },
-      ),
-
-
-      // ========================================================
-      // COMMUNITY STATISTICS
-      // ========================================================
-
-      communityStats: computed(
-        () => {
-
-          const posts =
-            store.posts();
-
-
-          const published =
-            posts.filter(
-              (post: CommunityPost) =>
-                post.status === 'published',
-            );
-
-
-          const discussions =
-            published.filter(
-              (post: CommunityPost) =>
-                post.postType === 'discussion',
-            );
-
-
-          const questions =
-            published.filter(
-              (post: CommunityPost) =>
-                post.postType === 'question',
-            );
-
-
-          const official =
-            published.filter(
-              (post: CommunityPost) =>
-                post.postType === 'announcement' ||
-                post.postType === 'news' ||
-                post.postType === 'notice',
-            );
-
-
-          const totalComments =
-            published.reduce(
-              (
-                total: number,
-                post: CommunityPost,
-              ) =>
-                total +
-                (post.commentCount ?? 0),
-              0,
-            );
-
-
-          const totalLikes =
-            published.reduce(
-              (
-                total: number,
-                post: CommunityPost,
-              ) =>
-                total +
-                (post.likeCount ?? 0),
-              0,
-            );
-
-
-          const totalViews =
-            published.reduce(
-              (
-                total: number,
-                post: CommunityPost,
-              ) =>
-                total +
-                (post.viewCount ?? 0),
-              0,
-            );
-
-
-          return {
-
-            totalPosts:
-              published.length,
-
-            discussions:
-              discussions.length,
-
-            questions:
-              questions.length,
-
-            official:
-              official.length,
-
-            totalComments,
-
-            totalLikes,
-
-            totalViews,
-
-          };
-        },
-      ),
-
+      isEmpty,
     };
-
   }),
 
-
-  // ============================================================
+  // ==========================================================
   // METHODS
-  // ============================================================
+  // ==========================================================
 
-  withMethods(
-    (
-      store,
+  withMethods((store) => {
+    const postService = inject(CommunityPostService);
 
-      communityService =
-        inject(CommunityService),
+    const topicService = inject(CommunityTopicService);
 
-      authService =
-        inject(AuthService),
+    // ========================================================
+    // LOAD INITIAL DATA
+    // ========================================================
 
-    ) => {
+    const loadInitialData = async (): Promise<void> => {
+      patchState(store, {
+        loading: true,
+        error: null,
+      });
 
+      try {
+        const [topics, postPage] = await Promise.all([
+          topicService.getActiveTopics(),
 
-      // ========================================================
-      // INTERNAL LOAD COMMUNITY HELPER
-      // ========================================================
-      //
-      // Methods inside withMethods() cannot call other methods
-      // through `store.loadCommunity()`.
-      //
-      // Therefore we define reusable local functions.
-      //
+          postService.getPosts({
+            topicId: store.selectedTopicId(),
+          }),
+        ]);
 
-      const loadCommunityInternal =
-        async (): Promise<void> => {
+        patchState(store, {
+          topics,
 
-          patchState(store, {
+          posts: postPage.posts,
 
-            loading: true,
+          lastDocument: postPage.lastDocument,
 
-            error: null,
+          hasMore: postPage.hasMore,
 
-          });
+          error: null,
 
+          loading: false,
+        });
+      } catch (error) {
+        console.error('Failed to load community data:', error);
 
-          try {
+        patchState(store, {
+          loading: false,
 
-            const [
-              posts,
-              categories,
-            ] = await Promise.all([
+          error: 'Unable to load the community right now. Please try again.',
+        });
+      }
+    };
 
-              communityService
-                .getRecentPosts(50),
+    // ========================================================
+    // LOAD MORE POSTS
+    // ========================================================
 
-              communityService
-                .getActiveCategories(),
+    const loadMore = async (): Promise<void> => {
+      if (store.loading() || store.loadingMore() || !store.hasMore()) {
+        return;
+      }
 
-            ]);
+      patchState(store, {
+        loadingMore: true,
 
+        error: null,
+      });
 
-            const user =
-              authService.user();
+      try {
+        const page = await postService.getPosts({
+          topicId: store.selectedTopicId(),
 
+          lastDocument: store.lastDocument(),
+        });
 
-            const myPosts =
-              user
+        patchState(store, {
+          posts: [...store.posts(), ...page.posts],
 
-                ? posts.filter(
-                    (post: CommunityPost) =>
-                      post.authorId === user.id,
-                  )
+          lastDocument: page.lastDocument,
 
-                : [];
+          hasMore: page.hasMore,
 
+          loadingMore: false,
 
-            patchState(store, {
+          error: null,
+        });
+      } catch (error) {
+        console.error('Failed to load more community posts:', error);
 
-              posts,
+        patchState(store, {
+          loadingMore: false,
 
-              categories,
+          error: 'Unable to load more posts. Please try again.',
+        });
+      }
+    };
 
-              myPosts,
+    // ========================================================
+    // REFRESH
+    // ========================================================
 
-              loading: false,
+    const refresh = async (): Promise<void> => {
+      patchState(store, {
+        refreshing: true,
 
-              error: null,
+        error: null,
+      });
 
-            });
+      try {
+        const page = await postService.getPosts({
+          topicId: store.selectedTopicId(),
+        });
 
-          } catch (error) {
+        patchState(store, {
+          posts: page.posts,
 
-            patchState(store, {
+          lastDocument: page.lastDocument,
 
-              loading: false,
+          hasMore: page.hasMore,
 
-              error:
-                getErrorMessage(error),
+          refreshing: false,
 
-            });
+          error: null,
+        });
+      } catch (error) {
+        console.error('Failed to refresh community:', error);
 
-          }
+        patchState(store, {
+          refreshing: false,
 
-        };
+          error: 'Unable to refresh the community. Please try again.',
+        });
+      }
+    };
 
+    // ========================================================
+    // SELECT TOPIC
+    // ========================================================
 
-      // ========================================================
-      // INTERNAL LOAD POST HELPER
-      // ========================================================
+    const selectTopic = async (topicId: string | null): Promise<void> => {
+      patchState(store, {
+        selectedTopicId: topicId,
 
-      const loadPostInternal =
-        async (
-          postId: string,
-        ): Promise<void> => {
+        posts: [],
 
-          patchState(store, {
+        lastDocument: null,
 
-            loadingPost: true,
+        hasMore: true,
 
-            error: null,
+        error: null,
 
-            selectedPost: null,
+        loading: true,
+      });
 
-          });
+      try {
+        const page = await postService.getPosts({
+          topicId,
+        });
 
+        patchState(store, {
+          posts: page.posts,
 
-          try {
+          lastDocument: page.lastDocument,
 
-            const post =
-              await communityService
-                .getPost(postId);
+          hasMore: page.hasMore,
 
+          loading: false,
 
-            // --------------------------------------------------
-            // getPost() may return null.
-            // --------------------------------------------------
+          error: null,
+        });
+      } catch (error) {
+        console.error('Failed to load topic posts:', error);
 
-            if (!post) {
+        patchState(store, {
+          loading: false,
 
-              patchState(store, {
+          error: 'Unable to load posts for this topic. Please try again.',
+        });
+      }
+    };
 
-                loadingPost: false,
+   // ========================================================
+// CREATE POST
+// ========================================================
 
-                error:
-                  'The community post could not be found.',
+const createPost = async (input: {
+  title: string;
+  content: string;
+  topicId: string;
+  topicName?: string;
+  tags?: string[];
+}): Promise<string | null> => {
+
+  // --------------------------------------------------------
+  // Current authenticated user
+  // --------------------------------------------------------
+
+  const currentUser = store.currentUser();
+
+  if (!currentUser) {
+    patchState(store, {
+      error: 'You must be signed in to create a post.',
+    });
+
+    return null;
+  }
+
+  // --------------------------------------------------------
+  // Validate input
+  // --------------------------------------------------------
+
+  const title = input.title.trim();
+  const content = input.content.trim();
+  const topicId = input.topicId.trim();
+
+  if (!title) {
+    patchState(store, {
+      error: 'A post title is required.',
+    });
+
+    return null;
+  }
+
+  if (!content) {
+    patchState(store, {
+      error: 'Post content is required.',
+    });
+
+    return null;
+  }
+
+  if (!topicId) {
+    patchState(store, {
+      error: 'Please select a topic.',
+    });
 
-              });
+    return null;
+  }
 
-              return;
+  // --------------------------------------------------------
+  // Begin save
+  // --------------------------------------------------------
 
-            }
+  patchState(store, {
+    loading: true,
+    error: null,
+  });
 
+  try {
+    const postId = await postService.createPost({
+      authorId: currentUser.id,
+      authorName:
+        currentUser.displayName || 'Zebron Community Member',
+      authorPhotoUrl: currentUser.photoUrl ?? null,
 
-            patchState(store, {
+      topicId,
+      topicName: input.topicName,
 
-              selectedPost: post,
+      title,
+      content,
+      tags: input.tags ?? [],
+    });
 
-              loadingPost: false,
+    // The post has been successfully written to Firestore.
+    // Mark the save as complete before refreshing the feed.
+    patchState(store, {
+      loading: false,
+      error: null,
+    });
 
-            });
+    // Refresh the feed separately.
+    // If refreshing fails, the post was still created successfully.
+    try {
+      await loadInitialData();
+    } catch (refreshError) {
+      console.error(
+        'Post created, but community feed refresh failed:',
+        refreshError,
+      );
+    }
 
-          } catch (error) {
+    return postId;
+  } catch (error) {
+    console.error(
+      'Failed to create community post:',
+      error,
+    );
 
-            patchState(store, {
+    patchState(store, {
+      loading: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Unable to create your post. Please try again.',
+    });
 
-              loadingPost: false,
+    return null;
+  } 
+};
 
-              error:
-                getErrorMessage(error),
+    // ========================================================
+    // SEARCH
+    // ========================================================
 
-            });
+    const setSearchTerm = (searchTerm: string): void => {
+      patchState(store, {
+        searchTerm,
+      });
+    };
 
-          }
+    // ========================================================
+    // SORT
+    // ========================================================
 
-        };
+    const setSortMode = (sortMode: CommunitySortMode): void => {
+      patchState(store, {
+        sortMode,
+      });
+    };
 
+    // ========================================================
+    // CLEAR FILTERS
+    // ========================================================
 
-      // ========================================================
-      // RETURN STORE METHODS
-      // ========================================================
+    const clearFilters = async (): Promise<void> => {
+      patchState(store, {
+        searchTerm: '',
 
-      return {
+        sortMode: 'latest',
 
+        selectedTopicId: null,
 
-        // ======================================================
-        // LOAD COMMUNITY
-        // ======================================================
+        posts: [],
 
-        async loadCommunity(): Promise<void> {
+        lastDocument: null,
 
-          await loadCommunityInternal();
+        hasMore: true,
 
-        },
+        error: null,
 
+        loading: true,
+      });
 
-        // ======================================================
-        // LOAD CATEGORIES
-        // ======================================================
+      try {
+        const page = await postService.getPosts({
+          topicId: null,
+        });
 
-        async loadCategories(): Promise<void> {
+        patchState(store, {
+          posts: page.posts,
 
-          try {
+          lastDocument: page.lastDocument,
 
-            const categories =
-              await communityService
-                .getActiveCategories();
+          hasMore: page.hasMore,
 
+          loading: false,
 
-            patchState(store, {
+          error: null,
+        });
+      } catch (error) {
+        console.error('Failed to clear community filters:', error);
 
-              categories,
+        patchState(store, {
+          loading: false,
 
-            });
+          error: 'Unable to reset the community feed. Please try again.',
+        });
+      }
+    };
 
-          } catch (error) {
+    // ========================================================
+    // PUBLIC METHODS
+    // ========================================================
 
-            patchState(store, {
+    return {
+      loadInitialData,
 
-              error:
-                getErrorMessage(error),
+      loadMore,
 
-            });
+      refresh,
 
-          }
+      selectTopic,
 
-        },
+      setSearchTerm,
 
+      setSortMode,
 
-        // ======================================================
-        // LOAD POST
-        // ======================================================
+      clearFilters,
 
-        async loadPost(
-          postId: string,
-        ): Promise<void> {
-
-          await loadPostInternal(
-            postId,
-          );
-
-        },
-
-
-        // ======================================================
-        // CLEAR SELECTED POST
-        // ======================================================
-
-        clearSelectedPost(): void {
-
-          patchState(store, {
-
-            selectedPost: null,
-
-            comments: [],
-
-          });
-
-        },
-
-
-        // ======================================================
-        // LOAD COMMENTS
-        // ======================================================
-
-        async loadComments(
-          postId: string,
-        ): Promise<void> {
-
-          patchState(store, {
-
-            loadingComments: true,
-
-            error: null,
-
-          });
-
-
-          try {
-
-            const comments =
-              await communityService
-                .getComments(postId);
-
-
-            patchState(store, {
-
-              comments,
-
-              loadingComments: false,
-
-            });
-
-          } catch (error) {
-
-            patchState(store, {
-
-              loadingComments: false,
-
-              error:
-                getErrorMessage(error),
-
-            });
-
-          }
-
-        },
-
-
-        // ======================================================
-        // CREATE POST
-        // ======================================================
-
-        async createPost(
-          input: {
-
-            title: string;
-
-            content: string;
-
-            authorId: string;
-
-            authorName: string;
-
-            authorPhotoUrl?: string;
-
-            postType: CommunityPostType;
-
-            categoryId?: string;
-
-            tags?: string[];
-
-            allowComments?: boolean;
-
-            status?: CommunityPostStatus;
-
-          },
-        ): Promise<string | null> {
-
-          patchState(store, {
-
-            saving: true,
-
-            error: null,
-
-          });
-
-
-          try {
-
-            const postId =
-              await communityService.createPost({
-
-                title:
-                  input.title,
-
-                content:
-                  input.content,
-
-                authorId:
-                  input.authorId,
-
-                authorName:
-                  input.authorName,
-
-                authorPhotoUrl:
-                  input.authorPhotoUrl,
-
-                postType:
-                  input.postType,
-
-                categoryId:
-                  input.categoryId,
-
-                tags:
-                  input.tags,
-
-                allowComments:
-                  input.allowComments,
-
-                status:
-                  input.status,
-
-              });
-
-
-            patchState(store, {
-
-              saving: false,
-
-            });
-
-
-            // Reload using the local helper instead of
-            // store.loadCommunity().
-
-            await loadCommunityInternal();
-
-
-            return postId;
-
-          } catch (error) {
-
-            patchState(store, {
-
-              saving: false,
-
-              error:
-                getErrorMessage(error),
-
-            });
-
-
-            return null;
-
-          }
-
-        },
-
-
-        // ======================================================
-        // UPDATE POST
-        // ======================================================
-
-        async updatePost(
-          postId: string,
-          updates: Partial<CommunityPost>,
-        ): Promise<boolean> {
-
-          patchState(store, {
-
-            saving: true,
-
-            error: null,
-
-          });
-
-
-          try {
-
-            await communityService.updatePost(
-              postId,
-              updates,
-            );
-
-
-            // Reload using local helper.
-
-            await loadCommunityInternal();
-
-
-            // If the currently selected post is the
-            // post being updated, reload it.
-
-            if (
-              store.selectedPost()?.id ===
-              postId
-            ) {
-
-              await loadPostInternal(
-                postId,
-              );
-
-            }
-
-
-            patchState(store, {
-
-              saving: false,
-
-            });
-
-
-            return true;
-
-          } catch (error) {
-
-            patchState(store, {
-
-              saving: false,
-
-              error:
-                getErrorMessage(error),
-
-            });
-
-
-            return false;
-
-          }
-
-        },
-
-
-        // ======================================================
-        // ADD COMMENT
-        // ======================================================
-
-        async addComment(
-          input: {
-
-            postId: string;
-
-            authorId: string;
-
-            authorName: string;
-
-            authorPhotoUrl?: string;
-
-            content: string;
-
-          },
-        ): Promise<string | null> {
-
-          patchState(store, {
-
-            saving: true,
-
-            error: null,
-
-          });
-
-
-          try {
-
-            const commentId =
-              await communityService
-                .createComment({
-
-                  postId:
-                    input.postId,
-
-                  authorId:
-                    input.authorId,
-
-                  authorName:
-                    input.authorName,
-
-                  authorPhotoUrl:
-                    input.authorPhotoUrl,
-
-                  content:
-                    input.content,
-
-                });
-
-
-            // --------------------------------------------------
-            // Reload comments.
-            // --------------------------------------------------
-
-            const comments =
-              await communityService
-                .getComments(
-                  input.postId,
-                );
-
-
-            // --------------------------------------------------
-            // Retrieve updated post.
-            //
-            // createComment() already increments commentCount.
-            // --------------------------------------------------
-
-            const updatedPost =
-              await communityService
-                .getPost(
-                  input.postId,
-                );
-
-
-            // --------------------------------------------------
-            // Update local post state only if the post exists.
-            // --------------------------------------------------
-
-            if (updatedPost) {
-
-              patchState(store, {
-
-                comments,
-
-                selectedPost:
-                  store.selectedPost()?.id ===
-                  input.postId
-
-                    ? updatedPost
-
-                    : store.selectedPost(),
-
-                posts:
-                  store.posts().map(
-                    (post: CommunityPost) =>
-                      post.id === input.postId
-                        ? updatedPost
-                        : post,
-                  ),
-
-                myPosts:
-                  store.myPosts().map(
-                    (post: CommunityPost) =>
-                      post.id === input.postId
-                        ? updatedPost
-                        : post,
-                  ),
-
-                saving: false,
-
-              });
-
-            } else {
-
-              patchState(store, {
-
-                comments,
-
-                saving: false,
-
-              });
-
-            }
-
-
-            return commentId;
-
-          } catch (error) {
-
-            patchState(store, {
-
-              saving: false,
-
-              error:
-                getErrorMessage(error),
-
-            });
-
-
-            return null;
-
-          }
-
-        },
-
-
-        // ======================================================
-        // REPORT CONTENT
-        // ======================================================
-
-        async reportContent(
-          input: {
-
-            postId?: string;
-
-            commentId?: string;
-
-            reportedBy: string;
-
-            reason: CommunityReportReason;
-
-            description?: string;
-
-          },
-        ): Promise<boolean> {
-
-          patchState(store, {
-
-            saving: true,
-
-            error: null,
-
-          });
-
-
-          try {
-
-            await communityService.reportContent({
-
-              postId:
-                input.postId,
-
-              commentId:
-                input.commentId,
-
-              reportedBy:
-                input.reportedBy,
-
-              reason:
-                input.reason,
-
-              description:
-                input.description,
-
-            });
-
-
-            patchState(store, {
-
-              saving: false,
-
-            });
-
-
-            return true;
-
-          } catch (error) {
-
-            patchState(store, {
-
-              saving: false,
-
-              error:
-                getErrorMessage(error),
-
-            });
-
-
-            return false;
-
-          }
-
-        },
-
-
-        // ======================================================
-        // SEARCH
-        // ======================================================
-
-        setSearchTerm(
-          searchTerm: string,
-        ): void {
-
-          patchState(store, {
-
-            searchTerm,
-
-          });
-
-        },
-
-
-        // ======================================================
-        // POST TYPE FILTER
-        // ======================================================
-
-        setPostType(
-          postType: CommunityPostType | null,
-        ): void {
-
-          patchState(store, {
-
-            selectedPostType:
-              postType,
-
-          });
-
-        },
-
-
-        // ======================================================
-        // CATEGORY FILTER
-        // ======================================================
-
-        setCategory(
-          categoryId: string | null,
-        ): void {
-
-          patchState(store, {
-
-            selectedCategoryId:
-              categoryId,
-
-          });
-
-        },
-
-
-        // ======================================================
-        // CLEAR FILTERS
-        // ======================================================
-
-        clearFilters(): void {
-
-          patchState(store, {
-
-            searchTerm: '',
-
-            selectedPostType: null,
-
-            selectedCategoryId: null,
-
-          });
-
-        },
-
-
-        // ======================================================
-        // CLEAR ERROR
-        // ======================================================
-
-        clearError(): void {
-
-          patchState(store, {
-
-            error: null,
-
-          });
-
-        },
-
-
-        // ======================================================
-        // RESET
-        // ======================================================
-
-        reset(): void {
-
-          patchState(store, {
-
-            ...initialState,
-
-          });
-
-        },
-
-      };
-
-    },
-  ),
+      createPost,
+    };
+  }),
 );
-
-
-// ============================================================
-// ERROR HELPER
-// ============================================================
-
-function getErrorMessage(
-  error: unknown,
-): string {
-
-  if (
-    error instanceof Error &&
-    error.message
-  ) {
-
-    return error.message;
-
-  }
-
-
-  if (
-    typeof error === 'string'
-  ) {
-
-    return error;
-
-  }
-
-
-  return (
-    'An unexpected error occurred. Please try again.'
-  );
-}
-

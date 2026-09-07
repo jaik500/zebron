@@ -1,598 +1,241 @@
+
 import {
   ChangeDetectionStrategy,
   Component,
   input,
 } from '@angular/core';
 
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
 
-import { CommunityPost } from '../../../../core/models/community/community-post.model';
+import { CommunityPost } from '../../models/community-post.model';
 
 @Component({
   selector: 'app-community-post-card',
   standalone: true,
-
   imports: [
-    CommonModule,
-    RouterLink,
-
     MatButtonModule,
     MatCardModule,
-    MatChipsModule,
     MatIconModule,
-    MatTooltipModule,
+    MatMenuModule,
   ],
-
-  changeDetection: ChangeDetectionStrategy.OnPush,
-
   template: `
     <mat-card
-      class="post-card"
-      appearance="outlined"
+      class="!rounded-2xl
+             !border !border-[#D6E6E7]
+             !bg-white
+             !shadow-none
+             hover:!border-[#7DD3D3]"
     >
-      <a
-        class="post-link"
-        [routerLink]="['/community/post', post().id]"
-        [attr.aria-label]="'Open post: ' + post().title"
+
+      <!-- Header -->
+      <div
+        class="flex items-start justify-between gap-3"
       >
 
-        <!-- ======================================================
-             AUTHOR
-             ====================================================== -->
+        <div
+          class="flex min-w-0 items-center gap-3"
+        >
 
-        <div class="avatar">
-          @if (post().authorPhotoUrl) {
+          <!-- Avatar -->
+          @if (post().author.photoUrl) {
+
             <img
-              [src]="post().authorPhotoUrl"
-              [alt]="post().authorName"
+              [src]="post().author.photoUrl"
+              [alt]="
+                post().author.displayName
+              "
+              class="h-10 w-10 rounded-full
+                     object-cover
+                     ring-2 ring-[#E5F4F4]"
             />
+
           } @else {
-            <span>
-              {{ getInitials(post().authorName) }}
-            </span>
-          }
-        </div>
 
-
-        <!-- ======================================================
-             CONTENT
-             ====================================================== -->
-
-        <div class="post-content">
-
-          <!-- --------------------------------------------------
-               META
-               -------------------------------------------------- -->
-
-          <div class="post-meta">
-
-            <mat-chip-set aria-label="Post type">
-              <mat-chip>
-                {{ getPostTypeLabel(post().postType) }}
-              </mat-chip>
-            </mat-chip-set>
-
-
-            @if (post().pinned) {
-              <mat-icon
-                class="meta-icon"
-                matTooltip="Pinned post"
-                aria-label="Pinned post"
-              >
-                push_pin
-              </mat-icon>
-            }
-
-
-            @if (post().featured) {
-              <mat-icon
-                class="meta-icon"
-                matTooltip="Featured post"
-                aria-label="Featured post"
-              >
-                star
-              </mat-icon>
-            }
-
-
-            @if (post().important) {
-              <mat-icon
-                class="meta-icon important-icon"
-                matTooltip="Important post"
-                aria-label="Important post"
-              >
-                priority_high
-              </mat-icon>
-            }
-
-          </div>
-
-
-          <!-- --------------------------------------------------
-               TITLE
-               -------------------------------------------------- -->
-
-          <h3>
-            {{ post().title }}
-          </h3>
-
-
-          <!-- --------------------------------------------------
-               CONTENT PREVIEW
-               -------------------------------------------------- -->
-
-          <p class="post-preview">
-            {{ truncate(post().content, 220) }}
-          </p>
-
-
-          <!-- --------------------------------------------------
-               TAGS
-               -------------------------------------------------- -->
-
-          @if (post().tags.length) {
-            <div class="tags">
-
-              @for (
-                tag of post().tags.slice(0, 4);
-                track tag
-              ) {
-                <span class="tag">
-                  #{{ tag }}
-                </span>
-              }
-
+            <div
+              class="flex h-10 w-10 items-center
+                     justify-center rounded-full
+                     bg-[#E5F4F4]
+                     text-sm font-semibold
+                     text-[#007979]"
+            >
+              {{
+                post().author.displayName
+                  .charAt(0)
+                  .toUpperCase()
+              }}
             </div>
+
           }
 
+          <div class="min-w-0">
 
-          <!-- --------------------------------------------------
-               FOOTER
-               -------------------------------------------------- -->
+            <div
+              class="truncate font-semibold
+                     text-[#032D42]"
+            >
+              {{ post().author.displayName }}
+            </div>
 
-          <div class="post-footer">
-
-            <span>
-              {{ post().authorName }}
-            </span>
-
-            <span>
-              {{ formatDate(post().publishedAt ?? post().createdAt) }}
-            </span>
-
-            <span>
-              <mat-icon>
-                visibility
-              </mat-icon>
-
-              {{ post().viewCount || 0 }}
-            </span>
-
-            <span>
-              <mat-icon>
-                chat_bubble_outline
-              </mat-icon>
-
-              {{ post().commentCount || 0 }}
-            </span>
-
-            <span>
-              <mat-icon>
-                favorite_border
-              </mat-icon>
-
-              {{ post().likeCount || 0 }}
-            </span>
+            <div
+              class="text-xs
+                     text-[#6F8B92]"
+            >
+              {{ post().topicName || 'Community' }}
+            </div>
 
           </div>
 
         </div>
 
+        <button
+          mat-icon-button
+          type="button"
+          aria-label="Post options"
+          class="!text-[#475D66]
+                 hover:!bg-[#E5F4F4]
+                 hover:!text-[#007979]"
+          [matMenuTriggerFor]="postMenu"
+        >
+          <mat-icon>more_vert</mat-icon>
+        </button>
 
-        <!-- ======================================================
-             ARROW
-             ====================================================== -->
+        <mat-menu #postMenu="matMenu">
 
-        <mat-icon class="post-arrow">
-          arrow_forward
-        </mat-icon>
+          <button
+            mat-menu-item
+          >
+            <mat-icon
+              class="!text-[#007979]"
+            >
+              bookmark_border
+            </mat-icon>
 
-      </a>
+            <span>Save post</span>
+          </button>
+
+          <button
+            mat-menu-item
+          >
+            <mat-icon
+              class="!text-[#007979]"
+            >
+              flag
+            </mat-icon>
+
+            <span>Report</span>
+          </button>
+
+        </mat-menu>
+
+      </div>
+
+      <!-- Content -->
+      <div class="mt-4">
+
+        <h2
+          class="text-lg font-semibold
+                 text-[#032D42]"
+        >
+          {{ post().title }}
+        </h2>
+
+        <p
+          class="mt-2 whitespace-pre-line
+                 text-sm leading-6
+                 text-[#475D66]"
+        >
+          {{ post().content }}
+        </p>
+
+      </div>
+
+      <!-- Actions -->
+      <div
+        class="mt-5 flex items-center
+               border-t border-[#D6E6E7]
+               pt-3"
+      >
+
+        <button
+          mat-button
+          type="button"
+          class="!text-[#007979]
+                 hover:!bg-[#E5F4F4]"
+        >
+          <mat-icon>
+            thumb_up_off_alt
+          </mat-icon>
+
+          <span class="ml-1">
+            {{ reactionCount('like') }}
+          </span>
+        </button>
+
+        <button
+          mat-button
+          type="button"
+          class="!text-[#007979]
+                 hover:!bg-[#E5F4F4]"
+        >
+          <mat-icon>
+            favorite_border
+          </mat-icon>
+
+          <span class="ml-1">
+            {{ reactionCount('love') }}
+          </span>
+        </button>
+
+        <button
+          mat-button
+          type="button"
+          class="!text-[#007979]
+                 hover:!bg-[#E5F4F4]"
+        >
+          <mat-icon>
+            chat_bubble_outline
+          </mat-icon>
+
+          <span class="ml-1">
+            {{ post().commentCount }}
+          </span>
+        </button>
+
+        <button
+          mat-button
+          type="button"
+          class="ml-auto
+                 !text-[#007979]
+                 hover:!bg-[#E5F4F4]"
+        >
+          <mat-icon>
+            share
+          </mat-icon>
+
+          <span class="ml-1">
+            Share
+          </span>
+        </button>
+
+      </div>
+
     </mat-card>
   `,
 
-  styles: [
-    `
-      :host {
-        display: block;
-      }
-
-      .post-card {
-        height: 100%;
-        border-radius: 14px;
-        overflow: hidden;
-        transition:
-          transform 160ms ease,
-          box-shadow 160ms ease,
-          border-color 160ms ease;
-      }
-
-      .post-card:hover {
-        transform: translateY(-2px);
-        box-shadow:
-          0 8px 24px rgba(0, 0, 0, 0.08);
-      }
-
-      .post-link {
-        position: relative;
-
-        display: grid;
-        grid-template-columns: 46px minmax(0, 1fr) 24px;
-
-        gap: 14px;
-
-        min-height: 180px;
-
-        padding: 18px;
-
-        color: inherit;
-        text-decoration: none;
-      }
-
-      /* ========================================================
-         AVATAR
-         ======================================================== */
-
-      .avatar {
-        width: 46px;
-        height: 46px;
-
-        flex-shrink: 0;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        overflow: hidden;
-
-        border-radius: 50%;
-
-        background:
-          linear-gradient(
-            135deg,
-            #e8eefc,
-            #d9e2f7
-          );
-
-        color: #334155;
-
-        font-size: 15px;
-        font-weight: 700;
-      }
-
-      .avatar img {
-        width: 100%;
-        height: 100%;
-
-        object-fit: cover;
-      }
-
-
-      /* ========================================================
-         CONTENT
-         ======================================================== */
-
-      .post-content {
-        min-width: 0;
-      }
-
-
-      /* ========================================================
-         META
-         ======================================================== */
-
-      .post-meta {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-
-        min-height: 30px;
-
-        margin-bottom: 8px;
-      }
-
-      .post-meta mat-chip {
-        font-size: 12px;
-      }
-
-      .meta-icon {
-        width: 18px;
-        height: 18px;
-
-        font-size: 18px;
-      }
-
-      .important-icon {
-        color: #b42318;
-      }
-
-
-      /* ========================================================
-         TITLE
-         ======================================================== */
-
-      h3 {
-        margin: 0;
-
-        color: #172033;
-
-        font-size: 18px;
-        line-height: 1.35;
-        font-weight: 700;
-      }
-
-
-      /* ========================================================
-         PREVIEW
-         ======================================================== */
-
-      .post-preview {
-        margin: 8px 0 12px;
-
-        color: #64748b;
-
-        font-size: 14px;
-        line-height: 1.55;
-      }
-
-
-      /* ========================================================
-         TAGS
-         ======================================================== */
-
-      .tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-
-        margin-bottom: 12px;
-      }
-
-      .tag {
-        padding: 3px 8px;
-
-        border-radius: 999px;
-
-        background: #f1f5f9;
-
-        color: #475569;
-
-        font-size: 11px;
-        line-height: 1.4;
-      }
-
-
-      /* ========================================================
-         FOOTER
-         ======================================================== */
-
-      .post-footer {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-
-        gap: 12px;
-
-        color: #64748b;
-
-        font-size: 12px;
-      }
-
-      .post-footer span {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .post-footer mat-icon {
-        width: 16px;
-        height: 16px;
-
-        font-size: 16px;
-      }
-
-
-      /* ========================================================
-         ARROW
-         ======================================================== */
-
-      .post-arrow {
-        align-self: center;
-
-        color: #94a3b8;
-
-        transition:
-          transform 160ms ease,
-          color 160ms ease;
-      }
-
-      .post-link:hover .post-arrow {
-        color: #334155;
-        transform: translateX(3px);
-      }
-
-
-      /* ========================================================
-         RESPONSIVE
-         ======================================================== */
-
-      @media (max-width: 600px) {
-
-        .post-link {
-          grid-template-columns: 40px minmax(0, 1fr);
-
-          gap: 12px;
-
-          padding: 15px;
-        }
-
-        .avatar {
-          width: 40px;
-          height: 40px;
-        }
-
-        .post-arrow {
-          display: none;
-        }
-
-        h3 {
-          font-size: 16px;
-        }
-
-        .post-footer {
-          gap: 8px;
-        }
-
-      }
-    `,
-  ],
+  changeDetection:
+    ChangeDetectionStrategy.OnPush,
 })
 export class CommunityPostCardComponent {
-
-  /**
-   * Community post supplied by the parent page.
-   */
   readonly post = input.required<CommunityPost>();
 
-
-  // ============================================================
-  // POST TYPE
-  // ============================================================
-
-  protected getPostTypeLabel(
-    type: CommunityPost['postType'],
-  ): string {
-
-    switch (type) {
-
-      case 'discussion':
-        return 'Discussion';
-
-      case 'question':
-        return 'Question';
-
-      case 'announcement':
-        return 'Announcement';
-
-      case 'news':
-        return 'News';
-
-      case 'event':
-        return 'Event';
-
-      case 'opportunity':
-        return 'Opportunity';
-
-      case 'notice':
-        return 'Notice';
-
-      default:
-        return 'Community';
-
-    }
-  }
-
-
-  // ============================================================
-  // INITIALS
-  // ============================================================
-
-  protected getInitials(
-    name: string | undefined,
-  ): string {
-
-    if (!name?.trim()) {
-      return 'Z';
-    }
-
-    const parts =
-      name
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean);
-
-    if (parts.length === 1) {
-      return parts[0]
-        .substring(0, 2)
-        .toUpperCase();
-    }
-
-    return (
-      parts[0][0] +
-      parts[parts.length - 1][0]
-    ).toUpperCase();
-  }
-
-
-  // ============================================================
-  // TRUNCATE
-  // ============================================================
-
-  protected truncate(
-    value: string | undefined,
-    maxLength: number,
-  ): string {
-
-    if (!value) {
-      return '';
-    }
-
-    const text = value.trim();
-
-    if (text.length <= maxLength) {
-      return text;
-    }
-
-    return `${text.substring(0, maxLength).trim()}…`;
-  }
-
-
-  // ============================================================
-  // DATE
-  // ============================================================
-
-  protected formatDate(
-    timestamp: CommunityPost['createdAt'],
-  ): string {
-
-    if (!timestamp) {
-      return '';
-    }
-
-    try {
-
-      return timestamp
-        .toDate()
-        .toLocaleDateString(
-          'en-US',
-          {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          },
-        );
-
-    } catch {
-
-      return '';
-
-    }
+  reactionCount(
+    type: string,
+  ): number {
+    return this.post()
+      .reactionCounts?.[type] ?? 0;
   }
 }
+
