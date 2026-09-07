@@ -6,7 +6,12 @@ import {
 import {
   addDoc,
   collection,
+  getDocs,
+  limit,
+  orderBy,
+  query,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 
 import { firestore } from './firebase-config';
@@ -51,17 +56,28 @@ export interface AuditEventInput {
   providedIn: 'root',
 })
 export class AuditService {
+
+  // ============================================================
+  // SERVICES
+  // ============================================================
+
   private readonly authService =
     inject(AuthService);
 
   private readonly logger =
     inject(LoggerService);
 
+
+  // ============================================================
+  // FIRESTORE
+  // ============================================================
+
   private readonly auditCollection =
     collection(
       firestore,
       'auditLogs',
     );
+
 
   // ============================================================
   // PUBLIC API
@@ -78,6 +94,7 @@ export class AuditService {
   ): Promise<
     string | null
   > {
+
     const operationId =
       this.logger.createOperationId();
 
@@ -98,7 +115,8 @@ export class AuditService {
       'Creating audit record.',
       {
         operationId,
-        action: input.action,
+        action:
+          input.action,
         entityType:
           input.entityType,
         entityId:
@@ -110,6 +128,7 @@ export class AuditService {
     );
 
     try {
+
       const record: Omit<
         AuditLog,
         'id' | 'createdAt'
@@ -118,6 +137,7 @@ export class AuditService {
           typeof serverTimestamp
         >;
       } = {
+
         action:
           input.action.trim(),
 
@@ -189,7 +209,9 @@ export class AuditService {
       );
 
       return reference.id;
+
     } catch (error) {
+
       this.logger.error(
         'AuditService',
         'Failed to create audit record.',
@@ -210,20 +232,288 @@ export class AuditService {
     }
   }
 
+
+  // ============================================================
+  // READ AUDIT LOGS
+  // ============================================================
+
+  /**
+   * Retrieves the most recent audit events.
+   *
+   * The Control Center uses this method to display the
+   * administrative audit trail.
+   */
+  async getRecentLogs(
+    maxResults = 100,
+  ): Promise<AuditLog[]> {
+
+    const operationId =
+      this.logger.createOperationId();
+
+    const safeLimit =
+      Math.min(
+        Math.max(
+          Math.floor(maxResults),
+          1,
+        ),
+        500,
+      );
+
+    this.logger.debug(
+      'AuditService',
+      'Loading recent audit records.',
+      {
+        operationId,
+        limit:
+          safeLimit,
+      },
+    );
+
+    try {
+
+      const auditQuery =
+        query(
+          this.auditCollection,
+          orderBy(
+            'createdAt',
+            'desc',
+          ),
+          limit(
+            safeLimit,
+          ),
+        );
+
+      const snapshot =
+        await getDocs(
+          auditQuery,
+        );
+
+      const logs =
+        snapshot.docs.map(
+          (document) => {
+
+            const data =
+              document.data();
+
+            return {
+              id:
+                document.id,
+
+              action:
+                String(
+                  data['action'] ??
+                  '',
+                ),
+
+              entityType:
+                String(
+                  data['entityType'] ??
+                  '',
+                ),
+
+              entityId:
+                this.toNullableString(
+                  data['entityId'],
+                ),
+
+              actorId:
+                this.toNullableString(
+                  data['actorId'],
+                ),
+
+              actorType:
+                this.toActorType(
+                  data['actorType'],
+                ),
+
+              outcome:
+                this.toOutcome(
+                  data['outcome'],
+                ),
+
+              source:
+                this.toSource(
+                  data['source'],
+                ),
+
+              reason:
+                this.toNullableString(
+                  data['reason'],
+                ),
+
+              metadata:
+                this.toRecord(
+                  data['metadata'],
+                ),
+
+              before:
+                data['before'],
+
+              after:
+                data['after'],
+
+              createdAt:
+                this.toTimestamp(
+                  data['createdAt'],
+                ),
+            } satisfies AuditLog;
+          },
+        );
+
+      this.logger.info(
+        'AuditService',
+        'Recent audit records loaded.',
+        {
+          operationId,
+          count:
+            logs.length,
+        },
+      );
+
+      return logs;
+
+    } catch (error) {
+
+      this.logger.error(
+        'AuditService',
+        'Failed to load recent audit records.',
+        error,
+        {
+          operationId,
+          limit:
+            safeLimit,
+        },
+      );
+
+      throw error;
+    }
+  }
+
+
   // ============================================================
   // ACTOR
   // ============================================================
 
   private resolveActorType():
     AuditActorType {
+
     try {
+
       return this.authService.isAdmin
         ? 'admin'
         : 'user';
+
     } catch {
+
       return 'anonymous';
     }
   }
+
+
+  // ============================================================
+  // TYPE CONVERSION
+  // ============================================================
+
+  private toNullableString(
+    value: unknown,
+  ): string | null {
+
+    if (
+      value === undefined ||
+      value === null
+    ) {
+      return null;
+    }
+
+    return String(value);
+  }
+
+
+  private toActorType(
+    value: unknown,
+  ): AuditActorType {
+
+    switch (value) {
+
+      case 'user':
+      case 'admin':
+      case 'system':
+      case 'anonymous':
+        return value;
+
+      default:
+        return 'system';
+    }
+  }
+
+
+  private toOutcome(
+    value: unknown,
+  ): AuditOutcome {
+
+    switch (value) {
+
+      case 'success':
+      case 'failure':
+      case 'denied':
+      case 'cancelled':
+        return value;
+
+      default:
+        return 'failure';
+    }
+  }
+
+
+  private toSource(
+    value: unknown,
+  ): AuditSource {
+
+    switch (value) {
+
+      case 'web':
+      case 'server':
+      case 'system':
+        return value;
+
+      default:
+        return 'web';
+    }
+  }
+
+
+  private toTimestamp(
+    value: unknown,
+  ): Timestamp | undefined {
+
+    if (
+      value instanceof Timestamp
+    ) {
+      return value;
+    }
+
+    return undefined;
+  }
+
+
+  private toRecord(
+    value: unknown,
+  ): Record<string, unknown> {
+
+    if (
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value)
+    ) {
+      return value as Record<
+        string,
+        unknown
+      >;
+    }
+
+    return {};
+  }
+
 
   // ============================================================
   // SECURITY
@@ -233,6 +523,7 @@ export class AuditService {
     value: unknown,
     depth = 0,
   ): unknown {
+
     if (
       value === undefined ||
       value === null
@@ -266,6 +557,7 @@ export class AuditService {
     }
 
     if (Array.isArray(value)) {
+
       return value.map(
         (item) =>
           this.sanitize(
@@ -278,10 +570,12 @@ export class AuditService {
     if (
       typeof value === 'object'
     ) {
-      const result: Record<
-        string,
-        unknown
-      > = {};
+
+      const result:
+        Record<
+          string,
+          unknown
+        > = {};
 
       for (
         const [
@@ -294,11 +588,13 @@ export class AuditService {
           >,
         )
       ) {
+
         if (
           this.isSensitiveKey(
             key,
           )
         ) {
+
           result[key] =
             '[REDACTED]';
 
@@ -318,9 +614,11 @@ export class AuditService {
     return String(value);
   }
 
+
   private isSensitiveKey(
     key: string,
   ): boolean {
+
     const normalized =
       key
         .toLowerCase()
