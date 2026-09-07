@@ -4,35 +4,66 @@ import {
   inject,
 } from '@angular/core';
 
-import { MatIconModule } from '@angular/material/icon';
-import { MatTabsModule } from '@angular/material/tabs';
+import {
+  MatButtonModule,
+} from '@angular/material/button';
 
-import { ConfigurationOverviewComponent } from './tabs/overview/configuration-overview.component';
-import { ConfigurationApplicationsComponent } from './tabs/applications/configuration-applications.component';
-import { ConfigurationSettingsComponent } from './tabs/settings/configuration-settings.component';
+import {
+  MatIconModule,
+} from '@angular/material/icon';
 
-import { LoggerService } from '../../../../core//services/logger.service';
+import {
+  MatTabsModule,
+} from '@angular/material/tabs';
+
+import {
+  LoggerService,
+} from '../../../../core/services/logger.service';
+
+import {
+  ConfigurationOverviewComponent,
+} from './tabs/overview/configuration-overview.component';
+
+import {
+  ConfigurationApplicationsComponent,
+} from './tabs/applications/configuration-applications.component';
+
+import {
+  ConfigurationSettingsComponent,
+} from './tabs/settings/configuration-settings.component';
+
 
 @Component({
-  selector: 'app-configuration',
+  selector:
+    'app-configuration',
+
   standalone: true,
+
   imports: [
-    MatIconModule,
     MatTabsModule,
+    MatButtonModule,
+    MatIconModule,
+
     ConfigurationOverviewComponent,
     ConfigurationApplicationsComponent,
     ConfigurationSettingsComponent,
   ],
+
   changeDetection:
     ChangeDetectionStrategy.OnPush,
+
   template: `
-    <div class="min-h-screen bg-slate-50">
+    <div
+      class="min-h-screen bg-slate-50"
+    >
 
-      <!-- ======================================================
-           HEADER
-      ======================================================= -->
+      <!-- =====================================================
+           CONTROL CENTER HEADER
+           ===================================================== -->
 
-      <div class="border-b bg-white">
+      <header
+        class="border-b bg-white"
+      >
 
         <div
           class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
@@ -40,51 +71,81 @@ import { LoggerService } from '../../../../core//services/logger.service';
 
           <div
             class="flex flex-col gap-4
-                   sm:flex-row
-                   sm:items-center
-                   sm:justify-between"
+                   md:flex-row
+                   md:items-center
+                   md:justify-between"
           >
 
             <div>
 
               <div
-                class="mb-2 flex items-center gap-2
-                       text-sm font-medium text-slate-500"
+                class="flex items-center gap-3"
               >
-                <mat-icon
-                  class="!h-5 !w-5 !text-[20px]"
+
+                <div
+                  class="flex h-11 w-11
+                         items-center justify-center
+                         rounded-xl
+                         bg-slate-900"
                 >
-                  admin_panel_settings
-                </mat-icon>
 
-                <span>
-                  Admin Center
-                </span>
+                  <mat-icon
+                    class="!text-white"
+                  >
+                    settings
+                  </mat-icon>
 
-                <span>
-                  /
-                </span>
+                </div>
 
-                <span>
-                  Configuration
-                </span>
+                <div>
+
+                  <h1
+                    class="text-2xl font-bold
+                           tracking-tight
+                           text-slate-900"
+                  >
+                    Control Center
+                  </h1>
+
+                  <p
+                    class="mt-1 text-sm
+                           text-slate-500"
+                  >
+                    Configure, monitor, and manage
+                    the Zebron platform.
+                  </p>
+
+                </div>
+
               </div>
 
-              <h1
-                class="text-2xl font-bold tracking-tight
-                       text-slate-900 sm:text-3xl"
-              >
-                Configuration &amp; Control Center
-              </h1>
+            </div>
 
-              <p
-                class="mt-2 max-w-3xl text-sm
-                       leading-6 text-slate-600"
+
+            <!-- SYSTEM STATUS -->
+
+            <div
+              class="flex items-center gap-2
+                     rounded-full
+                     border
+                     border-emerald-200
+                     bg-emerald-50
+                     px-4 py-2"
+            >
+
+              <span
+                class="h-2.5 w-2.5
+                       rounded-full
+                       bg-emerald-500"
+              ></span>
+
+              <span
+                class="text-sm
+                       font-medium
+                       text-emerald-700"
               >
-                Configure, monitor, troubleshoot, and
-                manage Zebron platform functionality
-                from one centralized control surface.
-              </p>
+                System Operational
+              </span>
 
             </div>
 
@@ -92,210 +153,512 @@ import { LoggerService } from '../../../../core//services/logger.service';
 
         </div>
 
-      </div>
+      </header>
 
 
-      <!-- ======================================================
-           CONTENT
-      ======================================================= -->
+      <!-- =====================================================
+           CONTROL CENTER NAVIGATION
+           ===================================================== -->
 
       <main
-        class="mx-auto max-w-7xl px-4 py-6
-               sm:px-6 lg:px-8"
+        class="mx-auto max-w-7xl
+               px-4 py-6
+               sm:px-6
+               lg:px-8"
       >
 
-        <div
-          class="overflow-hidden rounded-2xl
-                 border border-slate-200
-                 bg-white shadow-sm"
+        <mat-tab-group
+          animationDuration="0ms"
+          class="configuration-tabs"
         >
 
-          <mat-tab-group
-            animationDuration="150ms"
-            dynamicHeight
-          >
+          <!-- =================================================
+               OVERVIEW
+               ================================================= -->
 
-            <!-- OVERVIEW -->
+          <mat-tab>
 
-            <mat-tab>
+            <ng-template mat-tab-label>
 
-              <ng-template mat-tab-label>
+              <mat-icon>
+                dashboard
+              </mat-icon>
 
-                <mat-icon
-                  class="mr-2 !h-5 !w-5 !text-[20px]"
-                >
-                  dashboard
-                </mat-icon>
-
+              <span class="ml-2">
                 Overview
+              </span>
 
-              </ng-template>
+            </ng-template>
 
-              <div class="p-5 sm:p-6">
+            <div class="pt-6">
 
-                <app-configuration-overview />
+              <app-configuration-overview />
 
-              </div>
+            </div>
 
-            </mat-tab>
+          </mat-tab>
 
 
-            <!-- APPLICATIONS -->
+          <!-- =================================================
+               APPLICATIONS
+               ================================================= -->
 
-            <mat-tab>
+          <mat-tab>
 
-              <ng-template mat-tab-label>
+            <ng-template mat-tab-label>
 
-                <mat-icon
-                  class="mr-2 !h-5 !w-5 !text-[20px]"
-                >
-                  apps
-                </mat-icon>
+              <mat-icon>
+                apps
+              </mat-icon>
 
+              <span class="ml-2">
                 Applications
+              </span>
 
-              </ng-template>
+            </ng-template>
 
-              <div class="p-5 sm:p-6">
+            <div class="pt-6">
 
-                <app-configuration-applications />
+              <app-configuration-applications />
 
-              </div>
+            </div>
 
-            </mat-tab>
+          </mat-tab>
 
 
-            <!-- SETTINGS -->
+          <!-- =================================================
+               SETTINGS
+               ================================================= -->
 
-            <mat-tab>
+          <mat-tab>
 
-              <ng-template mat-tab-label>
+            <ng-template mat-tab-label>
 
-                <mat-icon
-                  class="mr-2 !h-5 !w-5 !text-[20px]"
-                >
-                  tune
-                </mat-icon>
+              <mat-icon>
+                tune
+              </mat-icon>
 
+              <span class="ml-2">
                 Settings
+              </span>
 
-              </ng-template>
+            </ng-template>
 
-              <div class="p-5 sm:p-6">
+            <div class="pt-6">
 
-                <app-configuration-settings />
+              <app-configuration-settings />
 
-              </div>
+            </div>
 
-            </mat-tab>
+          </mat-tab>
 
 
-            <!-- FUTURE TABS -->
+          <!-- =================================================
+               LOGGING & DIAGNOSTICS
+               ================================================= -->
 
-            <mat-tab disabled>
+          <mat-tab>
 
-              <ng-template mat-tab-label>
+            <ng-template mat-tab-label>
+
+              <mat-icon>
+                terminal
+              </mat-icon>
+
+              <span class="ml-2">
+                Diagnostics
+              </span>
+
+            </ng-template>
+
+            <div
+              class="pt-6"
+            >
+
+              <section
+                class="rounded-2xl
+                       border
+                       bg-white
+                       p-8
+                       text-center"
+              >
 
                 <mat-icon
-                  class="mr-2 !h-5 !w-5 !text-[20px]"
+                  class="!h-12 !w-12
+                         !text-5xl
+                         !text-slate-400"
                 >
-                  bug_report
+                  terminal
                 </mat-icon>
 
-                Diagnostics
+                <h2
+                  class="mt-4
+                         text-xl
+                         font-semibold
+                         text-slate-900"
+                >
+                  Logging & Diagnostics
+                </h2>
 
-              </ng-template>
+                <p
+                  class="mx-auto mt-2
+                         max-w-xl
+                         text-sm
+                         leading-6
+                         text-slate-500"
+                >
+                  Centralized application logging,
+                  diagnostics, operation tracking,
+                  and troubleshooting tools will
+                  be available here.
+                </p>
 
-            </mat-tab>
+              </section>
+
+            </div>
+
+          </mat-tab>
 
 
-            <mat-tab disabled>
+          <!-- =================================================
+               AUDIT
+               ================================================= -->
 
-              <ng-template mat-tab-label>
+          <mat-tab>
+
+            <ng-template mat-tab-label>
+
+              <mat-icon>
+                history
+              </mat-icon>
+
+              <span class="ml-2">
+                Audit
+              </span>
+
+            </ng-template>
+
+            <div
+              class="pt-6"
+            >
+
+              <section
+                class="rounded-2xl
+                       border
+                       bg-white
+                       p-8
+                       text-center"
+              >
 
                 <mat-icon
-                  class="mr-2 !h-5 !w-5 !text-[20px]"
+                  class="!h-12 !w-12
+                         !text-5xl
+                         !text-slate-400"
                 >
                   history
                 </mat-icon>
 
-                Audit
+                <h2
+                  class="mt-4
+                         text-xl
+                         font-semibold
+                         text-slate-900"
+                >
+                  Audit Trail
+                </h2>
 
-              </ng-template>
+                <p
+                  class="mx-auto mt-2
+                         max-w-xl
+                         text-sm
+                         leading-6
+                         text-slate-500"
+                >
+                  Configuration changes,
+                  administrative actions,
+                  system operations, and
+                  accountability records will
+                  appear here.
+                </p>
 
-            </mat-tab>
+              </section>
+
+            </div>
+
+          </mat-tab>
 
 
-            <mat-tab disabled>
+          <!-- =================================================
+               SECURITY
+               ================================================= -->
 
-              <ng-template mat-tab-label>
+          <mat-tab>
+
+            <ng-template mat-tab-label>
+
+              <mat-icon>
+                security
+              </mat-icon>
+
+              <span class="ml-2">
+                Security
+              </span>
+
+            </ng-template>
+
+            <div
+              class="pt-6"
+            >
+
+              <section
+                class="rounded-2xl
+                       border
+                       bg-white
+                       p-8
+                       text-center"
+              >
 
                 <mat-icon
-                  class="mr-2 !h-5 !w-5 !text-[20px]"
+                  class="!h-12 !w-12
+                         !text-5xl
+                         !text-slate-400"
                 >
                   security
                 </mat-icon>
 
-                Security
+                <h2
+                  class="mt-4
+                         text-xl
+                         font-semibold
+                         text-slate-900"
+                >
+                  Security Controls
+                </h2>
 
-              </ng-template>
+                <p
+                  class="mx-auto mt-2
+                         max-w-xl
+                         text-sm
+                         leading-6
+                         text-slate-500"
+                >
+                  Security configuration,
+                  access controls, policy
+                  validation, and security
+                  diagnostics will be managed here.
+                </p>
 
-            </mat-tab>
+              </section>
+
+            </div>
+
+          </mat-tab>
 
 
-            <mat-tab disabled>
+          <!-- =================================================
+               MAINTENANCE
+               ================================================= -->
 
-              <ng-template mat-tab-label>
+          <mat-tab>
+
+            <ng-template mat-tab-label>
+
+              <mat-icon>
+                build
+              </mat-icon>
+
+              <span class="ml-2">
+                Maintenance
+              </span>
+
+            </ng-template>
+
+            <div
+              class="pt-6"
+            >
+
+              <section
+                class="rounded-2xl
+                       border
+                       bg-white
+                       p-8
+                       text-center"
+              >
 
                 <mat-icon
-                  class="mr-2 !h-5 !w-5 !text-[20px]"
+                  class="!h-12 !w-12
+                         !text-5xl
+                         !text-slate-400"
                 >
                   build
                 </mat-icon>
 
-                Maintenance
+                <h2
+                  class="mt-4
+                         text-xl
+                         font-semibold
+                         text-slate-900"
+                >
+                  Maintenance
+                </h2>
 
-              </ng-template>
+                <p
+                  class="mx-auto mt-2
+                         max-w-xl
+                         text-sm
+                         leading-6
+                         text-slate-500"
+                >
+                  Scheduled maintenance,
+                  application maintenance mode,
+                  cache operations, and other
+                  platform maintenance tools will
+                  be managed here.
+                </p>
 
-            </mat-tab>
+              </section>
+
+            </div>
+
+          </mat-tab>
 
 
-            <mat-tab disabled>
+          <!-- =================================================
+               RECOVERY
+               ================================================= -->
 
-              <ng-template mat-tab-label>
+          <mat-tab>
+
+            <ng-template mat-tab-label>
+
+              <mat-icon>
+                restore
+              </mat-icon>
+
+              <span class="ml-2">
+                Recovery
+              </span>
+
+            </ng-template>
+
+            <div
+              class="pt-6"
+            >
+
+              <section
+                class="rounded-2xl
+                       border
+                       bg-white
+                       p-8
+                       text-center"
+              >
 
                 <mat-icon
-                  class="mr-2 !h-5 !w-5 !text-[20px]"
+                  class="!h-12 !w-12
+                         !text-5xl
+                         !text-slate-400"
                 >
-                  settings_backup_restore
+                  restore
                 </mat-icon>
 
-                Recovery
+                <h2
+                  class="mt-4
+                         text-xl
+                         font-semibold
+                         text-slate-900"
+                >
+                  Recovery
+                </h2>
 
-              </ng-template>
+                <p
+                  class="mx-auto mt-2
+                         max-w-xl
+                         text-sm
+                         leading-6
+                         text-slate-500"
+                >
+                  Scoped recovery operations,
+                  configuration restoration,
+                  rollback tools, and operational
+                  recovery workflows will be managed
+                  here.
+                </p>
 
-            </mat-tab>
+              </section>
+
+            </div>
+
+          </mat-tab>
 
 
-            <mat-tab disabled>
+          <!-- =================================================
+               SYSTEM HEALTH
+               ================================================= -->
 
-              <ng-template mat-tab-label>
+          <mat-tab>
+
+            <ng-template mat-tab-label>
+
+              <mat-icon>
+                monitor_heart
+              </mat-icon>
+
+              <span class="ml-2">
+                System Health
+              </span>
+
+            </ng-template>
+
+            <div
+              class="pt-6"
+            >
+
+              <section
+                class="rounded-2xl
+                       border
+                       bg-white
+                       p-8
+                       text-center"
+              >
 
                 <mat-icon
-                  class="mr-2 !h-5 !w-5 !text-[20px]"
+                  class="!h-12 !w-12
+                         !text-5xl
+                         !text-slate-400"
                 >
                   monitor_heart
                 </mat-icon>
 
-                System Health
+                <h2
+                  class="mt-4
+                         text-xl
+                         font-semibold
+                         text-slate-900"
+                >
+                  System Health
+                </h2>
 
-              </ng-template>
+                <p
+                  class="mx-auto mt-2
+                         max-w-xl
+                         text-sm
+                         leading-6
+                         text-slate-500"
+                >
+                  Application availability,
+                  Firebase connectivity,
+                  configuration status,
+                  service health, and platform
+                  diagnostics will be displayed here.
+                </p>
 
-            </mat-tab>
+              </section>
 
-          </mat-tab-group>
+            </div>
 
-        </div>
+          </mat-tab>
+
+        </mat-tab-group>
 
       </main>
 
@@ -308,9 +671,11 @@ export class ConfigurationComponent {
     inject(LoggerService);
 
   constructor() {
+
     this.logger.info(
       'ConfigurationComponent',
-      'Configuration Control Center initialized.',
+      'Control Center initialized.',
     );
+
   }
 }
