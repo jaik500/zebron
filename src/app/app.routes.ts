@@ -246,6 +246,31 @@ export const routes: Routes = [
 },
 
 // =====================================================
+// PROTECTED COMMUNITY
+// =====================================================
+{
+  path: 'community',
+  canActivate: [authGuard],
+  loadComponent: () =>
+    import(
+      './features/community/pages/community-home/community-home.component'
+    ).then(
+      (m) => m.CommunityHomeComponent
+    ),
+},
+
+{
+  path: 'community/post/:postId',
+  canActivate: [authGuard],
+  loadComponent: () =>
+    import(
+      './features/community/pages/community-post-detail/community-post-detail.component'
+    ).then(
+      (m) => m.CommunityPostDetailComponent,
+    ),
+},
+
+// =====================================================
 // ADMIN TEST CENTER TOPICS
 // =====================================================
 {
@@ -285,51 +310,7 @@ export const routes: Routes = [
     ),
 },
 
-{
-  path: 'community',
-  canActivate: [authGuard],
-  children: [
-    {
-      path: '',
-      loadComponent: () =>
-        import(
-          './features/community/pages/community-home/community-home.component'
-        ).then(
-          m => m.CommunityHomeComponent,
-        ),
-    },
 
-    {
-      path: 'post/:id',
-      loadComponent: () =>
-        import(
-          './features/community/pages/post-detail/community-post-detail.component'
-        ).then(
-          m => m.CommunityPostDetailComponent,
-        ),
-    },
-
-    {
-      path: 'new',
-      loadComponent: () =>
-        import(
-          './features/community/pages/create-post/community-create-post.component',
-        ).then(
-          m => m.CommunityCreatePostComponent,
-        ),
-    },
-
-    {
-      path: 'my-posts',
-      loadComponent: () =>
-        import(
-          './features/community/pages/my-posts/my-posts.component'
-        ).then(
-          m => m.MyPostsComponent,
-        ),
-    },
-  ],
-},
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -538,6 +519,20 @@ export const routes: Routes = [
         (m) => m.LocationAdminComponent,
       ),
   },
+
+  // =====================================================
+// ADMIN CONFIGURATION / CONTROL CENTER
+// =====================================================
+{
+  path: 'admin/configuration',
+  canActivate: [adminGuard],
+  loadComponent: () =>
+    import(
+      './features/admin/pages/configuration/configuration.component'
+    ).then(
+      (m) => m.ConfigurationComponent,
+    ),
+},
 
 
   // =====================================================
