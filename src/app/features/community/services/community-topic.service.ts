@@ -3,82 +3,143 @@ import { Injectable } from '@angular/core';
 import {
   collection,
   getDocs,
-  orderBy,
   query,
   where,
 } from 'firebase/firestore';
 
 import { firestore } from '../../../core/services/firebase-config';
+
 import { CommunityTopic } from '../models/community-topic.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CommunityTopicService {
-  private readonly topicsCollection = collection(
-    firestore,
-    'communityTopics',
-  );
+
+  // ============================================================
+  // FIRESTORE COLLECTION
+  // ============================================================
+
+  private readonly topicsCollection =
+    collection(
+      firestore,
+      'communityTopics',
+    );
+
+
+  // ============================================================
+  // GET ACTIVE TOPICS
+  // ============================================================
 
   /**
-   * Get all active community topics.
+   * Returns all active Community topics.
+   *
+   * We intentionally query only by `active`.
+   * Topics are sorted in memory by `sortOrder`.
+   *
+   * This avoids requiring a composite Firestore index
+   * for `active + sortOrder`.
    */
   async getActiveTopics(): Promise<CommunityTopic[]> {
-    console.log(
-      '[CommunityTopicService] Starting topic query...',
-    );
 
     console.log(
-      '[CommunityTopicService] Firestore:',
-      firestore,
+      '[CommunityTopicService] Loading active community topics...',
     );
 
-    try {
-      const topicsQuery = query(
+    const topicsQuery =
+      query(
         this.topicsCollection,
-        where('active', '==', true),
-        orderBy('sortOrder', 'asc'),
+
+        where(
+          'active',
+          '==',
+          true,
+        ),
       );
 
-      console.log(
-        '[CommunityTopicService] Executing Firestore query...',
+
+    const snapshot =
+      await getDocs(
+        topicsQuery,
       );
 
-      const snapshot = await getDocs(topicsQuery);
 
-      console.log(
-        '[CommunityTopicService] Documents returned:',
-        snapshot.size,
-      );
+    console.log(
+      '[CommunityTopicService] Topics returned from Firestore:',
+      snapshot.size,
+    );
 
-      const topics = snapshot.docs.map((doc) => {
-        const data = doc.data();
 
-        console.log(
-          '[CommunityTopicService] Document:',
-          doc.id,
-          data,
+    const topics =
+      snapshot.docs
+        .map(
+          (document) =>
+            ({
+              id: document.id,
+              ...document.data(),
+            }) as CommunityTopic,
+        )
+        .sort(
+          (a, b) =>
+            (a.sortOrder ?? 0) -
+            (b.sortOrder ?? 0),
         );
 
-        return {
-          id: doc.id,
-          ...data,
-        } as CommunityTopic;
-      });
 
-      console.log(
-        '[CommunityTopicService] Final topics:',
-        topics,
+    console.log(
+      '[CommunityTopicService] Active topics:',
+      topics,
+    );
+
+
+    return topics;
+  }
+
+
+  // ============================================================
+  // GET ALL TOPICS
+  // ============================================================
+
+  /**
+   * Returns all Community topics, including inactive topics.
+   *
+   * This will be useful later for Community administration.
+   */
+  async getAllTopics(): Promise<CommunityTopic[]> {
+
+    console.log(
+      '[CommunityTopicService] Loading all community topics...',
+    );
+
+
+    const snapshot =
+      await getDocs(
+        this.topicsCollection,
       );
 
-      return topics;
-    } catch (error) {
-      console.error(
-        '[CommunityTopicService] ERROR:',
-        error,
-      );
 
-      throw error;
-    }
+    const topics =
+      snapshot.docs
+        .map(
+          (document) =>
+            ({
+              id: document.id,
+              ...document.data(),
+            }) as CommunityTopic,
+        )
+        .sort(
+          (a, b) =>
+            (a.sortOrder ?? 0) -
+            (b.sortOrder ?? 0),
+        );
+
+
+    console.log(
+      '[CommunityTopicService] All topics:',
+      topics,
+    );
+
+
+    return topics;
   }
 }

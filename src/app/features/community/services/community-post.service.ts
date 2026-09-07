@@ -4,6 +4,7 @@ import {
   collection,
   DocumentData,
   DocumentSnapshot,
+  doc,
   getDocs,
   addDoc,
   limit,
@@ -13,6 +14,7 @@ import {
   QueryConstraint,
   startAfter,
   where,
+  getDoc,
 } from 'firebase/firestore';
 
 import { firestore } from '../../../core/services/firebase-config';
@@ -38,10 +40,7 @@ export interface CommunityPostPage {
 export class CommunityPostService {
   private readonly pageSize = 20;
 
-  private readonly postsCollection = collection(
-    firestore,
-    'communityPosts',
-  );
+  private readonly postsCollection = collection(firestore, 'communityPosts');
 
   /**
    * Get a page of published community posts.
@@ -61,21 +60,14 @@ export class CommunityPostService {
     ];
 
     if (options?.topicId) {
-      constraints.splice(
-        2,
-        0,
-        where('topicId', '==', options.topicId),
-      );
+      constraints.splice(2, 0, where('topicId', '==', options.topicId));
     }
 
     if (options?.lastDocument) {
       constraints.push(startAfter(options.lastDocument));
     }
 
-    const postsQuery = query(
-      this.postsCollection,
-      ...constraints,
-    );
+    const postsQuery = query(this.postsCollection, ...constraints);
 
     const snapshot = await getDocs(postsQuery);
 
@@ -89,76 +81,80 @@ export class CommunityPostService {
       lastDocument:
         snapshot.docs.length > 0
           ? snapshot.docs[snapshot.docs.length - 1]
-          : options?.lastDocument ?? null,
+          : (options?.lastDocument ?? null),
       hasMore: snapshot.docs.length === this.pageSize,
     };
   }
 
+  async getPostById(postId: string): Promise<CommunityPost | null> {
+    const postReference = doc(firestore, 'communityPosts', postId);
 
-/**
- * Create a new community post.
- *
- * The service owns Firestore persistence.
- */
-async createPost(input: {
-  title: string;
-  content: string;
-  topicId: string;
-  topicName?: string;
-  tags?: string[];
-  authorId: string;
-  authorName: string;
-  authorPhotoUrl?: string | null;
-}): Promise<string> {
-  const postsCollection = collection(
-    firestore,
-    'communityPosts',
-  );
+    const snapshot = await getDoc(postReference);
 
-  const postData = {
-    title: input.title.trim(),
-    content: input.content.trim(),
+    if (!snapshot.exists()) {
+      return null;
+    }
 
-    topicId: input.topicId,
-    topicName: input.topicName ?? null,
+    return {
+      id: snapshot.id,
+      ...snapshot.data(),
+    } as CommunityPost;
+  }
 
-    authorId: input.authorId,
-    authorName: input.authorName.trim(),
-    authorPhotoUrl: input.authorPhotoUrl ?? null,
+  /**
+   * Create a new community post.
+   *
+   * The service owns Firestore persistence.
+   */
+  async createPost(input: {
+    title: string;
+    content: string;
+    topicId: string;
+    topicName?: string;
+    tags?: string[];
+    authorId: string;
+    authorName: string;
+    authorPhotoUrl?: string | null;
+  }): Promise<string> {
+    const postsCollection = collection(firestore, 'communityPosts');
 
-    tags: (input.tags ?? [])
-      .map((tag) => tag.trim())
-      .filter(Boolean),
+    const postData = {
+      title: input.title.trim(),
+      content: input.content.trim(),
 
-    // New member-created posts are published immediately
-    // for the MVP.
-    status: 'published',
+      topicId: input.topicId,
+      topicName: input.topicName ?? null,
 
-    // Normal community member posts are discussions.
-    postType: 'discussion',
+      authorId: input.authorId,
+      authorName: input.authorName.trim(),
+      authorPhotoUrl: input.authorPhotoUrl ?? null,
 
-    featured: false,
-    pinned: false,
-    important: false,
+      tags: (input.tags ?? []).map((tag) => tag.trim()).filter(Boolean),
 
-    allowComments: true,
+      // New member-created posts are published immediately
+      // for the MVP.
+      status: 'published',
 
-    viewCount: 0,
-    likeCount: 0,
-    commentCount: 0,
+      // Normal community member posts are discussions.
+      postType: 'discussion',
 
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-    publishedAt: serverTimestamp(),
-  };
+      featured: false,
+      pinned: false,
+      important: false,
 
-  const documentReference = await addDoc(
-    postsCollection,
-    postData,
-  );
+      allowComments: true,
 
-  return documentReference.id;
-}
+      viewCount: 0,
+      likeCount: 0,
+      commentCount: 0,
 
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      publishedAt: serverTimestamp(),
+    };
 
+    const documentReference = await addDoc(postsCollection, postData);
+
+    return documentReference.id;
+  }
 }

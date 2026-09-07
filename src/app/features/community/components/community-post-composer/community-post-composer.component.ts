@@ -150,8 +150,6 @@ import { CommunityStore } from '../../store/community.store';
             </mat-select>
           </mat-form-field>
 
-          <div class="mt-1 text-xs text-gray-500">Topics loaded: {{ store.topics().length }}</div>
-
           <!-- ================================================== -->
           <!-- TITLE -->
           <!-- ================================================== -->

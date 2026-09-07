@@ -1,4 +1,3 @@
-
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,209 +5,379 @@ import {
 } from '@angular/core';
 
 import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
+import { CommunityPost } from '../../models/community-post.model';
 import { CommunityStore } from '../../store/community.store';
-
 import { CommunityPostCardComponent } from '../community-post-card/community-post-card.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-community-feed',
   standalone: true,
+
   imports: [
     MatButtonModule,
+    MatCardModule,
     MatIconModule,
     MatProgressSpinnerModule,
     CommunityPostCardComponent,
   ],
-  template: `
-    <section>
 
-      <!-- Loading -->
+  template: `
+
+    <section class="space-y-4">
+
+      <!-- ============================================================
+           LOADING
+           ============================================================ -->
+
       @if (store.loading()) {
 
         <div
-          class="flex min-h-64 items-center
-                 justify-center"
+          class="flex min-h-[260px] items-center justify-center
+                 rounded-2xl border border-slate-200 bg-white"
         >
-          <mat-spinner
-            diameter="40"
-            class="community-spinner"
-          />
+          <div class="flex flex-col items-center gap-3">
+
+            <mat-spinner
+              diameter="36"
+            />
+
+            <p class="text-sm text-slate-500">
+              Loading community posts…
+            </p>
+
+          </div>
         </div>
 
-      } @else {
+      }
 
-        <!-- Error -->
-        @if (store.error()) {
+
+      <!-- ============================================================
+           ERROR
+           ============================================================ -->
+
+      @else if (store.error()) {
+
+        <mat-card
+          class="!rounded-2xl !border !border-red-200
+                 !bg-red-50 !shadow-none"
+        >
+
           <div
-            class="mb-4 rounded-xl border
-                   border-red-200
-                   bg-red-50 p-4"
+            class="flex items-start gap-3 p-5"
           >
-            <div
-              class="flex items-center
-                     justify-between gap-4"
+
+            <mat-icon
+              class="text-red-600"
             >
+              error_outline
+            </mat-icon>
 
-              <div
-                class="flex items-center gap-2
-                       text-sm text-red-700"
+            <div class="flex-1">
+
+              <h3
+                class="font-semibold text-red-900"
               >
-                <mat-icon>
-                  error_outline
-                </mat-icon>
+                Unable to load community posts
+              </h3>
 
-                <span>
-                  {{ store.error() }}
-                </span>
-              </div>
+              <p
+                class="mt-1 text-sm text-red-700"
+              >
+                {{ store.error() }}
+              </p>
 
               <button
-                mat-button
+                mat-stroked-button
                 type="button"
-                class="!text-[#007979]
-                       hover:!bg-[#E5F4F4]"
+                class="mt-4"
                 (click)="refresh()"
               >
+                <mat-icon>refresh</mat-icon>
                 Try again
               </button>
 
             </div>
-          </div>
-        }
 
-        <!-- Empty state -->
-        @if (store.isEmpty()) {
+          </div>
+
+        </mat-card>
+
+      }
+
+
+      <!-- ============================================================
+           EMPTY STATE
+           ============================================================ -->
+
+      @else if (store.isEmpty()) {
+
+        <mat-card
+          class="!rounded-2xl !border !border-slate-200
+                 !shadow-sm"
+        >
 
           <div
-            class="rounded-2xl border
-                   border-dashed
-                   border-[#B8D0D2]
-                   bg-white p-10 text-center"
+            class="flex min-h-[280px] flex-col
+                   items-center justify-center
+                   px-6 py-10 text-center"
           >
 
-            <mat-icon
-              class="!h-12 !w-12 !text-5xl
-                     !text-[#7DD3D3]"
+            <div
+              class="mb-4 flex h-16 w-16 items-center
+                     justify-center rounded-full
+                     bg-[#087F80]/10"
             >
-              forum
-            </mat-icon>
+              <mat-icon
+                class="!h-8 !w-8 !text-[32px] text-[#087F80]"
+              >
+                forum
+              </mat-icon>
+            </div>
 
             <h2
-              class="mt-4 text-lg font-semibold
-                     text-[#032D42]"
+              class="text-lg font-semibold text-slate-900"
             >
               No posts found
             </h2>
 
             <p
-              class="mt-2 text-sm
-                     text-[#6F8B92]"
+              class="mt-2 max-w-md text-sm leading-6 text-slate-500"
             >
-              Be the first person to start
-              a conversation.
+              @if (store.hasActiveFilters()) {
+                There are no posts matching your current
+                filters. Try selecting another topic or
+                clearing your filters.
+              } @else {
+                Be the first person to start a conversation
+                with the Zebron community.
+              }
             </p>
 
-          </div>
-
-        } @else {
-
-          <!-- Posts -->
-          <div class="space-y-4">
-
-            @for (
-              post of store.filteredPosts();
-              track post.id
-            ) {
-              <app-community-post-card
-                [post]="post"
-              />
-            }
-
-          </div>
-
-          <!-- Load more -->
-          @if (store.hasMore()) {
-
-            <div
-              class="flex justify-center py-8"
-            >
+            @if (store.hasActiveFilters()) {
 
               <button
                 mat-stroked-button
                 type="button"
-                class="!border-[#007979]
-                       !text-[#007979]
-                       hover:!bg-[#E5F4F4]"
-                [disabled]="
-                  store.loadingMore()
-                "
-                (click)="loadMore()"
+                class="mt-5"
+                (click)="clearFilters()"
               >
-
-                @if (
-                  store.loadingMore()
-                ) {
-
-                  <mat-spinner
-                    diameter="20"
-                    class="community-spinner"
-                  />
-
-                  <span
-                    class="ml-2"
-                  >
-                    Loading...
-                  </span>
-
-                } @else {
-
-                  Load more
-
-                }
-
+                <mat-icon>filter_alt_off</mat-icon>
+                Clear filters
               </button>
 
-            </div>
+            }
+
+          </div>
+
+        </mat-card>
+
+      }
+
+
+      <!-- ============================================================
+           POSTS
+           ============================================================ -->
+
+      @else {
+
+        <div class="space-y-4">
+
+          @for (
+            post of store.filteredPosts();
+            track post.id
+          ) {
+
+            <app-community-post-card
+              [post]="post"
+              (postSelected)="openPost($event)"
+              (topicSelected)="selectTopic($event)"
+              (react)="reactToPost($event)"
+              (comments)="openComments($event)"
+              (bookmark)="bookmarkPost($event)"
+              (report)="reportPost($event)"
+            />
 
           }
 
-        }
+        </div>
+
+
+        <!-- ==========================================================
+             LOAD MORE
+             ========================================================== -->
+
+       @if (store.hasMore()) {
+
+  <div class="flex justify-center py-4">
+
+    @if (store.loadingMore()) {
+
+      <button
+        mat-stroked-button
+        type="button"
+        disabled
+      >
+        <mat-spinner
+          diameter="20"
+          class="mr-2"
+        />
+
+        <span>
+          Loading…
+        </span>
+      </button>
+
+    } @else {
+
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="loadMore()"
+      >
+        <mat-icon>
+          expand_more
+        </mat-icon>
+
+        <span>
+          Load more posts
+        </span>
+      </button>
+
+    }
+
+  </div>
+
+}
 
       }
 
     </section>
   `,
 
-  styles: [`
-    /*
-     * Zebron Community Feed
-     *
-     * Keep the feed component behavior and
-     * data handling unchanged. These styles
-     * only provide Zebron branding for the
-     * Material progress indicators.
-     */
-
-    .community-spinner {
-      --mdc-circular-progress-active-indicator-color: #007979;
-    }
-  `],
-
   changeDetection:
     ChangeDetectionStrategy.OnPush,
 })
 export class CommunityFeedComponent {
-  readonly store = inject(CommunityStore);
 
-  async loadMore(): Promise<void> {
-    await this.store.loadMore();
-  }
+  readonly store =
+    inject(CommunityStore);
 
-  async refresh(): Promise<void> {
-    await this.store.refresh();
-  }
+    private readonly router =
+  inject(Router);
+
+
+  // ============================================================
+  // POST ACTIONS
+  // ============================================================
+
+ openPost(
+  post: CommunityPost,
+): void {
+
+  void this.router.navigate([
+    '/community/post',
+    post.id,
+  ]);
 }
 
+
+  selectTopic(
+    topicId: string,
+  ): void {
+
+    void this.store.selectTopic(
+      topicId,
+    );
+  }
+
+
+  reactToPost(
+    post: CommunityPost,
+  ): void {
+
+    /*
+     * Reaction persistence will be implemented
+     * through the CommunityPostService/store.
+     */
+
+    console.log(
+      '[CommunityFeed] React to post:',
+      post.id,
+    );
+  }
+
+
+  openComments(
+    post: CommunityPost,
+  ): void {
+
+    /*
+     * Comments will eventually open the post detail
+     * / comments experience.
+     */
+
+    console.log(
+      '[CommunityFeed] Open comments:',
+      post.id,
+    );
+  }
+
+
+  bookmarkPost(
+    post: CommunityPost,
+  ): void {
+
+    /*
+     * Bookmark persistence will be implemented
+     * through the Community store/service.
+     */
+
+    console.log(
+      '[CommunityFeed] Bookmark post:',
+      post.id,
+    );
+  }
+
+
+  reportPost(
+    post: CommunityPost,
+  ): void {
+
+    /*
+     * Reporting should eventually use the shared
+     * confirmation/dialog pattern and CommunityReportService.
+     */
+
+    console.log(
+      '[CommunityFeed] Report post:',
+      post.id,
+    );
+  }
+
+
+  // ============================================================
+  // PAGINATION / FILTERS
+  // ============================================================
+
+  loadMore(): void {
+
+    void this.store.loadMore();
+  }
+
+
+  refresh(): void {
+
+    void this.store.refresh();
+  }
+
+
+  clearFilters(): void {
+
+    void this.store.clearFilters();
+  }
+}
