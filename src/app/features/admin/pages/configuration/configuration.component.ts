@@ -25,6 +25,9 @@ import { NavigationService } from '../../../../core/services/navigation.service'
 import { AuthService } from '../../../../core/services/auth.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import { ConfigurationSystemHealthComponent } from './tabs/system-health/configuration-system-health.component';
+import { ConfigurationAuditComponent } from './tabs/audit/configuration-audit.component';
+import { ConfigurationSecurityComponent } from './tabs/security/configuration-security.component';
+
 
 @Component({
   selector: 'app-configuration',
@@ -42,66 +45,63 @@ import { ConfigurationSystemHealthComponent } from './tabs/system-health/configu
     ConfigurationApplicationsComponent,
     ConfigurationSettingsComponent,
     ConfigurationSystemHealthComponent,
+    ConfigurationAuditComponent,
+    ConfigurationSecurityComponent,
   ],
-
   changeDetection: ChangeDetectionStrategy.OnPush,
 
   template: `
     <div class="min-h-screen bg-gray-50 mt-16 ">
-        
-         <header class=" bg-[#2a835f] shadow-sm">
-         <div
-  class="mx-auto flex min-h-10 max-w-7xl items-center px-4 pb-0 sm:px-6 lg:px-8"
->
-            <!-- ========================================================
+      <header class=" bg-[#2a835f] shadow-sm">
+        <div class="mx-auto flex min-h-10 max-w-7xl items-center px-4 pb-0 sm:px-6 lg:px-8">
+          <!-- ========================================================
          LEFT: CONTROL CENTER BRANDING
          ======================================================== -->
-            <div class="flex min-w-0 items-center gap-1">
-              <!-- Settings Icon -->
-              <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center
+          <div class="flex min-w-0 items-center gap-1">
+            <!-- Settings Icon -->
+            <div
+              class="flex h-10 w-10 shrink-0 items-center justify-center
                rounded-xl  text-white/45"
-              >
-                <mat-icon class="!text-[22px]"> settings </mat-icon>
-              </div>
-
-              <!-- Title / Subtitle -->
-              <div class="min-w-0">
-
-                <p
-                  class=" truncate text-md font-medium text-white/80
-                 sm:block "
-                >
-                  System configuration and administration
-                </p>
-              </div>
+            >
+              <mat-icon class="!text-[22px]"> settings </mat-icon>
             </div>
 
-            <!-- ========================================================
-         RIGHT: SYSTEM STATUS 
-         ======================================================== -->
-            <div class="ml-auto flex shrink-0 items-center gap-2">
-              <!-- System Operational -->
-              <div
-                class="flex items-center gap-2 rounded-full
-               border border-[#5FB8B8] bg-white/60
-               px-2.5 py-1.5 sm:px-3"
-                aria-label="System Operational"
+            <!-- Title / Subtitle -->
+            <div class="min-w-0">
+              <p
+                class=" truncate text-md font-medium text-white/80
+                 sm:block "
               >
-                <!-- Status indicator -->
-                <span
-                  class="h-3 w-3 shrink-0 rounded-full bg-green-600
-                 shadow-[0_0_0_2px_rgba(255,255,255,0.35)]"
-                ></span>
-
-                <!-- Hide text on small screens -->
-                <span class="hidden text-xs font-semibold text-[#164E55] sm:inline">
-                  System Operational
-                </span>
-              </div>
+                System configuration and administration
+              </p>
             </div>
           </div>
-        </header>
+
+          <!-- ========================================================
+         RIGHT: SYSTEM STATUS 
+         ======================================================== -->
+          <div class="ml-auto flex shrink-0 items-center gap-2">
+            <!-- System Operational -->
+            <div
+              class="flex items-center gap-2 rounded-full
+               border border-[#5FB8B8] bg-white/60
+               px-2.5 py-1.5 sm:px-3"
+              aria-label="System Operational"
+            >
+              <!-- Status indicator -->
+              <span
+                class="h-3 w-3 shrink-0 rounded-full bg-green-600
+                 shadow-[0_0_0_2px_rgba(255,255,255,0.35)]"
+              ></span>
+
+              <!-- Hide text on small screens -->
+              <span class="hidden text-xs font-semibold text-[#164E55] sm:inline">
+                System Operational
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
 
       <main class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <mat-tab-group animationDuration="0ms" class="configuration-tabs">
@@ -209,47 +209,13 @@ import { ConfigurationSystemHealthComponent } from './tabs/system-health/configu
 
           <mat-tab>
             <ng-template mat-tab-label>
-              <mat-icon> history </mat-icon>
+              <mat-icon>history</mat-icon>
 
               <span class="ml-2"> Audit </span>
             </ng-template>
 
             <div class="pt-6">
-              <section
-                class="rounded-2xl
-                       border
-                       bg-white
-                       p-8
-                       text-center"
-              >
-                <mat-icon
-                  class="!h-12 !w-12
-                         !text-5xl
-                         !text-slate-400"
-                >
-                  history
-                </mat-icon>
-
-                <h2
-                  class="mt-4
-                         text-xl
-                         font-semibold
-                         text-slate-900"
-                >
-                  Audit Trail
-                </h2>
-
-                <p
-                  class="mx-auto mt-2
-                         max-w-xl
-                         text-sm
-                         leading-6
-                         text-slate-500"
-                >
-                  Configuration changes, administrative actions, system operations, and
-                  accountability records will appear here.
-                </p>
-              </section>
+              <app-configuration-audit />
             </div>
           </mat-tab>
 
@@ -257,51 +223,19 @@ import { ConfigurationSystemHealthComponent } from './tabs/system-health/configu
                SECURITY
                ================================================= -->
 
-          <mat-tab>
-            <ng-template mat-tab-label>
-              <mat-icon> security </mat-icon>
+        <mat-tab>
+  <ng-template mat-tab-label>
+    <mat-icon>security</mat-icon>
 
-              <span class="ml-2"> Security </span>
-            </ng-template>
+    <span class="ml-2">
+      Security
+    </span>
+  </ng-template>
 
-            <div class="pt-6">
-              <section
-                class="rounded-2xl
-                       border
-                       bg-white
-                       p-8
-                       text-center"
-              >
-                <mat-icon
-                  class="!h-12 !w-12
-                         !text-5xl
-                         !text-slate-400"
-                >
-                  security
-                </mat-icon>
-
-                <h2
-                  class="mt-4
-                         text-xl
-                         font-semibold
-                         text-slate-900"
-                >
-                  Security Controls
-                </h2>
-
-                <p
-                  class="mx-auto mt-2
-                         max-w-xl
-                         text-sm
-                         leading-6
-                         text-slate-500"
-                >
-                  Security configuration, access controls, policy validation, and security
-                  diagnostics will be managed here.
-                </p>
-              </section>
-            </div>
-          </mat-tab>
+  <div class="pt-6">
+    <app-configuration-security />
+  </div>
+</mat-tab>
 
           <!-- =================================================
                MAINTENANCE
@@ -415,14 +349,12 @@ import { ConfigurationSystemHealthComponent } from './tabs/system-health/configu
             </ng-template>
 
             <div class="pt-6">
-               <app-configuration-system-health />
+              <app-configuration-system-health />
             </div>
           </mat-tab>
         </mat-tab-group>
-     
       </main>
     </div>
-
   `,
 })
 export class ConfigurationComponent {
@@ -434,8 +366,7 @@ export class ConfigurationComponent {
 
   private readonly logger = inject(LoggerService);
 
-  private readonly pageTitleService =
-    inject(PageTitleService);
+  private readonly pageTitleService = inject(PageTitleService);
 
   protected navigateTo(route: string): void {
     void this.router.navigateByUrl(route);
@@ -443,8 +374,8 @@ export class ConfigurationComponent {
 
   constructor() {
     this.logger.info('ConfigurationComponent', 'Control Center initialized.');
-  this.pageTitleService.setTitle('Control Center');
-}
+    this.pageTitleService.setTitle('Control Center');
+  }
 
   protected async signOut(): Promise<void> {
     await this.authService.logout();
