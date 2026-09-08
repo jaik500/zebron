@@ -27,7 +27,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
 import { ConfigurationSystemHealthComponent } from './tabs/system-health/configuration-system-health.component';
 import { ConfigurationAuditComponent } from './tabs/audit/configuration-audit.component';
 import { ConfigurationSecurityComponent } from './tabs/security/configuration-security.component';
-
+import { ConfigurationMaintenanceComponent } from './tabs/maintenance/configuration-maintenance.component';
 
 @Component({
   selector: 'app-configuration',
@@ -47,6 +47,7 @@ import { ConfigurationSecurityComponent } from './tabs/security/configuration-se
     ConfigurationSystemHealthComponent,
     ConfigurationAuditComponent,
     ConfigurationSecurityComponent,
+    ConfigurationMaintenanceComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 
@@ -223,19 +224,17 @@ import { ConfigurationSecurityComponent } from './tabs/security/configuration-se
                SECURITY
                ================================================= -->
 
-        <mat-tab>
-  <ng-template mat-tab-label>
-    <mat-icon>security</mat-icon>
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon>security</mat-icon>
 
-    <span class="ml-2">
-      Security
-    </span>
-  </ng-template>
+              <span class="ml-2"> Security </span>
+            </ng-template>
 
-  <div class="pt-6">
-    <app-configuration-security />
-  </div>
-</mat-tab>
+            <div class="pt-6">
+              <app-configuration-security />
+            </div>
+          </mat-tab>
 
           <!-- =================================================
                MAINTENANCE
@@ -243,47 +242,13 @@ import { ConfigurationSecurityComponent } from './tabs/security/configuration-se
 
           <mat-tab>
             <ng-template mat-tab-label>
-              <mat-icon> build </mat-icon>
+              <mat-icon>build</mat-icon>
 
               <span class="ml-2"> Maintenance </span>
             </ng-template>
 
             <div class="pt-6">
-              <section
-                class="rounded-2xl
-                       border
-                       bg-white
-                       p-8
-                       text-center"
-              >
-                <mat-icon
-                  class="!h-12 !w-12
-                         !text-5xl
-                         !text-slate-400"
-                >
-                  build
-                </mat-icon>
-
-                <h2
-                  class="mt-4
-                         text-xl
-                         font-semibold
-                         text-slate-900"
-                >
-                  Maintenance
-                </h2>
-
-                <p
-                  class="mx-auto mt-2
-                         max-w-xl
-                         text-sm
-                         leading-6
-                         text-slate-500"
-                >
-                  Scheduled maintenance, application maintenance mode, cache operations, and other
-                  platform maintenance tools will be managed here.
-                </p>
-              </section>
+              <app-configuration-maintenance />
             </div>
           </mat-tab>
 

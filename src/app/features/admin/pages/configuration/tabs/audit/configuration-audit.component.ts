@@ -1,742 +1,579 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
+  OnInit,
   inject,
   signal,
 } from '@angular/core';
-
 import { CommonModule } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { Timestamp } from 'firebase/firestore';
 
-import {
-  MatButtonModule,
-} from '@angular/material/button';
-
-import {
-  MatCardModule,
-} from '@angular/material/card';
-
-import {
-  MatIconModule,
-} from '@angular/material/icon';
-
-import {
-  MatProgressSpinnerModule,
-} from '@angular/material/progress-spinner';
-
-import {
-  MatTooltipModule,
-} from '@angular/material/tooltip';
-
-import {
-  AuditLog,
-  AuditOutcome,
-} from '../../../../../../core/models/audit-log.model';
-
-import {
-  AuditService,
-} from '../../../../../../core/services/audit.service';
-
-import {
-  LoggerService,
-} from '../../../../../../core/services/logger.service';
+import { AuditLog } from '../../../../../../core/models/audit-log.model';
+import { AuditService } from '../../../../../../core/services/audit.service';
+import { LoggerService } from '../../../../../../core/services/logger.service';
 
 @Component({
   selector: 'app-configuration-audit',
   standalone: true,
-
   imports: [
     CommonModule,
     MatButtonModule,
-    MatCardModule,
     MatIconModule,
-    MatProgressSpinnerModule,
-    MatTooltipModule,
   ],
-
-  changeDetection:
-    ChangeDetectionStrategy.OnPush,
-
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="space-y-4">
+    <section class="space-y-6">
 
-      <!-- =====================================================
+      <!-- ======================================================
            HEADER
-           ===================================================== -->
+      ======================================================= -->
 
-      <div
-        class="
-          flex
-          flex-col
-          gap-3
-          sm:flex-row
-          sm:items-center
-          sm:justify-between
-        "
-      >
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
         <div>
-
-          <h2
-            class="
-              text-xl
-              font-semibold
-              text-[#032D42]
-            "
-          >
+          <h2 class="text-xl font-semibold text-[#032D42]">
             Audit Trail
           </h2>
 
-          <p
-            class="
-              mt-1
-              text-sm
-              text-gray-500
-            "
-          >
-            Review administrative and system activity.
+          <p class="mt-1 text-sm text-gray-600">
+            Review administrative and system activity recorded by Zebron.
           </p>
-
         </div>
 
         <button
           mat-stroked-button
           type="button"
+          (click)="loadLogs()"
           [disabled]="loading()"
-          (click)="loadAuditLogs()"
         >
+          <mat-icon class="mr-1">
+            refresh
+          </mat-icon>
 
-          @if (loading()) {
-
-            <mat-spinner
-              diameter="18"
-              class="mr-2"
-            />
-
-            Loading...
-
-          } @else {
-<ng-container>
-            <mat-icon>
-              refresh
-            </mat-icon>
-          </ng-container>
-            Refresh
-
-          }
-
+          {{ loading() ? 'Refreshing...' : 'Refresh' }}
         </button>
 
       </div>
 
 
-      <!-- =====================================================
+      <!-- ======================================================
            SUMMARY
-           ===================================================== -->
+      ======================================================= -->
 
-      <div
-        class="
-          grid
-          grid-cols-1
-          gap-3
-          sm:grid-cols-3
-        "
-      >
+      <div class="grid gap-4 sm:grid-cols-3">
 
-        <mat-card
-          class="
-            !rounded-2xl
-            !border
-            !shadow-none
-          "
-        >
+        <!-- Total -->
 
-          <mat-card-content class="!p-4">
+        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
 
-            <div
-              class="
-                flex
-                items-center
-                justify-between
-              "
-            >
+          <div class="flex items-center gap-3">
 
-              <div>
-
-                <p
-                  class="
-                    text-xs
-                    font-medium
-                    uppercase
-                    tracking-wide
-                    text-gray-500
-                  "
-                >
-                  Total Events
-                </p>
-
-                <p
-                  class="
-                    mt-1
-                    text-2xl
-                    font-bold
-                    text-[#032D42]
-                  "
-                >
-                  {{ logs().length }}
-                </p>
-
-              </div>
-
-              <mat-icon
-                class="!text-[#032D42]"
-              >
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
+              <mat-icon class="text-gray-600">
                 history
               </mat-icon>
-
             </div>
 
-          </mat-card-content>
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                Total Events
+              </p>
 
-        </mat-card>
+              <p class="mt-1 text-2xl font-bold text-[#032D42]">
+                {{ logs().length }}
+              </p>
+            </div>
+
+          </div>
+
+        </div>
 
 
-        <mat-card
-          class="
-            !rounded-2xl
-            !border
-            !shadow-none
-          "
-        >
+        <!-- Successful -->
 
-          <mat-card-content class="!p-4">
+        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
 
-            <div
-              class="
-                flex
-                items-center
-                justify-between
-              "
-            >
+          <div class="flex items-center gap-3">
 
-              <div>
-
-                <p
-                  class="
-                    text-xs
-                    font-medium
-                    uppercase
-                    tracking-wide
-                    text-gray-500
-                  "
-                >
-                  Successful
-                </p>
-
-                <p
-                  class="
-                    mt-1
-                    text-2xl
-                    font-bold
-                    text-green-700
-                  "
-                >
-                  {{ successCount() }}
-                </p>
-
-              </div>
-
-              <mat-icon
-                class="!text-green-600"
-              >
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
+              <mat-icon class="text-green-600">
                 check_circle
               </mat-icon>
-
             </div>
 
-          </mat-card-content>
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                Successful
+              </p>
 
-        </mat-card>
+              <p class="mt-1 text-2xl font-bold text-green-700">
+                {{ successCount() }}
+              </p>
+            </div>
+
+          </div>
+
+        </div>
 
 
-        <mat-card
-          class="
-            !rounded-2xl
-            !border
-            !shadow-none
-          "
-        >
+        <!-- Attention -->
 
-          <mat-card-content class="!p-4">
+        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
 
-            <div
-              class="
-                flex
-                items-center
-                justify-between
-              "
-            >
+          <div class="flex items-center gap-3">
 
-              <div>
-
-                <p
-                  class="
-                    text-xs
-                    font-medium
-                    uppercase
-                    tracking-wide
-                    text-gray-500
-                  "
-                >
-                  Attention
-                </p>
-
-                <p
-                  class="
-                    mt-1
-                    text-2xl
-                    font-bold
-                    text-red-600
-                  "
-                >
-                  {{ attentionCount() }}
-                </p>
-
-              </div>
-
-              <mat-icon
-                class="!text-red-600"
-              >
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+              <mat-icon class="text-amber-600">
                 warning
               </mat-icon>
-
             </div>
 
-          </mat-card-content>
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                Attention
+              </p>
 
-        </mat-card>
+              <p class="mt-1 text-2xl font-bold text-amber-700">
+                {{ attentionCount() }}
+              </p>
+            </div>
+
+          </div>
+
+        </div>
 
       </div>
 
 
-      <!-- =====================================================
-           AUDIT EVENTS
-           ===================================================== -->
+      <!-- ======================================================
+           ERROR
+      ======================================================= -->
 
-      <mat-card
-        class="
-          !rounded-2xl
-          !border
-          !shadow-none
-        "
-      >
+      @if (error()) {
 
-        <mat-card-content class="!p-0">
+        <div
+          class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        >
+          <div class="flex items-start gap-3">
 
-          @if (loading()) {
+            <mat-icon class="shrink-0 text-red-600">
+              error
+            </mat-icon>
 
-            <div
-              class="
-                flex
-                min-h-48
-                items-center
-                justify-center
-              "
-            >
-
-              <mat-spinner diameter="36" />
-
-            </div>
-
-          } @else if (logs().length === 0) {
-
-            <div
-              class="
-                flex
-                min-h-56
-                flex-col
-                items-center
-                justify-center
-                px-6
-                text-center
-              "
-            >
-
-              <mat-icon
-                class="
-                  !h-12
-                  !w-12
-                  !text-5xl
-                  !text-gray-300
-                "
-              >
-                history
-              </mat-icon>
-
-              <h3
-                class="
-                  mt-3
-                  text-base
-                  font-semibold
-                  text-[#032D42]
-                "
-              >
-                No audit events found
-              </h3>
-
-              <p
-                class="
-                  mt-1
-                  max-w-md
-                  text-sm
-                  text-gray-500
-                "
-              >
-                Administrative actions will appear here
-                as they occur.
+            <div>
+              <p class="font-semibold">
+                Unable to load audit records
               </p>
 
+              <p class="mt-1">
+                {{ error() }}
+              </p>
             </div>
 
-          } @else {
+          </div>
+        </div>
 
-            <div
-              class="
-                divide-y
-                divide-gray-100
-              "
+      }
+
+
+      <!-- ======================================================
+           LOADING
+      ======================================================= -->
+
+      @if (loading()) {
+
+        <div class="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+
+          <mat-icon class="animate-spin text-gray-500">
+            sync
+          </mat-icon>
+
+          <p class="mt-3 text-sm text-gray-500">
+            Loading audit records...
+          </p>
+
+        </div>
+
+      }
+
+
+      <!-- ======================================================
+           EMPTY
+      ======================================================= -->
+
+      @if (!loading() && !error() && logs().length === 0) {
+
+        <div class="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
+
+          <mat-icon class="text-4xl text-gray-400">
+            history
+          </mat-icon>
+
+          <p class="mt-3 text-sm font-medium text-gray-700">
+            No audit records found.
+          </p>
+
+          <p class="mt-1 text-xs text-gray-500">
+            Administrative and system activity will appear here as it is recorded.
+          </p>
+
+        </div>
+
+      }
+
+
+      <!-- ======================================================
+           AUDIT RECORDS
+      ======================================================= -->
+
+      @if (!loading() && logs().length > 0) {
+
+        <div class="space-y-4">
+
+          @for (log of logs(); track log.id) {
+
+            <article
+              class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
             >
 
-              @for (
-                log of logs();
-                track log.id
-              ) {
+              <!-- Record header -->
 
-                <div
-                  class="
-                    px-4
-                    py-4
-                    transition
-                    hover:bg-gray-50
-                    sm:px-5
-                  "
-                >
+              <div class="flex flex-col gap-3 border-b border-gray-100 bg-gray-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+
+                <div class="flex items-center gap-3">
 
                   <div
-                    class="
-                      flex
-                      items-start
-                      gap-3
-                    "
+                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                    [class]="getOutcomeIconContainerClasses(log.outcome)"
                   >
+                    <mat-icon>
+                      {{ getOutcomeIcon(log.outcome) }}
+                    </mat-icon>
+                  </div>
 
-                    <!-- Event icon -->
+                  <div class="min-w-0">
 
-                    <div
-                      class="
-                        flex
-                        h-9
-                        w-9
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-lg
-                      "
-                      [class.bg-green-100]="
-                        log.outcome === 'success'
-                      "
-                      [class.text-green-700]="
-                        log.outcome === 'success'
-                      "
-                      [class.bg-red-100]="
-                        log.outcome === 'failure' ||
-                        log.outcome === 'denied'
-                      "
-                      [class.text-red-700]="
-                        log.outcome === 'failure' ||
-                        log.outcome === 'denied'
-                      "
-                      [class.bg-gray-100]="
-                        log.outcome === 'cancelled'
-                      "
-                      [class.text-gray-600]="
-                        log.outcome === 'cancelled'
-                      "
-                    >
+                    <p class="font-semibold text-[#032D42]">
+                      {{ formatAction(log.action) }}
+                    </p>
 
-                      <mat-icon>
-                        {{ outcomeIcon(log.outcome) }}
-                      </mat-icon>
-
-                    </div>
-
-
-                    <!-- Event -->
-
-                    <div class="min-w-0 flex-1">
-
-                      <div
-                        class="
-                          flex
-                          flex-col
-                          gap-1
-                          sm:flex-row
-                          sm:items-center
-                          sm:justify-between
-                        "
-                      >
-
-                        <div
-                          class="
-                            truncate
-                            text-sm
-                            font-semibold
-                            text-[#032D42]
-                          "
-                        >
-                          {{ log.action }}
-                        </div>
-
-                        <span
-                          class="
-                            shrink-0
-                            self-start
-                            rounded-full
-                            px-2
-                            py-1
-                            text-[10px]
-                            font-semibold
-                            uppercase
-                          "
-                          [class.bg-green-100]="
-                            log.outcome === 'success'
-                          "
-                          [class.text-green-700]="
-                            log.outcome === 'success'
-                          "
-                          [class.bg-red-100]="
-                            log.outcome === 'failure' ||
-                            log.outcome === 'denied'
-                          "
-                          [class.text-red-700]="
-                            log.outcome === 'failure' ||
-                            log.outcome === 'denied'
-                          "
-                          [class.bg-gray-100]="
-                            log.outcome === 'cancelled'
-                          "
-                          [class.text-gray-600]="
-                            log.outcome === 'cancelled'
-                          "
-                        >
-                          {{ log.outcome }}
-                        </span>
-
-                      </div>
-
-
-                      <div
-                        class="
-                          mt-1
-                          flex
-                          flex-wrap
-                          gap-x-3
-                          gap-y-1
-                          text-xs
-                          text-gray-500
-                        "
-                      >
-
+                    <p class="mt-0.5 text-xs text-gray-500">
+                      {{ log.entityType }}
+                      @if (log.entityId) {
                         <span>
-                          {{ log.entityType }}
+                          · {{ log.entityId }}
                         </span>
-
-                        @if (log.entityId) {
-
-                          <span>
-                            ID: {{ log.entityId }}
-                          </span>
-
-                        }
-
-                        <span>
-                          {{ log.actorType }}
-                        </span>
-
-                        @if (log.actorId) {
-
-                          <span>
-                            Actor: {{ log.actorId }}
-                          </span>
-
-                        }
-
-                      </div>
-
-
-                      @if (log.reason) {
-
-                        <p
-                          class="
-                            mt-2
-                            text-sm
-                            text-gray-600
-                          "
-                        >
-                          {{ log.reason }}
-                        </p>
-
                       }
-
-
-                      @if (log.createdAt) {
-
-                        <p
-                          class="
-                            mt-2
-                            text-[11px]
-                            text-gray-400
-                          "
-                        >
-                          {{ formatDate(log.createdAt.toDate()) }}
-                        </p>
-
-                      }
-
-                    </div>
+                    </p>
 
                   </div>
 
                 </div>
 
+
+                <!-- Result -->
+
+                <span
+                  class="inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold"
+                  [class]="getOutcomeClasses(log.outcome)"
+                >
+                  {{ log.outcome | titlecase }}
+                </span>
+
+              </div>
+
+
+              <!-- Record details -->
+
+              <div class="grid gap-5 px-5 py-5 sm:grid-cols-2 lg:grid-cols-4">
+
+                <!-- USER -->
+
+                <div>
+
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    User
+                  </p>
+
+                  <p class="mt-1 text-sm font-semibold text-[#032D42]">
+                    {{ log.actorName || 'Unknown user' }}
+                  </p>
+
+                  @if (log.actorEmail) {
+
+                    <p class="mt-0.5 break-all text-xs text-gray-500">
+                      {{ log.actorEmail }}
+                    </p>
+
+                  }
+
+                  @if (log.actorId) {
+
+                    <p class="mt-1 break-all text-[11px] text-gray-400">
+                      ID: {{ log.actorId }}
+                    </p>
+
+                  }
+
+                </div>
+
+
+                <!-- ACTION -->
+
+                <div>
+
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Action
+                  </p>
+
+                  <p class="mt-1 text-sm text-gray-700">
+                    {{ formatAction(log.action) }}
+                  </p>
+
+                </div>
+
+
+                <!-- DATE & TIME -->
+
+                <div>
+
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Date & Time
+                  </p>
+
+                  <p class="mt-1 text-sm font-semibold text-[#032D42]">
+                    {{ formatDateTime(log.createdAt) }}
+                  </p>
+
+                </div>
+
+
+                <!-- SOURCE -->
+
+                <div>
+
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Source
+                  </p>
+
+                  <p class="mt-1 text-sm text-gray-700">
+                    {{ log.source | titlecase }}
+                  </p>
+
+                  <p class="mt-0.5 text-xs text-gray-500">
+                    {{ log.actorType | titlecase }}
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <!-- Reason -->
+
+              @if (log.reason) {
+
+                <div class="border-t border-gray-100 px-5 py-4">
+
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Reason
+                  </p>
+
+                  <p class="mt-1 text-sm text-gray-700">
+                    {{ log.reason }}
+                  </p>
+
+                </div>
+
               }
 
-            </div>
+
+              <!-- Metadata -->
+
+              @if (hasMetadata(log)) {
+
+                <details class="border-t border-gray-100">
+
+                  <summary class="cursor-pointer px-5 py-3 text-xs font-semibold text-gray-600 hover:bg-gray-50">
+                    View metadata
+                  </summary>
+
+                  <pre class="overflow-x-auto bg-gray-50 px-5 py-4 text-xs text-gray-600">{{ formatMetadata(log.metadata) }}</pre>
+
+                </details>
+
+              }
+
+            </article>
 
           }
 
-        </mat-card-content>
+        </div>
 
-      </mat-card>
+      }
 
     </section>
   `,
 })
-export class ConfigurationAuditComponent {
+export class ConfigurationAuditComponent implements OnInit {
 
-  // =========================================================
-  // SERVICES
-  // =========================================================
+  private readonly auditService = inject(AuditService);
+  private readonly logger = inject(LoggerService);
 
-  private readonly auditService =
-    inject(AuditService);
+  protected readonly logs = signal<AuditLog[]>([]);
+  protected readonly loading = signal(false);
+  protected readonly error = signal<string | null>(null);
 
-  private readonly logger =
-    inject(LoggerService);
-
-
-  // =========================================================
-  // STATE
-  // =========================================================
-
-  protected readonly logs =
-    signal<AuditLog[]>([]);
-
-  protected readonly loading =
-    signal(false);
+  protected readonly successCount = signal(0);
+  protected readonly attentionCount = signal(0);
 
 
-  // =========================================================
-  // SUMMARY
-  // =========================================================
+  // ============================================================
+  // LIFECYCLE
+  // ============================================================
 
-  protected readonly successCount =
-    computed(() =>
-      this.logs()
-        .filter(
-          log =>
-            log.outcome === 'success',
-        )
-        .length,
-    );
+  ngOnInit(): void {
+    this.loadLogs();
+  }
 
 
-  protected readonly attentionCount =
-    computed(() =>
-      this.logs()
-        .filter(
-          log =>
-            log.outcome === 'failure' ||
-            log.outcome === 'denied',
-        )
-        .length,
-    );
-
-
-  // =========================================================
+  // ============================================================
   // LOAD
-  // =========================================================
+  // ============================================================
 
-  async loadAuditLogs(): Promise<void> {
+  protected async loadLogs(): Promise<void> {
 
     if (this.loading()) {
       return;
     }
 
     this.loading.set(true);
-
-    const operationId =
-      this.logger.createOperationId();
-
-    this.logger.info(
-      'ConfigurationAuditComponent',
-      'Loading audit events.',
-      {
-        operationId,
-      },
-    );
+    this.error.set(null);
 
     try {
 
-      /*
-       * IMPORTANT:
-       *
-       * Use the existing AuditService read method here.
-       *
-       * The current Control Center architecture already
-       * centralizes audit creation in AuditService. The exact
-       * read method should remain owned by that service as well.
-       */
-      const result =
+      const records =
         await this.auditService.getRecentLogs(100);
 
-      this.logs.set(result);
+      this.logs.set(records);
+
+      this.successCount.set(
+        records.filter(
+          (record) => record.outcome === 'success',
+        ).length,
+      );
+
+      this.attentionCount.set(
+        records.filter(
+          (record) =>
+            record.outcome !== 'success',
+        ).length,
+      );
 
     } catch (error) {
 
       this.logger.error(
         'ConfigurationAuditComponent',
-        'Unable to load audit events.',
-        {
-          operationId,
-          error:
-            this.getErrorMessage(error),
-        },
+        'Failed to load audit records.',
+        error,
+      );
+
+      this.error.set(
+        this.getErrorMessage(error),
       );
 
     } finally {
 
       this.loading.set(false);
+
     }
+
   }
 
 
-  // =========================================================
-  // ICON
-  // =========================================================
+  // ============================================================
+  // FORMATTING
+  // ============================================================
 
-  protected outcomeIcon(
-    outcome: AuditOutcome,
+  protected formatDateTime(
+    timestamp: Timestamp | null | undefined,
+  ): string {
+
+    if (!timestamp) {
+      return 'Pending';
+    }
+
+    return timestamp.toDate().toLocaleString(
+      undefined,
+      {
+        dateStyle: 'medium',
+        timeStyle: 'medium',
+      },
+    );
+
+  }
+
+
+  protected formatAction(action: string): string {
+
+    if (!action) {
+      return 'Unknown action';
+    }
+
+    return action
+      .replace(/[._-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (character) =>
+        character.toUpperCase(),
+      );
+
+  }
+
+
+  protected hasMetadata(
+    log: AuditLog,
+  ): boolean {
+
+    return !!log.metadata &&
+      Object.keys(log.metadata).length > 0;
+
+  }
+
+
+  protected formatMetadata(
+    metadata: Record<string, unknown> | undefined,
+  ): string {
+
+    if (!metadata) {
+      return '';
+    }
+
+    try {
+
+      return JSON.stringify(
+        metadata,
+        null,
+        2,
+      );
+
+    } catch {
+
+      return '[Unable to display metadata]';
+
+    }
+
+  }
+
+
+  // ============================================================
+  // OUTCOME DISPLAY
+  // ============================================================
+
+  protected getOutcomeIcon(
+    outcome: AuditLog['outcome'],
   ): string {
 
     switch (outcome) {
@@ -754,32 +591,68 @@ export class ConfigurationAuditComponent {
         return 'cancel';
 
       default:
-        return 'history';
+        return 'info';
+
     }
+
   }
 
 
-  // =========================================================
-  // DATE
-  // =========================================================
-
-  protected formatDate(
-    date: Date,
+  protected getOutcomeClasses(
+    outcome: AuditLog['outcome'],
   ): string {
 
-    return new Intl.DateTimeFormat(
-      'en-US',
-      {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      },
-    ).format(date);
+    switch (outcome) {
+
+      case 'success':
+        return 'bg-green-100 text-green-700';
+
+      case 'failure':
+        return 'bg-red-100 text-red-700';
+
+      case 'denied':
+        return 'bg-orange-100 text-orange-700';
+
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-700';
+
+      default:
+        return 'bg-gray-100 text-gray-700';
+
+    }
+
   }
 
 
-  // =========================================================
-  // ERROR
-  // =========================================================
+  protected getOutcomeIconContainerClasses(
+    outcome: AuditLog['outcome'],
+  ): string {
+
+    switch (outcome) {
+
+      case 'success':
+        return 'bg-green-100 text-green-600';
+
+      case 'failure':
+        return 'bg-red-100 text-red-600';
+
+      case 'denied':
+        return 'bg-orange-100 text-orange-600';
+
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-600';
+
+      default:
+        return 'bg-gray-100 text-gray-600';
+
+    }
+
+  }
+
+
+  // ============================================================
+  // ERROR HANDLING
+  // ============================================================
 
   private getErrorMessage(
     error: unknown,
@@ -789,6 +662,23 @@ export class ConfigurationAuditComponent {
       return error.message;
     }
 
-    return String(error);
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error
+    ) {
+
+      const message =
+        (error as { message?: unknown }).message;
+
+      if (typeof message === 'string') {
+        return message;
+      }
+
+    }
+
+    return 'An unexpected error occurred while loading the audit trail.';
+
   }
+
 }

@@ -1,88 +1,37 @@
-import {
-  Component,
-  signal,
-} from '@angular/core';
+import { Component, signal } from '@angular/core';
 
-import {
-  FormsModule,
-} from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 
-import {
-  RouterLink,
-} from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 import { inject } from '@angular/core';
 import { DonationService } from '../../../../core/services/donation.service';
+import { PageTitleService } from '../../../../core/services/page-title.service';
 
 @Component({
   selector: 'app-donate',
   standalone: true,
-  imports: [
-    FormsModule,
-    RouterLink,
-  ],
+  imports: [FormsModule],
   template: `
-     <!-- Header -->
-         <!-- Header -->
-<div
-  class="bg-[#032D42]
-         px-6 py-4
+    <!-- Header -->
+    <!-- Header -->
+    <div
+      class="bg-[#2A835F]
+         px-8
          text-white
-         sm:px-10 sm:py-4"
->
-  <!-- Header top row -->
-  <div class="flex items-center justify-between gap-4">
-    <p
-      class="text-xs font-semibold
-             uppercase tracking-wider
-             text-[#7ED6D1]"
+         sm:px-10 sm:py-2"
     >
-      Support Zebron
-    </p>
-
-    <!-- Home -->
-    <a
-      routerLink="/"
-      class="inline-flex shrink-0
-             items-center
-             gap-1.5
-             rounded-lg
-             border border-white/20
-             bg-white/10
-             px-3 py-1.5
-             text-sm font-medium
-             text-white
-             transition
-             hover:bg-white/20
-             focus:outline-none
-             focus:ring-2
-             focus:ring-white/40"
-    >
-      <span aria-hidden="true">⌂</span>
-      Home
-    </a>
-  </div>
-
-  <h1
-    class="mt-3 text-3xl
-           font-bold tracking-tight
-           sm:text-4xl"
-  >
-    Help us make resources easier to find
-  </h1>
-
-  <p
-    class="mt-4 max-w-2xl
+      <p
+        class="mt-15
            text-sm leading-6
            text-blue-100
            sm:text-base"
-  >
-    Your support helps Zebron connect people
-    with trusted resources, services,
-    organizations, and opportunities.
-  </p>
-</div>
-          
+      >
+        Your support helps Zebron connect people with trusted resources, services, organizations,
+        and opportunities.
+      </p>
+    </div>
+
     <main
       class="min-h-[calc(100vh-4rem)]
              bg-gray-50 px-4 py-2
@@ -90,9 +39,6 @@ import { DonationService } from '../../../../core/services/donation.service';
              lg:px-8"
     >
       <div class="mx-auto max-w-3xl">
-
-       
-
         <!-- Donation card -->
         <section
           class="mt-1 overflow-hidden
@@ -100,10 +46,8 @@ import { DonationService } from '../../../../core/services/donation.service';
                  border border-gray-200
                  bg-white shadow-lg"
         >
-
           <!-- Donation form -->
           <div class="px-6 py-8 sm:px-10">
-
             <!-- Amount -->
             <div>
               <h2
@@ -117,19 +61,12 @@ import { DonationService } from '../../../../core/services/donation.service';
                 class="mt-4 grid grid-cols-2
                        gap-3 sm:grid-cols-4"
               >
-                @for (
-                  amount of presetAmounts;
-                  track amount
-                ) {
+                @for (amount of presetAmounts; track amount) {
                   <button
                     type="button"
                     (click)="selectAmount(amount)"
-                    [class.border-[#007979]]="
-                      selectedAmount() === amount
-                    "
-                    [class.bg-[#007979]/5]="
-                      selectedAmount() === amount
-                    "
+                    [class.border-[#007979]]="selectedAmount() === amount"
+                    [class.bg-[#007979]/5]="selectedAmount() === amount"
                     class="rounded-xl
                            border border-gray-200
                            px-4 py-3
@@ -176,9 +113,7 @@ import { DonationService } from '../../../../core/services/donation.service';
                   max="10000"
                   step="0.01"
                   [ngModel]="customAmount()"
-                  (ngModelChange)="
-                    setCustomAmount($event)
-                  "
+                  (ngModelChange)="setCustomAmount($event)"
                   placeholder="25.00"
                   class="block w-full
                          rounded-xl
@@ -235,8 +170,7 @@ import { DonationService } from '../../../../core/services/donation.service';
                 class="mt-2 text-xs
                        text-gray-500"
               >
-                Your email can be used to send a
-                donation receipt.
+                Your email can be used to send a donation receipt.
               </p>
             </div>
 
@@ -287,10 +221,8 @@ import { DonationService } from '../../../../core/services/donation.service';
                      text-xs leading-5
                      text-gray-500"
             >
-              Secure payment powered by Stripe.
-              Zebron does not store your card information.
+              Secure payment powered by Stripe. Zebron does not store your card information.
             </p>
-
           </div>
         </section>
       </div>
@@ -298,46 +230,36 @@ import { DonationService } from '../../../../core/services/donation.service';
   `,
 })
 export class DonateComponent {
+  private readonly donationService = inject(DonationService);
 
-  private readonly donationService =
-  inject(DonationService);
+  private readonly pageTitleService = inject(PageTitleService);
 
-  protected readonly presetAmounts =
-    [10, 25, 50, 100];
+  protected readonly presetAmounts = [10, 25, 50, 100];
 
-  protected readonly selectedAmount =
-    signal(25);
+  protected readonly selectedAmount = signal(25);
 
-  protected readonly customAmount =
-    signal<number | null>(null);
+  protected readonly customAmount = signal<number | null>(null);
 
-  protected readonly processing =
-    signal(false);
+  protected readonly processing = signal(false);
 
-  protected readonly error =
-    signal<string | null>(null);
+  protected readonly error = signal<string | null>(null);
 
   protected email = '';
 
-  protected selectAmount(
-    amount: number,
-  ): void {
+  protected selectAmount(amount: number): void {
     this.selectedAmount.set(amount);
     this.customAmount.set(null);
     this.error.set(null);
   }
 
-  protected setCustomAmount(
-    value: number | string | null,
-  ): void {
+  constructor() {
+    this.pageTitleService.setTitle('Support Zebron');
+  }
 
-    const amount =
-      Number(value);
+  protected setCustomAmount(value: number | string | null): void {
+    const amount = Number(value);
 
-    if (
-      Number.isFinite(amount) &&
-      amount > 0
-    ) {
+    if (Number.isFinite(amount) && amount > 0) {
       this.customAmount.set(amount);
       this.selectedAmount.set(amount);
     } else {
@@ -348,87 +270,62 @@ export class DonateComponent {
     this.error.set(null);
   }
 
-  protected formatCurrency(
-    amount: number,
-  ): string {
-    return new Intl.NumberFormat(
-      'en-US',
-      {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 2,
-      },
-    ).format(amount);
+  protected formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 2,
+    }).format(amount);
   }
 
   protected async donate(): Promise<void> {
-  if (this.processing()) {
-    return;
-  }
+    if (this.processing()) {
+      return;
+    }
 
-  const amount =
-    Number(this.selectedAmount());
-
-  /*
-   * Validate the donation amount on the client
-   * for immediate user feedback.
-   *
-   * The Firebase function validates it again
-   * on the server.
-   */
-  if (
-    !Number.isFinite(amount) ||
-    amount < 1
-  ) {
-    this.error.set(
-      'Please enter a donation amount of at least $1.',
-    );
-
-    return;
-  }
-
-  if (amount > 10000) {
-    this.error.set(
-      'The maximum donation is $10,000.',
-    );
-
-    return;
-  }
-
-  this.processing.set(true);
-  this.error.set(null);
-
-  try {
-    /*
-     * Ask Firebase to create the Stripe Checkout
-     * session.
-     */
-    const checkoutUrl =
-      await this.donationService.createCheckout(
-        amount,
-        this.email,
-      );
+    const amount = Number(this.selectedAmount());
 
     /*
-     * Redirect the donor to Stripe-hosted Checkout.
+     * Validate the donation amount on the client
+     * for immediate user feedback.
      *
-     * Card information never passes through Zebron.
+     * The Firebase function validates it again
+     * on the server.
      */
-    window.location.href =
-      checkoutUrl;
+    if (!Number.isFinite(amount) || amount < 1) {
+      this.error.set('Please enter a donation amount of at least $1.');
 
-  } catch (error) {
-    console.error(
-      'Donation checkout failed:',
-      error,
-    );
+      return;
+    }
 
-    this.error.set(
-      'Unable to start the donation. Please try again.',
-    );
+    if (amount > 10000) {
+      this.error.set('The maximum donation is $10,000.');
 
-    this.processing.set(false);
+      return;
+    }
+
+    this.processing.set(true);
+    this.error.set(null);
+
+    try {
+      /*
+       * Ask Firebase to create the Stripe Checkout
+       * session.
+       */
+      const checkoutUrl = await this.donationService.createCheckout(amount, this.email);
+
+      /*
+       * Redirect the donor to Stripe-hosted Checkout.
+       *
+       * Card information never passes through Zebron.
+       */
+      window.location.href = checkoutUrl;
+    } catch (error) {
+      console.error('Donation checkout failed:', error);
+
+      this.error.set('Unable to start the donation. Please try again.');
+
+      this.processing.set(false);
+    }
   }
-}
-
 }

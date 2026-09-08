@@ -19,6 +19,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'resources',
+      title: 'Find the help you need',
     },
     loadComponent: () =>
       import(
@@ -34,6 +35,9 @@ export const routes: Routes = [
   // =====================================================
   {
     path: 'contact',
+    data: {
+    title: 'Contact Us',
+  },
     loadComponent: () =>
       import(
         './features/contact/pages/contact/contact'
@@ -53,6 +57,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'resources',
+      title: 'Zebron | Resources',
     },
     resolve: {
       resource: resourceResolver,
@@ -71,6 +76,9 @@ export const routes: Routes = [
   // =====================================================
   {
     path: 'login',
+    data: {
+    title: 'Zebron | Login',
+  },
     loadComponent: () =>
       import(
         './features/auth/pages/login/login.component'
@@ -85,6 +93,9 @@ export const routes: Routes = [
   // =====================================================
   {
     path: 'register',
+    data: {
+    title: 'Zebron | Register',
+  },
     loadComponent: () =>
       import(
         './features/auth/pages/register/register.component'
@@ -99,6 +110,9 @@ export const routes: Routes = [
   // =====================================================
   {
     path: 'donate',
+    data: {
+    title: 'Help us make resources easier to find',
+  },
     loadComponent: () =>
       import(
         './features/donate/pages/donate/donate.component'
@@ -113,6 +127,9 @@ export const routes: Routes = [
   // =========================================================
   {
     path: 'find',
+    data: {
+      title: 'Find your next opportunity',
+    },
     loadComponent: () =>
       import(
         './features/resource-finder/pages/find/find.component'
@@ -127,6 +144,9 @@ export const routes: Routes = [
   // =========================================================
   {
     path: 'find/job',
+    data: {
+      title: 'Find a job',
+    },
     loadComponent: () =>
       import(
         './features/resource-finder/pages/job/job-finder.component'
@@ -141,6 +161,9 @@ export const routes: Routes = [
   // =====================================================
   {
     path: 'jobs/:id',
+    data: {
+      title: 'Zebron | Job detail',
+    },
     loadComponent: () =>
       import(
         './features/jobs/pages/job-detail/job-detail.component'
@@ -155,6 +178,9 @@ export const routes: Routes = [
   // =========================================================
   {
     path: 'find/job/results',
+    data: {
+      title: 'Zebron | Jobs'
+    },
     loadComponent: () =>
       import(
         './features/resource-finder/pages/job-results/job-results.component'
@@ -169,6 +195,9 @@ export const routes: Routes = [
   // =========================================================
   {
     path: 'find/training',
+    data: {
+      title: 'Find a training',
+    },
     loadComponent: () =>
       import(
         './features/resource-finder/pages/training/training-finder.component'
@@ -183,6 +212,9 @@ export const routes: Routes = [
   // =========================================================
   {
     path: 'find/training/results',
+    data: {
+      title: 'Zebron | Trainings'
+    },
     loadComponent: () =>
       import(
         './features/resource-finder/pages/training-results/training-results.component'
@@ -197,6 +229,9 @@ export const routes: Routes = [
   // =====================================================
   {
     path: 'about',
+    data: {
+      title: 'About Zebron',
+    },
     component: AboutComponent,
   },
 
@@ -211,6 +246,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'test-center',
+      title: 'Test Center',
     },
     loadComponent: () =>
       import(
@@ -231,6 +267,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'test-center',
+      title: 'Test Center | Course detail',
     },
     loadComponent: () =>
       import(
@@ -251,6 +288,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'test-center',
+      title: 'Test Center | Setup',
     },
     loadComponent: () =>
       import(
@@ -271,6 +309,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'test-center',
+      title: 'Test Center | Practice',
     },
     loadComponent: () =>
       import(
@@ -291,6 +330,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'test-center',
+      title: 'Test Center | Courses',
     },
     loadComponent: () =>
       import(
@@ -312,6 +352,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'community',
+      title: 'Zebron | Community',
     },
     loadComponent: () =>
       import(
@@ -333,6 +374,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'community',
+      title: 'Zebron | Community post detail',
     },
     loadComponent: () =>
       import(
@@ -352,6 +394,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'test-center',
+      title: 'Zebron | Learning Lab',
     },
     loadComponent: () =>
       import(
@@ -373,6 +416,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'test-center',
+      title: 'Zebron | Test Center topics',
     },
     loadComponent: () =>
       import(
@@ -394,6 +438,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'test-center',
+      title: 'Admin | Test Center',
     },
     loadComponent: () =>
       import(
@@ -415,6 +460,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'test-center',
+      title: 'Admin | Test Center questions',
     },
     loadComponent: () =>
       import(
@@ -435,6 +481,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'test-center',
+      title: 'Test Center | Results',
     },
     loadComponent: () =>
       import(
@@ -450,6 +497,9 @@ export const routes: Routes = [
   // =====================================================
   {
     path: 'profile',
+    data: {
+      title: 'Zebron | Profile',
+    },
     canActivate: [
       authGuard,
     ],
@@ -473,6 +523,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'resources',
+      title: 'Submit a resource',
     },
     loadComponent: () =>
       import(
@@ -494,6 +545,7 @@ export const routes: Routes = [
     ],
     data: {
       featureKey: 'resources',
+      title: 'Admin | Resources',
     },
     loadComponent: () =>
       import(
@@ -512,6 +564,9 @@ export const routes: Routes = [
     canActivate: [
       adminGuard,
     ],
+    data: {
+      title: 'Admin | Organizations',
+    },
     loadComponent: () =>
       import(
         './features/admin/pages/organizations/organization-admin.component'
@@ -529,6 +584,9 @@ export const routes: Routes = [
     canActivate: [
       adminGuard,
     ],
+    data: {
+      title: 'Admin | Add a job',
+    },
     loadComponent: () =>
       import(
         './features/admin/pages/jobs/job-form/job-form.component'
@@ -546,6 +604,9 @@ export const routes: Routes = [
     canActivate: [
       adminGuard,
     ],
+    data: {
+      title: 'Admin | Jobs',
+    },
     loadComponent: () =>
       import(
         './features/admin/pages/jobs/job-admin.component'
@@ -563,6 +624,9 @@ export const routes: Routes = [
     canActivate: [
       adminGuard,
     ],
+    data: {
+      title: 'Admin | Edit a job',
+    },
     loadComponent: () =>
       import(
         './features/admin/pages/jobs/job-form/job-form.component'
@@ -707,6 +771,9 @@ export const routes: Routes = [
     canActivate: [
       adminGuard,
     ],
+    data: {
+      title: 'Admin | Configuration',
+    },
     loadComponent: () =>
       import(
         './features/admin/pages/configuration/configuration.component'
