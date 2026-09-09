@@ -17,6 +17,7 @@ import { CommunityFeedComponent } from '../../components/community-feed/communit
 import { CommunitySidebarComponent } from '../../components/community-sidebar/community-sidebar.component';
 
 import { CommunityTrendingComponent } from '../../components/community-trending/community-trending.component';
+import { PageTitleService } from '../../../../core/services/page-title.service';
 
 @Component({
   selector: 'app-community-home',
@@ -265,12 +266,17 @@ export class CommunityHomeComponent
   implements OnInit
 {
   readonly store = inject(CommunityStore);
+  readonly pageTitleService = inject(PageTitleService);
 
   private readonly dialog =
     inject(MatDialog);
 
   ngOnInit(): void {
     void this.store.loadInitialData();
+  }
+
+  constructor() {
+    this.pageTitleService.setTitle('Community');
   }
 
   openPostComposer(): void {

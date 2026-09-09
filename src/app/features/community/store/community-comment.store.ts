@@ -21,6 +21,8 @@ import {
   CommunityCommentService,
 } from '../services/community-comment.service';
 
+import { LoggerService } from '../../../core/services/logger.service';
+
 
 interface CommunityCommentState {
 
@@ -125,6 +127,7 @@ export const CommunityCommentStore =
           inject(
             AuthService,
           ),
+          logger = inject(LoggerService),
 
       ) => ({
 
@@ -186,10 +189,10 @@ export const CommunityCommentStore =
 
           } catch (error) {
 
-            console.error(
-              'Failed to load community comments:',
-              error,
-            );
+            logger.error(
+  'Failed to load community comments',
+  error instanceof Error ? error.message : String(error),
+);
 
 
             patchState(
@@ -433,10 +436,10 @@ export const CommunityCommentStore =
 
           } catch (error) {
 
-            console.error(
-              'Failed to create community comment:',
-              error,
-            );
+            logger.error(
+  'Failed to create community comment',
+  error instanceof Error ? error.message : String(error),
+);
 
 
             patchState(
@@ -592,10 +595,10 @@ export const CommunityCommentStore =
 
           } catch (error) {
 
-            console.error(
-              'Failed to delete community comment:',
-              error,
-            );
+           logger.error(
+  'Failed to delete community comment',
+  error instanceof Error ? error.message : String(error),
+);
 
 
             patchState(

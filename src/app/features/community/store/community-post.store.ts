@@ -13,6 +13,7 @@ import {
 
 import { CommunityPost } from '../models/community-post.model';
 import { CommunityPostService } from '../services/community-post.service';
+import { LoggerService } from '../../../core/services/logger.service';
 
 interface CommunityPostState {
   post: CommunityPost | null;
@@ -56,6 +57,7 @@ export const CommunityPostStore = signalStore(
     (
       store,
       postService = inject(CommunityPostService),
+      logger = inject(LoggerService),
     ) => ({
 
       async loadPost(
@@ -109,10 +111,10 @@ export const CommunityPostStore = signalStore(
 
         } catch (error) {
 
-          console.error(
-            'Failed to load community post:',
-            error,
-          );
+          logger.error(
+  'Failed to load community post:',
+  error instanceof Error ? error.message : String(error),
+);
 
           patchState(store, {
             post: null,

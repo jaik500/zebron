@@ -11,6 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 
 import { CommunityStore } from '../../store/community.store';
+import { LoggerService } from '../../../../core/services/logger.service';
 
 @Component({
   selector: 'app-community-post-composer',
@@ -439,6 +440,8 @@ export class CommunityPostComposerComponent {
 
   readonly store = inject(CommunityStore);
 
+  private readonly logger = inject(LoggerService);
+
   private readonly dialogRef = inject(MatDialogRef<CommunityPostComposerComponent>);
 
   // ============================================================
@@ -521,7 +524,10 @@ export class CommunityPostComposerComponent {
         this.dialogRef.close(postId);
       }
     } catch (error) {
-      console.error('Failed to publish community post:', error);
+      this.logger.error(
+  'Failed to publish community post',
+  error instanceof Error ? error.message : String(error),
+);
     } finally {
       this.saving.set(false);
     }

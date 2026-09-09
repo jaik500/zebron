@@ -11,6 +11,11 @@ import { CommunityTopic } from '../models/community-topic.model';
 import { CommunityPostService } from '../services/community-post.service';
 import { CommunityTopicService } from '../services/community-topic.service';
 
+import { CommunityReactionService } from '../services/community-reaction.service';
+
+import { CommunityReactionType } from '../models/community-reaction.model';
+
+import { LoggerService } from '../../../core/services/logger.service';
 // ============================================================
 // TYPES
 // ============================================================
@@ -222,9 +227,11 @@ export const CommunityStore = signalStore(
   // ==========================================================
 
   withMethods((store) => {
+    const authService = inject(AuthService);
     const postService = inject(CommunityPostService);
-
     const topicService = inject(CommunityTopicService);
+    const reactionService = inject(CommunityReactionService);
+    const logger = inject(LoggerService);
 
     // ========================================================
     // LOAD INITIAL DATA
@@ -259,7 +266,10 @@ export const CommunityStore = signalStore(
           loading: false,
         });
       } catch (error) {
-        console.error('Failed to load community data:', error);
+        logger.error(
+          'Failed to load community data',
+          error instanceof Error ? error.message : String(error),
+        );
 
         patchState(store, {
           loading: false,
@@ -303,8 +313,10 @@ export const CommunityStore = signalStore(
           error: null,
         });
       } catch (error) {
-        console.error('Failed to load more community posts:', error);
-
+        logger.error(
+          'Failed to load more community posts',
+          error instanceof Error ? error.message : String(error),
+        );
         patchState(store, {
           loadingMore: false,
 
@@ -341,12 +353,105 @@ export const CommunityStore = signalStore(
           error: null,
         });
       } catch (error) {
-        console.error('Failed to refresh community:', error);
+        logger.error(
+          'Failed to refresh community',
+          error instanceof Error ? error.message : String(error),
+        );
 
         patchState(store, {
           refreshing: false,
 
           error: 'Unable to refresh the community. Please try again.',
+        });
+      }
+    };
+
+    // ========================================================
+    // REACTIONS
+    // ========================================================
+
+    const reactToPost = async (
+      postId: string,
+      userId: string,
+      type: CommunityReactionType,
+    ): Promise<void> => {
+      if (!postId.trim()) {
+        return;
+      }
+
+      if (!userId.trim()) {
+        return;
+      }
+
+      try {
+        /*
+         * Persist the reaction first.
+         *
+         * The service transaction handles:
+         * - adding a new reaction
+         * - changing an existing reaction
+         * - removing the same reaction
+         * - updating Firestore reactionCounts
+         */
+        const resultingType = await reactionService.toggleReaction(postId, userId, type);
+
+        /*
+         * Update the locally displayed post immediately.
+         *
+         * This prevents the user from having to refresh
+         * the Community feed after reacting.
+         */
+        const updatedPosts = store.posts().map((post) => {
+          if (post.id !== postId) {
+            return post;
+          }
+
+          const currentCounts = {
+            ...(post.reactionCounts ?? {}),
+          };
+
+          const previousType = post.currentUserReaction ?? null;
+
+          /*
+           * Remove the previous reaction count when
+           * the user is changing or removing a reaction.
+           */
+          if (previousType && previousType !== resultingType) {
+            currentCounts[previousType] = Math.max(0, (currentCounts[previousType] ?? 0) - 1);
+          }
+
+          /*
+           * Add the new reaction count when a reaction
+           * was added or changed.
+           */
+          if (resultingType && previousType !== resultingType) {
+            currentCounts[resultingType] = (currentCounts[resultingType] ?? 0) + 1;
+          }
+
+          return {
+            ...post,
+
+            reactionCounts: currentCounts,
+
+            currentUserReaction: resultingType,
+          };
+        });
+
+        patchState(store, {
+          posts: updatedPosts,
+          error: null,
+        });
+      } catch (error) {
+        logger.error(
+          'Failed to react to community post',
+          error instanceof Error ? error.message : String(error),
+        );
+
+        patchState(store, {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Unable to update your reaction. Please try again.',
         });
       }
     };
@@ -387,7 +492,10 @@ export const CommunityStore = signalStore(
           error: null,
         });
       } catch (error) {
-        console.error('Failed to load topic posts:', error);
+        logger.error(
+          'Failed to select community topic',
+          error instanceof Error ? error.message : String(error),
+        );
 
         patchState(store, {
           loading: false,
@@ -397,124 +505,125 @@ export const CommunityStore = signalStore(
       }
     };
 
-   // ========================================================
-// CREATE POST
-// ========================================================
+    // ========================================================
+    // CREATE POST
+    // ========================================================
 
-const createPost = async (input: {
-  title: string;
-  content: string;
-  topicId: string;
-  topicName?: string;
-  tags?: string[];
-}): Promise<string | null> => {
+    const createPost = async (input: {
+      title: string;
+      content: string;
+      topicId: string;
+      topicName?: string;
+      tags?: string[];
+    }): Promise<string | null> => {
+      // --------------------------------------------------------
+      // Current authenticated user
+      // --------------------------------------------------------
 
-  // --------------------------------------------------------
-  // Current authenticated user
-  // --------------------------------------------------------
+      const currentUser = store.currentUser();
 
-  const currentUser = store.currentUser();
+      if (!currentUser) {
+        patchState(store, {
+          error: 'You must be signed in to create a post.',
+        });
 
-  if (!currentUser) {
-    patchState(store, {
-      error: 'You must be signed in to create a post.',
-    });
+        return null;
+      }
 
-    return null;
-  }
+      // --------------------------------------------------------
+      // Validate input
+      // --------------------------------------------------------
 
-  // --------------------------------------------------------
-  // Validate input
-  // --------------------------------------------------------
+      const title = input.title.trim();
+      const content = input.content.trim();
+      const topicId = input.topicId.trim();
 
-  const title = input.title.trim();
-  const content = input.content.trim();
-  const topicId = input.topicId.trim();
+      if (!title) {
+        patchState(store, {
+          error: 'A post title is required.',
+        });
 
-  if (!title) {
-    patchState(store, {
-      error: 'A post title is required.',
-    });
+        return null;
+      }
 
-    return null;
-  }
+      if (!content) {
+        patchState(store, {
+          error: 'Post content is required.',
+        });
 
-  if (!content) {
-    patchState(store, {
-      error: 'Post content is required.',
-    });
+        return null;
+      }
 
-    return null;
-  }
+      if (!topicId) {
+        patchState(store, {
+          error: 'Please select a topic.',
+        });
 
-  if (!topicId) {
-    patchState(store, {
-      error: 'Please select a topic.',
-    });
+        return null;
+      }
 
-    return null;
-  }
+      // --------------------------------------------------------
+      // Begin save
+      // --------------------------------------------------------
 
-  // --------------------------------------------------------
-  // Begin save
-  // --------------------------------------------------------
+      patchState(store, {
+        loading: true,
+        error: null,
+      });
 
-  patchState(store, {
-    loading: true,
-    error: null,
-  });
+      try {
+        const postId = await postService.createPost({
+          authorId: currentUser.id,
 
-  try {
-    const postId = await postService.createPost({
-      authorId: currentUser.id,
-      authorName:
-        currentUser.displayName || 'Zebron Community Member',
-      authorPhotoUrl: currentUser.photoUrl ?? null,
+          author: {
+            id: currentUser.id,
+            displayName: currentUser.displayName || 'Zebron Community Member',
+            ...(currentUser.photoUrl ? { photoUrl: currentUser.photoUrl } : {}),
+          },
 
-      topicId,
-      topicName: input.topicName,
+          topicId,
+          topicName: input.topicName,
 
-      title,
-      content,
-      tags: input.tags ?? [],
-    });
+          title,
+          content,
+          tags: input.tags ?? [],
+        });
 
-    // The post has been successfully written to Firestore.
-    // Mark the save as complete before refreshing the feed.
-    patchState(store, {
-      loading: false,
-      error: null,
-    });
+        // The post has been successfully written to Firestore.
+        // Mark the save as complete before refreshing the feed.
+        patchState(store, {
+          loading: false,
+          error: null,
+        });
 
-    // Refresh the feed separately.
-    // If refreshing fails, the post was still created successfully.
-    try {
-      await loadInitialData();
-    } catch (refreshError) {
-      console.error(
-        'Post created, but community feed refresh failed:',
-        refreshError,
-      );
-    }
+        // Refresh the feed separately.
+        // If refreshing fails, the post was still created successfully.
+        try {
+          await loadInitialData();
+        } catch (refreshError) {
+          logger.error(
+            'Post created, but community feed refresh failed',
+            refreshError instanceof Error ? refreshError.message : String(refreshError),
+          );
+        }
 
-    return postId;
-  } catch (error) {
-    console.error(
-      'Failed to create community post:',
-      error,
-    );
+        return postId;
+      } catch (error) {
+        logger.error(
+          'Failed to create community post',
+          error instanceof Error ? error.message : String(error),
+        );
+        patchState(store, {
+          loading: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Unable to create your post. Please try again.',
+        });
 
-    patchState(store, {
-      loading: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Unable to create your post. Please try again.',
-    });
-
-    return null;
-  } 
-};
+        return null;
+      }
+    };
 
     // ========================================================
     // SEARCH
@@ -576,8 +685,10 @@ const createPost = async (input: {
           error: null,
         });
       } catch (error) {
-        console.error('Failed to clear community filters:', error);
-
+        logger.error(
+          'Failed to clear community filters',
+          error instanceof Error ? error.message : String(error),
+        );
         patchState(store, {
           loading: false,
 
@@ -596,6 +707,8 @@ const createPost = async (input: {
       loadMore,
 
       refresh,
+
+      reactToPost,
 
       selectTopic,
 

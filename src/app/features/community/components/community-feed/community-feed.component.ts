@@ -9,11 +9,16 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import { CommunityPost } from '../../models/community-post.model';
-import { CommunityStore } from '../../store/community.store';
-import { CommunityPostCardComponent } from '../community-post-card/community-post-card.component';
 import { Router } from '@angular/router';
 
+import { CommunityPost } from '../../models/community-post.model';
+import { CommunityReactionType } from '../../models/community-reaction.model';
+
+import { CommunityStore } from '../../store/community.store';
+
+import { CommunityPostCardComponent } from '../community-post-card/community-post-card.component';
+
+import { AuthService } from '../../../../core/services/auth.service';
 @Component({
   selector: 'app-community-feed',
   standalone: true,
@@ -264,10 +269,13 @@ import { Router } from '@angular/router';
 })
 export class CommunityFeedComponent {
 
-  readonly store =
-    inject(CommunityStore);
+ readonly store =
+  inject(CommunityStore);
 
-    private readonly router =
+private readonly authService =
+  inject(AuthService);
+
+private readonly router =
   inject(Router);
 
 
@@ -296,21 +304,22 @@ export class CommunityFeedComponent {
   }
 
 
-  reactToPost(
-    post: CommunityPost,
-  ): void {
+async reactToPost(
+  post: CommunityPost,
+): Promise<void> {
+  const currentUser =
+    this.authService.user();
 
-    /*
-     * Reaction persistence will be implemented
-     * through the CommunityPostService/store.
-     */
-
-    console.log(
-      '[CommunityFeed] React to post:',
-      post.id,
-    );
+  if (!currentUser) {
+    return;
   }
 
+  await this.store.reactToPost(
+    post.id,
+    currentUser.id,
+    'like',
+  );
+}
 
   openComments(
     post: CommunityPost,
