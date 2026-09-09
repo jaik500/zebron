@@ -16,6 +16,7 @@ import { CommunityReactionService } from '../services/community-reaction.service
 import { CommunityReactionType } from '../models/community-reaction.model';
 
 import { LoggerService } from '../../../core/services/logger.service';
+
 // ============================================================
 // TYPES
 // ============================================================
@@ -233,6 +234,50 @@ export const CommunityStore = signalStore(
     const reactionService = inject(CommunityReactionService);
     const logger = inject(LoggerService);
 
+    // Hellper to hydrate reaction state.
+    const hydrateReactionState = async (
+      posts: CommunityPost[],
+      userId: string | null,
+    ): Promise<CommunityPost[]> => {
+      if (!userId || posts.length === 0) {
+        return posts;
+      }
+
+      try {
+        const hydratedPosts = await Promise.all(
+          posts.map(async (post) => {
+            try {
+              const reaction = await reactionService.getUserReaction(post.id, userId);
+
+              return {
+                ...post,
+                currentUserReaction: reaction?.type ?? null,
+              };
+            } catch (error) {
+              logger.error(
+                `Failed to load reaction for community post ${post.id}`,
+                error instanceof Error ? error.message : String(error),
+              );
+
+              return {
+                ...post,
+                currentUserReaction: null,
+              };
+            }
+          }),
+        );
+
+        return hydratedPosts;
+      } catch (error) {
+        logger.error(
+          'Failed to hydrate community reaction state',
+          error instanceof Error ? error.message : String(error),
+        );
+
+        return posts;
+      }
+    };
+
     // ========================================================
     // LOAD INITIAL DATA
     // ========================================================
@@ -252,10 +297,14 @@ export const CommunityStore = signalStore(
           }),
         ]);
 
+        const currentUser = authService.user();
+
+        const hydratedPosts = await hydrateReactionState(postPage.posts, currentUser?.id ?? null);
+
         patchState(store, {
           topics,
 
-          posts: postPage.posts,
+          posts: hydratedPosts,
 
           lastDocument: postPage.lastDocument,
 
@@ -301,8 +350,12 @@ export const CommunityStore = signalStore(
           lastDocument: store.lastDocument(),
         });
 
+        const currentUser = authService.user();
+
+        const hydratedPosts = await hydrateReactionState(page.posts, currentUser?.id ?? null);
+
         patchState(store, {
-          posts: [...store.posts(), ...page.posts],
+          posts: [...store.posts(), ...hydratedPosts],
 
           lastDocument: page.lastDocument,
 
@@ -317,6 +370,7 @@ export const CommunityStore = signalStore(
           'Failed to load more community posts',
           error instanceof Error ? error.message : String(error),
         );
+
         patchState(store, {
           loadingMore: false,
 
@@ -332,7 +386,6 @@ export const CommunityStore = signalStore(
     const refresh = async (): Promise<void> => {
       patchState(store, {
         refreshing: true,
-
         error: null,
       });
 
@@ -341,8 +394,12 @@ export const CommunityStore = signalStore(
           topicId: store.selectedTopicId(),
         });
 
+        const currentUser = authService.user();
+
+        const hydratedPosts = await hydrateReactionState(page.posts, currentUser?.id ?? null);
+
         patchState(store, {
-          posts: page.posts,
+          posts: hydratedPosts,
 
           lastDocument: page.lastDocument,
 
@@ -384,55 +441,38 @@ export const CommunityStore = signalStore(
       }
 
       try {
-        /*
-         * Persist the reaction first.
-         *
-         * The service transaction handles:
-         * - adding a new reaction
-         * - changing an existing reaction
-         * - removing the same reaction
-         * - updating Firestore reactionCounts
-         */
+        const previousPost = store.posts().find((post) => post.id === postId);
+
+        if (!previousPost) {
+          return;
+        }
+
+        const previousType = previousPost.currentUserReaction ?? null;
+
         const resultingType = await reactionService.toggleReaction(postId, userId, type);
 
-        /*
-         * Update the locally displayed post immediately.
-         *
-         * This prevents the user from having to refresh
-         * the Community feed after reacting.
-         */
         const updatedPosts = store.posts().map((post) => {
           if (post.id !== postId) {
             return post;
           }
 
-          const currentCounts = {
+          const reactionCounts = {
             ...(post.reactionCounts ?? {}),
           };
 
-          const previousType = post.currentUserReaction ?? null;
-
-          /*
-           * Remove the previous reaction count when
-           * the user is changing or removing a reaction.
-           */
+          // Remove the previous reaction count.
           if (previousType && previousType !== resultingType) {
-            currentCounts[previousType] = Math.max(0, (currentCounts[previousType] ?? 0) - 1);
+            reactionCounts[previousType] = Math.max(0, (reactionCounts[previousType] ?? 0) - 1);
           }
 
-          /*
-           * Add the new reaction count when a reaction
-           * was added or changed.
-           */
+          // Add the new reaction count.
           if (resultingType && previousType !== resultingType) {
-            currentCounts[resultingType] = (currentCounts[resultingType] ?? 0) + 1;
+            reactionCounts[resultingType] = (reactionCounts[resultingType] ?? 0) + 1;
           }
 
           return {
             ...post,
-
-            reactionCounts: currentCounts,
-
+            reactionCounts,
             currentUserReaction: resultingType,
           };
         });
