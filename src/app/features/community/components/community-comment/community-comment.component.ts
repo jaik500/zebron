@@ -173,24 +173,26 @@ import { CommunityCommentStore } from '../../store/community-comment.store';
             <button
               mat-button
               type="button"
-              class="!min-w-0 !px-2
-                     !text-xs"
-              (click)="react.emit(comment())"
+              class="!min-w-0 !px-2 !text-xs"
+              (click)="onReactionClick()"
             >
               <mat-icon
-                class="!mr-1 !h-[18px]
-                       !w-[18px]
-                       !text-[18px]"
+                class="!mr-1 !h-[18px] !w-[18px] !text-[18px]"
+                [class.text-blue-600]="comment().currentUserReaction === 'like'"
+                [class.text-slate-500]="comment().currentUserReaction !== 'like'"
               >
-                thumb_up_off_alt
+                {{ comment().currentUserReaction === 'like' ? 'thumb_up' : 'thumb_up_off_alt' }}
               </mat-icon>
 
               @if (reactionCount() > 0) {
-                <span>
+                <span
+                  [class.text-blue-600]="comment().currentUserReaction === 'like'"
+                  [class.font-semibold]="comment().currentUserReaction === 'like'"
+                >
                   {{ reactionCount() }}
                 </span>
               } @else {
-                <span> Like </span>
+                <span>Like</span>
               }
             </button>
 
@@ -255,8 +257,6 @@ import { CommunityCommentStore } from '../../store/community-comment.store';
                     <mat-spinner diameter="18" />
                   } @else {
                     <ng-container>
-                      <mat-icon> send </mat-icon>
-
                       <span> Reply </span>
                     </ng-container>
                   }
@@ -391,6 +391,16 @@ export class CommunityCommentComponent {
 
       this.replyCreated.emit(replyId);
     }
+  }
+
+  async onReactionClick(): Promise<void> {
+    const comment = this.comment();
+
+    if (!comment.postId || !comment.id) {
+      return;
+    }
+
+    await this.commentStore.reactToComment(comment.postId, comment.id, 'like');
   }
 
   // ============================================================

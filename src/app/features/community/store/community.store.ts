@@ -16,6 +16,7 @@ import { CommunityReactionService } from '../services/community-reaction.service
 import { CommunityReactionType } from '../models/community-reaction.model';
 
 import { LoggerService } from '../../../core/services/logger.service';
+import { CommunityBookmarkService } from '../services/community-bookmark.service';
 
 // ============================================================
 // TYPES
@@ -233,6 +234,7 @@ export const CommunityStore = signalStore(
     const topicService = inject(CommunityTopicService);
     const reactionService = inject(CommunityReactionService);
     const logger = inject(LoggerService);
+    const bookmarkService = inject(CommunityBookmarkService);
 
     // Hellper to hydrate reaction state.
     const hydrateReactionState = async (
@@ -278,6 +280,49 @@ export const CommunityStore = signalStore(
       }
     };
 
+    /**
+     * Hydrate viewer-specific bookmark state for the loaded posts.
+     *
+     * Bookmark state is intentionally not stored on the CommunityPost document
+     * because it belongs to the current user. We therefore resolve it after
+     * loading the community posts.
+     */
+    const hydrateBookmarks = async (
+      posts: CommunityPost[],
+      userId: string | null,
+    ): Promise<CommunityPost[]> => {
+      if (!userId || posts.length === 0) {
+        return posts;
+      }
+
+      const hydratedPosts = await Promise.all(
+        posts.map(async (post) => {
+          try {
+            const bookmarked = await bookmarkService.isBookmarked(post.id, userId);
+
+            return {
+              ...post,
+              bookmarkedByCurrentUser: bookmarked,
+            };
+          } catch (error) {
+            logger.error('CommunityStore', 'Failed to load bookmark state for community post.', {
+              postId: post.id,
+              userId,
+              error: error instanceof Error ? error.message : String(error),
+            });
+
+            // Do not prevent the feed from loading if bookmark hydration fails.
+            return {
+              ...post,
+              bookmarkedByCurrentUser: false,
+            };
+          }
+        }),
+      );
+
+      return hydratedPosts;
+    };
+
     // ========================================================
     // LOAD INITIAL DATA
     // ========================================================
@@ -298,8 +343,13 @@ export const CommunityStore = signalStore(
         ]);
 
         const currentUser = authService.user();
+        const userId = currentUser?.id ?? null;
 
-        const hydratedPosts = await hydrateReactionState(postPage.posts, currentUser?.id ?? null);
+        // Hydrate viewer-specific reaction state first.
+        const postsWithReactions = await hydrateReactionState(postPage.posts, userId);
+
+        // Hydrate viewer-specific bookmark state.
+        const hydratedPosts = await hydrateBookmarks(postsWithReactions, userId);
 
         patchState(store, {
           topics,
@@ -315,10 +365,9 @@ export const CommunityStore = signalStore(
           loading: false,
         });
       } catch (error) {
-        logger.error(
-          'Failed to load community data',
-          error instanceof Error ? error.message : String(error),
-        );
+        logger.error('CommunityStore', 'Failed to load community data.', {
+          error: error instanceof Error ? error.message : String(error),
+        });
 
         patchState(store, {
           loading: false,
@@ -339,42 +388,45 @@ export const CommunityStore = signalStore(
 
       patchState(store, {
         loadingMore: true,
-
         error: null,
       });
 
       try {
-        const page = await postService.getPosts({
+        const postPage = await postService.getPosts({
           topicId: store.selectedTopicId(),
-
           lastDocument: store.lastDocument(),
         });
 
         const currentUser = authService.user();
+        const userId = currentUser?.id ?? null;
 
-        const hydratedPosts = await hydrateReactionState(page.posts, currentUser?.id ?? null);
+        // Hydrate reactions for the newly loaded posts.
+        const postsWithReactions = await hydrateReactionState(postPage.posts, userId);
+
+        // Hydrate bookmarks for the newly loaded posts.
+        const hydratedPosts = await hydrateBookmarks(postsWithReactions, userId);
 
         patchState(store, {
           posts: [...store.posts(), ...hydratedPosts],
 
-          lastDocument: page.lastDocument,
+          lastDocument: postPage.lastDocument,
 
-          hasMore: page.hasMore,
+          hasMore: postPage.hasMore,
 
           loadingMore: false,
 
           error: null,
         });
       } catch (error) {
-        logger.error(
-          'Failed to load more community posts',
-          error instanceof Error ? error.message : String(error),
-        );
+        logger.error('CommunityStore', 'Failed to load more community posts.', {
+          topicId: store.selectedTopicId(),
+          error: error instanceof Error ? error.message : String(error),
+        });
 
         patchState(store, {
           loadingMore: false,
 
-          error: 'Unable to load more posts. Please try again.',
+          error: error instanceof Error ? error.message : 'Unable to load more community posts.',
         });
       }
     };
@@ -383,46 +435,63 @@ export const CommunityStore = signalStore(
     // REFRESH
     // ========================================================
 
-    const refresh = async (): Promise<void> => {
-      patchState(store, {
-        refreshing: true,
-        error: null,
-      });
+  const refresh = async (): Promise<void> => {
+  patchState(store, {
+    refreshing: true,
+    error: null,
+  });
 
-      try {
-        const page = await postService.getPosts({
-          topicId: store.selectedTopicId(),
-        });
+  try {
+    const postPage = await postService.getPosts({
+      topicId: store.selectedTopicId(),
+    });
 
-        const currentUser = authService.user();
+    const currentUser = authService.user();
+    const userId = currentUser?.id ?? null;
 
-        const hydratedPosts = await hydrateReactionState(page.posts, currentUser?.id ?? null);
+    const postsWithReactions = await hydrateReactionState(
+      postPage.posts,
+      userId,
+    );
 
-        patchState(store, {
-          posts: hydratedPosts,
+    const hydratedPosts = await hydrateBookmarks(
+      postsWithReactions,
+      userId,
+    );
 
-          lastDocument: page.lastDocument,
+    patchState(store, {
+      posts: hydratedPosts,
 
-          hasMore: page.hasMore,
+      lastDocument: postPage.lastDocument,
 
-          refreshing: false,
+      hasMore: postPage.hasMore,
 
-          error: null,
-        });
-      } catch (error) {
-        logger.error(
-          'Failed to refresh community',
-          error instanceof Error ? error.message : String(error),
-        );
+      refreshing: false,
 
-        patchState(store, {
-          refreshing: false,
+      error: null,
+    });
+  } catch (error) {
+    logger.error(
+      'CommunityStore',
+      'Failed to refresh community posts.',
+      {
+        topicId: store.selectedTopicId(),
+        error: error instanceof Error
+          ? error.message
+          : String(error),
+      },
+    );
 
-          error: 'Unable to refresh the community. Please try again.',
-        });
-      }
-    };
+    patchState(store, {
+      refreshing: false,
 
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Unable to refresh the community right now.',
+    });
+  }
+};
     // ========================================================
     // REACTIONS
     // ========================================================
@@ -665,6 +734,28 @@ export const CommunityStore = signalStore(
       }
     };
 
+    // Update the post commentCount.
+    const updatePostCommentCount = (postId: string, delta: number): void => {
+      const id = postId.trim();
+
+      if (!id || !Number.isFinite(delta)) {
+        return;
+      }
+
+      patchState(store, {
+        posts: store.posts().map((post) => {
+          if (post.id !== id) {
+            return post;
+          }
+
+          return {
+            ...post,
+            commentCount: Math.max(0, (post.commentCount ?? 0) + delta),
+          };
+        }),
+      });
+    };
+
     // ========================================================
     // SEARCH
     // ========================================================
@@ -673,6 +764,57 @@ export const CommunityStore = signalStore(
       patchState(store, {
         searchTerm,
       });
+    };
+
+    const toggleBookmark = async (postId: string): Promise<void> => {
+      const id = postId.trim();
+
+      if (!id) {
+        return;
+      }
+
+      const currentUser = store.currentUser();
+
+      if (!currentUser) {
+        patchState(store, {
+          error: 'You must be signed in to save a post.',
+        });
+
+        return;
+      }
+
+      try {
+        const bookmarked = await bookmarkService.toggleBookmark(id, currentUser.id);
+
+        patchState(store, {
+          posts: store.posts().map((post) =>
+            post.id === id
+              ? {
+                  ...post,
+                  bookmarkedByCurrentUser: bookmarked,
+                }
+              : post,
+          ),
+          error: null,
+        });
+
+        logger.info('CommunityStore', 'Community post bookmark updated.', {
+          postId: id,
+          userId: currentUser.id,
+          bookmarked,
+        });
+      } catch (error) {
+        logger.error('CommunityStore', 'Failed to update community post bookmark.', {
+          postId: id,
+          userId: currentUser.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        patchState(store, {
+          error:
+            error instanceof Error ? error.message : 'Unable to save the post. Please try again.',
+        });
+      }
     };
 
     // ========================================================
@@ -759,6 +901,10 @@ export const CommunityStore = signalStore(
       clearFilters,
 
       createPost,
+
+      updatePostCommentCount,
+
+      toggleBookmark,
     };
   }),
 );
