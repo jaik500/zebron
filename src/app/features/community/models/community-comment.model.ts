@@ -1,45 +1,110 @@
 import { Timestamp } from 'firebase/firestore';
 
+
+// ================================================================
+// COMMENT STATUS
+// ================================================================
+
 export type CommunityCommentStatus =
   | 'published'
-  | 'hidden'
-  | 'deleted';
+  | 'deleted'
+  | 'hidden';
+
+
+// ================================================================
+// COMMENT AUTHOR
+// ================================================================
+
+export interface CommunityCommentAuthor {
+  id: string;
+  displayName: string;
+  photoUrl?: string | null;
+}
+
+
+// ================================================================
+// COMMUNITY COMMENT
+// ================================================================
 
 export interface CommunityComment {
-  id: string;
-  postId: string;
-  parentCommentId?: string | null;
 
+  /**
+   * Firestore document ID.
+   */
+  id: string;
+
+  /**
+   * ID of the post this comment belongs to.
+   */
+  postId: string;
+
+  /**
+   * Null for a top-level comment.
+   *
+   * Contains the parent comment ID for replies.
+   */
+  parentCommentId: string | null;
+
+  /**
+   * User who created the comment.
+   */
   authorId: string;
 
-  author: {
-    id: string;
-    displayName: string;
-    photoUrl?: string;
-  };
+  /**
+   * Denormalized author information used
+   * for efficient rendering.
+   */
+  author: CommunityCommentAuthor;
 
+  /**
+   * Comment body.
+   *
+   * For deleted comments, this should be
+   * empty and should never be rendered.
+   */
   content: string;
 
   /**
    * Aggregate reaction counts.
    *
    * Example:
+   *
    * {
-   *   like: 3
+   *   like: 4,
+   *   love: 2
    * }
    */
   reactionCounts: Record<string, number>;
 
   /**
-   * Reaction made by the currently authenticated user.
+   * Current authenticated user's reaction.
    *
-   * This is viewer-specific state and should not be
-   * persisted inside the comment document.
+   * This is hydrated by CommunityCommentStore
+   * and is not necessarily persisted on the
+   * comment document.
    */
   currentUserReaction?: string | null;
 
+  /**
+   * Comment lifecycle status.
+   */
   status: CommunityCommentStatus;
 
+  /**
+   * Creation timestamp.
+   */
   createdAt?: Timestamp;
+
+  /**
+   * Last update timestamp.
+   */
   updatedAt?: Timestamp;
+
+  /**
+   * Indicates that the comment was soft-deleted.
+   *
+   * This is derived from status and is optional
+   * for backwards compatibility.
+   */
+  deletedAt?: Timestamp | null;
 }

@@ -1,30 +1,55 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  forwardRef,
+  computed,
   inject,
   input,
   output,
   signal,
 } from '@angular/core';
 
-import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
-import { MatButtonModule } from '@angular/material/button';
+import {
+  MatButtonModule,
+} from '@angular/material/button';
 
-import { MatIconModule } from '@angular/material/icon';
+import {
+  MatIconModule,
+} from '@angular/material/icon';
 
-import { MatInputModule } from '@angular/material/input';
+import {
+  MatMenuModule,
+} from '@angular/material/menu';
 
-import { MatMenuModule } from '@angular/material/menu';
+import {
+  MatTooltipModule,
+} from '@angular/material/tooltip';
 
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import {
+  MatFormFieldModule,
+} from '@angular/material/form-field';
 
-import { MatTooltipModule } from '@angular/material/tooltip';
+import {
+  MatInputModule,
+} from '@angular/material/input';
 
-import { CommunityComment } from '../../models/community-comment.model';
+import {
+  CommunityComment,
+} from '../../models/community-comment.model';
 
-import { CommunityCommentStore } from '../../store/community-comment.store';
+import {
+  CommunityCommentStore,
+} from '../../store/community-comment.store';
+
+import {
+  LoggerService,
+} from '../../../../core/services/logger.service';
+
+
+// ================================================================
+// COMPONENT
+// ================================================================
 
 @Component({
   selector: 'app-community-comment',
@@ -32,479 +57,950 @@ import { CommunityCommentStore } from '../../store/community-comment.store';
   standalone: true,
 
   imports: [
-    FormsModule,
-
+    CommonModule,
     MatButtonModule,
     MatIconModule,
-    MatInputModule,
     MatMenuModule,
-    MatProgressSpinnerModule,
     MatTooltipModule,
-
-    forwardRef(() => CommunityCommentComponent),
+    MatFormFieldModule,
+    MatInputModule,
   ],
 
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection:
+    ChangeDetectionStrategy.OnPush,
 
   template: `
+
     <!-- ==========================================================
-         COMMENT
+         COMMENT CONTAINER
          ========================================================== -->
 
-    <article class="group relative" [class.pl-10]="depth() > 0" [class.sm:pl-12]="depth() > 0">
-      <!-- Reply connector -->
+    <div
+      class="group relative"
+      [class.ml-8]="depth() > 0"
+      [class.mt-4]="depth() > 0"
+    >
 
-      @if (depth() > 0) {
-        <div
-          class="absolute left-4 top-0
-                 h-full w-px
-                 bg-slate-200
-                 sm:left-5"
-        ></div>
-      }
+      <!-- ========================================================
+           DELETED COMMENT
+           ======================================================== -->
 
-      <div class="flex items-start gap-3">
-        <!-- ======================================================
-             AVATAR
-             ====================================================== -->
+      @if (isDeleted()) {
 
         <div
-          class="relative z-10 flex
-                 h-9 w-9 shrink-0
-                 items-center justify-center
-                 overflow-hidden rounded-full
-                 bg-[#087F80]/10
-                 text-xs font-semibold
-                 text-[#087F80]"
+          class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
+          role="status"
+          aria-label="Deleted comment"
         >
-          @if (comment().author.photoUrl) {
-            <img
-              [src]="comment().author.photoUrl"
-              [alt]="comment().author.displayName"
-              class="h-full w-full
-                     object-cover"
-            />
-          } @else {
-            {{ getInitials(comment().author.displayName) }}
-          }
-        </div>
-
-        <!-- ======================================================
-             COMMENT CONTENT
-             ====================================================== -->
-
-        <div class="min-w-0 flex-1">
-          <!-- Header -->
 
           <div
-            class="flex items-start
-                   justify-between gap-2"
+            class="flex items-center gap-2 text-sm italic text-gray-500"
           >
-            <div class="min-w-0">
-              <div
-                class="truncate text-sm
-                       font-semibold
-                       text-slate-900"
-              >
-                {{ comment().author.displayName }}
-              </div>
+
+            <mat-icon
+              class="!h-5 !w-5 !text-[20px]"
+              aria-hidden="true"
+            >
+              delete_outline
+            </mat-icon>
+
+            <span>
+              This comment was deleted.
+            </span>
+
+          </div>
+
+        </div>
+
+      } @else {
+
+        <!-- ======================================================
+             ACTIVE COMMENT
+             ====================================================== -->
+
+        <div
+          class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+        >
+
+          <!-- ====================================================
+               COMMENT HEADER
+               ==================================================== -->
+
+          <div
+            class="flex items-start justify-between gap-3"
+          >
+
+            <div
+              class="flex min-w-0 items-center gap-3"
+            >
+
+              <!-- Avatar -->
 
               <div
-                class="text-xs
-                       text-slate-400"
+                class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100"
               >
-                {{ formatDate(comment().createdAt) }}
+
+                @if (comment().author.photoUrl) {
+
+                  <img
+                    [src]="comment().author.photoUrl"
+                    [alt]="comment().author.displayName"
+                    class="h-full w-full object-cover"
+                  />
+
+                } @else {
+
+                  <span
+                    class="text-sm font-semibold text-slate-600"
+                  >
+                    {{ authorInitials() }}
+                  </span>
+
+                }
+
               </div>
+
+
+              <!-- Author -->
+
+              <div
+                class="min-w-0"
+              >
+
+                <div
+                  class="truncate text-sm font-semibold text-gray-900"
+                >
+                  {{ comment().author.displayName }}
+                </div>
+
+                <div
+                  class="text-xs text-gray-500"
+                >
+                  {{ formattedDate() }}
+                </div>
+
+              </div>
+
             </div>
+
 
             <!-- ==================================================
                  COMMENT MENU
                  ================================================== -->
 
-            @if (isCurrentUserComment()) {
+            @if (canDelete()) {
+
               <button
                 mat-icon-button
                 type="button"
-                aria-label="Comment options"
-                matTooltip="Comment options"
                 [matMenuTriggerFor]="commentMenu"
+                aria-label="Comment actions"
+                matTooltip="Comment actions"
               >
-                <mat-icon> more_vert </mat-icon>
+                <mat-icon>
+                  more_vert
+                </mat-icon>
               </button>
 
               <mat-menu #commentMenu="matMenu">
+
                 <button
                   mat-menu-item
                   type="button"
                   [disabled]="commentStore.deleting()"
                   (click)="deleteComment()"
                 >
-                  <mat-icon> delete_outline </mat-icon>
 
-                  <span> Delete comment </span>
+                  <mat-icon>
+                    delete_outline
+                  </mat-icon>
+
+                  <span>
+                    Delete
+                  </span>
+
                 </button>
+
               </mat-menu>
+
             }
+
           </div>
 
+
           <!-- ====================================================
-               BODY
+               COMMENT CONTENT
                ==================================================== -->
 
           <div
-            class="mt-2 whitespace-pre-line
-                   break-words
-                   text-sm leading-6
-                   text-slate-700"
+            class="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-gray-700"
           >
             {{ comment().content }}
           </div>
 
+
           <!-- ====================================================
-               ACTIONS
+               COMMENT ACTIONS
                ==================================================== -->
 
           <div
-            class="mt-2 flex items-center
-                   gap-1"
+            class="mt-3 flex items-center gap-1"
           >
+
             <!-- Reaction -->
 
             <button
               mat-button
               type="button"
-              class="!min-w-0 !px-2 !text-xs"
+              class="!min-w-0"
+              [class.!text-blue-600]="hasCurrentUserReaction()"
+              [disabled]="commentStore.deleting()"
               (click)="onReactionClick()"
+              [attr.aria-pressed]="hasCurrentUserReaction()"
+              [attr.aria-label]="
+                hasCurrentUserReaction()
+                  ? 'Remove like'
+                  : 'Like comment'
+              "
+              matTooltip="Like"
             >
+
               <mat-icon
-                class="!mr-1 !h-[18px] !w-[18px] !text-[18px]"
-                [class.text-blue-600]="comment().currentUserReaction === 'like'"
-                [class.text-slate-500]="comment().currentUserReaction !== 'like'"
+                class="!mr-1"
               >
-                {{ comment().currentUserReaction === 'like' ? 'thumb_up' : 'thumb_up_off_alt' }}
+                {{
+                  hasCurrentUserReaction()
+                    ? 'thumb_up'
+                    : 'thumb_up_off_alt'
+                }}
               </mat-icon>
 
+              <span>
+                Like
+              </span>
+
               @if (reactionCount() > 0) {
+
                 <span
-                  [class.text-blue-600]="comment().currentUserReaction === 'like'"
-                  [class.font-semibold]="comment().currentUserReaction === 'like'"
+                  class="ml-1 text-xs"
                 >
                   {{ reactionCount() }}
                 </span>
-              } @else {
-                <span>Like</span>
+
               }
+
             </button>
+
 
             <!-- Reply -->
 
-            <button
-              mat-button
-              type="button"
-              class="!min-w-0 !px-2
-                     !text-xs"
-              (click)="toggleReply()"
-            >
-              <mat-icon
-                class="!mr-1 !h-[18px]
-                       !w-[18px]
-                       !text-[18px]"
-              >
-                reply
-              </mat-icon>
+            @if (canReply()) {
 
-              <span> Reply </span>
-            </button>
+              <button
+                mat-button
+                type="button"
+                class="!min-w-0"
+                (click)="startReply()"
+                aria-label="Reply to comment"
+                matTooltip="Reply"
+              >
+
+                <mat-icon
+                  class="!mr-1"
+                >
+                  reply
+                </mat-icon>
+
+                <span>
+                  Reply
+                </span>
+
+              </button>
+
+            }
+
           </div>
+
 
           <!-- ====================================================
                REPLY COMPOSER
                ==================================================== -->
 
           @if (replying()) {
+
             <div
-              class="mt-3 rounded-xl
-                     border border-slate-200
-                     bg-slate-50 p-3"
+              class="mt-4"
             >
-              <mat-form-field appearance="outline" class="w-full" floatLabel="always">
+
+              <mat-form-field
+                appearance="outline"
+                class="w-full"
+              >
+
                 <mat-label>
-                  Reply to
-                  {{ comment().author.displayName }}
+                  Write a reply
                 </mat-label>
 
                 <textarea
                   matInput
-                  [(ngModel)]="replyText"
-                  rows="2"
+                  rows="3"
                   maxlength="2000"
-                  placeholder="Write a reply..."
+                  [value]="replyContent()"
+                  [disabled]="commentStore.saving()"
+                  (input)="onReplyInput($event)"
+                  (keydown)="onReplyKeydown($event)"
                 ></textarea>
 
-                <mat-hint align="end"> {{ replyText.length }}/2000 </mat-hint>
+                <mat-hint align="end">
+                  {{ replyContent().length }}/2000
+                </mat-hint>
+
               </mat-form-field>
 
-              <div class="flex justify-end gap-2">
-                <button mat-button type="button" (click)="cancelReply()">Cancel</button>
+
+              <div
+                class="flex justify-end gap-2"
+              >
+
+                <button
+                  mat-button
+                  type="button"
+                  [disabled]="commentStore.saving()"
+                  (click)="cancelReply()"
+                >
+                  Cancel
+                </button>
 
                 <button
                   mat-flat-button
                   type="button"
-                  [disabled]="!replyText.trim() || commentStore.saving()"
+                  [disabled]="
+                    !canSubmitReply() ||
+                    commentStore.saving()
+                  "
                   (click)="submitReply()"
                 >
+
                   @if (commentStore.saving()) {
-                    <mat-spinner diameter="18" />
+
+                    <mat-icon>
+                      hourglass_empty
+                    </mat-icon>
+
                   } @else {
-                    <ng-container>
-                      <span> Reply </span>
-                    </ng-container>
+
+                    <mat-icon>
+                      send
+                    </mat-icon>
+
                   }
+
+                  Reply
+
                 </button>
+
               </div>
+
             </div>
+
           }
+
 
           <!-- ====================================================
                REPLIES
                ==================================================== -->
 
           @if (replies().length > 0) {
-            <div class="mt-4 space-y-4">
-              @for (reply of replies(); track reply.id) {
+
+            <div
+              class="mt-4 space-y-4 border-l-2 border-gray-100 pl-4"
+            >
+
+              @for (
+                reply of replies();
+                track reply.id
+              ) {
+
                 <app-community-comment
                   [comment]="reply"
                   [depth]="depth() + 1"
+                  (replyCreated)="replyCreated.emit($event)"
                   (react)="react.emit($event)"
                   (commentDeleted)="commentDeleted.emit($event)"
-                  (replyCreated)="replyCreated.emit($event)"
                 />
+
               }
+
             </div>
+
           }
+
         </div>
-      </div>
-    </article>
+
+      }
+
+      <!-- ========================================================
+           DELETED COMMENT REPLIES
+           ======================================================== -->
+
+      @if (
+        isDeleted() &&
+        replies().length > 0
+      ) {
+
+        <div
+          class="mt-4 space-y-4 border-l-2 border-gray-100 pl-4"
+        >
+
+          @for (
+            reply of replies();
+            track reply.id
+          ) {
+
+            <app-community-comment
+              [comment]="reply"
+              [depth]="depth() + 1"
+              (replyCreated)="replyCreated.emit($event)"
+              (react)="react.emit($event)"
+              (commentDeleted)="commentDeleted.emit($event)"
+            />
+
+          }
+
+        </div>
+
+      }
+
+    </div>
   `,
+
+  styles: [`
+
+    :host {
+      display: block;
+    }
+
+  `],
 })
 export class CommunityCommentComponent {
-  // ============================================================
-  // STORE
-  // ============================================================
 
-  readonly commentStore = inject(CommunityCommentStore);
+  // ==============================================================
+  // DEPENDENCIES
+  // ==============================================================
 
-  // ============================================================
+  readonly commentStore =
+    inject(CommunityCommentStore);
+
+  private readonly logger =
+    inject(LoggerService);
+
+
+  // ==============================================================
   // INPUTS
-  // ============================================================
+  // ==============================================================
 
-  readonly comment = input.required<CommunityComment>();
+  readonly comment =
+    input.required<CommunityComment>();
 
-  /**
-   * Used to visually indent nested replies.
-   */
-  readonly depth = input<number>(0);
+  readonly depth =
+    input<number>(0);
 
-  // ============================================================
+
+  // ==============================================================
   // OUTPUTS
-  // ============================================================
+  // ==============================================================
 
-  readonly react = output<CommunityComment>();
+ readonly replyCreated = output<string>();
+readonly react = output<CommunityComment>();
+readonly commentDeleted = output<string>();
 
-  readonly commentDeleted = output<string>();
 
-  readonly replyCreated = output<string>();
-
-  // ============================================================
+  // ==============================================================
   // LOCAL STATE
-  // ============================================================
+  // ==============================================================
 
-  readonly replying = signal(false);
+  readonly replying =
+    signal(false);
 
-  replyText = '';
+  readonly replyContent =
+    signal('');
 
-  // ============================================================
-  // REPLIES
-  // ============================================================
 
-  replies() {
-    return this.commentStore.getReplies(this.comment().id);
+  // ==============================================================
+  // COMPUTED STATE
+  // ==============================================================
+
+  readonly replies =
+    computed(() =>
+      this.commentStore.getReplies(
+        this.comment().id,
+      ),
+    );
+
+
+  readonly isDeleted =
+    computed(() =>
+      this.comment().status === 'deleted',
+    );
+
+
+  readonly canReply =
+    computed(() =>
+      !this.isDeleted(),
+    );
+
+
+  readonly canDelete =
+    computed(() => {
+
+      const comment =
+        this.comment();
+
+      const user =
+        this.commentStore.currentUser();
+
+      if (
+        this.isDeleted() ||
+        !user
+      ) {
+        return false;
+      }
+
+      return (
+        comment.authorId ===
+        user.id
+      );
+    });
+
+
+  readonly hasCurrentUserReaction =
+    computed(() =>
+      !!this.comment()
+        .currentUserReaction,
+    );
+
+
+  readonly reactionCount =
+    computed(() => {
+
+      const counts =
+        this.comment()
+          .reactionCounts ?? {};
+
+      return Object.values(
+        counts,
+      ).reduce(
+        (total, count) =>
+          total + (
+            typeof count === 'number'
+              ? count
+              : 0
+          ),
+        0,
+      );
+    });
+
+
+  readonly authorInitials =
+    computed(() => {
+
+      const name =
+        this.comment()
+          .author
+          ?.displayName
+          ?.trim();
+
+      if (!name) {
+        return 'Z';
+      }
+
+      const parts =
+        name
+          .split(/\s+/)
+          .filter(Boolean);
+
+      if (parts.length === 1) {
+        return parts[0]
+          .substring(0, 2)
+          .toUpperCase();
+      }
+
+      return (
+        parts[0][0] +
+        parts[parts.length - 1][0]
+      ).toUpperCase();
+    });
+
+
+  readonly formattedDate =
+    computed(() =>
+      this.formatDate(
+        this.comment().createdAt,
+      ),
+    );
+
+
+  // ==============================================================
+  // REPLY INPUT
+  // ==============================================================
+
+  onReplyInput(
+    event: Event,
+  ): void {
+
+    const target =
+      event.target as HTMLTextAreaElement;
+
+    this.replyContent.set(
+      target.value,
+    );
   }
 
-  // ============================================================
-  // REACTION COUNT
-  // ============================================================
 
-  reactionCount(): number {
-    const counts = this.comment().reactionCounts ?? {};
+  // ==============================================================
+  // REPLY KEYBOARD HANDLING
+  // ==============================================================
 
-    return Object.values(counts).reduce((total, count) => total + Number(count || 0), 0);
-  }
+  onReplyKeydown(
+    event: KeyboardEvent,
+  ): void {
 
-  // ============================================================
-  // CURRENT USER
-  // ============================================================
+    if (
+      (event.ctrlKey ||
+        event.metaKey) &&
+      event.key === 'Enter'
+    ) {
 
-  isCurrentUserComment(): boolean {
-    const user = this.commentStore.currentUser();
+      event.preventDefault();
 
-    return !!user && user.id === this.comment().authorId;
-  }
-
-  // ============================================================
-  // REPLY
-  // ============================================================
-
-  toggleReply(): void {
-    const nextValue = !this.replying();
-
-    this.replying.set(nextValue);
-
-    if (!nextValue) {
-      this.replyText = '';
+      void this.submitReply();
     }
   }
+
+
+  // ==============================================================
+  // START REPLY
+  // ==============================================================
+
+  startReply(): void {
+
+    if (this.isDeleted()) {
+      return;
+    }
+
+    this.replying.set(true);
+
+    this.replyContent.set('');
+  }
+
+
+  // ==============================================================
+  // CANCEL REPLY
+  // ==============================================================
 
   cancelReply(): void {
+
     this.replying.set(false);
 
-    this.replyText = '';
+    this.replyContent.set('');
   }
+
+
+  // ==============================================================
+  // REPLY VALIDATION
+  // ==============================================================
+
+  canSubmitReply(): boolean {
+
+    if (this.isDeleted()) {
+      return false;
+    }
+
+    const content =
+      this.replyContent().trim();
+
+    return (
+      content.length > 0 &&
+      content.length <= 2000
+    );
+  }
+
+
+  // ==============================================================
+  // SUBMIT REPLY
+  // ==============================================================
 
   async submitReply(): Promise<void> {
-    const postId = this.comment().postId;
 
-    const parentCommentId = this.comment().id;
-
-    const text = this.replyText.trim();
-
-    if (!postId || !parentCommentId || !text) {
+    if (
+      !this.canSubmitReply() ||
+      this.commentStore.saving()
+    ) {
       return;
     }
 
-    const replyId = await this.commentStore.addReply(postId, parentCommentId, text);
+    const comment =
+      this.comment();
 
-    if (replyId) {
-      this.replyText = '';
+    const content =
+      this.replyContent().trim();
 
-      this.replying.set(false);
 
-      this.replyCreated.emit(replyId);
+    try {
+
+      const replyId =
+  await this.commentStore.addReply(
+    comment.postId,
+    comment.id,
+    content,
+  );
+
+if (!replyId) {
+  return;
+}
+
+this.logger.info(
+  'CommunityCommentComponent',
+  'Community comment reply created.',
+  {
+    postId: comment.postId,
+    parentCommentId: comment.id,
+    replyId,
+  },
+);
+
+this.replying.set(false);
+this.replyContent.set('');
+
+/*
+ * The store returns the newly-created reply ID.
+ * Emit that ID directly so the parent component
+ * can synchronize its state.
+ */
+this.replyCreated.emit(replyId);
+
+    } catch (error) {
+
+      this.logger.error(
+        'CommunityCommentComponent',
+        'Failed to create community comment reply.',
+        {
+          postId:
+            comment.postId,
+
+          parentCommentId:
+            comment.id,
+
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
+
     }
   }
+
+
+  // ==============================================================
+  // REACTION
+  // ==============================================================
 
   async onReactionClick(): Promise<void> {
-    const comment = this.comment();
 
-    if (!comment.postId || !comment.id) {
+    const comment =
+      this.comment();
+
+
+    if (
+      this.isDeleted() ||
+      !comment.postId ||
+      !comment.id
+    ) {
       return;
     }
 
-    await this.commentStore.reactToComment(comment.postId, comment.id, 'like');
+
+    try {
+
+      await this.commentStore
+        .reactToComment(
+          comment.postId,
+          comment.id,
+          'like',
+        );
+
+
+      /*
+       * Emit the current comment from the
+       * component state after persistence.
+       */
+      const updatedComment =
+        this.commentStore
+          .comments()
+          .find(
+            (item) =>
+              item.id === comment.id,
+          );
+
+
+      if (updatedComment) {
+
+        this.react.emit(
+          updatedComment,
+        );
+
+      }
+
+
+      this.logger.info(
+        'CommunityCommentComponent',
+        'Community comment reaction requested.',
+        {
+          postId:
+            comment.postId,
+
+          commentId:
+            comment.id,
+        },
+      );
+
+    } catch (error) {
+
+      this.logger.error(
+        'CommunityCommentComponent',
+        'Failed to react to community comment.',
+        {
+          postId:
+            comment.postId,
+
+          commentId:
+            comment.id,
+
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
+
+    }
   }
 
-  // ============================================================
-  // DELETE
-  // ============================================================
+
+  // ==============================================================
+  // DELETE COMMENT
+  // ==============================================================
 
   async deleteComment(): Promise<void> {
-    const postId = this.comment().postId;
 
-    const commentId = this.comment().id;
+    const comment =
+      this.comment();
 
-    const deleted = await this.commentStore.deleteComment(postId, commentId);
 
-    if (deleted) {
-      this.commentDeleted.emit(commentId);
-    }
-  }
-
-  // ============================================================
-  // INITIALS
-  // ============================================================
-
-  getInitials(name: string | null | undefined): string {
-    if (!name?.trim()) {
-      return '?';
-    }
-
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-
-    if (parts.length === 1) {
-      return parts[0].substring(0, 2).toUpperCase();
-    }
-
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-
-  // ============================================================
-  // DATE
-  // ============================================================
-
-  formatDate(value: unknown): string {
-    if (!value) {
-      return 'Recently';
-    }
-
-    let date: Date | null = null;
-
-    if (value instanceof Date) {
-      date = value;
-    } else if (
-      typeof value === 'object' &&
-      value !== null &&
-      'toDate' in value &&
-      typeof (
-        value as {
-          toDate?: unknown;
-        }
-      ).toDate === 'function'
+    if (
+      this.isDeleted() ||
+      !this.canDelete()
     ) {
-      date = (
-        value as {
-          toDate: () => Date;
-        }
-      ).toDate();
-    } else if (typeof value === 'string' || typeof value === 'number') {
-      const parsed = new Date(value);
+      return;
+    }
 
-      if (!Number.isNaN(parsed.getTime())) {
-        date = parsed;
+
+    try {
+
+      const success =
+        await this.commentStore
+          .deleteComment(
+            comment.postId,
+            comment.id,
+          );
+
+
+      if (!success) {
+        return;
       }
+
+
+      this.logger.info(
+        'CommunityCommentComponent',
+        'Community comment soft-deleted.',
+        {
+          postId:
+            comment.postId,
+
+          commentId:
+            comment.id,
+
+          authorId:
+            comment.authorId,
+        },
+      );
+
+
+      /*
+       * Emit the original comment identity so
+       * the parent component can synchronize
+       * any additional state.
+       */
+    this.commentDeleted.emit(comment.id);
+
+    } catch (error) {
+
+      this.logger.error(
+        'CommunityCommentComponent',
+        'Failed to delete community comment.',
+        {
+          postId:
+            comment.postId,
+
+          commentId:
+            comment.id,
+
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
+
+    }
+  }
+
+
+  // ==============================================================
+  // DATE FORMATTER
+  // ==============================================================
+
+  private formatDate(
+    value:
+      CommunityComment['createdAt'],
+  ): string {
+
+    if (!value) {
+      return '';
     }
 
-    if (!date) {
-      return 'Recently';
+
+    try {
+
+      const date =
+        value.toDate();
+
+
+      return new Intl.DateTimeFormat(
+        undefined,
+        {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        },
+      ).format(date);
+
+    } catch {
+
+      return '';
     }
-
-    const difference = Math.max(0, Date.now() - date.getTime());
-
-    const minute = 60 * 1000;
-
-    const hour = 60 * minute;
-
-    const day = 24 * hour;
-
-    if (difference < minute) {
-      return 'Just now';
-    }
-
-    if (difference < hour) {
-      return `${Math.floor(difference / minute)}m ago`;
-    }
-
-    if (difference < day) {
-      return `${Math.floor(difference / hour)}h ago`;
-    }
-
-    if (difference < 7 * day) {
-      return `${Math.floor(difference / day)}d ago`;
-    }
-
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
-    });
   }
 }

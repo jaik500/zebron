@@ -167,7 +167,7 @@ import {
                 font-semibold
                 tracking-tight
                 text-white
-                text-2xl
+                text-3xl
               "
               [attr.title]="currentTitle()"
             >
@@ -196,7 +196,7 @@ import {
       font-semibold
       leading-tight
       text-white
-      text-lg
+      text-xl
       tracking-tight
       lg:max-w-[320px]
     "

@@ -8,19 +8,41 @@ import { Location } from '../../../../core/models/location.model';
 import { HotToastService } from '@ngxpert/hot-toast';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
+// ============================================================
+// TYPES
+// ============================================================
+
+interface AdminDashboardCard {
+  title: string;
+  description: string;
+  route: string;
+  actionLabel: string;
+  icon: string;
+}
+
+// ============================================================
+// COMPONENT
+// ============================================================
+
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [RouterLink, FormsModule],
-
+  imports: [
+    RouterLink,
+    FormsModule,
+  ],
   template: `
     <div class="min-h-screen bg-gray-50 mt-16">
 
       <!-- =========================================================
            ADMIN DASHBOARD HEADER
            ========================================================= -->
-      <header class="hidden sm:block border-b border-gray-200 bg-[#2a835f] text-white">
-
+      <header
+        class="hidden sm:block
+               border-b border-gray-200
+               bg-[#2a835f]
+               text-white"
+      >
         <div
           class="mx-auto flex max-w-7xl
                  items-center justify-between
@@ -32,12 +54,9 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                DASHBOARD TITLE
                ===================================================== -->
           <div class="min-w-0">
-
-
             <p class="text-sm text-white/80">
               Manage Zebron resources and database content.
             </p>
-
           </div>
 
           <!-- =====================================================
@@ -48,16 +67,25 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
             <!-- ===================================================
                  DESKTOP ACTIONS
                  =================================================== -->
-            <div class="hidden items-center gap-3 sm:flex">
+            <div
+              class="hidden
+                     items-center
+                     gap-3
+                     sm:flex"
+            >
 
               <!-- Mailbox -->
               <a
                 routerLink="/admin/contact"
-                class="shrink-0 rounded-lg
+                class="shrink-0
+                       rounded-lg
                        border border-white/30
-                       bg-white/10 px-3 py-1
-                       text-sm font-semibold text-white
-                       transition hover:bg-white/20"
+                       bg-white/10
+                       px-3 py-1
+                       text-sm font-semibold
+                       text-white
+                       transition
+                       hover:bg-white/20"
               >
                 Mailbox
               </a>
@@ -65,11 +93,15 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
               <!-- Public site -->
               <a
                 routerLink="/resources"
-                class="shrink-0 rounded-md
+                class="shrink-0
+                       rounded-md
                        border border-white/30
-                       bg-white/10 px-3 py-1
-                       text-sm font-semibold text-white
-                       transition hover:bg-white/20"
+                       bg-white/10
+                       px-3 py-1
+                       text-sm font-semibold
+                       text-white
+                       transition
+                       hover:bg-white/20"
               >
                 View site
               </a>
@@ -79,11 +111,15 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                 type="button"
                 (click)="signOut()"
                 [disabled]="signingOut()"
-                class="shrink-0 rounded-lg
+                class="shrink-0
+                       rounded-lg
                        border border-white/30
-                       bg-white/10 px-3 py-1
-                       text-sm font-semibold text-white
-                       transition hover:bg-white/20
+                       bg-white/10
+                       px-3 py-1
+                       text-sm font-semibold
+                       text-white
+                       transition
+                       hover:bg-white/20
                        disabled:cursor-not-allowed
                        disabled:opacity-50"
               >
@@ -112,7 +148,8 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                        bg-white/10
                        text-2xl font-bold
                        leading-none text-white
-                       transition hover:bg-white/20
+                       transition
+                       hover:bg-white/20
                        focus:outline-none
                        focus:ring-2
                        focus:ring-white/40"
@@ -145,7 +182,8 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                            px-4 py-3
                            text-sm font-medium
                            text-gray-700
-                           transition hover:bg-gray-50"
+                           transition
+                           hover:bg-gray-50"
                     role="menuitem"
                   >
                     <span
@@ -168,7 +206,8 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                            px-4 py-3
                            text-sm font-medium
                            text-gray-700
-                           transition hover:bg-gray-50"
+                           transition
+                           hover:bg-gray-50"
                     role="menuitem"
                   >
                     <span
@@ -191,14 +230,15 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                            px-4 py-3
                            text-sm font-medium
                            text-gray-700
-                           transition hover:bg-gray-50"
+                           transition
+                           hover:bg-gray-50"
                     role="menuitem"
                   >
                     <span
                       aria-hidden="true"
                       class="text-base"
                     >
-                      🌐
+                      🏠
                     </span>
 
                     <span>
@@ -215,8 +255,10 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                            items-center gap-3
                            px-4 py-3
                            text-left text-sm
-                           font-medium text-gray-700
-                           transition hover:bg-gray-50
+                           font-medium
+                           text-gray-700
+                           transition
+                           hover:bg-gray-50
                            disabled:cursor-not-allowed
                            disabled:opacity-50"
                     role="menuitem"
@@ -245,6 +287,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
             </div>
 
           </div>
+
         </div>
       </header>
 
@@ -254,7 +297,8 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
       @if (authService.user(); as user) {
 
         <section
-          class="hidden sm:block bg-[#032D42]/5
+          class="hidden sm:block
+                 bg-[#032D42]/5
                  px-4 py-1
                  sm:px-6"
         >
@@ -271,7 +315,8 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
             <div
               class="min-w-0 truncate
                      text-sm font-semibold
-                     uppercase tracking-wide
+                     uppercase
+                     tracking-wide
                      text-[#007979]"
             >
               {{ user.displayName || user.email }}
@@ -280,7 +325,8 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
             <!-- Administrator label -->
             <p
               class="shrink-0
-                     text-sm text-gray-600"
+                     text-sm
+                     text-gray-600"
             >
               Administrator
             </p>
@@ -294,7 +340,8 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
            MAIN CONTENT
            ========================================================= -->
       <main
-        class="mx-auto max-w-6xl
+        class="mx-auto
+               max-w-6xl
                px-3
                sm:p-2"
       >
@@ -307,14 +354,18 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
           <div>
 
             <p
-              class="text-xs font-semibold uppercase
-                     tracking-wider text-[#7ED6D1]"
+              class="text-xs
+                     font-semibold
+                     uppercase
+                     tracking-wider
+                     text-[#7ED6D1]"
             >
               Zebron Administration
             </p>
 
             <h2
-              class="text-lg font-semibold
+              class="text-xl
+                     font-semibold
                      text-[#032D42]
                      sm:text-xl"
             >
@@ -326,8 +377,11 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
           <!-- =====================================================
                MANAGEMENT CARDS
 
+               Cards are generated from managementCards rather than
+               hard-coded individually.
+
                MOBILE:
-               - 1 columns
+               - 2 columns
                - compact gap
                - compact cards
 
@@ -339,987 +393,735 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                ===================================================== -->
           <div
             class="mt-2 grid
-                   grid-cols-1 gap-1
-                   sm:grid-cols-2 sm:gap-6
+                   grid-cols-2
+                   gap-1
+                   sm:grid-cols-2
+                   sm:gap-6
                    lg:grid-cols-4"
           >
 
-            <!-- ===================================================
-                 CATEGORIES
-                 =================================================== -->
-            <a
-              routerLink="/admin/categories"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm transition
-                     hover:border-[#032D42]/40
-                     hover:shadow-md
-                     sm:rounded-xl
-                     sm:px-6 sm:py-3"
-            >
+            @for (
+              card of managementCards;
+              track card.route
+            ) {
 
-              <h3
-                class="text-xs font-semibold
-                       leading-tight
-                       text-[#032D42]
-                       sm:text-lg
-                       sm:leading-normal
-                       group-hover:text-[#007979]"
-              >
-                Categories
-              </h3>
-
-              <!-- Hidden on mobile -->
-              <p
-                class="hidden
-                       sm:mt-2 sm:block
-                       sm:text-sm
-                       sm:leading-normal
-                       text-gray-600"
-              >
-                Create and manage resource categories.
-              </p>
-
-              <span
-                class="mt-1 inline-block
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
-                       sm:mt-4
-                       sm:text-sm"
-              >
-                Manage →
-              </span>
-
-            </a>
-
-            <!-- ===================================================
-                 RESOURCES
-                 =================================================== -->
-            <a
-              routerLink="/admin/resources"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm transition
-                     hover:border-[#032D42]/40
-                     hover:shadow-md
-                     sm:rounded-xl
-                     sm:p-6 sm:py-3"
-            >
-
-              <h3
-                class="text-xs font-semibold
-                       leading-tight
-                       text-[#032D42]
-                       sm:text-lg
-                       sm:leading-normal
-                       group-hover:text-[#007979]"
-              >
-                Resources
-              </h3>
-
-              <!-- Hidden on mobile -->
-              <p
-                class="hidden
-                       sm:mt-2 sm:block
-                       sm:text-sm
-                       sm:leading-normal
-                       text-gray-600"
-              >
-                Create, edit, publish, and manage resources.
-              </p>
-
-              <span
-                class="mt-1 inline-block
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
-                       sm:mt-4
-                       sm:text-sm"
-              >
-                Manage →
-              </span>
-
-            </a>
-
-            <!-- ===================================================
-                 ORGANIZATIONS
-                 =================================================== -->
-            <a
-              routerLink="/admin/organizations"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm transition
-                     hover:border-[#032D42]/40
-                     hover:shadow-md
-                     sm:rounded-xl
-                     sm:p-6 sm:py-3"
-            >
-
-              <h3
-                class="text-xs font-semibold
-                       leading-tight
-                       text-[#032D42]
-                       sm:text-lg
-                       sm:leading-normal
-                       group-hover:text-[#007979]"
-              >
-                Organizations
-              </h3>
-
-              <!-- Hidden on mobile -->
-              <p
-                class="hidden
-                       sm:mt-2 sm:block
-                       sm:text-sm
-                       sm:leading-normal
-                       text-gray-600"
-              >
-                Manage organizations associated with resources.
-              </p>
-
-              <span
-                class="mt-1 inline-block
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
-                       sm:mt-4
-                       sm:text-sm"
-              >
-                Manage →
-              </span>
-
-            </a>
-
-            <!-- ===================================================
-                 SUBMISSIONS
-                 =================================================== -->
-            <a
-              routerLink="/admin/submissions"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm transition
-                     hover:border-[#032D42]/40
-                     hover:shadow-md
-                     sm:rounded-xl
-                     sm:p-6 sm:py-3"
-            >
-
-              <h3
-                class="text-xs font-semibold
-                       leading-tight
-                       text-[#032D42]
-                       sm:text-lg
-                       sm:leading-normal
-                       group-hover:text-[#007979]"
-              >
-                Submissions
-              </h3>
-
-              <!-- Hidden on mobile -->
-              <p
-                class="hidden
-                       sm:mt-2 sm:block
-                       sm:text-sm
-                       sm:leading-normal
-                       text-gray-600"
-              >
-                Review and manage submitted resources.
-              </p>
-
-              <span
-                class="mt-1 inline-block
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
-                       sm:mt-4
-                       sm:text-sm"
-              >
-                Manage →
-              </span>
-
-            </a>
-
-            <!-- ===================================================
-                 JOBS
-                 =================================================== -->
-            <a
-              routerLink="/admin/jobs"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm
-                     transition
-                     hover:-translate-y-0.5
-                     hover:border-[#007979]/40
-                     hover:shadow-md
-                     sm:rounded-xl
-                     sm:p-5"
-            >
-
-              <!-- Icon hidden on mobile -->
-              <div
-                class="hidden
-                       sm:flex
-                       h-11 w-11
-                       items-center
-                       justify-center
-                       rounded-xl
-                       bg-[#007979]/10
-                       text-xl"
-                aria-hidden="true"
-              >
-                💼
-              </div>
-
-              <h2
-                class="mt-0
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#032D42]
-                       sm:mt-4
-                       sm:text-base
-                       sm:leading-normal"
-              >
-                Jobs
-              </h2>
-
-              <!-- Description hidden on mobile -->
-              <p
-                class="hidden
-                       sm:mt-1 sm:block
-                       sm:text-sm
-                       sm:leading-5
-                       text-gray-600"
-              >
-                Manage job opportunities available through the Zebron Job Finder.
-              </p>
-
-              <div
-                class="mt-1.5
-                       inline-flex
-                       items-center
-                       gap-1
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
+              <a
+                [routerLink]="card.route"
+                class="group
+                       rounded-lg
+                       border border-gray-200
+                       bg-white
+                       p-2
+                       shadow-sm
                        transition
-                       group-hover:gap-2
-                       sm:mt-4
-                       sm:text-sm"
-              >
-                Manage jobs
-
-                <span aria-hidden="true">
-                  →
-                </span>
-              </div>
-
-            </a>
-
-            <!-- ===================================================
-                 USERS
-                 =================================================== -->
-            <a
-              routerLink="/admin/users"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm transition
-                     hover:-translate-y-0.5
-                     hover:border-[#007979]/30
-                     hover:shadow-md
-                     sm:rounded-2xl
-                     sm:p-6"
-            >
-
-              <!-- Icon hidden on mobile -->
-              <div
-                class="hidden
-                       sm:flex
-                       h-12 w-12
-                       items-center
-                       justify-center
-                       rounded-xl
-                       bg-[#007979]/10
-                       text-[#007979]"
+                       hover:-translate-y-0.5
+                       hover:border-[#007979]/30
+                       hover:shadow-md
+                       sm:rounded-2xl
+                       sm:p-6"
               >
 
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  class="h-6 w-6"
+                <!-- =================================================
+                     ICON
+                     ================================================= -->
+                <div
+                  class="hidden
+                         sm:flex
+                         h-12 w-12
+                         items-center
+                         justify-center
+                         rounded-xl
+                         bg-[#007979]/10
+                         text-[#007979]"
                   aria-hidden="true"
                 >
 
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-                  />
+                  @switch (card.icon) {
 
-                  <circle
-                    cx="9"
-                    cy="7"
-                    r="4"
-                  />
+                    @case ('category') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <rect
+                          x="4"
+                          y="4"
+                          width="6"
+                          height="6"
+                          rx="1"
+                        />
 
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M22 21v-2a4 4 0 0 0-3-3.87"
-                  />
+                        <rect
+                          x="14"
+                          y="4"
+                          width="6"
+                          height="6"
+                          rx="1"
+                        />
 
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M16 3.13a4 4 0 0 1 0 7.75"
-                  />
+                        <rect
+                          x="4"
+                          y="14"
+                          width="6"
+                          height="6"
+                          rx="1"
+                        />
 
-                </svg>
+                        <rect
+                          x="14"
+                          y="14"
+                          width="6"
+                          height="6"
+                          rx="1"
+                        />
+                      </svg>
+                    }
 
-              </div>
+                    @case ('resources') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v13H6.5A2.5 2.5 0 0 0 4 19.5v-13Z"
+                        />
 
-              <div class="mt-0 sm:mt-5">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
+                        />
+                      </svg>
+                    }
 
-                <h2
-                  class="text-sm
+                    @case ('organization') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M3 21h18"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M5 21V5l7-3 7 3v16"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M8 8h1M8 11h1M8 14h1M15 8h1M15 11h1M15 14h1"
+                        />
+                      </svg>
+                    }
+
+                    @case ('submission') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M5 4h14v16H5z"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          d="M8 9h8M8 13h8M8 17h5"
+                        />
+                      </svg>
+                    }
+
+                    @case ('jobs') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <rect
+                          x="3"
+                          y="7"
+                          width="18"
+                          height="13"
+                          rx="2"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          d="M3 12h18"
+                        />
+                      </svg>
+                    }
+
+                    @case ('community') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M16 11a4 4 0 1 0-8 0"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M3 21a7 7 0 0 1 14 0"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M17 7a3 3 0 1 1 0 6"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M19 21a5 5 0 0 0-3-4.58"
+                        />
+                      </svg>
+                    }
+
+                    @case ('users') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                        />
+
+                        <circle
+                          cx="9"
+                          cy="7"
+                          r="4"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M22 21v-2a4 4 0 0 0-3-3.87"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M16 3.13a4 4 0 0 1 0 7.75"
+                        />
+                      </svg>
+                    }
+
+                    @case ('resource-types') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <rect
+                          x="4"
+                          y="4"
+                          width="16"
+                          height="16"
+                          rx="2"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          d="M8 9h8M8 13h8M8 17h5"
+                        />
+                      </svg>
+                    }
+
+                    @case ('locations') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"
+                        />
+
+                        <circle
+                          cx="12"
+                          cy="9"
+                          r="2.25"
+                        />
+                      </svg>
+                    }
+
+                    @case ('test-center') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M9 5h6"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"
+                        />
+
+                        <rect
+                          x="5"
+                          y="4"
+                          width="14"
+                          height="17"
+                          rx="2"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          d="M9 10h6M9 14h6M9 18h4"
+                        />
+                      </svg>
+                    }
+
+                    @case ('contact') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <rect
+                          x="3"
+                          y="5"
+                          width="18"
+                          height="14"
+                          rx="2"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="m3 7 9 6 9-6"
+                        />
+                      </svg>
+                    }
+
+                    @case ('business') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M3 21h18"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M5 21V5l7-3 7 3v16"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M9 21v-4h6v4"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          d="M8 8h1M8 11h1M8 14h1M15 8h1M15 11h1M15 14h1"
+                        />
+                      </svg>
+                    }
+
+                    @case ('configuration') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="3.5"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2.55v-.1a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 15a1.7 1.7 0 0 0-1.56-1.03H6.4v-2.55h.14A1.7 1.7 0 0 0 8.1 10.4a1.7 1.7 0 0 0-.34-1.88L7.7 8.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56V5.4h2.55v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.14v2.55h-.14A1.7 1.7 0 0 0 19.4 15Z"
+                        />
+                      </svg>
+                    }
+
+                  }
+
+                </div>
+
+                <!-- =================================================
+                     CARD CONTENT
+                     ================================================= -->
+                <div class="mt-0 sm:mt-5">
+
+                  <h2
+                    class="text-md
+                           font-semibold
+                           leading-tight
+                           text-[#032D42]
+                           sm:text-xl
+                           sm:leading-normal
+                           group-hover:text-[#007979]"
+                  >
+                    {{ card.title }}
+                  </h2>
+
+                  <!-- Description hidden on mobile -->
+                  <p
+                    class="hidden
+                           sm:mt-2
+                           sm:block
+                           sm:text-md
+                           sm:leading-6
+                           text-gray-500"
+                  >
+                    {{ card.description }}
+                  </p>
+
+                </div>
+
+                <!-- =================================================
+                     ACTION
+                     ================================================= -->
+                <div
+                  class="mt-1.5
+                         text-md
                          font-semibold
                          leading-tight
-                         text-[#032D42]
-                         sm:text-lg
-                         sm:leading-normal
-                         group-hover:text-[#007979]"
+                         text-[#007979]
+                         sm:mt-5
+                         sm:text-sm"
                 >
-                  Users
-                </h2>
-
-                <!-- Description hidden on mobile -->
-                <p
-                  class="hidden
-                         sm:mt-2 sm:block
-                         sm:text-sm
-                         sm:leading-6
-                         text-gray-500"
-                >
-                  Manage user accounts, profiles, roles, and permissions.
-                </p>
-
-              </div>
-
-              <div
-                class="mt-1.5
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
-                       sm:mt-5
-                       sm:text-sm"
-              >
-                Manage users →
-              </div>
-
-            </a>
-
-            <!-- ===================================================
-                 RESOURCE TYPES
-                 =================================================== -->
-            <a
-              routerLink="/admin/resource-types"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm transition
-                     hover:-translate-y-0.5
-                     hover:border-[#007979]/30
-                     hover:shadow-md
-                     sm:rounded-2xl
-                     sm:p-6"
-            >
-
-              <!-- Icon hidden on mobile -->
-              <div
-                class="hidden
-                       sm:flex
-                       h-12 w-12
-                       items-center
-                       justify-center
-                       rounded-xl
-                       bg-[#007979]/10
-                       text-[#007979]"
-              >
-
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  class="h-6 w-6"
-                  aria-hidden="true"
-                >
-
-                  <rect
-                    x="4"
-                    y="4"
-                    width="16"
-                    height="16"
-                    rx="2"
-                  />
-
-                  <path
-                    stroke-linecap="round"
-                    d="M8 9h8M8 13h8M8 17h5"
-                  />
-
-                </svg>
-
-              </div>
-
-              <div class="mt-0 sm:mt-5">
-
-                <h2
-                  class="text-sm
-                         font-semibold
-                         leading-tight
-                         text-[#032D42]
-                         sm:text-lg
-                         sm:leading-normal
-                         group-hover:text-[#007979]"
-                >
-                  Resource Types
-                </h2>
-
-                <!-- Description hidden on mobile -->
-                <p
-                  class="hidden
-                         sm:mt-2 sm:block
-                         sm:text-sm
-                         sm:leading-6
-                         text-gray-500"
-                >
-                  Manage the types used to classify resources across Zebron.
-                </p>
-
-              </div>
-
-              <div
-                class="mt-1.5
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
-                       sm:mt-5
-                       sm:text-sm"
-              >
-                Manage resource types →
-              </div>
-
-            </a>
-
-            <!-- ===================================================
-                 LOCATIONS
-                 =================================================== -->
-            <a
-              routerLink="/admin/locations"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm transition
-                     hover:-translate-y-0.5
-                     hover:border-[#007979]/30
-                     hover:shadow-md
-                     sm:rounded-2xl
-                     sm:p-6"
-            >
-
-              <!-- Icon hidden on mobile -->
-              <div
-                class="hidden
-                       sm:flex
-                       h-12 w-12
-                       items-center
-                       justify-center
-                       rounded-xl
-                       bg-[#007979]/10
-                       text-[#007979]"
-              >
-
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  class="h-6 w-6"
-                  aria-hidden="true"
-                >
-
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"
-                  />
-
-                  <circle
-                    cx="12"
-                    cy="9"
-                    r="2.25"
-                  />
-
-                </svg>
-
-              </div>
-
-              <div class="mt-0 sm:mt-5">
-
-                <h2
-                  class="text-sm
-                         font-semibold
-                         leading-tight
-                         text-[#032D42]
-                         sm:text-lg
-                         sm:leading-normal
-                         group-hover:text-[#007979]"
-                >
-                  Locations
-                </h2>
-
-                <!-- Description hidden on mobile -->
-                <p
-                  class="hidden
-                         sm:mt-2 sm:block
-                         sm:text-sm
-                         sm:leading-6
-                         text-gray-500"
-                >
-                  Manage locations used by resources and location-based personalization.
-                </p>
-
-              </div>
-
-              <div
-                class="mt-1.5
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
-                       sm:mt-5
-                       sm:text-sm"
-              >
-                Manage locations →
-              </div>
-
-            </a>
-
-            <!-- ===================================================
-                 TEST CENTER
-                 =================================================== -->
-            <a
-              routerLink="/admin/test-center"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm transition
-                     hover:-translate-y-0.5
-                     hover:border-[#007979]/30
-                     hover:shadow-md
-                     sm:rounded-2xl
-                     sm:p-6"
-            >
-
-              <!-- Icon hidden on mobile -->
-              <div
-                class="hidden
-                       sm:flex
-                       h-12 w-12
-                       items-center
-                       justify-center
-                       rounded-xl
-                       bg-[#007979]/10
-                       text-[#007979]"
-              >
-
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  class="h-6 w-6"
-                  aria-hidden="true"
-                >
-
-                  <!-- Clipboard -->
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9 5h6"
-                  />
-
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"
-                  />
-
-                  <rect
-                    x="5"
-                    y="4"
-                    width="14"
-                    height="17"
-                    rx="2"
-                  />
-
-                  <!-- Checklist -->
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9 10h6"
-                  />
-
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9 14h6"
-                  />
-
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9 18h4"
-                  />
-
-                </svg>
-
-              </div>
-
-              <div class="mt-0 sm:mt-5">
-
-                <h2
-                  class="text-sm
-                         font-semibold
-                         leading-tight
-                         text-[#032D42]
-                         sm:text-lg
-                         sm:leading-normal
-                         group-hover:text-[#007979]"
-                >
-                  Test Center
-                </h2>
-
-                <!-- Description hidden on mobile -->
-                <p
-                  class="hidden
-                         sm:mt-2 sm:block
-                         sm:text-sm
-                         sm:leading-6
-                         text-gray-500"
-                >
-                  Manage test courses, topics, questions, and question banks.
-                </p>
-
-              </div>
-
-              <div
-                class="mt-1.5
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
-                       sm:mt-5
-                       sm:text-sm"
-              >
-                Open Test Center →
-              </div>
-
-            </a>
-
-            <!-- ===================================================
-                 CONTACT MAILBOX
-                 =================================================== -->
-            <a
-              routerLink="/admin/contact"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm transition
-                     hover:-translate-y-0.5
-                     hover:border-[#007979]/30
-                     hover:shadow-md
-                     sm:rounded-2xl
-                     sm:p-6"
-            >
-
-              <!-- Icon hidden on mobile -->
-              <div
-                class="hidden
-                       sm:flex
-                       h-12 w-12
-                       items-center
-                       justify-center
-                       rounded-xl
-                       bg-[#007979]/10
-                       text-[#007979]"
-              >
-
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  class="h-6 w-6"
-                  aria-hidden="true"
-                >
-
-                  <rect
-                    x="3"
-                    y="5"
-                    width="18"
-                    height="14"
-                    rx="2"
-                  />
-
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="m3 7 9 6 9-6"
-                  />
-
-                </svg>
-
-              </div>
-
-              <div class="mt-0 sm:mt-5">
-
-                <h2
-                  class="text-sm
-                         font-semibold
-                         leading-tight
-                         text-[#032D42]
-                         sm:text-lg
-                         sm:leading-normal
-                         group-hover:text-[#007979]"
-                >
-                  Contact Mailbox
-                </h2>
-
-                <!-- Description hidden on mobile -->
-                <p
-                  class="hidden
-                         sm:mt-2 sm:block
-                         sm:text-sm
-                         sm:leading-6
-                         text-gray-500"
-                >
-                  Review and manage messages submitted through the contact form.
-                </p>
-
-              </div>
-
-              <div
-                class="mt-1.5
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
-                       sm:mt-5
-                       sm:text-sm"
-              >
-                Open mailbox →
-              </div>
-
-            </a>
-
-            <!-- ===================================================
-                 BUSINESS OPERATIONS
-                 =================================================== -->
-            <a
-              routerLink="/admin/business"
-              class="group rounded-lg
-                     border border-gray-200
-                     bg-white p-2
-                     shadow-sm transition
-                     hover:-translate-y-0.5
-                     hover:border-[#007979]/30
-                     hover:shadow-md
-                     sm:rounded-2xl
-                     sm:p-6"
-            >
-
-              <!-- Icon hidden on mobile -->
-              <div
-                class="hidden
-                       sm:flex
-                       h-12 w-12
-                       items-center
-                       justify-center
-                       rounded-xl
-                       bg-[#007979]/10
-                       text-[#007979]"
-              >
-
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  class="h-6 w-6"
-                  aria-hidden="true"
-                >
-
-                  <!-- Building -->
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M3 21h18"
-                  />
-
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M5 21V5l7-3 7 3v16"
-                  />
-
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9 21v-4h6v4"
-                  />
-
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M8 8h1M8 11h1M8 14h1M15 8h1M15 11h1M15 14h1"
-                  />
-
-                </svg>
-
-              </div>
-
-              <div class="mt-0 sm:mt-5">
-
-                <h2
-                  class="text-sm
-                         font-semibold
-                         leading-tight
-                         text-[#032D42]
-                         sm:text-lg
-                         sm:leading-normal
-                         group-hover:text-[#007979]"
-                >
-                  Business Operations
-                </h2>
-
-                <!-- Description hidden on mobile -->
-                <p
-                  class="hidden
-                         sm:mt-2 sm:block
-                         sm:text-sm
-                         sm:leading-6
-                         text-gray-500"
-                >
-                  Manage business finances, revenue, expenses, compliance,
-                  activities, documents, and reports.
-                </p>
-
-              </div>
-
-              <div
-                class="mt-1.5
-                       text-xs
-                       font-semibold
-                       leading-tight
-                       text-[#007979]
-                       sm:mt-5
-                       sm:text-sm"
-              >
-                Open Business Operations →
-              </div>
-
-            </a>
+                  {{ card.actionLabel }} →
+                </div>
+
+              </a>
+            }
 
           </div>
+
         </section>
 
       </main>
+
     </div>
   `,
 })
 export class AdminDashboardComponent {
+
+  // ============================================================
+  // SERVICES
+  // ============================================================
+
   /**
    * Firebase authentication service.
    */
-  protected readonly authService = inject(AuthService);
+  protected readonly authService =
+    inject(AuthService);
 
   /**
-   * Location service used to create
-   * resource locations.
+   * Location store.
+   *
+   * Kept here because the dashboard currently owns
+   * location creation functionality.
    */
-  private readonly locationStore = inject(LocationStore);
-
-  /**
-   * Prevent duplicate location submissions.
-   */
-  protected readonly savingLocation = signal(false);
-
-  private readonly pageTitleService = inject(PageTitleService);
-
-  /**
-   * Location creation form.
-   */
-  protected locationForm: Partial<Location> = {
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: 'United States',
-    latitude: undefined,
-    longitude: undefined,
-  };
+  private readonly locationStore =
+    inject(LocationStore);
 
   /**
    * Angular router.
    */
-  private readonly router = inject(Router);
+  private readonly router =
+    inject(Router);
 
   /**
    * Toast notification service.
    */
-  private readonly toast = inject(HotToastService);
+  private readonly toast =
+    inject(HotToastService);
 
   /**
-   * Prevent duplicate sign-out requests
-   * while Firebase processes the request.
+   * Page title service.
    */
-  protected readonly signingOut = signal(false);
+  private readonly pageTitleService =
+    inject(PageTitleService);
+
+  // ============================================================
+  // ADMIN MANAGEMENT CARDS
+  // ============================================================
+
+  /**
+   * Central configuration for the Admin Dashboard
+   * management cards.
+   *
+   * The template renders these cards dynamically with
+   * Angular's @for control flow.
+   *
+   * Adding a new administration feature should generally
+   * require adding a new object here rather than duplicating
+   * card markup in the template.
+   */
+  protected readonly managementCards:
+    AdminDashboardCard[] = [
+
+      {
+        title: 'Categories',
+        description:
+          'Create and manage resource categories.',
+        route: '/admin/categories',
+        actionLabel: 'Manage',
+        icon: 'category',
+      },
+
+      {
+        title: 'Resources',
+        description:
+          'Create, edit, publish, and manage resources.',
+        route: '/admin/resources',
+        actionLabel: 'Manage',
+        icon: 'resources',
+      },
+
+      {
+        title: 'Organizations',
+        description:
+          'Manage organizations associated with resources.',
+        route: '/admin/organizations',
+        actionLabel: 'Manage',
+        icon: 'organization',
+      },
+
+      {
+        title: 'Submissions',
+        description:
+          'Review and manage submitted resources.',
+        route: '/admin/submissions',
+        actionLabel: 'Manage',
+        icon: 'submission',
+      },
+
+      {
+        title: 'Jobs',
+        description:
+          'Manage job opportunities available through the Zebron Job Finder.',
+        route: '/admin/jobs',
+        actionLabel: 'Manage jobs',
+        icon: 'jobs',
+      },
+
+      {
+        title: 'Community',
+        description:
+          'Manage community posts, topics, comments, and moderation.',
+        route: '/community',
+        actionLabel: 'Manage community',
+        icon: 'community',
+      },
+
+      {
+        title: 'Users',
+        description:
+          'Manage user accounts, profiles, roles, and permissions.',
+        route: '/admin/users',
+        actionLabel: 'Manage users',
+        icon: 'users',
+      },
+
+      {
+        title: 'Resource Types',
+        description:
+          'Manage the types used to classify resources across Zebron.',
+        route: '/admin/resource-types',
+        actionLabel: 'Manage resource types',
+        icon: 'resource-types',
+      },
+
+      {
+        title: 'Locations',
+        description:
+          'Manage locations used by resources and location-based personalization.',
+        route: '/admin/locations',
+        actionLabel: 'Manage locations',
+        icon: 'locations',
+      },
+
+      {
+        title: 'Test Center',
+        description:
+          'Manage test courses, topics, questions, and question banks.',
+        route: '/admin/test-center',
+        actionLabel: 'Open Test Center',
+        icon: 'test-center',
+      },
+
+      {
+        title: 'Contact Mailbox',
+        description:
+          'Review and manage messages submitted through the contact form.',
+        route: '/admin/contact',
+        actionLabel: 'Open mailbox',
+        icon: 'contact',
+      },
+
+      {
+        title: 'Business Operations',
+        description:
+          'Manage business finances, revenue, expenses, compliance, activities, documents, and reports.',
+        route: '/admin/business',
+        actionLabel: 'Open Business Operations',
+        icon: 'business',
+      },
+
+      {
+        title: 'Configuration',
+        description:
+          'Manage system settings, platform configuration, and administrative options.',
+        route: '/admin/configuration',
+        actionLabel: 'Manage configuration',
+        icon: 'configuration',
+      },
+    ];
+
+  // ============================================================
+  // LOCATION STATE
+  // ============================================================
+
+  /**
+   * Prevent duplicate location submissions.
+   */
+  protected readonly savingLocation =
+    signal(false);
+
+  /**
+   * Location creation form.
+   *
+   * Kept for compatibility with the existing
+   * dashboard location functionality.
+   */
+  protected locationForm:
+    Partial<Location> = {
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: 'United States',
+      latitude: undefined,
+      longitude: undefined,
+    };
+
+  // ============================================================
+  // UI STATE
+  // ============================================================
+
+  /**
+   * Prevent duplicate sign-out requests.
+   */
+  protected readonly signingOut =
+    signal(false);
 
   /**
    * Controls the mobile dashboard
    * three-dot menu.
    */
-  protected readonly moreMenuOpen = signal(false);
+  protected readonly moreMenuOpen =
+    signal(false);
+
+  // ============================================================
+  // CONSTRUCTOR
+  // ============================================================
+
+  constructor() {
+    this.pageTitleService.setTitle(
+      'Admin Dashboard',
+    );
+  }
+
+  // ============================================================
+  // MOBILE MENU
+  // ============================================================
 
   /**
    * Toggle the mobile dashboard menu.
    */
   protected toggleMoreMenu(): void {
-    this.moreMenuOpen.update((open) => !open);
+    this.moreMenuOpen.update(
+      (open) => !open,
+    );
   }
 
   /**
@@ -1329,14 +1131,15 @@ export class AdminDashboardComponent {
     this.moreMenuOpen.set(false);
   }
 
-  constructor() {
-    this.pageTitleService.setTitle('Admin Dashboard');
-  }
+  // ============================================================
+  // LOCATION MANAGEMENT
+  // ============================================================
 
   /**
    * Create a new location in Firestore.
    */
   protected async createLocation(): Promise<void> {
+
     if (
       !this.locationForm.city?.trim() ||
       !this.locationForm.state?.trim() ||
@@ -1357,44 +1160,70 @@ export class AdminDashboardComponent {
     this.savingLocation.set(true);
 
     try {
+
       const location: Location = {
-        address: this.locationForm.address?.trim() || '',
+        address:
+          this.locationForm.address?.trim() ||
+          '',
 
-        city: this.locationForm.city!.trim(),
+        city:
+          this.locationForm.city!.trim(),
 
-        state: this.locationForm.state!.trim(),
+        state:
+          this.locationForm.state!.trim(),
 
-        zipCode: this.locationForm.zipCode!.trim(),
+        zipCode:
+          this.locationForm.zipCode!.trim(),
 
-        country: this.locationForm.country!.trim(),
+        country:
+          this.locationForm.country!.trim(),
 
-        ...(this.locationForm.latitude !== undefined &&
-        this.locationForm.latitude !== null
+        ...(this.locationForm.latitude !==
+          undefined &&
+        this.locationForm.latitude !==
+          null
           ? {
-              latitude: Number(this.locationForm.latitude),
+              latitude: Number(
+                this.locationForm.latitude,
+              ),
             }
           : {}),
 
-        ...(this.locationForm.longitude !== undefined &&
-        this.locationForm.longitude !== null
+        ...(this.locationForm.longitude !==
+          undefined &&
+        this.locationForm.longitude !==
+          null
           ? {
-              longitude: Number(this.locationForm.longitude),
+              longitude: Number(
+                this.locationForm.longitude,
+              ),
             }
           : {}),
       };
 
-      await this.locationStore.createLocation(location);
+      await this.locationStore.createLocation(
+        location,
+      );
 
-      this.toast.success('Location created successfully.');
+      this.toast.success(
+        'Location created successfully.',
+      );
 
       this.clearLocationForm();
+
     } catch (error) {
-      console.error('Failed to create location:', error);
+
+      console.error(
+        'Failed to create location:',
+        error,
+      );
 
       this.toast.error(
         'Unable to create location. Please try again.',
       );
+
     } finally {
+
       this.savingLocation.set(false);
     }
   }
@@ -1403,6 +1232,7 @@ export class AdminDashboardComponent {
    * Reset the location form.
    */
   protected clearLocationForm(): void {
+
     this.locationForm = {
       address: '',
       city: '',
@@ -1414,11 +1244,16 @@ export class AdminDashboardComponent {
     };
   }
 
+  // ============================================================
+  // AUTHENTICATION
+  // ============================================================
+
   /**
    * Sign the administrator out of Firebase,
    * show feedback, and return to the login page.
    */
   protected async signOut(): Promise<void> {
+
     /**
      * Prevent multiple sign-out requests
      * from repeated button clicks.
@@ -1430,6 +1265,7 @@ export class AdminDashboardComponent {
     this.signingOut.set(true);
 
     try {
+
       /**
        * Sign out through the existing
        * authentication service.
@@ -1446,9 +1282,12 @@ export class AdminDashboardComponent {
       /**
        * Return to the login page.
        */
-      await this.router.navigateByUrl('/login');
+      await this.router.navigateByUrl(
+        '/login',
+      );
 
     } catch (error) {
+
       console.error(
         'Failed to sign out:',
         error,
@@ -1459,6 +1298,7 @@ export class AdminDashboardComponent {
       );
 
     } finally {
+
       this.signingOut.set(false);
     }
   }

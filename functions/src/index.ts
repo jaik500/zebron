@@ -623,18 +623,46 @@ export const submitContactMessage = onCall(
  * Resend calls this function directly, so this must be
  * an HTTP function rather than an onCall function.
  */
+/**
+ * Personal Gmail address that receives a copy
+ * of every inbound Zebron email.
+ */
+const INBOUND_FORWARD_EMAIL =
+  "jaik500@gmail.com";
+
+
+/**
+ * Receive inbound email from Resend.
+ *
+ * Resend sends an email.received webhook whenever
+ * an email arrives at the configured inbound domain.
+ *
+ * Processing flow:
+ *
+ * 1. Verify the Resend webhook signature.
+ * 2. Confirm the event is email.received.
+ * 3. Retrieve the complete received email.
+ * 4. Retrieve attachment metadata.
+ * 5. Store the message in contactMessages.
+ * 6. Forward the message to the administrator's Gmail.
+ *
+ * This is an HTTP function because Resend calls
+ * the endpoint directly.
+ */
 export const receiveInboundEmail = onRequest(
   {
     region: "us-central1",
 
     /**
-     * Give this function access to the Resend API key.
+     * Give this function access to the secrets
+     * required for Resend.
      */
     secrets: [
       "RESEND_API_KEY",
       "RESEND_WEBHOOK_SECRET",
     ],
   },
+
   async (request, response) => {
     /**
      * Only POST requests are accepted.
@@ -649,11 +677,8 @@ export const receiveInboundEmail = onRequest(
 
     try {
       /**
-       * The Resend webhook signature MUST be verified against
-       * the raw request body.
-       *
-       * Do not use request.body here because Express/Firebase
-       * may already have parsed the JSON.
+       * Resend/Svix signatures must be verified
+       * against the original raw request body.
        */
       const rawBody =
         typeof request.rawBody === "string" ?
@@ -673,7 +698,7 @@ export const receiveInboundEmail = onRequest(
       }
 
       /**
-       * Resend webhook headers used for Svix verification.
+       * Read the Svix verification headers.
        */
       const svixId =
         request.header("svix-id");
@@ -701,11 +726,8 @@ export const receiveInboundEmail = onRequest(
       }
 
       /**
-       * The webhook signing secret is configured in Resend
-       * and stored securely in Firebase Secret Manager.
-       *
-       * We will configure this secret after creating the
-       * Resend webhook.
+       * Read the webhook signing secret from
+       * Firebase Secret Manager.
        */
       const webhookSecret =
         process.env["RESEND_WEBHOOK_SECRET"];
@@ -723,20 +745,37 @@ export const receiveInboundEmail = onRequest(
       }
 
       /**
-       * Create the Resend client using the Firebase secret.
+       * Read the Resend API key.
        */
-      const {Resend} = await import("resend");
+      const resendApiKey =
+        process.env["RESEND_API_KEY"];
 
-      const resend =
-        new Resend(
-          process.env["RESEND_API_KEY"]
+      if (!resendApiKey) {
+        logger.error(
+          "RESEND_API_KEY is not configured."
         );
 
+        response
+          .status(500)
+          .send("Email configuration error.");
+
+        return;
+      }
+
       /**
-       * Verify the webhook signature.
+       * Load the Resend SDK.
+       */
+      const {Resend} =
+        await import("resend");
+
+      const resend =
+        new Resend(resendApiKey);
+
+      /**
+       * Verify the Resend/Svix webhook.
        *
-       * Resend's SDK uses the raw payload and the Svix
-       * headers to validate authenticity.
+       * Resend recommends using the raw request
+       * body together with the Svix headers.
        */
       const event =
         resend.webhooks.verify({
@@ -751,7 +790,9 @@ export const receiveInboundEmail = onRequest(
           webhookSecret,
         }) as {
           type?: string;
+
           created_at?: string;
+
           data?: {
             email_id?: string;
             created_at?: string;
@@ -766,13 +807,17 @@ export const receiveInboundEmail = onRequest(
         };
 
       /**
-       * We only process inbound email events.
+       * Only process inbound email events.
        */
-      if (event.type !== "email.received") {
-        response.status(200).json({
-          success: true,
-          ignored: true,
-        });
+      if (
+        event.type !== "email.received"
+      ) {
+        response
+          .status(200)
+          .json({
+            success: true,
+            ignored: true,
+          });
 
         return;
       }
@@ -780,6 +825,10 @@ export const receiveInboundEmail = onRequest(
       const webhookEmail =
         event.data;
 
+      /**
+       * The Resend email ID is required
+       * to retrieve the complete email.
+       */
       if (!webhookEmail?.email_id) {
         logger.error(
           "Inbound email event has no email ID."
@@ -796,47 +845,82 @@ export const receiveInboundEmail = onRequest(
         webhookEmail.email_id;
 
       /**
-       * Prevent duplicate processing.
+       * Use the Resend email ID as the Firestore
+       * document ID.
        *
-       * Resend supports webhook retries, so the same event
-       * can legitimately arrive more than once.
+       * This provides idempotency because Resend
+       * may retry webhook delivery.
        */
       const messageRef =
         db
           .collection("contactMessages")
           .doc(emailId);
 
+      /**
+       * Check whether this message has already
+       * been processed.
+       */
       const existing =
         await messageRef.get();
 
       if (existing.exists) {
+        const existingData =
+          existing.data();
+
+        /**
+         * If the message already exists and has
+         * been forwarded, do nothing.
+         */
+        if (
+          existingData?.["forwardedAt"]
+        ) {
+          logger.info(
+            "Inbound email already processed and forwarded.",
+            {
+              emailId,
+            }
+          );
+
+          response
+            .status(200)
+            .json({
+              success: true,
+              duplicate: true,
+              forwarded: true,
+            });
+
+          return;
+        }
+
+        /**
+         * If the document exists but forwarding
+         * did not complete, continue processing
+         * instead of sending a duplicate blindly.
+         */
         logger.info(
-          "Inbound email already exists.",
+          "Inbound email exists but forwarding has not completed.",
           {
             emailId,
           }
         );
-
-        response.status(200).json({
-          success: true,
-          duplicate: true,
-        });
-
-        return;
       }
 
       /**
-       * Retrieve the complete received email from Resend.
+       * Retrieve the complete received email.
        */
       const {
         data: receivedEmail,
         error: receiveError,
       } =
-        await resend.emails.receiving.get(
-          emailId
-        );
+        await resend
+          .emails
+          .receiving
+          .get(emailId);
 
-      if (receiveError || !receivedEmail) {
+      if (
+        receiveError ||
+        !receivedEmail
+      ) {
         logger.error(
           "Unable to retrieve received email from Resend.",
           {
@@ -856,6 +940,9 @@ export const receiveInboundEmail = onRequest(
 
       /**
        * Retrieve attachment metadata.
+       *
+       * The actual attachment content remains
+       * available through Resend.
        */
       const {
         data: attachments,
@@ -880,124 +967,212 @@ export const receiveInboundEmail = onRequest(
       }
 
       /**
- * Parse the sender into the same fields used by the
- * existing Zebron contact-message mailbox.
- *
- * Resend may return a value such as:
- *
- *   John Doe <john@example.com>
- *
- * or simply:
- *
- *   john@example.com
- */
+       * Parse the sender.
+       *
+       * Examples:
+       *
+       * John Doe <john@example.com>
+       *
+       * or:
+       *
+       * john@example.com
+       */
       const sender =
-  receivedEmail.from ??
-  webhookEmail.from ??
-  "";
+        receivedEmail.from ??
+        webhookEmail.from ??
+        "";
 
       const senderMatch =
-  sender.match(/^(.*?)\s*<([^>]+)>$/);
+        sender.match(
+          /^(.*?)\s*<([^>]+)>$/,
+        );
 
       const senderName =
-  senderMatch?.[1]?.trim() ??
-  "";
+        senderMatch?.[1]?.trim() ??
+        "";
 
       const senderEmail =
-  senderMatch?.[2]?.trim().toLowerCase() ??
-  sender.trim().toLowerCase();
+        senderMatch?.[2]?.trim().toLowerCase() ??
+        sender.trim().toLowerCase();
 
       /**
- * Store the inbound email using the existing
- * contactMessages structure.
- */
-      await messageRef.set({
-        /**
-   * Identify this as an inbound email rather than
-   * a submission from the Zebron contact form.
-   */
-        source: "email",
-        provider: "resend",
+       * Make sure we have a valid sender.
+       */
+      if (!senderEmail) {
+        logger.error(
+          "Inbound email does not contain a sender email address.",
+          {
+            emailId,
+          }
+        );
 
-        emailId,
+        response
+          .status(400)
+          .send(
+            "Missing sender email address."
+          );
 
-        messageId:
-    receivedEmail.message_id ??
-    webhookEmail.message_id ??
-    null,
+        return;
+      }
 
-        /**
-   * Existing mailbox sender fields.
-   */
-        name: senderName,
-        email: senderEmail,
+      /**
+       * Resolve the subject.
+       */
+      const subject =
+        (
+          receivedEmail.subject ??
+          webhookEmail.subject ??
+          ""
+        ).trim();
 
-        /**
-   * Preserve the original Resend addressing data.
-   */
-        from: sender,
-        to:
-    receivedEmail.to ??
-    webhookEmail.to ??
-    [],
-        cc:
-    receivedEmail.cc ??
-    webhookEmail.cc ??
-    [],
-        bcc:
-    receivedEmail.bcc ??
-    webhookEmail.bcc ??
-    [],
+      /**
+       * Prefer the plain-text body.
+       *
+       * Fall back to HTML if no text body
+       * was returned.
+       */
+      const message =
+        (
+          receivedEmail.text ??
+          ""
+        ).trim() ||
+        (
+          receivedEmail.html ??
+          ""
+        ).trim();
 
-        /**
-   * Existing mailbox fields.
-   */
-        subject:
-    receivedEmail.subject ??
-    webhookEmail.subject ??
-    "",
+      /**
+       * Resolve the original Message-ID.
+       *
+       * This will be useful for threaded replies.
+       */
+      const messageId =
+        receivedEmail.message_id ??
+        webhookEmail.message_id ??
+        null;
 
-        message:
-    receivedEmail.text ??
-    "",
+      /**
+       * Store the inbound email using the same
+       * contactMessages collection used by the
+       * existing Zebron mailbox.
+       */
+      await messageRef.set(
+        {
+          /**
+           * Identify this as an inbound email.
+           */
+          source: "email",
 
-        /**
-   * Preserve the HTML version for future use.
-   */
-        html:
-    receivedEmail.html ??
-    "",
+          provider: "resend",
 
-        headers:
-    receivedEmail.headers ??
-    {},
+          emailId,
 
-        attachments:
-    attachments ??
-    [],
+          messageId,
 
-        /**
-   * Mailbox state.
-   */
-        status: "unread",
-        read: false,
-        archived: false,
+          /**
+           * Existing mailbox sender fields.
+           */
+          name:
+            senderName ||
+            senderEmail,
 
-        /**
-   * Always create a Firestore timestamp for the mailbox.
-   * This guarantees the existing Angular date display
-   * receives a Firestore timestamp rather than relying
-   * on Resend's date-string format.
-   */
-        createdAt:
-    FieldValue.serverTimestamp(),
+          email:
+            senderEmail,
 
-        receivedAt:
-    FieldValue.serverTimestamp(),
+          /**
+           * Preserve original addressing.
+           */
+          from:
+            sender,
 
-        updatedAt:
-    FieldValue.serverTimestamp(),
-      });
+          to:
+            receivedEmail.to ??
+            webhookEmail.to ??
+            [],
+
+          cc:
+            receivedEmail.cc ??
+            webhookEmail.cc ??
+            [],
+
+          bcc:
+            receivedEmail.bcc ??
+            webhookEmail.bcc ??
+            [],
+
+          /**
+           * Existing mailbox fields.
+           */
+          subject,
+
+          message,
+
+          /**
+           * Preserve HTML for future rendering.
+           */
+          html:
+            receivedEmail.html ??
+            "",
+
+          /**
+           * Preserve original headers.
+           */
+          headers:
+            receivedEmail.headers ??
+            {},
+
+          /**
+           * Preserve attachment metadata.
+           */
+          attachments:
+            attachments ??
+            [],
+
+          /**
+           * IMPORTANT:
+           *
+           * The ContactMailbox uses "new",
+           * "read", and "archived".
+           *
+           * Do NOT use "unread" here.
+           */
+          status: "new",
+
+          read: false,
+
+          archived: false,
+
+          /**
+           * Firestore timestamps.
+           */
+          createdAt:
+            FieldValue.serverTimestamp(),
+
+          receivedAt:
+            FieldValue.serverTimestamp(),
+
+          updatedAt:
+            FieldValue.serverTimestamp(),
+
+          /**
+           * Forwarding state.
+           *
+           * We intentionally leave forwardedAt
+           * empty until Gmail forwarding succeeds.
+           */
+          forwardedTo:
+            INBOUND_FORWARD_EMAIL,
+
+          forwardedAt:
+            null,
+
+          forwardingEmailId:
+            null,
+        },
+        {
+          merge: true,
+        },
+      );
 
       logger.info(
         "Inbound email stored successfully.",
@@ -1010,9 +1185,246 @@ export const receiveInboundEmail = onRequest(
         }
       );
 
-      response.status(200).json({
-        success: true,
+      /**
+       * Build the forwarded email.
+       *
+       * We use Reply-To so that when you reply
+       * from Gmail, the response goes to the
+       * original sender.
+       */
+      const forwardedSubject =
+        `[Zebron Inbox] ${subject || "(No subject)"}`;
+
+      /**
+       * Convert the plain-text message into
+       * safe HTML for the forwarding email.
+       */
+      const escapedMessage =
+        escapeHtml(message)
+          .replace(
+            /\r?\n/g,
+            "<br>",
+          );
+
+      const forwardedHtml = `
+        <div
+          style="
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #222;
+          "
+        >
+          <h2>
+            New inbound email
+          </h2>
+
+          <table
+            cellpadding="6"
+            cellspacing="0"
+            style="
+              border-collapse: collapse;
+              margin-bottom: 20px;
+            "
+          >
+            <tr>
+              <td>
+                <strong>From:</strong>
+              </td>
+
+              <td>
+                ${escapeHtml(senderName || senderEmail)}
+                &lt;${escapeHtml(senderEmail)}&gt;
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <strong>To:</strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+    (
+      receivedEmail.to ??
+                    webhookEmail.to ??
+                    []
+    ).join(", ")
+  )}
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <strong>Subject:</strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+    subject || "(No subject)"
+  )}
+              </td>
+            </tr>
+          </table>
+
+          <hr />
+
+          <div>
+            ${escapedMessage}
+          </div>
+
+          <hr />
+
+          <p
+            style="
+              color: #777;
+              font-size: 12px;
+            "
+          >
+            Automatically forwarded from the
+            Zebron Contact Mailbox.
+          </p>
+        </div>
+      `;
+
+      /**
+       * Forward the message to Gmail.
+       */
+      const {
+        data: forwardedEmail,
+        error: forwardingError,
+      } =
+        await resend.emails.send({
+          from:
+            ZEBRON_FROM_EMAIL,
+
+          to:
+            [INBOUND_FORWARD_EMAIL],
+
+          subject:
+            forwardedSubject,
+
+          html:
+            forwardedHtml,
+
+          /**
+           * This is critical.
+           *
+           * Replying from Gmail will go to the
+           * original sender rather than back to
+           * the Zebron inbound address.
+           */
+          replyTo:
+            senderEmail,
+
+          /**
+           * Preserve the original email thread
+           * where possible.
+           */
+          headers:
+            messageId ?
+              {
+                "In-Reply-To":
+                    messageId,
+
+                "References":
+                    messageId,
+              } :
+              undefined,
+        });
+
+      /**
+       * Handle forwarding failure separately.
+       *
+       * The inbound email has already been saved
+       * to the Zebron mailbox, so we don't lose it.
+       */
+      if (forwardingError) {
+        logger.error(
+          "Inbound email was stored, but Gmail forwarding failed.",
+          {
+            emailId,
+
+            senderEmail,
+
+            forwardingError,
+          }
+        );
+
+        /**
+         * Keep forwarding state visible in
+         * Firestore for troubleshooting.
+         */
+        await messageRef.update({
+          forwardingError:
+            String(
+              forwardingError
+            ),
+
+          updatedAt:
+            FieldValue.serverTimestamp(),
+        });
+
+        /**
+         * Return an error so Resend can retry
+         * the webhook.
+         */
+        response
+          .status(500)
+          .send(
+            "Email stored, but forwarding failed."
+          );
+
+        return;
+      }
+
+      /**
+       * Mark forwarding as successful.
+       */
+      await messageRef.update({
+        forwardedAt:
+          FieldValue.serverTimestamp(),
+
+        forwardingEmailId:
+          forwardedEmail?.id ??
+          null,
+
+        forwardingError:
+          null,
+
+        updatedAt:
+          FieldValue.serverTimestamp(),
       });
+
+      logger.info(
+        "Inbound email forwarded successfully.",
+        {
+          emailId,
+
+          senderEmail,
+
+          forwardedTo:
+            INBOUND_FORWARD_EMAIL,
+
+          forwardingEmailId:
+            forwardedEmail?.id ??
+            null,
+        }
+      );
+
+      /**
+       * Tell Resend that processing completed
+       * successfully.
+       */
+      response
+        .status(200)
+        .json({
+          success: true,
+
+          emailId,
+
+          forwardedTo:
+            INBOUND_FORWARD_EMAIL,
+        });
     } catch (error: unknown) {
       logger.error(
         "Failed to process inbound email webhook.",
@@ -1029,6 +1441,38 @@ export const receiveInboundEmail = onRequest(
     }
   }
 );
+
+
+/**
+ * Escape HTML values before inserting
+ * email/user-controlled content into the
+ * forwarded message.
+ */
+function escapeHtml(
+  value: string,
+): string {
+  return value
+    .replace(
+      /&/g,
+      "&amp;",
+    )
+    .replace(
+      /</g,
+      "&lt;",
+    )
+    .replace(
+      />/g,
+      "&gt;",
+    )
+    .replace(
+      /"/g,
+      "&quot;",
+    )
+    .replace(
+      /'/g,
+      "&#039;",
+    );
+}
 
 /**
  * Send a reply from the administrator mailbox.

@@ -44,6 +44,7 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
 import { BusinessDocumentsComponent } from '../business-documents/business-documents.component';
 
 import { BusinessReportsComponent } from '../business-reports/business-reports.component';
+import { PageTitleService } from '../../../../core/services/page-title.service';
 
 @Component({
   selector: 'app-business-dashboard',
@@ -81,21 +82,21 @@ import { BusinessReportsComponent } from '../business-reports/business-reports.c
          PAGE
          ========================================================= -->
 
-    <main class="min-h-screen bg-gray-50">
+    <main class="min-h-screen bg-gray-50 mt-16">
       <!-- =======================================================
            HEADER
            ======================================================= -->
 
-      <header class="bg-[#032D42] text-white">
+      <header hidden sm:block class="bg-[#2a835f] text-white">
         <div
           class="mx-auto max-w-7xl
-                 px-4 py-2
+                 px-4
                  sm:px-6
-                 lg:px-8"
+                 lg:px-10"
         >
           <div
             class="flex flex-col
-                   gap-4
+                   gap-2
                    sm:flex-row
                    sm:items-center
                    sm:justify-between"
@@ -111,18 +112,11 @@ import { BusinessReportsComponent } from '../business-reports/business-reports.c
                 Administration
               </p>
 
-              <h1
-                class="mt-1
-                       text-2xl
-                       font-bold
-                       sm:text-3xl"
-              >
-                Business Operations
-              </h1>
+              
 
               <p
-                class="mt-2
-                       max-w-2xl
+                class="
+                      
                        text-sm
                        text-gray-200"
               >
@@ -131,7 +125,7 @@ import { BusinessReportsComponent } from '../business-reports/business-reports.c
               </p>
             </div>
 
-            <a routerLink="/admin" mat-stroked-button class="!border-white !text-white">
+            <a routerLink="/admin" matButton class="!border-white !text-white">
               <mat-icon> arrow_back </mat-icon>
 
               Admin Dashboard
@@ -338,14 +332,10 @@ import { BusinessReportsComponent } from '../business-reports/business-reports.c
                    OVERVIEW
                    ================================================= -->
 
-              <!-- =================================================
-                   OVERVIEW
-                   ================================================= -->
-
               <mat-tab>
                 <ng-template mat-tab-label>
                   <mat-icon class="mr-2">dashboard</mat-icon>
-                  Overview
+                  Overview 
                 </ng-template>
 
                 <div class="p-4 sm:p-6">
@@ -2385,6 +2375,11 @@ export class BusinessDashboardComponent implements OnInit {
    */
   private readonly complianceOrder = signal<string[]>([]);
 
+
+   constructor() {
+    this.pageTitleService.setTitle('Business Operations');
+  }
+
   /**
    * Storage key prefix for Business Operations dashboard ordering.
    *
@@ -2433,6 +2428,8 @@ export class BusinessDashboardComponent implements OnInit {
       console.warn('Unable to restore Business Operations dashboard order:', error);
     }
   }
+
+  private readonly pageTitleService = inject(PageTitleService);
 
   /**
    * Saves both ordering arrays after a successful drag/drop operation.

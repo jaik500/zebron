@@ -473,18 +473,50 @@ export class CommunityPostService {
     // AUTHOR SNAPSHOT
     // ==========================================================
 
-    const author: CommunityPostAuthor = {
-      id: authorId,
+   const author: CommunityPostAuthor = {
+  id: authorId,
+  displayName,
 
-      displayName,
+  ...(input.author.photoUrl
+    ? { photoUrl: input.author.photoUrl }
+    : {}),
 
-      ...(input.author.photoUrl
-        ? {
-            photoUrl:
-              input.author.photoUrl,
-          }
-        : {}),
-    };
+  ...(input.author.firstName
+    ? { firstName: input.author.firstName }
+    : {}),
+
+  ...(input.author.lastName
+    ? { lastName: input.author.lastName }
+    : {}),
+
+  ...(input.author.preferredName
+    ? { preferredName: input.author.preferredName }
+    : {}),
+
+  ...(input.author.bio
+    ? { bio: input.author.bio }
+    : {}),
+
+  ...(input.author.countryOfOrigin
+    ? { countryOfOrigin: input.author.countryOfOrigin }
+    : {}),
+
+  ...(input.author.currentCountry
+    ? { currentCountry: input.author.currentCountry }
+    : {}),
+
+  ...(input.author.city
+    ? { city: input.author.city }
+    : {}),
+
+  ...(input.author.state
+    ? { state: input.author.state }
+    : {}),
+
+  ...(input.author.website
+    ? { website: input.author.website }
+    : {}),
+};
 
 
     // ==========================================================

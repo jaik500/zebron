@@ -62,6 +62,127 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
         </p>
       </div>
 
+      <!-- SUMMARY -->
+
+     <div
+  class="grid grid-cols-3 gap-2
+         sm:grid-cols-3
+         lg:grid-cols-8
+         text-center"
+>
+  <!-- RESEND EMAIL -->
+
+  <mat-card appearance="outlined" class="!rounded-xl">
+    <mat-card-content class="!p-2">
+      <a
+        href="https://resend.com/emails"
+        target="_blank"
+        class="text-sm"
+      >
+        Resend
+      </a>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- CLOUDFLARE -->
+
+  <mat-card appearance="outlined" class="!rounded-xl">
+    <mat-card-content class="!p-2">
+      <a
+        href="https://dash.cloudflare.com/login"
+        target="_blank"
+        class="text-sm"
+      >
+        Cloudflare
+      </a>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- FIREBASE -->
+
+  <mat-card appearance="outlined" class="!rounded-xl">
+    <mat-card-content class="!p-2">
+      <a
+        href="https://console.firebase.google.com/project/zebron-2b49f/firestore/databases"
+        target="_blank"
+        class="text-sm"
+      >
+        Firebase
+      </a>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- STRIPE -->
+
+  <mat-card appearance="outlined" class="!rounded-xl">
+    <mat-card-content class="!p-2">
+      <a
+        href="https://dashboard.stripe.com/acct_1U9QlQIpzrAXcYjT/test/dashboard"
+        target="_blank"
+        class="text-sm"
+      >
+        Stripe
+      </a>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- GOOGLE CONSOLE -->
+
+  <mat-card appearance="outlined" class="!rounded-xl">
+    <mat-card-content class="!p-2">
+      <a
+        href="https://search.google.com/search-console/performance/search-analytics?resource_id=sc-domain:zebron.org&utm_source=wnc_756200&utm_medium=gamma&utm_campaign=wnc_756200&utm_content=msg_843500&hl=en-GB#deeplink=pagesimpressions"
+        target="_blank"
+        class="text-sm"
+      >
+        Google Console
+      </a>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- GOOGLE SEARCH -->
+
+  <mat-card appearance="outlined" class="!rounded-xl">
+    <mat-card-content class="!p-2">
+      <a
+        href="https://www.google.com/"
+        target="_blank"
+        class="text-sm"
+      >
+        Google Search
+      </a>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- PLACEHOLDER -->
+
+  <mat-card appearance="outlined" class="!rounded-xl">
+    <mat-card-content class="!p-2">
+      <a
+        href="https://www.google.com/"
+        target="_blank"
+        class="text-sm"
+      >
+        Placeholder
+      </a>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- PLACEHOLDER -->
+
+  <mat-card appearance="outlined" class="!rounded-xl">
+    <mat-card-content class="!p-2">
+      <a
+        href="https://www.google.com/"
+        target="_blank"
+        class="text-sm"
+      >
+        Placeholder
+      </a>
+    </mat-card-content>
+  </mat-card>
+</div>
+
       <!-- =====================================================
            STATUS
            ===================================================== -->
@@ -352,10 +473,8 @@ export class ConfigurationMaintenanceComponent {
   );
 
   constructor() {
-  this.message.set(
-    this.maintenanceService.getMessage(),
-  );
-}
+    this.message.set(this.maintenanceService.getMessage());
+  }
 
   // =========================================================
   // ENABLE

@@ -68,6 +68,9 @@ import { RouterLink } from '@angular/router';
             >
               Discover resources, organizations, jobs, training, and opportunities.
             </p>
+            <a class="text-white/70 hover:text-white" href="mailto:support@inbound.zebron.org">
+              support@inbound.zebron.org
+            </a>
           </div>
 
           <!-- ===================================================

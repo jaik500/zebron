@@ -1145,23 +1145,30 @@ export const CommunityCommentStore =
               // --------------------------------------------------
 
               patchState(
-                store,
-                {
+  store,
+  {
+    comments:
+      store
+        .comments()
+        .map(
+          (item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  content: '',
+                  status: 'deleted',
+                  currentUserReaction: null,
+                  reactionCounts: {},
+                  deletedAt: undefined,
+                }
+              : item,
+        ),
 
-                  comments:
-                    store
-                      .comments()
-                      .filter(
-                        (item) =>
-                          item.id !== id,
-                      ),
+    deleting: false,
 
-                  deleting: false,
-
-                  error: null,
-
-                },
-              );
+    error: null,
+  },
+);
 
 
               return true;

@@ -1,8 +1,19 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
+
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  OnInit,
+  inject,
+} from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import {
+  ActivatedRoute,
+  Router,
+  RouterLink,
+} from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -20,18 +31,16 @@ import { CommunityReactionType } from '../../models/community-reaction.model';
 
 import { CommunityCommentStore } from '../../store/community-comment.store';
 import { CommunityPostStore } from '../../store/community-post.store';
+import { CommunityStore } from '../../store/community.store';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { LoggerService } from '../../../../core/services/logger.service';
 import { ShareService } from '../../../../core/services/share.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
-import { CommunityStore } from '../../store/community.store';
 
 @Component({
   selector: 'app-community-post-detail',
-
   standalone: true,
-
   changeDetection: ChangeDetectionStrategy.OnPush,
 
   imports: [
@@ -72,21 +81,33 @@ import { CommunityStore } from '../../store/community.store';
           max-w-4xl
         "
       >
+
         <!-- ========================================================
              LOADING STATE
              ======================================================== -->
 
         @if (store.loading()) {
-          <div
-            class="
-              flex
-              min-h-[320px]
-              items-center
-              justify-center
-            "
+          <mat-card
+            appearance="outlined"
+            class="overflow-hidden rounded-2xl"
           >
-            <mat-spinner diameter="42" />
-          </div>
+            <div
+              class="
+                flex
+                min-h-[320px]
+                flex-col
+                items-center
+                justify-center
+                gap-3
+              "
+            >
+              <mat-spinner diameter="42" />
+
+              <p class="text-sm text-slate-500">
+                Loading community post…
+              </p>
+            </div>
+          </mat-card>
         }
 
         <!-- ========================================================
@@ -96,14 +117,12 @@ import { CommunityStore } from '../../store/community.store';
         @else if (store.error()) {
           <mat-card
             appearance="outlined"
-            class="
-              overflow-hidden
-              rounded-2xl
-            "
+            class="overflow-hidden rounded-2xl"
           >
             <div
               class="
                 flex
+                min-h-[320px]
                 flex-col
                 items-center
                 justify-center
@@ -150,12 +169,15 @@ import { CommunityStore } from '../../store/community.store';
                 {{ store.error() }}
               </p>
 
-              <div class="mt-6">
-                <button mat-flat-button type="button" (click)="reloadPost()">
-                  <mat-icon>refresh</mat-icon>
-                  Try Again
-                </button>
-              </div>
+              <button
+                mat-flat-button
+                type="button"
+                class="mt-6"
+                (click)="reloadPost()"
+              >
+                <mat-icon>refresh</mat-icon>
+                Try Again
+              </button>
             </div>
           </mat-card>
         }
@@ -165,6 +187,7 @@ import { CommunityStore } from '../../store/community.store';
              ======================================================== -->
 
         @else if (store.post(); as post) {
+
           <mat-card
             appearance="outlined"
             class="
@@ -172,46 +195,53 @@ import { CommunityStore } from '../../store/community.store';
               rounded-2xl
             "
           >
+
             <!-- ====================================================
                  POST HEADER
                  ==================================================== -->
 
             <div
               class="
-    bg-[#2a835f]/80
-    px-4
-    py-2
-    sm:px-6
-    sm:py-2
-  "
+                bg-[#2a835f]/80
+                px-4
+                py-2
+                sm:px-6
+                sm:py-2
+              "
             >
+
               <!-- Back / Actions -->
 
               <div
                 class="
-      mb-2
-      flex
-      items-center
-      justify-between
-      gap-3
-      text-white
-    "
+                  mb-2
+                  flex
+                  items-center
+                  justify-between
+                  gap-3
+                  text-white
+                "
               >
+
                 <!-- Back -->
 
                 <a
                   mat-button
                   routerLink="/community"
                   class="
-        !min-w-0
-        !px-2
-        !text-white
-        hover:!bg-white/10
-      "
+                    !min-w-0
+                    !px-2
+                    !text-white
+                    hover:!bg-white/10
+                  "
                 >
-                  <mat-icon class="!text-white"> arrow_back </mat-icon>
+                  <mat-icon class="!text-white">
+                    arrow_back
+                  </mat-icon>
 
-                  <span class="text-sm font-medium"> Back to Community </span>
+                  <span class="text-sm font-medium">
+                    Back to Community
+                  </span>
                 </a>
 
                 <!-- Post Menu -->
@@ -224,37 +254,65 @@ import { CommunityStore } from '../../store/community.store';
                   [matMenuTriggerFor]="postMenu"
                   class="!text-white"
                 >
-                  <mat-icon class="!text-white"> more_vert </mat-icon>
+                  <mat-icon class="!text-white">
+                    more_vert
+                  </mat-icon>
                 </button>
 
                 <mat-menu #postMenu="matMenu">
+
                   <!-- Save -->
 
-                  <button mat-menu-item type="button" (click)="savePost(post.id)">
+                  <button
+                    mat-menu-item
+                    type="button"
+                    (click)="toggleBookmark(post)"
+                  >
                     <mat-icon>
-                      {{ post.bookmarkedByCurrentUser ? 'bookmark' : 'bookmark_border' }}
+                      {{
+                        post.bookmarkedByCurrentUser
+                          ? 'bookmark'
+                          : 'bookmark_border'
+                      }}
                     </mat-icon>
 
                     <span>
-                      {{ post.bookmarkedByCurrentUser ? 'Remove saved post' : 'Save post' }}
+                      {{
+                        post.bookmarkedByCurrentUser
+                          ? 'Remove saved post'
+                          : 'Save post'
+                      }}
                     </span>
                   </button>
 
                   <!-- Share -->
 
-                  <button mat-menu-item type="button" (click)="sharePost(post)">
+                  <button
+                    mat-menu-item
+                    type="button"
+                    (click)="sharePost(post)"
+                  >
                     <mat-icon>share</mat-icon>
 
-                    <span> Share post </span>
+                    <span>
+                      Share post
+                    </span>
                   </button>
 
                   <!-- Report -->
 
-                  <button mat-menu-item type="button" (click)="reportPost(post.id)">
+                  <button
+                    mat-menu-item
+                    type="button"
+                    (click)="reportPost(post)"
+                  >
                     <mat-icon>flag</mat-icon>
 
-                    <span> Report post </span>
+                    <span>
+                      Report post
+                    </span>
                   </button>
+
                 </mat-menu>
               </div>
 
@@ -262,11 +320,12 @@ import { CommunityStore } from '../../store/community.store';
 
               <div
                 class="
-      flex
-      items-center
-      gap-2.5
-    "
+                  flex
+                  items-center
+                  gap-2.5
+                "
               >
+
                 <!-- Avatar -->
 
                 @if (post.author.photoUrl) {
@@ -274,32 +333,32 @@ import { CommunityStore } from '../../store/community.store';
                     [src]="post.author.photoUrl"
                     [alt]="post.author.displayName"
                     class="
-          h-9
-          w-9
-          shrink-0
-          rounded-full
-          object-cover
-          ring-2
-          ring-white/40
-        "
+                      h-9
+                      w-9
+                      shrink-0
+                      rounded-full
+                      object-cover
+                      ring-2
+                      ring-white/40
+                    "
                   />
                 } @else {
                   <div
                     class="
-          flex
-          h-9
-          w-9
-          shrink-0
-          items-center
-          justify-center
-          rounded-full
-          bg-white/20
-          text-sm
-          font-semibold
-          text-white
-          ring-2
-          ring-white/30
-        "
+                      flex
+                      h-9
+                      w-9
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-white/20
+                      text-sm
+                      font-semibold
+                      text-white
+                      ring-2
+                      ring-white/30
+                    "
                   >
                     {{ getInitials(post.author.displayName) }}
                   </div>
@@ -308,27 +367,30 @@ import { CommunityStore } from '../../store/community.store';
                 <!-- Author Information -->
 
                 <div class="min-w-0">
+
                   <div
                     class="
-          truncate
-          text-sm
-          font-semibold
-          text-white
-        "
+                      truncate
+                      text-sm
+                      font-semibold
+                      text-white
+                    "
                   >
                     {{ post.author.displayName }}
                   </div>
 
                   <div
                     class="
-          mt-0.5
-          text-xs
-          text-white/75
-        "
+                      mt-0.5
+                      text-xs
+                      text-white/75
+                    "
                   >
                     {{ formatDate(post.createdAt) }}
                   </div>
+
                 </div>
+
               </div>
             </div>
 
@@ -342,9 +404,10 @@ import { CommunityStore } from '../../store/community.store';
                 pb-5
                 pt-5
                 sm:px-7
-                sm:pb-3
+                sm:pb-4
               "
             >
+
               <!-- Topic -->
 
               @if (post.topicName) {
@@ -355,18 +418,27 @@ import { CommunityStore } from '../../store/community.store';
                     inline-flex
                     items-center
                     rounded-full
-                    bg-blue-50
+                    bg-[#087F80]/10
                     px-3
                     py-1
                     text-xs
                     font-medium
-                    text-blue-700
+                    text-[#087F80]
                     transition
-                    hover:bg-blue-100
+                    hover:bg-[#087F80]/20
                   "
                   (click)="selectTopic(post.topicId)"
                 >
-                  <mat-icon class="mr-1 !h-4 !w-4 !text-base"> forum </mat-icon>
+                  <mat-icon
+                    class="
+                      mr-1
+                      !h-4
+                      !w-4
+                      !text-base
+                    "
+                  >
+                    forum
+                  </mat-icon>
 
                   {{ post.topicName }}
                 </button>
@@ -381,7 +453,6 @@ import { CommunityStore } from '../../store/community.store';
                   leading-tight
                   tracking-tight
                   text-slate-900
-                  sm:text-2xl
                 "
               >
                 {{ post.title }}
@@ -401,14 +472,12 @@ import { CommunityStore } from '../../store/community.store';
                 {{ post.content }}
               </div>
 
-              <!-- ==================================================
-                   TAGS
-                   ================================================== -->
+              <!-- Tags -->
 
-              @if (post.tags && post.tags.length > 0) {
+              @if (post.tags?.length) {
                 <div
                   class="
-                    mt-3
+                    mt-5
                     flex
                     flex-wrap
                     gap-2
@@ -420,17 +489,18 @@ import { CommunityStore } from '../../store/community.store';
                         rounded-full
                         bg-slate-100
                         px-3
-                        pt-1
+                        py-1
                         text-xs
                         font-medium
                         text-slate-600
                       "
                     >
-                      #{{ tag }}
+                      #{{ normalizeTag(tag) }}
                     </span>
                   }
                 </div>
               }
+
             </div>
 
             <!-- ====================================================
@@ -450,11 +520,21 @@ import { CommunityStore } from '../../store/community.store';
                 sm:px-7
               "
             >
-              <!-- Reactions -->
 
-              <button mat-button type="button" (click)="reactToPost(post.id)">
+              <!-- Reaction -->
+
+              <button
+                mat-button
+                type="button"
+                [class.!text-[#087F80]]="!!post.currentUserReaction"
+                (click)="reactToPost(post.id)"
+              >
                 <mat-icon>
-                  {{ post.currentUserReaction ? 'thumb_up' : 'thumb_up_off_alt' }}
+                  {{
+                    post.currentUserReaction
+                      ? 'thumb_up'
+                      : 'thumb_up_off_alt'
+                  }}
                 </mat-icon>
 
                 <span>
@@ -464,11 +544,33 @@ import { CommunityStore } from '../../store/community.store';
 
               <!-- Comments -->
 
-              <button mat-button type="button" (click)="scrollToComments()">
-                <mat-icon> comment </mat-icon>
+              <button
+                mat-button
+                type="button"
+                (click)="scrollToComments()"
+              >
+                <mat-icon>
+                  comment
+                </mat-icon>
 
                 <span>
                   {{ post.commentCount || 0 }}
+                </span>
+              </button>
+
+              <!-- Share -->
+
+              <button
+                mat-button
+                type="button"
+                (click)="sharePost(post)"
+              >
+                <mat-icon>
+                  share
+                </mat-icon>
+
+                <span>
+                  Share
                 </span>
               </button>
 
@@ -484,21 +586,36 @@ import { CommunityStore } from '../../store/community.store';
                   text-sm
                   text-slate-500
                 "
+                matTooltip="Views"
               >
-                <mat-icon class="!h-5 !w-5 !text-[20px]"> visibility </mat-icon>
+                <mat-icon
+                  class="
+                    !h-5
+                    !w-5
+                    !text-[20px]
+                  "
+                >
+                  visibility
+                </mat-icon>
 
                 <span>
                   {{ post.viewCount || 0 }}
                 </span>
               </div>
+
             </div>
+
           </mat-card>
 
           <!-- ======================================================
                COMMENTS
                ====================================================== -->
 
-          <section id="community-comments" class="mt-6">
+          <section
+            id="community-comments"
+            class="mt-6"
+          >
+
             <mat-card
               appearance="outlined"
               class="
@@ -506,6 +623,7 @@ import { CommunityStore } from '../../store/community.store';
                 rounded-2xl
               "
             >
+
               <!-- Comments Header -->
 
               <div
@@ -517,11 +635,12 @@ import { CommunityStore } from '../../store/community.store';
                   border-b
                   border-slate-200
                   px-5
-                  py-1
+                  py-4
                   sm:px-7
                 "
               >
                 <div>
+
                   <h2
                     class="
                       text-lg
@@ -541,6 +660,7 @@ import { CommunityStore } from '../../store/community.store';
                   >
                     Join the conversation.
                   </p>
+
                 </div>
 
                 @if (commentStore.commentCount() > 0) {
@@ -558,6 +678,7 @@ import { CommunityStore } from '../../store/community.store';
                     {{ commentStore.commentCount() }}
                   </span>
                 }
+
               </div>
 
               <!-- ==================================================
@@ -574,8 +695,15 @@ import { CommunityStore } from '../../store/community.store';
                   sm:px-7
                 "
               >
-                <mat-form-field appearance="outline" class="w-full" floatLabel="always">
-                  <mat-label> Add a comment </mat-label>
+
+                <mat-form-field
+                  appearance="outline"
+                  class="w-full"
+                  floatLabel="always"
+                >
+                  <mat-label>
+                    Add a comment
+                  </mat-label>
 
                   <textarea
                     matInput
@@ -585,7 +713,9 @@ import { CommunityStore } from '../../store/community.store';
                     placeholder="Share your thoughts..."
                   ></textarea>
 
-                  <mat-hint align="end"> {{ commentText.length }}/2000 </mat-hint>
+                  <mat-hint align="end">
+                    {{ commentText.length }}/2000
+                  </mat-hint>
                 </mat-form-field>
 
                 <!-- Comment Error -->
@@ -605,7 +735,15 @@ import { CommunityStore } from '../../store/community.store';
                       text-red-700
                     "
                   >
-                    <mat-icon class="!h-5 !w-5 !text-[20px]"> error_outline </mat-icon>
+                    <mat-icon
+                      class="
+                        !h-5
+                        !w-5
+                        !text-[20px]
+                      "
+                    >
+                      error_outline
+                    </mat-icon>
 
                     <span>
                       {{ commentStore.error() }}
@@ -616,11 +754,19 @@ import { CommunityStore } from '../../store/community.store';
                 <!-- Submit -->
 
                 <div class="mt-3 flex justify-end">
-                  @if (commentStore.saving()) {
-                    <button mat-flat-button type="button" disabled>
-                      <mat-spinner diameter="18" class="mr-2" />
 
-                      Posting...
+                  @if (commentStore.saving()) {
+                    <button
+                      mat-flat-button
+                      type="button"
+                      disabled
+                    >
+                      <mat-spinner
+                        diameter="18"
+                        class="mr-2"
+                      />
+
+                      Posting…
                     </button>
                   } @else {
                     <button
@@ -629,12 +775,16 @@ import { CommunityStore } from '../../store/community.store';
                       [disabled]="!canSubmitComment()"
                       (click)="addComment()"
                     >
-                      <mat-icon> send </mat-icon>
+                      <mat-icon>
+                        send
+                      </mat-icon>
 
                       Post Comment
                     </button>
                   }
+
                 </div>
+
               </div>
 
               <!-- ==================================================
@@ -642,6 +792,7 @@ import { CommunityStore } from '../../store/community.store';
                    ================================================== -->
 
               @if (commentStore.loading()) {
+
                 <div
                   class="
                     flex
@@ -653,13 +804,18 @@ import { CommunityStore } from '../../store/community.store';
                 >
                   <mat-spinner diameter="36" />
                 </div>
+
               }
 
               <!-- ==================================================
                    COMMENT ERROR
                    ================================================== -->
 
-              @else if (commentStore.error() && commentStore.isEmpty()) {
+              @else if (
+                commentStore.error() &&
+                commentStore.isEmpty()
+              ) {
+
                 <div
                   class="
                     px-6
@@ -688,12 +844,20 @@ import { CommunityStore } from '../../store/community.store';
                     Unable to load comments.
                   </p>
 
-                  <button mat-stroked-button type="button" class="mt-4" (click)="reloadComments()">
-                    <mat-icon> refresh </mat-icon>
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    class="mt-4"
+                    (click)="reloadComments()"
+                  >
+                    <mat-icon>
+                      refresh
+                    </mat-icon>
 
                     Try Again
                   </button>
                 </div>
+
               }
 
               <!-- ==================================================
@@ -701,6 +865,7 @@ import { CommunityStore } from '../../store/community.store';
                    ================================================== -->
 
               @else if (commentStore.isEmpty()) {
+
                 <div
                   class="
                     px-6
@@ -708,6 +873,7 @@ import { CommunityStore } from '../../store/community.store';
                     text-center
                   "
                 >
+
                   <div
                     class="
                       mx-auto
@@ -721,7 +887,9 @@ import { CommunityStore } from '../../store/community.store';
                       text-slate-500
                     "
                   >
-                    <mat-icon> forum </mat-icon>
+                    <mat-icon>
+                      forum
+                    </mat-icon>
                   </div>
 
                   <h3
@@ -745,9 +913,12 @@ import { CommunityStore } from '../../store/community.store';
                       text-slate-500
                     "
                   >
-                    Be the first person to join the conversation.
+                    Be the first person to join
+                    the conversation.
                   </p>
+
                 </div>
+
               }
 
               <!-- ==================================================
@@ -755,13 +926,19 @@ import { CommunityStore } from '../../store/community.store';
                    ================================================== -->
 
               @else {
+
                 <div
                   class="
                     divide-y
                     divide-slate-100
                   "
                 >
-                  @for (comment of commentStore.topLevelComments(); track comment.id) {
+
+                  @for (
+                    comment of commentStore.topLevelComments();
+                    track comment.id
+                  ) {
+
                     <div
                       class="
                         px-5
@@ -769,6 +946,7 @@ import { CommunityStore } from '../../store/community.store';
                         sm:px-7
                       "
                     >
+
                       <app-community-comment
                         [comment]="comment"
                         [depth]="0"
@@ -776,13 +954,21 @@ import { CommunityStore } from '../../store/community.store';
                         (commentDeleted)="onCommentDeleted($event)"
                         (replyCreated)="onReplyCreated($event)"
                       />
+
                     </div>
+
                   }
+
                 </div>
+
               }
+
             </mat-card>
+
           </section>
+
         }
+
       </div>
     </main>
   `,
@@ -794,8 +980,8 @@ import { CommunityStore } from '../../store/community.store';
       }
 
       /*
-       * Keep Material progress spinners aligned with text
-       * when they appear inside action buttons.
+       * Keep Material progress spinners aligned with
+       * text when they appear inside buttons.
        */
       mat-spinner {
         display: inline-block;
@@ -804,26 +990,39 @@ import { CommunityStore } from '../../store/community.store';
     `,
   ],
 })
-export class CommunityPostDetailComponent implements OnInit, OnDestroy {
+export class CommunityPostDetailComponent
+  implements OnInit, OnDestroy {
+
   // ==============================================================
   // DEPENDENCIES
   // ==============================================================
 
-  readonly store = inject(CommunityPostStore);
+  readonly store =
+    inject(CommunityPostStore);
 
-  readonly commentStore = inject(CommunityCommentStore);
+  readonly commentStore =
+    inject(CommunityCommentStore);
 
-  readonly communityStore = inject(CommunityStore);
+  readonly communityStore =
+    inject(CommunityStore);
 
-  private readonly route = inject(ActivatedRoute);
+  private readonly route =
+    inject(ActivatedRoute);
 
-  private readonly authService = inject(AuthService);
+  private readonly router =
+    inject(Router);
 
-  private readonly logger = inject(LoggerService);
+  private readonly authService =
+    inject(AuthService);
 
-  private readonly shareService = inject(ShareService);
+  private readonly logger =
+    inject(LoggerService);
 
-  readonly pageTitleService = inject(PageTitleService);
+  private readonly shareService =
+    inject(ShareService);
+
+  readonly pageTitleService =
+    inject(PageTitleService);
 
   // ==============================================================
   // STATE
@@ -838,38 +1037,48 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
   // ==============================================================
 
   ngOnInit(): void {
-    this.postId = this.route.snapshot.paramMap.get('postId')?.trim() ?? '';
+    this.postId =
+      this.route.snapshot.paramMap
+        .get('postId')
+        ?.trim() ?? '';
 
     if (!this.postId) {
+      this.logger.warn(
+        'CommunityPostDetailComponent',
+        'Community post detail opened without a post ID.',
+      );
+
       return;
     }
 
     /*
-     * Load the post first so that the post-detail view is rendered
-     * before attempting to scroll to the comments section.
+     * Load the post first so that the detail page is
+     * available before processing the comments fragment.
      */
     void this.loadPostAndHandleFragment();
 
     /*
-     * Comments can load independently from the post.
+     * Comments load independently from the post.
      */
-    void this.commentStore.loadComments(this.postId);
+    void this.commentStore.loadComments(
+      this.postId,
+    );
   }
 
   ngOnDestroy(): void {
     /*
-     * Clear both stores when leaving the page
-     * so stale post/comment state isn't displayed
-     * when another post is opened.
+     * Clear both stores when leaving the page so
+     * stale post/comment state cannot appear when
+     * another post is opened.
      */
-
     this.commentStore.clear();
-
     this.store.clear();
   }
 
   constructor() {
-    this.pageTitleService.setTitle('Community | Post');
+    this.pageTitleService.setTitle(
+      'Community | Post',
+    );
   }
 
   // ==============================================================
@@ -882,28 +1091,38 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
     }
 
     try {
-      await this.store.loadPost(this.postId);
+      await this.store.loadPost(
+        this.postId,
+      );
 
       /*
-       * When the user clicked "Comments" from the feed,
-       * the route contains:
+       * The feed navigates to:
        *
        * /community/post/{postId}#community-comments
        *
-       * The post is loaded asynchronously, so we wait until
-       * Angular has rendered the post and comments section.
+       * Wait until Angular has rendered the
+       * comments section before scrolling.
        */
-
-      if (this.route.snapshot.fragment === 'community-comments') {
+      if (
+        this.route.snapshot.fragment ===
+        'community-comments'
+      ) {
         setTimeout(() => {
           this.scrollToComments();
         });
       }
     } catch (error) {
-      this.logger.error('CommunityPostDetailComponent', 'Failed to load community post.', {
-        postId: this.postId,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      this.logger.error(
+        'CommunityPostDetailComponent',
+        'Failed to load community post.',
+        {
+          postId: this.postId,
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
     }
   }
 
@@ -915,33 +1134,66 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
     void this.loadPostAndHandleFragment();
   }
 
-  selectTopic(topicId: string): void {
-    if (!topicId) {
+  // ==============================================================
+  // TOPIC
+  // ==============================================================
+
+  async selectTopic(
+    topicId: string,
+  ): Promise<void> {
+
+    const id = topicId.trim();
+
+    if (!id) {
       return;
     }
 
-    /*
-     * Topic navigation will be handled by the
-     * Community Home/store routing flow.
-     *
-     * For now we return to Community.
-     */
+    try {
+      /*
+       * Update the Community store so the feed has
+       * the selected topic ready when the user returns.
+       */
+      await this.communityStore.selectTopic(id);
 
-    window.location.href = `/community?topic=${encodeURIComponent(topicId)}`;
+      /*
+       * Return to the Community page using Angular
+       * navigation instead of forcing a full browser reload.
+       */
+      await this.router.navigate([
+        '/community',
+      ]);
+    } catch (error) {
+      this.logger.error(
+        'CommunityPostDetailComponent',
+        'Failed to select community topic.',
+        {
+          topicId: id,
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
+    }
   }
 
   // ==============================================================
   // POST REACTIONS
   // ==============================================================
 
-  async reactToPost(postId: string, type: CommunityReactionType = 'like'): Promise<void> {
+  async reactToPost(
+    postId: string,
+    type: CommunityReactionType = 'like',
+  ): Promise<void> {
+
     const id = postId.trim();
 
     if (!id) {
       return;
     }
 
-    const currentUser = this.authService.user();
+    const currentUser =
+      this.authService.user();
 
     if (!currentUser) {
       this.logger.warn(
@@ -956,14 +1208,100 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
     }
 
     try {
-      await this.store.reactToPost(id, currentUser.id, type);
+      await this.store.reactToPost(
+        id,
+        currentUser.id,
+        type,
+      );
+
+      /*
+       * Keep the Community feed synchronized if the
+       * same post already exists in the feed store.
+       *
+       * The post store remains the source of truth
+       * for the detail page.
+       */
+      this.logger.info(
+        'CommunityPostDetailComponent',
+        'Community post reaction updated.',
+        {
+          postId: id,
+          userId: currentUser.id,
+          reactionType: type,
+        },
+      );
     } catch (error) {
-      this.logger.error('CommunityPostDetailComponent', 'Failed to react to community post.', {
-        postId: id,
-        userId: currentUser.id,
-        reactionType: type,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      this.logger.error(
+        'CommunityPostDetailComponent',
+        'Failed to react to community post.',
+        {
+          postId: id,
+          userId: currentUser.id,
+          reactionType: type,
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
+    }
+  }
+
+  // ==============================================================
+  // BOOKMARK
+  // ==============================================================
+
+  async toggleBookmark(
+    post: CommunityPost,
+  ): Promise<void> {
+
+    const postId =
+      post.id?.trim();
+
+    if (!postId) {
+      this.logger.warn(
+        'CommunityPostDetailComponent',
+        'Unable to bookmark community post because the post ID is missing.',
+      );
+
+      return;
+    }
+
+    try {
+      await this.communityStore.toggleBookmark(
+        postId,
+      );
+
+      /*
+       * Refresh the detail post so the bookmark state
+       * displayed in the detail page matches persistence.
+       */
+      await this.store.loadPost(
+        postId,
+      );
+
+      this.logger.info(
+        'CommunityPostDetailComponent',
+        'Community post bookmark updated.',
+        {
+          postId,
+          bookmarked:
+            this.store.post()
+              ?.bookmarkedByCurrentUser ?? false,
+        },
+      );
+    } catch (error) {
+      this.logger.error(
+        'CommunityPostDetailComponent',
+        'Failed to update community post bookmark.',
+        {
+          postId,
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
     }
   }
 
@@ -971,8 +1309,12 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
   // SHARE
   // ==============================================================
 
-  async sharePost(post: CommunityPost): Promise<void> {
-    const postId = post.id?.trim();
+  async sharePost(
+    post: CommunityPost,
+  ): Promise<void> {
+
+    const postId =
+      post.id?.trim();
 
     if (!postId) {
       this.logger.warn(
@@ -983,7 +1325,10 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const url = this.shareService.getCommunityPostUrl(postId);
+    const url =
+      this.shareService.getCommunityPostUrl(
+        postId,
+      );
 
     if (!url) {
       this.logger.warn(
@@ -997,49 +1342,64 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    await this.shareService.share({
-      title: post.title,
+    try {
+      await this.shareService.share({
+        title: post.title,
 
-      text: post.content.length > 180 ? `${post.content.substring(0, 180).trim()}…` : post.content,
+        text:
+          post.content.length > 180
+            ? `${post.content
+                .substring(0, 180)
+                .trim()}…`
+            : post.content,
 
-      url,
-    });
-  }
-
-  // ==============================================================
-  // SAVE
-  // ==============================================================
-
-  savePost(postId: string): void {
-    /*
-     * Bookmark persistence will be implemented
-     * through CommunityBookmarkService/Store.
-     *
-     * Until that feature is implemented, record the
-     * requested action through the centralized logger.
-     */
-
-    this.logger.info('CommunityPostDetailComponent', 'Save post action requested.', {
-      postId,
-    });
+        url,
+      });
+    } catch (error) {
+      this.logger.error(
+        'CommunityPostDetailComponent',
+        'Failed to share community post.',
+        {
+          postId,
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
+    }
   }
 
   // ==============================================================
   // REPORT
   // ==============================================================
 
-  reportPost(postId: string): void {
-    /*
-     * Reporting will eventually open a shared
-     * Material confirmation/dialog workflow.
-     *
-     * Until that feature is implemented, record the
-     * requested action through the centralized logger.
-     */
+  reportPost(
+    post: CommunityPost,
+  ): void {
 
-    this.logger.info('CommunityPostDetailComponent', 'Report post action requested.', {
-      postId,
-    });
+    const postId =
+      post.id?.trim();
+
+    if (!postId) {
+      return;
+    }
+
+    /*
+     * Reporting will eventually use the shared
+     * confirmation/dialog pattern together with
+     * CommunityReportService.
+     *
+     * Until that feature exists, record the
+     * requested action through centralized logging.
+     */
+    this.logger.info(
+      'CommunityPostDetailComponent',
+      'Report post action requested.',
+      {
+        postId,
+      },
+    );
   }
 
   // ==============================================================
@@ -1047,251 +1407,388 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
   // ==============================================================
 
   canSubmitComment(): boolean {
-    const text = this.commentText.trim();
+    const text =
+      this.commentText.trim();
 
-    return text.length > 0 && text.length <= 2000 && !this.commentStore.saving();
+    return (
+      text.length > 0 &&
+      text.length <= 2000 &&
+      !this.commentStore.saving()
+    );
   }
 
-async addComment(): Promise<void> {
-  const text = this.commentText.trim();
+  async addComment(): Promise<void> {
 
-  if (!text || text.length > 2000 || !this.postId) {
-    return;
-  }
+    const text =
+      this.commentText.trim();
 
-  try {
-
-    const commentId =
-      await this.commentStore.addComment(
-        this.postId,
-        text,
-      );
-
-    if (!commentId) {
+    if (
+      !text ||
+      text.length > 2000 ||
+      !this.postId
+    ) {
       return;
     }
 
-    this.commentText = '';
+    const currentUser =
+      this.authService.user();
 
-    // Refresh the detail-page post.
-    await this.store.loadPost(
-      this.postId,
-    );
+    if (!currentUser) {
+      this.logger.warn(
+        'CommunityPostDetailComponent',
+        'Cannot add comment because no authenticated user is available.',
+        {
+          postId: this.postId,
+        },
+      );
 
-    // Keep the already-loaded Community feed
-    // synchronized without another Firestore query.
-    this.communityStore.updatePostCommentCount(
-      this.postId,
-      1,
-    );
+      return;
+    }
 
-    this.logger.info(
-      'CommunityPostDetailComponent',
-      'Community comment created.',
-      {
-        postId: this.postId,
-        commentId,
-      },
-    );
+    try {
+      const commentId =
+        await this.commentStore.addComment(
+          this.postId,
+          text,
+        );
 
-  } catch (error) {
+      if (!commentId) {
+        return;
+      }
 
-    this.logger.error(
-      'CommunityPostDetailComponent',
-      'Failed to add community comment.',
-      {
-        postId: this.postId,
-        error:
-          error instanceof Error
-            ? error.message
-            : String(error),
-      },
-    );
+      this.commentText = '';
+
+      /*
+       * Refresh the detail post so its denormalized
+       * commentCount stays accurate.
+       */
+      await this.store.loadPost(
+        this.postId,
+      );
+
+      /*
+       * Synchronize the already-loaded Community
+       * feed without another feed query.
+       */
+      this.communityStore.updatePostCommentCount(
+        this.postId,
+        1,
+      );
+
+      this.logger.info(
+        'CommunityPostDetailComponent',
+        'Community comment created.',
+        {
+          postId: this.postId,
+          commentId,
+        },
+      );
+    } catch (error) {
+      this.logger.error(
+        'CommunityPostDetailComponent',
+        'Failed to add community comment.',
+        {
+          postId: this.postId,
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
+    }
   }
-}
 
   reloadComments(): void {
     if (!this.postId) {
       return;
     }
 
-    void this.commentStore.loadComments(this.postId);
+    void this.commentStore.loadComments(
+      this.postId,
+    );
   }
 
   // ==============================================================
   // COMMENT EVENTS
   // ==============================================================
 
-async onCommentDeleted(
-  commentId: string,
-): Promise<void> {
+  async onCommentDeleted(
+    commentId: string,
+  ): Promise<void> {
 
-  const id = commentId.trim();
+    const id =
+      commentId.trim();
 
-  if (!id || !this.postId) {
-    return;
+    if (!id || !this.postId) {
+      return;
+    }
+
+    try {
+      await this.store.loadPost(
+        this.postId,
+      );
+
+      /*
+       * The comment service has already decremented
+       * Firestore's denormalized commentCount.
+       *
+       * Mirror that change in the existing feed.
+       */
+      this.communityStore.updatePostCommentCount(
+        this.postId,
+        -1,
+      );
+
+      this.logger.info(
+        'CommunityPostDetailComponent',
+        'Community comment deleted.',
+        {
+          postId: this.postId,
+          commentId: id,
+        },
+      );
+    } catch (error) {
+      this.logger.error(
+        'CommunityPostDetailComponent',
+        'Failed to refresh post after comment deletion.',
+        {
+          postId: this.postId,
+          commentId: id,
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
+    }
   }
 
-  try {
+  async onReplyCreated(
+    commentId: string,
+  ): Promise<void> {
 
-    await this.store.loadPost(
-      this.postId,
-    );
+    const id =
+      commentId.trim();
 
-    // The service decremented Firestore commentCount.
-    // Mirror that change in the existing feed state.
-    this.communityStore.updatePostCommentCount(
-      this.postId,
-      -1,
-    );
+    if (!id || !this.postId) {
+      return;
+    }
 
-    this.logger.info(
-      'CommunityPostDetailComponent',
-      'Community comment deleted.',
-      {
-        postId: this.postId,
-        commentId: id,
-      },
-    );
+    try {
+      await this.store.loadPost(
+        this.postId,
+      );
 
-  } catch (error) {
+      /*
+       * Replies also increment the post's
+       * denormalized commentCount.
+       */
+      this.communityStore.updatePostCommentCount(
+        this.postId,
+        1,
+      );
 
-    this.logger.error(
-      'CommunityPostDetailComponent',
-      'Failed to refresh post after comment deletion.',
-      {
-        postId: this.postId,
-        commentId: id,
-        error:
-          error instanceof Error
-            ? error.message
-            : String(error),
-      },
-    );
+      this.logger.info(
+        'CommunityPostDetailComponent',
+        'Community comment reply created.',
+        {
+          postId: this.postId,
+          commentId: id,
+        },
+      );
+    } catch (error) {
+      this.logger.error(
+        'CommunityPostDetailComponent',
+        'Failed to refresh post after reply creation.',
+        {
+          postId: this.postId,
+          commentId: id,
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+      );
+    }
   }
-}
-async onReplyCreated(
-  commentId: string,
-): Promise<void> {
 
-  const id = commentId.trim();
+  onCommentReaction(
+    comment: CommunityComment,
+  ): void {
 
-  if (!id || !this.postId) {
-    return;
-  }
-
-  try {
-
-    // Refresh the detail post.
-    await this.store.loadPost(
-      this.postId,
-    );
-
-    // Replies also increment the post's
-    // denormalized commentCount.
-    this.communityStore.updatePostCommentCount(
-      this.postId,
-      1,
-    );
-
-    this.logger.info(
-      'CommunityPostDetailComponent',
-      'Community comment reply created.',
-      {
-        postId: this.postId,
-        commentId: id,
-      },
-    );
-
-  } catch (error) {
-
-    this.logger.error(
-      'CommunityPostDetailComponent',
-      'Failed to refresh post after reply creation.',
-      {
-        postId: this.postId,
-        commentId: id,
-        error:
-          error instanceof Error
-            ? error.message
-            : String(error),
-      },
-    );
-  }
-}
-
-  onCommentReaction(comment: CommunityComment): void {
     /*
-     * Comment reactions will be persisted through
-     * CommunityReactionService once comment reaction
-     * persistence is implemented.
+     * Comment reactions are intentionally left as
+     * a future persistence feature.
+     *
+     * The event is already wired from the reusable
+     * CommunityCommentComponent so it can be
+     * implemented without redesigning this page.
      */
-
-    this.logger.info('CommunityPostDetailComponent', 'Community comment reaction requested.', {
-      commentId: comment.id,
-      postId: this.postId,
-    });
+    this.logger.info(
+      'CommunityPostDetailComponent',
+      'Community comment reaction requested.',
+      {
+        commentId: comment.id,
+        postId: this.postId,
+        reactionType: comment.currentUserReaction ?? 'like',
+      },
+    );
   }
 
   // ==============================================================
   // ENGAGEMENT
   // ==============================================================
 
-  totalReactionCount(post: { reactionCounts?: Record<string, number> }): number {
-    const counts = post.reactionCounts ?? {};
+  totalReactionCount(
+    post: {
+      reactionCounts?: Record<string, number>;
+    },
+  ): number {
 
-    return Object.values(counts).reduce((total, count) => total + Number(count || 0), 0);
+    const counts =
+      post.reactionCounts ?? {};
+
+    return Object.values(
+      counts,
+    ).reduce(
+      (total, count) =>
+        total + Number(count || 0),
+      0,
+    );
   }
 
   scrollToComments(): void {
-    document.getElementById('community-comments')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
+    document
+      .getElementById(
+        'community-comments',
+      )
+      ?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
   }
 
   // ==============================================================
   // DISPLAY HELPERS
   // ==============================================================
 
-  getInitials(name: string): string {
-    const value = name?.trim();
+  getInitials(
+    name: string | null | undefined,
+  ): string {
+
+    const value =
+      name?.trim();
 
     if (!value) {
       return 'Z';
     }
 
-    const parts = value.split(/\s+/).filter(Boolean);
+    const parts =
+      value
+        .split(/\s+/)
+        .filter(Boolean);
 
     if (parts.length === 1) {
-      return parts[0].substring(0, 2).toUpperCase();
+      return parts[0]
+        .substring(0, 2)
+        .toUpperCase();
     }
 
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return (
+      parts[0][0] +
+      parts[parts.length - 1][0]
+    ).toUpperCase();
   }
 
-  formatDate(timestamp: any): string {
+  normalizeTag(
+    tag: string | null | undefined,
+  ): string {
+
+    if (!tag) {
+      return '';
+    }
+
+    return tag
+      .trim()
+      .replace(/^#+/, '');
+  }
+
+  formatDate(
+    timestamp: unknown,
+  ): string {
+
     if (!timestamp) {
       return '';
     }
 
     try {
-      const date =
-        typeof timestamp.toDate === 'function' ? timestamp.toDate() : new Date(timestamp);
+      let date: Date;
 
-      if (Number.isNaN(date.getTime())) {
+      /*
+       * Firestore Timestamp.
+       */
+      if (
+        typeof timestamp === 'object' &&
+        timestamp !== null &&
+        'toDate' in timestamp &&
+        typeof (
+          timestamp as {
+            toDate?: unknown;
+          }
+        ).toDate === 'function'
+      ) {
+        date = (
+          timestamp as {
+            toDate: () => Date;
+          }
+        ).toDate();
+      }
+
+      /*
+       * JavaScript Date.
+       */
+      else if (
+        timestamp instanceof Date
+      ) {
+        date = timestamp;
+      }
+
+      /*
+       * String / number.
+       */
+      else if (
+        typeof timestamp === 'string' ||
+        typeof timestamp === 'number'
+      ) {
+        date = new Date(timestamp);
+      }
+
+      else {
         return '';
       }
 
-      return new Intl.DateTimeFormat(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      }).format(date);
+      if (
+        Number.isNaN(
+          date.getTime(),
+        )
+      ) {
+        return '';
+      }
+
+      return new Intl.DateTimeFormat(
+        undefined,
+        {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        },
+      ).format(date);
+
     } catch {
       return '';
     }
   }
 }
+

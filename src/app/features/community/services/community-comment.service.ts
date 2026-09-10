@@ -1,9 +1,7 @@
 import { Injectable } from '@angular/core';
 
 import {
-  addDoc,
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -12,8 +10,6 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  setDoc,
-  updateDoc,
   where,
   writeBatch,
 } from 'firebase/firestore';
@@ -30,11 +26,12 @@ import {
 } from '../models/community-reaction.model';
 
 
-// ============================================================
+// ================================================================
 // CREATE COMMENT INPUT
-// ============================================================
+// ================================================================
 
 export interface CreateCommunityCommentInput {
+
   postId: string;
 
   /**
@@ -56,18 +53,18 @@ export interface CreateCommunityCommentInput {
 }
 
 
-// ============================================================
+// ================================================================
 // COMMENT PAGE
-// ============================================================
+// ================================================================
 
 export interface CommunityCommentPage {
   comments: CommunityComment[];
 }
 
 
-// ============================================================
+// ================================================================
 // SERVICE
-// ============================================================
+// ================================================================
 
 @Injectable({
   providedIn: 'root',
@@ -172,15 +169,22 @@ export class CommunityCommentService {
     }
 
 
+    /*
+     * IMPORTANT:
+     *
+     * We intentionally do not filter only for
+     * status === 'published'.
+     *
+     * Soft-deleted comments must remain available
+     * so their replies can continue to render beneath
+     * the deleted parent.
+     *
+     * The UI is responsible for displaying deleted
+     * comments using the appropriate placeholder.
+     */
     const commentsQuery =
       query(
         this.commentsCollection(id),
-
-        where(
-          'status',
-          '==',
-          'published',
-        ),
 
         orderBy(
           'createdAt',
@@ -265,6 +269,8 @@ export class CommunityCommentService {
     /*
      * A batch ensures that the comment and the
      * post comment count are written together.
+     *
+     * This counts both top-level comments and replies.
      */
     const batch =
       writeBatch(firestore);
@@ -301,8 +307,7 @@ export class CommunityCommentService {
 
         content,
 
-        reactionCounts:
-          {},
+        reactionCounts: {},
 
         status:
           'published' as CommunityCommentStatus,
@@ -312,6 +317,9 @@ export class CommunityCommentService {
 
         updatedAt:
           serverTimestamp(),
+
+        deletedAt:
+          null,
       },
     );
 
@@ -319,8 +327,6 @@ export class CommunityCommentService {
     /*
      * Increment the denormalized comment count
      * on the parent post.
-     *
-     * This counts both top-level comments and replies.
      */
     batch.update(
       this.postDocument(postId),
@@ -388,7 +394,6 @@ export class CommunityCommentService {
     const data =
       reactionSnapshot.data();
 
-
     const type =
       data['type'];
 
@@ -451,11 +456,40 @@ export class CommunityCommentService {
     }
 
 
+    /*
+     * Prevent reactions to deleted comments.
+     */
     const commentReference =
       this.commentDocument(
         post,
         comment,
       );
+
+    const commentSnapshot =
+      await getDoc(
+        commentReference,
+      );
+
+
+    if (!commentSnapshot.exists()) {
+      throw new Error(
+        'Comment could not be found.',
+      );
+    }
+
+
+    const commentData =
+      commentSnapshot.data();
+
+
+    if (
+      commentData['status'] ===
+      'deleted'
+    ) {
+      throw new Error(
+        'Deleted comments cannot receive reactions.',
+      );
+    }
 
 
     const reactionReference =
@@ -486,14 +520,10 @@ export class CommunityCommentService {
       const existingData =
         existingReaction.data();
 
-
       const existingType =
         existingData['type'];
 
 
-      /*
-       * Only decrement known reaction types.
-       */
       const validExistingType =
         existingType === 'like' ||
         existingType === 'love' ||
@@ -509,18 +539,13 @@ export class CommunityCommentService {
         writeBatch(firestore);
 
 
-      /*
-       * Remove the user's reaction.
-       */
       batch.delete(
         reactionReference,
       );
 
 
-      /*
-       * Decrement the aggregate count.
-       */
       if (validExistingType) {
+
         batch.update(
           commentReference,
           {
@@ -531,7 +556,9 @@ export class CommunityCommentService {
               serverTimestamp(),
           },
         );
+
       } else {
+
         batch.update(
           commentReference,
           {
@@ -559,9 +586,6 @@ export class CommunityCommentService {
       writeBatch(firestore);
 
 
-    /*
-     * Store one reaction per user.
-     */
     batch.set(
       reactionReference,
       {
@@ -579,9 +603,6 @@ export class CommunityCommentService {
     );
 
 
-    /*
-     * Increment aggregate reaction count.
-     */
     batch.update(
       commentReference,
       {
@@ -602,7 +623,7 @@ export class CommunityCommentService {
 
 
   // ============================================================
-  // DELETE COMMENT
+  // SOFT DELETE COMMENT
   // ============================================================
 
   async deleteComment(
@@ -631,10 +652,6 @@ export class CommunityCommentService {
     }
 
 
-    const batch =
-      writeBatch(firestore);
-
-
     const commentReference =
       this.commentDocument(
         post,
@@ -642,20 +659,57 @@ export class CommunityCommentService {
       );
 
 
-    batch.delete(
-      commentReference,
-    );
+    const commentSnapshot =
+      await getDoc(
+        commentReference,
+      );
+
+
+    if (!commentSnapshot.exists()) {
+      throw new Error(
+        'Comment could not be found.',
+      );
+    }
+
+
+    const commentData =
+      commentSnapshot.data();
 
 
     /*
-     * Keep the denormalized post comment count
-     * synchronized with the actual comment deletion.
+     * Deleting an already-deleted comment is
+     * treated as an idempotent operation.
      */
+    if (
+      commentData['status'] ===
+      'deleted'
+    ) {
+      return;
+    }
+
+
+    /*
+     * Soft deletion deliberately does NOT
+     * decrement post.commentCount.
+     *
+     * The comment remains part of the thread.
+     * Replies therefore remain valid.
+     */
+    const batch =
+      writeBatch(firestore);
+
+
     batch.update(
-      this.postDocument(post),
+      commentReference,
       {
-        commentCount:
-          increment(-1),
+        content:
+          '',
+
+        status:
+          'deleted' as CommunityCommentStatus,
+
+        deletedAt:
+          serverTimestamp(),
 
         updatedAt:
           serverTimestamp(),

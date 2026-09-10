@@ -1,18 +1,27 @@
-import { computed, inject } from '@angular/core';
-import { DocumentData, DocumentSnapshot } from 'firebase/firestore';
 
-import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
+import { computed, inject } from '@angular/core';
+import {
+  DocumentData,
+  DocumentSnapshot,
+} from 'firebase/firestore';
+
+import {
+  patchState,
+  signalStore,
+  withComputed,
+  withMethods,
+  withState,
+} from '@ngrx/signals';
 
 import { AuthService } from '../../../core/services/auth.service';
 
-import { CommunityPost } from '../models/community-post.model';
+import { CommunityPost, CommunityPostAuthor } from '../models/community-post.model';
 import { CommunityTopic } from '../models/community-topic.model';
 
 import { CommunityPostService } from '../services/community-post.service';
 import { CommunityTopicService } from '../services/community-topic.service';
 
 import { CommunityReactionService } from '../services/community-reaction.service';
-
 import { CommunityReactionType } from '../models/community-reaction.model';
 
 import { LoggerService } from '../../../core/services/logger.service';
@@ -22,7 +31,10 @@ import { CommunityBookmarkService } from '../services/community-bookmark.service
 // TYPES
 // ============================================================
 
-export type CommunitySortMode = 'latest' | 'popular' | 'trending';
+export type CommunitySortMode =
+  | 'latest'
+  | 'popular'
+  | 'trending';
 
 // ============================================================
 // STATE
@@ -89,6 +101,7 @@ export const CommunityStore = signalStore(
   {
     providedIn: 'root',
   },
+
   // ==========================================================
   // STATE
   // ==========================================================
@@ -109,20 +122,25 @@ export const CommunityStore = signalStore(
     const filteredPosts = computed(() => {
       const posts = store.posts();
 
-      const searchTerm = store.searchTerm().trim().toLowerCase();
+      const searchTerm =
+        store.searchTerm().trim().toLowerCase();
 
       if (!searchTerm) {
         return posts;
       }
 
       return posts.filter((post) => {
-        const title = post.title?.toLowerCase() ?? '';
+        const title =
+          post.title?.toLowerCase() ?? '';
 
-        const content = post.content?.toLowerCase() ?? '';
+        const content =
+          post.content?.toLowerCase() ?? '';
 
-        const topicName = post.topicName?.toLowerCase() ?? '';
+        const topicName =
+          post.topicName?.toLowerCase() ?? '';
 
-        const tags = post.tags?.join(' ').toLowerCase() ?? '';
+        const tags =
+          post.tags?.join(' ').toLowerCase() ?? '';
 
         return (
           title.includes(searchTerm) ||
@@ -144,7 +162,11 @@ export const CommunityStore = signalStore(
         return null;
       }
 
-      return store.topics().find((topic) => topic.id === topicId) ?? null;
+      return (
+        store.topics().find(
+          (topic) => topic.id === topicId,
+        ) ?? null
+      );
     });
 
     // --------------------------------------------------------
@@ -153,7 +175,9 @@ export const CommunityStore = signalStore(
 
     const hasActiveFilters = computed(() => {
       return (
-        !!store.selectedTopicId() || !!store.searchTerm().trim() || store.sortMode() !== 'latest'
+        !!store.selectedTopicId() ||
+        !!store.searchTerm().trim() ||
+        store.sortMode() !== 'latest'
       );
     });
 
@@ -167,30 +191,30 @@ export const CommunityStore = signalStore(
 
     // --------------------------------------------------------
     // Post count
-    //
-    // IMPORTANT:
-    // Do not call filteredPosts() here because filteredPosts
-    // is a sibling computed property in this same factory.
-    // Calculate from the same source instead.
     // --------------------------------------------------------
 
     const postCount = computed(() => {
       const posts = store.posts();
 
-      const searchTerm = store.searchTerm().trim().toLowerCase();
+      const searchTerm =
+        store.searchTerm().trim().toLowerCase();
 
       if (!searchTerm) {
         return posts.length;
       }
 
       return posts.filter((post) => {
-        const title = post.title?.toLowerCase() ?? '';
+        const title =
+          post.title?.toLowerCase() ?? '';
 
-        const content = post.content?.toLowerCase() ?? '';
+        const content =
+          post.content?.toLowerCase() ?? '';
 
-        const topicName = post.topicName?.toLowerCase() ?? '';
+        const topicName =
+          post.topicName?.toLowerCase() ?? '';
 
-        const tags = post.tags?.join(' ').toLowerCase() ?? '';
+        const tags =
+          post.tags?.join(' ').toLowerCase() ?? '';
 
         return (
           title.includes(searchTerm) ||
@@ -206,20 +230,19 @@ export const CommunityStore = signalStore(
     // --------------------------------------------------------
 
     const isEmpty = computed(() => {
-      return !store.loading() && !store.loadingMore() && postCount() === 0;
+      return (
+        !store.loading() &&
+        !store.loadingMore() &&
+        postCount() === 0
+      );
     });
 
     return {
       filteredPosts,
-
       selectedTopic,
-
       hasActiveFilters,
-
       currentUser,
-
       postCount,
-
       isEmpty,
     };
   }),
@@ -236,7 +259,10 @@ export const CommunityStore = signalStore(
     const logger = inject(LoggerService);
     const bookmarkService = inject(CommunityBookmarkService);
 
-    // Hellper to hydrate reaction state.
+    // ========================================================
+    // HYDRATE REACTION STATE
+    // ========================================================
+
     const hydrateReactionState = async (
       posts: CommunityPost[],
       userId: string | null,
@@ -249,16 +275,29 @@ export const CommunityStore = signalStore(
         const hydratedPosts = await Promise.all(
           posts.map(async (post) => {
             try {
-              const reaction = await reactionService.getUserReaction(post.id, userId);
+              const reaction =
+                await reactionService.getUserReaction(
+                  post.id,
+                  userId,
+                );
 
               return {
                 ...post,
-                currentUserReaction: reaction?.type ?? null,
+                currentUserReaction:
+                  reaction?.type ?? null,
               };
             } catch (error) {
               logger.error(
-                `Failed to load reaction for community post ${post.id}`,
-                error instanceof Error ? error.message : String(error),
+                'CommunityStore',
+                'Failed to load reaction for community post.',
+                {
+                  postId: post.id,
+                  userId,
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : String(error),
+                },
               );
 
               return {
@@ -272,21 +311,24 @@ export const CommunityStore = signalStore(
         return hydratedPosts;
       } catch (error) {
         logger.error(
-          'Failed to hydrate community reaction state',
-          error instanceof Error ? error.message : String(error),
+          'CommunityStore',
+          'Failed to hydrate community reaction state.',
+          {
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
         );
 
         return posts;
       }
     };
 
-    /**
-     * Hydrate viewer-specific bookmark state for the loaded posts.
-     *
-     * Bookmark state is intentionally not stored on the CommunityPost document
-     * because it belongs to the current user. We therefore resolve it after
-     * loading the community posts.
-     */
+    // ========================================================
+    // HYDRATE BOOKMARK STATE
+    // ========================================================
+
     const hydrateBookmarks = async (
       posts: CommunityPost[],
       userId: string | null,
@@ -298,20 +340,32 @@ export const CommunityStore = signalStore(
       const hydratedPosts = await Promise.all(
         posts.map(async (post) => {
           try {
-            const bookmarked = await bookmarkService.isBookmarked(post.id, userId);
+            const bookmarked =
+              await bookmarkService.isBookmarked(
+                post.id,
+                userId,
+              );
 
             return {
               ...post,
               bookmarkedByCurrentUser: bookmarked,
             };
           } catch (error) {
-            logger.error('CommunityStore', 'Failed to load bookmark state for community post.', {
-              postId: post.id,
-              userId,
-              error: error instanceof Error ? error.message : String(error),
-            });
+            logger.error(
+              'CommunityStore',
+              'Failed to load bookmark state for community post.',
+              {
+                postId: post.id,
+                userId,
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : String(error),
+              },
+            );
 
-            // Do not prevent the feed from loading if bookmark hydration fails.
+            // Do not prevent the feed from loading
+            // if bookmark hydration fails.
             return {
               ...post,
               bookmarkedByCurrentUser: false,
@@ -321,6 +375,33 @@ export const CommunityStore = signalStore(
       );
 
       return hydratedPosts;
+    };
+
+    // ========================================================
+    // HYDRATE VIEWER STATE
+    // ========================================================
+
+    /**
+     * Applies all current-user-specific state to a collection
+     * of posts.
+     *
+     * This keeps initial loading, topic selection, pagination,
+     * and refresh behavior consistent.
+     */
+    const hydrateViewerState = async (
+      posts: CommunityPost[],
+      userId: string | null,
+    ): Promise<CommunityPost[]> => {
+      const postsWithReactions =
+        await hydrateReactionState(
+          posts,
+          userId,
+        );
+
+      return hydrateBookmarks(
+        postsWithReactions,
+        userId,
+      );
     };
 
     // ========================================================
@@ -334,45 +415,60 @@ export const CommunityStore = signalStore(
       });
 
       try {
-        const [topics, postPage] = await Promise.all([
-          topicService.getActiveTopics(),
+        const [topics, postPage] =
+          await Promise.all([
+            topicService.getActiveTopics(),
 
-          postService.getPosts({
-            topicId: store.selectedTopicId(),
-          }),
-        ]);
+            postService.getPosts({
+              topicId:
+                store.selectedTopicId(),
+            }),
+          ]);
 
-        const currentUser = authService.user();
-        const userId = currentUser?.id ?? null;
+        const currentUser =
+          authService.user();
 
-        // Hydrate viewer-specific reaction state first.
-        const postsWithReactions = await hydrateReactionState(postPage.posts, userId);
+        const userId =
+          currentUser?.id ?? null;
 
-        // Hydrate viewer-specific bookmark state.
-        const hydratedPosts = await hydrateBookmarks(postsWithReactions, userId);
+        const hydratedPosts =
+          await hydrateViewerState(
+            postPage.posts,
+            userId,
+          );
 
         patchState(store, {
           topics,
 
           posts: hydratedPosts,
 
-          lastDocument: postPage.lastDocument,
+          lastDocument:
+            postPage.lastDocument,
 
-          hasMore: postPage.hasMore,
+          hasMore:
+            postPage.hasMore,
 
           error: null,
 
           loading: false,
         });
       } catch (error) {
-        logger.error('CommunityStore', 'Failed to load community data.', {
-          error: error instanceof Error ? error.message : String(error),
-        });
+        logger.error(
+          'CommunityStore',
+          'Failed to load community data.',
+          {
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
+        );
 
         patchState(store, {
           loading: false,
 
-          error: 'Unable to load the community right now. Please try again.',
+          error:
+            'Unable to load the community right now. Please try again.',
         });
       }
     };
@@ -382,7 +478,11 @@ export const CommunityStore = signalStore(
     // ========================================================
 
     const loadMore = async (): Promise<void> => {
-      if (store.loading() || store.loadingMore() || !store.hasMore()) {
+      if (
+        store.loading() ||
+        store.loadingMore() ||
+        !store.hasMore()
+      ) {
         return;
       }
 
@@ -392,41 +492,65 @@ export const CommunityStore = signalStore(
       });
 
       try {
-        const postPage = await postService.getPosts({
-          topicId: store.selectedTopicId(),
-          lastDocument: store.lastDocument(),
-        });
+        const postPage =
+          await postService.getPosts({
+            topicId:
+              store.selectedTopicId(),
 
-        const currentUser = authService.user();
-        const userId = currentUser?.id ?? null;
+            lastDocument:
+              store.lastDocument(),
+          });
 
-        // Hydrate reactions for the newly loaded posts.
-        const postsWithReactions = await hydrateReactionState(postPage.posts, userId);
+        const currentUser =
+          authService.user();
 
-        // Hydrate bookmarks for the newly loaded posts.
-        const hydratedPosts = await hydrateBookmarks(postsWithReactions, userId);
+        const userId =
+          currentUser?.id ?? null;
+
+        const hydratedPosts =
+          await hydrateViewerState(
+            postPage.posts,
+            userId,
+          );
 
         patchState(store, {
-          posts: [...store.posts(), ...hydratedPosts],
+          posts: [
+            ...store.posts(),
+            ...hydratedPosts,
+          ],
 
-          lastDocument: postPage.lastDocument,
+          lastDocument:
+            postPage.lastDocument,
 
-          hasMore: postPage.hasMore,
+          hasMore:
+            postPage.hasMore,
 
           loadingMore: false,
 
           error: null,
         });
       } catch (error) {
-        logger.error('CommunityStore', 'Failed to load more community posts.', {
-          topicId: store.selectedTopicId(),
-          error: error instanceof Error ? error.message : String(error),
-        });
+        logger.error(
+          'CommunityStore',
+          'Failed to load more community posts.',
+          {
+            topicId:
+              store.selectedTopicId(),
+
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
+        );
 
         patchState(store, {
           loadingMore: false,
 
-          error: error instanceof Error ? error.message : 'Unable to load more community posts.',
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Unable to load more community posts.',
         });
       }
     };
@@ -435,63 +559,70 @@ export const CommunityStore = signalStore(
     // REFRESH
     // ========================================================
 
-  const refresh = async (): Promise<void> => {
-  patchState(store, {
-    refreshing: true,
-    error: null,
-  });
+    const refresh = async (): Promise<void> => {
+      patchState(store, {
+        refreshing: true,
+        error: null,
+      });
 
-  try {
-    const postPage = await postService.getPosts({
-      topicId: store.selectedTopicId(),
-    });
+      try {
+        const postPage =
+          await postService.getPosts({
+            topicId:
+              store.selectedTopicId(),
+          });
 
-    const currentUser = authService.user();
-    const userId = currentUser?.id ?? null;
+        const currentUser =
+          authService.user();
 
-    const postsWithReactions = await hydrateReactionState(
-      postPage.posts,
-      userId,
-    );
+        const userId =
+          currentUser?.id ?? null;
 
-    const hydratedPosts = await hydrateBookmarks(
-      postsWithReactions,
-      userId,
-    );
+        const hydratedPosts =
+          await hydrateViewerState(
+            postPage.posts,
+            userId,
+          );
 
-    patchState(store, {
-      posts: hydratedPosts,
+        patchState(store, {
+          posts: hydratedPosts,
 
-      lastDocument: postPage.lastDocument,
+          lastDocument:
+            postPage.lastDocument,
 
-      hasMore: postPage.hasMore,
+          hasMore:
+            postPage.hasMore,
 
-      refreshing: false,
+          refreshing: false,
 
-      error: null,
-    });
-  } catch (error) {
-    logger.error(
-      'CommunityStore',
-      'Failed to refresh community posts.',
-      {
-        topicId: store.selectedTopicId(),
-        error: error instanceof Error
-          ? error.message
-          : String(error),
-      },
-    );
+          error: null,
+        });
+      } catch (error) {
+        logger.error(
+          'CommunityStore',
+          'Failed to refresh community posts.',
+          {
+            topicId:
+              store.selectedTopicId(),
 
-    patchState(store, {
-      refreshing: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
+        );
 
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Unable to refresh the community right now.',
-    });
-  }
-};
+        patchState(store, {
+          refreshing: false,
+
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Unable to refresh the community right now.',
+        });
+      }
+    };
+
     // ========================================================
     // REACTIONS
     // ========================================================
@@ -510,41 +641,72 @@ export const CommunityStore = signalStore(
       }
 
       try {
-        const previousPost = store.posts().find((post) => post.id === postId);
+        const previousPost =
+          store.posts().find(
+            (post) => post.id === postId,
+          );
 
         if (!previousPost) {
           return;
         }
 
-        const previousType = previousPost.currentUserReaction ?? null;
+        const previousType =
+          previousPost.currentUserReaction ??
+          null;
 
-        const resultingType = await reactionService.toggleReaction(postId, userId, type);
+        const resultingType =
+          await reactionService.toggleReaction(
+            postId,
+            userId,
+            type,
+          );
 
-        const updatedPosts = store.posts().map((post) => {
-          if (post.id !== postId) {
-            return post;
-          }
+        const updatedPosts =
+          store.posts().map((post) => {
+            if (post.id !== postId) {
+              return post;
+            }
 
-          const reactionCounts = {
-            ...(post.reactionCounts ?? {}),
-          };
+            const reactionCounts = {
+              ...(post.reactionCounts ?? {}),
+            };
 
-          // Remove the previous reaction count.
-          if (previousType && previousType !== resultingType) {
-            reactionCounts[previousType] = Math.max(0, (reactionCounts[previousType] ?? 0) - 1);
-          }
+            // Remove the previous reaction count.
+            if (
+              previousType &&
+              previousType !== resultingType
+            ) {
+              reactionCounts[previousType] =
+                Math.max(
+                  0,
+                  (
+                    reactionCounts[
+                      previousType
+                    ] ?? 0
+                  ) - 1,
+                );
+            }
 
-          // Add the new reaction count.
-          if (resultingType && previousType !== resultingType) {
-            reactionCounts[resultingType] = (reactionCounts[resultingType] ?? 0) + 1;
-          }
+            // Add the new reaction count.
+            if (
+              resultingType &&
+              previousType !== resultingType
+            ) {
+              reactionCounts[resultingType] =
+                (
+                  reactionCounts[
+                    resultingType
+                  ] ?? 0
+                ) + 1;
+            }
 
-          return {
-            ...post,
-            reactionCounts,
-            currentUserReaction: resultingType,
-          };
-        });
+            return {
+              ...post,
+              reactionCounts,
+              currentUserReaction:
+                resultingType,
+            };
+          });
 
         patchState(store, {
           posts: updatedPosts,
@@ -552,8 +714,17 @@ export const CommunityStore = signalStore(
         });
       } catch (error) {
         logger.error(
-          'Failed to react to community post',
-          error instanceof Error ? error.message : String(error),
+          'CommunityStore',
+          'Failed to react to community post.',
+          {
+            postId,
+            userId,
+            reactionType: type,
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
         );
 
         patchState(store, {
@@ -569,9 +740,15 @@ export const CommunityStore = signalStore(
     // SELECT TOPIC
     // ========================================================
 
-    const selectTopic = async (topicId: string | null): Promise<void> => {
+    const selectTopic = async (
+      topicId: string | null,
+    ): Promise<void> => {
+      const normalizedTopicId =
+        topicId?.trim() || null;
+
       patchState(store, {
-        selectedTopicId: topicId,
+        selectedTopicId:
+          normalizedTopicId,
 
         posts: [],
 
@@ -585,31 +762,68 @@ export const CommunityStore = signalStore(
       });
 
       try {
-        const page = await postService.getPosts({
-          topicId,
-        });
+        const page =
+          await postService.getPosts({
+            topicId:
+              normalizedTopicId,
+          });
+
+        const currentUser =
+          authService.user();
+
+        const userId =
+          currentUser?.id ?? null;
+
+        // IMPORTANT:
+        // Topic changes must hydrate the same
+        // viewer-specific state as initial loading.
+        const hydratedPosts =
+          await hydrateViewerState(
+            page.posts,
+            userId,
+          );
 
         patchState(store, {
-          posts: page.posts,
+          posts: hydratedPosts,
 
-          lastDocument: page.lastDocument,
+          lastDocument:
+            page.lastDocument,
 
-          hasMore: page.hasMore,
+          hasMore:
+            page.hasMore,
 
           loading: false,
 
           error: null,
         });
+
+        logger.info(
+          'CommunityStore',
+          'Community topic selected.',
+          {
+            topicId: normalizedTopicId,
+            postCount: hydratedPosts.length,
+          },
+        );
       } catch (error) {
         logger.error(
-          'Failed to select community topic',
-          error instanceof Error ? error.message : String(error),
+          'CommunityStore',
+          'Failed to select community topic.',
+          {
+            topicId: normalizedTopicId,
+
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
         );
 
         patchState(store, {
           loading: false,
 
-          error: 'Unable to load posts for this topic. Please try again.',
+          error:
+            'Unable to load posts for this topic. Please try again.',
         });
       }
     };
@@ -618,38 +832,44 @@ export const CommunityStore = signalStore(
     // CREATE POST
     // ========================================================
 
-    const createPost = async (input: {
-      title: string;
-      content: string;
-      topicId: string;
-      topicName?: string;
-      tags?: string[];
-    }): Promise<string | null> => {
-      // --------------------------------------------------------
-      // Current authenticated user
-      // --------------------------------------------------------
-
-      const currentUser = store.currentUser();
+   const createPost = async (input: {
+  title: string;
+  content: string;
+  topicId: string;
+  topicName?: string;
+  tags?: string[];
+  authorId: string;
+  author: CommunityPostAuthor;
+}): Promise<string | null> => {
+      const currentUser =
+        store.currentUser();
 
       if (!currentUser) {
         patchState(store, {
-          error: 'You must be signed in to create a post.',
+          error:
+            'You must be signed in to create a post.',
         });
 
         return null;
       }
 
-      // --------------------------------------------------------
+      // ------------------------------------------------------
       // Validate input
-      // --------------------------------------------------------
+      // ------------------------------------------------------
 
-      const title = input.title.trim();
-      const content = input.content.trim();
-      const topicId = input.topicId.trim();
+      const title =
+        input.title.trim();
+
+      const content =
+        input.content.trim();
+
+      const topicId =
+        input.topicId.trim();
 
       if (!title) {
         patchState(store, {
-          error: 'A post title is required.',
+          error:
+            'A post title is required.',
         });
 
         return null;
@@ -657,7 +877,8 @@ export const CommunityStore = signalStore(
 
       if (!content) {
         patchState(store, {
-          error: 'Post content is required.',
+          error:
+            'Post content is required.',
         });
 
         return null;
@@ -665,15 +886,16 @@ export const CommunityStore = signalStore(
 
       if (!topicId) {
         patchState(store, {
-          error: 'Please select a topic.',
+          error:
+            'Please select a topic.',
         });
 
         return null;
       }
 
-      // --------------------------------------------------------
+      // ------------------------------------------------------
       // Begin save
-      // --------------------------------------------------------
+      // ------------------------------------------------------
 
       patchState(store, {
         loading: true,
@@ -681,49 +903,58 @@ export const CommunityStore = signalStore(
       });
 
       try {
-        const postId = await postService.createPost({
-          authorId: currentUser.id,
+        const postId =
+        await postService.createPost({
+  authorId: input.authorId,
+  author: input.author,
+  topicId,
+  topicName: input.topicName,
+  title,
+  content,
+  tags: input.tags ?? [],
+});
 
-          author: {
-            id: currentUser.id,
-            displayName: currentUser.displayName || 'Zebron Community Member',
-            ...(currentUser.photoUrl ? { photoUrl: currentUser.photoUrl } : {}),
-          },
-
-          topicId,
-          topicName: input.topicName,
-
-          title,
-          content,
-          tags: input.tags ?? [],
-        });
-
-        // The post has been successfully written to Firestore.
-        // Mark the save as complete before refreshing the feed.
+        // The post was successfully written.
         patchState(store, {
           loading: false,
           error: null,
         });
 
         // Refresh the feed separately.
-        // If refreshing fails, the post was still created successfully.
+        // If the refresh fails, the post still exists.
         try {
           await loadInitialData();
         } catch (refreshError) {
           logger.error(
-            'Post created, but community feed refresh failed',
-            refreshError instanceof Error ? refreshError.message : String(refreshError),
+            'CommunityStore',
+            'Post created, but community feed refresh failed.',
+            {
+              postId,
+
+              error:
+                refreshError instanceof Error
+                  ? refreshError.message
+                  : String(refreshError),
+            },
           );
         }
 
         return postId;
       } catch (error) {
         logger.error(
-          'Failed to create community post',
-          error instanceof Error ? error.message : String(error),
+          'CommunityStore',
+          'Failed to create community post.',
+          {
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
         );
+
         patchState(store, {
           loading: false,
+
           error:
             error instanceof Error
               ? error.message
@@ -734,25 +965,42 @@ export const CommunityStore = signalStore(
       }
     };
 
-    // Update the post commentCount.
-    const updatePostCommentCount = (postId: string, delta: number): void => {
-      const id = postId.trim();
+    // ========================================================
+    // UPDATE COMMENT COUNT
+    // ========================================================
 
-      if (!id || !Number.isFinite(delta)) {
+    const updatePostCommentCount = (
+      postId: string,
+      delta: number,
+    ): void => {
+      const id =
+        postId.trim();
+
+      if (
+        !id ||
+        !Number.isFinite(delta)
+      ) {
         return;
       }
 
       patchState(store, {
-        posts: store.posts().map((post) => {
-          if (post.id !== id) {
-            return post;
-          }
+        posts:
+          store.posts().map((post) => {
+            if (post.id !== id) {
+              return post;
+            }
 
-          return {
-            ...post,
-            commentCount: Math.max(0, (post.commentCount ?? 0) + delta),
-          };
-        }),
+            return {
+              ...post,
+
+              commentCount:
+                Math.max(
+                  0,
+                  (post.commentCount ?? 0) +
+                    delta,
+                ),
+            };
+          }),
       });
     };
 
@@ -760,59 +1008,90 @@ export const CommunityStore = signalStore(
     // SEARCH
     // ========================================================
 
-    const setSearchTerm = (searchTerm: string): void => {
+    const setSearchTerm = (
+      searchTerm: string,
+    ): void => {
       patchState(store, {
         searchTerm,
       });
     };
 
-    const toggleBookmark = async (postId: string): Promise<void> => {
-      const id = postId.trim();
+    // ========================================================
+    // BOOKMARKS
+    // ========================================================
+
+    const toggleBookmark = async (
+      postId: string,
+    ): Promise<void> => {
+      const id =
+        postId.trim();
 
       if (!id) {
         return;
       }
 
-      const currentUser = store.currentUser();
+      const currentUser =
+        store.currentUser();
 
       if (!currentUser) {
         patchState(store, {
-          error: 'You must be signed in to save a post.',
+          error:
+            'You must be signed in to save a post.',
         });
 
         return;
       }
 
       try {
-        const bookmarked = await bookmarkService.toggleBookmark(id, currentUser.id);
+        const bookmarked =
+          await bookmarkService.toggleBookmark(
+            id,
+            currentUser.id,
+          );
 
         patchState(store, {
-          posts: store.posts().map((post) =>
-            post.id === id
-              ? {
-                  ...post,
-                  bookmarkedByCurrentUser: bookmarked,
-                }
-              : post,
-          ),
+          posts:
+            store.posts().map((post) =>
+              post.id === id
+                ? {
+                    ...post,
+                    bookmarkedByCurrentUser:
+                      bookmarked,
+                  }
+                : post,
+            ),
+
           error: null,
         });
 
-        logger.info('CommunityStore', 'Community post bookmark updated.', {
-          postId: id,
-          userId: currentUser.id,
-          bookmarked,
-        });
+        logger.info(
+          'CommunityStore',
+          'Community post bookmark updated.',
+          {
+            postId: id,
+            userId: currentUser.id,
+            bookmarked,
+          },
+        );
       } catch (error) {
-        logger.error('CommunityStore', 'Failed to update community post bookmark.', {
-          postId: id,
-          userId: currentUser.id,
-          error: error instanceof Error ? error.message : String(error),
-        });
+        logger.error(
+          'CommunityStore',
+          'Failed to update community post bookmark.',
+          {
+            postId: id,
+            userId: currentUser.id,
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
+        );
 
         patchState(store, {
           error:
-            error instanceof Error ? error.message : 'Unable to save the post. Please try again.',
+            error instanceof Error
+              ? error.message
+              : 'Unable to save the post. Please try again.',
         });
       }
     };
@@ -821,7 +1100,9 @@ export const CommunityStore = signalStore(
     // SORT
     // ========================================================
 
-    const setSortMode = (sortMode: CommunitySortMode): void => {
+    const setSortMode = (
+      sortMode: CommunitySortMode,
+    ): void => {
       patchState(store, {
         sortMode,
       });
@@ -851,16 +1132,31 @@ export const CommunityStore = signalStore(
       });
 
       try {
-        const page = await postService.getPosts({
-          topicId: null,
-        });
+        const page =
+          await postService.getPosts({
+            topicId: null,
+          });
+
+        const currentUser =
+          authService.user();
+
+        const userId =
+          currentUser?.id ?? null;
+
+        const hydratedPosts =
+          await hydrateViewerState(
+            page.posts,
+            userId,
+          );
 
         patchState(store, {
-          posts: page.posts,
+          posts: hydratedPosts,
 
-          lastDocument: page.lastDocument,
+          lastDocument:
+            page.lastDocument,
 
-          hasMore: page.hasMore,
+          hasMore:
+            page.hasMore,
 
           loading: false,
 
@@ -868,13 +1164,21 @@ export const CommunityStore = signalStore(
         });
       } catch (error) {
         logger.error(
-          'Failed to clear community filters',
-          error instanceof Error ? error.message : String(error),
+          'CommunityStore',
+          'Failed to clear community filters.',
+          {
+            error:
+              error instanceof Error
+                ? error.message
+                : String(error),
+          },
         );
+
         patchState(store, {
           loading: false,
 
-          error: 'Unable to reset the community feed. Please try again.',
+          error:
+            'Unable to reset the community feed. Please try again.',
         });
       }
     };
@@ -908,3 +1212,4 @@ export const CommunityStore = signalStore(
     };
   }),
 );
+

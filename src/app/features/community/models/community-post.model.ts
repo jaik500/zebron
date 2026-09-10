@@ -2,11 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 
 export type CommunityPostStatus = 'published' | 'draft' | 'hidden' | 'deleted';
 
-export type CommunityModerationStatus =
-  | 'pending'
-  | 'approved'
-  | 'flagged'
-  | 'rejected';
+export type CommunityModerationStatus = 'pending' | 'approved' | 'flagged' | 'rejected';
 
 export interface CommunityPost {
   id: string;
@@ -81,4 +77,16 @@ export interface CommunityPostAuthor {
   id: string;
   displayName: string;
   photoUrl?: string;
+
+  firstName?: string;
+  lastName?: string;
+  preferredName?: string;
+
+  bio?: string;
+
+  countryOfOrigin?: string;
+  currentCountry?: string;
+  city?: string;
+  state?: string;
+  website?: string;
 }

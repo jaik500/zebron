@@ -1,17 +1,51 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+} from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
-import { MatButtonModule } from '@angular/material/button';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
+import {
+  MatButtonModule,
+} from '@angular/material/button';
 
+import {
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
+
+import {
+  MatFormFieldModule,
+} from '@angular/material/form-field';
+
+import {
+  MatIconModule,
+} from '@angular/material/icon';
+
+import {
+  MatInputModule,
+} from '@angular/material/input';
+
+import {
+  MatProgressSpinnerModule,
+} from '@angular/material/progress-spinner';
+
+import {
+  MatSelectModule,
+} from '@angular/material/select';
+
+import { HotToastService } from '@ngxpert/hot-toast';
+
+import { CommunityPostAuthor } from '../../models/community-post.model';
 import { CommunityStore } from '../../store/community.store';
+
+import { CommunityUserService } from '../../services/community-user.service';
+
 import { LoggerService } from '../../../../core/services/logger.service';
+import { AuthService } from '../../../../core/services/auth.service';
+
 
 @Component({
   selector: 'app-community-post-composer',
@@ -35,6 +69,7 @@ import { LoggerService } from '../../../../core/services/logger.service';
              overflow-hidden
              bg-white"
     >
+
       <!-- ====================================================== -->
       <!-- ZEBRON HEADER -->
       <!-- ====================================================== -->
@@ -48,6 +83,7 @@ import { LoggerService } from '../../../../core/services/logger.service';
                px-5 py-3.5
                text-white"
       >
+
         <!-- Subtle Zebron decorative circles -->
 
         <div
@@ -82,7 +118,9 @@ import { LoggerService } from '../../../../core/services/logger.service';
                  items-center
                  justify-between"
         >
+
           <div class="min-w-0">
+
             <h2
               class="text-lg
                      font-semibold
@@ -100,6 +138,7 @@ import { LoggerService } from '../../../../core/services/logger.service';
             >
               Share something with the Zebron community
             </p>
+
           </div>
 
           <!-- Close -->
@@ -116,10 +155,14 @@ import { LoggerService } from '../../../../core/services/logger.service';
                    hover:!bg-white/10"
             (click)="close()"
           >
-            <mat-icon class="!text-[21px]"> close </mat-icon>
+            <mat-icon class="!text-[21px]">
+              close
+            </mat-icon>
           </button>
+
         </div>
       </div>
+
 
       <!-- ====================================================== -->
       <!-- FORM -->
@@ -130,33 +173,59 @@ import { LoggerService } from '../../../../core/services/logger.service';
                px-5
                py-3.5"
       >
+
         <div
           class="flex
                  flex-col
                  gap-2.5"
         >
+
           <!-- ================================================== -->
           <!-- TOPIC -->
           <!-- ================================================== -->
 
-          <mat-form-field appearance="outline" class="compact-field w-full">
-            <mat-label> Topic </mat-label>
+          <mat-form-field
+            appearance="outline"
+            class="compact-field w-full"
+          >
 
-            <mat-select [(ngModel)]="topicId" placeholder="Select a topic">
-              @for (topic of store.topics(); track topic.id) {
+            <mat-label>
+              Topic
+            </mat-label>
+
+            <mat-select
+              [(ngModel)]="topicId"
+              placeholder="Select a topic"
+            >
+
+              @for (
+                topic of store.topics();
+                track topic.id
+              ) {
+
                 <mat-option [value]="topic.id">
                   {{ topic.name }}
                 </mat-option>
+
               }
+
             </mat-select>
+
           </mat-form-field>
+
 
           <!-- ================================================== -->
           <!-- TITLE -->
           <!-- ================================================== -->
 
-          <mat-form-field appearance="outline" class="compact-field w-full">
-            <mat-label> Title </mat-label>
+          <mat-form-field
+            appearance="outline"
+            class="compact-field w-full"
+          >
+
+            <mat-label>
+              Title
+            </mat-label>
 
             <input
               matInput
@@ -165,8 +234,12 @@ import { LoggerService } from '../../../../core/services/logger.service';
               placeholder="What would you like to discuss?"
             />
 
-            <mat-hint align="end"> {{ title.length }}/150 </mat-hint>
+            <mat-hint align="end">
+              {{ title.length }}/150
+            </mat-hint>
+
           </mat-form-field>
+
 
           <!-- ================================================== -->
           <!-- CONTENT -->
@@ -187,7 +260,10 @@ import { LoggerService } from '../../../../core/services/logger.service';
                    compact-content-field
                    w-full"
           >
-            <mat-label> What's on your mind? </mat-label>
+
+            <mat-label>
+              What's on your mind?
+            </mat-label>
 
             <textarea
               matInput
@@ -197,26 +273,45 @@ import { LoggerService } from '../../../../core/services/logger.service';
               placeholder="Share your question, experience, advice, or idea..."
             ></textarea>
 
-            <mat-hint align="end"> {{ content.length }}/5000 </mat-hint>
+            <mat-hint align="end">
+              {{ content.length }}/5000
+            </mat-hint>
+
           </mat-form-field>
+
 
           <!-- ================================================== -->
           <!-- TAGS -->
           <!-- ================================================== -->
 
-          <mat-form-field appearance="outline" class="compact-field w-full">
-            <mat-label> Tags </mat-label>
+          <mat-form-field
+            appearance="outline"
+            class="compact-field w-full"
+          >
 
-            <input matInput [(ngModel)]="tagsText" placeholder="jobs, career, employment" />
+            <mat-label>
+              Tags
+            </mat-label>
 
-            <mat-hint> Separate tags with commas </mat-hint>
+            <input
+              matInput
+              [(ngModel)]="tagsText"
+              placeholder="jobs, career, employment"
+            />
+
+            <mat-hint>
+              Separate tags with commas
+            </mat-hint>
+
           </mat-form-field>
+
 
           <!-- ================================================== -->
           <!-- ERROR -->
           <!-- ================================================== -->
 
           @if (store.error()) {
+
             <div
               class="flex
                      items-start
@@ -230,6 +325,7 @@ import { LoggerService } from '../../../../core/services/logger.service';
                      text-xs
                      text-red-700"
             >
+
               <mat-icon
                 class="!mt-0.5
                        !h-4
@@ -242,10 +338,15 @@ import { LoggerService } from '../../../../core/services/logger.service';
               <span>
                 {{ store.error() }}
               </span>
+
             </div>
+
           }
+
         </div>
+
       </div>
+
 
       <!-- ====================================================== -->
       <!-- FOOTER -->
@@ -262,6 +363,7 @@ import { LoggerService } from '../../../../core/services/logger.service';
                px-5
                py-2.5"
       >
+
         <!-- Cancel -->
 
         <button
@@ -274,12 +376,18 @@ import { LoggerService } from '../../../../core/services/logger.service';
           Cancel
         </button>
 
+
         <!-- Publish -->
 
         <button
           mat-flat-button
           type="button"
-          [disabled]="saving() || !title.trim() || !content.trim() || !topicId"
+          [disabled]="
+            saving() ||
+            !title.trim() ||
+            !content.trim() ||
+            !topicId
+          "
           class="!rounded-full
                  !bg-[#087F80]
                  !px-5
@@ -289,84 +397,111 @@ import { LoggerService } from '../../../../core/services/logger.service';
                  disabled:!text-slate-400"
           (click)="publish()"
         >
+
           @if (saving()) {
+
             <span
               class="flex
                      items-center
                      gap-2"
             >
-              <mat-spinner diameter="16"></mat-spinner>
+
+              <mat-spinner
+                diameter="16"
+              ></mat-spinner>
 
               Publishing...
+
             </span>
+
           } @else {
+
             <span
               class="flex
                      items-center
                      gap-2"
             >
-              <mat-icon class="!text-[18px]"> send </mat-icon>
+
+              <mat-icon class="!text-[18px]">
+                send
+              </mat-icon>
 
               Publish
+
             </span>
+
           }
+
         </button>
+
       </div>
+
     </div>
   `,
 
   styles: [
     `
       /* ==========================================================
-       HOST
-       ========================================================== */
+         HOST
+         ========================================================== */
 
       :host {
         display: block;
       }
 
+
       /* ==========================================================
-       COMPACT MATERIAL FIELDS
-       ========================================================== */
+         COMPACT MATERIAL FIELDS
+         ========================================================== */
 
       .compact-field {
         margin-bottom: 0;
       }
 
-      /*
-     * Keep the Material hint/counter area compact.
-     */
 
-      .compact-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+      /*
+       * Keep the Material hint/counter area compact.
+       */
+
+      .compact-field
+        ::ng-deep
+        .mat-mdc-form-field-subscript-wrapper {
         min-height: 18px;
       }
 
-      /*
-     * Make the single-line controls compact without
-     * interfering with Material's floating-label behavior.
-     */
 
-      .compact-field ::ng-deep .mat-mdc-text-field-wrapper {
+      /*
+       * Make the single-line controls compact without
+       * interfering with Material's floating-label behavior.
+       */
+
+      .compact-field
+        ::ng-deep
+        .mat-mdc-text-field-wrapper {
         min-height: 48px;
       }
 
-      /*
-     * Textarea field.
-     *
-     * We intentionally DO NOT set the Material container
-     * height to "auto".
-     *
-     * This allows Angular Material to correctly calculate
-     * the floating-label notch.
-     */
 
-      .compact-content-field ::ng-deep .mat-mdc-text-field-wrapper {
+      /*
+       * Textarea field.
+       *
+       * We intentionally DO NOT set the Material container
+       * height to "auto".
+       *
+       * This allows Angular Material to correctly calculate
+       * the floating-label notch.
+       */
+
+      .compact-content-field
+        ::ng-deep
+        .mat-mdc-text-field-wrapper {
         min-height: 118px;
       }
 
+
       /*
-     * Actual textarea size.
-     */
+       * Actual textarea size.
+       */
 
       .compact-content-field textarea {
         min-height: 78px;
@@ -374,49 +509,63 @@ import { LoggerService } from '../../../../core/services/logger.service';
         resize: vertical;
       }
 
-      /*
-     * Keep the textarea label above the border.
-     */
 
-      .compact-content-field ::ng-deep .mdc-floating-label {
+      /*
+       * Keep the textarea label above the border.
+       */
+
+      .compact-content-field
+        ::ng-deep
+        .mdc-floating-label {
         background: transparent;
       }
 
-      /*
-     * Compact Material form-field spacing.
-     */
 
-      .compact-field ::ng-deep .mat-mdc-form-field-infix {
+      /*
+       * Compact Material form-field spacing.
+       */
+
+      .compact-field
+        ::ng-deep
+        .mat-mdc-form-field-infix {
         min-height: 46px;
         padding-top: 10px;
         padding-bottom: 6px;
       }
 
-      /*
-     * Textarea gets enough vertical room while
-     * retaining the compact appearance.
-     */
 
-      .compact-content-field ::ng-deep .mat-mdc-form-field-infix {
+      /*
+       * Textarea gets enough vertical room while
+       * retaining the compact appearance.
+       */
+
+      .compact-content-field
+        ::ng-deep
+        .mat-mdc-form-field-infix {
         min-height: 108px;
         padding-top: 12px;
         padding-bottom: 6px;
       }
 
+
       /*
-     * Loading spinner.
-     */
+       * Loading spinner.
+       */
 
       mat-spinner {
         display: inline-block;
       }
 
+
       /* ==========================================================
-       SMALL SCREENS
-       ========================================================== */
+         SMALL SCREENS
+         ========================================================== */
 
       @media (max-width: 640px) {
-        .compact-content-field ::ng-deep .mat-mdc-text-field-wrapper {
+
+        .compact-content-field
+          ::ng-deep
+          .mat-mdc-text-field-wrapper {
           min-height: 108px;
         }
 
@@ -424,9 +573,12 @@ import { LoggerService } from '../../../../core/services/logger.service';
           min-height: 68px;
         }
 
-        .compact-content-field ::ng-deep .mat-mdc-form-field-infix {
+        .compact-content-field
+          ::ng-deep
+          .mat-mdc-form-field-infix {
           min-height: 98px;
         }
+
       }
     `,
   ],
@@ -434,15 +586,30 @@ import { LoggerService } from '../../../../core/services/logger.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CommunityPostComposerComponent {
+
   // ============================================================
   // DEPENDENCIES
   // ============================================================
 
   readonly store = inject(CommunityStore);
 
-  private readonly logger = inject(LoggerService);
+  private readonly logger =
+    inject(LoggerService);
 
-  private readonly dialogRef = inject(MatDialogRef<CommunityPostComposerComponent>);
+  private readonly authService =
+    inject(AuthService);
+
+  private readonly toast =
+    inject(HotToastService);
+
+  private readonly communityUserService =
+    inject(CommunityUserService);
+
+  private readonly dialogRef =
+    inject(
+      MatDialogRef<CommunityPostComposerComponent>,
+    );
+
 
   // ============================================================
   // FORM STATE
@@ -456,22 +623,29 @@ export class CommunityPostComposerComponent {
 
   tagsText = '';
 
+
   // ============================================================
   // SAVE STATE
   // ============================================================
 
   readonly saving = signal(false);
 
+
   // ============================================================
   // PUBLISH
   // ============================================================
 
   async publish(): Promise<void> {
-    const title = this.title.trim();
 
-    const content = this.content.trim();
+    const title =
+      this.title.trim();
 
-    const topicId = this.topicId.trim();
+    const content =
+      this.content.trim();
+
+    const topicId =
+      this.topicId.trim();
+
 
     // ----------------------------------------------------------
     // Basic validation
@@ -481,63 +655,259 @@ export class CommunityPostComposerComponent {
       return;
     }
 
+
     // ----------------------------------------------------------
     // Find selected topic
     // ----------------------------------------------------------
 
-    const topic = this.store.topics().find((item) => item.id === topicId);
+    const topic =
+      this.store
+        .topics()
+        .find(
+          (item) =>
+            item.id === topicId,
+        );
+
 
     this.saving.set(true);
 
-    // ----------------------------------------------------------
-    // Parse tags
-    // ----------------------------------------------------------
-
-    const tags = this.tagsText
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean)
-      .filter((tag, index, values) => values.indexOf(tag) === index);
-
-    // ----------------------------------------------------------
-    // Create post
-    // ----------------------------------------------------------
 
     try {
-      const postId = await this.store.createPost({
-        title,
 
-        content,
+      // --------------------------------------------------------
+      // Get authenticated user
+      // --------------------------------------------------------
 
-        topicId,
+      const firebaseUser =
+        this.authService.firebaseUser();
 
-        topicName: topic?.name,
+      const currentUser =
+        this.authService.user();
 
-        tags,
-      });
+      const userId =
+        currentUser?.id ??
+        firebaseUser?.uid ??
+        '';
+
+
+      if (!userId) {
+
+        this.toast.error(
+          'You must be signed in to create a post.',
+        );
+
+        return;
+      }
+
+
+      // --------------------------------------------------------
+      // Load the user's Community profile
+      //
+      // This gives the post author snapshot access to:
+      // - name
+      // - photo
+      // - bio
+      // - country of origin
+      // - current country
+      // - city
+      // - state
+      // - website
+      // --------------------------------------------------------
+
+      const communityUser =
+        await this.communityUserService
+          .getUserById(userId);
+
+
+      if (!communityUser) {
+
+        this.toast.error(
+          'Unable to load your Community profile.',
+        );
+
+        return;
+      }
+
+
+      // --------------------------------------------------------
+      // Build the author snapshot
+      // --------------------------------------------------------
+
+      const author: CommunityPostAuthor = {
+
+        id: communityUser.id,
+
+        displayName:
+          communityUser.displayName ||
+          'Zebron User',
+
+
+        ...(communityUser.photoUrl
+          ? {
+              photoUrl:
+                communityUser.photoUrl,
+            }
+          : {}),
+
+
+        ...(communityUser.firstName
+          ? {
+              firstName:
+                communityUser.firstName,
+            }
+          : {}),
+
+
+       ...(communityUser.lastName
+  ? {
+      lastName:
+        communityUser.lastName,
+    }
+  : {}),
+
+
+        ...(communityUser.preferredName
+          ? {
+              preferredName:
+                communityUser.preferredName,
+            }
+          : {}),
+
+
+        ...(communityUser.bio
+          ? {
+              bio:
+                communityUser.bio,
+            }
+          : {}),
+
+
+        ...(communityUser.countryOfOrigin
+          ? {
+              countryOfOrigin:
+                communityUser.countryOfOrigin,
+            }
+          : {}),
+
+
+        ...(communityUser.currentCountry
+          ? {
+              currentCountry:
+                communityUser.currentCountry,
+            }
+          : {}),
+
+
+        ...(communityUser.city
+          ? {
+              city:
+                communityUser.city,
+            }
+          : {}),
+
+
+        ...(communityUser.state
+          ? {
+              state:
+                communityUser.state,
+            }
+          : {}),
+
+
+        ...(communityUser.website
+          ? {
+              website:
+                communityUser.website,
+            }
+          : {}),
+      };
+
+
+      // --------------------------------------------------------
+      // Parse tags
+      // --------------------------------------------------------
+
+      const tags =
+        this.tagsText
+          .split(',')
+          .map(
+            (tag) =>
+              tag.trim(),
+          )
+          .filter(Boolean)
+          .filter(
+            (tag, index, values) =>
+              values.indexOf(tag) === index,
+          );
+
+
+      // --------------------------------------------------------
+      // Create post
+      // --------------------------------------------------------
+
+      const postId =
+        await this.store.createPost({
+
+          title,
+
+          content,
+
+          topicId,
+
+          topicName:
+            topic?.name,
+
+          tags,
+
+          authorId:
+            communityUser.id,
+
+          author,
+
+        });
+
 
       // --------------------------------------------------------
       // Close dialog after successful creation
       // --------------------------------------------------------
 
       if (postId) {
-        this.dialogRef.close(postId);
+
+        this.dialogRef.close(
+          postId,
+        );
+
       }
+
     } catch (error) {
+
       this.logger.error(
-  'Failed to publish community post',
-  error instanceof Error ? error.message : String(error),
-);
+        'Failed to publish community post',
+
+        error instanceof Error
+          ? error.message
+          : String(error),
+      );
+
+      this.toast.error(
+        'Failed to publish your post. Please try again.',
+      );
+
     } finally {
+
       this.saving.set(false);
+
     }
   }
+
 
   // ============================================================
   // CLOSE
   // ============================================================
 
   close(): void {
+
     this.dialogRef.close();
+
   }
 }
