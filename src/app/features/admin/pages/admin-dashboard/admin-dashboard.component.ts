@@ -1,13 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
-
 import { FormsModule } from '@angular/forms';
-
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { LocationStore } from '../../../locations/stores/location.store';
 import { Location } from '../../../../core/models/location.model';
 import { HotToastService } from '@ngxpert/hot-toast';
+import { PageTitleService } from '../../../../core/services/page-title.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -15,46 +14,42 @@ import { HotToastService } from '@ngxpert/hot-toast';
   imports: [RouterLink, FormsModule],
 
   template: `
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-gray-50 mt-16">
+
       <!-- =========================================================
            ADMIN DASHBOARD HEADER
            ========================================================= -->
-      <header class="border-b border-gray-200 bg-[#032D42]">
+      <header class="hidden sm:block border-b border-gray-200 bg-[#2a835f] text-white">
+
         <div
           class="mx-auto flex max-w-7xl
                  items-center justify-between
-                 gap-4 p-5
+                 gap-4 px-5
                  sm:px-6 lg:px-8"
         >
+
           <!-- =====================================================
                DASHBOARD TITLE
                ===================================================== -->
           <div class="min-w-0">
-            <p
-              class="text-xs font-semibold uppercase
-                     tracking-wider text-[#7ED6D1]"
-            >
-              Zebron Administration
+
+
+            <p class="text-sm text-white/80">
+              Manage Zebron resources and database content.
             </p>
 
-            <h1
-              class="text-xl font-bold text-white
-                     sm:text-3xl"
-            >
-              Admin Dashboard
-            </h1>
-
-            <p class="mt-1 text-sm text-white/80">Manage Zebron resources and database content.</p>
           </div>
 
           <!-- =====================================================
                DASHBOARD HEADER ACTIONS
                ===================================================== -->
           <div class="flex items-center">
+
             <!-- ===================================================
                  DESKTOP ACTIONS
                  =================================================== -->
             <div class="hidden items-center gap-3 sm:flex">
+
               <!-- Mailbox -->
               <a
                 routerLink="/admin/contact"
@@ -98,12 +93,14 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   Sign out
                 }
               </button>
+
             </div>
 
             <!-- ===================================================
                  MOBILE THREE-DOT MENU
                  =================================================== -->
             <div class="relative sm:hidden">
+
               <!-- Three vertical dots -->
               <button
                 type="button"
@@ -130,6 +127,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                    MOBILE MENU
                    ================================================= -->
               @if (moreMenuOpen()) {
+
                 <div
                   class="absolute right-0 top-12 z-50
                          w-52 overflow-hidden
@@ -138,6 +136,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                          bg-white shadow-xl"
                   role="menu"
                 >
+
                   <!-- Mailbox -->
                   <a
                     routerLink="/admin/contact"
@@ -149,12 +148,19 @@ import { HotToastService } from '@ngxpert/hot-toast';
                            transition hover:bg-gray-50"
                     role="menuitem"
                   >
-                    <span aria-hidden="true" class="text-base"> 📥 </span>
+                    <span
+                      aria-hidden="true"
+                      class="text-base"
+                    >
+                      📥
+                    </span>
 
-                    <span> Mailbox </span>
+                    <span>
+                      Mailbox
+                    </span>
                   </a>
 
-                  <!-- View site -->
+                  <!-- Resources -->
                   <a
                     routerLink="/resources"
                     (click)="closeMoreMenu()"
@@ -165,9 +171,39 @@ import { HotToastService } from '@ngxpert/hot-toast';
                            transition hover:bg-gray-50"
                     role="menuitem"
                   >
-                    <span aria-hidden="true" class="text-base"> 🌐 </span>
+                    <span
+                      aria-hidden="true"
+                      class="text-base"
+                    >
+                      🌐
+                    </span>
 
-                    <span> View site </span>
+                    <span>
+                      Resources
+                    </span>
+                  </a>
+
+                  <!-- Home -->
+                  <a
+                    routerLink="/"
+                    (click)="closeMoreMenu()"
+                    class="flex items-center gap-3
+                           px-4 py-3
+                           text-sm font-medium
+                           text-gray-700
+                           transition hover:bg-gray-50"
+                    role="menuitem"
+                  >
+                    <span
+                      aria-hidden="true"
+                      class="text-base"
+                    >
+                      🌐
+                    </span>
+
+                    <span>
+                      Home
+                    </span>
                   </a>
 
                   <!-- Sign out -->
@@ -185,17 +221,29 @@ import { HotToastService } from '@ngxpert/hot-toast';
                            disabled:opacity-50"
                     role="menuitem"
                   >
-                    <span aria-hidden="true" class="text-base"> ↪ </span>
+                    <span
+                      aria-hidden="true"
+                      class="text-base"
+                    >
+                      ↪
+                    </span>
 
                     @if (signingOut()) {
-                      <span> Signing out... </span>
+                      <span>
+                        Signing out...
+                      </span>
                     } @else {
-                      <span> Sign out </span>
+                      <span>
+                        Sign out
+                      </span>
                     }
                   </button>
+
                 </div>
               }
+
             </div>
+
           </div>
         </div>
       </header>
@@ -204,7 +252,13 @@ import { HotToastService } from '@ngxpert/hot-toast';
            ADMINISTRATOR INFORMATION
            ========================================================= -->
       @if (authService.user(); as user) {
-        <section class="bg-[#032D42]/5 px-6 py-1">
+
+        <section
+          class="hidden sm:block bg-[#032D42]/5
+                 px-4 py-1
+                 sm:px-6"
+        >
+
           <div
             class="flex w-full
                    items-center
@@ -212,6 +266,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                    gap-3
                    whitespace-nowrap"
           >
+
             <!-- Administrator information -->
             <div
               class="min-w-0 truncate
@@ -229,7 +284,9 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               Administrator
             </p>
+
           </div>
+
         </section>
       }
 
@@ -238,58 +295,104 @@ import { HotToastService } from '@ngxpert/hot-toast';
            ========================================================= -->
       <main
         class="mx-auto max-w-6xl
-               px-4 sm:p-2"
+               px-3
+               sm:p-2"
       >
+
         <!-- =======================================================
              MANAGE CONTENT
              ======================================================= -->
         <section class="mt-1">
+
           <div>
+
+            <p
+              class="text-xs font-semibold uppercase
+                     tracking-wider text-[#7ED6D1]"
+            >
+              Zebron Administration
+            </p>
+
             <h2
-              class="text-xl font-semibold
-                     text-[#032D42]"
+              class="text-lg font-semibold
+                     text-[#032D42]
+                     sm:text-xl"
             >
               Manage content
             </h2>
+
           </div>
 
           <!-- =====================================================
                MANAGEMENT CARDS
+
+               MOBILE:
+               - 1 columns
+               - compact gap
+               - compact cards
+
+               TABLET:
+               - 2 columns
+
+               DESKTOP:
+               - 4 columns
                ===================================================== -->
           <div
-            class="mt-2 grid gap-6
-                   sm:grid-cols-2
+            class="mt-2 grid
+                   grid-cols-1 gap-1
+                   sm:grid-cols-2 sm:gap-6
                    lg:grid-cols-4"
           >
+
             <!-- ===================================================
                  CATEGORIES
                  =================================================== -->
             <a
               routerLink="/admin/categories"
-              class="group rounded-xl
+              class="group rounded-lg
                      border border-gray-200
-                     bg-white px-6 py-3
+                     bg-white p-2
                      shadow-sm transition
                      hover:border-[#032D42]/40
-                     hover:shadow-md"
+                     hover:shadow-md
+                     sm:rounded-xl
+                     sm:px-6 sm:py-3"
             >
+
               <h3
-                class="text-lg font-semibold
+                class="text-xs font-semibold
+                       leading-tight
                        text-[#032D42]
+                       sm:text-lg
+                       sm:leading-normal
                        group-hover:text-[#007979]"
               >
                 Categories
               </h3>
 
-              <p class="mt-2 text-sm text-gray-600">Create and manage resource categories.</p>
+              <!-- Hidden on mobile -->
+              <p
+                class="hidden
+                       sm:mt-2 sm:block
+                       sm:text-sm
+                       sm:leading-normal
+                       text-gray-600"
+              >
+                Create and manage resource categories.
+              </p>
 
               <span
-                class="mt-4 inline-block
-                       text-sm font-semibold
-                       text-[#007979]"
+                class="mt-1 inline-block
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       sm:mt-4
+                       sm:text-sm"
               >
                 Manage →
               </span>
+
             </a>
 
             <!-- ===================================================
@@ -297,30 +400,50 @@ import { HotToastService } from '@ngxpert/hot-toast';
                  =================================================== -->
             <a
               routerLink="/admin/resources"
-              class="group rounded-xl
+              class="group rounded-lg
                      border border-gray-200
-                     bg-white p-6 py-3
+                     bg-white p-2
                      shadow-sm transition
                      hover:border-[#032D42]/40
-                     hover:shadow-md"
+                     hover:shadow-md
+                     sm:rounded-xl
+                     sm:p-6 sm:py-3"
             >
+
               <h3
-                class="text-lg font-semibold
+                class="text-xs font-semibold
+                       leading-tight
                        text-[#032D42]
+                       sm:text-lg
+                       sm:leading-normal
                        group-hover:text-[#007979]"
               >
                 Resources
               </h3>
 
-              <p class="mt-2 text-sm text-gray-600">Create, edit, publish, and manage resources.</p>
+              <!-- Hidden on mobile -->
+              <p
+                class="hidden
+                       sm:mt-2 sm:block
+                       sm:text-sm
+                       sm:leading-normal
+                       text-gray-600"
+              >
+                Create, edit, publish, and manage resources.
+              </p>
 
               <span
-                class="mt-4 inline-block
-                       text-sm font-semibold
-                       text-[#007979]"
+                class="mt-1 inline-block
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       sm:mt-4
+                       sm:text-sm"
               >
                 Manage →
               </span>
+
             </a>
 
             <!-- ===================================================
@@ -328,32 +451,50 @@ import { HotToastService } from '@ngxpert/hot-toast';
                  =================================================== -->
             <a
               routerLink="/admin/organizations"
-              class="group rounded-xl
+              class="group rounded-lg
                      border border-gray-200
-                     bg-white p-6 py-3
+                     bg-white p-2
                      shadow-sm transition
                      hover:border-[#032D42]/40
-                     hover:shadow-md"
+                     hover:shadow-md
+                     sm:rounded-xl
+                     sm:p-6 sm:py-3"
             >
+
               <h3
-                class="text-lg font-semibold
+                class="text-xs font-semibold
+                       leading-tight
                        text-[#032D42]
+                       sm:text-lg
+                       sm:leading-normal
                        group-hover:text-[#007979]"
               >
                 Organizations
               </h3>
 
-              <p class="mt-2 text-sm text-gray-600">
+              <!-- Hidden on mobile -->
+              <p
+                class="hidden
+                       sm:mt-2 sm:block
+                       sm:text-sm
+                       sm:leading-normal
+                       text-gray-600"
+              >
                 Manage organizations associated with resources.
               </p>
 
               <span
-                class="mt-4 inline-block
-                       text-sm font-semibold
-                       text-[#007979]"
+                class="mt-1 inline-block
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       sm:mt-4
+                       sm:text-sm"
               >
                 Manage →
               </span>
+
             </a>
 
             <!-- ===================================================
@@ -361,89 +502,129 @@ import { HotToastService } from '@ngxpert/hot-toast';
                  =================================================== -->
             <a
               routerLink="/admin/submissions"
-              class="group rounded-xl
+              class="group rounded-lg
                      border border-gray-200
-                     bg-white p-6 py-3
+                     bg-white p-2
                      shadow-sm transition
                      hover:border-[#032D42]/40
-                     hover:shadow-md"
+                     hover:shadow-md
+                     sm:rounded-xl
+                     sm:p-6 sm:py-3"
             >
+
               <h3
-                class="text-lg font-semibold
+                class="text-xs font-semibold
+                       leading-tight
                        text-[#032D42]
+                       sm:text-lg
+                       sm:leading-normal
                        group-hover:text-[#007979]"
               >
                 Submissions
               </h3>
 
-              <p class="mt-2 text-sm text-gray-600">Review and manage submitted resources.</p>
+              <!-- Hidden on mobile -->
+              <p
+                class="hidden
+                       sm:mt-2 sm:block
+                       sm:text-sm
+                       sm:leading-normal
+                       text-gray-600"
+              >
+                Review and manage submitted resources.
+              </p>
 
               <span
-                class="mt-4 inline-block
-                       text-sm font-semibold
-                       text-[#007979]"
+                class="mt-1 inline-block
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       sm:mt-4
+                       sm:text-sm"
               >
                 Manage →
               </span>
+
             </a>
 
-            <!-- Jobs -->
+            <!-- ===================================================
+                 JOBS
+                 =================================================== -->
             <a
               routerLink="/admin/jobs"
-              class="group rounded-xl
-         border border-gray-200
-         bg-white
-         p-5
-         shadow-sm
-         transition
-         hover:-translate-y-0.5
-         hover:border-[#007979]/40
-         hover:shadow-md"
+              class="group rounded-lg
+                     border border-gray-200
+                     bg-white p-2
+                     shadow-sm
+                     transition
+                     hover:-translate-y-0.5
+                     hover:border-[#007979]/40
+                     hover:shadow-md
+                     sm:rounded-xl
+                     sm:p-5"
             >
+
+              <!-- Icon hidden on mobile -->
               <div
-                class="flex h-11 w-11
-           items-center
-           justify-center
-           rounded-xl
-           bg-[#007979]/10
-           text-xl"
+                class="hidden
+                       sm:flex
+                       h-11 w-11
+                       items-center
+                       justify-center
+                       rounded-xl
+                       bg-[#007979]/10
+                       text-xl"
                 aria-hidden="true"
               >
                 💼
               </div>
 
               <h2
-                class="mt-4
-           text-base
-           font-semibold
-           text-[#032D42]"
+                class="mt-0
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#032D42]
+                       sm:mt-4
+                       sm:text-base
+                       sm:leading-normal"
               >
                 Jobs
               </h2>
 
+              <!-- Description hidden on mobile -->
               <p
-                class="mt-1
-           text-sm
-           leading-5
-           text-gray-600"
+                class="hidden
+                       sm:mt-1 sm:block
+                       sm:text-sm
+                       sm:leading-5
+                       text-gray-600"
               >
                 Manage job opportunities available through the Zebron Job Finder.
               </p>
 
               <div
-                class="mt-4
-           inline-flex
-           items-center
-           gap-1
-           text-sm
-           font-semibold
-           text-[#007979]
-           transition
-           group-hover:gap-2"
+                class="mt-1.5
+                       inline-flex
+                       items-center
+                       gap-1
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       transition
+                       group-hover:gap-2
+                       sm:mt-4
+                       sm:text-sm"
               >
                 Manage jobs
-                <span aria-hidden="true">→</span>
+
+                <span aria-hidden="true">
+                  →
+                </span>
               </div>
+
             </a>
 
             <!-- ===================================================
@@ -451,21 +632,29 @@ import { HotToastService } from '@ngxpert/hot-toast';
                  =================================================== -->
             <a
               routerLink="/admin/users"
-              class="group rounded-2xl
+              class="group rounded-lg
                      border border-gray-200
-                     bg-white p-6
+                     bg-white p-2
                      shadow-sm transition
                      hover:-translate-y-0.5
                      hover:border-[#007979]/30
-                     hover:shadow-md"
+                     hover:shadow-md
+                     sm:rounded-2xl
+                     sm:p-6"
             >
+
+              <!-- Icon hidden on mobile -->
               <div
-                class="flex h-12 w-12
-                       items-center justify-center
+                class="hidden
+                       sm:flex
+                       h-12 w-12
+                       items-center
+                       justify-center
                        rounded-xl
                        bg-[#007979]/10
                        text-[#007979]"
               >
+
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -475,13 +664,18 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   class="h-6 w-6"
                   aria-hidden="true"
                 >
+
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
                   />
 
-                  <circle cx="9" cy="7" r="4" />
+                  <circle
+                    cx="9"
+                    cy="7"
+                    r="4"
+                  />
 
                   <path
                     stroke-linecap="round"
@@ -494,58 +688,80 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     stroke-linejoin="round"
                     d="M16 3.13a4 4 0 0 1 0 7.75"
                   />
+
                 </svg>
+
               </div>
 
-              <div class="mt-5">
+              <div class="mt-0 sm:mt-5">
+
                 <h2
-                  class="text-lg font-semibold
+                  class="text-sm
+                         font-semibold
+                         leading-tight
                          text-[#032D42]
+                         sm:text-lg
+                         sm:leading-normal
                          group-hover:text-[#007979]"
                 >
                   Users
                 </h2>
 
+                <!-- Description hidden on mobile -->
                 <p
-                  class="mt-2 text-sm
-                         leading-6 text-gray-500"
+                  class="hidden
+                         sm:mt-2 sm:block
+                         sm:text-sm
+                         sm:leading-6
+                         text-gray-500"
                 >
                   Manage user accounts, profiles, roles, and permissions.
                 </p>
+
               </div>
 
               <div
-                class="mt-5 text-sm font-semibold
-                       text-[#007979]"
+                class="mt-1.5
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       sm:mt-5
+                       sm:text-sm"
               >
                 Manage users →
               </div>
-            </a>
 
-            <!-- ===================================================
-                 LOCATIONS
-                 =================================================== -->
+            </a>
 
             <!-- ===================================================
                  RESOURCE TYPES
                  =================================================== -->
             <a
               routerLink="/admin/resource-types"
-              class="group rounded-2xl
+              class="group rounded-lg
                      border border-gray-200
-                     bg-white p-6
+                     bg-white p-2
                      shadow-sm transition
                      hover:-translate-y-0.5
                      hover:border-[#007979]/30
-                     hover:shadow-md"
+                     hover:shadow-md
+                     sm:rounded-2xl
+                     sm:p-6"
             >
+
+              <!-- Icon hidden on mobile -->
               <div
-                class="flex h-12 w-12
-                       items-center justify-center
+                class="hidden
+                       sm:flex
+                       h-12 w-12
+                       items-center
+                       justify-center
                        rounded-xl
                        bg-[#007979]/10
                        text-[#007979]"
               >
+
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -555,54 +771,93 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   class="h-6 w-6"
                   aria-hidden="true"
                 >
-                  <rect x="4" y="4" width="16" height="16" rx="2" />
 
-                  <path stroke-linecap="round" d="M8 9h8M8 13h8M8 17h5" />
+                  <rect
+                    x="4"
+                    y="4"
+                    width="16"
+                    height="16"
+                    rx="2"
+                  />
+
+                  <path
+                    stroke-linecap="round"
+                    d="M8 9h8M8 13h8M8 17h5"
+                  />
+
                 </svg>
+
               </div>
 
-              <div class="mt-5">
+              <div class="mt-0 sm:mt-5">
+
                 <h2
-                  class="text-lg font-semibold
+                  class="text-sm
+                         font-semibold
+                         leading-tight
                          text-[#032D42]
+                         sm:text-lg
+                         sm:leading-normal
                          group-hover:text-[#007979]"
                 >
                   Resource Types
                 </h2>
 
+                <!-- Description hidden on mobile -->
                 <p
-                  class="mt-2 text-sm
-                         leading-6 text-gray-500"
+                  class="hidden
+                         sm:mt-2 sm:block
+                         sm:text-sm
+                         sm:leading-6
+                         text-gray-500"
                 >
                   Manage the types used to classify resources across Zebron.
                 </p>
+
               </div>
 
               <div
-                class="mt-5 text-sm font-semibold
-                       text-[#007979]"
+                class="mt-1.5
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       sm:mt-5
+                       sm:text-sm"
               >
                 Manage resource types →
               </div>
+
             </a>
 
+            <!-- ===================================================
+                 LOCATIONS
+                 =================================================== -->
             <a
               routerLink="/admin/locations"
-              class="group rounded-2xl
+              class="group rounded-lg
                      border border-gray-200
-                     bg-white p-6
+                     bg-white p-2
                      shadow-sm transition
                      hover:-translate-y-0.5
                      hover:border-[#007979]/30
-                     hover:shadow-md"
+                     hover:shadow-md
+                     sm:rounded-2xl
+                     sm:p-6"
             >
+
+              <!-- Icon hidden on mobile -->
               <div
-                class="flex h-12 w-12
-                       items-center justify-center
+                class="hidden
+                       sm:flex
+                       h-12 w-12
+                       items-center
+                       justify-center
                        rounded-xl
                        bg-[#007979]/10
                        text-[#007979]"
               >
+
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -612,62 +867,92 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   class="h-6 w-6"
                   aria-hidden="true"
                 >
+
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"
                   />
 
-                  <circle cx="12" cy="9" r="2.25" />
+                  <circle
+                    cx="12"
+                    cy="9"
+                    r="2.25"
+                  />
+
                 </svg>
+
               </div>
 
-              <div class="mt-5">
+              <div class="mt-0 sm:mt-5">
+
                 <h2
-                  class="text-lg font-semibold
+                  class="text-sm
+                         font-semibold
+                         leading-tight
                          text-[#032D42]
+                         sm:text-lg
+                         sm:leading-normal
                          group-hover:text-[#007979]"
                 >
                   Locations
                 </h2>
 
+                <!-- Description hidden on mobile -->
                 <p
-                  class="mt-2 text-sm
-                         leading-6 text-gray-500"
+                  class="hidden
+                         sm:mt-2 sm:block
+                         sm:text-sm
+                         sm:leading-6
+                         text-gray-500"
                 >
                   Manage locations used by resources and location-based personalization.
                 </p>
+
               </div>
 
               <div
-                class="mt-5 text-sm font-semibold
-                       text-[#007979]"
+                class="mt-1.5
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       sm:mt-5
+                       sm:text-sm"
               >
                 Manage locations →
               </div>
+
             </a>
 
             <!-- ===================================================
-     TEST CENTER
-     =================================================== -->
+                 TEST CENTER
+                 =================================================== -->
             <a
               routerLink="/admin/test-center"
-              class="group rounded-2xl
-         border border-gray-200
-         bg-white p-6
-         shadow-sm transition
-         hover:-translate-y-0.5
-         hover:border-[#007979]/30
-         hover:shadow-md"
+              class="group rounded-lg
+                     border border-gray-200
+                     bg-white p-2
+                     shadow-sm transition
+                     hover:-translate-y-0.5
+                     hover:border-[#007979]/30
+                     hover:shadow-md
+                     sm:rounded-2xl
+                     sm:p-6"
             >
-              <!-- Icon -->
+
+              <!-- Icon hidden on mobile -->
               <div
-                class="flex h-12 w-12
-           items-center justify-center
-           rounded-xl
-           bg-[#007979]/10
-           text-[#007979]"
+                class="hidden
+                       sm:flex
+                       h-12 w-12
+                       items-center
+                       justify-center
+                       rounded-xl
+                       bg-[#007979]/10
+                       text-[#007979]"
               >
+
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -677,8 +962,13 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   class="h-6 w-6"
                   aria-hidden="true"
                 >
+
                   <!-- Clipboard -->
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5h6" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 5h6"
+                  />
 
                   <path
                     stroke-linecap="round"
@@ -686,42 +976,76 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"
                   />
 
-                  <rect x="5" y="4" width="14" height="17" rx="2" />
+                  <rect
+                    x="5"
+                    y="4"
+                    width="14"
+                    height="17"
+                    rx="2"
+                  />
 
                   <!-- Checklist -->
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 10h6" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 10h6"
+                  />
 
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 14h6"
+                  />
 
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 18h4" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 18h4"
+                  />
+
                 </svg>
+
               </div>
 
-              <!-- Content -->
-              <div class="mt-5">
+              <div class="mt-0 sm:mt-5">
+
                 <h2
-                  class="text-lg font-semibold
-             text-[#032D42]
-             group-hover:text-[#007979]"
+                  class="text-sm
+                         font-semibold
+                         leading-tight
+                         text-[#032D42]
+                         sm:text-lg
+                         sm:leading-normal
+                         group-hover:text-[#007979]"
                 >
                   Test Center
                 </h2>
 
+                <!-- Description hidden on mobile -->
                 <p
-                  class="mt-2 text-sm
-             leading-6 text-gray-500"
+                  class="hidden
+                         sm:mt-2 sm:block
+                         sm:text-sm
+                         sm:leading-6
+                         text-gray-500"
                 >
                   Manage test courses, topics, questions, and question banks.
                 </p>
+
               </div>
 
-              <!-- Action -->
               <div
-                class="mt-5 text-sm font-semibold
-           text-[#007979]"
+                class="mt-1.5
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       sm:mt-5
+                       sm:text-sm"
               >
                 Open Test Center →
               </div>
+
             </a>
 
             <!-- ===================================================
@@ -729,21 +1053,29 @@ import { HotToastService } from '@ngxpert/hot-toast';
                  =================================================== -->
             <a
               routerLink="/admin/contact"
-              class="group rounded-2xl
+              class="group rounded-lg
                      border border-gray-200
-                     bg-white p-6
+                     bg-white p-2
                      shadow-sm transition
                      hover:-translate-y-0.5
                      hover:border-[#007979]/30
-                     hover:shadow-md"
+                     hover:shadow-md
+                     sm:rounded-2xl
+                     sm:p-6"
             >
+
+              <!-- Icon hidden on mobile -->
               <div
-                class="flex h-12 w-12
-                       items-center justify-center
+                class="hidden
+                       sm:flex
+                       h-12 w-12
+                       items-center
+                       justify-center
                        rounded-xl
                        bg-[#007979]/10
                        text-[#007979]"
               >
+
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -753,35 +1085,64 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   class="h-6 w-6"
                   aria-hidden="true"
                 >
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
 
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m3 7 9 6 9-6" />
+                  <rect
+                    x="3"
+                    y="5"
+                    width="18"
+                    height="14"
+                    rx="2"
+                  />
+
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="m3 7 9 6 9-6"
+                  />
+
                 </svg>
+
               </div>
 
-              <div class="mt-5">
+              <div class="mt-0 sm:mt-5">
+
                 <h2
-                  class="text-lg font-semibold
+                  class="text-sm
+                         font-semibold
+                         leading-tight
                          text-[#032D42]
+                         sm:text-lg
+                         sm:leading-normal
                          group-hover:text-[#007979]"
                 >
                   Contact Mailbox
                 </h2>
 
+                <!-- Description hidden on mobile -->
                 <p
-                  class="mt-2 text-sm
-                         leading-6 text-gray-500"
+                  class="hidden
+                         sm:mt-2 sm:block
+                         sm:text-sm
+                         sm:leading-6
+                         text-gray-500"
                 >
                   Review and manage messages submitted through the contact form.
                 </p>
+
               </div>
 
               <div
-                class="mt-5 text-sm font-semibold
-                       text-[#007979]"
+                class="mt-1.5
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       sm:mt-5
+                       sm:text-sm"
               >
                 Open mailbox →
               </div>
+
             </a>
 
             <!-- ===================================================
@@ -789,22 +1150,29 @@ import { HotToastService } from '@ngxpert/hot-toast';
                  =================================================== -->
             <a
               routerLink="/admin/business"
-              class="group rounded-2xl
+              class="group rounded-lg
                      border border-gray-200
-                     bg-white p-6
+                     bg-white p-2
                      shadow-sm transition
                      hover:-translate-y-0.5
                      hover:border-[#007979]/30
-                     hover:shadow-md"
+                     hover:shadow-md
+                     sm:rounded-2xl
+                     sm:p-6"
             >
-              <!-- Icon -->
+
+              <!-- Icon hidden on mobile -->
               <div
-                class="flex h-12 w-12
-                       items-center justify-center
+                class="hidden
+                       sm:flex
+                       h-12 w-12
+                       items-center
+                       justify-center
                        rounded-xl
                        bg-[#007979]/10
                        text-[#007979]"
               >
+
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -814,51 +1182,81 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   class="h-6 w-6"
                   aria-hidden="true"
                 >
+
                   <!-- Building -->
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3 21h18"
+                  />
 
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 21V5l7-3 7 3v16" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 21V5l7-3 7 3v16"
+                  />
 
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 21v-4h6v4" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 21v-4h6v4"
+                  />
 
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     d="M8 8h1M8 11h1M8 14h1M15 8h1M15 11h1M15 14h1"
                   />
+
                 </svg>
+
               </div>
 
-              <!-- Content -->
-              <div class="mt-5">
+              <div class="mt-0 sm:mt-5">
+
                 <h2
-                  class="text-lg font-semibold
+                  class="text-sm
+                         font-semibold
+                         leading-tight
                          text-[#032D42]
+                         sm:text-lg
+                         sm:leading-normal
                          group-hover:text-[#007979]"
                 >
                   Business Operations
                 </h2>
 
+                <!-- Description hidden on mobile -->
                 <p
-                  class="mt-2 text-sm
-                         leading-6 text-gray-500"
+                  class="hidden
+                         sm:mt-2 sm:block
+                         sm:text-sm
+                         sm:leading-6
+                         text-gray-500"
                 >
-                  Manage business finances, revenue, expenses, compliance, activities, documents,
-                  and reports.
+                  Manage business finances, revenue, expenses, compliance,
+                  activities, documents, and reports.
                 </p>
+
               </div>
 
-              <!-- Action -->
               <div
-                class="mt-5 text-sm font-semibold
-                       text-[#007979]"
+                class="mt-1.5
+                       text-xs
+                       font-semibold
+                       leading-tight
+                       text-[#007979]
+                       sm:mt-5
+                       sm:text-sm"
               >
                 Open Business Operations →
               </div>
+
             </a>
-            
+
           </div>
         </section>
+
       </main>
     </div>
   `,
@@ -879,6 +1277,8 @@ export class AdminDashboardComponent {
    * Prevent duplicate location submissions.
    */
   protected readonly savingLocation = signal(false);
+
+  private readonly pageTitleService = inject(PageTitleService);
 
   /**
    * Location creation form.
@@ -929,6 +1329,10 @@ export class AdminDashboardComponent {
     this.moreMenuOpen.set(false);
   }
 
+  constructor() {
+    this.pageTitleService.setTitle('Admin Dashboard');
+  }
+
   /**
    * Create a new location in Firestore.
    */
@@ -939,7 +1343,9 @@ export class AdminDashboardComponent {
       !this.locationForm.zipCode?.trim() ||
       !this.locationForm.country?.trim()
     ) {
-      this.toast.error('Please complete the city, state, ZIP code, and country.');
+      this.toast.error(
+        'Please complete the city, state, ZIP code, and country.',
+      );
 
       return;
     }
@@ -962,13 +1368,15 @@ export class AdminDashboardComponent {
 
         country: this.locationForm.country!.trim(),
 
-        ...(this.locationForm.latitude !== undefined && this.locationForm.latitude !== null
+        ...(this.locationForm.latitude !== undefined &&
+        this.locationForm.latitude !== null
           ? {
               latitude: Number(this.locationForm.latitude),
             }
           : {}),
 
-        ...(this.locationForm.longitude !== undefined && this.locationForm.longitude !== null
+        ...(this.locationForm.longitude !== undefined &&
+        this.locationForm.longitude !== null
           ? {
               longitude: Number(this.locationForm.longitude),
             }
@@ -983,7 +1391,9 @@ export class AdminDashboardComponent {
     } catch (error) {
       console.error('Failed to create location:', error);
 
-      this.toast.error('Unable to create location. Please try again.');
+      this.toast.error(
+        'Unable to create location. Please try again.',
+      );
     } finally {
       this.savingLocation.set(false);
     }
@@ -1029,16 +1439,25 @@ export class AdminDashboardComponent {
       /**
        * Show confirmation to the administrator.
        */
-      this.toast.success('You have been signed out.');
+      this.toast.success(
+        'You have been signed out.',
+      );
 
       /**
        * Return to the login page.
        */
       await this.router.navigateByUrl('/login');
-    } catch (error) {
-      console.error('Failed to sign out:', error);
 
-      this.toast.error('Unable to sign out. Please try again.');
+    } catch (error) {
+      console.error(
+        'Failed to sign out:',
+        error,
+      );
+
+      this.toast.error(
+        'Unable to sign out. Please try again.',
+      );
+
     } finally {
       this.signingOut.set(false);
     }
