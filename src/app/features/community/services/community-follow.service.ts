@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import {
   collection,
@@ -16,11 +16,24 @@ import {
 import { firestore } from '../../../core/services/firebase-config';
 
 import { CommunityFollow } from '../models/community-follow.model';
+import { CommunityUserService } from './community-user.service';
+import { CommunityNotificationService } from './community-notification.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CommunityFollowService {
+  // =============================================================
+  // Services
+  // =============================================================
+
+  private readonly userService =
+    inject(CommunityUserService);
+
+  private readonly notificationService =
+    inject(CommunityNotificationService);
+
+
   // =============================================================
   // Firestore
   // =============================================================
@@ -99,6 +112,9 @@ export class CommunityFollowService {
 
   /**
    * Follow another user.
+   *
+   * After a successful new follow, a notification is
+   * created for the user being followed.
    */
   async followUser(
     followerId: string,
@@ -138,11 +154,48 @@ export class CommunityFollowService {
       return;
     }
 
+    // Create the follow relationship first.
     await setDoc(followRef, {
       followerId,
       followingId,
       createdAt: serverTimestamp(),
     });
+
+    // ===========================================================
+    // Create follow notification
+    // ===========================================================
+
+    try {
+      const follower =
+        await this.userService.getUserById(
+          followerId,
+        );
+
+      await this.notificationService.createNotification({
+        recipientId: followingId,
+
+        actorId: followerId,
+
+        actorDisplayName:
+          follower?.displayName ??
+          'Zebron User',
+
+        actorPhotoUrl:
+          follower?.photoUrl,
+
+        type: 'follow',
+
+        message:
+          `${follower?.displayName ?? 'Zebron User'} ` +
+          `started following you.`,
+
+        route:
+          `/community/users/${followerId}`,
+      });
+    } catch {
+      // The follow has already succeeded.
+      // Notification failure must not undo the follow.
+    }
   }
 
 
@@ -266,10 +319,13 @@ export class CommunityFollowService {
 
         return {
           id: followDoc.id,
+
           followerId:
             data['followerId'] as string,
+
           followingId:
             data['followingId'] as string,
+
           createdAt:
             data['createdAt'] ?? null,
         };
@@ -314,10 +370,13 @@ export class CommunityFollowService {
 
         return {
           id: followDoc.id,
+
           followerId:
             data['followerId'] as string,
+
           followingId:
             data['followingId'] as string,
+
           createdAt:
             data['createdAt'] ?? null,
         };
@@ -366,10 +425,13 @@ export class CommunityFollowService {
 
         return {
           id: followDoc.id,
+
           followerId:
             data['followerId'] as string,
+
           followingId:
             data['followingId'] as string,
+
           createdAt:
             data['createdAt'] ?? null,
         };

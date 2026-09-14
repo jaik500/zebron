@@ -551,21 +551,30 @@ export class CommunityNotificationsComponent implements OnInit {
   // NOTIFICATION ROUTE
   // =============================================================
 
-  private getNotificationRoute(notification: CommunityNotification): string | null {
-    if (notification.route) {
-      return notification.route;
-    }
+  // =============================================================
+// NOTIFICATION ROUTE
+// =============================================================
 
-    if (notification.postId) {
-      return `/community/posts/${notification.postId}`;
-    }
-
-    if (notification.actorId) {
-      return `/community/users/${notification.actorId}`;
-    }
-
-    return null;
+private getNotificationRoute(
+  notification: CommunityNotification,
+): string | null {
+  // Prefer an explicitly stored route when one exists.
+  if (notification.route) {
+    return notification.route;
   }
+
+  // Community posts use the singular `/post/:id` route.
+  if (notification.postId) {
+    return `/community/post/${notification.postId}`;
+  }
+
+  // Fall back to the actor's community profile.
+  if (notification.actorId) {
+    return `/community/users/${notification.actorId}`;
+  }
+
+  return null;
+}
 
   // =============================================================
   // NOTIFICATION ICON

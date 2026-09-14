@@ -1,4 +1,3 @@
-
 import {
   ChangeDetectionStrategy,
   Component,
@@ -22,7 +21,10 @@ import { CommunityStore } from '../../store/community.store';
   template: `
     <div class="space-y-6">
 
-      <!-- Main navigation -->
+      <!-- ============================================================
+           MAIN NAVIGATION
+           ============================================================ -->
+
       <section>
 
         <h2
@@ -35,13 +37,18 @@ import { CommunityStore } from '../../store/community.store';
 
         <div class="mt-2 space-y-1">
 
+          <!-- ========================================================
+               HOME
+               ======================================================== -->
+
           <button
             mat-button
             type="button"
             class="!w-full !justify-start
                    !rounded-xl
                    !text-[#032D42]
-                   hover:!bg-[#E5F4F4]"
+                   hover:!bg-[#E5F4F4]
+                   hover:!text-[#007979]"
             [class.!bg-[#E5F4F4]]="
               !store.selectedTopicId()
             "
@@ -50,6 +57,7 @@ import { CommunityStore } from '../../store/community.store';
             "
             (click)="selectAll()"
           >
+
             <mat-icon
               [class.!text-[#007979]]="
                 !store.selectedTopicId()
@@ -61,7 +69,13 @@ import { CommunityStore } from '../../store/community.store';
             <span class="ml-2">
               Home
             </span>
+
           </button>
+
+
+          <!-- ========================================================
+               TRENDING
+               ======================================================== -->
 
           <button
             mat-button
@@ -71,7 +85,9 @@ import { CommunityStore } from '../../store/community.store';
                    !text-[#032D42]
                    hover:!bg-[#E5F4F4]
                    hover:!text-[#007979]"
+            (click)="selectTrending()"
           >
+
             <mat-icon
               class="!text-[#007979]"
             >
@@ -81,7 +97,13 @@ import { CommunityStore } from '../../store/community.store';
             <span class="ml-2">
               Trending
             </span>
+
           </button>
+
+
+          <!-- ========================================================
+               FOLLOWING
+               ======================================================== -->
 
           <button
             mat-button
@@ -92,6 +114,7 @@ import { CommunityStore } from '../../store/community.store';
                    hover:!bg-[#E5F4F4]
                    hover:!text-[#007979]"
           >
+
             <mat-icon
               class="!text-[#007979]"
             >
@@ -101,7 +124,13 @@ import { CommunityStore } from '../../store/community.store';
             <span class="ml-2">
               Following
             </span>
+
           </button>
+
+
+          <!-- ========================================================
+               SAVED
+               ======================================================== -->
 
           <button
             mat-button
@@ -112,6 +141,7 @@ import { CommunityStore } from '../../store/community.store';
                    hover:!bg-[#E5F4F4]
                    hover:!text-[#007979]"
           >
+
             <mat-icon
               class="!text-[#007979]"
             >
@@ -121,12 +151,18 @@ import { CommunityStore } from '../../store/community.store';
             <span class="ml-2">
               Saved
             </span>
+
           </button>
 
         </div>
+
       </section>
 
-      <!-- Topics -->
+
+      <!-- ============================================================
+           TOPICS
+           ============================================================ -->
+
       <section>
 
         <h2
@@ -189,6 +225,7 @@ import { CommunityStore } from '../../store/community.store';
           }
 
         </div>
+
       </section>
 
     </div>
@@ -198,16 +235,57 @@ import { CommunityStore } from '../../store/community.store';
     ChangeDetectionStrategy.OnPush,
 })
 export class CommunitySidebarComponent {
-  readonly store = inject(CommunityStore);
+
+  // ============================================================
+  // STORE
+  // ============================================================
+
+  readonly store =
+    inject(CommunityStore);
+
+
+  // ============================================================
+  // HOME
+  // ============================================================
 
   async selectAll(): Promise<void> {
+
     await this.store.selectTopic(null);
+
   }
+
+
+  
+  // ============================================================
+  // TRENDING
+  // ============================================================
+
+  /**
+   * Select the Trending community feed.
+   *
+   * The actual feed-mode state will be owned by CommunityStore.
+   * Keeping this action here gives the sidebar a single entry
+   * point for navigation.
+   */
+  async selectTrending(): Promise<void> {
+
+    await this.store.selectFeedMode('trending');
+
+  }
+
+
+  // ============================================================
+  // TOPIC
+  // ============================================================
 
   async selectTopic(
     topicId: string,
   ): Promise<void> {
-    await this.store.selectTopic(topicId);
-  }
-}
 
+    await this.store.selectTopic(
+      topicId,
+    );
+
+  }
+
+}

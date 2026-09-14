@@ -185,6 +185,132 @@ export const routes: Routes = [
     component: AboutComponent,
   },
 
+
+// =====================================================
+// ADMIN CONTENT & OPERATIONS
+// =====================================================
+{
+  path: 'admin/content-operations',
+  canActivate: [adminGuard],
+  data: {
+    title: 'Admin | Content & Operations',
+  },
+  loadComponent: () =>
+    import(
+      './features/admin/pages/content-operations/pages/content-operations.component'
+    ).then(
+      (m) => m.ContentOperationsComponent,
+    ),
+},
+
+// =====================================================
+// ADMIN CONTENT & OPERATIONS - MILESTONES
+// =====================================================
+{
+  path: 'admin/content-operations/milestones',
+  canActivate: [adminGuard],
+  data: {
+    title: 'Admin | Content & Operations | Milestones',
+  },
+  loadComponent: () =>
+    import(
+      './features/admin/pages/content-operations/pages/milestones/content-milestones.component'
+    ).then(
+      (m) => m.ContentMilestonesComponent,
+    ),
+},
+
+{
+  path: 'admin/content-operations/captures',
+  canActivate: [adminGuard],
+  data: {
+    title: 'Admin | Content & Operations | Capture Moments',
+  },
+  loadComponent: () =>
+    import(
+      './features/admin/pages/content-operations/pages/captures/content-captures.component'
+    ).then(
+      (m) => m.ContentCapturesComponent,
+    ),
+},
+
+{
+  path: 'admin/content-operations/tools',
+  canActivate: [adminGuard],
+  data: {
+    title: 'Admin | Content & Operations | Tools',
+  },
+  loadComponent: () =>
+    import(
+      './features/admin/pages/content-operations/pages/tools/content-tools.component'
+    ).then(
+      (m) => m.ContentToolsComponent,
+    ),
+},
+
+{
+  path: 'admin/content-operations/content',
+  canActivate: [adminGuard],
+  data: {
+    title: 'Admin | Content & Operations | Content',
+  },
+  loadComponent: () =>
+    import(
+      './features/admin/pages/content-operations/pages/content/content-page.component'
+    ).then(
+      (m) => m.ContentPageComponent,
+    ),
+},
+
+{
+  path: 'admin/content-operations/content/create',
+  canActivate: [adminGuard],
+  data: {
+    title: 'Admin | Content & Operations | Create Content',
+  },
+  loadComponent: () =>
+    import(
+      './features/admin/pages/content-operations/pages/content/create-content.component'
+    ).then(
+      (m) => m.CreateContentComponent,
+    ),
+},
+
+// =====================================================
+// ADMIN CONTENT & OPERATIONS - EDIT CONTENT
+// =====================================================
+{
+  path: 'admin/content-operations/content/:id/edit',
+  canActivate: [adminGuard],
+  data: {
+    title: 'Admin | Content & Operations | Edit Content',
+  },
+  loadComponent: () =>
+    import(
+      './features/admin/pages/content-operations/pages/content/edit-content.component'
+    ).then(
+      (m) => m.EditContentComponent,
+    ),
+},
+
+// =====================================================
+// ADMIN CONTENT & OPERATIONS - CONTENT IDEAS
+// =====================================================
+{
+  path: 'admin/content-operations/ideas',
+  canActivate: [adminGuard],
+  data: {
+    title: 'Content Ideas',
+  },
+  loadComponent: () =>
+    import(
+      './features/admin/pages/content-operations/pages/ideas/content-ideas.component'
+    ).then(
+      (m) => m.ContentIdeasComponent,
+    ),
+},
+
+
   // =====================================================
   // TEST CENTER
   // =====================================================

@@ -25,6 +25,15 @@ import {
   CommunityPostAuthor,
 } from '../models/community-post.model';
 
+import {
+  CommunitySortMode,
+} from '../models/community-feed.model';
+
+
+// ============================================================
+// POST PAGE
+// ============================================================
+
 export interface CommunityPostPage {
   posts: CommunityPost[];
 
@@ -39,8 +48,14 @@ export interface CommunityPostPage {
   hasMore: boolean;
 }
 
+
+// ============================================================
+// CREATE POST INPUT
+// ============================================================
+
 export interface CreateCommunityPostInput {
   title: string;
+
   content: string;
 
   topicId: string;
@@ -64,6 +79,11 @@ export interface CreateCommunityPostInput {
 
   author: CommunityPostAuthor;
 }
+
+
+// ============================================================
+// SERVICE
+// ============================================================
 
 @Injectable({
   providedIn: 'root',
@@ -99,19 +119,55 @@ export class CommunityPostService {
    * Returns a paginated collection of published and approved
    * Community posts.
    *
-   * Pagination uses a Firestore document cursor so the entire
-   * Community feed does not need to be downloaded at once.
+   * Supported sort modes:
+   *
+   * latest:
+   *   Newest posts first.
+   *
+   * popular:
+   *   Posts with the highest view count first.
+   *
+   * trending:
+   *   Posts with the highest trending score first.
+   *
+   * Trending uses the denormalized trendingScore field so
+   * Firestore can perform the ranking before pagination.
+   *
+   * The sort mode is kept in the service contract so the
+   * CommunityStore does not need to know how Firestore performs
+   * the actual query.
    */
   async getPosts(
     options?: {
       topicId?: string | null;
+
+      sortMode?: CommunitySortMode;
+
       lastDocument?: DocumentSnapshot<DocumentData> | null;
     },
   ): Promise<CommunityPostPage> {
 
+    // ----------------------------------------------------------
+    // NORMALIZE OPTIONS
+    // ----------------------------------------------------------
+
+    const topicId =
+      options?.topicId?.trim() ||
+      null;
+
+    const sortMode =
+      options?.sortMode ??
+      'latest';
+
+
     try {
 
+      // --------------------------------------------------------
+      // BASE FILTERS
+      // --------------------------------------------------------
+
       const constraints: QueryConstraint[] = [
+
         where(
           'status',
           '==',
@@ -123,36 +179,93 @@ export class CommunityPostService {
           '==',
           'approved',
         ),
-
-        orderBy(
-          'createdAt',
-          'desc',
-        ),
-
-        limit(
-          this.pageSize,
-        ),
       ];
 
 
-      // ----------------------------------------------------------
+      // --------------------------------------------------------
       // OPTIONAL TOPIC FILTER
-      // ----------------------------------------------------------
+      // --------------------------------------------------------
 
-      if (
-        options?.topicId &&
-        options.topicId.trim()
-      ) {
+      if (topicId) {
 
-        constraints.splice(
-          2,
-          0,
+        constraints.push(
           where(
             'topicId',
             '==',
-            options.topicId.trim(),
+            topicId,
           ),
         );
+      }
+
+
+      // --------------------------------------------------------
+      // SORTING
+      // --------------------------------------------------------
+
+      switch (sortMode) {
+
+        case 'trending':
+
+          /**
+           * Trending uses the denormalized trendingScore.
+           *
+           * The score is calculated by CommunityRankingService
+           * and stored on the post document.
+           *
+           * createdAt provides a deterministic recency
+           * tie-breaker when two posts have the same score.
+           */
+          constraints.push(
+            orderBy(
+              'trendingScore',
+              'desc',
+            ),
+
+            orderBy(
+              'createdAt',
+              'desc',
+            ),
+          );
+
+          break;
+
+
+        case 'popular':
+
+          /**
+           * Popular currently uses viewCount as its primary
+           * popularity signal.
+           *
+           * Later we can introduce a dedicated popularity score
+           * based on reactions, comments, and views.
+           */
+          constraints.push(
+            orderBy(
+              'viewCount',
+              'desc',
+            ),
+
+            orderBy(
+              'createdAt',
+              'desc',
+            ),
+          );
+
+          break;
+
+
+        case 'latest':
+
+        default:
+
+          constraints.push(
+            orderBy(
+              'createdAt',
+              'desc',
+            ),
+          );
+
+          break;
       }
 
 
@@ -172,6 +285,21 @@ export class CommunityPostService {
       }
 
 
+      // ----------------------------------------------------------
+      // PAGE LIMIT
+      // ----------------------------------------------------------
+
+      constraints.push(
+        limit(
+          this.pageSize,
+        ),
+      );
+
+
+      // ----------------------------------------------------------
+      // FIRESTORE QUERY
+      // ----------------------------------------------------------
+
       const postsQuery =
         query(
           this.postsCollection,
@@ -185,47 +313,91 @@ export class CommunityPostService {
         );
 
 
+      // ----------------------------------------------------------
+      // MAP POSTS
+      // ----------------------------------------------------------
+
       const posts =
         snapshot.docs.map(
           (document) => ({
-            id: document.id,
+
+            id:
+              document.id,
+
             ...document.data(),
+
           }),
         ) as CommunityPost[];
 
 
+      // ----------------------------------------------------------
+      // PAGINATION
+      // ----------------------------------------------------------
+
+      const lastDocument =
+        snapshot.docs.length > 0
+          ? snapshot.docs[
+              snapshot.docs.length - 1
+            ]
+          : (
+              options?.lastDocument ??
+              null
+            );
+
+
+      const hasMore =
+        snapshot.docs.length ===
+        this.pageSize;
+
+
+      // ----------------------------------------------------------
+      // SUCCESS LOG
+      // ----------------------------------------------------------
+
+      this.logger.info(
+        'CommunityPostService',
+        'Community posts loaded successfully.',
+        {
+          topicId,
+
+          sortMode,
+
+          resultCount:
+            posts.length,
+
+          hasMore,
+        },
+      );
+
+
+      // ----------------------------------------------------------
+      // RETURN PAGE
+      // ----------------------------------------------------------
+
       return {
+
         posts,
 
-        lastDocument:
-          snapshot.docs.length > 0
-            ? snapshot.docs[
-                snapshot.docs.length - 1
-              ]
-            : (
-                options?.lastDocument ??
-                null
-              ),
+        lastDocument,
 
-        hasMore:
-          snapshot.docs.length ===
-          this.pageSize,
+        hasMore,
+
       };
 
     } catch (error) {
 
+      // ----------------------------------------------------------
+      // ERROR LOG
+      // ----------------------------------------------------------
+
       this.logger.error(
         'CommunityPostService',
         'Failed to load community posts.',
+        error,
         {
-          topicId:
-            options?.topicId ??
-            null,
+          topicId,
 
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
+          sortMode,
         },
       );
 
@@ -285,8 +457,12 @@ export class CommunityPostService {
 
 
       return {
-        id: snapshot.id,
+
+        id:
+          snapshot.id,
+
         ...snapshot.data(),
+
       } as CommunityPost;
 
     } catch (error) {
@@ -294,13 +470,10 @@ export class CommunityPostService {
       this.logger.error(
         'CommunityPostService',
         'Failed to load community post.',
+        error,
         {
-          postId: id,
-
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
+          postId:
+            id,
         },
       );
 
@@ -332,6 +505,8 @@ export class CommunityPostService {
    * - reactionCounts
    * - commentCount
    * - viewCount
+   * - trendingScore
+   * - timestamps
    */
   async createPost(
     input: CreateCommunityPostInput,
@@ -428,7 +603,7 @@ export class CommunityPostService {
     if (!displayName) {
 
       throw new Error(
-        'Author display name is required.',
+        'Post author display name is required.',
       );
     }
 
@@ -439,13 +614,16 @@ export class CommunityPostService {
 
     const tags =
       (input.tags ?? [])
+
         .map(
           (tag) =>
             tag.trim(),
         )
+
         .filter(
           Boolean,
         )
+
         .map(
           (tag) =>
             tag.startsWith('#')
@@ -460,10 +638,12 @@ export class CommunityPostService {
 
     const mediaUrls =
       (input.mediaUrls ?? [])
+
         .map(
           (url) =>
             url.trim(),
         )
+
         .filter(
           Boolean,
         );
@@ -473,50 +653,93 @@ export class CommunityPostService {
     // AUTHOR SNAPSHOT
     // ==========================================================
 
-   const author: CommunityPostAuthor = {
-  id: authorId,
-  displayName,
+    const author: CommunityPostAuthor = {
 
-  ...(input.author.photoUrl
-    ? { photoUrl: input.author.photoUrl }
-    : {}),
+      id:
+        authorId,
 
-  ...(input.author.firstName
-    ? { firstName: input.author.firstName }
-    : {}),
+      displayName,
 
-  ...(input.author.lastName
-    ? { lastName: input.author.lastName }
-    : {}),
 
-  ...(input.author.preferredName
-    ? { preferredName: input.author.preferredName }
-    : {}),
+      ...(input.author.photoUrl
+        ? {
+            photoUrl:
+              input.author.photoUrl,
+          }
+        : {}),
 
-  ...(input.author.bio
-    ? { bio: input.author.bio }
-    : {}),
 
-  ...(input.author.countryOfOrigin
-    ? { countryOfOrigin: input.author.countryOfOrigin }
-    : {}),
+      ...(input.author.firstName
+        ? {
+            firstName:
+              input.author.firstName,
+          }
+        : {}),
 
-  ...(input.author.currentCountry
-    ? { currentCountry: input.author.currentCountry }
-    : {}),
 
-  ...(input.author.city
-    ? { city: input.author.city }
-    : {}),
+      ...(input.author.lastName
+        ? {
+            lastName:
+              input.author.lastName,
+          }
+        : {}),
 
-  ...(input.author.state
-    ? { state: input.author.state }
-    : {}),
 
-  ...(input.author.website
-    ? { website: input.author.website }
-    : {}),
-};
+      ...(input.author.preferredName
+        ? {
+            preferredName:
+              input.author.preferredName,
+          }
+        : {}),
+
+
+      ...(input.author.bio
+        ? {
+            bio:
+              input.author.bio,
+          }
+        : {}),
+
+
+      ...(input.author.countryOfOrigin
+        ? {
+            countryOfOrigin:
+              input.author.countryOfOrigin,
+          }
+        : {}),
+
+
+      ...(input.author.currentCountry
+        ? {
+            currentCountry:
+              input.author.currentCountry,
+          }
+        : {}),
+
+
+      ...(input.author.city
+        ? {
+            city:
+              input.author.city,
+          }
+        : {}),
+
+
+      ...(input.author.state
+        ? {
+            state:
+              input.author.state,
+          }
+        : {}),
+
+
+      ...(input.author.website
+        ? {
+            website:
+              input.author.website,
+          }
+        : {}),
+    };
 
 
     // ==========================================================
@@ -577,7 +800,8 @@ export class CommunityPostService {
 
       /**
        * MVP behavior:
-       * member-created posts are immediately approved.
+       *
+       * Member-created posts are immediately approved.
        *
        * This can later become "pending" when a moderation
        * workflow is introduced.
@@ -603,6 +827,7 @@ export class CommunityPostService {
         support: 0,
 
         helpful: 0,
+
       },
 
 
@@ -610,9 +835,20 @@ export class CommunityPostService {
       // ENGAGEMENT COUNTS
       // --------------------------------------------------------
 
-      commentCount: 0,
+      commentCount:
+        0,
 
-      viewCount: 0,
+      viewCount:
+        0,
+
+      /**
+       * Initial Trending score.
+       *
+       * New posts begin at zero and are subsequently updated
+       * by the ranking process.
+       */
+      trendingScore:
+        0,
 
 
       // --------------------------------------------------------
@@ -624,8 +860,13 @@ export class CommunityPostService {
 
       updatedAt:
         serverTimestamp(),
+
     };
 
+
+    // ==========================================================
+    // CREATE FIRESTORE DOCUMENT
+    // ==========================================================
 
     try {
 
@@ -636,22 +877,40 @@ export class CommunityPostService {
         );
 
 
+      // --------------------------------------------------------
+      // SUCCESS LOG
+      // --------------------------------------------------------
+
+      this.logger.info(
+        'CommunityPostService',
+        'Community post created successfully.',
+        {
+          postId:
+            documentReference.id,
+
+          authorId,
+
+          topicId,
+        },
+      );
+
+
       return documentReference.id;
 
     } catch (error) {
 
+      // --------------------------------------------------------
+      // ERROR LOG
+      // --------------------------------------------------------
+
       this.logger.error(
         'CommunityPostService',
         'Failed to create community post.',
+        error,
         {
           authorId,
 
           topicId,
-
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
         },
       );
 
@@ -659,3 +918,4 @@ export class CommunityPostService {
     }
   }
 }
+

@@ -37,6 +37,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { LoggerService } from '../../../../core/services/logger.service';
 import { ShareService } from '../../../../core/services/share.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
+import { CommunityPostViewService } from '../../services/community-post-view.service';
 
 @Component({
   selector: 'app-community-post-detail',
@@ -1024,6 +1025,9 @@ export class CommunityPostDetailComponent
   readonly pageTitleService =
     inject(PageTitleService);
 
+    private readonly postViewService =
+  inject(CommunityPostViewService);
+
   // ==============================================================
   // STATE
   // ==============================================================
@@ -1094,6 +1098,7 @@ export class CommunityPostDetailComponent
       await this.store.loadPost(
         this.postId,
       );
+      await this.recordPostView();
 
       /*
        * The feed navigates to:
@@ -1667,6 +1672,54 @@ export class CommunityPostDetailComponent
         block: 'start',
       });
   }
+
+
+/**
+ * Records a view after the post has successfully loaded.
+ *
+ * View tracking is intentionally isolated from post loading.
+ * If view tracking fails, the user should still be able to
+ * view and interact with the post normally.
+ */
+private async recordPostView(): Promise<void> {
+  if (!this.postId) {
+    return;
+  }
+
+  const userId =
+    this.authService.user()?.id ??
+    this.authService.firebaseUser()?.uid ??
+    null;
+
+  /*
+   * Anonymous visitors can read community posts, but the
+   * current view-tracking strategy uses an authenticated
+   * user identifier to prevent repeated view inflation.
+   */
+  if (!userId) {
+    return;
+  }
+
+  try {
+    await this.postViewService.recordView(
+      this.postId,
+      userId,
+    );
+  } catch (error) {
+    /*
+     * A view-tracking failure must not prevent the post
+     * detail page from functioning.
+     */
+    this.logger.error(
+      'CommunityPostDetailComponent',
+      'Failed to record community post view.',
+      error,
+      {
+        postId: this.postId,
+      },
+    );
+  }
+}
 
   // ==============================================================
   // DISPLAY HELPERS

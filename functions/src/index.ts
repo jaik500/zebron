@@ -26,6 +26,14 @@ const ZEBRON_FROM_EMAIL = "Zebron <noreply@zebron.org>";
 
 const db = getFirestore();
 const auth = getAuth();
+/**
+ * Return the initialized Firestore instance.
+ *
+ * @return {FirebaseFirestore.Firestore} Firestore database instance.
+ */
+function getDb() {
+  return getFirestore();
+}
 
 
 /**
@@ -51,7 +59,7 @@ async function requireAdmin(request: CallableRequest<unknown>): Promise<{
   /**
    * Load the Zebron Firestore profile.
    */
-  const profile = await db.collection("users").doc(uid).get();
+  const profile = await getDb().collection("users").doc(uid).get();
 
   if (!profile.exists) {
     throw new HttpsError("permission-denied", "Administrator profile could not be found.");
@@ -96,7 +104,7 @@ export const createUser = onCall(
     /**
      * Retrieve the administrator's Firestore profile.
      */
-    const adminProfile = await db.collection("users").doc(adminUid).get();
+    const adminProfile = await getDb().collection("users").doc(adminUid).get();
 
     if (!adminProfile.exists) {
       throw new HttpsError("permission-denied", "Administrator profile could not be found.");
@@ -202,7 +210,7 @@ export const createUser = onCall(
         userProfile["displayName"] = displayName;
       }
 
-      await db.collection("users").doc(firebaseUser.uid).set(userProfile);
+      await getDb().collection("users").doc(firebaseUser.uid).set(userProfile);
     } catch (error: unknown) {
       logger.error("Failed to create Firestore user profile.", {
         error,
@@ -414,7 +422,7 @@ export const resetUserPassword = onCall(
        *
        * Do NOT store the password-reset link in Firestore.
        */
-      await db.collection("passwordResetRequests").add({
+      await getDb().collection("passwordResetRequests").add({
         userId: uid,
 
         email: targetEmail,
@@ -583,7 +591,7 @@ export const submitContactMessage = onCall(
      * Store the contact message.
      */
     try {
-      await db.collection("contactMessages").add(contactMessage);
+      await getDb().collection("contactMessages").add(contactMessage);
     } catch (error: unknown) {
       logger.error("Failed to save contact message.", {
         error,
@@ -1606,7 +1614,7 @@ export const sendContactReply = onCall(
        * original contact message so the
        * conversation remains associated.
        */
-      await db.collection("contactMessages").doc(messageId).collection("replies").add({
+      await getDb().collection("contactMessages").doc(messageId).collection("replies").add({
         from: ZEBRON_FROM_EMAIL,
 
         to,
@@ -1788,7 +1796,7 @@ export const sendNewContactMessage = onCall(
        * Keep a record of administrator-sent
        * messages in a dedicated collection.
        */
-      await db.collection("outboundMessages").add({
+      await getDb().collection("outboundMessages").add({
         from: ZEBRON_FROM_EMAIL,
 
         to,
@@ -1984,3 +1992,11 @@ export const createDonationCheckout = onCall(
 export {
   processBusinessComplianceStatuses,
 } from "./compliance-scheduler";
+
+export {
+  updateCommunityTrendingScore,
+} from "./community-ranking";
+
+export {
+  refreshCommunityTrendingScores,
+} from "./community-ranking-scheduler";

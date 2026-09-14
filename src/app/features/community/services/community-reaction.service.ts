@@ -1,26 +1,33 @@
 import { Injectable, inject } from '@angular/core';
 
 import {
-  collection,
-  deleteDoc,
   doc,
   getDoc,
   increment,
   runTransaction,
   serverTimestamp,
-  setDoc,
 } from 'firebase/firestore';
 
 import { firestore } from '../../../core/services/firebase-config';
 import { LoggerService } from '../../../core/services/logger.service';
 
-import { CommunityReaction, CommunityReactionType } from '../models/community-reaction.model';
+import {
+  CommunityReaction,
+  CommunityReactionType,
+} from '../models/community-reaction.model';
 
+import { CommunityNotificationService } from './community-notification.service';
+import { CommunityUserService } from './community-user.service';
 @Injectable({
   providedIn: 'root',
 })
 export class CommunityReactionService {
   private readonly logger = inject(LoggerService);
+  private readonly notificationService =
+  inject(CommunityNotificationService);
+
+private readonly userService =
+  inject(CommunityUserService);
 
   private readonly postsCollection = 'communityPosts';
   private readonly reactionsCollection = 'reactions';
