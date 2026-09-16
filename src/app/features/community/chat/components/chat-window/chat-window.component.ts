@@ -6,6 +6,7 @@ import {
   HostListener,
   inject,
   OnDestroy,
+  output,
   signal,
   ViewChild,
 } from '@angular/core';
@@ -14,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
 import {
   ChatMessage,
@@ -24,6 +26,14 @@ import {
   ChatStore,
 } from '../../store/chat.store';
 
+import {
+  ChatConversation,
+} from '../../models/chat-conversation.model';
+
+import {
+  ChatParticipant,
+} from '../../models/chat-participant.model';
+
 
 @Component({
   selector: 'app-chat-window',
@@ -32,6 +42,7 @@ import {
     FormsModule,
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
   ],
   changeDetection:
     ChangeDetectionStrategy.OnPush,
@@ -67,7 +78,7 @@ import {
       </section>
     } @else {
       <section
-        class="flex h-full min-h-0 flex-col bg-gray-50"
+        class="relative flex h-full min-h-0 flex-col bg-gray-50"
       >
 
         <!-- =====================================================
@@ -75,8 +86,26 @@ import {
              ===================================================== -->
 
         <header
-          class="flex shrink-0 items-center gap-3 border-b bg-white px-4 py-3"
+          class="relative z-50 flex shrink-0 items-center gap-3 border-b bg-white px-4 py-3"
         >
+
+          <!-- =====================================================
+               MOBILE CONVERSATIONS BUTTON
+               ===================================================== -->
+
+          <button
+            mat-icon-button
+            type="button"
+            class="relative z-50 shrink-0 md:hidden"
+            [matMenuTriggerFor]="conversationMenu"
+            aria-label="Open conversations"
+            title="Open conversations"
+          >
+            <mat-icon>
+              menu
+            </mat-icon>
+          </button>
+
           <div
             class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200"
           >
@@ -113,6 +142,173 @@ import {
             </p>
           </div>
         </header>
+
+
+        <!-- =====================================================
+             MOBILE CONVERSATIONS MATERIAL MENU
+             ===================================================== -->
+
+        <mat-menu
+          #conversationMenu="matMenu"
+          xPosition="after"
+          yPosition="below"
+          panelClass="chat-conversations-menu !w-[300px] !max-w-[calc(100vw-24px)] !min-w-0 !overflow-hidden !rounded-lg !bg-white !p-0 !shadow-xl md:!hidden"
+          (menuOpened)="onConversationMenuOpened()"
+        >
+
+          <!-- HEADER -->
+          <div
+            class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-3 py-3"
+          >
+            <mat-icon class="!text-gray-700">forum</mat-icon>
+
+            <span
+              class="text-sm font-semibold text-gray-900"
+            >
+              Chats
+            </span>
+          </div>
+
+          <!-- EMPTY STATE -->
+          @if (conversationsWithMessages().length === 0) {
+            <div
+              class="px-4 py-7 text-center"
+            >
+              <mat-icon
+                class="!text-gray-300"
+              >
+                chat_bubble_outline
+              </mat-icon>
+
+              <p
+                class="mt-2 text-xs text-gray-500"
+              >
+                No conversations yet
+              </p>
+            </div>
+          } @else {
+
+            <!-- CONVERSATIONS -->
+            @for (
+              conversation of conversationsWithMessages();
+              track conversation.id
+            ) {
+              <button
+                mat-menu-item
+                type="button"
+                class="!h-auto !min-h-0 !w-full !px-3 !py-3 !leading-normal"
+                [class.!bg-blue-50]="
+                  conversation.id ===
+                  store.activeConversationId()
+                "
+                (click)="
+                  selectConversationFromPopup(
+                    conversation.id
+                  )
+                "
+              >
+                <div
+                  class="flex w-full min-w-0 items-center gap-3"
+                >
+                  <!-- AVATAR -->
+                  <div
+                    class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100"
+                  >
+                    @if (
+                      getParticipant(conversation)?.photoUrl
+                    ) {
+                      <img
+                        [src]="
+                          getParticipant(conversation)
+                            ?.photoUrl
+                        "
+                        [alt]="
+                          getParticipant(conversation)
+                            ?.displayName ||
+                          'Community member'
+                        "
+                        class="h-full w-full object-cover"
+                      />
+                    } @else {
+                      <span
+                        class="text-[10px] font-bold text-gray-600"
+                      >
+                        {{
+                          getInitials(
+                            getParticipant(conversation)
+                              ?.displayName
+                          )
+                        }}
+                      </span>
+                    }
+                  </div>
+
+                  <!-- MESSAGE CONTENT -->
+                  <div
+                    class="min-w-0 flex-1"
+                  >
+                    <div
+                      class="flex min-w-0 items-center gap-2"
+                    >
+                      <span
+                        class="min-w-0 flex-1 truncate text-xs text-gray-900"
+                        [class.font-bold]="
+                          getUnreadCount(conversation) > 0
+                        "
+                        [class.font-semibold]="
+                          getUnreadCount(conversation) === 0
+                        "
+                      >
+                        {{
+                          getParticipant(conversation)
+                            ?.displayName ||
+                          'Community Member'
+                        }}
+                      </span>
+
+                      @if (
+                        getUnreadCount(conversation) > 0
+                      ) {
+                        <span
+                          class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white"
+                        >
+                          {{
+                            getUnreadCount(conversation) > 99
+                              ? '99+'
+                              : getUnreadCount(conversation)
+                          }}
+                        </span>
+                      }
+                    </div>
+
+                    <div
+                      class="mt-0.5 flex min-w-0 items-center gap-2"
+                    >
+                      <span
+                        class="min-w-0 flex-1 truncate text-[10px] leading-4 text-gray-500"
+                      >
+                        {{
+                          latestMessage(conversation)
+                        }}
+                      </span>
+
+                      <span
+                        class="shrink-0 whitespace-nowrap text-[9px] leading-4 text-gray-400"
+                      >
+                        {{
+                          formatConversationTime(
+                            conversation.lastMessageAt
+                          )
+                        }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            }
+          }
+
+        </mat-menu>
 
 
         <!-- =====================================================
@@ -1010,6 +1206,14 @@ export class ChatWindowComponent
   readonly store =
     inject(ChatStore);
 
+  /**
+   * Opens the mobile conversation drawer.
+   *
+   * The parent CommunityChatComponent owns the drawer state.
+   */
+  readonly openConversations =
+    output<void>();
+
 
   @ViewChild('messageInput')
   private messageInput?: ElementRef<HTMLTextAreaElement>;
@@ -1172,6 +1376,154 @@ export class ChatWindowComponent
       queueMicrotask(() => {
         this.scrollToBottom();
       });
+    });
+  }
+
+
+  // ============================================================
+  // MOBILE CONVERSATION MENU
+  // ============================================================
+
+  onConversationMenuOpened(): void {
+    this.closeEmojiPicker();
+    this.closeAttachmentMenu();
+  }
+
+  async selectConversationFromPopup(
+    conversationId: string,
+  ): Promise<void> {
+    await this.store.openConversation(
+      conversationId,
+    );
+  }
+
+  conversationsWithMessages(): ChatConversation[] {
+    return this.store
+      .conversations()
+      .filter(
+        (conversation) =>
+          !!conversation.lastMessage ||
+          !!conversation.lastMessageAt,
+      );
+  }
+
+  getParticipant(
+    conversation: ChatConversation,
+  ): ChatParticipant | null {
+    const currentUserId =
+      this.store.currentUser()?.id;
+
+    return (
+      conversation.participantInfo.find(
+        (participant) =>
+          participant.userId !== currentUserId,
+      ) ?? null
+    );
+  }
+
+  getUnreadCount(
+    conversation: ChatConversation,
+  ): number {
+    const userId =
+      this.store.currentUser()?.id;
+
+    if (!userId) {
+      return 0;
+    }
+
+    return conversation.unreadCounts?.[userId] ?? 0;
+  }
+
+  latestMessage(
+    conversation: ChatConversation,
+  ): string {
+    const message =
+      conversation.lastMessage?.trim();
+
+    if (!message) {
+      return 'No messages yet';
+    }
+
+    const userId =
+      this.store.currentUser()?.id;
+
+    return conversation.lastMessageSenderId === userId
+      ? `You: ${message}`
+      : message;
+  }
+
+  getInitials(
+    displayName: string | null | undefined,
+  ): string {
+    if (!displayName?.trim()) {
+      return '?';
+    }
+
+    const parts = displayName
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (parts.length === 1) {
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+
+    return (
+      parts[0][0] +
+      parts[parts.length - 1][0]
+    ).toUpperCase();
+  }
+
+  formatConversationTime(value: unknown): string {
+    if (!value) {
+      return '';
+    }
+
+    let date: Date | null = null;
+
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      'toDate' in value &&
+      typeof (value as { toDate?: unknown }).toDate === 'function'
+    ) {
+      date = (value as { toDate: () => Date }).toDate();
+    } else if (value instanceof Date) {
+      date = value;
+    }
+
+    if (!date) {
+      return '';
+    }
+
+    const now = new Date();
+    const difference = now.getTime() - date.getTime();
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (difference < minute) {
+      return 'now';
+    }
+
+    if (difference < hour) {
+      return `${Math.floor(difference / minute)}m`;
+    }
+
+    if (difference < day) {
+      return `${Math.floor(difference / hour)}h`;
+    }
+
+    if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+    }
+
+    return date.toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
     });
   }
 
