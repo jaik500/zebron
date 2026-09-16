@@ -132,16 +132,16 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                  MESSAGES
                  ==================================================== -->
 
-            <button
-              mat-icon-button
-              type="button"
-              aria-label="Messages"
-              matTooltip="chat"
-              class="!text-white
-                     hover:!bg-white/10"
-            >
-              <mat-icon> chat </mat-icon>
-            </button>
+            <a
+  mat-icon-button
+  routerLink="/community/messages"
+  aria-label="Messages"
+  matTooltip="Messages"
+  class="!text-white
+         hover:!bg-white/10"
+>
+  <mat-icon>chat</mat-icon>
+</a>
 
             <!-- ====================================================
                  NOTIFICATIONS

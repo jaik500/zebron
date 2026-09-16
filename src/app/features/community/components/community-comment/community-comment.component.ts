@@ -865,86 +865,47 @@ this.replyCreated.emit(replyId);
   // REACTION
   // ==============================================================
 
-  async onReactionClick(): Promise<void> {
+ async onReactionClick(): Promise<void> {
+  const comment = this.comment();
 
-    const comment =
-      this.comment();
-
-
-    if (
-      this.isDeleted() ||
-      !comment.postId ||
-      !comment.id
-    ) {
-      return;
-    }
-
-
-    try {
-
-      await this.commentStore
-        .reactToComment(
-          comment.postId,
-          comment.id,
-          'like',
-        );
-
-
-      /*
-       * Emit the current comment from the
-       * component state after persistence.
-       */
-      const updatedComment =
-        this.commentStore
-          .comments()
-          .find(
-            (item) =>
-              item.id === comment.id,
-          );
-
-
-      if (updatedComment) {
-
-        this.react.emit(
-          updatedComment,
-        );
-
-      }
-
-
-      this.logger.info(
-        'CommunityCommentComponent',
-        'Community comment reaction requested.',
-        {
-          postId:
-            comment.postId,
-
-          commentId:
-            comment.id,
-        },
-      );
-
-    } catch (error) {
-
-      this.logger.error(
-        'CommunityCommentComponent',
-        'Failed to react to community comment.',
-        {
-          postId:
-            comment.postId,
-
-          commentId:
-            comment.id,
-
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
-        },
-      );
-
-    }
+  if (
+    this.isDeleted() ||
+    !comment.postId ||
+    !comment.id
+  ) {
+    return;
   }
+
+  try {
+    await this.commentStore.reactToComment(
+      comment.postId,
+      comment.id,
+      'like',
+    );
+
+    this.logger.info(
+      'CommunityCommentComponent',
+      'Community comment reaction updated.',
+      {
+        postId: comment.postId,
+        commentId: comment.id,
+      },
+    );
+  } catch (error) {
+    this.logger.error(
+      'CommunityCommentComponent',
+      'Failed to update community comment reaction.',
+      {
+        postId: comment.postId,
+        commentId: comment.id,
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      },
+    );
+  }
+}
 
 
   // ==============================================================

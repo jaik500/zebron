@@ -1,19 +1,8 @@
-
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnDestroy,
-  OnInit,
-  inject,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
-import {
-  ActivatedRoute,
-  Router,
-  RouterLink,
-} from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -82,16 +71,12 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
           max-w-4xl
         "
       >
-
         <!-- ========================================================
              LOADING STATE
              ======================================================== -->
 
         @if (store.loading()) {
-          <mat-card
-            appearance="outlined"
-            class="overflow-hidden rounded-2xl"
-          >
+          <mat-card appearance="outlined" class="overflow-hidden rounded-2xl">
             <div
               class="
                 flex
@@ -104,9 +89,7 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
             >
               <mat-spinner diameter="42" />
 
-              <p class="text-sm text-slate-500">
-                Loading community post…
-              </p>
+              <p class="text-sm text-slate-500">Loading community post…</p>
             </div>
           </mat-card>
         }
@@ -116,10 +99,7 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
              ======================================================== -->
 
         @else if (store.error()) {
-          <mat-card
-            appearance="outlined"
-            class="overflow-hidden rounded-2xl"
-          >
+          <mat-card appearance="outlined" class="overflow-hidden rounded-2xl">
             <div
               class="
                 flex
@@ -170,12 +150,7 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 {{ store.error() }}
               </p>
 
-              <button
-                mat-flat-button
-                type="button"
-                class="mt-6"
-                (click)="reloadPost()"
-              >
+              <button mat-flat-button type="button" class="mt-6" (click)="reloadPost()">
                 <mat-icon>refresh</mat-icon>
                 Try Again
               </button>
@@ -188,7 +163,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
              ======================================================== -->
 
         @else if (store.post(); as post) {
-
           <mat-card
             appearance="outlined"
             class="
@@ -196,7 +170,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
               rounded-2xl
             "
           >
-
             <!-- ====================================================
                  POST HEADER
                  ==================================================== -->
@@ -210,7 +183,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 sm:py-2
               "
             >
-
               <!-- Back / Actions -->
 
               <div
@@ -223,7 +195,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                   text-white
                 "
               >
-
                 <!-- Back -->
 
                 <a
@@ -236,13 +207,9 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                     hover:!bg-white/10
                   "
                 >
-                  <mat-icon class="!text-white">
-                    arrow_back
-                  </mat-icon>
+                  <mat-icon class="!text-white"> arrow_back </mat-icon>
 
-                  <span class="text-sm font-medium">
-                    Back to Community
-                  </span>
+                  <span class="text-sm font-medium"> Back to Community </span>
                 </a>
 
                 <!-- Post Menu -->
@@ -255,65 +222,37 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                   [matMenuTriggerFor]="postMenu"
                   class="!text-white"
                 >
-                  <mat-icon class="!text-white">
-                    more_vert
-                  </mat-icon>
+                  <mat-icon class="!text-white"> more_vert </mat-icon>
                 </button>
 
                 <mat-menu #postMenu="matMenu">
-
                   <!-- Save -->
 
-                  <button
-                    mat-menu-item
-                    type="button"
-                    (click)="toggleBookmark(post)"
-                  >
+                  <button mat-menu-item type="button" (click)="toggleBookmark(post)">
                     <mat-icon>
-                      {{
-                        post.bookmarkedByCurrentUser
-                          ? 'bookmark'
-                          : 'bookmark_border'
-                      }}
+                      {{ post.bookmarkedByCurrentUser ? 'bookmark' : 'bookmark_border' }}
                     </mat-icon>
 
                     <span>
-                      {{
-                        post.bookmarkedByCurrentUser
-                          ? 'Remove saved post'
-                          : 'Save post'
-                      }}
+                      {{ post.bookmarkedByCurrentUser ? 'Remove saved post' : 'Save post' }}
                     </span>
                   </button>
 
                   <!-- Share -->
 
-                  <button
-                    mat-menu-item
-                    type="button"
-                    (click)="sharePost(post)"
-                  >
+                  <button mat-menu-item type="button" (click)="sharePost(post)">
                     <mat-icon>share</mat-icon>
 
-                    <span>
-                      Share post
-                    </span>
+                    <span> Share post </span>
                   </button>
 
                   <!-- Report -->
 
-                  <button
-                    mat-menu-item
-                    type="button"
-                    (click)="reportPost(post)"
-                  >
+                  <button mat-menu-item type="button" (click)="reportPost(post)">
                     <mat-icon>flag</mat-icon>
 
-                    <span>
-                      Report post
-                    </span>
+                    <span> Report post </span>
                   </button>
-
                 </mat-menu>
               </div>
 
@@ -326,7 +265,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                   gap-2.5
                 "
               >
-
                 <!-- Avatar -->
 
                 @if (post.author.photoUrl) {
@@ -368,7 +306,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 <!-- Author Information -->
 
                 <div class="min-w-0">
-
                   <div
                     class="
                       truncate
@@ -389,9 +326,7 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                   >
                     {{ formatDate(post.createdAt) }}
                   </div>
-
                 </div>
-
               </div>
             </div>
 
@@ -408,7 +343,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 sm:pb-4
               "
             >
-
               <!-- Topic -->
 
               @if (post.topicName) {
@@ -501,7 +435,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                   }
                 </div>
               }
-
             </div>
 
             <!-- ====================================================
@@ -521,7 +454,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 sm:px-7
               "
             >
-
               <!-- Reaction -->
 
               <button
@@ -531,11 +463,7 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 (click)="reactToPost(post.id)"
               >
                 <mat-icon>
-                  {{
-                    post.currentUserReaction
-                      ? 'thumb_up'
-                      : 'thumb_up_off_alt'
-                  }}
+                  {{ post.currentUserReaction ? 'thumb_up' : 'thumb_up_off_alt' }}
                 </mat-icon>
 
                 <span>
@@ -545,14 +473,8 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
 
               <!-- Comments -->
 
-              <button
-                mat-button
-                type="button"
-                (click)="scrollToComments()"
-              >
-                <mat-icon>
-                  comment
-                </mat-icon>
+              <button mat-button type="button" (click)="scrollToComments()">
+                <mat-icon> comment </mat-icon>
 
                 <span>
                   {{ post.commentCount || 0 }}
@@ -561,18 +483,10 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
 
               <!-- Share -->
 
-              <button
-                mat-button
-                type="button"
-                (click)="sharePost(post)"
-              >
-                <mat-icon>
-                  share
-                </mat-icon>
+              <button mat-button type="button" (click)="sharePost(post)">
+                <mat-icon> share </mat-icon>
 
-                <span>
-                  Share
-                </span>
+                <span> Share </span>
               </button>
 
               <!-- Views -->
@@ -603,20 +517,14 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                   {{ post.viewCount || 0 }}
                 </span>
               </div>
-
             </div>
-
           </mat-card>
 
           <!-- ======================================================
                COMMENTS
                ====================================================== -->
 
-          <section
-            id="community-comments"
-            class="mt-6"
-          >
-
+          <section id="community-comments" class="mt-6">
             <mat-card
               appearance="outlined"
               class="
@@ -624,7 +532,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 rounded-2xl
               "
             >
-
               <!-- Comments Header -->
 
               <div
@@ -641,7 +548,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 "
               >
                 <div>
-
                   <h2
                     class="
                       text-lg
@@ -661,7 +567,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                   >
                     Join the conversation.
                   </p>
-
                 </div>
 
                 @if (commentStore.commentCount() > 0) {
@@ -679,7 +584,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                     {{ commentStore.commentCount() }}
                   </span>
                 }
-
               </div>
 
               <!-- ==================================================
@@ -696,15 +600,8 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                   sm:px-7
                 "
               >
-
-                <mat-form-field
-                  appearance="outline"
-                  class="w-full"
-                  floatLabel="always"
-                >
-                  <mat-label>
-                    Add a comment
-                  </mat-label>
+                <mat-form-field appearance="outline" class="w-full" floatLabel="always">
+                  <mat-label> Add a comment </mat-label>
 
                   <textarea
                     matInput
@@ -714,9 +611,7 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                     placeholder="Share your thoughts..."
                   ></textarea>
 
-                  <mat-hint align="end">
-                    {{ commentText.length }}/2000
-                  </mat-hint>
+                  <mat-hint align="end"> {{ commentText.length }}/2000 </mat-hint>
                 </mat-form-field>
 
                 <!-- Comment Error -->
@@ -755,17 +650,9 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 <!-- Submit -->
 
                 <div class="mt-3 flex justify-end">
-
                   @if (commentStore.saving()) {
-                    <button
-                      mat-flat-button
-                      type="button"
-                      disabled
-                    >
-                      <mat-spinner
-                        diameter="18"
-                        class="mr-2"
-                      />
+                    <button mat-flat-button type="button" disabled>
+                      <mat-spinner diameter="18" class="mr-2" />
 
                       Posting…
                     </button>
@@ -776,16 +663,12 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                       [disabled]="!canSubmitComment()"
                       (click)="addComment()"
                     >
-                      <mat-icon>
-                        send
-                      </mat-icon>
+                      <mat-icon> send </mat-icon>
 
                       Post Comment
                     </button>
                   }
-
                 </div>
-
               </div>
 
               <!-- ==================================================
@@ -793,7 +676,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                    ================================================== -->
 
               @if (commentStore.loading()) {
-
                 <div
                   class="
                     flex
@@ -805,18 +687,13 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 >
                   <mat-spinner diameter="36" />
                 </div>
-
               }
 
               <!-- ==================================================
                    COMMENT ERROR
                    ================================================== -->
 
-              @else if (
-                commentStore.error() &&
-                commentStore.isEmpty()
-              ) {
-
+              @else if (commentStore.error() && commentStore.isEmpty()) {
                 <div
                   class="
                     px-6
@@ -845,20 +722,12 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                     Unable to load comments.
                   </p>
 
-                  <button
-                    mat-stroked-button
-                    type="button"
-                    class="mt-4"
-                    (click)="reloadComments()"
-                  >
-                    <mat-icon>
-                      refresh
-                    </mat-icon>
+                  <button mat-stroked-button type="button" class="mt-4" (click)="reloadComments()">
+                    <mat-icon> refresh </mat-icon>
 
                     Try Again
                   </button>
                 </div>
-
               }
 
               <!-- ==================================================
@@ -866,7 +735,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                    ================================================== -->
 
               @else if (commentStore.isEmpty()) {
-
                 <div
                   class="
                     px-6
@@ -874,7 +742,6 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                     text-center
                   "
                 >
-
                   <div
                     class="
                       mx-auto
@@ -888,9 +755,7 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                       text-slate-500
                     "
                   >
-                    <mat-icon>
-                      forum
-                    </mat-icon>
+                    <mat-icon> forum </mat-icon>
                   </div>
 
                   <h3
@@ -914,12 +779,9 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                       text-slate-500
                     "
                   >
-                    Be the first person to join
-                    the conversation.
+                    Be the first person to join the conversation.
                   </p>
-
                 </div>
-
               }
 
               <!-- ==================================================
@@ -927,19 +789,13 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                    ================================================== -->
 
               @else {
-
                 <div
                   class="
                     divide-y
                     divide-slate-100
                   "
                 >
-
-                  @for (
-                    comment of commentStore.topLevelComments();
-                    track comment.id
-                  ) {
-
+                  @for (comment of commentStore.topLevelComments(); track comment.id) {
                     <div
                       class="
                         px-5
@@ -947,29 +803,19 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                         sm:px-7
                       "
                     >
-
                       <app-community-comment
                         [comment]="comment"
                         [depth]="0"
-                        (react)="onCommentReaction($event)"
                         (commentDeleted)="onCommentDeleted($event)"
                         (replyCreated)="onReplyCreated($event)"
                       />
-
                     </div>
-
                   }
-
                 </div>
-
               }
-
             </mat-card>
-
           </section>
-
         }
-
       </div>
     </main>
   `,
@@ -991,42 +837,30 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
     `,
   ],
 })
-export class CommunityPostDetailComponent
-  implements OnInit, OnDestroy {
-
+export class CommunityPostDetailComponent implements OnInit, OnDestroy {
   // ==============================================================
   // DEPENDENCIES
   // ==============================================================
 
-  readonly store =
-    inject(CommunityPostStore);
+  readonly store = inject(CommunityPostStore);
 
-  readonly commentStore =
-    inject(CommunityCommentStore);
+  readonly commentStore = inject(CommunityCommentStore);
 
-  readonly communityStore =
-    inject(CommunityStore);
+  readonly communityStore = inject(CommunityStore);
 
-  private readonly route =
-    inject(ActivatedRoute);
+  private readonly route = inject(ActivatedRoute);
 
-  private readonly router =
-    inject(Router);
+  private readonly router = inject(Router);
 
-  private readonly authService =
-    inject(AuthService);
+  private readonly authService = inject(AuthService);
 
-  private readonly logger =
-    inject(LoggerService);
+  private readonly logger = inject(LoggerService);
 
-  private readonly shareService =
-    inject(ShareService);
+  private readonly shareService = inject(ShareService);
 
-  readonly pageTitleService =
-    inject(PageTitleService);
+  readonly pageTitleService = inject(PageTitleService);
 
-    private readonly postViewService =
-  inject(CommunityPostViewService);
+  private readonly postViewService = inject(CommunityPostViewService);
 
   // ==============================================================
   // STATE
@@ -1041,10 +875,7 @@ export class CommunityPostDetailComponent
   // ==============================================================
 
   ngOnInit(): void {
-    this.postId =
-      this.route.snapshot.paramMap
-        .get('postId')
-        ?.trim() ?? '';
+    this.postId = this.route.snapshot.paramMap.get('postId')?.trim() ?? '';
 
     if (!this.postId) {
       this.logger.warn(
@@ -1064,9 +895,7 @@ export class CommunityPostDetailComponent
     /*
      * Comments load independently from the post.
      */
-    void this.commentStore.loadComments(
-      this.postId,
-    );
+    void this.commentStore.loadComments(this.postId);
   }
 
   ngOnDestroy(): void {
@@ -1080,9 +909,7 @@ export class CommunityPostDetailComponent
   }
 
   constructor() {
-    this.pageTitleService.setTitle(
-      'Community | Post',
-    );
+    this.pageTitleService.setTitle('Community | Post');
   }
 
   // ==============================================================
@@ -1095,9 +922,7 @@ export class CommunityPostDetailComponent
     }
 
     try {
-      await this.store.loadPost(
-        this.postId,
-      );
+      await this.store.loadPost(this.postId);
       await this.recordPostView();
 
       /*
@@ -1108,26 +933,16 @@ export class CommunityPostDetailComponent
        * Wait until Angular has rendered the
        * comments section before scrolling.
        */
-      if (
-        this.route.snapshot.fragment ===
-        'community-comments'
-      ) {
+      if (this.route.snapshot.fragment === 'community-comments') {
         setTimeout(() => {
           this.scrollToComments();
         });
       }
     } catch (error) {
-      this.logger.error(
-        'CommunityPostDetailComponent',
-        'Failed to load community post.',
-        {
-          postId: this.postId,
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
-        },
-      );
+      this.logger.error('CommunityPostDetailComponent', 'Failed to load community post.', {
+        postId: this.postId,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -1143,10 +958,7 @@ export class CommunityPostDetailComponent
   // TOPIC
   // ==============================================================
 
-  async selectTopic(
-    topicId: string,
-  ): Promise<void> {
-
+  async selectTopic(topicId: string): Promise<void> {
     const id = topicId.trim();
 
     if (!id) {
@@ -1164,21 +976,12 @@ export class CommunityPostDetailComponent
        * Return to the Community page using Angular
        * navigation instead of forcing a full browser reload.
        */
-      await this.router.navigate([
-        '/community',
-      ]);
+      await this.router.navigate(['/community']);
     } catch (error) {
-      this.logger.error(
-        'CommunityPostDetailComponent',
-        'Failed to select community topic.',
-        {
-          topicId: id,
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
-        },
-      );
+      this.logger.error('CommunityPostDetailComponent', 'Failed to select community topic.', {
+        topicId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -1186,19 +989,14 @@ export class CommunityPostDetailComponent
   // POST REACTIONS
   // ==============================================================
 
-  async reactToPost(
-    postId: string,
-    type: CommunityReactionType = 'like',
-  ): Promise<void> {
-
+  async reactToPost(postId: string, type: CommunityReactionType = 'like'): Promise<void> {
     const id = postId.trim();
 
     if (!id) {
       return;
     }
 
-    const currentUser =
-      this.authService.user();
+    const currentUser = this.authService.user();
 
     if (!currentUser) {
       this.logger.warn(
@@ -1213,11 +1011,7 @@ export class CommunityPostDetailComponent
     }
 
     try {
-      await this.store.reactToPost(
-        id,
-        currentUser.id,
-        type,
-      );
+      await this.store.reactToPost(id, currentUser.id, type);
 
       /*
        * Keep the Community feed synchronized if the
@@ -1226,29 +1020,18 @@ export class CommunityPostDetailComponent
        * The post store remains the source of truth
        * for the detail page.
        */
-      this.logger.info(
-        'CommunityPostDetailComponent',
-        'Community post reaction updated.',
-        {
-          postId: id,
-          userId: currentUser.id,
-          reactionType: type,
-        },
-      );
+      this.logger.info('CommunityPostDetailComponent', 'Community post reaction updated.', {
+        postId: id,
+        userId: currentUser.id,
+        reactionType: type,
+      });
     } catch (error) {
-      this.logger.error(
-        'CommunityPostDetailComponent',
-        'Failed to react to community post.',
-        {
-          postId: id,
-          userId: currentUser.id,
-          reactionType: type,
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
-        },
-      );
+      this.logger.error('CommunityPostDetailComponent', 'Failed to react to community post.', {
+        postId: id,
+        userId: currentUser.id,
+        reactionType: type,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -1256,12 +1039,8 @@ export class CommunityPostDetailComponent
   // BOOKMARK
   // ==============================================================
 
-  async toggleBookmark(
-    post: CommunityPost,
-  ): Promise<void> {
-
-    const postId =
-      post.id?.trim();
+  async toggleBookmark(post: CommunityPost): Promise<void> {
+    const postId = post.id?.trim();
 
     if (!postId) {
       this.logger.warn(
@@ -1273,38 +1052,25 @@ export class CommunityPostDetailComponent
     }
 
     try {
-      await this.communityStore.toggleBookmark(
-        postId,
-      );
+      await this.communityStore.toggleBookmark(postId);
 
       /*
        * Refresh the detail post so the bookmark state
        * displayed in the detail page matches persistence.
        */
-      await this.store.loadPost(
-        postId,
-      );
+      await this.store.loadPost(postId);
 
-      this.logger.info(
-        'CommunityPostDetailComponent',
-        'Community post bookmark updated.',
-        {
-          postId,
-          bookmarked:
-            this.store.post()
-              ?.bookmarkedByCurrentUser ?? false,
-        },
-      );
+      this.logger.info('CommunityPostDetailComponent', 'Community post bookmark updated.', {
+        postId,
+        bookmarked: this.store.post()?.bookmarkedByCurrentUser ?? false,
+      });
     } catch (error) {
       this.logger.error(
         'CommunityPostDetailComponent',
         'Failed to update community post bookmark.',
         {
           postId,
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
+          error: error instanceof Error ? error.message : String(error),
         },
       );
     }
@@ -1314,12 +1080,8 @@ export class CommunityPostDetailComponent
   // SHARE
   // ==============================================================
 
-  async sharePost(
-    post: CommunityPost,
-  ): Promise<void> {
-
-    const postId =
-      post.id?.trim();
+  async sharePost(post: CommunityPost): Promise<void> {
+    const postId = post.id?.trim();
 
     if (!postId) {
       this.logger.warn(
@@ -1330,10 +1092,7 @@ export class CommunityPostDetailComponent
       return;
     }
 
-    const url =
-      this.shareService.getCommunityPostUrl(
-        postId,
-      );
+    const url = this.shareService.getCommunityPostUrl(postId);
 
     if (!url) {
       this.logger.warn(
@@ -1352,26 +1111,15 @@ export class CommunityPostDetailComponent
         title: post.title,
 
         text:
-          post.content.length > 180
-            ? `${post.content
-                .substring(0, 180)
-                .trim()}…`
-            : post.content,
+          post.content.length > 180 ? `${post.content.substring(0, 180).trim()}…` : post.content,
 
         url,
       });
     } catch (error) {
-      this.logger.error(
-        'CommunityPostDetailComponent',
-        'Failed to share community post.',
-        {
-          postId,
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
-        },
-      );
+      this.logger.error('CommunityPostDetailComponent', 'Failed to share community post.', {
+        postId,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -1379,12 +1127,8 @@ export class CommunityPostDetailComponent
   // REPORT
   // ==============================================================
 
-  reportPost(
-    post: CommunityPost,
-  ): void {
-
-    const postId =
-      post.id?.trim();
+  reportPost(post: CommunityPost): void {
+    const postId = post.id?.trim();
 
     if (!postId) {
       return;
@@ -1398,13 +1142,9 @@ export class CommunityPostDetailComponent
      * Until that feature exists, record the
      * requested action through centralized logging.
      */
-    this.logger.info(
-      'CommunityPostDetailComponent',
-      'Report post action requested.',
-      {
-        postId,
-      },
-    );
+    this.logger.info('CommunityPostDetailComponent', 'Report post action requested.', {
+      postId,
+    });
   }
 
   // ==============================================================
@@ -1412,31 +1152,19 @@ export class CommunityPostDetailComponent
   // ==============================================================
 
   canSubmitComment(): boolean {
-    const text =
-      this.commentText.trim();
+    const text = this.commentText.trim();
 
-    return (
-      text.length > 0 &&
-      text.length <= 2000 &&
-      !this.commentStore.saving()
-    );
+    return text.length > 0 && text.length <= 2000 && !this.commentStore.saving();
   }
 
   async addComment(): Promise<void> {
+    const text = this.commentText.trim();
 
-    const text =
-      this.commentText.trim();
-
-    if (
-      !text ||
-      text.length > 2000 ||
-      !this.postId
-    ) {
+    if (!text || text.length > 2000 || !this.postId) {
       return;
     }
 
-    const currentUser =
-      this.authService.user();
+    const currentUser = this.authService.user();
 
     if (!currentUser) {
       this.logger.warn(
@@ -1451,11 +1179,7 @@ export class CommunityPostDetailComponent
     }
 
     try {
-      const commentId =
-        await this.commentStore.addComment(
-          this.postId,
-          text,
-        );
+      const commentId = await this.commentStore.addComment(this.postId, text);
 
       if (!commentId) {
         return;
@@ -1467,39 +1191,23 @@ export class CommunityPostDetailComponent
        * Refresh the detail post so its denormalized
        * commentCount stays accurate.
        */
-      await this.store.loadPost(
-        this.postId,
-      );
+      await this.store.loadPost(this.postId);
 
       /*
        * Synchronize the already-loaded Community
        * feed without another feed query.
        */
-      this.communityStore.updatePostCommentCount(
-        this.postId,
-        1,
-      );
+      this.communityStore.updatePostCommentCount(this.postId, 1);
 
-      this.logger.info(
-        'CommunityPostDetailComponent',
-        'Community comment created.',
-        {
-          postId: this.postId,
-          commentId,
-        },
-      );
+      this.logger.info('CommunityPostDetailComponent', 'Community comment created.', {
+        postId: this.postId,
+        commentId,
+      });
     } catch (error) {
-      this.logger.error(
-        'CommunityPostDetailComponent',
-        'Failed to add community comment.',
-        {
-          postId: this.postId,
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
-        },
-      );
+      this.logger.error('CommunityPostDetailComponent', 'Failed to add community comment.', {
+        postId: this.postId,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -1508,30 +1216,22 @@ export class CommunityPostDetailComponent
       return;
     }
 
-    void this.commentStore.loadComments(
-      this.postId,
-    );
+    void this.commentStore.loadComments(this.postId);
   }
 
   // ==============================================================
   // COMMENT EVENTS
   // ==============================================================
 
-  async onCommentDeleted(
-    commentId: string,
-  ): Promise<void> {
-
-    const id =
-      commentId.trim();
+  async onCommentDeleted(commentId: string): Promise<void> {
+    const id = commentId.trim();
 
     if (!id || !this.postId) {
       return;
     }
 
     try {
-      await this.store.loadPost(
-        this.postId,
-      );
+      await this.store.loadPost(this.postId);
 
       /*
        * The comment service has already decremented
@@ -1539,19 +1239,12 @@ export class CommunityPostDetailComponent
        *
        * Mirror that change in the existing feed.
        */
-      this.communityStore.updatePostCommentCount(
-        this.postId,
-        -1,
-      );
+      this.communityStore.updatePostCommentCount(this.postId, -1);
 
-      this.logger.info(
-        'CommunityPostDetailComponent',
-        'Community comment deleted.',
-        {
-          postId: this.postId,
-          commentId: id,
-        },
-      );
+      this.logger.info('CommunityPostDetailComponent', 'Community comment deleted.', {
+        postId: this.postId,
+        commentId: id,
+      });
     } catch (error) {
       this.logger.error(
         'CommunityPostDetailComponent',
@@ -1559,48 +1252,32 @@ export class CommunityPostDetailComponent
         {
           postId: this.postId,
           commentId: id,
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
+          error: error instanceof Error ? error.message : String(error),
         },
       );
     }
   }
 
-  async onReplyCreated(
-    commentId: string,
-  ): Promise<void> {
-
-    const id =
-      commentId.trim();
+  async onReplyCreated(commentId: string): Promise<void> {
+    const id = commentId.trim();
 
     if (!id || !this.postId) {
       return;
     }
 
     try {
-      await this.store.loadPost(
-        this.postId,
-      );
+      await this.store.loadPost(this.postId);
 
       /*
        * Replies also increment the post's
        * denormalized commentCount.
        */
-      this.communityStore.updatePostCommentCount(
-        this.postId,
-        1,
-      );
+      this.communityStore.updatePostCommentCount(this.postId, 1);
 
-      this.logger.info(
-        'CommunityPostDetailComponent',
-        'Community comment reply created.',
-        {
-          postId: this.postId,
-          commentId: id,
-        },
-      );
+      this.logger.info('CommunityPostDetailComponent', 'Community comment reply created.', {
+        postId: this.postId,
+        commentId: id,
+      });
     } catch (error) {
       this.logger.error(
         'CommunityPostDetailComponent',
@@ -1608,168 +1285,101 @@ export class CommunityPostDetailComponent
         {
           postId: this.postId,
           commentId: id,
-          error:
-            error instanceof Error
-              ? error.message
-              : String(error),
+          error: error instanceof Error ? error.message : String(error),
         },
       );
     }
   }
 
-  onCommentReaction(
-    comment: CommunityComment,
-  ): void {
 
-    /*
-     * Comment reactions are intentionally left as
-     * a future persistence feature.
-     *
-     * The event is already wired from the reusable
-     * CommunityCommentComponent so it can be
-     * implemented without redesigning this page.
-     */
-    this.logger.info(
-      'CommunityPostDetailComponent',
-      'Community comment reaction requested.',
-      {
-        commentId: comment.id,
-        postId: this.postId,
-        reactionType: comment.currentUserReaction ?? 'like',
-      },
-    );
-  }
 
   // ==============================================================
   // ENGAGEMENT
   // ==============================================================
 
-  totalReactionCount(
-    post: {
-      reactionCounts?: Record<string, number>;
-    },
-  ): number {
+  totalReactionCount(post: { reactionCounts?: Record<string, number> }): number {
+    const counts = post.reactionCounts ?? {};
 
-    const counts =
-      post.reactionCounts ?? {};
-
-    return Object.values(
-      counts,
-    ).reduce(
-      (total, count) =>
-        total + Number(count || 0),
-      0,
-    );
+    return Object.values(counts).reduce((total, count) => total + Number(count || 0), 0);
   }
 
   scrollToComments(): void {
-    document
-      .getElementById(
-        'community-comments',
-      )
-      ?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
+    document.getElementById('community-comments')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   }
 
-
-/**
- * Records a view after the post has successfully loaded.
- *
- * View tracking is intentionally isolated from post loading.
- * If view tracking fails, the user should still be able to
- * view and interact with the post normally.
- */
-private async recordPostView(): Promise<void> {
-  if (!this.postId) {
-    return;
-  }
-
-  const userId =
-    this.authService.user()?.id ??
-    this.authService.firebaseUser()?.uid ??
-    null;
-
-  /*
-   * Anonymous visitors can read community posts, but the
-   * current view-tracking strategy uses an authenticated
-   * user identifier to prevent repeated view inflation.
+  /**
+   * Records a view after the post has successfully loaded.
+   *
+   * View tracking is intentionally isolated from post loading.
+   * If view tracking fails, the user should still be able to
+   * view and interact with the post normally.
    */
-  if (!userId) {
-    return;
-  }
+  private async recordPostView(): Promise<void> {
+    if (!this.postId) {
+      return;
+    }
 
-  try {
-    await this.postViewService.recordView(
-      this.postId,
-      userId,
-    );
-  } catch (error) {
+    const userId = this.authService.user()?.id ?? this.authService.firebaseUser()?.uid ?? null;
+
     /*
-     * A view-tracking failure must not prevent the post
-     * detail page from functioning.
+     * Anonymous visitors can read community posts, but the
+     * current view-tracking strategy uses an authenticated
+     * user identifier to prevent repeated view inflation.
      */
-    this.logger.error(
-      'CommunityPostDetailComponent',
-      'Failed to record community post view.',
-      error,
-      {
-        postId: this.postId,
-      },
-    );
+    if (!userId) {
+      return;
+    }
+
+    try {
+      await this.postViewService.recordView(this.postId, userId);
+    } catch (error) {
+      /*
+       * A view-tracking failure must not prevent the post
+       * detail page from functioning.
+       */
+      this.logger.error(
+        'CommunityPostDetailComponent',
+        'Failed to record community post view.',
+        error,
+        {
+          postId: this.postId,
+        },
+      );
+    }
   }
-}
 
   // ==============================================================
   // DISPLAY HELPERS
   // ==============================================================
 
-  getInitials(
-    name: string | null | undefined,
-  ): string {
-
-    const value =
-      name?.trim();
+  getInitials(name: string | null | undefined): string {
+    const value = name?.trim();
 
     if (!value) {
       return 'Z';
     }
 
-    const parts =
-      value
-        .split(/\s+/)
-        .filter(Boolean);
+    const parts = value.split(/\s+/).filter(Boolean);
 
     if (parts.length === 1) {
-      return parts[0]
-        .substring(0, 2)
-        .toUpperCase();
+      return parts[0].substring(0, 2).toUpperCase();
     }
 
-    return (
-      parts[0][0] +
-      parts[parts.length - 1][0]
-    ).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
 
-  normalizeTag(
-    tag: string | null | undefined,
-  ): string {
-
+  normalizeTag(tag: string | null | undefined): string {
     if (!tag) {
       return '';
     }
 
-    return tag
-      .trim()
-      .replace(/^#+/, '');
+    return tag.trim().replace(/^#+/, '');
   }
 
-  formatDate(
-    timestamp: unknown,
-  ): string {
-
+  formatDate(timestamp: unknown): string {
     if (!timestamp) {
       return '';
     }
@@ -1795,53 +1405,35 @@ private async recordPostView(): Promise<void> {
             toDate: () => Date;
           }
         ).toDate();
-      }
+      } else if (timestamp instanceof Date) {
 
       /*
        * JavaScript Date.
        */
-      else if (
-        timestamp instanceof Date
-      ) {
         date = timestamp;
-      }
+      } else if (typeof timestamp === 'string' || typeof timestamp === 'number') {
 
       /*
        * String / number.
        */
-      else if (
-        typeof timestamp === 'string' ||
-        typeof timestamp === 'number'
-      ) {
         date = new Date(timestamp);
-      }
-
-      else {
+      } else {
         return '';
       }
 
-      if (
-        Number.isNaN(
-          date.getTime(),
-        )
-      ) {
+      if (Number.isNaN(date.getTime())) {
         return '';
       }
 
-      return new Intl.DateTimeFormat(
-        undefined,
-        {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-        },
-      ).format(date);
-
+      return new Intl.DateTimeFormat(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(date);
     } catch {
       return '';
     }
   }
 }
-
