@@ -268,35 +268,37 @@ import {
                    TOTAL UNREAD MESSAGE BADGE
                    ================================================== -->
 
-              @if (unreadChatCount() > 0) {
-
-                <span
-                  class="absolute
-                         right-0.5
-                         top-0.5
-                         flex
-                         h-4
-                         min-w-4
-                         items-center
-                         justify-center
-                         rounded-full
-                         bg-red-500
-                         px-1
-                         text-[10px]
-                         font-bold
-                         leading-none
-                         text-white
-                         ring-2
-                         ring-[#032D42]"
-                >
-                  {{
-                    unreadChatCount() > 99
-                      ? '99+'
-                      : unreadChatCount()
-                  }}
-                </span>
-
-              }
+          @if (unreadChatCount() > 0) {
+ <span
+  class="pointer-events-none
+         absolute
+         bottom-0
+         right-0
+         z-20
+         flex
+         h-4
+         min-w-4
+         translate-x-1/4
+         translate-y-1/4
+         items-center
+         justify-center
+         rounded-full
+         bg-red-500
+         px-1
+         text-[10px]
+         font-bold
+         leading-none
+         text-white
+         ring-2
+         ring-[#032D42]"
+>
+    {{
+      unreadChatCount() > 99
+        ? '99+'
+        : unreadChatCount()
+    }}
+  </span>
+}
 
             </button>
 

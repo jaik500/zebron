@@ -6,13 +6,7 @@ import {
   OnInit,
 } from '@angular/core';
 
-import {
-  MatDialog,
-} from '@angular/material/dialog';
-
-import {
-  MatIconModule,
-} from '@angular/material/icon';
+import { MatIconModule } from '@angular/material/icon';
 
 import {
   ChatListComponent,
@@ -23,16 +17,8 @@ import {
 } from '../../components/chat-window/chat-window.component';
 
 import {
-  NewConversationDialogComponent,
-} from '../../components/new-conversation-dialog/new-conversation-dialog.component';
-
-import {
   ChatStore,
 } from '../../store/chat.store';
-
-import {
-  CommunityUser,
-} from '../../../models/community-user.model';
 
 @Component({
   selector: 'app-community-chat',
@@ -44,17 +30,16 @@ import {
   ],
   changeDetection:
     ChangeDetectionStrategy.OnPush,
-
   template: `
     <main
       class="mx-auto flex h-[calc(100vh-64px)] max-w-7xl flex-col px-3 py-3 sm:px-4 lg:px-6"
     >
-
-      <!-- PAGE HEADER -->
+      <!-- ======================================================
+           PAGE HEADER
+           ====================================================== -->
       <header
         class="mb-3 flex items-center gap-3"
       >
-
         <div
           class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50"
         >
@@ -66,7 +51,6 @@ import {
         </div>
 
         <div>
-
           <h1
             class="text-xl font-semibold text-gray-900"
           >
@@ -78,110 +62,66 @@ import {
           >
             Connect privately with members of the Zebron community.
           </p>
-
         </div>
-
       </header>
 
-      <!-- CHAT WORKSPACE -->
-      <section
-        class="grid min-h-0 flex-1 overflow-hidden rounded-xl border bg-white shadow-sm md:grid-cols-[300px_minmax(0,1fr)]"
-      >
+      <!-- ======================================================
+           DESKTOP CHAT WORKSPACE
 
-        <!-- CONVERSATION LIST -->
+           Desktop keeps the existing two-column layout.
+           ====================================================== -->
+      <section
+        class="hidden min-h-0 flex-1 overflow-hidden rounded-xl border bg-white shadow-sm md:grid md:grid-cols-[300px_minmax(0,1fr)]"
+      >
         <aside
-          class="hidden min-h-0 border-r md:block"
+          class="min-h-0 border-r"
         >
-          <app-chat-list
-            (newConversation)="openNewConversation()"
-          />
+          <app-chat-list />
         </aside>
 
-        <!-- CHAT WINDOW -->
         <div
           class="min-h-0"
         >
-          <app-chat-window />
+          <app-chat-window
+            class="block h-full min-h-0"
+          />
         </div>
-
       </section>
 
+      <!-- ======================================================
+           MOBILE CHAT
+
+           There is intentionally no mobile side drawer here.
+           The active chat's forum button opens the conversation
+           list as a popup menu over the chat, matching the
+           requested Messages/Chats interaction.
+           ====================================================== -->
+      <section
+        class="min-h-0 flex-1 overflow-hidden rounded-xl border bg-white shadow-sm md:hidden"
+      >
+        @if (chatStore.activeConversation()) {
+          <app-chat-window
+            class="block h-full min-h-0"
+          />
+        } @else {
+          <app-chat-list />
+        }
+      </section>
     </main>
   `,
 })
 export class CommunityChatComponent
   implements OnInit, OnDestroy {
 
-  private readonly chatStore =
+  readonly chatStore =
     inject(ChatStore);
 
-  private readonly dialog =
-    inject(MatDialog);
-
   ngOnInit(): void {
-
     void this.chatStore
       .loadConversations();
-
-  }
-
-  openNewConversation(): void {
-
-    const dialogRef =
-      this.dialog.open(
-        NewConversationDialogComponent,
-        {
-          width: 'calc(100vw - 32px)',
-          maxWidth: '480px',
-          maxHeight: '90vh',
-          autoFocus: false,
-          panelClass: 'zebron-new-conversation-dialog',
-        },
-      );
-
-    dialogRef
-      .afterClosed()
-      .subscribe(
-        (
-          member:
-            | CommunityUser
-            | undefined,
-        ) => {
-
-          if (!member) {
-            return;
-          }
-
-          void this.startConversation(member);
-
-        },
-      );
-  }
-
-  private async startConversation(
-    member: CommunityUser,
-  ): Promise<void> {
-
-    const participant = {
-      userId: member.id,
-      displayName:
-        member.displayName ||
-        'Zebron Community Member',
-      photoUrl:
-        member.photoUrl ??
-        undefined,
-    };
-
-    await this.chatStore
-      .startDirectConversation(
-        participant,
-      );
   }
 
   ngOnDestroy(): void {
-
-    this.chatStore
-      .clear();
-
+    this.chatStore.clear();
   }
 }
