@@ -20,6 +20,11 @@ import {
   ChatStore,
 } from '../../store/chat.store';
 
+import {
+  ChatCallPanelComponent,
+} from '../../components/chat-call-panel/chat-call-panel.component';
+
+
 @Component({
   selector: 'app-community-chat',
   standalone: true,
@@ -27,6 +32,7 @@ import {
     ChatListComponent,
     ChatWindowComponent,
     MatIconModule,
+    ChatCallPanelComponent,
   ],
   changeDetection:
     ChangeDetectionStrategy.OnPush,
@@ -107,6 +113,8 @@ import {
           <app-chat-list />
         }
       </section>
+
+      <app-chat-call-panel />
     </main>
   `,
 })

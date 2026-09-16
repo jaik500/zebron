@@ -17,6 +17,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
+import { ChatCallService } from '../../services/chat-call.service';
+
 import {
   ChatMessage,
   ChatMessageType,
@@ -141,6 +143,33 @@ import {
               Private conversation
             </p>
           </div>
+
+          <button
+            mat-icon-button
+            type="button"
+            aria-label="Start voice call"
+            title="Start voice call"
+            [disabled]="callService.state() !== 'idle' || !otherParticipant()?.userId"
+            class="shrink-0 !text-gray-700 hover:!bg-gray-100"
+            (click)="startVoiceCall()"
+          >
+            <mat-icon>call</mat-icon>
+          </button>
+
+          <button
+  mat-icon-button
+  type="button"
+  aria-label="Start video call"
+  title="Start video call"
+  [disabled]="
+    callService.state() !== 'idle' ||
+    !otherParticipant()?.userId
+  "
+  class="shrink-0 !text-gray-700 hover:!bg-gray-100"
+  (click)="startVideoCall()"
+>
+  <mat-icon>videocam</mat-icon>
+</button>
         </header>
 
 
@@ -1206,6 +1235,9 @@ export class ChatWindowComponent
   readonly store =
     inject(ChatStore);
 
+  readonly callService =
+    inject(ChatCallService);
+
   /**
    * Opens the mobile conversation drawer.
    *
@@ -1635,6 +1667,53 @@ export class ChatWindowComponent
         : 1,
     )} ${units[unitIndex]}`;
   }
+
+
+  // ==============================================================
+  // VOICE CALL
+  // ==============================================================
+
+  async startVoiceCall(): Promise<void> {
+    const conversation = this.store.activeConversation();
+    const participant = this.otherParticipant();
+
+    if (!conversation || !participant?.userId) {
+      return;
+    }
+
+    try {
+      await this.callService.startVoiceCall(
+        conversation.id,
+        participant.userId,
+      );
+    } catch {
+      // ChatCallService logs the technical error.
+    }
+  }
+
+  async startVideoCall(): Promise<void> {
+  const conversation =
+    this.store.activeConversation();
+
+  const participant =
+    this.otherParticipant();
+
+  if (
+    !conversation ||
+    !participant?.userId
+  ) {
+    return;
+  }
+
+  try {
+    await this.callService.startVideoCall(
+      conversation.id,
+      participant.userId,
+    );
+  } catch {
+    // ChatCallService logs the technical error.
+  }
+}
 
 
   // ==============================================================
