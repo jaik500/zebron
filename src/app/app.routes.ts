@@ -489,6 +489,25 @@ export const routes: Routes = [
       ),
   },
 
+
+  // =====================================================
+// ADMIN COMMUNITY - TOPICS
+// =====================================================
+{
+  path: 'admin/community/topics',
+  canActivate: [adminGuard, featureGuard],
+  data: {
+    featureKey: 'community',
+    title: 'Admin | Community | Topics',
+  },
+  loadComponent: () =>
+    import(
+      './features/admin/pages/community/topics/community-topics-admin'
+    ).then(
+      (m) => m.CommunityTopicsAdminComponent,
+    ),
+},
+
   // =====================================================
   // ADMIN TEST CENTER TOPICS
   // =====================================================

@@ -200,6 +200,23 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                 <mat-icon> account_circle </mat-icon>
               </a>
             }
+
+          <!-- Settings -->
+           
+      @if (authService.isAdmin) {
+
+         <a
+                mat-icon-button
+                routerLink="/admin/community/topics"
+                aria-label="Settings"
+                matTooltip="Settings"
+                class="!text-white
+           hover:!bg-white/10"
+              >
+                <mat-icon> settings </mat-icon>
+              </a>
+             
+      }
           </div>
         </div>
 
@@ -374,7 +391,7 @@ export class CommunityHomeComponent implements OnInit {
   // SERVICES
   // =============================================================
 
-  private readonly authService = inject(AuthService);
+  readonly authService = inject(AuthService);
 
   readonly pageTitleService = inject(PageTitleService);
 

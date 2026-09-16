@@ -296,7 +296,7 @@ export class UsefulLinksComponent {
       title: 'Community Services',
       description:
         'Connect with community organizations and programs.',
-      route: '/resources?category=community',
+      route: '/community',
     },
   ];
 

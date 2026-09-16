@@ -27,13 +27,9 @@ interface AdminDashboardCard {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [
-    RouterLink,
-    FormsModule,
-  ],
+  imports: [RouterLink, FormsModule],
   template: `
     <div class="min-h-screen bg-gray-50 mt-16">
-
       <!-- =========================================================
            ADMIN DASHBOARD HEADER
            ========================================================= -->
@@ -49,21 +45,17 @@ interface AdminDashboardCard {
                  gap-4 px-5
                  sm:px-6 lg:px-8"
         >
-
           <!-- =====================================================
                DASHBOARD TITLE
                ===================================================== -->
           <div class="min-w-0">
-            <p class="text-sm text-white/80">
-              Manage Zebron resources and database content.
-            </p>
+            <p class="text-sm text-white/80">Manage Zebron resources and database content.</p>
           </div>
 
           <!-- =====================================================
                DASHBOARD HEADER ACTIONS
                ===================================================== -->
           <div class="flex items-center">
-
             <!-- ===================================================
                  DESKTOP ACTIONS
                  =================================================== -->
@@ -73,7 +65,6 @@ interface AdminDashboardCard {
                      gap-3
                      sm:flex"
             >
-
               <!-- Mailbox -->
               <a
                 routerLink="/admin/contact"
@@ -129,14 +120,12 @@ interface AdminDashboardCard {
                   Sign out
                 }
               </button>
-
             </div>
 
             <!-- ===================================================
                  MOBILE THREE-DOT MENU
                  =================================================== -->
             <div class="relative sm:hidden">
-
               <!-- Three vertical dots -->
               <button
                 type="button"
@@ -164,7 +153,6 @@ interface AdminDashboardCard {
                    MOBILE MENU
                    ================================================= -->
               @if (moreMenuOpen()) {
-
                 <div
                   class="absolute right-0 top-12 z-50
                          w-52 overflow-hidden
@@ -173,7 +161,6 @@ interface AdminDashboardCard {
                          bg-white shadow-xl"
                   role="menu"
                 >
-
                   <!-- Mailbox -->
                   <a
                     routerLink="/admin/contact"
@@ -186,16 +173,9 @@ interface AdminDashboardCard {
                            hover:bg-gray-50"
                     role="menuitem"
                   >
-                    <span
-                      aria-hidden="true"
-                      class="text-base"
-                    >
-                      📥
-                    </span>
+                    <span aria-hidden="true" class="text-base"> 📥 </span>
 
-                    <span>
-                      Mailbox
-                    </span>
+                    <span> Mailbox </span>
                   </a>
 
                   <!-- Resources -->
@@ -210,16 +190,9 @@ interface AdminDashboardCard {
                            hover:bg-gray-50"
                     role="menuitem"
                   >
-                    <span
-                      aria-hidden="true"
-                      class="text-base"
-                    >
-                      🌐
-                    </span>
+                    <span aria-hidden="true" class="text-base"> 🌐 </span>
 
-                    <span>
-                      Resources
-                    </span>
+                    <span> Resources </span>
                   </a>
 
                   <!-- Home -->
@@ -234,16 +207,9 @@ interface AdminDashboardCard {
                            hover:bg-gray-50"
                     role="menuitem"
                   >
-                    <span
-                      aria-hidden="true"
-                      class="text-base"
-                    >
-                      🏠
-                    </span>
+                    <span aria-hidden="true" class="text-base"> 🏠 </span>
 
-                    <span>
-                      Home
-                    </span>
+                    <span> Home </span>
                   </a>
 
                   <!-- Sign out -->
@@ -263,31 +229,18 @@ interface AdminDashboardCard {
                            disabled:opacity-50"
                     role="menuitem"
                   >
-                    <span
-                      aria-hidden="true"
-                      class="text-base"
-                    >
-                      ↪
-                    </span>
+                    <span aria-hidden="true" class="text-base"> ↪ </span>
 
                     @if (signingOut()) {
-                      <span>
-                        Signing out...
-                      </span>
+                      <span> Signing out... </span>
                     } @else {
-                      <span>
-                        Sign out
-                      </span>
+                      <span> Sign out </span>
                     }
                   </button>
-
                 </div>
               }
-
             </div>
-
           </div>
-
         </div>
       </header>
 
@@ -295,14 +248,12 @@ interface AdminDashboardCard {
            ADMINISTRATOR INFORMATION
            ========================================================= -->
       @if (authService.user(); as user) {
-
         <section
           class="hidden sm:block
                  bg-[#032D42]/5
                  px-4 py-1
                  sm:px-6"
         >
-
           <div
             class="flex w-full
                    items-center
@@ -310,7 +261,6 @@ interface AdminDashboardCard {
                    gap-3
                    whitespace-nowrap"
           >
-
             <!-- Administrator information -->
             <div
               class="min-w-0 truncate
@@ -330,9 +280,7 @@ interface AdminDashboardCard {
             >
               Administrator
             </p>
-
           </div>
-
         </section>
       }
 
@@ -345,14 +293,11 @@ interface AdminDashboardCard {
                px-3
                sm:p-2"
       >
-
         <!-- =======================================================
              MANAGE CONTENT
              ======================================================= -->
         <section class="mt-1">
-
           <div>
-
             <p
               class="text-xs
                      font-semibold
@@ -371,7 +316,6 @@ interface AdminDashboardCard {
             >
               Manage content
             </h2>
-
           </div>
 
           <!-- =====================================================
@@ -399,12 +343,7 @@ interface AdminDashboardCard {
                    sm:gap-6
                    lg:grid-cols-4"
           >
-
-            @for (
-              card of managementCards;
-              track card.route
-            ) {
-
+            @for (card of managementCards; track card.route) {
               <a
                 [routerLink]="card.route"
                 class="group
@@ -420,7 +359,6 @@ interface AdminDashboardCard {
                        sm:rounded-2xl
                        sm:p-6"
               >
-
                 <!-- =================================================
                      ICON
                      ================================================= -->
@@ -435,9 +373,7 @@ interface AdminDashboardCard {
                          text-[#007979]"
                   aria-hidden="true"
                 >
-
                   @switch (card.icon) {
-
                     @case ('category') {
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -447,37 +383,13 @@ interface AdminDashboardCard {
                         stroke-width="1.8"
                         class="h-6 w-6"
                       >
-                        <rect
-                          x="4"
-                          y="4"
-                          width="6"
-                          height="6"
-                          rx="1"
-                        />
+                        <rect x="4" y="4" width="6" height="6" rx="1" />
 
-                        <rect
-                          x="14"
-                          y="4"
-                          width="6"
-                          height="6"
-                          rx="1"
-                        />
+                        <rect x="14" y="4" width="6" height="6" rx="1" />
 
-                        <rect
-                          x="4"
-                          y="14"
-                          width="6"
-                          height="6"
-                          rx="1"
-                        />
+                        <rect x="4" y="14" width="6" height="6" rx="1" />
 
-                        <rect
-                          x="14"
-                          y="14"
-                          width="6"
-                          height="6"
-                          rx="1"
-                        />
+                        <rect x="14" y="14" width="6" height="6" rx="1" />
                       </svg>
                     }
 
@@ -513,11 +425,7 @@ interface AdminDashboardCard {
                         stroke-width="1.8"
                         class="h-6 w-6"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M3 21h18"
-                        />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18" />
 
                         <path
                           stroke-linecap="round"
@@ -542,16 +450,9 @@ interface AdminDashboardCard {
                         stroke-width="1.8"
                         class="h-6 w-6"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M5 4h14v16H5z"
-                        />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h14v16H5z" />
 
-                        <path
-                          stroke-linecap="round"
-                          d="M8 9h8M8 13h8M8 17h5"
-                        />
+                        <path stroke-linecap="round" d="M8 9h8M8 13h8M8 17h5" />
                       </svg>
                     }
 
@@ -564,13 +465,7 @@ interface AdminDashboardCard {
                         stroke-width="1.8"
                         class="h-6 w-6"
                       >
-                        <rect
-                          x="3"
-                          y="7"
-                          width="18"
-                          height="13"
-                          rx="2"
-                        />
+                        <rect x="3" y="7" width="18" height="13" rx="2" />
 
                         <path
                           stroke-linecap="round"
@@ -578,10 +473,7 @@ interface AdminDashboardCard {
                           d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
                         />
 
-                        <path
-                          stroke-linecap="round"
-                          d="M3 12h18"
-                        />
+                        <path stroke-linecap="round" d="M3 12h18" />
                       </svg>
                     }
 
@@ -620,6 +512,37 @@ interface AdminDashboardCard {
                       </svg>
                     }
 
+                    @case ('content-operations') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M6 3.75h8.25L19 8.5v11.75H6a2 2 0 0 1-2-2V5.75a2 2 0 0 1 2-2Z"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M14 3.75V8.5h4.75"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="m10 12 4 2.5-4 2.5v-5Z"
+                        />
+
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 20.25h8" />
+                      </svg>
+                    }
+
                     @case ('users') {
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -635,11 +558,7 @@ interface AdminDashboardCard {
                           d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
                         />
 
-                        <circle
-                          cx="9"
-                          cy="7"
-                          r="4"
-                        />
+                        <circle cx="9" cy="7" r="4" />
 
                         <path
                           stroke-linecap="round"
@@ -664,18 +583,9 @@ interface AdminDashboardCard {
                         stroke-width="1.8"
                         class="h-6 w-6"
                       >
-                        <rect
-                          x="4"
-                          y="4"
-                          width="16"
-                          height="16"
-                          rx="2"
-                        />
+                        <rect x="4" y="4" width="16" height="16" rx="2" />
 
-                        <path
-                          stroke-linecap="round"
-                          d="M8 9h8M8 13h8M8 17h5"
-                        />
+                        <path stroke-linecap="round" d="M8 9h8M8 13h8M8 17h5" />
                       </svg>
                     }
 
@@ -694,11 +604,7 @@ interface AdminDashboardCard {
                           d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"
                         />
 
-                        <circle
-                          cx="12"
-                          cy="9"
-                          r="2.25"
-                        />
+                        <circle cx="12" cy="9" r="2.25" />
                       </svg>
                     }
 
@@ -711,11 +617,7 @@ interface AdminDashboardCard {
                         stroke-width="1.8"
                         class="h-6 w-6"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M9 5h6"
-                        />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5h6" />
 
                         <path
                           stroke-linecap="round"
@@ -723,18 +625,9 @@ interface AdminDashboardCard {
                           d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"
                         />
 
-                        <rect
-                          x="5"
-                          y="4"
-                          width="14"
-                          height="17"
-                          rx="2"
-                        />
+                        <rect x="5" y="4" width="14" height="17" rx="2" />
 
-                        <path
-                          stroke-linecap="round"
-                          d="M9 10h6M9 14h6M9 18h4"
-                        />
+                        <path stroke-linecap="round" d="M9 10h6M9 14h6M9 18h4" />
                       </svg>
                     }
 
@@ -747,19 +640,9 @@ interface AdminDashboardCard {
                         stroke-width="1.8"
                         class="h-6 w-6"
                       >
-                        <rect
-                          x="3"
-                          y="5"
-                          width="18"
-                          height="14"
-                          rx="2"
-                        />
+                        <rect x="3" y="5" width="18" height="14" rx="2" />
 
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="m3 7 9 6 9-6"
-                        />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m3 7 9 6 9-6" />
                       </svg>
                     }
 
@@ -772,11 +655,7 @@ interface AdminDashboardCard {
                         stroke-width="1.8"
                         class="h-6 w-6"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M3 21h18"
-                        />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18" />
 
                         <path
                           stroke-linecap="round"
@@ -784,11 +663,7 @@ interface AdminDashboardCard {
                           d="M5 21V5l7-3 7 3v16"
                         />
 
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M9 21v-4h6v4"
-                        />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 21v-4h6v4" />
 
                         <path
                           stroke-linecap="round"
@@ -806,11 +681,7 @@ interface AdminDashboardCard {
                         stroke-width="1.8"
                         class="h-6 w-6"
                       >
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="3.5"
-                        />
+                        <circle cx="12" cy="12" r="3.5" />
 
                         <path
                           stroke-linecap="round"
@@ -819,16 +690,13 @@ interface AdminDashboardCard {
                         />
                       </svg>
                     }
-
                   }
-
                 </div>
 
                 <!-- =================================================
                      CARD CONTENT
                      ================================================= -->
                 <div class="mt-0 sm:mt-5">
-
                   <h2
                     class="text-md
                            font-semibold
@@ -852,7 +720,6 @@ interface AdminDashboardCard {
                   >
                     {{ card.description }}
                   </p>
-
                 </div>
 
                 <!-- =================================================
@@ -869,21 +736,15 @@ interface AdminDashboardCard {
                 >
                   {{ card.actionLabel }} →
                 </div>
-
               </a>
             }
-
           </div>
-
         </section>
-
       </main>
-
     </div>
   `,
 })
 export class AdminDashboardComponent {
-
   // ============================================================
   // SERVICES
   // ============================================================
@@ -891,8 +752,7 @@ export class AdminDashboardComponent {
   /**
    * Firebase authentication service.
    */
-  protected readonly authService =
-    inject(AuthService);
+  protected readonly authService = inject(AuthService);
 
   /**
    * Location store.
@@ -900,26 +760,22 @@ export class AdminDashboardComponent {
    * Kept here because the dashboard currently owns
    * location creation functionality.
    */
-  private readonly locationStore =
-    inject(LocationStore);
+  private readonly locationStore = inject(LocationStore);
 
   /**
    * Angular router.
    */
-  private readonly router =
-    inject(Router);
+  private readonly router = inject(Router);
 
   /**
    * Toast notification service.
    */
-  private readonly toast =
-    inject(HotToastService);
+  private readonly toast = inject(HotToastService);
 
   /**
    * Page title service.
    */
-  private readonly pageTitleService =
-    inject(PageTitleService);
+  private readonly pageTitleService = inject(PageTitleService);
 
   // ============================================================
   // ADMIN MANAGEMENT CARDS
@@ -936,126 +792,120 @@ export class AdminDashboardComponent {
    * require adding a new object here rather than duplicating
    * card markup in the template.
    */
-  protected readonly managementCards:
-    AdminDashboardCard[] = [
+  protected readonly managementCards: AdminDashboardCard[] = [
+    {
+      title: 'Categories',
+      description: 'Create and manage resource categories.',
+      route: '/admin/categories',
+      actionLabel: 'Manage',
+      icon: 'category',
+    },
 
-      {
-        title: 'Categories',
-        description:
-          'Create and manage resource categories.',
-        route: '/admin/categories',
-        actionLabel: 'Manage',
-        icon: 'category',
-      },
+    {
+      title: 'Resources',
+      description: 'Create, edit, publish, and manage resources.',
+      route: '/admin/resources',
+      actionLabel: 'Manage',
+      icon: 'resources',
+    },
 
-      {
-        title: 'Resources',
-        description:
-          'Create, edit, publish, and manage resources.',
-        route: '/admin/resources',
-        actionLabel: 'Manage',
-        icon: 'resources',
-      },
+    {
+      title: 'Organizations',
+      description: 'Manage organizations associated with resources.',
+      route: '/admin/organizations',
+      actionLabel: 'Manage',
+      icon: 'organization',
+    },
 
-      {
-        title: 'Organizations',
-        description:
-          'Manage organizations associated with resources.',
-        route: '/admin/organizations',
-        actionLabel: 'Manage',
-        icon: 'organization',
-      },
+    {
+      title: 'Submissions',
+      description: 'Review and manage submitted resources.',
+      route: '/admin/submissions',
+      actionLabel: 'Manage',
+      icon: 'submission',
+    },
 
-      {
-        title: 'Submissions',
-        description:
-          'Review and manage submitted resources.',
-        route: '/admin/submissions',
-        actionLabel: 'Manage',
-        icon: 'submission',
-      },
+    {
+      title: 'Jobs',
+      description: 'Manage job opportunities available through the Zebron Job Finder.',
+      route: '/admin/jobs',
+      actionLabel: 'Manage jobs',
+      icon: 'jobs',
+    },
 
-      {
-        title: 'Jobs',
-        description:
-          'Manage job opportunities available through the Zebron Job Finder.',
-        route: '/admin/jobs',
-        actionLabel: 'Manage jobs',
-        icon: 'jobs',
-      },
+    {
+      title: 'Community',
+      description: 'Manage community posts, topics, comments, and moderation.',
+      route: '/community',
+      actionLabel: 'Manage community',
+      icon: 'community',
+    },
 
-      {
-        title: 'Community',
-        description:
-          'Manage community posts, topics, comments, and moderation.',
-        route: '/community',
-        actionLabel: 'Manage community',
-        icon: 'community',
-      },
+    {
+      title: 'Content & Operations',
+      description: 'Manage content, development captures, tools, and operational resources.',
+      route: '/admin/content-operations',
+      actionLabel: 'Manage',
+      icon: 'content-operations',
+    },
 
-      {
-        title: 'Users',
-        description:
-          'Manage user accounts, profiles, roles, and permissions.',
-        route: '/admin/users',
-        actionLabel: 'Manage users',
-        icon: 'users',
-      },
+    {
+      title: 'Users',
+      description: 'Manage user accounts, profiles, roles, and permissions.',
+      route: '/admin/users',
+      actionLabel: 'Manage users',
+      icon: 'users',
+    },
 
-      {
-        title: 'Resource Types',
-        description:
-          'Manage the types used to classify resources across Zebron.',
-        route: '/admin/resource-types',
-        actionLabel: 'Manage resource types',
-        icon: 'resource-types',
-      },
+    {
+      title: 'Resource Types',
+      description: 'Manage the types used to classify resources across Zebron.',
+      route: '/admin/resource-types',
+      actionLabel: 'Manage resource types',
+      icon: 'resource-types',
+    },
 
-      {
-        title: 'Locations',
-        description:
-          'Manage locations used by resources and location-based personalization.',
-        route: '/admin/locations',
-        actionLabel: 'Manage locations',
-        icon: 'locations',
-      },
+    {
+      title: 'Locations',
+      description: 'Manage locations used by resources and location-based personalization.',
+      route: '/admin/locations',
+      actionLabel: 'Manage locations',
+      icon: 'locations',
+    },
 
-      {
-        title: 'Test Center',
-        description:
-          'Manage test courses, topics, questions, and question banks.',
-        route: '/admin/test-center',
-        actionLabel: 'Open Test Center',
-        icon: 'test-center',
-      },
+    {
+      title: 'Test Center',
+      description: 'Manage test courses, topics, questions, and question banks.',
+      route: '/admin/test-center',
+      actionLabel: 'Open Test Center',
+      icon: 'test-center',
+    },
 
-      {
-        title: 'Contact Mailbox',
-        description:
-          'Review and manage messages submitted through the contact form.',
-        route: '/admin/contact',
-        actionLabel: 'Open mailbox',
-        icon: 'contact',
-      },
+    {
+      title: 'Contact Mailbox',
+      description: 'Review and manage messages submitted through the contact form.',
+      route: '/admin/contact',
+      actionLabel: 'Open mailbox',
+      icon: 'contact',
+    },
 
-      {
-        title: 'Business Operations',
-        description:
-          'Manage business finances, revenue, expenses, compliance, activities, documents, and reports.',
-        route: '/admin/business',
-        actionLabel: 'Open Business Operations',
-        icon: 'business',
-      },
+    {
+      title: 'Business Operations',
+      description:
+        'Manage business finances, revenue, expenses, compliance, activities, documents, and reports.',
+      route: '/admin/business',
+      actionLabel: 'Open Business Operations',
+      icon: 'business',
+    },
 
-      {
-        title: 'Configuration',
-        description:
-          'Manage system settings, platform configuration, and administrative options.',
-        route: '/admin/configuration',
-        actionLabel: 'Manage configuration',
-        icon: 'configuration',
-      },
-    ];
+    {
+      title: 'Configuration',
+      description: 'Manage system settings, platform configuration, and administrative options.',
+      route: '/admin/configuration',
+      actionLabel: 'Manage configuration',
+      icon: 'configuration',
+    },
+  ];
 
   // ============================================================
   // LOCATION STATE
@@ -1064,8 +914,7 @@ export class AdminDashboardComponent {
   /**
    * Prevent duplicate location submissions.
    */
-  protected readonly savingLocation =
-    signal(false);
+  protected readonly savingLocation = signal(false);
 
   /**
    * Location creation form.
@@ -1073,16 +922,15 @@ export class AdminDashboardComponent {
    * Kept for compatibility with the existing
    * dashboard location functionality.
    */
-  protected locationForm:
-    Partial<Location> = {
-      address: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: 'United States',
-      latitude: undefined,
-      longitude: undefined,
-    };
+  protected locationForm: Partial<Location> = {
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'United States',
+    latitude: undefined,
+    longitude: undefined,
+  };
 
   // ============================================================
   // UI STATE
@@ -1091,24 +939,20 @@ export class AdminDashboardComponent {
   /**
    * Prevent duplicate sign-out requests.
    */
-  protected readonly signingOut =
-    signal(false);
+  protected readonly signingOut = signal(false);
 
   /**
    * Controls the mobile dashboard
    * three-dot menu.
    */
-  protected readonly moreMenuOpen =
-    signal(false);
+  protected readonly moreMenuOpen = signal(false);
 
   // ============================================================
   // CONSTRUCTOR
   // ============================================================
 
   constructor() {
-    this.pageTitleService.setTitle(
-      'Admin Dashboard',
-    );
+    this.pageTitleService.setTitle('Admin Dashboard');
   }
 
   // ============================================================
@@ -1119,9 +963,7 @@ export class AdminDashboardComponent {
    * Toggle the mobile dashboard menu.
    */
   protected toggleMoreMenu(): void {
-    this.moreMenuOpen.update(
-      (open) => !open,
-    );
+    this.moreMenuOpen.update((open) => !open);
   }
 
   /**
@@ -1139,16 +981,13 @@ export class AdminDashboardComponent {
    * Create a new location in Firestore.
    */
   protected async createLocation(): Promise<void> {
-
     if (
       !this.locationForm.city?.trim() ||
       !this.locationForm.state?.trim() ||
       !this.locationForm.zipCode?.trim() ||
       !this.locationForm.country?.trim()
     ) {
-      this.toast.error(
-        'Please complete the city, state, ZIP code, and country.',
-      );
+      this.toast.error('Please complete the city, state, ZIP code, and country.');
 
       return;
     }
@@ -1160,70 +999,40 @@ export class AdminDashboardComponent {
     this.savingLocation.set(true);
 
     try {
-
       const location: Location = {
-        address:
-          this.locationForm.address?.trim() ||
-          '',
+        address: this.locationForm.address?.trim() || '',
 
-        city:
-          this.locationForm.city!.trim(),
+        city: this.locationForm.city!.trim(),
 
-        state:
-          this.locationForm.state!.trim(),
+        state: this.locationForm.state!.trim(),
 
-        zipCode:
-          this.locationForm.zipCode!.trim(),
+        zipCode: this.locationForm.zipCode!.trim(),
 
-        country:
-          this.locationForm.country!.trim(),
+        country: this.locationForm.country!.trim(),
 
-        ...(this.locationForm.latitude !==
-          undefined &&
-        this.locationForm.latitude !==
-          null
+        ...(this.locationForm.latitude !== undefined && this.locationForm.latitude !== null
           ? {
-              latitude: Number(
-                this.locationForm.latitude,
-              ),
+              latitude: Number(this.locationForm.latitude),
             }
           : {}),
 
-        ...(this.locationForm.longitude !==
-          undefined &&
-        this.locationForm.longitude !==
-          null
+        ...(this.locationForm.longitude !== undefined && this.locationForm.longitude !== null
           ? {
-              longitude: Number(
-                this.locationForm.longitude,
-              ),
+              longitude: Number(this.locationForm.longitude),
             }
           : {}),
       };
 
-      await this.locationStore.createLocation(
-        location,
-      );
+      await this.locationStore.createLocation(location);
 
-      this.toast.success(
-        'Location created successfully.',
-      );
+      this.toast.success('Location created successfully.');
 
       this.clearLocationForm();
-
     } catch (error) {
+      console.error('Failed to create location:', error);
 
-      console.error(
-        'Failed to create location:',
-        error,
-      );
-
-      this.toast.error(
-        'Unable to create location. Please try again.',
-      );
-
+      this.toast.error('Unable to create location. Please try again.');
     } finally {
-
       this.savingLocation.set(false);
     }
   }
@@ -1232,7 +1041,6 @@ export class AdminDashboardComponent {
    * Reset the location form.
    */
   protected clearLocationForm(): void {
-
     this.locationForm = {
       address: '',
       city: '',
@@ -1253,7 +1061,6 @@ export class AdminDashboardComponent {
    * show feedback, and return to the login page.
    */
   protected async signOut(): Promise<void> {
-
     /**
      * Prevent multiple sign-out requests
      * from repeated button clicks.
@@ -1265,7 +1072,6 @@ export class AdminDashboardComponent {
     this.signingOut.set(true);
 
     try {
-
       /**
        * Sign out through the existing
        * authentication service.
@@ -1275,30 +1081,17 @@ export class AdminDashboardComponent {
       /**
        * Show confirmation to the administrator.
        */
-      this.toast.success(
-        'You have been signed out.',
-      );
+      this.toast.success('You have been signed out.');
 
       /**
        * Return to the login page.
        */
-      await this.router.navigateByUrl(
-        '/login',
-      );
-
+      await this.router.navigateByUrl('/login');
     } catch (error) {
+      console.error('Failed to sign out:', error);
 
-      console.error(
-        'Failed to sign out:',
-        error,
-      );
-
-      this.toast.error(
-        'Unable to sign out. Please try again.',
-      );
-
+      this.toast.error('Unable to sign out. Please try again.');
     } finally {
-
       this.signingOut.set(false);
     }
   }

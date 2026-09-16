@@ -27,14 +27,6 @@ import {
 } from '@angular/material/tooltip';
 
 import {
-  MatFormFieldModule,
-} from '@angular/material/form-field';
-
-import {
-  MatInputModule,
-} from '@angular/material/input';
-
-import {
   CommunityComment,
 } from '../../models/community-comment.model';
 
@@ -62,8 +54,6 @@ import {
     MatIconModule,
     MatMenuModule,
     MatTooltipModule,
-    MatFormFieldModule,
-    MatInputModule,
   ],
 
   changeDetection:
@@ -328,82 +318,137 @@ import {
 
           @if (replying()) {
 
+            <!-- ==================================================
+                 REPLY COMPOSER
+                 ================================================== -->
+
             <div
-              class="mt-4"
+              class="reply-composer mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
             >
 
-              <mat-form-field
-                appearance="outline"
-                class="w-full"
-              >
-
-                <mat-label>
-                  Write a reply
-                </mat-label>
-
-                <textarea
-                  matInput
-                  rows="3"
-                  maxlength="2000"
-                  [value]="replyContent()"
-                  [disabled]="commentStore.saving()"
-                  (input)="onReplyInput($event)"
-                  (keydown)="onReplyKeydown($event)"
-                ></textarea>
-
-                <mat-hint align="end">
-                  {{ replyContent().length }}/2000
-                </mat-hint>
-
-              </mat-form-field>
-
-
               <div
-                class="flex justify-end gap-2"
+                class="flex items-start gap-3"
               >
 
-                <button
-                  mat-button
-                  type="button"
-                  [disabled]="commentStore.saving()"
-                  (click)="cancelReply()"
-                >
-                  Cancel
-                </button>
+                <!-- ==================================================
+                     REPLY AVATAR
+                     ================================================== -->
 
-                <button
-                  mat-flat-button
-                  type="button"
-                  [disabled]="
-                    !canSubmitReply() ||
-                    commentStore.saving()
-                  "
-                  (click)="submitReply()"
+                <div
+                  class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100"
                 >
 
-                  @if (commentStore.saving()) {
+                  @if (comment().author.photoUrl) {
 
-                    <mat-icon>
-                      hourglass_empty
-                    </mat-icon>
+                    <img
+                      [src]="comment().author.photoUrl"
+                      [alt]="comment().author.displayName"
+                      class="h-full w-full object-cover"
+                    />
 
                   } @else {
 
-                    <mat-icon>
-                      send
-                    </mat-icon>
+                    <span
+                      class="text-sm font-semibold text-slate-600"
+                    >
+                      {{ authorInitials() }}
+                    </span>
 
                   }
 
-                  Reply
+                </div>
 
-                </button>
+
+                <!-- ==================================================
+                     REPLY CONTENT
+                     ================================================== -->
+
+                <div
+                  class="min-w-0 flex-1"
+                >
+
+                  <!-- Reply heading -->
+
+                  <div
+                    class="mb-3 text-sm font-semibold text-gray-900"
+                  >
+                    Reply to
+                    {{ comment().author.displayName }}
+                  </div>
+
+
+                  <!-- Reply textarea -->
+
+                  <textarea
+                    class="block min-h-[104px] w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm leading-6 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-50"
+                    rows="4"
+                    maxlength="2000"
+                    placeholder="Write a reply..."
+                    [value]="replyContent()"
+                    [disabled]="commentStore.saving()"
+                    aria-label="Write a reply"
+                    (input)="onReplyInput($event)"
+                    (keydown)="onReplyKeydown($event)"
+                  ></textarea>
+
+
+                  <!-- Actions -->
+
+                  <div
+                    class="mt-3 flex items-center justify-end gap-2"
+                  >
+
+                    <button
+                      mat-button
+                      type="button"
+                      class="!rounded-full !px-4"
+                      [disabled]="commentStore.saving()"
+                      (click)="cancelReply()"
+                    >
+                      Cancel
+                    </button>
+
+
+                    <button
+                      mat-flat-button
+                      type="button"
+                      class="!rounded-full !px-5"
+                      [disabled]="
+                        !canSubmitReply() ||
+                        commentStore.saving()
+                      "
+                      (click)="submitReply()"
+                    >
+
+                      @if (commentStore.saving()) {
+
+                        <mat-icon>
+                          hourglass_empty
+                        </mat-icon>
+
+                      } @else {
+
+                        <mat-icon>
+                          send
+                        </mat-icon>
+
+                      }
+
+                      Reply
+
+                    </button>
+
+                  </div>
+
+                </div>
 
               </div>
 
             </div>
 
           }
+
+
 
 
           <!-- ====================================================
@@ -478,6 +523,20 @@ import {
 
     :host {
       display: block;
+    }
+
+    .reply-composer textarea {
+      box-sizing: border-box;
+      display: block;
+      width: 100%;
+      min-height: 104px;
+      font: inherit;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .reply-composer textarea:focus {
+      outline: none;
     }
 
   `],
