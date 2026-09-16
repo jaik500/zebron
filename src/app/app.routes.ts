@@ -525,6 +525,24 @@ export const routes: Routes = [
   },
 
   // =====================================================
+// COMMUNITY CHAT
+// =====================================================
+{
+  path: 'community/chat',
+  canActivate: [authGuard, featureGuard],
+  data: {
+    featureKey: 'community',
+    title: 'Zebron | Community chat',
+  },
+  loadComponent: () =>
+    import(
+      './features/community/chat/pages/community-chat/community-chat.component'
+    ).then(
+      (m) => m.CommunityChatComponent,
+    ),
+},
+
+  // =====================================================
   // ADMIN TEST CENTER
   // =====================================================
   {
