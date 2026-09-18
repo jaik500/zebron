@@ -514,6 +514,62 @@ import { MatIconModule } from '@angular/material/icon';
                 </mat-icon>
               </span>
             </a>
+
+                <!-- Tav & Pay Calculator -->
+
+            <a
+              routerLink="/tax-calculator"
+              class="group rounded-2xl
+                     border border-gray-200
+                     bg-[#E5F4F4] p-6
+                     shadow-sm
+                     transition
+                     hover:-translate-y-1
+                     hover:border-[#007979]/40
+                     hover:shadow-md"
+            >
+              <div
+                class="flex h-12 w-12
+                       items-center justify-center
+                       rounded-xl
+                       bg-[#E5F4F4]"
+              >
+                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]"> calculate </mat-icon>
+              </div>
+
+              <h3
+                class="mt-6 text-xl font-bold
+                       text-[#032D42]"
+              >
+                Tax & Pay Calculator
+              </h3>
+
+              <p
+                class="mt-2 text-sm leading-6
+                       text-gray-600"
+              >
+                Crunch your numbers, clear your doubts, and keep more of your hard-earned money with a smarter tax calculator
+              </p>
+
+              <span
+                class="mt-5 inline-flex
+                       items-center gap-1
+                       text-sm font-bold
+                       text-[#007979]"
+              >
+                Try Tax Calculator
+
+                <mat-icon
+                  aria-hidden="true"
+                  class="!m-0 !h-5 !w-5
+                         !text-[17px]
+                         transition-transform
+                         group-hover:translate-x-1"
+                >
+                  arrow_forward
+                </mat-icon>
+              </span>
+            </a>
           </div>
         </div>
       </section>

@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:zebron": "node dist/zebron/server/server.mjs"
+    "serve:ssr:zebron": "node dist/zebron/server/server.mjs",
+    "generate:counties": "node scripts/generate-us-counties.mjs"
   },
   "prettier": {
     "printWidth": 100,

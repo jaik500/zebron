@@ -391,6 +391,22 @@ export const routes: Routes = [
       ),
   },
 
+    // =====================================================
+  // TAX & PAY CALCULATOR
+  // =====================================================
+  {
+    path: 'tax-calculator',
+    data: {
+      title: 'Zebron | Tax & Pay Calculator',
+    },
+    loadComponent: () =>
+      import(
+        './features/tax-pay-calculator/pages/tax-pay-calculator/tax-pay-calculator.component'
+      ).then(
+        (m) => m.TaxPayCalculatorComponent,
+      ),
+  },
+
   // =====================================================
   // PROTECTED COMMUNITY
   // =====================================================

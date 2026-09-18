@@ -644,87 +644,63 @@ completeTest(): TestResult | null {
   return result;
 }
 
-  /**
-   * Load published questions for the
-   * current test configuration.
-   *
-   * The component does not access
-   * TestQuestionService directly.
-   *
-   * TestStore owns the question state.
-   */
-  /**
- * Load published questions for the
- * current test configuration.
+ /**
+ * Load published questions for the current test configuration.
  *
- * The TestStore owns the question state and
- * enforces the requested question count.
+ * Question order and answer order are randomized here,
+ * at the TestStore/session layer.
+ *
+ * IMPORTANT:
+ * The option IDs are never changed.
  *
  * Example:
  *
- * Available questions = 25
- * Requested questions = 10
- * Questions loaded    = 10
+ * Original:
+ *   a = correct
+ *   b
+ *   c
+ *   d
+ *
+ * Randomized:
+ *   c
+ *   a = correct
+ *   d
+ *   b
+ *
+ * The UI displays A/B/C/D based on array position,
+ * while correctness continues to use the stable option ID.
  */
 async loadQuestions(): Promise<boolean> {
   const currentCourse = this.course();
 
   if (!currentCourse) {
     this.questions.set([]);
-
-    this.error.set(
-      'Please select a course before starting the test.',
-    );
-
+    this.error.set('Please select a course before starting the test.');
     return false;
   }
-
 
   if (this.selectedTopicIds().length === 0) {
     this.questions.set([]);
-
     this.error.set(
       'Please select at least one topic before starting the test.',
     );
-
     return false;
   }
 
-
   try {
     this.loading.set(true);
-
     this.error.set('');
 
-
-    /*
-     * ----------------------------------------------------------
-     * LOAD ALL ELIGIBLE QUESTIONS
-     * ----------------------------------------------------------
-     *
-     * The question service determines which published
-     * questions match the selected course, topics,
-     * and difficulty.
-     */
-    const questions =
+    const loadedQuestions =
       await this.questionService.getQuestionsForTest(
         currentCourse.id,
         this.selectedTopicIds(),
         this.difficulty(),
       );
 
-
-    /*
-     * ----------------------------------------------------------
-     * NO QUESTIONS AVAILABLE
-     * ----------------------------------------------------------
-     */
-
-    if (questions.length === 0) {
+    if (loadedQuestions.length === 0) {
       this.questions.set([]);
-
       this.currentQuestionIndex.set(0);
-
       this.selectedAnswers.set({});
 
       this.error.set(
@@ -734,124 +710,59 @@ async loadQuestions(): Promise<boolean> {
       return false;
     }
 
+    /*
+     * ---------------------------------------------------------
+     * ANSWER RANDOMIZATION
+     * ---------------------------------------------------------
+     *
+     * Create new question objects so we never mutate the
+     * Firestore result or the original option arrays.
+     */
+    let questions = loadedQuestions.map((question) => ({
+      ...question,
+      options: this.randomizeAnswers()
+        ? this.shuffle(question.options)
+        : [...question.options],
+    }));
 
     /*
-     * ----------------------------------------------------------
-     * DETERMINE REQUESTED QUESTION COUNT
-     * ----------------------------------------------------------
+     * ---------------------------------------------------------
+     * QUESTION RANDOMIZATION
+     * ---------------------------------------------------------
      */
-
-    const requestedCount =
-      Math.max(
-        1,
-        Math.floor(this.questionCount()),
-      );
-
+    if (this.randomizeQuestions()) {
+      questions = this.shuffle(questions);
+    }
 
     /*
-     * ----------------------------------------------------------
-     * RANDOMIZE QUESTION ORDER
-     * ----------------------------------------------------------
+     * ---------------------------------------------------------
+     * QUESTION COUNT
+     * ---------------------------------------------------------
      *
-     * If randomization is enabled, shuffle the complete
-     * eligible question set before selecting the requested
-     * number of questions.
-     *
-     * This prevents the same first N questions from being
-     * selected every time.
+     * Respect the number selected in Test Setup.
      */
-    const orderedQuestions =
-      this.randomizeQuestions()
-        ? this.shuffle(questions)
-        : [...questions];
-
-
-    /*
-     * ----------------------------------------------------------
-     * ENFORCE QUESTION COUNT
-     * ----------------------------------------------------------
-     *
-     * The actual test can never contain more questions
-     * than the requested question count.
-     *
-     * If fewer questions are available than requested,
-     * all available questions are used.
-     *
-     * Example:
-     *
-     * Requested = 10
-     * Available = 25
-     * Loaded    = 10
-     *
-     * Requested = 10
-     * Available = 7
-     * Loaded    = 7
-     */
-    const selectedQuestions =
-      orderedQuestions.slice(
-        0,
-        Math.min(
-          requestedCount,
-          orderedQuestions.length,
-        ),
-      );
-
-
-    /*
-     * ----------------------------------------------------------
-     * STORE THE ACTUAL TEST QUESTIONS
-     * ----------------------------------------------------------
-     */
-
-    this.questions.set(selectedQuestions);
-
-    this.currentQuestionIndex.set(0);
-
-    this.selectedAnswers.set({});
-
-
-    /*
-     * ----------------------------------------------------------
-     * OPTIONAL DIAGNOSTIC LOG
-     * ----------------------------------------------------------
-     *
-     * Useful during development to confirm that the
-     * requested count is actually being enforced.
-     */
-    console.log(
-      'Test Center questions loaded:',
-      {
-        requested: requestedCount,
-        available: questions.length,
-        loaded: selectedQuestions.length,
-        randomized: this.randomizeQuestions(),
-      },
+    questions = questions.slice(
+      0,
+      Math.min(this.questionCount(), questions.length),
     );
 
+    this.questions.set(questions);
+    this.currentQuestionIndex.set(0);
+    this.selectedAnswers.set({});
+    this.completedResult.set(null);
 
     return true;
-
   } catch (error) {
-
-    console.error(
-      'Failed to load Test Center questions:',
-      error,
-    );
+    console.error('Failed to load Test Center questions:', error);
 
     this.questions.set([]);
-
     this.currentQuestionIndex.set(0);
-
     this.selectedAnswers.set({});
 
-    this.error.set(
-      'We could not load questions for this test.',
-    );
+    this.error.set('We could not load questions for this test.');
 
     return false;
-
   } finally {
-
     this.loading.set(false);
   }
 }
