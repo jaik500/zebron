@@ -1,858 +1,1478 @@
 rules_version = '2';
 
 service cloud.firestore {
-  match /databases/{database}/documents {
+match /databases/{database}/documents {
 
-    // ============================================================
-    // COMMON HELPERS
-    // ============================================================
+// ============================================================
+// COMMON HELPERS
+// ============================================================
 
-    function isAuthenticated() {
-      return request.auth != null;
-    }
+function isAuthenticated() {
+  return request.auth != null;
+}
 
-    function isCurrentUser(userId) {
-      return isAuthenticated()
-        && request.auth.uid == userId;
-    }
+function isCurrentUser(userId) {
+  return isAuthenticated()
+    && request.auth.uid == userId;
+}
 
-    /*
-     * Current Zebron bootstrap/admin model:
-     *
-     *   users/{uid}.role == "admin"
-     *
-     * This is intentionally separate from the newer platform/
-     * organization/group ACL model.
-     *
-     * Later, platform roles can be migrated to a dedicated
-     * platform-role collection or Firebase custom claims.
-     */
-    function isPlatformAdmin() {
-      return isAuthenticated()
-        && exists(
-          /databases/$(database)/documents/users/$(request.auth.uid)
-        )
-        && get(
-          /databases/$(database)/documents/users/$(request.auth.uid)
-        ).data.role == "admin";
-    }
+/*
+ * Current Zebron bootstrap/admin model:
+ *
+ *   users/{uid}.role == "admin"
+ *
+ * This is intentionally separate from the newer platform/
+ * organization/group ACL model.
+ *
+ * Later, platform roles can be migrated to a dedicated
+ * platform-role collection or Firebase custom claims.
+ */
+function isPlatformAdmin() {
+  return isAuthenticated()
+    && exists(
+      /databases/$(database)/documents/users/$(request.auth.uid)
+    )
+    && get(
+      /databases/$(database)/documents/users/$(request.auth.uid)
+    ).data.role == "admin";
+}
 
-    /*
-     * Organization memberships use deterministic IDs:
-     *
-     *   {userId}_{organizationId}
-     */
-    function organizationMembershipPath(
-      userId,
-      organizationId
-    ) {
-      return /databases/$(database)/documents/organizationMemberships/$(userId + "_" + organizationId);
-    }
+/*
+ * Organization memberships use deterministic IDs:
+ *
+ *   {userId}_{organizationId}
+ */
+function organizationMembershipPath(
+  userId,
+  organizationId
+) {
+  return /databases/$(database)/documents/organizationMemberships/$(userId + "_" + organizationId);
+}
 
-    function isOrganizationMember(organizationId) {
-      return isAuthenticated()
-        && exists(
-          organizationMembershipPath(
-            request.auth.uid,
-            organizationId
-          )
-        )
-        && get(
-          organizationMembershipPath(
-            request.auth.uid,
-            organizationId
-          )
-        ).data.active == true;
-    }
+function isOrganizationMember(organizationId) {
+  return isAuthenticated()
+    && exists(
+      organizationMembershipPath(
+        request.auth.uid,
+        organizationId
+      )
+    )
+    && get(
+      organizationMembershipPath(
+        request.auth.uid,
+        organizationId
+      )
+    ).data.active == true;
+}
 
-    function isOrganizationAdmin(organizationId) {
-      return isAuthenticated()
-        && (
-          isPlatformAdmin()
+function isOrganizationAdmin(organizationId) {
+  return isAuthenticated()
+    && (
+      isPlatformAdmin()
+      ||
+      (
+        isOrganizationMember(organizationId)
+        &&
+        (
+          get(
+            organizationMembershipPath(
+              request.auth.uid,
+              organizationId
+            )
+          ).data.role == "owner"
           ||
-          (
-            isOrganizationMember(organizationId)
-            &&
-            (
-              get(
-                organizationMembershipPath(
-                  request.auth.uid,
-                  organizationId
-                )
-              ).data.role == "owner"
-              ||
-              get(
-                organizationMembershipPath(
-                  request.auth.uid,
-                  organizationId
-                )
-              ).data.role == "admin"
+          get(
+            organizationMembershipPath(
+              request.auth.uid,
+              organizationId
             )
-          )
-        );
-    }
+          ).data.role == "admin"
+        )
+      )
+    );
+}
 
-    function isOrganizationManagerOrAbove(
-      organizationId
-    ) {
-      return isAuthenticated()
-        && (
-          isPlatformAdmin()
+function isOrganizationManagerOrAbove(
+  organizationId
+) {
+  return isAuthenticated()
+    && (
+      isPlatformAdmin()
+      ||
+      (
+        isOrganizationMember(organizationId)
+        &&
+        (
+          get(
+            organizationMembershipPath(
+              request.auth.uid,
+              organizationId
+            )
+          ).data.role == "owner"
           ||
-          (
-            isOrganizationMember(organizationId)
-            &&
-            (
-              get(
-                organizationMembershipPath(
-                  request.auth.uid,
-                  organizationId
-                )
-              ).data.role == "owner"
-              ||
-              get(
-                organizationMembershipPath(
-                  request.auth.uid,
-                  organizationId
-                )
-              ).data.role == "admin"
-              ||
-              get(
-                organizationMembershipPath(
-                  request.auth.uid,
-                  organizationId
-                )
-              ).data.role == "manager"
+          get(
+            organizationMembershipPath(
+              request.auth.uid,
+              organizationId
             )
-          )
-        );
-    }
+          ).data.role == "admin"
+          ||
+          get(
+            organizationMembershipPath(
+              request.auth.uid,
+              organizationId
+            )
+          ).data.role == "manager"
+        )
+      )
+    );
+}
 
-    function groupExists(groupId) {
-      return exists(
-        /databases/$(database)/documents/groups/$(groupId)
-      );
-    }
+function groupExists(groupId) {
+  return exists(
+    /databases/$(database)/documents/groups/$(groupId)
+  );
+}
 
-    function groupBelongsToOrganization(
-      groupId,
+function groupBelongsToOrganization(
+  groupId,
+  organizationId
+) {
+  return groupExists(groupId)
+    && get(
+      /databases/$(database)/documents/groups/$(groupId)
+    ).data.organizationId == organizationId;
+}
+
+function groupOrganizationId(groupId) {
+  return get(
+    /databases/$(database)/documents/groups/$(groupId)
+  ).data.organizationId;
+}
+
+/*
+ * Group memberships use deterministic IDs:
+ *
+ *   {userId}_{groupId}
+ */
+function isActiveGroupMember(groupId) {
+  return isAuthenticated()
+    && exists(
+      /databases/$(database)/documents/groupMemberships/$(request.auth.uid + "_" + groupId)
+    )
+    && get(
+      /databases/$(database)/documents/groupMemberships/$(request.auth.uid + "_" + groupId)
+    ).data.active == true;
+}
+
+
+// ============================================================
+// KNOWLEDGE HELPERS
+// ============================================================
+
+/*
+ * Validate the structure of a Knowledge Article.
+ *
+ * Knowledge articles are platform-managed content.
+ * The source content remains in Firestore; generated PDFs
+ * are derived artifacts.
+ */
+function isValidKnowledgeArticle() {
+  return request.resource.data.keys().hasAll([
+    'id',
+    'applicationKey',
+    'title',
+    'content',
+    'contentType',
+    'category',
+    'tags',
+    'audience',
+    'status',
+    'version',
+    'authorId',
+    'createdAt',
+    'updatedAt',
+    'downloadable'
+  ])
+  && request.resource.data.id is string
+  && request.resource.data.applicationKey is string
+  && request.resource.data.title is string
+  && request.resource.data.content is string
+  && request.resource.data.contentType is string
+  && request.resource.data.category is string
+  && request.resource.data.tags is list
+  && request.resource.data.audience is list
+  && request.resource.data.status in [
+    'draft',
+    'published',
+    'archived'
+  ]
+  && request.resource.data.version is int
+  && request.resource.data.authorId is string
+  && request.resource.data.createdAt is string
+  && request.resource.data.updatedAt is string
+  && request.resource.data.downloadable is bool;
+}
+
+/*
+ * Validate the structure of a Knowledge Article version.
+ *
+ * Versions are historical records and are immutable after
+ * creation.
+ */
+function isValidKnowledgeArticleVersion() {
+  return request.resource.data.keys().hasAll([
+    'id',
+    'articleId',
+    'version',
+    'title',
+    'content',
+    'contentType',
+    'category',
+    'tags',
+    'audience',
+    'createdBy',
+    'createdAt'
+  ])
+  && request.resource.data.id is string
+  && request.resource.data.articleId is string
+  && request.resource.data.version is int
+  && request.resource.data.title is string
+  && request.resource.data.content is string
+  && request.resource.data.contentType is string
+  && request.resource.data.category is string
+  && request.resource.data.tags is list
+  && request.resource.data.audience is list
+  && request.resource.data.createdBy is string
+  && request.resource.data.createdAt is string;
+}
+
+
+// ============================================================
+// USERS
+// ============================================================
+
+match /users/{userId} {
+
+  /*
+   * Users may read their own profile.
+   *
+   * Platform admins may read all user profiles.
+   */
+  allow get: if isCurrentUser(userId)
+    || isPlatformAdmin();
+
+  /*
+   * User listing is intentionally restricted to platform admins.
+   */
+  allow list: if isPlatformAdmin();
+
+  /*
+   * A user may create their own initial profile.
+   *
+   * Platform admins can create user records.
+   */
+  allow create: if isCurrentUser(userId)
+    || isPlatformAdmin();
+
+  /*
+   * Users can update their own profile, but cannot elevate
+   * their platform role through the client.
+   */
+  allow update: if (
+      isCurrentUser(userId)
+      && request.resource.data.role == resource.data.role
+    )
+    || isPlatformAdmin();
+
+  allow delete: if isPlatformAdmin();
+}
+
+
+// ============================================================
+// ORGANIZATION MEMBERSHIPS
+// ============================================================
+
+match /organizationMemberships/{membershipId} {
+
+  /*
+   * Members can read their own membership.
+   *
+   * Organization administrators can read memberships belonging
+   * to their organization.
+   *
+   * Platform admins can read everything.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.userId == request.auth.uid
+    )
+    || isOrganizationAdmin(
+      resource.data.organizationId
+    );
+
+  /*
+   * Queries are authorized based on the documents that could
+   * be returned.
+   *
+   * Supported query patterns:
+   *
+   *   where("userId", "==", currentUserId)
+   *
+   *   where("organizationId", "==", organizationId)
+   *
+   * Platform admins may query all memberships.
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.userId == request.auth.uid
+    )
+    || (
+      isAuthenticated()
+      && isOrganizationAdmin(
+        resource.data.organizationId
+      )
+    );
+
+  /*
+   * Membership creation is administrative.
+   */
+  allow create: if isPlatformAdmin()
+    || (
+      request.resource.data.organizationId != null
+      && isOrganizationAdmin(
+        request.resource.data.organizationId
+      )
+    );
+
+  /*
+   * Organization/user/role boundaries cannot be changed
+   * during a normal client update.
+   */
+  allow update: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(
+        resource.data.organizationId
+      )
+      && request.resource.data.userId
+        == resource.data.userId
+      && request.resource.data.organizationId
+        == resource.data.organizationId
+      && request.resource.data.role in [
+        "owner",
+        "admin",
+        "manager",
+        "member"
+      ]
+    );
+
+  allow delete: if isPlatformAdmin()
+    || isOrganizationAdmin(
+      resource.data.organizationId
+    );
+}
+
+
+// ============================================================
+// GROUPS
+// ============================================================
+
+match /groups/{groupId} {
+
+  /*
+   * Organization members can read active groups
+   * in their organization.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      isOrganizationMember(
+        resource.data.organizationId
+      )
+      && resource.data.active == true
+    );
+
+  /*
+   * Group queries are restricted to active groups belonging
+   * to organizations of which the requester is a member.
+   *
+   * Supported query pattern:
+   *
+   *   where("organizationId", "==", organizationId)
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && isOrganizationMember(
+        resource.data.organizationId
+      )
+      && resource.data.active == true
+    );
+
+  /*
+   * Groups can only be created by organization administrators.
+   */
+  allow create: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(
+        request.resource.data.organizationId
+      )
+      && request.resource.data.systemManaged == false
+    );
+
+  /*
+   * A group cannot be moved between organizations.
+   *
+   * System-managed groups cannot be modified by ordinary
+   * organization administrators.
+   */
+  allow update: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(
+        resource.data.organizationId
+      )
+      && resource.data.systemManaged == false
+      && request.resource.data.organizationId
+        == resource.data.organizationId
+      && request.resource.data.systemManaged == false
+    );
+
+  /*
+   * System-managed groups are protected.
+   */
+  allow delete: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(
+        resource.data.organizationId
+      )
+      && resource.data.systemManaged == false
+    );
+}
+
+
+// ============================================================
+// GROUP MEMBERSHIPS
+// ============================================================
+
+match /groupMemberships/{membershipId} {
+
+  /*
+   * A member may read their own active membership.
+   *
+   * Organization administrators may read memberships for
+   * groups belonging to their organization.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.userId == request.auth.uid
+      && isActiveGroupMember(
+        resource.data.groupId
+      )
+    )
+    || (
+      groupExists(
+        resource.data.groupId
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          resource.data.groupId
+        )
+      )
+    );
+
+  /*
+   * Queries are restricted to:
+   *
+   * 1. The authenticated user's own memberships.
+   *
+   * 2. Memberships belonging to groups administered by the
+   *    requester's organization.
+   *
+   * Supported query patterns:
+   *
+   *   where("userId", "==", currentUserId)
+   *
+   *   where("groupId", "==", groupId)
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.userId == request.auth.uid
+    )
+    || (
+      isAuthenticated()
+      && groupExists(
+        resource.data.groupId
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          resource.data.groupId
+        )
+      )
+    );
+
+  /*
+   * Only organization administrators may add group members.
+   */
+  allow create: if isPlatformAdmin()
+    || (
+      groupExists(
+        request.resource.data.groupId
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          request.resource.data.groupId
+        )
+      )
+    );
+
+  /*
+   * Group and user ownership cannot be changed during update.
+   */
+  allow update: if isPlatformAdmin()
+    || (
+      groupExists(
+        resource.data.groupId
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          resource.data.groupId
+        )
+      )
+      && request.resource.data.groupId
+        == resource.data.groupId
+      && request.resource.data.userId
+        == resource.data.userId
+    );
+
+  allow delete: if isPlatformAdmin()
+    || (
+      groupExists(
+        resource.data.groupId
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          resource.data.groupId
+        )
+      )
+    );
+}
+
+
+// ============================================================
+// GROUP ROLES
+// ============================================================
+
+match /groupRoles/{groupRoleId} {
+
+  /*
+   * Only administrators of the owning organization can inspect
+   * group ACL configuration.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      groupExists(
+        resource.data.groupId
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          resource.data.groupId
+        )
+      )
+    );
+
+  /*
+   * Only organization administrators may query group roles.
+   *
+   * Supported query pattern:
+   *
+   *   where("groupId", "==", groupId)
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && groupExists(
+        resource.data.groupId
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          resource.data.groupId
+        )
+      )
+    );
+
+  /*
+   * Roles belong to a specific group.
+   */
+  allow create: if isPlatformAdmin()
+    || (
+      groupExists(
+        request.resource.data.groupId
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          request.resource.data.groupId
+        )
+      )
+      && request.resource.data.systemManaged == false
+    );
+
+  /*
+   * A role cannot be moved to another group.
+   *
+   * System-managed roles are protected.
+   */
+  allow update: if isPlatformAdmin()
+    || (
+      groupExists(
+        resource.data.groupId
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          resource.data.groupId
+        )
+      )
+      && resource.data.systemManaged == false
+      && request.resource.data.groupId
+        == resource.data.groupId
+      && request.resource.data.systemManaged == false
+    );
+
+  allow delete: if isPlatformAdmin()
+    || (
+      groupExists(
+        resource.data.groupId
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          resource.data.groupId
+        )
+      )
+      && resource.data.systemManaged == false
+    );
+}
+
+
+// ============================================================
+// GROUP ROLE ASSIGNMENTS
+// ============================================================
+
+match /groupRoleAssignments/{assignmentId} {
+
+  /*
+   * Assignment ownership is derived from:
+   *
+   * assignment
+   *   -> groupMembership
+   *   -> group
+   *
+   * and:
+   *
+   * assignment
+   *   -> groupRole
+   *   -> group
+   *
+   * The membership and role must belong to the same group.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      exists(
+        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+      )
+      && exists(
+        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      )
+      && get(
+        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+      ).data.groupId
+        ==
+      get(
+        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      ).data.groupId
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          get(
+            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+          ).data.groupId
+        )
+      )
+    );
+
+  /*
+   * Only organization administrators of the associated group
+   * may query role assignments.
+   *
+   * Supported query patterns:
+   *
+   *   where("groupMembershipId", "==", membershipId)
+   *
+   *   where("groupRoleId", "==", groupRoleId)
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && exists(
+        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+      )
+      && exists(
+        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      )
+      && get(
+        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+      ).data.groupId
+        ==
+      get(
+        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      ).data.groupId
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          get(
+            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+          ).data.groupId
+        )
+      )
+    );
+
+  allow create: if isPlatformAdmin()
+    || (
+      exists(
+        /databases/$(database)/documents/groupMemberships/$(request.resource.data.groupMembershipId)
+      )
+      && exists(
+        /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
+      )
+      && get(
+        /databases/$(database)/documents/groupMemberships/$(request.resource.data.groupMembershipId)
+      ).data.groupId
+        ==
+      get(
+        /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
+      ).data.groupId
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          get(
+            /databases/$(database)/documents/groupMemberships/$(request.resource.data.groupMembershipId)
+          ).data.groupId
+        )
+      )
+    );
+
+  allow update: if isPlatformAdmin()
+    || (
+      exists(
+        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+      )
+      && exists(
+        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      )
+      && get(
+        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+      ).data.groupId
+        ==
+      get(
+        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      ).data.groupId
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          get(
+            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+          ).data.groupId
+        )
+      )
+      && request.resource.data.groupMembershipId
+        == resource.data.groupMembershipId
+      && request.resource.data.groupRoleId
+        == resource.data.groupRoleId
+    );
+
+  allow delete: if isPlatformAdmin()
+    || (
+      exists(
+        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          get(
+            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+          ).data.groupId
+        )
+      )
+    );
+}
+
+
+// ============================================================
+// GROUP ROLE PERMISSIONS
+// ============================================================
+
+match /groupRolePermissions/{groupRolePermissionId} {
+
+  /*
+   * Permission records are configuration.
+   *
+   * Ownership is derived from the referenced group role.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      exists(
+        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          get(
+            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+          ).data.groupId
+        )
+      )
+    );
+
+  /*
+   * Only organization administrators of the group owning the
+   * referenced role may query role permissions.
+   *
+   * Supported query pattern:
+   *
+   *   where("groupRoleId", "==", groupRoleId)
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && exists(
+        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          get(
+            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+          ).data.groupId
+        )
+      )
+    );
+
+  /*
+   * Permission IDs are stable permission keys such as:
+   *
+   * users.view
+   * users.manage
+   * tax-rules.view
+   * tax-rules.manage
+   * tax-rules.publish
+   */
+  allow create: if isPlatformAdmin()
+    || (
+      exists(
+        /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          get(
+            /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
+          ).data.groupId
+        )
+      )
+    );
+
+  allow update: if isPlatformAdmin()
+    || (
+      exists(
+        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          get(
+            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+          ).data.groupId
+        )
+      )
+      && request.resource.data.groupRoleId
+        == resource.data.groupRoleId
+      && request.resource.data.permissionId
+        == resource.data.permissionId
+    );
+
+  allow delete: if isPlatformAdmin()
+    || (
+      exists(
+        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      )
+      && isOrganizationAdmin(
+        groupOrganizationId(
+          get(
+            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+          ).data.groupId
+        )
+      )
+    );
+}
+
+
+
+// ============================================================
+// TEST CENTER HELPERS
+// ============================================================
+
+/*
+ * Test Center is organization-scoped.
+ *
+ * Organization membership is the tenant boundary:
+ *   - active members may read permitted Test Center content
+ *   - organization owners/admins may manage Test Center content
+ *   - platform admins retain platform-wide access
+ *
+ * The organizationId on Test Center documents is immutable after
+ * creation so a document cannot be moved between organizations.
+ */
+function isTestCenterMember(organizationId) {
+  return isPlatformAdmin()
+    || isOrganizationMember(organizationId);
+}
+
+function isTestCenterAdmin(organizationId) {
+  return isPlatformAdmin()
+    || isOrganizationAdmin(organizationId);
+}
+
+function canCreateTestCenterDocument(organizationId) {
+  return isTestCenterAdmin(organizationId);
+}
+
+function testCenterCourseBelongsToOrganization(
+  courseId,
+  organizationId
+) {
+  return exists(
+    /databases/$(database)/documents/testCourses/$(courseId)
+  )
+  && get(
+    /databases/$(database)/documents/testCourses/$(courseId)
+  ).data.organizationId == organizationId;
+}
+
+function testCenterTopicBelongsToOrganization(
+  topicId,
+  organizationId,
+  courseId
+) {
+  return exists(
+    /databases/$(database)/documents/testTopics/$(topicId)
+  )
+  && get(
+    /databases/$(database)/documents/testTopics/$(topicId)
+  ).data.organizationId == organizationId
+  && get(
+    /databases/$(database)/documents/testTopics/$(topicId)
+  ).data.courseId == courseId;
+}
+
+function canCreateTestCenterTopic(
+  organizationId,
+  courseId
+) {
+  return isTestCenterAdmin(organizationId)
+    && testCenterCourseBelongsToOrganization(
+      courseId,
       organizationId
-    ) {
-      return groupExists(groupId)
-        && get(
-          /databases/$(database)/documents/groups/$(groupId)
-        ).data.organizationId == organizationId;
-    }
+    );
+}
 
-    function groupOrganizationId(groupId) {
-      return get(
-        /databases/$(database)/documents/groups/$(groupId)
-      ).data.organizationId;
-    }
+function canCreateTestCenterQuestion(
+  organizationId,
+  courseId,
+  topicId
+) {
+  return isTestCenterAdmin(organizationId)
+    && testCenterCourseBelongsToOrganization(
+      courseId,
+      organizationId
+    )
+    && testCenterTopicBelongsToOrganization(
+      topicId,
+      organizationId,
+      courseId
+    );
+}
 
-    /*
-     * Group memberships use deterministic IDs:
-     *
-     *   {userId}_{groupId}
-     */
-    function isActiveGroupMember(groupId) {
-      return isAuthenticated()
-        && exists(
-          /databases/$(database)/documents/groupMemberships/$(request.auth.uid + "_" + groupId)
-        )
-        && get(
-          /databases/$(database)/documents/groupMemberships/$(request.auth.uid + "_" + groupId)
-        ).data.active == true;
-    }
+function canCreateTestCenterAttempt(
+  organizationId,
+  courseId
+) {
+  return isOrganizationMember(organizationId)
+    && testCenterCourseBelongsToOrganization(
+      courseId,
+      organizationId
+    );
+}
 
+function canCreateTestCenterResult(
+  organizationId,
+  userId,
+  courseId,
+  attemptId
+) {
+  return isOrganizationMember(organizationId)
+    && request.auth.uid == userId
+    && testCenterCourseBelongsToOrganization(
+      courseId,
+      organizationId
+    )
+    && exists(
+      /databases/$(database)/documents/testAttempts/$(attemptId)
+    )
+    && get(
+      /databases/$(database)/documents/testAttempts/$(attemptId)
+    ).data.organizationId == organizationId
+    && get(
+      /databases/$(database)/documents/testAttempts/$(attemptId)
+    ).data.userId == userId;
+}
 
-    // ============================================================
-    // USERS
-    // ============================================================
+// ============================================================
+// KNOWLEDGE ARTICLES
+// ============================================================
 
-    match /users/{userId} {
+match /knowledgeArticles/{articleId} {
 
-      /*
-       * Users may read their own profile.
-       *
-       * Platform admins may read all user profiles.
-       */
-      allow get: if isCurrentUser(userId)
-        || isPlatformAdmin();
+  /*
+   * Authenticated users may read published Knowledge articles.
+   *
+   * Draft and archived articles remain administrative content.
+   */
+  allow get: if isAuthenticated()
+    && resource.data.status == "published";
 
-      /*
-       * User listing is intentionally restricted to platform admins.
-       */
-      allow list: if isPlatformAdmin();
+  /*
+   * Platform administrators may read all article states.
+   */
+  allow get: if isPlatformAdmin();
 
-      /*
-       * A user may create their own initial profile.
-       *
-       * Platform admins can create user records.
-       */
-      allow create: if isCurrentUser(userId)
-        || isPlatformAdmin();
+  /*
+   * User-facing queries may return published articles.
+   *
+   * Platform administrators may query all articles.
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.status == "published"
+    );
 
-      /*
-       * Users can update their own profile, but cannot elevate
-       * their platform role through the client.
-       */
-      allow update: if (
-          isCurrentUser(userId)
-          && request.resource.data.role == resource.data.role
-        )
-        || isPlatformAdmin();
+  /*
+   * Only platform administrators can create Knowledge articles.
+   */
+  allow create: if isPlatformAdmin()
+    && isValidKnowledgeArticle()
+    && request.resource.data.id == articleId;
 
-      allow delete: if isPlatformAdmin();
-    }
+  /*
+   * Only platform administrators can update Knowledge articles.
+   *
+   * The document ID remains immutable.
+   */
+  allow update: if isPlatformAdmin()
+    && isValidKnowledgeArticle()
+    && request.resource.data.id == resource.data.id
+    && request.resource.data.id == articleId;
 
-
-    // ============================================================
-    // ORGANIZATION MEMBERSHIPS
-    // ============================================================
-
-    match /organizationMemberships/{membershipId} {
-
-      /*
-       * Members can read their own membership.
-       *
-       * Organization administrators can read memberships belonging
-       * to their organization.
-       *
-       * Platform admins can read everything.
-       */
-      allow get: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && resource.data.userId == request.auth.uid
-        )
-        || isOrganizationAdmin(
-          resource.data.organizationId
-        );
-
-      /*
-       * Queries are authorized based on the documents that could
-       * be returned.
-       *
-       * Supported query patterns:
-       *
-       *   where("userId", "==", currentUserId)
-       *
-       *   where("organizationId", "==", organizationId)
-       *
-       * Platform admins may query all memberships.
-       */
-      allow list: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && resource.data.userId == request.auth.uid
-        )
-        || (
-          isAuthenticated()
-          && isOrganizationAdmin(
-            resource.data.organizationId
-          )
-        );
-
-      /*
-       * Membership creation is administrative.
-       */
-      allow create: if isPlatformAdmin()
-        || (
-          request.resource.data.organizationId != null
-          && isOrganizationAdmin(
-            request.resource.data.organizationId
-          )
-        );
-
-      /*
-       * Organization/user/role boundaries cannot be changed
-       * during a normal client update.
-       */
-      allow update: if isPlatformAdmin()
-        || (
-          isOrganizationAdmin(
-            resource.data.organizationId
-          )
-          && request.resource.data.userId
-            == resource.data.userId
-          && request.resource.data.organizationId
-            == resource.data.organizationId
-          && request.resource.data.role in [
-            "owner",
-            "admin",
-            "manager",
-            "member"
-          ]
-        );
-
-      allow delete: if isPlatformAdmin()
-        || isOrganizationAdmin(
-          resource.data.organizationId
-        );
-    }
+  /*
+   * Only platform administrators can permanently delete
+   * Knowledge articles.
+   *
+   * Published articles should normally be archived first.
+   */
+  allow delete: if isPlatformAdmin();
+}
 
 
-    // ============================================================
-    // GROUPS
-    // ============================================================
+// ============================================================
+// KNOWLEDGE ARTICLE VERSIONS
+// ============================================================
 
-    match /groups/{groupId} {
+match /knowledgeArticleVersions/{versionId} {
 
-      /*
-       * Organization members can read active groups
-       * in their organization.
-       */
-      allow get: if isPlatformAdmin()
-        || (
-          isOrganizationMember(
-            resource.data.organizationId
-          )
-          && resource.data.active == true
-        );
+  /*
+   * Version history is administrative information.
+   */
+  allow get: if isPlatformAdmin();
 
-      /*
-       * Group queries are restricted to active groups belonging
-       * to organizations of which the requester is a member.
-       *
-       * Supported query pattern:
-       *
-       *   where("organizationId", "==", organizationId)
-       */
-      allow list: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && isOrganizationMember(
-            resource.data.organizationId
-          )
-          && resource.data.active == true
-        );
+  allow list: if isPlatformAdmin();
 
-      /*
-       * Groups can only be created by organization administrators.
-       */
-      allow create: if isPlatformAdmin()
-        || (
-          isOrganizationAdmin(
-            request.resource.data.organizationId
-          )
-          && request.resource.data.systemManaged == false
-        );
+  /*
+   * Only platform administrators can create versions.
+   */
+  allow create: if isPlatformAdmin()
+    && isValidKnowledgeArticleVersion()
+    && request.resource.data.id == versionId;
 
-      /*
-       * A group cannot be moved between organizations.
-       *
-       * System-managed groups cannot be modified by ordinary
-       * organization administrators.
-       */
-      allow update: if isPlatformAdmin()
-        || (
-          isOrganizationAdmin(
-            resource.data.organizationId
-          )
-          && resource.data.systemManaged == false
-          && request.resource.data.organizationId
-            == resource.data.organizationId
-          && request.resource.data.systemManaged == false
-        );
+  /*
+   * Article versions are immutable.
+   *
+   * Once a version has been created, it cannot be changed.
+   */
+  allow update: if false;
 
-      /*
-       * System-managed groups are protected.
-       */
-      allow delete: if isPlatformAdmin()
-        || (
-          isOrganizationAdmin(
-            resource.data.organizationId
-          )
-          && resource.data.systemManaged == false
-        );
-    }
+  /*
+   * Historical versions are protected from normal deletion.
+   */
+  allow delete: if false;
+}
 
 
-    // ============================================================
-    // GROUP MEMBERSHIPS
-    // ============================================================
 
-    match /groupMemberships/{membershipId} {
+// ============================================================
+// TEST CENTER COURSES
+// ============================================================
 
-      /*
-       * A member may read their own active membership.
-       *
-       * Organization administrators may read memberships for
-       * groups belonging to their organization.
-       */
-      allow get: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && resource.data.userId == request.auth.uid
-          && isActiveGroupMember(
-            resource.data.groupId
-          )
-        )
-        || (
-          groupExists(
-            resource.data.groupId
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              resource.data.groupId
-            )
-          )
-        );
+match /testCourses/{courseId} {
 
-      /*
-       * Queries are restricted to:
-       *
-       * 1. The authenticated user's own memberships.
-       *
-       * 2. Memberships belonging to groups administered by the
-       *    requester's organization.
-       *
-       * Supported query patterns:
-       *
-       *   where("userId", "==", currentUserId)
-       *
-       *   where("groupId", "==", groupId)
-       */
-      allow list: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && resource.data.userId == request.auth.uid
-        )
-        || (
-          isAuthenticated()
-          && groupExists(
-            resource.data.groupId
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              resource.data.groupId
-            )
-          )
-        );
+  /*
+   * Active courses are visible to active organization members.
+   * Platform administrators can inspect all courses.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      resource.data.organizationId != null
+      && isTestCenterMember(resource.data.organizationId)
+      && resource.data.active == true
+    );
 
-      /*
-       * Only organization administrators may add group members.
-       */
-      allow create: if isPlatformAdmin()
-        || (
-          groupExists(
-            request.resource.data.groupId
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              request.resource.data.groupId
-            )
-          )
-        );
+  /*
+   * Queries must be constrained to an organization. Firestore
+   * evaluates the rule against documents that could be returned.
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.organizationId != null
+      && isOrganizationMember(resource.data.organizationId)
+      && resource.data.active == true
+    );
 
-      /*
-       * Group and user ownership cannot be changed during update.
-       */
-      allow update: if isPlatformAdmin()
-        || (
-          groupExists(
-            resource.data.groupId
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              resource.data.groupId
-            )
-          )
-          && request.resource.data.groupId
-            == resource.data.groupId
-          && request.resource.data.userId
-            == resource.data.userId
-        );
-
-      allow delete: if isPlatformAdmin()
-        || (
-          groupExists(
-            resource.data.groupId
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              resource.data.groupId
-            )
-          )
-        );
-    }
+  /*
+   * Courses are managed by organization administrators.
+   */
+  allow create: if canCreateTestCenterDocument(
+      request.resource.data.organizationId
+    )
+    && request.resource.data.organizationId is string
 
 
-    // ============================================================
-    // GROUP ROLES
-    // ============================================================
+  /*
+   * A course cannot be moved between organizations.
+   */
+  allow update: if isPlatformAdmin()
+    || (
+      request.resource.data.id == resource.data.id
+      && request.resource.data.organizationId
+         == resource.data.organizationId
+      && isOrganizationAdmin(resource.data.organizationId)
+    );
 
-    match /groupRoles/{groupRoleId} {
-
-      /*
-       * Only administrators of the owning organization can inspect
-       * group ACL configuration.
-       */
-      allow get: if isPlatformAdmin()
-        || (
-          groupExists(
-            resource.data.groupId
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              resource.data.groupId
-            )
-          )
-        );
-
-      /*
-       * Only organization administrators may query group roles.
-       *
-       * Supported query pattern:
-       *
-       *   where("groupId", "==", groupId)
-       */
-      allow list: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && groupExists(
-            resource.data.groupId
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              resource.data.groupId
-            )
-          )
-        );
-
-      /*
-       * Roles belong to a specific group.
-       */
-      allow create: if isPlatformAdmin()
-        || (
-          groupExists(
-            request.resource.data.groupId
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              request.resource.data.groupId
-            )
-          )
-          && request.resource.data.systemManaged == false
-        );
-
-      /*
-       * A role cannot be moved to another group.
-       *
-       * System-managed roles are protected.
-       */
-      allow update: if isPlatformAdmin()
-        || (
-          groupExists(
-            resource.data.groupId
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              resource.data.groupId
-            )
-          )
-          && resource.data.systemManaged == false
-          && request.resource.data.groupId
-            == resource.data.groupId
-          && request.resource.data.systemManaged == false
-        );
-
-      allow delete: if isPlatformAdmin()
-        || (
-          groupExists(
-            resource.data.groupId
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              resource.data.groupId
-            )
-          )
-          && resource.data.systemManaged == false
-        );
-    }
+  allow delete: if isTestCenterAdmin(
+    resource.data.organizationId
+  );
+}
 
 
-    // ============================================================
-    // GROUP ROLE ASSIGNMENTS
-    // ============================================================
+// ============================================================
+// TEST CENTER TOPICS
+// ============================================================
 
-    match /groupRoleAssignments/{assignmentId} {
+match /testTopics/{topicId} {
 
-      /*
-       * Assignment ownership is derived from:
-       *
-       * assignment
-       *   -> groupMembership
-       *   -> group
-       *
-       * and:
-       *
-       * assignment
-       *   -> groupRole
-       *   -> group
-       *
-       * The membership and role must belong to the same group.
-       */
-      allow get: if isPlatformAdmin()
-        || (
-          exists(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          )
-          && exists(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          )
-          && get(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          ).data.groupId
-            ==
-          get(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          ).data.groupId
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              get(
-                /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-              ).data.groupId
-            )
-          )
-        );
+  /*
+   * Active topics are visible to members of the owning
+   * organization. Platform administrators can inspect all.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      resource.data.organizationId != null
+      && isTestCenterMember(resource.data.organizationId)
+      && resource.data.active == true
+    );
 
-      /*
-       * Only organization administrators of the associated group
-       * may query role assignments.
-       *
-       * Supported query pattern:
-       *
-       *   where("groupMembershipId", "==", membershipId)
-       *
-       *   where("groupRoleId", "==", groupRoleId)
-       */
-      allow list: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && exists(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          )
-          && exists(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          )
-          && get(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          ).data.groupId
-            ==
-          get(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          ).data.groupId
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              get(
-                /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-              ).data.groupId
-            )
-          )
-        );
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.organizationId != null
+      && isOrganizationMember(resource.data.organizationId)
+      && resource.data.active == true
+    );
 
-      allow create: if isPlatformAdmin()
-        || (
-          exists(
-            /databases/$(database)/documents/groupMemberships/$(request.resource.data.groupMembershipId)
-          )
-          && exists(
-            /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
-          )
-          && get(
-            /databases/$(database)/documents/groupMemberships/$(request.resource.data.groupMembershipId)
-          ).data.groupId
-            ==
-          get(
-            /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
-          ).data.groupId
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              get(
-                /databases/$(database)/documents/groupMemberships/$(request.resource.data.groupMembershipId)
-              ).data.groupId
-            )
-          )
-        );
+    allow read: if
+isTestCenterMember(resource.data.organizationId)
+&& (
+  resource.data.status == 'published'
+  || isTestCenterAdmin(resource.data.organizationId)
+);
 
-      allow update: if isPlatformAdmin()
-        || (
-          exists(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          )
-          && exists(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          )
-          && get(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          ).data.groupId
-            ==
-          get(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          ).data.groupId
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              get(
-                /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-              ).data.groupId
-            )
-          )
-          && request.resource.data.groupMembershipId
-            == resource.data.groupMembershipId
-          && request.resource.data.groupRoleId
-            == resource.data.groupRoleId
-        );
-
-      allow delete: if isPlatformAdmin()
-        || (
-          exists(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              get(
-                /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-              ).data.groupId
-            )
-          )
-        );
-    }
+  /*
+   * Topic creation is restricted to organization administrators.
+   */
+   allow create: if
+request.resource.data.organizationId is string
+&& request.resource.data.courseId is string
+&& canCreateTestCenterTopic(
+  request.resource.data.organizationId,
+  request.resource.data.courseId
+);
 
 
-    // ============================================================
-    // GROUP ROLE PERMISSIONS
-    // ============================================================
+  /*
+   * Topics remain in their original organization and course.
+   */
+  allow update: if
+isTestCenterAdmin(resource.data.organizationId)
+&& request.resource.data.organizationId == resource.data.organizationId
+&& request.resource.data.courseId == resource.data.courseId;
 
-    match /groupRolePermissions/{groupRolePermissionId} {
-
-      /*
-       * Permission records are configuration.
-       *
-       * Ownership is derived from the referenced group role.
-       */
-      allow get: if isPlatformAdmin()
-        || (
-          exists(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              get(
-                /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-              ).data.groupId
-            )
-          )
-        );
-
-      /*
-       * Only organization administrators of the group owning the
-       * referenced role may query role permissions.
-       *
-       * Supported query pattern:
-       *
-       *   where("groupRoleId", "==", groupRoleId)
-       */
-      allow list: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && exists(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              get(
-                /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-              ).data.groupId
-            )
-          )
-        );
-
-      /*
-       * Permission IDs are stable permission keys such as:
-       *
-       * users.view
-       * users.manage
-       * tax-rules.view
-       * tax-rules.manage
-       * tax-rules.publish
-       */
-      allow create: if isPlatformAdmin()
-        || (
-          exists(
-            /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              get(
-                /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
-              ).data.groupId
-            )
-          )
-        );
-
-      allow update: if isPlatformAdmin()
-        || (
-          exists(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              get(
-                /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-              ).data.groupId
-            )
-          )
-          && request.resource.data.groupRoleId
-            == resource.data.groupRoleId
-          && request.resource.data.permissionId
-            == resource.data.permissionId
-        );
-
-      allow delete: if isPlatformAdmin()
-        || (
-          exists(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          )
-          && isOrganizationAdmin(
-            groupOrganizationId(
-              get(
-                /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-              ).data.groupId
-            )
-          )
-        );
-    }
+   allow delete: if
+isTestCenterAdmin(resource.data.organizationId);
+}
 
 
-    // ============================================================
-    // DEFAULT DENY
-    // ============================================================
+// ============================================================
+// TEST CENTER QUESTIONS
+// ============================================================
 
-    /*
-     * There is intentionally NO:
-     *
-     * match /{document=**} {
-     *   allow read, write: if true;
-     * }
-     *
-     * Any collection without an explicit rule is denied.
-     *
-     * Feature-specific rules will be added for:
-     *
-     *   community
-     *   chat
-     *   resources
-     *   jobs
-     *   training
-     *   test center
-     *   notifications
-     *   tax configuration
-     *   incidents
-     *   donations
-     *   etc.
-     */
+match /testQuestions/{questionId} {
 
-  }
+  /*
+   * Published questions are available to members of the
+   * owning organization. Draft/archived questions are
+   * administrative content.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      resource.data.organizationId != null
+      && isTestCenterMember(resource.data.organizationId)
+      && resource.data.status == "published"
+    )
+    || (
+      resource.data.organizationId != null
+      && isTestCenterAdmin(resource.data.organizationId)
+    );
+
+  /*
+   * Normal test-taking queries must be scoped to an organization
+   * and return published questions only. Organization admins may
+   * query their complete question bank.
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.organizationId != null
+      && isOrganizationMember(resource.data.organizationId)
+      && resource.data.status == "published"
+    )
+    || (
+      isAuthenticated()
+      && resource.data.organizationId != null
+      && isOrganizationAdmin(resource.data.organizationId)
+    );
+
+    allow read: if
+isTestCenterMember(resource.data.organizationId)
+&& (
+  resource.data.status == 'published'
+  || isTestCenterAdmin(resource.data.organizationId)
+);
+
+  /*
+   * Only organization administrators can create questions.
+   * The organization is supplied by the trusted application
+   * context and must be a string.
+   */
+ allow create: if
+request.resource.data.organizationId is string
+&& request.resource.data.courseId is string
+&& request.resource.data.topicId is string
+&& canCreateTestCenterQuestion(
+  request.resource.data.organizationId,
+  request.resource.data.courseId,
+  request.resource.data.topicId
+);
+
+  /*
+   * A question cannot be moved between organizations or courses
+   * or topics through an update.
+   */
+  allow update: if
+isTestCenterAdmin(resource.data.organizationId)
+&& request.resource.data.organizationId == resource.data.organizationId
+&& request.resource.data.courseId == resource.data.courseId
+&& request.resource.data.topicId == resource.data.topicId;
+
+  allow delete: if
+isTestCenterAdmin(resource.data.organizationId);
+}
+
+
+// ============================================================
+// TEST CENTER ATTEMPTS
+// ============================================================
+
+match /testAttempts/{attemptId} {
+
+  /*
+   * A user can read their own attempts. Organization admins can
+   * inspect attempts belonging to their organization.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      resource.data.organizationId != null
+      && isOrganizationMember(resource.data.organizationId)
+      && resource.data.userId == request.auth.uid
+    )
+    || (
+      resource.data.organizationId != null
+      && isOrganizationAdmin(resource.data.organizationId)
+    );
+
+  /*
+   * Queries must remain organization-scoped. A normal member
+   * can only query their own attempts; organization admins can
+   * query attempts for their organization.
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.organizationId != null
+      && isOrganizationMember(resource.data.organizationId)
+      && resource.data.userId == request.auth.uid
+    )
+    || (
+      isAuthenticated()
+      && resource.data.organizationId != null
+      && isOrganizationAdmin(resource.data.organizationId)
+    );
+
+  /*
+   * Users create attempts for themselves. The organization must
+   * be one in which they have an active membership.
+   */
+  allow create: if isAuthenticated()
+    && request.resource.data.organizationId is string
+    && isOrganizationMember(
+      request.resource.data.organizationId
+    )
+    && request.resource.data.userId == request.auth.uid
+
+
+  /*
+   * Attempts are historical records. Organization ownership and
+   * user ownership cannot be changed.
+   */
+  allow update: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(resource.data.organizationId)
+      && request.resource.data.organizationId
+         == resource.data.organizationId
+      && request.resource.data.userId
+         == resource.data.userId
+    );
+
+  allow delete: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(resource.data.organizationId)
+    );
+}
+
+
+// ============================================================
+// TEST CENTER RESULTS
+// ============================================================
+
+match /testResults/{resultId} {
+
+  /*
+   * Users can read their own results. Organization admins can
+   * inspect results belonging to their organization.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      resource.data.organizationId != null
+      && isOrganizationMember(resource.data.organizationId)
+      && resource.data.userId == request.auth.uid
+    )
+    || (
+      resource.data.organizationId != null
+      && isOrganizationAdmin(resource.data.organizationId)
+    );
+
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.organizationId != null
+      && isOrganizationMember(resource.data.organizationId)
+      && resource.data.userId == request.auth.uid
+    )
+    || (
+      isAuthenticated()
+      && resource.data.organizationId != null
+      && isOrganizationAdmin(resource.data.organizationId)
+    );
+
+  /*
+   * Results are created by the user completing their own test.
+   */
+  allow create: if isAuthenticated()
+    && request.resource.data.organizationId is string
+    && isOrganizationMember(
+      request.resource.data.organizationId
+    )
+    && request.resource.data.userId == request.auth.uid
+
+
+  /*
+   * Result identity and tenant ownership are immutable.
+   */
+  allow update: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(resource.data.organizationId)
+      && request.resource.data.organizationId
+         == resource.data.organizationId
+      && request.resource.data.userId
+         == resource.data.userId
+      && request.resource.data.attemptId
+         == resource.data.attemptId
+    );
+
+  allow delete: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(resource.data.organizationId)
+    );
+}
+
+
+// ============================================================
+// DEFAULT DENY
+// ============================================================
+
+/*
+ * There is intentionally NO:
+ *
+ * match /{document=**} {
+ *   allow read, write: if true;
+ * }
+ *
+ * Any collection without an explicit rule is denied.
+ *
+ * Feature-specific rules will be added for:
+ *
+ *   community
+ *   chat
+ *   resources
+ *   jobs
+ *   training
+ *   test center
+ *   notifications
+ *   tax configuration
+ *   incidents
+ *   donations
+ *   etc.
+ */
+
+}
 }
