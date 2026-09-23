@@ -8,6 +8,9 @@ import { TestQuestionResult, TestResult, TestTopicPerformance } from '../models/
 import { TestTopicService } from '../services/test-topic.service';
 import { TestQuestionService } from '../services/test-question.service';
 
+import { AuthService } from '../../../core/services/auth.service';
+import { OrganizationContextService } from '../../../core/services/organization-context.service';
+
 // =====================================================
 // TEST MODE
 // =====================================================
@@ -32,6 +35,11 @@ export class TestStore {
 
   private readonly questionService = inject(TestQuestionService);
 
+  private readonly authService = inject(AuthService);
+
+  private readonly organizationContext =
+    inject(OrganizationContextService);
+
   // =====================================================
   // COURSE
   // =====================================================
@@ -40,6 +48,16 @@ export class TestStore {
    * Currently selected Test Center course.
    */
   readonly course = signal<TestCourse | null>(null);
+
+  /**
+   * Current Test Center organization.
+   *
+   * The selected organization is the tenant boundary for
+   * all Test Center reads and writes.
+   */
+readonly organizationId = computed(
+  () => this.organizationContext.organizationId(),
+);
 
   // =====================================================
   // TOPICS
@@ -227,7 +245,21 @@ readonly testCompleted = computed(
 
       this.error.set('');
 
-      const topics = await this.topicService.getActiveTopics(courseId);
+      const organizationId = this.organizationId();
+
+      if (!organizationId) {
+        this.error.set(
+          'Please select an organization before loading Test Center topics.',
+        );
+        this.topics.set([]);
+        return;
+      }
+
+      const topics =
+        await this.topicService.getActiveTopics(
+          organizationId,
+          courseId,
+        );
 
       this.topics.set(topics);
     } catch (error) {
@@ -605,7 +637,35 @@ completeTest(): TestResult | null {
    * ----------------------------------------------------------
    */
 
+  const organizationId = this.organizationId();
+
+  if (!organizationId) {
+    this.error.set(
+      'No organization is selected for this Test Center session.',
+    );
+    return null;
+  }
+
+  const currentUser = this.authService.user();
+
+  if (!currentUser?.id) {
+    this.error.set(
+      'You must be signed in to complete this Test Center session.',
+    );
+    return null;
+  }
+
+  const attemptId = crypto.randomUUID();
+
   const result: TestResult = {
+    id: crypto.randomUUID(),
+
+    organizationId,
+
+    userId: currentUser.id,
+
+    attemptId,
+
     courseId: course.id,
 
     courseName: course.name,
@@ -691,8 +751,19 @@ async loadQuestions(): Promise<boolean> {
     this.loading.set(true);
     this.error.set('');
 
+    const organizationId = this.organizationId();
+
+    if (!organizationId) {
+      this.questions.set([]);
+      this.error.set(
+        'Please select an organization before starting the test.',
+      );
+      return false;
+    }
+
     const loadedQuestions =
       await this.questionService.getQuestionsForTest(
+        organizationId,
         currentCourse.id,
         this.selectedTopicIds(),
         this.difficulty(),
@@ -798,7 +869,19 @@ async loadQuestions(): Promise<boolean> {
     }
 
     try {
-      const count = await this.questionService.getPublishedQuestionCount(course.id, topicIds);
+      const organizationId = this.organizationId();
+
+      if (!organizationId) {
+        this.availableQuestionCount.set(0);
+        return;
+      }
+
+      const count =
+        await this.questionService.getPublishedQuestionCount(
+          organizationId,
+          course.id,
+          topicIds,
+        );
 
       this.availableQuestionCount.set(count);
     } catch (error) {

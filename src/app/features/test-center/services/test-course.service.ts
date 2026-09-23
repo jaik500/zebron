@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 
 import {
+  addDoc,
   collection,
   doc,
   getDoc,
   getDocs,
   query,
   serverTimestamp,
-  setDoc,
   updateDoc,
   where,
 } from 'firebase/firestore';
@@ -20,184 +20,193 @@ import { TestCourse } from '../models/test-course.model';
   providedIn: 'root',
 })
 export class TestCourseService {
-
-  // =========================================================
+  // ============================================================
   // FIRESTORE COLLECTION
-  // =========================================================
+  // ============================================================
 
-  private readonly coursesCollection =
-    collection(firestore, 'testCourses');
+  private readonly coursesCollection = collection(
+    firestore,
+    'testCourses',
+  );
 
-
-  // =========================================================
+  // ============================================================
   // GET ALL COURSES
-  // =========================================================
+  // ============================================================
 
   /**
-   * Get every Test Center course.
+   * Returns all courses belonging to an organization.
    *
-   * This method is intended primarily for administration,
-   * because inactive courses must also be visible to admins.
-   *
-   * Sorting is performed in application memory so that the
-   * query does not require a Firestore composite index.
+   * Organization scope is mandatory.
    */
-  async getAllCourses(): Promise<TestCourse[]> {
+  async getAllCourses(
+    organizationId: string,
+  ): Promise<TestCourse[]> {
+    this.requireOrganizationId(organizationId);
 
-    const snapshot =
-      await getDocs(
-        this.coursesCollection,
-      );
+    const q = query(
+      this.coursesCollection,
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
+    );
 
+    const snapshot = await getDocs(q);
 
-    const courses =
-      snapshot.docs.map(
+    return snapshot.docs
+      .map(
         (document) =>
           ({
             id: document.id,
             ...document.data(),
           }) as TestCourse,
+      )
+      .sort((a, b) =>
+        a.name.localeCompare(b.name),
       );
-
-
-    return courses.sort(
-      (a, b) =>
-        a.name.localeCompare(
-          b.name,
-          undefined,
-          {
-            sensitivity: 'base',
-          },
-        ),
-    );
   }
 
-
-  // =========================================================
+  // ============================================================
   // GET ACTIVE COURSES
-  // =========================================================
+  // ============================================================
 
   /**
-   * Get all active Test Center courses.
+   * Returns active courses belonging to an organization.
    *
-   * Courses are sorted by name in application memory so
-   * the query does not require a Firestore composite index.
+   * Active filtering is done in Firestore.
+   * Name sorting is done in memory to avoid an additional
+   * composite index.
    */
-  async getActiveCourses(): Promise<TestCourse[]> {
+  async getActiveCourses(
+    organizationId: string,
+  ): Promise<TestCourse[]> {
+    this.requireOrganizationId(organizationId);
 
     const q = query(
       this.coursesCollection,
-      where('active', '==', true),
+
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
+
+      where(
+        'active',
+        '==',
+        true,
+      ),
     );
 
+    const snapshot = await getDocs(q);
 
-    const snapshot =
-      await getDocs(q);
-
-
-    const courses =
-      snapshot.docs.map(
-        (doc) =>
+    return snapshot.docs
+      .map(
+        (document) =>
           ({
-            id: doc.id,
-            ...doc.data(),
+            id: document.id,
+            ...document.data(),
           }) as TestCourse,
+      )
+      .sort((a, b) =>
+        a.name.localeCompare(b.name),
       );
-
-
-    return courses.sort(
-      (a, b) =>
-        a.name.localeCompare(
-          b.name,
-          undefined,
-          {
-            sensitivity: 'base',
-          },
-        ),
-    );
   }
 
-
-  // =========================================================
+  // ============================================================
   // GET COURSE BY ID
-  // =========================================================
+  // ============================================================
 
   /**
-   * Get a course by its Firestore document ID.
+   * Gets a course by ID only if it belongs to the
+   * supplied organization.
    */
   async getCourseById(
+    organizationId: string,
     courseId: string,
   ): Promise<TestCourse | null> {
+    this.requireOrganizationId(organizationId);
 
-    if (!courseId) {
+    if (!courseId?.trim()) {
       return null;
     }
 
+    const reference = doc(
+      firestore,
+      'testCourses',
+      courseId,
+    );
 
-    const reference =
-      doc(
-        this.coursesCollection,
-        courseId,
-      );
-
-
-    const snapshot =
-      await getDoc(reference);
-
+    const snapshot = await getDoc(reference);
 
     if (!snapshot.exists()) {
       return null;
     }
 
+    const data = snapshot.data();
 
-    return {
-      id: snapshot.id,
-      ...snapshot.data(),
-    } as TestCourse;
-  }
-
-
-  // =========================================================
-  // GET COURSE BY SLUG
-  // =========================================================
-
-  /**
-   * Get an active course by its URL slug.
-   *
-   * The slug is queried first and the active state is
-   * checked in application memory. This avoids requiring
-   * a composite Firestore index for slug + active.
-   */
-  async getCourseBySlug(
-    slug: string,
-  ): Promise<TestCourse | null> {
-
-    const q = query(
-      this.coursesCollection,
-      where('slug', '==', slug),
-    );
-
-
-    const snapshot =
-      await getDocs(q);
-
-
-    if (snapshot.empty) {
+    if (
+      data['organizationId'] !== organizationId
+    ) {
       return null;
     }
 
+    return {
+      id: snapshot.id,
+      ...data,
+    } as TestCourse;
+  }
 
-    const document =
-      snapshot.docs.find(
-        (doc) =>
-          doc.data()['active'] === true,
-      );
+  // ============================================================
+  // GET COURSE BY SLUG
+  // ============================================================
 
+  /**
+   * Gets an active course by slug within an organization.
+   */
+  async getCourseBySlug(
+    organizationId: string,
+    slug: string,
+  ): Promise<TestCourse | null> {
+    this.requireOrganizationId(organizationId);
+
+    const normalizedSlug =
+      this.normalizeSlug(slug);
+
+    if (!normalizedSlug) {
+      return null;
+    }
+
+    const q = query(
+      this.coursesCollection,
+
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
+
+      where(
+        'slug',
+        '==',
+        normalizedSlug,
+      ),
+
+      where(
+        'active',
+        '==',
+        true,
+      ),
+    );
+
+    const snapshot = await getDocs(q);
+
+    const document = snapshot.docs[0];
 
     if (!document) {
       return null;
     }
-
 
     return {
       id: document.id,
@@ -205,41 +214,32 @@ export class TestCourseService {
     } as TestCourse;
   }
 
-
-  // =========================================================
+  // ============================================================
   // CREATE COURSE
-  // =========================================================
+  // ============================================================
 
   /**
-   * Create a new Test Center course.
+   * Creates a course inside an organization.
    *
-   * The slug is used as the Firestore document ID.
-   *
-   * This gives us a stable, human-readable course ID such as:
-   *
-   * cybersecurity-fundamentals
-   *
-   * Question count starts at zero and is maintained by the
-   * question/topic functionality rather than manually entered
-   * by an administrator.
+   * The organizationId is written directly onto the document.
    */
   async createCourse(
+    organizationId: string,
     course: {
       name: string;
       slug: string;
       description: string;
       provider?: string;
-      type: string;
+      type: TestCourse['type'];
       certificationCode?: string;
+      imageUrl?: string;
       active: boolean;
     },
-  ): Promise<TestCourse> {
+  ): Promise<string> {
+    this.requireOrganizationId(organizationId);
 
-    const name =
-      course.name.trim();
-
-    const slug =
-      course.slug.trim().toLowerCase();
+    const name = course.name?.trim() ?? '';
+    const slug = this.normalizeSlug(course.slug);
 
     if (!name) {
       throw new Error(
@@ -247,65 +247,71 @@ export class TestCourseService {
       );
     }
 
-
     if (!slug) {
       throw new Error(
         'Course slug is required.',
       );
     }
 
+    // ----------------------------------------------------------
+    // Prevent duplicate slugs inside the same organization
+    // ----------------------------------------------------------
 
-    const courseReference =
-      doc(
-        this.coursesCollection,
+    const existingQuery = query(
+      this.coursesCollection,
+
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
+
+      where(
+        'slug',
+        '==',
         slug,
-      );
+      ),
+    );
 
+    const existingSnapshot =
+      await getDocs(existingQuery);
 
-    // -------------------------------------------------------
-    // Prevent duplicate course IDs / slugs
-    // -------------------------------------------------------
-
-    const existing =
-      await getDoc(
-        courseReference,
-      );
-
-
-    if (existing.exists()) {
+    if (!existingSnapshot.empty) {
       throw new Error(
-        `A course with the slug "${slug}" already exists.`,
+        `A course with the slug "${slug}" already exists in this organization.`,
       );
     }
 
+    // ----------------------------------------------------------
+    // Create
+    // ----------------------------------------------------------
 
-    // -------------------------------------------------------
-    // Create course
-    // -------------------------------------------------------
-
-    await setDoc(
-      courseReference,
+    const reference = await addDoc(
+      this.coursesCollection,
       {
+        organizationId,
+
         name,
 
         slug,
 
         description:
-          course.description.trim(),
+          course.description?.trim() ?? '',
 
         provider:
-          course.provider?.trim() || '',
+          course.provider?.trim() || null,
 
-        type:
-          course.type.trim(),
+        type: course.type,
 
         certificationCode:
-          course.certificationCode?.trim() || '',
+          course.certificationCode?.trim() || null,
+
+        imageUrl:
+          course.imageUrl?.trim() || null,
 
         active:
-          course.active,
+          course.active === true,
 
-        // Question count is system-maintained.
         questionCount: 0,
 
         createdAt:
@@ -316,118 +322,94 @@ export class TestCourseService {
       },
     );
 
-
-    const createdCourse =
-      await this.getCourseById(slug);
-
-
-    if (!createdCourse) {
-      throw new Error(
-        'Course was created but could not be retrieved.',
-      );
-    }
-
-
-    return createdCourse;
+    return reference.id;
   }
 
-
-  // =========================================================
+  // ============================================================
   // UPDATE COURSE
-  // =========================================================
+  // ============================================================
 
   /**
-   * Update an existing Test Center course.
+   * Updates a course only when the course belongs to the
+   * supplied organization.
    *
-   * The document ID and slug are deliberately not changed.
-   *
-   * This prevents existing course URLs and question
-   * relationships from being broken.
+   * organizationId and slug cannot be changed here.
    */
   async updateCourse(
+    organizationId: string,
     courseId: string,
-    changes: {
-      name?: string;
-      description?: string;
-      provider?: string;
-      type?: string;
-      certificationCode?: string;
-      active?: boolean;
-    },
+    changes: Partial<
+      Omit<
+        TestCourse,
+        | 'id'
+        | 'organizationId'
+        | 'createdAt'
+        | 'updatedAt'
+        | 'slug'
+      >
+    >,
   ): Promise<void> {
+    this.requireOrganizationId(organizationId);
 
-    if (!courseId) {
-      throw new Error(
-        'Course ID is required.',
-      );
-    }
-
-
-    const courseReference =
-      doc(
-        this.coursesCollection,
+    const existing =
+      await this.getCourseById(
+        organizationId,
         courseId,
       );
 
-
-    const existing =
-      await getDoc(
-        courseReference,
-      );
-
-
-    if (!existing.exists()) {
+    if (!existing) {
       throw new Error(
-        'The selected course does not exist.',
+        'Test Center course was not found in the current organization.',
       );
     }
 
-
-    const payload: Record<string, unknown> = {
-      updatedAt:
-        serverTimestamp(),
+    const updatePayload: Record<string, unknown> = {
+      ...changes,
+      updatedAt: serverTimestamp(),
     };
 
+    // Never allow the service caller to move the record
+    // between organizations.
+    delete updatePayload['organizationId'];
 
-    if (changes.name !== undefined) {
-      payload['name'] =
-        changes.name.trim();
-    }
+    // Slug is immutable after creation.
+    delete updatePayload['slug'];
 
-
-    if (changes.description !== undefined) {
-      payload['description'] =
-        changes.description.trim();
-    }
-
-
-    if (changes.provider !== undefined) {
-      payload['provider'] =
-        changes.provider.trim();
-    }
-
-
-    if (changes.type !== undefined) {
-      payload['type'] =
-        changes.type.trim();
-    }
-
-
-    if (changes.certificationCode !== undefined) {
-      payload['certificationCode'] =
-        changes.certificationCode.trim();
-    }
-
-
-    if (changes.active !== undefined) {
-      payload['active'] =
-        changes.active;
-    }
-
+    // ID is not a Firestore field, but remove it defensively.
+    delete updatePayload['id'];
 
     await updateDoc(
-      courseReference,
-      payload,
+      doc(
+        firestore,
+        'testCourses',
+        courseId,
+      ),
+      updatePayload,
     );
+  }
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+
+  private requireOrganizationId(
+    organizationId: string,
+  ): void {
+    if (!organizationId?.trim()) {
+      throw new Error(
+        'An organization is required for Test Center operations.',
+      );
+    }
+  }
+
+  private normalizeSlug(
+    value: string,
+  ): string {
+    return (value ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 }

@@ -16,7 +16,6 @@ export interface TestQuestionResult {
   explanation?: string;
 }
 
-
 export interface TestTopicPerformance {
   topicId: string;
 
@@ -33,8 +32,15 @@ export interface TestTopicPerformance {
   percentage: number;
 }
 
-
 export interface TestResult {
+  id: string;
+
+  organizationId: string;
+
+  userId: string;
+
+  attemptId: string;
+
   courseId: string;
 
   courseName: string;

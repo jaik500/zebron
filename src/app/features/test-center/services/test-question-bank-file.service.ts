@@ -131,10 +131,24 @@ export class TestQuestionBankFileService {
    * existing Firestore import service.
    */
   async importFile(
+    organizationId: string,
     courseId: string,
     bank: TestQuestionBankFile,
   ): Promise<TestQuestionImportResult> {
+    if (!organizationId?.trim()) {
+      throw new Error(
+        'An organization is required to import a question bank.',
+      );
+    }
+
+    if (!courseId?.trim()) {
+      throw new Error(
+        'A Test Center course is required to import a question bank.',
+      );
+    }
+
     return this.importService.importQuestionBank(
+      organizationId,
       courseId,
       bank.topics,
       bank.questions,

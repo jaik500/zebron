@@ -5,6 +5,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   orderBy,
   query,
@@ -24,6 +25,9 @@ import {
   providedIn: 'root',
 })
 export class TestQuestionService {
+  // ============================================================
+  // FIRESTORE COLLECTION
+  // ============================================================
 
   private readonly questionsCollection =
     collection(
@@ -31,21 +35,25 @@ export class TestQuestionService {
       'testQuestions',
     );
 
+  // ============================================================
+  // GET ALL QUESTIONS FOR COURSE
+  // ============================================================
 
-  /**
-   * Get all questions for a course.
-   *
-   * Used primarily by Test Center administration.
-   *
-   * Unlike the practice/test methods below, this method
-   * returns questions regardless of publication status.
-   */
   async getAllQuestionsForCourse(
+    organizationId: string,
     courseId: string,
   ): Promise<TestQuestion[]> {
+    this.requireOrganizationId(organizationId);
+    this.requireCourseId(courseId);
 
     const q = query(
       this.questionsCollection,
+
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
 
       where(
         'courseId',
@@ -54,15 +62,15 @@ export class TestQuestionService {
       ),
     );
 
-    const snapshot =
-      await getDocs(q);
+    const snapshot = await getDocs(q);
 
     return snapshot.docs
       .map(
-        (document) => ({
-          id: document.id,
-          ...document.data(),
-        }) as TestQuestion,
+        (document) =>
+          ({
+            id: document.id,
+            ...document.data(),
+          }) as TestQuestion,
       )
       .sort(
         (a, b) =>
@@ -71,19 +79,28 @@ export class TestQuestionService {
       );
   }
 
+  // ============================================================
+  // GET ALL QUESTIONS FOR TOPIC
+  // ============================================================
 
-  /**
-   * Get all questions for a specific topic.
-   *
-   * Used by Question Administration when a topic
-   * is selected.
-   */
   async getAllQuestionsForTopic(
+    organizationId: string,
     topicId: string,
   ): Promise<TestQuestion[]> {
+    this.requireOrganizationId(organizationId);
+
+    if (!topicId?.trim()) {
+      return [];
+    }
 
     const q = query(
       this.questionsCollection,
+
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
 
       where(
         'topicId',
@@ -92,15 +109,15 @@ export class TestQuestionService {
       ),
     );
 
-    const snapshot =
-      await getDocs(q);
+    const snapshot = await getDocs(q);
 
     return snapshot.docs
       .map(
-        (document) => ({
-          id: document.id,
-          ...document.data(),
-        }) as TestQuestion,
+        (document) =>
+          ({
+            id: document.id,
+            ...document.data(),
+          }) as TestQuestion,
       )
       .sort(
         (a, b) =>
@@ -109,103 +126,65 @@ export class TestQuestionService {
       );
   }
 
+  // ============================================================
+  // GET QUESTION BY ID
+  // ============================================================
 
-  /**
-   * Create a new question.
-   *
-   * createdAt and updatedAt are managed by Firestore.
-   */
-  async createQuestion(
-    question: Omit<
-      TestQuestion,
-      'id' | 'createdAt' | 'updatedAt'
-    >,
-  ): Promise<string> {
-
-    const reference =
-      await addDoc(
-        this.questionsCollection,
-        {
-          ...question,
-
-          createdAt:
-            serverTimestamp(),
-
-          updatedAt:
-            serverTimestamp(),
-        },
-      );
-
-    return reference.id;
-  }
-
-
-  /**
-   * Update an existing question.
-   */
-  async updateQuestion(
+  async getQuestionById(
+    organizationId: string,
     questionId: string,
+  ): Promise<TestQuestion | null> {
+    this.requireOrganizationId(organizationId);
 
-    changes: Partial<
-      Omit<
-        TestQuestion,
-        'id' | 'createdAt' | 'updatedAt'
-      >
-    >,
-  ): Promise<void> {
+    if (!questionId?.trim()) {
+      return null;
+    }
 
-    const questionReference =
+    const snapshot = await getDoc(
       doc(
         firestore,
         'testQuestions',
         questionId,
-      );
-
-    await updateDoc(
-      questionReference,
-      {
-        ...changes,
-
-        updatedAt:
-          serverTimestamp(),
-      },
+      ),
     );
+
+    if (!snapshot.exists()) {
+      return null;
+    }
+
+    const data = snapshot.data();
+
+    if (
+      data['organizationId'] !== organizationId
+    ) {
+      return null;
+    }
+
+    return {
+      id: snapshot.id,
+      ...data,
+    } as TestQuestion;
   }
 
+  // ============================================================
+  // GET PUBLISHED QUESTIONS FOR COURSE
+  // ============================================================
 
-  /**
-   * Delete an existing question.
-   */
-  async deleteQuestion(
-    questionId: string,
-  ): Promise<void> {
-
-    const questionReference =
-      doc(
-        firestore,
-        'testQuestions',
-        questionId,
-      );
-
-    await deleteDoc(
-      questionReference,
-    );
-  }
-
-
-  /**
-   * Get all published questions
-   * for a specific course.
-   *
-   * This is primarily useful for administrative
-   * or course-level question-bank operations.
-   */
   async getPublishedQuestionsForCourse(
+    organizationId: string,
     courseId: string,
   ): Promise<TestQuestion[]> {
+    this.requireOrganizationId(organizationId);
+    this.requireCourseId(courseId);
 
     const q = query(
       this.questionsCollection,
+
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
 
       where(
         'courseId',
@@ -225,31 +204,36 @@ export class TestQuestionService {
       ),
     );
 
-    const snapshot =
-      await getDocs(q);
+    const snapshot = await getDocs(q);
 
     return snapshot.docs.map(
-      (document) => ({
-        id: document.id,
-        ...document.data(),
-      }) as TestQuestion,
+      (document) =>
+        ({
+          id: document.id,
+          ...document.data(),
+        }) as TestQuestion,
     );
   }
 
+  // ============================================================
+  // GET PUBLISHED QUESTIONS
+  // ============================================================
 
-  /**
-   * Get published questions for a course
-   * and a set of selected topics.
-   *
-   * When topicIds is empty, all published
-   * questions for the course are returned.
-   */
   async getPublishedQuestions(
+    organizationId: string,
     courseId: string,
     topicIds: string[] = [],
   ): Promise<TestQuestion[]> {
+    this.requireOrganizationId(organizationId);
+    this.requireCourseId(courseId);
 
     const constraints = [
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
+
       where(
         'courseId',
         '==',
@@ -263,8 +247,11 @@ export class TestQuestionService {
       ),
     ];
 
-    if (topicIds.length === 1) {
+    // ----------------------------------------------------------
+    // Single topic
+    // ----------------------------------------------------------
 
+    if (topicIds.length === 1) {
       constraints.push(
         where(
           'topicId',
@@ -283,27 +270,22 @@ export class TestQuestionService {
       ),
     );
 
-    const snapshot =
-      await getDocs(q);
+    const snapshot = await getDocs(q);
 
     let questions =
       snapshot.docs.map(
-        (document) => ({
-          id: document.id,
-          ...document.data(),
-        }) as TestQuestion,
+        (document) =>
+          ({
+            id: document.id,
+            ...document.data(),
+          }) as TestQuestion,
       );
 
-    /**
-     * Firestore does not support an arbitrary
-     * array of topic IDs with a normal equality
-     * query.
-     *
-     * Therefore, when multiple topics are selected,
-     * filter the course questions in memory.
-     */
-    if (topicIds.length > 1) {
+    // ----------------------------------------------------------
+    // Multiple topics
+    // ----------------------------------------------------------
 
+    if (topicIds.length > 1) {
       const selectedTopics =
         new Set(topicIds);
 
@@ -319,113 +301,422 @@ export class TestQuestionService {
     return questions;
   }
 
-  
+  // ============================================================
+  // GET QUESTIONS FOR TEST
+  // ============================================================
 
+  async getQuestionsForTest(
+    organizationId: string,
+    courseId: string,
+    topicIds: string[],
+    difficulty:
+      | TestQuestionDifficulty
+      | 'mixed',
+  ): Promise<TestQuestion[]> {
+    this.requireOrganizationId(organizationId);
+    this.requireCourseId(courseId);
 
- /**
- * Get published questions matching:
- * - course
- * - selected topics
- * - difficulty
- *
- * 'mixed' means all published difficulties.
- *
- * Topic filtering is performed in memory so multiple
- * selected topics work consistently without requiring
- * a Firestore "in" query or additional composite indexes.
- */
-async getQuestionsForTest(
-  courseId: string,
-  topicIds: string[],
-  difficulty:
-    | TestQuestionDifficulty
-    | 'mixed',
-): Promise<TestQuestion[]> {
-  if (!courseId || topicIds.length === 0) {
-    return [];
-  }
+    const q = query(
+      this.questionsCollection,
 
-  const q = query(
-    this.questionsCollection,
-    where('courseId', '==', courseId),
-  );
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
 
-  const snapshot = await getDocs(q);
-
-  const selectedTopicIds = new Set(topicIds);
-
-  return snapshot.docs
-    .map(
-      (document) =>
-        ({
-          id: document.id,
-          ...document.data(),
-        }) as TestQuestion,
-    )
-    .filter((question) => {
-      const matchesStatus =
-        question.status === 'published';
-
-      const matchesTopic =
-        selectedTopicIds.has(question.topicId);
-
-      const matchesDifficulty =
-        difficulty === 'mixed' ||
-        question.difficulty === difficulty;
-
-      return (
-        matchesStatus &&
-        matchesTopic &&
-        matchesDifficulty
-      );
-    });
-}
-
-/**
- * Get the number of published questions available
- * for the selected topics in a course.
- */
-async getPublishedQuestionCount(
-  courseId: string,
-  topicIds: string[],
-): Promise<number> {
-  if (!courseId || topicIds.length === 0) {
-    return 0;
-  }
-
-  const q = query(
-    this.questionsCollection,
-    where('courseId', '==', courseId),
-  );
-
-  const snapshot = await getDocs(q);
-
-  const selectedTopicIds = new Set(topicIds);
-
-  return snapshot.docs.filter((document) => {
-    const data = document.data() as TestQuestion;
-
-    return (
-      data.status === 'published' &&
-      selectedTopicIds.has(data.topicId)
+      where(
+        'courseId',
+        '==',
+        courseId,
+      ),
     );
-  }).length;
-}
 
+    const snapshot = await getDocs(q);
 
-  /**
-   * Convert Firestore Timestamp values safely
-   * for client-side sorting.
-   */
-  private toMillis(
-    timestamp: TestQuestion['createdAt'],
-  ): number {
+    const selectedTopics =
+      new Set(topicIds);
+
+    return snapshot.docs
+      .map(
+        (document) =>
+          ({
+            id: document.id,
+            ...document.data(),
+          }) as TestQuestion,
+      )
+      .filter(
+        (question) =>
+          question.status ===
+          'published',
+      )
+      .filter(
+        (question) =>
+          topicIds.length === 0 ||
+          selectedTopics.has(
+            question.topicId,
+          ),
+      )
+      .filter(
+        (question) =>
+          difficulty === 'mixed' ||
+          question.difficulty ===
+            difficulty,
+      )
+      .sort(
+        (a, b) =>
+          this.toMillis(a.createdAt) -
+          this.toMillis(b.createdAt),
+      );
+  }
+
+  // ============================================================
+  // GET PUBLISHED QUESTION COUNT
+  // ============================================================
+
+  async getPublishedQuestionCount(
+    organizationId: string,
+    courseId: string,
+    topicIds: string[] = [],
+  ): Promise<number> {
+    const questions =
+      await this.getPublishedQuestions(
+        organizationId,
+        courseId,
+        topicIds,
+      );
+
+    return questions.length;
+  }
+
+  // ============================================================
+  // CREATE QUESTION
+  // ============================================================
+
+  async createQuestion(
+    organizationId: string,
+    question: Omit<
+      TestQuestion,
+      'id' | 'createdAt' | 'updatedAt'
+    >,
+  ): Promise<string> {
+    this.requireOrganizationId(organizationId);
+    this.requireCourseId(
+      question.courseId,
+    );
+
+    if (!question.topicId?.trim()) {
+      throw new Error(
+        'A Test Center topic is required.',
+      );
+    }
+
+    await this.verifyCourseOwnership(
+      organizationId,
+      question.courseId,
+    );
+
+    await this.verifyTopicOwnership(
+      organizationId,
+      question.topicId,
+      question.courseId,
+    );
+
+    const reference =
+      await addDoc(
+        this.questionsCollection,
+        {
+          organizationId,
+
+          courseId:
+            question.courseId,
+
+          topicId:
+            question.topicId,
+
+          subtopicId:
+            question.subtopicId ?? null,
+
+          question:
+            question.question?.trim() ?? '',
+
+          type:
+            question.type,
+
+          options:
+            question.options ?? [],
+
+          correctAnswer:
+            question.correctAnswer,
+
+          explanation:
+            question.explanation?.trim() ||
+            null,
+
+          hint:
+            question.hint?.trim() ||
+            null,
+
+          difficulty:
+            question.difficulty,
+
+          tags:
+            question.tags ?? [],
+
+          sourceType:
+            question.sourceType,
+
+          sourceReference:
+            question.sourceReference?.trim() ||
+            null,
+
+          status:
+            question.status,
+
+          createdAt:
+            serverTimestamp(),
+
+          updatedAt:
+            serverTimestamp(),
+        },
+      );
+
+    return reference.id;
+  }
+
+  // ============================================================
+  // UPDATE QUESTION
+  // ============================================================
+
+  async updateQuestion(
+    organizationId: string,
+    questionId: string,
+    changes: Partial<
+      Omit<
+        TestQuestion,
+        | 'id'
+        | 'organizationId'
+        | 'createdAt'
+        | 'updatedAt'
+      >
+    >,
+  ): Promise<void> {
+    this.requireOrganizationId(organizationId);
+
+    const existing =
+      await this.getQuestionById(
+        organizationId,
+        questionId,
+      );
+
+    if (!existing) {
+      throw new Error(
+        'Test Center question was not found in the current organization.',
+      );
+    }
+
+    const updatePayload: Record<
+      string,
+      unknown
+    > = {
+      ...changes,
+      updatedAt:
+        serverTimestamp(),
+    };
+
+    delete updatePayload[
+      'organizationId'
+    ];
+
+    delete updatePayload['id'];
+
+    // ----------------------------------------------------------
+    // Prevent cross-course/topic reassignment through a
+    // tenant-unaware update.
+    // ----------------------------------------------------------
 
     if (
-      timestamp &&
-      typeof (timestamp as any).toMillis === 'function'
+      changes.courseId &&
+      changes.courseId !==
+        existing.courseId
     ) {
-      return (timestamp as any).toMillis();
+      await this.verifyCourseOwnership(
+        organizationId,
+        changes.courseId,
+      );
+    }
+
+    if (
+      changes.topicId &&
+      changes.topicId !==
+        existing.topicId
+    ) {
+      const courseId =
+        changes.courseId ??
+        existing.courseId;
+
+      await this.verifyTopicOwnership(
+        organizationId,
+        changes.topicId,
+        courseId,
+      );
+    }
+
+    await updateDoc(
+      doc(
+        firestore,
+        'testQuestions',
+        questionId,
+      ),
+      updatePayload,
+    );
+  }
+
+  // ============================================================
+  // DELETE QUESTION
+  // ============================================================
+
+  async deleteQuestion(
+    organizationId: string,
+    questionId: string,
+  ): Promise<void> {
+    this.requireOrganizationId(organizationId);
+
+    const existing =
+      await this.getQuestionById(
+        organizationId,
+        questionId,
+      );
+
+    if (!existing) {
+      throw new Error(
+        'Test Center question was not found in the current organization.',
+      );
+    }
+
+    await deleteDoc(
+      doc(
+        firestore,
+        'testQuestions',
+        questionId,
+      ),
+    );
+  }
+
+  // ============================================================
+  // VERIFY COURSE OWNERSHIP
+  // ============================================================
+
+  private async verifyCourseOwnership(
+    organizationId: string,
+    courseId: string,
+  ): Promise<void> {
+    const snapshot =
+      await getDoc(
+        doc(
+          firestore,
+          'testCourses',
+          courseId,
+        ),
+      );
+
+    if (
+      !snapshot.exists() ||
+      snapshot.data()[
+        'organizationId'
+      ] !== organizationId
+    ) {
+      throw new Error(
+        'The selected course does not belong to the current organization.',
+      );
+    }
+  }
+
+  // ============================================================
+  // VERIFY TOPIC OWNERSHIP
+  // ============================================================
+
+  private async verifyTopicOwnership(
+    organizationId: string,
+    topicId: string,
+    courseId: string,
+  ): Promise<void> {
+    const snapshot =
+      await getDoc(
+        doc(
+          firestore,
+          'testTopics',
+          topicId,
+        ),
+      );
+
+    if (!snapshot.exists()) {
+      throw new Error(
+        'The selected topic could not be found.',
+      );
+    }
+
+    const data =
+      snapshot.data();
+
+    if (
+      data['organizationId'] !==
+        organizationId ||
+      data['courseId'] !==
+        courseId
+    ) {
+      throw new Error(
+        'The selected topic does not belong to the current organization and course.',
+      );
+    }
+  }
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+
+  private requireOrganizationId(
+    organizationId: string,
+  ): void {
+    if (!organizationId?.trim()) {
+      throw new Error(
+        'An organization is required for Test Center operations.',
+      );
+    }
+  }
+
+  private requireCourseId(
+    courseId: string,
+  ): void {
+    if (!courseId?.trim()) {
+      throw new Error(
+        'A Test Center course is required.',
+      );
+    }
+  }
+
+  private toMillis(
+    value: unknown,
+  ): number {
+    if (
+      value &&
+      typeof value === 'object' &&
+      'toMillis' in value &&
+      typeof (
+        value as {
+          toMillis: () => number;
+        }
+      ).toMillis === 'function'
+    ) {
+      return (
+        value as {
+          toMillis: () => number;
+        }
+      ).toMillis();
+    }
+
+    if (value instanceof Date) {
+      return value.getTime();
     }
 
     return 0;

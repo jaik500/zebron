@@ -26,41 +26,36 @@ import {
 })
 export class TestQuestionImportService {
   /**
-   * Firestore supports a maximum of 500 writes per batch.
+   * Firestore maximum is 500 writes per batch.
    *
-   * Keep some headroom for future metadata writes.
+   * Keep headroom for future metadata writes.
    */
   private readonly batchSize = 400;
 
-  // =========================================================
+  // ============================================================
   // IMPORT QUESTION BANK
-  // =========================================================
+  // ============================================================
 
-  /**
-   * Import a question bank into a Test Center course.
-   *
-   * The caller supplies:
-   *
-   * 1. The selected course ID
-   * 2. Topic definitions owned by the question bank
-   * 3. Question records
-   *
-   * Existing topics are reused.
-   *
-   * Missing topics are created automatically.
-   *
-   * Questions are then imported and linked to the resolved
-   * Firestore topic IDs.
-   *
-   * Question documents use deterministic IDs based on seedId,
-   * making repeated imports safe.
-   */
   async importQuestionBank(
+    organizationId: string,
     courseId: string,
-    topicDefinitions: readonly TestQuestionImportTopic[],
-    records: readonly TestQuestionImportRecord[],
+    topicDefinitions:
+      readonly TestQuestionImportTopic[],
+    records:
+      readonly TestQuestionImportRecord[],
   ): Promise<TestQuestionImportResult> {
-    const result: TestQuestionImportResult = {
+    this.requireOrganizationId(
+      organizationId,
+    );
+
+    if (!courseId?.trim()) {
+      throw new Error(
+        'A Test Center course is required before importing questions.',
+      );
+    }
+
+    const result:
+      TestQuestionImportResult = {
       total: records.length,
       created: 0,
       updated: 0,
@@ -70,28 +65,31 @@ export class TestQuestionImportService {
       errors: [],
     };
 
-    // -------------------------------------------------------
-    // Validate course
-    // -------------------------------------------------------
-
-    if (!courseId) {
-      throw new Error(
-        'A Test Center course is required before importing questions.',
-      );
-    }
-
-    // -------------------------------------------------------
-    // Validate question bank
-    // -------------------------------------------------------
-
     if (records.length === 0) {
       return result;
     }
 
-    const validationErrors =
-      this.validateQuestionBank(records);
+    // ==========================================================
+    // VALIDATE COURSE OWNERSHIP
+    // ==========================================================
 
-    if (validationErrors.length > 0) {
+    await this.validateCourse(
+      organizationId,
+      courseId,
+    );
+
+    // ==========================================================
+    // VALIDATE QUESTION BANK
+    // ==========================================================
+
+    const validationErrors =
+      this.validateQuestionBank(
+        records,
+      );
+
+    if (
+      validationErrors.length > 0
+    ) {
       throw new Error(
         [
           'Question bank validation failed:',
@@ -101,9 +99,9 @@ export class TestQuestionImportService {
       );
     }
 
-    // -------------------------------------------------------
-    // Validate topic definitions
-    // -------------------------------------------------------
+    // ==========================================================
+    // VALIDATE TOPIC DEFINITIONS
+    // ==========================================================
 
     const topicValidationErrors =
       this.validateTopicDefinitions(
@@ -111,7 +109,9 @@ export class TestQuestionImportService {
         records,
       );
 
-    if (topicValidationErrors.length > 0) {
+    if (
+      topicValidationErrors.length > 0
+    ) {
       throw new Error(
         [
           'Question-bank topic validation failed:',
@@ -121,21 +121,23 @@ export class TestQuestionImportService {
       );
     }
 
-    // -------------------------------------------------------
-    // Load existing course topics
-    // -------------------------------------------------------
+    // ==========================================================
+    // LOAD EXISTING TOPICS
+    // ==========================================================
 
     const existingTopics =
       await this.loadCourseTopics(
+        organizationId,
         courseId,
       );
 
-    // -------------------------------------------------------
-    // Resolve or create topics
-    // -------------------------------------------------------
+    // ==========================================================
+    // RESOLVE / CREATE TOPICS
+    // ==========================================================
 
     const resolvedTopics =
       await this.resolveOrCreateTopics(
+        organizationId,
         courseId,
         existingTopics,
         topicDefinitions,
@@ -143,9 +145,9 @@ export class TestQuestionImportService {
         result,
       );
 
-    // -------------------------------------------------------
-    // Load existing questions
-    // -------------------------------------------------------
+    // ==========================================================
+    // LOAD EXISTING QUESTIONS
+    // ==========================================================
 
     const questionsCollection =
       collection(
@@ -157,6 +159,13 @@ export class TestQuestionImportService {
       await getDocs(
         query(
           questionsCollection,
+
+          where(
+            'organizationId',
+            '==',
+            organizationId,
+          ),
+
           where(
             'courseId',
             '==',
@@ -165,74 +174,79 @@ export class TestQuestionImportService {
         ),
       );
 
-    const existingIds =
-      new Set<string>(
-        existingSnapshot.docs.map(
-          (document) =>
-            document.id,
-        ),
-      );
-
-    // =======================================================
-    // IMPORT QUESTIONS
-    // =======================================================
+    const existingQuestions =
+      new Map<
+        string,
+        string
+      >();
 
     for (
-      let start = 0;
-      start < records.length;
-      start += this.batchSize
+      const document of
+        existingSnapshot.docs
     ) {
-      const chunk =
-        records.slice(
-          start,
-          start + this.batchSize,
+      const data =
+        document.data();
+
+      const importKey =
+        data['importKey'];
+
+      if (
+        typeof importKey ===
+        'string' &&
+        importKey.trim()
+      ) {
+        existingQuestions.set(
+          this.normalizeQuestionKey(
+            importKey,
+          ),
+          document.id,
         );
+      }
+    }
 
-      const batch =
-        writeBatch(firestore);
+    // ==========================================================
+    // BUILD QUESTION OPERATIONS
+    // ==========================================================
 
-      for (const record of chunk) {
+    const operations: Array<{
+      id: string;
+      exists: boolean;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    for (
+      const record of records
+    ) {
+      try {
         const topic =
           resolvedTopics.get(
             record.topicKey,
           );
 
         if (!topic) {
-          result.failed++;
-
-          result.errors.push(
-            `${record.seedId}: topic "${record.topicKey}" could not be resolved.`,
+          throw new Error(
+            `Topic "${record.topicKey}" could not be resolved.`,
           );
-
-          continue;
         }
 
-        // ---------------------------------------------------
-        // Deterministic question ID
-        // ---------------------------------------------------
-
-        const questionId =
+        const importKey =
           this.normalizeQuestionKey(
             record.seedId,
           );
 
-        const questionReference =
-          doc(
-            firestore,
-            'testQuestions',
-            questionId,
+        const existingId =
+          existingQuestions.get(
+            importKey,
           );
 
-        const alreadyExists =
-          existingIds.has(
-            questionId,
-          );
+        const questionId =
+          existingId ??
+          importKey;
 
-        // ---------------------------------------------------
-        // Question document
-        // ---------------------------------------------------
+        const payload:
+          Record<string, unknown> = {
+          organizationId,
 
-        const payload = {
           courseId,
 
           topicId:
@@ -245,18 +259,10 @@ export class TestQuestionImportService {
             record.type,
 
           options:
-            record.options.map(
-              (option) => ({
-                id:
-                  option.id.trim(),
-
-                text:
-                  option.text.trim(),
-              }),
-            ),
+            record.options,
 
           correctAnswer:
-            record.correctAnswer.trim(),
+            record.correctAnswer,
 
           explanation:
             record.explanation?.trim() ||
@@ -270,18 +276,7 @@ export class TestQuestionImportService {
             record.difficulty,
 
           tags:
-            [
-              ...new Set(
-                record.tags
-                  .map(
-                    (tag) =>
-                      tag
-                        .trim()
-                        .toLowerCase(),
-                  )
-                  .filter(Boolean),
-              ),
-            ],
+            record.tags ?? [],
 
           sourceType:
             record.sourceType,
@@ -293,38 +288,77 @@ export class TestQuestionImportService {
           status:
             record.status,
 
-          /**
-           * Original question-bank identifier.
-           */
-          importKey:
-            record.seedId,
+          importKey,
 
-          /**
-           * Original semantic topic key.
-           */
           importTopicKey:
             record.topicKey,
 
           updatedAt:
             serverTimestamp(),
-
-          ...(alreadyExists
-            ? {}
-            : {
-                createdAt:
-                  serverTimestamp(),
-              }),
         };
 
-        batch.set(
-          questionReference,
+        if (!existingId) {
+          payload['createdAt'] =
+            serverTimestamp();
+        }
+
+        operations.push({
+          id: questionId,
+          exists: Boolean(
+            existingId,
+          ),
           payload,
+        });
+      } catch (error) {
+        result.failed++;
+
+        result.errors.push(
+          `Question "${record.seedId}": ${
+            this.getErrorMessage(error)
+          }`,
+        );
+      }
+    }
+
+    // ==========================================================
+    // WRITE QUESTIONS IN BATCHES
+    // ==========================================================
+
+    for (
+      let index = 0;
+      index < operations.length;
+      index += this.batchSize
+    ) {
+      const batch =
+        writeBatch(firestore);
+
+      const chunk =
+        operations.slice(
+          index,
+          index + this.batchSize,
+        );
+
+      for (
+        const operation of chunk
+      ) {
+        const reference =
+          doc(
+            firestore,
+            'testQuestions',
+            operation.id,
+          );
+
+        batch.set(
+          reference,
+          operation.payload,
           {
             merge: true,
           },
         );
 
-        if (alreadyExists) {
+        if (
+          operation.exists
+        ) {
           result.updated++;
         } else {
           result.created++;
@@ -334,16 +368,18 @@ export class TestQuestionImportService {
       await batch.commit();
     }
 
-    // -------------------------------------------------------
-    // Refresh cached question counts
-    // -------------------------------------------------------
+    // ==========================================================
+    // REFRESH COUNTS
+    // ==========================================================
 
     const refreshedTopics =
       await this.loadCourseTopics(
+        organizationId,
         courseId,
       );
 
     await this.refreshQuestionCounts(
+      organizationId,
       courseId,
       refreshedTopics,
     );
@@ -351,43 +387,80 @@ export class TestQuestionImportService {
     return result;
   }
 
-  // =========================================================
-  // RESOLVE / CREATE TOPICS
-  // =========================================================
+  // ============================================================
+  // LOAD COURSE TOPICS
+  // ============================================================
 
-  /**
-   * Resolve existing topics first.
-   *
-   * If a question-bank topic cannot be matched, create it
-   * using the metadata supplied by the question bank.
-   */
+  private async loadCourseTopics(
+    organizationId: string,
+    courseId: string,
+  ): Promise<TestTopic[]> {
+    const snapshot =
+      await getDocs(
+        query(
+          collection(
+            firestore,
+            'testTopics',
+          ),
+
+          where(
+            'organizationId',
+            '==',
+            organizationId,
+          ),
+
+          where(
+            'courseId',
+            '==',
+            courseId,
+          ),
+        ),
+      );
+
+    return snapshot.docs
+      .map(
+        (document) =>
+          ({
+            id: document.id,
+            ...document.data(),
+          }) as TestTopic,
+      )
+      .sort(
+        (a, b) =>
+          a.sortOrder - b.sortOrder,
+      );
+  }
+
+  // ============================================================
+  // RESOLVE OR CREATE TOPICS
+  // ============================================================
+
   private async resolveOrCreateTopics(
+    organizationId: string,
     courseId: string,
     existingTopics: TestTopic[],
-    topicDefinitions: readonly TestQuestionImportTopic[],
-    records: readonly TestQuestionImportRecord[],
+    definitions:
+      readonly TestQuestionImportTopic[],
+    records:
+      readonly TestQuestionImportRecord[],
     result: TestQuestionImportResult,
-  ): Promise<Map<string, TestTopic>> {
+  ): Promise<
+    Map<string, TestTopic>
+  > {
     const resolved =
       new Map<string, TestTopic>();
 
-    const topicsByKey =
-      new Map<string, TestQuestionImportTopic>();
-
-    for (
-      const definition of topicDefinitions
-    ) {
-      topicsByKey.set(
-        definition.key,
-        definition,
+    const definitionsByKey =
+      new Map(
+        definitions.map(
+          (definition) => [
+            definition.key,
+            definition,
+          ],
+        ),
       );
-    }
 
-    // -------------------------------------------------------
-    // Determine which topic keys are actually used
-    // -------------------------------------------------------
-
-    const usedTopicKeys =
+    const requiredKeys =
       [
         ...new Set(
           records.map(
@@ -397,63 +470,41 @@ export class TestQuestionImportService {
         ),
       ];
 
-    // -------------------------------------------------------
-    // Find highest existing sort order
-    // -------------------------------------------------------
-
     let nextSortOrder =
-      existingTopics.reduce(
-        (
-          max,
-          topic,
-        ) =>
-          Math.max(
-            max,
-            Number.isFinite(
-              topic.sortOrder,
-            )
-              ? topic.sortOrder
-              : 0,
-          ),
-        0,
-      ) + 1;
-
-    // -------------------------------------------------------
-    // Resolve each bank topic
-    // -------------------------------------------------------
+      existingTopics.length > 0
+        ? Math.max(
+            ...existingTopics.map(
+              (topic) =>
+                topic.sortOrder,
+            ),
+          ) + 1
+        : 0;
 
     for (
-      const topicKey of usedTopicKeys
+      const topicKey of
+        requiredKeys
     ) {
       const definition =
-        topicsByKey.get(
+        definitionsByKey.get(
           topicKey,
         );
 
       if (!definition) {
-        result.failed++;
-
-        result.errors.push(
-          `Topic "${topicKey}" is used by the question bank but has no topic definition.`,
+        throw new Error(
+          `No topic definition exists for "${topicKey}".`,
         );
-
-        continue;
       }
 
-      // -----------------------------------------------------
-      // Look for an existing topic
-      // -----------------------------------------------------
-
-      const existing =
+      const matchingTopic =
         this.findMatchingTopic(
           existingTopics,
           definition,
         );
 
-      if (existing) {
+      if (matchingTopic) {
         resolved.set(
           topicKey,
-          existing,
+          matchingTopic,
         );
 
         result.topicsExisting++;
@@ -461,9 +512,9 @@ export class TestQuestionImportService {
         continue;
       }
 
-      // -----------------------------------------------------
-      // Create missing topic
-      // -----------------------------------------------------
+      // --------------------------------------------------------
+      // Create topic
+      // --------------------------------------------------------
 
       const topicReference =
         await addDoc(
@@ -472,6 +523,8 @@ export class TestQuestionImportService {
             'testTopics',
           ),
           {
+            organizationId,
+
             courseId,
 
             name:
@@ -483,17 +536,16 @@ export class TestQuestionImportService {
               ),
 
             description:
-              definition.description?.trim() ||
+              definition.description
+                ?.trim() ||
               null,
 
             sortOrder:
-              nextSortOrder++,
+              nextSortOrder,
 
-            questionCount:
-              0,
+            questionCount: 0,
 
-            active:
-              true,
+            active: true,
 
             createdAt:
               serverTimestamp(),
@@ -503,17 +555,36 @@ export class TestQuestionImportService {
           },
         );
 
-   const createdTopic =
-  {
-    id: topicReference.id,
-    courseId,
-    name: definition.name.trim(),
-    slug: this.normalizeSlug(definition.slug),
-    description: definition.description?.trim(),
-    sortOrder: nextSortOrder - 1,
-    questionCount: 0,
-    active: true,
-  } as TestTopic;
+      const createdTopic =
+        {
+          id:
+            topicReference.id,
+
+          organizationId,
+
+          courseId,
+
+          name:
+            definition.name.trim(),
+
+          slug:
+            this.normalizeSlug(
+              definition.slug,
+            ),
+
+          description:
+            definition.description
+              ?.trim(),
+
+          sortOrder:
+            nextSortOrder,
+
+          questionCount: 0,
+
+          active: true,
+        } as TestTopic;
+
+      nextSortOrder++;
 
       resolved.set(
         topicKey,
@@ -530,19 +601,14 @@ export class TestQuestionImportService {
     return resolved;
   }
 
-  // =========================================================
-  // EXISTING TOPIC MATCHING
-  // =========================================================
+  // ============================================================
+  // MATCH EXISTING TOPIC
+  // ============================================================
 
-  /**
-   * Match a bank topic against an existing Firestore topic.
-   *
-   * Matching is deliberately based on semantic metadata,
-   * never on Firestore document IDs.
-   */
   private findMatchingTopic(
     topics: TestTopic[],
-    definition: TestQuestionImportTopic,
+    definition:
+      TestQuestionImportTopic,
   ): TestTopic | undefined {
     const key =
       this.normalizeTopicValue(
@@ -571,21 +637,18 @@ export class TestQuestionImportService {
             topic.slug,
           );
 
-        // Exact slug
         if (
           topicSlug === slug
         ) {
           return true;
         }
 
-        // Exact name
         if (
           topicName === name
         ) {
           return true;
         }
 
-        // Bank key equals slug/name
         if (
           topicSlug === key ||
           topicName === key
@@ -593,7 +656,6 @@ export class TestQuestionImportService {
           return true;
         }
 
-        // Semantic containment
         if (
           topicSlug.includes(key) ||
           topicName.includes(key)
@@ -606,343 +668,12 @@ export class TestQuestionImportService {
     );
   }
 
-  // =========================================================
-  // LOAD COURSE TOPICS
-  // =========================================================
-
-  private async loadCourseTopics(
-    courseId: string,
-  ): Promise<TestTopic[]> {
-    const snapshot =
-      await getDocs(
-        query(
-          collection(
-            firestore,
-            'testTopics',
-          ),
-          where(
-            'courseId',
-            '==',
-            courseId,
-          ),
-        ),
-      );
-
-    return snapshot.docs
-      .map(
-        (document) =>
-          ({
-            id:
-              document.id,
-
-            ...document.data(),
-          }) as TestTopic,
-      )
-      .sort(
-        (a, b) =>
-          a.sortOrder -
-          b.sortOrder,
-      );
-  }
-
-  // =========================================================
-  // VALIDATION
-  // =========================================================
-
-  private validateQuestionBank(
-    records: readonly TestQuestionImportRecord[],
-  ): string[] {
-    const errors: string[] = [];
-
-    const seedIds =
-      new Set<string>();
-
-    for (
-      let index = 0;
-      index < records.length;
-      index++
-    ) {
-      const record =
-        records[index];
-
-      const label =
-        record.seedId?.trim() ||
-        `Question ${index + 1}`;
-
-      // -----------------------------------------------------
-      // seedId
-      // -----------------------------------------------------
-
-      if (
-        !record.seedId?.trim()
-      ) {
-        errors.push(
-          `Question ${index + 1}: seedId is required.`,
-        );
-      } else if (
-        seedIds.has(
-          record.seedId.trim(),
-        )
-      ) {
-        errors.push(
-          `${label}: duplicate seedId.`,
-        );
-      } else {
-        seedIds.add(
-          record.seedId.trim(),
-        );
-      }
-
-      // -----------------------------------------------------
-      // topicKey
-      // -----------------------------------------------------
-
-      if (
-        !record.topicKey?.trim()
-      ) {
-        errors.push(
-          `${label}: topicKey is required.`,
-        );
-      }
-
-      // -----------------------------------------------------
-      // question
-      // -----------------------------------------------------
-
-      if (
-        !record.question?.trim()
-      ) {
-        errors.push(
-          `${label}: question text is required.`,
-        );
-      }
-
-      // -----------------------------------------------------
-      // type
-      // -----------------------------------------------------
-
-      if (
-        record.type !==
-          'multiple-choice' &&
-        record.type !==
-          'true-false'
-      ) {
-        errors.push(
-          `${label}: invalid question type.`,
-        );
-      }
-
-      // -----------------------------------------------------
-      // options
-      // -----------------------------------------------------
-
-      if (
-        !Array.isArray(
-          record.options,
-        ) ||
-        record.options.length < 2
-      ) {
-        errors.push(
-          `${label}: at least two options are required.`,
-        );
-      } else {
-        const optionIds =
-          record.options.map(
-            (option) =>
-              option.id.trim(),
-          );
-
-        if (
-          record.options.some(
-            (option) =>
-              !option.id?.trim() ||
-              !option.text?.trim(),
-          )
-        ) {
-          errors.push(
-            `${label}: every option requires an ID and text.`,
-          );
-        }
-
-        if (
-          new Set(optionIds).size !==
-          optionIds.length
-        ) {
-          errors.push(
-            `${label}: option IDs must be unique.`,
-          );
-        }
-
-        if (
-          !optionIds.includes(
-            record.correctAnswer?.trim(),
-          )
-        ) {
-          errors.push(
-            `${label}: correctAnswer does not match an option ID.`,
-          );
-        }
-      }
-
-      // -----------------------------------------------------
-      // difficulty
-      // -----------------------------------------------------
-
-      if (
-        ![
-          'easy',
-          'medium',
-          'hard',
-        ].includes(
-          record.difficulty,
-        )
-      ) {
-        errors.push(
-          `${label}: invalid difficulty.`,
-        );
-      }
-
-      // -----------------------------------------------------
-      // source
-      // -----------------------------------------------------
-
-      if (
-        ![
-          'original',
-          'licensed',
-        ].includes(
-          record.sourceType,
-        )
-      ) {
-        errors.push(
-          `${label}: invalid sourceType.`,
-        );
-      }
-
-      // -----------------------------------------------------
-      // status
-      // -----------------------------------------------------
-
-      if (
-        ![
-          'draft',
-          'published',
-          'archived',
-        ].includes(
-          record.status,
-        )
-      ) {
-        errors.push(
-          `${label}: invalid status.`,
-        );
-      }
-
-      // -----------------------------------------------------
-      // tags
-      // -----------------------------------------------------
-
-      if (
-        !Array.isArray(
-          record.tags,
-        )
-      ) {
-        errors.push(
-          `${label}: tags must be an array.`,
-        );
-      }
-    }
-
-    return errors;
-  }
-
-  // =========================================================
-  // TOPIC VALIDATION
-  // =========================================================
-
-  private validateTopicDefinitions(
-    definitions: readonly TestQuestionImportTopic[],
-    records: readonly TestQuestionImportRecord[],
-  ): string[] {
-    const errors: string[] = [];
-
-    const definitionKeys =
-      new Set<string>();
-
-    for (
-      const definition of definitions
-    ) {
-      if (
-        !definition.key?.trim()
-      ) {
-        errors.push(
-          'A topic definition is missing its key.',
-        );
-      }
-
-      if (
-        !definition.name?.trim()
-      ) {
-        errors.push(
-          `Topic "${definition.key}": name is required.`,
-        );
-      }
-
-      if (
-        !definition.slug?.trim()
-      ) {
-        errors.push(
-          `Topic "${definition.key}": slug is required.`,
-        );
-      }
-
-      if (
-        definitionKeys.has(
-          definition.key,
-        )
-      ) {
-        errors.push(
-          `Duplicate topic definition: "${definition.key}".`,
-        );
-      }
-
-      definitionKeys.add(
-        definition.key,
-      );
-    }
-
-    const missingDefinitions =
-      [
-        ...new Set(
-          records
-            .map(
-              (record) =>
-                record.topicKey,
-            )
-            .filter(
-              (topicKey) =>
-                !definitionKeys.has(
-                  topicKey,
-                ),
-            ),
-        ),
-      ];
-
-    for (
-      const topicKey of missingDefinitions
-    ) {
-      errors.push(
-        `Question bank uses topic "${topicKey}" but no topic definition exists.`,
-      );
-    }
-
-    return errors;
-  }
-
-  // =========================================================
-  // QUESTION COUNTS
-  // =========================================================
+  // ============================================================
+  // REFRESH QUESTION COUNTS
+  // ============================================================
 
   private async refreshQuestionCounts(
+    organizationId: string,
     courseId: string,
     topics: TestTopic[],
   ): Promise<void> {
@@ -953,6 +684,13 @@ export class TestQuestionImportService {
             firestore,
             'testQuestions',
           ),
+
+          where(
+            'organizationId',
+            '==',
+            organizationId,
+          ),
+
           where(
             'courseId',
             '==',
@@ -970,11 +708,14 @@ export class TestQuestionImportService {
       );
 
     const countByTopic =
-      new Map<string, number>();
+      new Map<
+        string,
+        number
+      >();
 
     for (
-      const question
-      of publishedQuestions
+      const question of
+        publishedQuestions
     ) {
       const topicId =
         question.data()[
@@ -1033,9 +774,274 @@ export class TestQuestionImportService {
     await batch.commit();
   }
 
-  // =========================================================
+  // ============================================================
+  // VALIDATE QUESTION BANK
+  // ============================================================
+
+  private validateQuestionBank(
+    records:
+      readonly TestQuestionImportRecord[],
+  ): string[] {
+    const errors: string[] = [];
+
+    const seedIds =
+      new Set<string>();
+
+    for (
+      const record of records
+    ) {
+      const label =
+        `Question "${record.seedId}"`;
+
+      if (
+        !record.seedId?.trim()
+      ) {
+        errors.push(
+          'A question is missing seedId.',
+        );
+      } else {
+        const normalized =
+          this.normalizeQuestionKey(
+            record.seedId,
+          );
+
+        if (
+          seedIds.has(normalized)
+        ) {
+          errors.push(
+            `${label}: duplicate seedId.`,
+          );
+        }
+
+        seedIds.add(normalized);
+      }
+
+      if (
+        !record.topicKey?.trim()
+      ) {
+        errors.push(
+          `${label}: topicKey is required.`,
+        );
+      }
+
+      if (
+        !record.question?.trim()
+      ) {
+        errors.push(
+          `${label}: question text is required.`,
+        );
+      }
+
+      if (
+        !Array.isArray(
+          record.options,
+        ) ||
+        record.options.length === 0
+      ) {
+        errors.push(
+          `${label}: options are required.`,
+        );
+      }
+
+      if (
+        !record.correctAnswer?.trim()
+      ) {
+        errors.push(
+          `${label}: correctAnswer is required.`,
+        );
+      }
+
+      if (
+        ![
+          'easy',
+          'medium',
+          'hard',
+        ].includes(
+          record.difficulty,
+        )
+      ) {
+        errors.push(
+          `${label}: invalid difficulty.`,
+        );
+      }
+
+      if (
+        ![
+          'multiple-choice',
+          'true-false',
+        ].includes(
+          record.type,
+        )
+      ) {
+        errors.push(
+          `${label}: invalid question type.`,
+        );
+      }
+
+      if (
+        ![
+          'original',
+          'licensed',
+        ].includes(
+          record.sourceType,
+        )
+      ) {
+        errors.push(
+          `${label}: invalid sourceType.`,
+        );
+      }
+
+      if (
+        ![
+          'draft',
+          'published',
+          'archived',
+        ].includes(
+          record.status,
+        )
+      ) {
+        errors.push(
+          `${label}: invalid status.`,
+        );
+      }
+
+      if (
+        !Array.isArray(
+          record.tags,
+        )
+      ) {
+        errors.push(
+          `${label}: tags must be an array.`,
+        );
+      }
+    }
+
+    return errors;
+  }
+
+  // ============================================================
+  // VALIDATE TOPIC DEFINITIONS
+  // ============================================================
+
+  private validateTopicDefinitions(
+    definitions:
+      readonly TestQuestionImportTopic[],
+    records:
+      readonly TestQuestionImportRecord[],
+  ): string[] {
+    const errors: string[] = [];
+
+    const definitionKeys =
+      new Set<string>();
+
+    for (
+      const definition of
+        definitions
+    ) {
+      if (
+        !definition.key?.trim()
+      ) {
+        errors.push(
+          'A topic definition is missing its key.',
+        );
+      }
+
+      if (
+        !definition.name?.trim()
+      ) {
+        errors.push(
+          `Topic "${definition.key}": name is required.`,
+        );
+      }
+
+      if (
+        !definition.slug?.trim()
+      ) {
+        errors.push(
+          `Topic "${definition.key}": slug is required.`,
+        );
+      }
+
+      if (
+        definitionKeys.has(
+          definition.key,
+        )
+      ) {
+        errors.push(
+          `Duplicate topic definition: "${definition.key}".`,
+        );
+      }
+
+      definitionKeys.add(
+        definition.key,
+      );
+    }
+
+    const missingDefinitions =
+      [
+        ...new Set(
+          records
+            .map(
+              (record) =>
+                record.topicKey,
+            )
+            .filter(
+              (topicKey) =>
+                !definitionKeys.has(
+                  topicKey,
+                ),
+            ),
+        ),
+      ];
+
+    for (
+      const topicKey of
+        missingDefinitions
+    ) {
+      errors.push(
+        `Question bank uses topic "${topicKey}" but no topic definition exists.`,
+      );
+    }
+
+    return errors;
+  }
+
+  // ============================================================
+  // VALIDATE COURSE
+  // ============================================================
+
+  private async validateCourse(
+    organizationId: string,
+    courseId: string,
+  ): Promise<void> {
+    const snapshot =
+      await import(
+        'firebase/firestore'
+      ).then(({ getDoc }) =>
+        getDoc(
+          doc(
+            firestore,
+            'testCourses',
+            courseId,
+          ),
+        ),
+      );
+
+    if (
+      !snapshot.exists() ||
+      snapshot.data()[
+        'organizationId'
+      ] !== organizationId
+    ) {
+      throw new Error(
+        'The selected Test Center course does not belong to the current organization.',
+      );
+    }
+  }
+
+  // ============================================================
   // NORMALIZATION
-  // =========================================================
+  // ============================================================
 
   private normalizeTopicValue(
     value: string,
@@ -1113,5 +1119,27 @@ export class TestQuestionImportService {
     }
 
     return normalized;
+  }
+
+  private requireOrganizationId(
+    organizationId: string,
+  ): void {
+    if (!organizationId?.trim()) {
+      throw new Error(
+        'An organization is required for Test Center operations.',
+      );
+    }
+  }
+
+  private getErrorMessage(
+    error: unknown,
+  ): string {
+    if (
+      error instanceof Error
+    ) {
+      return error.message;
+    }
+
+    return String(error);
   }
 }

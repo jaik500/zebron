@@ -14,6 +14,11 @@ export interface TestAttempt {
   id: string;
 
   /**
+   * Organization in which the test was taken.
+   */
+  organizationId: string;
+
+  /**
    * User who completed the test.
    */
   userId: string;

@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
+import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
@@ -1017,6 +1018,9 @@ export class TestTopicAdminComponent implements OnInit {
 
   private readonly courseService = inject(TestCourseService);
 
+  private readonly organizationContext =
+    inject(OrganizationContextService);
+
   private readonly topicService = inject(TestTopicService);
 
   private readonly authService = inject(AuthService);
@@ -1068,12 +1072,29 @@ export class TestTopicAdminComponent implements OnInit {
   // =========================================================
 
   private async loadCourses(): Promise<void> {
+    const organizationId =
+      this.organizationContext.organizationId();
+
+    if (!organizationId) {
+      this.courses.set([]);
+      this.toast.error(
+        'Select an organization before managing Test Center topics.',
+      );
+      return;
+    }
+
     try {
-      const courses = await this.courseService.getActiveCourses();
+      const courses =
+        await this.courseService.getActiveCourses(
+          organizationId,
+        );
 
       this.courses.set(courses);
     } catch (error) {
-      console.error('Failed to load Test Center courses:', error);
+      console.error(
+        'Failed to load Test Center courses:',
+        error,
+      );
 
       this.toast.error('Unable to load courses.');
     }
@@ -1101,8 +1122,21 @@ export class TestTopicAdminComponent implements OnInit {
         return;
       }
 
+      const organizationId =
+        this.organizationContext.organizationId();
+
+      if (!organizationId) {
+        this.topics.set([]);
+        return;
+      }
+
       const topicGroups = await Promise.all(
-        courses.map((course) => this.topicService.getAllTopics(course.id)),
+        courses.map((course) =>
+          this.topicService.getAllTopics(
+            organizationId,
+            course.id,
+          ),
+        ),
       );
 
       const topics = topicGroups.flat().sort((a, b) => a.sortOrder - b.sortOrder);
@@ -1252,37 +1286,53 @@ export class TestTopicAdminComponent implements OnInit {
       const editingId = this.editingId();
 
       if (editingId) {
-        await this.topicService.updateTopic(editingId, {
-          courseId,
+        const organizationId =
+          this.organizationContext.organizationId();
 
-          name,
+        if (!organizationId) {
+          this.toast.error(
+            'Select an organization before saving the topic.',
+          );
+          return;
+        }
 
-          slug,
-
-          description,
-
-          sortOrder,
-
-          active: this.form.active,
-        });
+        await this.topicService.updateTopic(
+          organizationId,
+          editingId,
+          {
+            name,
+            slug,
+            description,
+            sortOrder,
+            active: this.form.active,
+          },
+        );
 
         this.toast.success('Topic updated successfully.');
       } else {
-        await this.topicService.createTopic({
-          courseId,
+        const organizationId =
+          this.organizationContext.organizationId();
 
-          name,
+        if (!organizationId) {
+          this.toast.error(
+            'Select an organization before saving the topic.',
+          );
+          return;
+        }
 
-          slug,
-
-          description,
-
-          sortOrder,
-
-          questionCount: 0,
-
-          active: this.form.active,
-        });
+        await this.topicService.createTopic(
+          organizationId,
+          {
+            organizationId,
+            courseId,
+            name,
+            slug,
+            description,
+            sortOrder,
+            questionCount: 0,
+            active: this.form.active,
+          },
+        );
 
         this.toast.success('Topic created successfully.');
       }
@@ -1311,7 +1361,20 @@ export class TestTopicAdminComponent implements OnInit {
     }
 
     try {
-      await this.topicService.deleteTopic(topic.id);
+      const organizationId =
+        this.organizationContext.organizationId();
+
+      if (!organizationId) {
+        this.toast.error(
+          'Select an organization before deleting the topic.',
+        );
+        return;
+      }
+
+      await this.topicService.deleteTopic(
+        organizationId,
+        topic.id,
+      );
 
       this.toast.success('Topic deleted successfully.');
 

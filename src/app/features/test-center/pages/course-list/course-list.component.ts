@@ -12,6 +12,8 @@ import { TestCourseService } from '../../services/test-course.service';
 
 import { TestCourse } from '../../models/test-course.model';
 
+import { OrganizationContextService } from '../../../../core/services/organization-context.service';
+
 
 @Component({
   selector: 'app-course-list',
@@ -330,6 +332,9 @@ export class CourseListComponent
   protected readonly error =
     signal<string | null>(null);
 
+  private readonly organizationContext =
+  inject(OrganizationContextService);
+
 
   // =========================================================
   // Initialization
@@ -344,33 +349,41 @@ export class CourseListComponent
   // Load Courses
   // =========================================================
 
-  protected async loadCourses(): Promise<void> {
+ protected async loadCourses(): Promise<void> {
+  this.loading.set(true);
+  this.error.set(null);
 
-    this.loading.set(true);
+  try {
+    const organizationId =
+      this.organizationContext.organizationId();
 
-    this.error.set(null);
-
-    try {
-
-      const courses =
-        await this.courseService.getActiveCourses();
-
-      this.courses.set(courses);
-
-    } catch (error) {
-
-      console.error(
-        'Failed to load courses:',
-        error,
-      );
+    if (!organizationId) {
+      this.courses.set([]);
 
       this.error.set(
-        'Unable to load courses. Please try again later.',
+        'Select an organization before loading Test Center courses.',
       );
 
-    } finally {
-
-      this.loading.set(false);
+      return;
     }
+
+    const courses =
+      await this.courseService.getActiveCourses(
+        organizationId,
+      );
+
+    this.courses.set(courses);
+  } catch (error) {
+    console.error(
+      'Failed to load courses:',
+      error,
+    );
+
+    this.error.set(
+      'Unable to load courses. Please try again later.',
+    );
+  } finally {
+    this.loading.set(false);
   }
+}
 }

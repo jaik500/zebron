@@ -1,64 +1,38 @@
 import { Timestamp } from 'firebase/firestore';
 
-/**
- * Represents a course, certification, subject, or
- * other learning area available in the Zebron Test Center.
- */
+export type TestCourseType =
+  | 'certification'
+  | 'course'
+  | 'subject'
+  | 'skill';
+
 export interface TestCourse {
   id: string;
 
   /**
-   * Display name.
-   * Example: ServiceNow Certified System Administrator
+   * Organization that owns this course.
    */
+  organizationId: string;
+
   name: string;
 
-  /**
-   * URL-friendly identifier.
-   */
   slug: string;
 
-  /**
-   * Short description shown on course cards.
-   */
   description: string;
 
-  /**
-   * Organization or vendor.
-   * Example: ServiceNow, AWS, CompTIA.
-   */
   provider?: string;
 
-  /**
-   * General classification of the course.
-   */
-  type:
-    | 'certification'
-    | 'course'
-    | 'subject'
-    | 'skill';
+  type: TestCourseType;
 
-  /**
-   * Optional certification code.
-   * Example: CSA.
-   */
   certificationCode?: string;
 
-  /**
-   * Optional image/icon.
-   */
   imageUrl?: string;
 
-  /**
-   * Controls whether the course is visible.
-   */
   active: boolean;
 
-  /**
-   * Cached question count for display.
-   */
   questionCount: number;
 
   createdAt: Timestamp;
+
   updatedAt: Timestamp;
 }

@@ -15,6 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TestCourse } from '../../models/test-course.model';
 import { TestCourseService } from '../../services/test-course.service';
 import { TestStore } from '../../store/test.store';
+import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 
 
 @Component({
@@ -909,6 +910,9 @@ export class TestCenterHomeComponent
   private readonly courseService =
     inject(TestCourseService);
 
+  private readonly organizationContext =
+    inject(OrganizationContextService);
+
   /**
    * TestStore is injected now so the Test Center
    * follows the same state-management pattern as
@@ -981,9 +985,20 @@ export class TestCenterHomeComponent
 
       this.error.set('');
 
+      const organizationId =
+        this.organizationContext.organizationId();
+
+      if (!organizationId) {
+        this.courses.set([]);
+        this.error.set(
+          'Select an organization before loading Test Center courses.',
+        );
+        return;
+      }
+
       const courses =
         await this.courseService
-          .getActiveCourses();
+          .getActiveCourses(organizationId);
 
       this.courses.set(courses);
 

@@ -1,13 +1,15 @@
 import { Timestamp } from 'firebase/firestore';
 
-/**
- * Represents a topic within a Test Center course.
- */
 export interface TestTopic {
   id: string;
 
   /**
-   * Parent course.
+   * Organization that owns this topic.
+   */
+  organizationId: string;
+
+  /**
+   * Parent Test Center course.
    */
   courseId: string;
 
@@ -17,18 +19,13 @@ export interface TestTopic {
 
   description?: string;
 
-  /**
-   * Controls topic ordering.
-   */
   sortOrder: number;
 
-  /**
-   * Cached question count.
-   */
   questionCount: number;
 
   active: boolean;
 
   createdAt: Timestamp;
+
   updatedAt: Timestamp;
 }

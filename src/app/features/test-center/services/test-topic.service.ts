@@ -20,10 +20,9 @@ import { TestTopic } from '../models/test-topic.model';
   providedIn: 'root',
 })
 export class TestTopicService {
-
-  // =====================================================
+  // ============================================================
   // FIRESTORE COLLECTION
-  // =====================================================
+  // ============================================================
 
   private readonly topicsCollection =
     collection(
@@ -31,37 +30,43 @@ export class TestTopicService {
       'testTopics',
     );
 
-
-  // =====================================================
-  // GET ACTIVE TOPICS FOR A COURSE
-  // =====================================================
+  // ============================================================
+  // GET ACTIVE TOPICS
+  // ============================================================
 
   /**
-   * Returns all active topics belonging to a
-   * specific Test Center course.
-   *
-   * Topics are filtered and sorted in memory so
-   * additional composite Firestore indexes are
-   * not required.
+   * Returns active topics for a course within an organization.
    */
   async getActiveTopics(
+    organizationId: string,
     courseId: string,
   ): Promise<TestTopic[]> {
+    this.requireOrganizationId(organizationId);
+    this.requireCourseId(courseId);
 
     const q = query(
       this.topicsCollection,
+
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
 
       where(
         'courseId',
         '==',
         courseId,
       ),
+
+      where(
+        'active',
+        '==',
+        true,
+      ),
     );
 
-
-    const snapshot =
-      await getDocs(q);
-
+    const snapshot = await getDocs(q);
 
     return snapshot.docs
       .map(
@@ -71,31 +76,35 @@ export class TestTopicService {
             ...document.data(),
           }) as TestTopic,
       )
-      .filter(
-        (topic) =>
-          topic.active === true,
-      )
       .sort(
         (a, b) =>
           a.sortOrder - b.sortOrder,
       );
   }
 
-
-  // =====================================================
-  // GET ALL TOPICS FOR A COURSE
-  // =====================================================
+  // ============================================================
+  // GET ALL TOPICS
+  // ============================================================
 
   /**
-   * Returns all topics for a course, including
-   * inactive topics.
+   * Returns active and inactive topics for a course within
+   * the organization.
    */
   async getAllTopics(
+    organizationId: string,
     courseId: string,
   ): Promise<TestTopic[]> {
+    this.requireOrganizationId(organizationId);
+    this.requireCourseId(courseId);
 
     const q = query(
       this.topicsCollection,
+
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
 
       where(
         'courseId',
@@ -104,10 +113,7 @@ export class TestTopicService {
       ),
     );
 
-
-    const snapshot =
-      await getDocs(q);
-
+    const snapshot = await getDocs(q);
 
     return snapshot.docs
       .map(
@@ -123,108 +129,289 @@ export class TestTopicService {
       );
   }
 
+  // ============================================================
+  // GET TOPIC BY ID
+  // ============================================================
 
-  // =====================================================
-  // CREATE TOPIC
-  // =====================================================
+  async getTopicById(
+    organizationId: string,
+    topicId: string,
+  ): Promise<TestTopic | null> {
+    this.requireOrganizationId(organizationId);
 
-  /**
-   * Creates a new Test Center topic.
-   *
-   * The caller supplies the course ID and topic
-   * information. Firestore generates the document ID.
-   */
-  async createTopic(
-    topic: Omit<
-      TestTopic,
-      'id' |
-      'createdAt' |
-      'updatedAt'
-    >,
-  ): Promise<string> {
+    if (!topicId?.trim()) {
+      return null;
+    }
 
-    const reference =
-      await addDoc(
-        this.topicsCollection,
-        {
-          ...topic,
+    const snapshot = await import(
+      'firebase/firestore'
+    ).then(({ getDoc }) =>
+      getDoc(
+        doc(
+          firestore,
+          'testTopics',
+          topicId,
+        ),
+      ),
+    );
 
-          createdAt:
-            serverTimestamp(),
+    if (!snapshot.exists()) {
+      return null;
+    }
 
-          updatedAt:
-            serverTimestamp(),
-        },
-      );
+    const data = snapshot.data();
 
+    if (
+      data['organizationId'] !== organizationId
+    ) {
+      return null;
+    }
 
-    return reference.id;
+    return {
+      id: snapshot.id,
+      ...data,
+    } as TestTopic;
   }
 
+  // ============================================================
+  // CREATE TOPIC
+  // ============================================================
 
-  // =====================================================
-  // UPDATE TOPIC
-  // =====================================================
-
-  /**
-   * Updates an existing Test Center topic.
-   */
-  async updateTopic(
-    topicId: string,
-    changes: Partial<
-      Omit<
-        TestTopic,
-        'id' |
-        'createdAt' |
-        'updatedAt'
-      >
+  async createTopic(
+    organizationId: string,
+    topic: Omit<
+      TestTopic,
+      'id' | 'createdAt' | 'updatedAt'
     >,
-  ): Promise<void> {
+  ): Promise<string> {
+    this.requireOrganizationId(organizationId);
+    this.requireCourseId(topic.courseId);
 
-    const topicReference =
-      doc(
-        firestore,
-        'testTopics',
-        topicId,
+    if (!topic.name?.trim()) {
+      throw new Error(
+        'Topic name is required.',
       );
+    }
 
+    if (!topic.slug?.trim()) {
+      throw new Error(
+        'Topic slug is required.',
+      );
+    }
 
-    await updateDoc(
-      topicReference,
+    // ----------------------------------------------------------
+    // Verify the course belongs to this organization
+    // ----------------------------------------------------------
+
+    const courseQuery = query(
+      collection(
+        firestore,
+        'testCourses',
+      ),
+
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
+
+      where(
+        '__name__',
+        '==',
+        topic.courseId,
+      ),
+    );
+
+    const courseSnapshot =
+      await getDocs(courseQuery);
+
+    if (courseSnapshot.empty) {
+      throw new Error(
+        'The selected Test Center course does not belong to the current organization.',
+      );
+    }
+
+    // ----------------------------------------------------------
+    // Prevent duplicate topic slugs within a course
+    // ----------------------------------------------------------
+
+    const duplicateQuery = query(
+      this.topicsCollection,
+
+      where(
+        'organizationId',
+        '==',
+        organizationId,
+      ),
+
+      where(
+        'courseId',
+        '==',
+        topic.courseId,
+      ),
+
+      where(
+        'slug',
+        '==',
+        topic.slug.trim(),
+      ),
+    );
+
+    const duplicateSnapshot =
+      await getDocs(duplicateQuery);
+
+    if (!duplicateSnapshot.empty) {
+      throw new Error(
+        `A topic with the slug "${topic.slug}" already exists in this course.`,
+      );
+    }
+
+    const reference = await addDoc(
+      this.topicsCollection,
       {
-        ...changes,
+        organizationId,
+
+        courseId:
+          topic.courseId,
+
+        name:
+          topic.name.trim(),
+
+        slug:
+          topic.slug.trim(),
+
+        description:
+          topic.description?.trim() || null,
+
+        sortOrder:
+          topic.sortOrder ?? 0,
+
+        questionCount:
+          topic.questionCount ?? 0,
+
+        active:
+          topic.active === true,
+
+        createdAt:
+          serverTimestamp(),
 
         updatedAt:
           serverTimestamp(),
       },
     );
+
+    return reference.id;
   }
 
+  // ============================================================
+  // UPDATE TOPIC
+  // ============================================================
 
-  // =====================================================
-  // DELETE TOPIC
-  // =====================================================
-
-  /**
-   * Deletes a Test Center topic.
-   *
-   * Question cleanup should be handled separately once
-   * the question administration workflow is implemented.
-   */
-  async deleteTopic(
+  async updateTopic(
+    organizationId: string,
     topicId: string,
+    changes: Partial<
+      Omit<
+        TestTopic,
+        | 'id'
+        | 'organizationId'
+        | 'courseId'
+        | 'createdAt'
+        | 'updatedAt'
+      >
+    >,
   ): Promise<void> {
+    this.requireOrganizationId(organizationId);
 
-    const topicReference =
+    const existing =
+      await this.getTopicById(
+        organizationId,
+        topicId,
+      );
+
+    if (!existing) {
+      throw new Error(
+        'Test Center topic was not found in the current organization.',
+      );
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      ...changes,
+      updatedAt: serverTimestamp(),
+    };
+
+    delete updatePayload['organizationId'];
+    delete updatePayload['courseId'];
+    delete updatePayload['id'];
+
+    await updateDoc(
       doc(
         firestore,
         'testTopics',
         topicId,
+      ),
+      updatePayload,
+    );
+  }
+
+  // ============================================================
+  // DELETE TOPIC
+  // ============================================================
+
+  /**
+   * Deletes a topic only when it belongs to the organization.
+   *
+   * The caller should ensure questions are handled before
+   * deleting a topic.
+   */
+  async deleteTopic(
+    organizationId: string,
+    topicId: string,
+  ): Promise<void> {
+    this.requireOrganizationId(organizationId);
+
+    const existing =
+      await this.getTopicById(
+        organizationId,
+        topicId,
       );
 
+    if (!existing) {
+      throw new Error(
+        'Test Center topic was not found in the current organization.',
+      );
+    }
 
     await deleteDoc(
-      topicReference,
+      doc(
+        firestore,
+        'testTopics',
+        topicId,
+      ),
     );
+  }
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+
+  private requireOrganizationId(
+    organizationId: string,
+  ): void {
+    if (!organizationId?.trim()) {
+      throw new Error(
+        'An organization is required for Test Center operations.',
+      );
+    }
+  }
+
+  private requireCourseId(
+    courseId: string,
+  ): void {
+    if (!courseId?.trim()) {
+      throw new Error(
+        'A Test Center course is required.',
+      );
+    }
   }
 }

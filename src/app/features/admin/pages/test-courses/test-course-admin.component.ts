@@ -6,7 +6,10 @@ import { Router, RouterLink } from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
-import { TestCourse } from '../../../../features/test-center/models/test-course.model';
+import {
+  TestCourse,
+  TestCourseType,
+} from '../../../../features/test-center/models/test-course.model';
 
 import { TestCourseService } from '../../../../features/test-center/services/test-course.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,6 +17,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatMenuModule } from '@angular/material/menu';
 
 import { AuthService } from '../../../../core/services/auth.service';
+import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 
 // ============================================================
 // FORM MODEL
@@ -24,7 +28,7 @@ interface CourseForm {
   slug: string;
   description: string;
   provider: string;
-  type: string;
+  type: TestCourseType;
   certificationCode: string;
   active: boolean;
 }
@@ -1056,6 +1060,9 @@ export class TestCourseAdminComponent implements OnInit {
 
   private readonly authService = inject(AuthService);
 
+  private readonly organizationContext =
+    inject(OrganizationContextService);
+
   private readonly router = inject(Router);
 
   private readonly toast = inject(HotToastService);
@@ -1084,6 +1091,8 @@ export class TestCourseAdminComponent implements OnInit {
 
   protected form: CourseForm = this.createEmptyForm();
 
+  
+
   // ============================================================
   // INITIALIZATION
   // ============================================================
@@ -1100,7 +1109,21 @@ export class TestCourseAdminComponent implements OnInit {
     try {
       this.loadingCourses.set(true);
 
-      const courses = await this.courseService.getAllCourses();
+      const organizationId =
+        this.organizationContext.organizationId();
+
+      if (!organizationId) {
+        this.courses.set([]);
+        this.toast.error(
+          'Select an organization before managing Test Center courses.',
+        );
+        return;
+      }
+
+      const courses =
+        await this.courseService.getAllCourses(
+          organizationId,
+        );
 
       this.courses.set(courses);
     } catch (error) {
@@ -1195,6 +1218,16 @@ export class TestCourseAdminComponent implements OnInit {
     try {
       this.saving.set(true);
 
+      const organizationId =
+        this.organizationContext.organizationId();
+
+      if (!organizationId) {
+        this.toast.error(
+          'Select an organization before managing Test Center courses.',
+        );
+        return;
+      }
+
       const editingId = this.editingCourseId();
 
       if (editingId) {
@@ -1202,7 +1235,10 @@ export class TestCourseAdminComponent implements OnInit {
         // UPDATE
         // -------------------------------------------------------
 
-        await this.courseService.updateCourse(editingId, {
+        await this.courseService.updateCourse(
+          organizationId,
+          editingId,
+          {
           name: this.form.name,
 
           description: this.form.description,
@@ -1214,7 +1250,8 @@ export class TestCourseAdminComponent implements OnInit {
           certificationCode: this.form.certificationCode,
 
           active: this.form.active,
-        });
+          },
+        );
 
         this.toast.success('Course updated successfully.');
       } else {
@@ -1222,7 +1259,9 @@ export class TestCourseAdminComponent implements OnInit {
         // CREATE
         // -------------------------------------------------------
 
-        await this.courseService.createCourse({
+        await this.courseService.createCourse(
+          organizationId,
+          {
           name: this.form.name,
 
           slug: this.form.slug,
@@ -1236,7 +1275,8 @@ export class TestCourseAdminComponent implements OnInit {
           certificationCode: this.form.certificationCode,
 
           active: this.form.active,
-        });
+          },
+        );
 
         this.toast.success('Course created successfully.');
       }
