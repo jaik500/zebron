@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -22,6 +28,29 @@ import { LoggerService } from '../../../../../../core/services/logger.service';
 import { NotificationService } from '../../../../../../core/services/notification.service';
 
 import { ConfirmationService } from '../../../../../../core/services/confirmation.service';
+
+/*
+ * Canonical application catalog.
+ *
+ * This is metadata only:
+ * - application name
+ * - description
+ * - icon
+ * - keywords
+ * - enabled/catalog status
+ *
+ * Runtime application state remains owned by FeatureConfigService.
+ *
+ * This path matches the configuration Settings component structure
+ * used elsewhere in the Control Center.
+ */
+import {
+  CONFIGURATION_APPLICATIONS,
+} from '../../../../../../core/registries/configuration-application.registry';
+
+import {
+  ConfigurationApplication,
+} from '../../../../../../core/models/configuration-application.model';
 
 @Component({
   selector: 'app-configuration-applications',
@@ -48,9 +77,13 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
            PAGE HEADER
            ========================================================= -->
 
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+      >
         <div>
-          <h2 class="text-lg font-semibold text-slate-900">Applications</h2>
+          <h2 class="text-lg font-semibold text-slate-900">
+            Applications
+          </h2>
 
           <p class="text-sm text-slate-500">
             Manage application availability and navigation visibility.
@@ -64,18 +97,26 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
           <!-- Application search -->
 
-          <mat-form-field appearance="outline" class="w-full sm:w-72" subscriptSizing="dynamic">
-            <mat-label> Search applications </mat-label>
+          <mat-form-field
+            appearance="outline"
+            class="w-full sm:w-72"
+            subscriptSizing="dynamic"
+          >
+            <mat-label>
+              Search applications
+            </mat-label>
 
             <input
               matInput
               type="search"
-              placeholder="Search by name or key"
+              placeholder="Search by name, key, or keyword"
               [value]="searchTerm()"
               (input)="onSearchChange($event)"
             />
 
-            <mat-icon matPrefix> search </mat-icon>
+            <mat-icon matPrefix>
+              search
+            </mat-icon>
 
             @if (searchTerm()) {
               <button
@@ -86,7 +127,9 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
                 matTooltip="Clear search"
                 (click)="clearSearch()"
               >
-                <mat-icon> close </mat-icon>
+                <mat-icon>
+                  close
+                </mat-icon>
               </button>
             }
           </mat-form-field>
@@ -94,11 +137,27 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
           <!-- Application count -->
 
           <div
-            class="flex h-10 shrink-0 items-center whitespace-nowrap rounded-full bg-slate-100 px-4 text-sm font-medium text-slate-700"
+            class="
+              flex
+              h-10
+              shrink-0
+              items-center
+              whitespace-nowrap
+              rounded-full
+              bg-slate-100
+              px-4
+              text-sm
+              font-medium
+              text-slate-700
+            "
           >
             {{ filteredFeatures().length }}
 
-            {{ filteredFeatures().length === 1 ? 'application' : 'applications' }}
+            {{
+              filteredFeatures().length === 1
+                ? 'application'
+                : 'applications'
+            }}
           </div>
         </div>
       </div>
@@ -146,8 +205,9 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
               text-blue-800
             "
           >
-            Availability changes are persisted through the centralized feature configuration service
-            and are recorded for administrative auditing.
+            Availability changes are persisted through the centralized
+            feature configuration service and are recorded for
+            administrative auditing.
           </p>
         </div>
       </div>
@@ -159,7 +219,10 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
       @if (features().length === 0) {
         <!-- No applications configured -->
 
-        <mat-card appearance="outlined" class="!rounded-2xl">
+        <mat-card
+          appearance="outlined"
+          class="!rounded-2xl"
+        >
           <mat-card-content
             class="
               flex
@@ -202,15 +265,18 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
                 text-gray-500
               "
             >
-              No application definitions are currently available in the feature configuration
-              registry.
+              No application definitions are currently available
+              in the feature configuration registry.
             </p>
           </mat-card-content>
         </mat-card>
       } @else if (filteredFeatures().length === 0) {
         <!-- No search results -->
 
-        <mat-card appearance="outlined" class="!rounded-2xl">
+        <mat-card
+          appearance="outlined"
+          class="!rounded-2xl"
+        >
           <mat-card-content
             class="
               flex
@@ -254,18 +320,29 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
               "
             >
               No applications match
-              <span class="font-semibold"> "{{ searchTerm() }}" </span>.
+              <span class="font-semibold">
+                "{{ searchTerm() }}"
+              </span>.
             </p>
 
-            <button mat-stroked-button type="button" class="mt-5" (click)="clearSearch()">
-              <mat-icon> close </mat-icon>
+            <button
+              mat-stroked-button
+              type="button"
+              class="mt-5"
+              (click)="clearSearch()"
+            >
+              <mat-icon>
+                close
+              </mat-icon>
 
               Clear search
             </button>
           </mat-card-content>
         </mat-card>
       } @else {
-        <!-- Application grid -->
+        <!-- =======================================================
+             APPLICATION GRID
+             ======================================================= -->
 
         <div
           class="
@@ -275,42 +352,46 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
             xl:grid-cols-2
           "
         >
-          @for (feature of filteredFeatures(); track feature.key) {
+          @for (
+            feature of filteredFeatures();
+            track feature.key
+          ) {
             <mat-card
               appearance="outlined"
               class="
-    !rounded-xl
-    !border-gray-200
-    transition
-    hover:shadow-md
-  "
+                !rounded-xl
+                !border-gray-200
+                transition
+                hover:shadow-md
+              "
             >
-              <!-- =========================================================
-       CARD HEADER
-       ========================================================= -->
+              <!-- =================================================
+                   CARD HEADER
+                   ================================================= -->
+
               <mat-card-header
                 class="
-    !px-4
-    !py-3
-  "
+                  !px-4
+                  !py-3
+                "
               >
                 <!-- Application icon -->
 
                 <div
                   mat-card-avatar
                   class="
-      !flex
-      !h-10
-      !w-10
-      !items-center
-      !justify-center
-      !rounded-lg
-      !bg-[#032D42]/10
-      !text-[#032D42]
-    "
+                    !flex
+                    !h-10
+                    !w-10
+                    !items-center
+                    !justify-center
+                    !rounded-lg
+                    !bg-[#032D42]/10
+                    !text-[#032D42]
+                  "
                 >
                   <mat-icon>
-                    {{ feature.icon || 'apps' }}
+                    {{ applicationIcon(feature) }}
                   </mat-icon>
                 </div>
 
@@ -318,78 +399,98 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
 
                 <mat-card-title
                   class="
-      !text-base
-      !font-semibold
-      !text-[#032D42]
-    "
+                    !text-base
+                    !font-semibold
+                    !text-[#032D42]
+                  "
                 >
-                  {{ feature.name }}
+                  {{ applicationName(feature) }}
                 </mat-card-title>
 
                 <mat-card-subtitle
                   class="
-      !mt-0.5
-      !text-[11px]
-      !text-gray-500
-    "
+                    !mt-0.5
+                    !text-[11px]
+                    !text-gray-500
+                  "
                 >
                   {{ feature.key }}
                 </mat-card-subtitle>
 
-                <!-- =========================================================
-       STATUS + security + EXPAND/COLLAPSE
-       ========================================================= -->
+                <!-- ===============================================
+                     STATUS + SECURITY + EXPAND/COLLAPSE
+                     =============================================== -->
 
                 <div
                   class="
-      !ml-auto
-      flex
-      shrink-0
-      items-center
-      gap-1
-    "
+                    !ml-auto
+                    flex
+                    shrink-0
+                    items-center
+                    gap-1
+                  "
                 >
                   <!-- Status -->
 
                   <span
                     class="
-        inline-flex
-        items-center
-        gap-1.5
-        rounded-full
-        px-2.5
-        py-1
-        font-semibold
-      "
-                    [class.bg-emerald-100]="feature.availability === 'enabled'"
-                    [class.text-emerald-800]="feature.availability === 'enabled'"
-                    [class.bg-amber-100]="feature.availability === 'maintenance'"
-                    [class.text-amber-800]="feature.availability === 'maintenance'"
-                    [class.bg-red-100]="feature.availability === 'disabled'"
-                    [class.text-red-800]="feature.availability === 'disabled'"
+                      inline-flex
+                      items-center
+                      gap-1.5
+                      rounded-full
+                      px-2.5
+                      py-1
+                      font-semibold
+                    "
+                    [class.bg-emerald-100]="
+                      feature.availability === 'enabled'
+                    "
+                    [class.text-emerald-800]="
+                      feature.availability === 'enabled'
+                    "
+                    [class.bg-amber-100]="
+                      feature.availability === 'maintenance'
+                    "
+                    [class.text-amber-800]="
+                      feature.availability === 'maintenance'
+                    "
+                    [class.bg-red-100]="
+                      feature.availability === 'disabled'
+                    "
+                    [class.text-red-800]="
+                      feature.availability === 'disabled'
+                    "
                   >
                     <span
                       class="
-          h-3
-          w-3
-          rounded-full
-          bg-current
-        "
+                        h-3
+                        w-3
+                        rounded-full
+                        bg-current
+                      "
                     ></span>
                   </span>
 
-                  <!-- security level -->
+                  <!-- Protected/core application -->
 
                   @if (feature.core) {
                     <span
                       class="
-              inline-flex
-              items-center
-              rounded-full
-              text-[#032D42]
-            "
+                        inline-flex
+                        items-center
+                        rounded-full
+                        text-[#032D42]
+                      "
                     >
-                      <mat-icon class="!h-5 !w-5 !text-sm"> lock </mat-icon>
+                      <mat-icon
+                        class="
+                          !h-5
+                          !w-5
+                          !text-sm
+                        "
+                      >
+                        lock
+                      </mat-icon>
                     </span>
                   }
 
@@ -399,107 +500,191 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
                     mat-icon-button
                     type="button"
                     class="
-        !ml-0.5
-        !h-9
-        !w-9
-        !text-[#032D42]
-      "
+                      !ml-0.5
+                      !h-9
+                      !w-9
+                      !text-[#032D42]
+                    "
                     [attr.aria-label]="
                       isCollapsed(feature.key)
                         ? 'Show application details'
                         : 'Hide application details'
                     "
-                    [matTooltip]="isCollapsed(feature.key) ? 'Show details' : 'Hide details'"
+                    [matTooltip]="
+                      isCollapsed(feature.key)
+                        ? 'Show details'
+                        : 'Hide details'
+                    "
                     (click)="toggleCard(feature.key)"
                   >
                     <mat-icon>
-                      {{ isCollapsed(feature.key) ? 'keyboard_arrow_down' : 'keyboard_arrow_up' }}
+                      {{
+                        isCollapsed(feature.key)
+                          ? 'keyboard_arrow_down'
+                          : 'keyboard_arrow_up'
+                      }}
                     </mat-icon>
                   </button>
                 </div>
               </mat-card-header>
 
-              <!-- =========================================================
-       EXPANDED CONTENT
-       ========================================================= -->
+              <!-- =================================================
+                   EXPANDED CONTENT
+                   ================================================= -->
 
               @if (!isCollapsed(feature.key)) {
                 <mat-card-content
                   class="
-        !px-4
-        !pb-3
-        !pt-1
-      "
+                    !px-4
+                    !pb-3
+                    !pt-1
+                  "
                 >
                   <!-- Description -->
 
                   <p
                     class="
-          text-sm
-          leading-5
-          text-gray-600
-        "
+                      text-sm
+                      leading-5
+                      text-gray-600
+                    "
                   >
-                    {{ feature.description || 'No application description has been configured.' }}
+                    {{
+                      applicationDescription(feature)
+                    }}
                   </p>
+
+                  <!-- Canonical keywords -->
+
+                  @if (
+                    applicationKeywords(feature).length > 0
+                  ) {
+                    <div class="mt-3">
+                      <p
+                        class="
+                          text-[10px]
+                          font-semibold
+                          uppercase
+                          tracking-wide
+                          text-gray-400
+                        "
+                      >
+                        Keywords
+                      </p>
+
+                      <div
+                        class="
+                          mt-1.5
+                          flex
+                          flex-wrap
+                          gap-1.5
+                        "
+                      >
+                        @for (
+                          keyword of applicationKeywords(feature);
+                          track keyword
+                        ) {
+                          <span
+                            class="
+                              rounded
+                              border
+                              border-gray-200
+                              bg-gray-50
+                              px-2
+                              py-0.5
+                              text-[10px]
+                              font-medium
+                              text-gray-600
+                            "
+                          >
+                            {{ keyword }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  }
 
                   <!-- Status -->
 
                   <div
                     class="
-          mt-3
-          flex
-          flex-wrap
-          items-center
-          gap-1.5
-        "
+                      mt-3
+                      flex
+                      flex-wrap
+                      items-center
+                      gap-1.5
+                    "
                   >
                     <span
                       class="
-            inline-flex
-            items-center
-            gap-1.5
-            rounded-full
-            px-2.5
-            py-1
-            text-[11px]
-            font-semibold
-          "
-                      [class.bg-emerald-100]="feature.availability === 'enabled'"
-                      [class.text-emerald-800]="feature.availability === 'enabled'"
-                      [class.bg-amber-100]="feature.availability === 'maintenance'"
-                      [class.text-amber-800]="feature.availability === 'maintenance'"
-                      [class.bg-red-100]="feature.availability === 'disabled'"
-                      [class.text-red-800]="feature.availability === 'disabled'"
+                        inline-flex
+                        items-center
+                        gap-1.5
+                        rounded-full
+                        px-2.5
+                        py-1
+                        text-[11px]
+                        font-semibold
+                      "
+                      [class.bg-emerald-100]="
+                        feature.availability === 'enabled'
+                      "
+                      [class.text-emerald-800]="
+                        feature.availability === 'enabled'
+                      "
+                      [class.bg-amber-100]="
+                        feature.availability === 'maintenance'
+                      "
+                      [class.text-amber-800]="
+                        feature.availability === 'maintenance'
+                      "
+                      [class.bg-red-100]="
+                        feature.availability === 'disabled'
+                      "
+                      [class.text-red-800]="
+                        feature.availability === 'disabled'
+                      "
                     >
                       <span
                         class="
-              h-1.5
-              w-1.5
-              rounded-full
-              bg-current
-            "
+                          h-1.5
+                          w-1.5
+                          rounded-full
+                          bg-current
+                        "
                       ></span>
 
-                      {{ availabilityLabel(feature.availability) }}
+                      {{
+                        availabilityLabel(
+                          feature.availability
+                        )
+                      }}
                     </span>
 
                     @if (feature.core) {
                       <span
                         class="
-              inline-flex
-              items-center
-              gap-1
-              rounded-full
-              bg-[#032D42]
-              px-2.5
-              py-1
-              text-[11px]
-              font-semibold
-              text-white
-            "
+                          inline-flex
+                          items-center
+                          gap-1
+                          rounded-full
+                          bg-[#032D42]
+                          px-2.5
+                          py-1
+                          text-[11px]
+                          font-semibold
+                          text-white
+                        "
                       >
-                        <mat-icon class="!h-3.5 !w-3.5 !text-sm"> lock </mat-icon>
+                        <mat-icon
+                          class="
+                            !h-3.5
+                            !w-3.5
+                            !text-sm
+                          "
+                        >
+                          lock
+                        </mat-icon>
 
                         Protected
                       </span>
@@ -508,14 +693,14 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
                     @if (feature.version) {
                       <span
                         class="
-              rounded-full
-              bg-gray-100
-              px-2.5
-              py-1
-              text-[11px]
-              font-medium
-              text-gray-600
-            "
+                          rounded-full
+                          bg-gray-100
+                          px-2.5
+                          py-1
+                          text-[11px]
+                          font-medium
+                          text-gray-600
+                        "
                       >
                         v{{ feature.version }}
                       </span>
@@ -524,58 +709,72 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
 
                   <mat-divider class="!my-3"></mat-divider>
 
-                  <!-- Configuration summary -->
+                  <!-- =================================================
+                       CONFIGURATION SUMMARY
+                       ================================================= -->
 
                   <div
                     class="
-          grid
-          grid-cols-2
-          gap-3
-        "
+                      grid
+                      grid-cols-2
+                      gap-3
+                    "
                   >
                     <!-- Navigation -->
 
                     <div>
                       <p
                         class="
-              text-[10px]
-              font-semibold
-              uppercase
-              tracking-wide
-              text-gray-400
-            "
+                          text-[10px]
+                          font-semibold
+                          uppercase
+                          tracking-wide
+                          text-gray-400
+                        "
                       >
                         Navigation
                       </p>
 
                       <div
                         class="
-              mt-1
-              flex
-              items-center
-              gap-1.5
-            "
+                          mt-1
+                          flex
+                          items-center
+                          gap-1.5
+                        "
                       >
                         <mat-icon
                           class="
-                !h-4
-                !w-4
-                !text-base
-              "
-                          [class.text-emerald-600]="feature.visibleInNavigation"
-                          [class.text-gray-400]="!feature.visibleInNavigation"
+                            !h-4
+                            !w-4
+                            !text-base
+                          "
+                          [class.text-emerald-600]="
+                            feature.visibleInNavigation
+                          "
+                          [class.text-gray-400]="
+                            !feature.visibleInNavigation
+                          "
                         >
-                          {{ feature.visibleInNavigation ? 'visibility' : 'visibility_off' }}
+                          {{
+                            feature.visibleInNavigation
+                              ? 'visibility'
+                              : 'visibility_off'
+                          }}
                         </mat-icon>
 
                         <span
                           class="
-                text-xs
-                font-medium
-                text-gray-700
-              "
+                            text-xs
+                            font-medium
+                            text-gray-700
+                          "
                         >
-                          {{ feature.visibleInNavigation ? 'Visible' : 'Hidden' }}
+                          {{
+                            feature.visibleInNavigation
+                              ? 'Visible'
+                              : 'Hidden'
+                          }}
                         </span>
                       </div>
                     </div>
@@ -585,86 +784,103 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
                     <div>
                       <p
                         class="
-              text-[10px]
-              font-semibold
-              uppercase
-              tracking-wide
-              text-gray-400
-            "
+                          text-[10px]
+                          font-semibold
+                          uppercase
+                          tracking-wide
+                          text-gray-400
+                        "
                       >
                         New Users
                       </p>
 
                       <div
                         class="
-              mt-1
-              flex
-              items-center
-              gap-1.5
-            "
+                          mt-1
+                          flex
+                          items-center
+                          gap-1.5
+                        "
                       >
                         <mat-icon
                           class="
-                !h-4
-                !w-4
-                !text-base
-              "
-                          [class.text-emerald-600]="feature.allowNewUsers"
-                          [class.text-gray-400]="!feature.allowNewUsers"
+                            !h-4
+                            !w-4
+                            !text-base
+                          "
+                          [class.text-emerald-600]="
+                            feature.allowNewUsers
+                          "
+                          [class.text-gray-400]="
+                            !feature.allowNewUsers
+                          "
                         >
-                          {{ feature.allowNewUsers ? 'person_add' : 'person_off' }}
+                          {{
+                            feature.allowNewUsers
+                              ? 'person_add'
+                              : 'person_off'
+                          }}
                         </mat-icon>
 
                         <span
                           class="
-                text-xs
-                font-medium
-                text-gray-700
-              "
+                            text-xs
+                            font-medium
+                            text-gray-700
+                          "
                         >
-                          {{ feature.allowNewUsers ? 'Allowed' : 'Restricted' }}
+                          {{
+                            feature.allowNewUsers
+                              ? 'Allowed'
+                              : 'Restricted'
+                          }}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Dependencies -->
+                  <!-- =================================================
+                       DEPENDENCIES
+                       ================================================= -->
 
                   @if (feature.dependencies.length > 0) {
                     <div class="mt-3">
                       <p
                         class="
-              text-[10px]
-              font-semibold
-              uppercase
-              tracking-wide
-              text-gray-400
-            "
+                          text-[10px]
+                          font-semibold
+                          uppercase
+                          tracking-wide
+                          text-gray-400
+                        "
                       >
                         Dependencies
                       </p>
 
                       <div
                         class="
-              mt-1.5
-              flex
-              flex-wrap
-              gap-1.5
-            "
+                          mt-1.5
+                          flex
+                          flex-wrap
+                          gap-1.5
+                        "
                       >
-                        @for (dependency of feature.dependencies; track dependency) {
+                        @for (
+                          dependency of feature.dependencies;
+                          track dependency
+                        ) {
                           <span
                             class="
-                  rounded
-                  border
-                  border-gray-200
-                  bg-gray-50
-                  px-2
-                  py-0.5
-                  font-mono
-                  text-[10px]
-                  text-gray-600
-                "
+                              rounded
+                              border
+                              border-gray-200
+                              bg-gray-50
+                              px-2
+                              py-0.5
+                              font-mono
+                              text-[10px]
+                              text-gray-600
+                            "
                           >
                             {{ dependency }}
                           </span>
@@ -673,90 +889,189 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
                     </div>
                   }
 
-                  <!-- Applications that currently depend on this application -->
+                  <!-- =================================================
+                       ENABLED DEPENDENTS
+                       ================================================= -->
 
-@if (getEnabledDependents(feature.key).length > 0) {
+                  @if (
+                    getEnabledDependents(feature.key).length > 0
+                  ) {
+                    <div
+                      class="
+                        mt-3
+                        rounded-lg
+                        border
+                        border-amber-200
+                        bg-amber-50
+                        px-3
+                        py-2.5
+                      "
+                    >
+                      <div
+                        class="
+                          flex
+                          items-start
+                          gap-2
+                        "
+                      >
+                        <mat-icon
+                          class="
+                            !h-4
+                            !w-4
+                            !text-base
+                            text-amber-700
+                          "
+                        >
+                          account_tree
+                        </mat-icon>
 
-  <div
-    class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5"
-  >
+                        <div class="min-w-0">
+                          <p
+                            class="
+                              text-[10px]
+                              font-semibold
+                              uppercase
+                              tracking-wide
+                              text-amber-800
+                            "
+                          >
+                            Used by
+                          </p>
 
-    <div class="flex items-start gap-2">
+                          <p
+                            class="
+                              mt-0.5
+                              text-xs
+                              leading-5
+                              text-amber-900
+                            "
+                          >
+                            This application cannot be disabled
+                            while these applications are enabled.
+                          </p>
 
-      <mat-icon
-        class="!h-4 !w-4 !text-base text-amber-700"
-      >
-        account_tree
-      </mat-icon>
+                          <div
+                            class="
+                              mt-1.5
+                              flex
+                              flex-wrap
+                              gap-1.5
+                            "
+                          >
+                            @for (
+                              dependent of
+                              getEnabledDependents(feature.key);
+                              track dependent.key
+                            ) {
+                              <span
+                                class="
+                                  rounded
+                                  border
+                                  border-amber-200
+                                  bg-white
+                                  px-2
+                                  py-0.5
+                                  text-[10px]
+                                  font-medium
+                                  text-amber-800
+                                "
+                              >
+                                {{ applicationName(dependent) }}
+                              </span>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  }
 
-      <div class="min-w-0">
+                  <!-- =================================================
+                       REGISTRY STATUS
+                       ================================================= -->
 
-        <p
-          class="text-[10px] font-semibold uppercase tracking-wide text-amber-800"
-        >
-          Used by
-        </p>
+                  @if (!hasCanonicalApplication(feature.key)) {
+                    <div
+                      class="
+                        mt-3
+                        flex
+                        items-start
+                        gap-2
+                        rounded-lg
+                        border
+                        border-slate-200
+                        bg-slate-50
+                        px-3
+                        py-2.5
+                      "
+                    >
+                      <mat-icon
+                        class="
+                          !h-4
+                          !w-4
+                          !text-base
+                          text-slate-500
+                        "
+                      >
+                        info
+                      </mat-icon>
 
-        <p class="mt-0.5 text-xs leading-5 text-amber-900">
-          This application cannot be disabled while these applications
-          are enabled.
-        </p>
-
-        <div class="mt-1.5 flex flex-wrap gap-1.5">
-
-          @for (
-            dependent of getEnabledDependents(feature.key);
-            track dependent.key
-          ) {
-
-            <span
-              class="rounded border border-amber-200 bg-white px-2 py-0.5 text-[10px] font-medium text-amber-800"
-            >
-              {{ dependent.name }}
-            </span>
-
-          }
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-}
+                      <p
+                        class="
+                          text-xs
+                          leading-5
+                          text-slate-600
+                        "
+                      >
+                        This runtime feature is not yet represented
+                        in the canonical application catalog.
+                        Runtime configuration remains available.
+                      </p>
+                    </div>
+                  }
                 </mat-card-content>
 
-                <!-- =========================================================
-         CARD ACTIONS
-         ========================================================= -->
+                <!-- =================================================
+                     CARD ACTIONS
+                     ================================================= -->
 
                 <mat-card-actions
                   class="
-        !flex
-        !flex-wrap
-        !items-center
-        !gap-2
-        !border-t
-        !border-gray-100
-        !px-4
-        !py-2.5
-      "
+                    !flex
+                    !flex-wrap
+                    !items-center
+                    !gap-2
+                    !border-t
+                    !border-gray-100
+                    !px-4
+                    !py-2.5
+                  "
                 >
+                  <!-- Enable -->
+
                   <button
                     mat-stroked-button
                     type="button"
                     [disabled]="
-                      feature.core || isSaving(feature.key) || feature.availability === 'enabled'
+                      feature.core ||
+                      isSaving(feature.key) ||
+                      feature.availability === 'enabled'
                     "
-                    (click)="changeAvailability(feature, 'enabled')"
+                    (click)="
+                      changeAvailability(
+                        feature,
+                        'enabled'
+                      )
+                    "
                     matTooltip="Enable this application"
                   >
-                    <mat-icon> check_circle </mat-icon>
+                    <mat-icon>
+                      check_circle
+                    </mat-icon>
 
                     Enable
                   </button>
+
+                  <!-- Maintenance -->
 
                   <button
                     mat-stroked-button
@@ -766,13 +1081,22 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
                       isSaving(feature.key) ||
                       feature.availability === 'maintenance'
                     "
-                    (click)="changeAvailability(feature, 'maintenance')"
+                    (click)="
+                      changeAvailability(
+                        feature,
+                        'maintenance'
+                      )
+                    "
                     matTooltip="Place this application into maintenance mode"
                   >
-                    <mat-icon> build </mat-icon>
+                    <mat-icon>
+                      build
+                    </mat-icon>
 
                     Maintenance
                   </button>
+
+                  <!-- Disable -->
 
                   <button
                     mat-stroked-button
@@ -783,34 +1107,58 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
                       feature.availability === 'disabled' ||
                       getEnabledDependents(feature.key).length > 0
                     "
-                    (click)="changeAvailability(feature, 'disabled')"
+                    (click)="
+                      changeAvailability(
+                        feature,
+                        'disabled'
+                      )
+                    "
                     [matTooltip]="
                       getEnabledDependents(feature.key).length > 0
                         ? 'Cannot disable while enabled applications depend on this application'
                         : 'Disable this application'
                     "
                   >
-                    <mat-icon> block </mat-icon>
+                    <mat-icon>
+                      block
+                    </mat-icon>
 
                     Disable
                   </button>
+
+                  <!-- Navigation -->
 
                   <button
                     mat-button
                     type="button"
                     class="!ml-auto"
-                    [disabled]="feature.core || isSaving(feature.key)"
-                    (click)="toggleNavigationVisibility(feature)"
+                    [disabled]="
+                      feature.core ||
+                      isSaving(feature.key)
+                    "
+                    (click)="
+                      toggleNavigationVisibility(feature)
+                    "
                   >
                     @if (isSaving(feature.key)) {
-                      <mat-spinner diameter="16"></mat-spinner>
+                      <mat-spinner
+                        diameter="16"
+                      ></mat-spinner>
                     } @else {
                       <mat-icon>
-                        {{ feature.visibleInNavigation ? 'visibility_off' : 'visibility' }}
+                        {{
+                          feature.visibleInNavigation
+                            ? 'visibility_off'
+                            : 'visibility'
+                        }}
                       </mat-icon>
                     }
 
-                    {{ feature.visibleInNavigation ? 'Hide navigation' : 'Show navigation' }}
+                    {{
+                      feature.visibleInNavigation
+                        ? 'Hide navigation'
+                        : 'Show navigation'
+                    }}
                   </button>
                 </mat-card-actions>
 
@@ -819,19 +1167,21 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
                 @if (isSaving(feature.key)) {
                   <div
                     class="
-          flex
-          items-center
-          gap-2
-          border-t
-          border-gray-100
-          bg-gray-50
-          px-4
-          py-2
-          text-[11px]
-          text-gray-500
-        "
+                      flex
+                      items-center
+                      gap-2
+                      border-t
+                      border-gray-100
+                      bg-gray-50
+                      px-4
+                      py-2
+                      text-[11px]
+                      text-gray-500
+                    "
                   >
-                    <mat-spinner diameter="14"></mat-spinner>
+                    <mat-spinner
+                      diameter="14"
+                    ></mat-spinner>
 
                     Applying configuration change...
                   </div>
@@ -849,13 +1199,134 @@ export class ConfigurationApplicationsComponent {
   // SERVICES
   // ============================================================
 
-  private readonly featureConfigService = inject(FeatureConfigService);
+  private readonly featureConfigService =
+    inject(FeatureConfigService);
 
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly confirmationService =
+    inject(ConfirmationService);
 
-  private readonly notificationService = inject(NotificationService);
+  private readonly notificationService =
+    inject(NotificationService);
 
-  private readonly logger = inject(LoggerService);
+  private readonly logger =
+    inject(LoggerService);
+
+  // ============================================================
+  // CANONICAL APPLICATION CATALOG
+  // ============================================================
+
+  /**
+   * Canonical application metadata.
+   *
+   * This registry is intentionally separate from runtime
+   * FeatureConfig state.
+   */
+  protected readonly applicationCatalog =
+    CONFIGURATION_APPLICATIONS;
+
+  /**
+   * Fast lookup map for application metadata.
+   */
+  private readonly applicationCatalogMap =
+    new Map<string, ConfigurationApplication>(
+      this.applicationCatalog.map(
+        (application) => [
+          application.key,
+          application,
+        ],
+      ),
+    );
+
+  // ============================================================
+  // RUNTIME APPLICATION FEATURES
+  // ============================================================
+
+  /**
+   * Runtime application configuration.
+   *
+   * FeatureConfigService remains the source of truth for:
+   *
+   * - availability
+   * - navigation visibility
+   * - dependencies
+   * - protected/core state
+   * - version
+   * - new-user access
+   */
+  protected readonly features =
+    this.featureConfigService.features;
+
+  /**
+   * Return canonical metadata for a runtime feature.
+   */
+  private getApplication(
+    key: string,
+  ): ConfigurationApplication | undefined {
+    return this.applicationCatalogMap.get(key);
+  }
+
+  /**
+   * Determine whether a runtime application exists
+   * in the canonical catalog.
+   */
+  protected hasCanonicalApplication(
+    key: string,
+  ): boolean {
+    return this.applicationCatalogMap.has(key);
+  }
+
+  /**
+   * Return the display name.
+   *
+   * Canonical application metadata takes precedence,
+   * while runtime configuration remains the fallback.
+   */
+  protected applicationName(
+    feature: FeatureConfig,
+  ): string {
+    return (
+      this.getApplication(feature.key)?.name ??
+      feature.name
+    );
+  }
+
+  /**
+   * Return the application description.
+   */
+  protected applicationDescription(
+    feature: FeatureConfig,
+  ): string {
+    return (
+      this.getApplication(feature.key)?.description ??
+      feature.description ??
+      'No application description has been configured.'
+    );
+  }
+
+  /**
+   * Return the canonical application icon.
+   */
+  protected applicationIcon(
+    feature: FeatureConfig,
+  ): string {
+    return (
+      this.getApplication(feature.key)?.icon ??
+      feature.icon ??
+      'apps'
+    );
+  }
+
+  /**
+   * Return canonical application keywords.
+   */
+  protected applicationKeywords(
+    feature: FeatureConfig,
+  ): string[] {
+    const application =
+      this.getApplication(feature.key);
+
+    return application?.keywords ?? [];
+  }
 
   // ============================================================
   // SEARCH
@@ -863,53 +1334,72 @@ export class ConfigurationApplicationsComponent {
 
   /**
    * Current application search term.
-   *
-   * Filtering is performed locally against the feature
-   * configuration registry. No additional Firestore request
-   * is required when the administrator searches.
    */
-  readonly searchTerm = signal('');
-
-  /**
-   * Feature registry exposed to the template.
-   *
-   * FeatureConfigService remains the source of truth.
-   */
-  protected readonly features = this.featureConfigService.features;
+  readonly searchTerm =
+    signal('');
 
   /**
    * Applications matching the current search term.
    *
-   * Searches:
-   * - Application name
-   * - Feature key
-   * - Description
+   * Searches runtime and canonical metadata:
+   *
+   * - application name
+   * - application key
+   * - description
+   * - canonical keywords
    */
-  readonly filteredFeatures = computed(() => {
-    const term = this.searchTerm().trim().toLowerCase();
+  readonly filteredFeatures =
+    computed(() => {
+      const term =
+        this.searchTerm()
+          .trim()
+          .toLowerCase();
 
-    if (!term) {
-      return this.features();
-    }
+      if (!term) {
+        return this.features();
+      }
 
-    return this.features().filter((feature) =>
-      [feature.name, feature.key, feature.description ?? ''].some((value) =>
-        value.toLowerCase().includes(term),
-      ),
-    );
-  });
+      return this.features().filter(
+        (feature) => {
+          const application =
+            this.getApplication(
+              feature.key,
+            );
+
+          const searchableText = [
+            feature.name,
+            feature.key,
+            feature.description ?? '',
+            application?.name ?? '',
+            application?.description ?? '',
+            ...(application?.keywords ?? []),
+          ]
+            .join(' ')
+            .toLowerCase();
+
+          return searchableText.includes(
+            term,
+          );
+        },
+      );
+    });
 
   /**
    * Handle application search input.
    */
-  onSearchChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
+  onSearchChange(
+    event: Event,
+  ): void {
+    const input =
+      event.target as HTMLInputElement;
 
-    this.searchTerm.set(input.value);
+    this.searchTerm.set(
+      input.value,
+    );
   }
 
   /**
-   * Clear the application search.
+   * Clear application search.
    */
   clearSearch(): void {
     this.searchTerm.set('');
@@ -921,40 +1411,60 @@ export class ConfigurationApplicationsComponent {
 
   /**
    * Feature keys currently being modified.
-   *
-   * A Set is used so multiple independent cards can
-   * theoretically be updated without blocking the
-   * entire Applications screen.
    */
-  private readonly savingKeys = signal<Set<string>>(new Set());
+  private readonly savingKeys =
+    signal<Set<string>>(
+      new Set(),
+    );
 
   /**
    * Return whether a feature is currently being modified.
    */
-  protected isSaving(key: string): boolean {
-    return this.savingKeys().has(key);
+  protected isSaving(
+    key: string,
+  ): boolean {
+    return this.savingKeys().has(
+      key,
+    );
   }
+
+  // ============================================================
+  // EXPANSION STATE
+  // ============================================================
 
   /**
    * Tracks application cards that have been manually expanded.
    *
    * Cards are collapsed by default.
    */
-  readonly expandedKeys = signal<Set<string>>(new Set());
+  readonly expandedKeys =
+    signal<Set<string>>(
+      new Set(),
+    );
 
-  protected isCollapsed(key: string): boolean {
-    return !this.expandedKeys().has(key);
+  protected isCollapsed(
+    key: string,
+  ): boolean {
+    return !this.expandedKeys().has(
+      key,
+    );
   }
 
+  // ============================================================
+  // DEPENDENCIES
+  // ============================================================
+
   /**
-   * Return the applications that are currently enabled and depend on
-   * the supplied application.
+   * Return applications that are currently enabled and
+   * depend on the supplied application.
    *
-   * FeatureConfigService remains the source of truth for dependency
-   * relationships and availability state.
+   * FeatureConfigService remains the source of truth.
    */
-  protected getEnabledDependents(key: string): FeatureConfig[] {
-    return this.featureConfigService.getEnabledDependents(key);
+  protected getEnabledDependents(
+    key: string,
+  ): FeatureConfig[] {
+    return this.featureConfigService
+      .getEnabledDependents(key);
   }
 
   // ============================================================
@@ -964,7 +1474,9 @@ export class ConfigurationApplicationsComponent {
   /**
    * Return a human-readable availability label.
    */
-  protected availabilityLabel(availability: FeatureAvailability): string {
+  protected availabilityLabel(
+    availability: FeatureAvailability,
+  ): string {
     switch (availability) {
       case 'enabled':
         return 'Enabled';
@@ -984,7 +1496,9 @@ export class ConfigurationApplicationsComponent {
    * Convert availability to an administrator-friendly
    * action label.
    */
-  private availabilityActionLabel(availability: FeatureAvailability): string {
+  private availabilityActionLabel(
+    availability: FeatureAvailability,
+  ): string {
     switch (availability) {
       case 'enabled':
         return 'Enable';
@@ -1014,55 +1528,91 @@ export class ConfigurationApplicationsComponent {
     feature: FeatureConfig,
     availability: FeatureAvailability,
   ): Promise<void> {
-    // Core applications cannot be disabled or
-    // placed into maintenance.
+    // Core applications cannot be disabled
+    // or placed into maintenance.
 
     if (feature.core) {
-      this.notificationService.warning(`${feature.name} is a protected core application.`);
+      this.notificationService.warning(
+        `${this.applicationName(feature)} is a protected core application.`,
+      );
 
       return;
     }
 
     // Nothing to change.
 
-    if (feature.availability === availability) {
+    if (
+      feature.availability ===
+      availability
+    ) {
       return;
     }
 
-    const operationLabel = this.availabilityActionLabel(availability);
+    // Prevent disabling an application while
+    // enabled applications depend on it.
+
+    if (
+      availability === 'disabled' &&
+      this.getEnabledDependents(
+        feature.key,
+      ).length > 0
+    ) {
+      this.notificationService.warning(
+        `${this.applicationName(feature)} cannot be disabled while enabled applications depend on it.`,
+      );
+
+      return;
+    }
+
+    const operationLabel =
+      this.availabilityActionLabel(
+        availability,
+      );
 
     // ----------------------------------------------------------
     // Confirmation
     // ----------------------------------------------------------
 
-    const confirmed = await this.confirmationService.confirm({
-      title: `${operationLabel} application?`,
+    const confirmed =
+      await this.confirmationService.confirm(
+        {
+          title:
+            `${operationLabel} application?`,
 
-      message:
-        `You are about to ${operationLabel.toLowerCase()} ` +
-        `${feature.name}. This change will affect the application's ` +
-        `runtime availability.`,
+          message:
+            `You are about to ${operationLabel.toLowerCase()} ` +
+            `${this.applicationName(feature)}. This change will affect ` +
+            `the application's runtime availability.`,
 
-      warning:
-        availability === 'disabled'
-          ? 'The application data will be preserved, but users will no longer be able to access the feature while it is disabled.'
-          : availability === 'maintenance'
-            ? 'Users will be redirected to the feature unavailable page while the application is in maintenance mode.'
-            : 'Confirm that the application is ready to accept user traffic.',
+          warning:
+            availability ===
+            'disabled'
+              ? 'The application data will be preserved, but users will no longer be able to access the feature while it is disabled.'
+              : availability ===
+                  'maintenance'
+                ? 'Users will be redirected to the feature unavailable page while the application is in maintenance mode.'
+                : 'Confirm that the application is ready to accept user traffic.',
 
-      icon:
-        availability === 'disabled'
-          ? 'block'
-          : availability === 'maintenance'
-            ? 'build'
-            : 'check_circle',
+          icon:
+            availability ===
+            'disabled'
+              ? 'block'
+              : availability ===
+                  'maintenance'
+                ? 'build'
+                : 'check_circle',
 
-      confirmText: operationLabel,
+          confirmText:
+            operationLabel,
 
-      cancelText: 'Cancel',
+          cancelText:
+            'Cancel',
 
-      destructive: availability === 'disabled',
-    });
+          destructive:
+            availability ===
+            'disabled',
+        },
+      );
 
     // Administrator cancelled.
 
@@ -1071,8 +1621,11 @@ export class ConfigurationApplicationsComponent {
         'ConfigurationApplicationsComponent',
         'Application availability change cancelled.',
         {
-          featureKey: feature.key,
-          requestedAvailability: availability,
+          featureKey:
+            feature.key,
+
+          requestedAvailability:
+            availability,
         },
       );
 
@@ -1083,26 +1636,37 @@ export class ConfigurationApplicationsComponent {
     // Saving state
     // ----------------------------------------------------------
 
-    this.setSaving(feature.key, true);
+    this.setSaving(
+      feature.key,
+      true,
+    );
 
-    const operationId = this.logger.createOperationId();
+    const operationId =
+      this.logger.createOperationId();
 
     this.logger.info(
       'ConfigurationApplicationsComponent',
       'Starting application availability change.',
       {
         operationId,
-        featureKey: feature.key,
-        previousAvailability: feature.availability,
-        requestedAvailability: availability,
+        featureKey:
+          feature.key,
+        previousAvailability:
+          feature.availability,
+        requestedAvailability:
+          availability,
       },
     );
 
     try {
-      await this.featureConfigService.setAvailability(feature.key, availability);
+      await this.featureConfigService
+        .setAvailability(
+          feature.key,
+          availability,
+        );
 
       this.notificationService.success(
-        `${feature.name} is now ${this.availabilityLabel(availability).toLowerCase()}.`,
+        `${this.applicationName(feature)} is now ${this.availabilityLabel(availability).toLowerCase()}.`,
       );
 
       this.logger.info(
@@ -1110,7 +1674,8 @@ export class ConfigurationApplicationsComponent {
         'Application availability change completed.',
         {
           operationId,
-          featureKey: feature.key,
+          featureKey:
+            feature.key,
           availability,
         },
       );
@@ -1120,17 +1685,26 @@ export class ConfigurationApplicationsComponent {
         'Application availability change failed.',
         {
           operationId,
-          featureKey: feature.key,
-          requestedAvailability: availability,
-          error: this.getErrorMessage(error),
+          featureKey:
+            feature.key,
+          requestedAvailability:
+            availability,
+          error:
+            this.getErrorMessage(
+              error,
+            ),
         },
       );
 
       this.notificationService.error(
-        `Unable to update ${feature.name}. ` + `The previous configuration has been preserved.`,
+        `Unable to update ${this.applicationName(feature)}. ` +
+        `The previous configuration has been preserved.`,
       );
     } finally {
-      this.setSaving(feature.key, false);
+      this.setSaving(
+        feature.key,
+        false,
+      );
     }
   }
 
@@ -1141,39 +1715,55 @@ export class ConfigurationApplicationsComponent {
   /**
    * Toggle whether an application appears in navigation.
    */
-  protected async toggleNavigationVisibility(feature: FeatureConfig): Promise<void> {
+  protected async toggleNavigationVisibility(
+    feature: FeatureConfig,
+  ): Promise<void> {
     // Core applications cannot be hidden.
 
     if (feature.core) {
-      this.notificationService.warning(`${feature.name} is a protected core application.`);
+      this.notificationService.warning(
+        `${this.applicationName(feature)} is a protected core application.`,
+      );
 
       return;
     }
 
-    const visible = !feature.visibleInNavigation;
+    const visible =
+      !feature.visibleInNavigation;
 
-    this.setSaving(feature.key, true);
+    this.setSaving(
+      feature.key,
+      true,
+    );
 
-    const operationId = this.logger.createOperationId();
+    const operationId =
+      this.logger.createOperationId();
 
     this.logger.info(
       'ConfigurationApplicationsComponent',
       'Starting application navigation visibility change.',
       {
         operationId,
-        featureKey: feature.key,
-        previousVisibleInNavigation: feature.visibleInNavigation,
-        requestedVisibleInNavigation: visible,
+        featureKey:
+          feature.key,
+        previousVisibleInNavigation:
+          feature.visibleInNavigation,
+        requestedVisibleInNavigation:
+          visible,
       },
     );
 
     try {
-      await this.featureConfigService.setNavigationVisibility(feature.key, visible);
+      await this.featureConfigService
+        .setNavigationVisibility(
+          feature.key,
+          visible,
+        );
 
       this.notificationService.success(
         visible
-          ? `${feature.name} is now visible in navigation.`
-          : `${feature.name} is now hidden from navigation.`,
+          ? `${this.applicationName(feature)} is now visible in navigation.`
+          : `${this.applicationName(feature)} is now hidden from navigation.`,
       );
 
       this.logger.info(
@@ -1181,8 +1771,10 @@ export class ConfigurationApplicationsComponent {
         'Application navigation visibility changed.',
         {
           operationId,
-          featureKey: feature.key,
-          visibleInNavigation: visible,
+          featureKey:
+            feature.key,
+          visibleInNavigation:
+            visible,
         },
       );
     } catch (error) {
@@ -1191,15 +1783,25 @@ export class ConfigurationApplicationsComponent {
         'Application navigation visibility change failed.',
         {
           operationId,
-          featureKey: feature.key,
-          visibleInNavigation: visible,
-          error: this.getErrorMessage(error),
+          featureKey:
+            feature.key,
+          visibleInNavigation:
+            visible,
+          error:
+            this.getErrorMessage(
+              error,
+            ),
         },
       );
 
-      this.notificationService.error(`Unable to update navigation visibility for ${feature.name}.`);
+      this.notificationService.error(
+        `Unable to update navigation visibility for ${this.applicationName(feature)}.`,
+      );
     } finally {
-      this.setSaving(feature.key, false);
+      this.setSaving(
+        feature.key,
+        false,
+      );
     }
   }
 
@@ -1210,35 +1812,46 @@ export class ConfigurationApplicationsComponent {
   /**
    * Mark a feature as being modified.
    */
-  private setSaving(key: string, saving: boolean): void {
-    this.savingKeys.update((current) => {
-      const next = new Set(current);
+  private setSaving(
+    key: string,
+    saving: boolean,
+  ): void {
+    this.savingKeys.update(
+      (current) => {
+        const next =
+          new Set(current);
 
-      if (saving) {
-        next.add(key);
-      } else {
-        next.delete(key);
-      }
+        if (saving) {
+          next.add(key);
+        } else {
+          next.delete(key);
+        }
 
-      return next;
-    });
+        return next;
+      },
+    );
   }
 
   /**
-   * Toggle the expanded/collapsed state of an application card.
+   * Toggle expanded/collapsed state.
    */
-  protected toggleCard(key: string): void {
-    this.expandedKeys.update((current) => {
-      const next = new Set(current);
+  protected toggleCard(
+    key: string,
+  ): void {
+    this.expandedKeys.update(
+      (current) => {
+        const next =
+          new Set(current);
 
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
 
-      return next;
-    });
+        return next;
+      },
+    );
   }
 
   // ============================================================
@@ -1248,12 +1861,10 @@ export class ConfigurationApplicationsComponent {
   /**
    * Safely convert an unknown caught error into
    * a loggable string.
-   *
-   * JavaScript catch variables are typed as unknown,
-   * so we should never assume that the thrown value
-   * is an Error.
    */
-  private getErrorMessage(error: unknown): string {
+  private getErrorMessage(
+    error: unknown,
+  ): string {
     if (error instanceof Error) {
       return error.message;
     }

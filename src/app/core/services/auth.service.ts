@@ -266,12 +266,15 @@ export class AuthService {
 
 
   /**
-   * Indicates whether the current Zebron user has
-   * administrator privileges.
-   */
-  get isAdmin(): boolean {
-    return this.currentUser()?.role === 'admin';
-  }
+ * Indicates whether the current Zebron user has
+ * platform administrator privileges.
+ *
+ * Platform authorization is based on the canonical
+ * platformRole field.
+ */
+get isAdmin(): boolean {
+  return this.currentUser()?.platformRole === 'platform-admin';
+}
 
 
   // ============================================================

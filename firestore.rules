@@ -16,29 +16,45 @@ function isCurrentUser(userId) {
     && request.auth.uid == userId;
 }
 
-/*
- * Platform role:
+/**
+ * Determine whether the authenticated user is a
+ * platform administrator.
  *
- *   users/{uid}.role == "admin"
+ * Canonical authorization:
  *
- * Organization membership roles are separate and use the org_*
- * namespace so platform and organization authorization cannot be
- * confused.
+ *   platformRole == "platform-admin"
  *
- * This is intentionally separate from the newer platform/
- * organization/group ACL model.
+ * Legacy compatibility:
  *
- * Later, platform roles can be migrated to a dedicated
- * platform-role collection or Firebase custom claims.
+ *   role == "admin"
+ *
+ * is only honored when platformRole does not yet exist.
+ *
+ * This allows existing administrator accounts to continue
+ * functioning while user profiles are migrated.
  */
 function isPlatformAdmin() {
   return isAuthenticated()
     && exists(
       /databases/$(database)/documents/users/$(request.auth.uid)
     )
-    && get(
-      /databases/$(database)/documents/users/$(request.auth.uid)
-    ).data.role == "admin";
+    && (
+      get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data.platformRole == "platform-admin"
+
+      ||
+
+      (
+        !get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.keys().hasAny(["platformRole"])
+        &&
+        get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.role == "admin"
+      )
+    );
 }
 
 // ============================================================
@@ -1562,7 +1578,7 @@ match /testCourses/{courseId} {
    * Organization administrators create organization courses.
    */
   allow create: if
-  
+
   request.resource.data.scope == 'organization'
   && request.resource.data.accessType
     == 'organization-members'
@@ -1714,7 +1730,7 @@ match /testQuestions/{questionId} {
       && isOrganizationAdmin(resource.data.organizationId)
     );
 
-   
+
 
   /*
    * Only organization administrators can create questions.

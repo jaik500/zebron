@@ -10,8 +10,9 @@ import {
   TestQuestion,
   TestQuestionDifficulty,
   TestQuestionOption,
+  TestQuestionStatus,
   TestQuestionType,
-} from '../../../../features/test-center/models/test-question.model';
+} from '../../../test-center/models/test-question.model';
 
 import { TestTopic } from '../../../../features/test-center/models/test-topic.model';
 
@@ -2345,7 +2346,7 @@ export class TestQuestionAdminComponent implements OnInit {
 
           sourceReference: this.optionalString(raw, 'sourceReference'),
 
-          status: status as 'draft' | 'published' | 'archived',
+          status: status as TestQuestionStatus,
         };
 
         records.push(record);
@@ -2729,5 +2730,5 @@ interface QuestionForm {
 
   sourceReference: string;
 
-  status: 'draft' | 'published' | 'archived';
+  status: TestQuestionStatus;
 }

@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "vitest run",
     "serve:ssr:zebron": "node dist/zebron/server/server.mjs",
-    "generate:counties": "node scripts/generate-us-counties.mjs"
+    "generate:counties": "node scripts/generate-us-counties.mjs",
+    "generate:application-inventory": "node scripts/generate-application-inventory.mjs"
   },
   "prettier": {
     "printWidth": 100,
@@ -53,6 +54,8 @@
     "@angular/compiler-cli": "^21.1.0",
     "@firebase/rules-unit-testing": "^5.0.2",
     "@types/express": "^5.0.1",
+    "@types/jest": "^30.0.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20.17.19",
     "typescript": "~5.9.2",
     "vitest": "^4.1.11"

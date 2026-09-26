@@ -1,3 +1,5 @@
+import { InjectionToken } from '@angular/core';
+
 import { Organization } from '../models/organization.model';
 
 /**
@@ -8,33 +10,20 @@ import { Organization } from '../models/organization.model';
  */
 export interface OrganizationRepository {
 
-  /**
-   * Get all organizations.
-   */
   getOrganizations(): Promise<Organization[]>;
 
-  /**
-   * Get one organization by document ID.
-   */
-  getOrganization(id: string): Promise<Organization | null>;
+  getOrganization(
+    id: string,
+  ): Promise<Organization | null>;
 
-  /**
-   * Find an organization by normalized name.
-   */
   findByNormalizedName(
     normalizedName: string,
   ): Promise<Organization | null>;
 
-  /**
-   * Find an organization by business / registration number.
-   */
   findByCompanyNumber(
     companyNumber: string,
   ): Promise<Organization | null>;
 
-  /**
-   * Create an organization.
-   */
   createOrganization(
     organization: Omit<
       Organization,
@@ -42,9 +31,6 @@ export interface OrganizationRepository {
     >,
   ): Promise<string>;
 
-  /**
-   * Update an organization.
-   */
   updateOrganization(
     id: string,
     changes: Partial<
@@ -55,10 +41,18 @@ export interface OrganizationRepository {
     >,
   ): Promise<void>;
 
-  /**
-   * Delete an organization.
-   */
   deleteOrganization(
     id: string,
   ): Promise<void>;
 }
+
+/**
+ * Angular DI token for the organization repository.
+ *
+ * The interface above is compile-time only, so Angular
+ * cannot inject it directly.
+ */
+export const ORGANIZATION_REPOSITORY =
+  new InjectionToken<OrganizationRepository>(
+    'OrganizationRepository',
+  );

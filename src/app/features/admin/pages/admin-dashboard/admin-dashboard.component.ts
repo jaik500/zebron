@@ -631,6 +631,43 @@ interface AdminDashboardCard {
                       </svg>
                     }
 
+                    @case ('partner-test-center') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <!-- Certificate / assessment -->
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M6 3.5h8.5L19 8v7.5"
+                        />
+
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14 3.5V8h4.5" />
+
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 11h6M9 14h4" />
+
+                        <!-- Completion check -->
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="m8 17 1.5 1.5L12 16"
+                        />
+
+                        <!-- Partner -->
+                        <circle cx="17.5" cy="17" r="2.5" />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M14.5 21c.5-1.5 1.5-2.5 3-2.5s2.5 1 3 2.5"
+                        />
+                      </svg>
+                    }
                     @case ('contact') {
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -687,6 +724,49 @@ interface AdminDashboardCard {
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2.55v-.1a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 15a1.7 1.7 0 0 0-1.56-1.03H6.4v-2.55h.14A1.7 1.7 0 0 0 8.1 10.4a1.7 1.7 0 0 0-.34-1.88L7.7 8.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56V5.4h2.55v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.14v2.55h-.14A1.7 1.7 0 0 0 19.4 15Z"
+                        />
+                      </svg>
+                    }
+
+                    @case ('account_balance') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                      >
+                        <circle cx="12" cy="12" r="3.5" />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2.55v-.1a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.1 15a1.7 1.7 0 0 0-1.56-1.03H6.4v-2.55h.14A1.7 1.7 0 0 0 8.1 10.4a1.7 1.7 0 0 0-.34-1.88L7.7 8.46l1.8-1.8.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56V5.4h2.55v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.8 1.8-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.14v2.55h-.14A1.7 1.7 0 0 0 19.4 15Z"
+                        />
+                      </svg>
+                    }
+
+                    @case ('menu_book') {
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        class="h-6 w-6"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M4.5 5.25A2.25 2.25 0 0 1 6.75 3H11a2 2 0 0 1 2 2v15a2 2 0 0 0-2-2H6.75A2.25 2.25 0 0 0 4.5 20.25v-15Z"
+                        />
+
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M19.5 5.25A2.25 2.25 0 0 0 17.25 3H13a2 2 0 0 0-2 2v15a2 2 0 0 1 2-2h4.25a2.25 2.25 0 0 1 2.25 2.25v-15Z"
                         />
                       </svg>
                     }
@@ -882,6 +962,13 @@ export class AdminDashboardComponent {
     },
 
     {
+      title: 'Partner Test Center',
+      description: 'Manage test courses, topics, questions, and question banks.',
+      route: '/partner/dashboard',
+      actionLabel: 'Open Test Center',
+      icon: 'test-center',
+    },
+    {
       title: 'Contact Mailbox',
       description: 'Review and manage messages submitted through the contact form.',
       route: '/admin/contact',
@@ -904,6 +991,22 @@ export class AdminDashboardComponent {
       route: '/admin/configuration',
       actionLabel: 'Manage configuration',
       icon: 'configuration',
+    },
+
+    {
+      title: 'Tax & Pay Admin',
+      description: 'Manage tax and payroll data used by the Zebron Tax & Pay Calculator.',
+      route: '/admin/tax-pay',
+      actionLabel: 'Manage Tax & Pay',
+      icon: 'account_balance',
+    },
+
+    {
+      title: 'Knowledge',
+      description: 'Create, manage, publish, and maintain Zebron knowledge articles.',
+      route: '/admin/configuration/knowledge',
+      actionLabel: 'Manage Knowledge',
+      icon: 'menu_book',
     },
   ];
 

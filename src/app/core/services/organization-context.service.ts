@@ -14,6 +14,10 @@ export class OrganizationContextService {
   private readonly organizationStore =
     inject(OrganizationStore);
 
+  // ============================================================
+  // CURRENT ORGANIZATION
+  // ============================================================
+
   /**
    * Currently selected organization.
    */
@@ -49,6 +53,10 @@ export class OrganizationContextService {
     () => this.organization()?.active === true,
   );
 
+  // ============================================================
+  // AVAILABLE ORGANIZATIONS
+  // ============================================================
+
   /**
    * Available organizations.
    */
@@ -70,8 +78,16 @@ export class OrganizationContextService {
     () => this.organizationStore.error(),
   );
 
-  /**
+  // ============================================================
+  // ORGANIZATION LOADING
+  // ============================================================
 
+  /**
+   * Load all available organizations.
+   */
+  async loadOrganizations(): Promise<void> {
+    await this.organizationStore.loadOrganizations();
+  }
 
   /**
    * Select an organization by ID.
@@ -79,35 +95,29 @@ export class OrganizationContextService {
    * Uses an already-loaded organization when possible.
    * Otherwise loads the organization through the store.
    */
-  async selectOrganizationById(
+async selectOrganizationById(
   organizationId: string,
 ): Promise<Organization | null> {
-  const normalizedId = organizationId.trim();
+  return this.organizationStore.selectOrganizationById(
+    organizationId,
+  );
+}
 
-  if (!normalizedId) {
-    this.clearOrganization();
-    return null;
-  }
+  // ============================================================
+  // ORGANIZATION SELECTION
+  // ============================================================
 
-  const existingOrganization =
-    this.organizations().find(
-      (organization) =>
-        organization.id === normalizedId,
-    );
+  /**
+   * Select an organization as the current application
+   * organization context.
+   */
 
-  if (existingOrganization) {
-    // Your current store must provide the mechanism
-    // for changing selectedOrganization.
-    // Do not call a nonexistent selectOrganization().
-    return existingOrganization;
-  }
-
-  const organization =
-    await this.organizationStore.getOrganizationById(
-      normalizedId,
-    );
-
-  return organization;
+selectOrganization(
+  organization: Organization | null,
+): void {
+  this.organizationStore.selectOrganization(
+    organization,
+  );
 }
 
   /**
@@ -116,6 +126,10 @@ export class OrganizationContextService {
   clearOrganization(): void {
     this.organizationStore.clearSelectedOrganization();
   }
+
+  // ============================================================
+  // ORGANIZATION REQUIREMENTS
+  // ============================================================
 
   /**
    * Require a selected organization.

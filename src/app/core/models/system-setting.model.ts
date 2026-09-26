@@ -23,10 +23,25 @@ export interface SystemSetting<T = SystemSettingValue> {
   /**
    * Stable configuration key.
    *
-   * Example:
-   * community.comment.maxLength
+   * Examples:
+   * community.reactions.enabled
+   * tax-pay.w2.enabled
+   * jobs.applications.enabled
    */
   key: string;
+
+  /**
+   * Application that owns this setting.
+   *
+   * Examples:
+   * platform
+   * community
+   * resources
+   * jobs
+   * test-center
+   * tax-pay
+   */
+  applicationKey: string;
 
   /**
    * Human-readable label.
@@ -66,9 +81,6 @@ export interface SystemSetting<T = SystemSettingValue> {
   /**
    * Whether the setting can safely be exposed
    * to the client application.
-   *
-   * Sensitive server-only configuration should
-   * never be stored here.
    */
   clientReadable: boolean;
 

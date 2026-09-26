@@ -1,8 +1,17 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  inject,
+  signal,
+} from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
-import { Router, RouterLink } from '@angular/router';
+import {
+  Router,
+  RouterLink,
+} from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
@@ -12,12 +21,14 @@ import {
 } from '../../../../features/test-center/models/test-course.model';
 
 import { TestCourseService } from '../../../../features/test-center/services/test-course.service';
+
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatMenuModule } from '@angular/material/menu';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { OrganizationContextService } from '../../../../core/services/organization-context.service';
+import { PageTitleService } from '../../../../core/services/page-title.service';
 
 // ============================================================
 // FORM MODEL
@@ -31,51 +42,58 @@ interface CourseForm {
   type: TestCourseType;
   certificationCode: string;
   active: boolean;
+  scope: 'platform' | 'organization';
+  organizationId: string;
+  programId: string;
 }
 
 @Component({
   selector: 'app-test-course-admin',
-
   standalone: true,
-
-  imports: [FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule],
-
+  imports: [
+    FormsModule,
+    RouterLink,
+    MatIconModule,
+    MatDividerModule,
+    MatMenuModule,
+  ],
   template: `
     <!-- =========================================================
          PAGE
          ========================================================= -->
-    <!-- ============================================================
-     PAGE HEADER
-     ============================================================ -->
 
-    <header class=" bg-[#032D42] shadow-md">
+    <!-- ============================================================
+         PAGE HEADER
+         ============================================================ -->
+
+    <header class="bg-[#032D42] shadow-md mt-16">
       <div
         class="mx-auto max-w-7xl
-           px-4 py-2
-           sm:px-6
-           lg:px-8"
+               px-4 py-2
+               sm:px-6
+               lg:px-8"
       >
         <div
           class="flex items-start
-             justify-between
-             gap-4"
+                 justify-between
+                 gap-4"
         >
           <!-- ======================================================
-           HEADER CONTENT / BREADCRUMB
-           ====================================================== -->
+               HEADER CONTENT / BREADCRUMB
+               ====================================================== -->
 
           <div class="min-w-0">
-            <!-- Current Breadcrumb -->
+
+            <!-- Breadcrumb -->
 
             <div
-              class="mb-2 flex flex-wrap
-                 items-center gap-2
-                 text-sm text-white/65"
+              class="flex flex-wrap
+                     items-center gap-2
+                     text-sm text-white/65"
             >
               <a
                 routerLink="/admin"
-                class="transition
-                   hover:text-white"
+                class="transition hover:text-white"
               >
                 Admin
               </a>
@@ -84,44 +102,41 @@ interface CourseForm {
 
               <a
                 routerLink="/admin/test-center"
-                class="transition
-                   hover:text-white"
+                class="transition hover:text-white"
               >
                 Test Center
               </a>
 
               <span>/</span>
 
-              <span class="text-white/90"> Courses </span>
+              <span class="text-white/90">
+                Courses
+              </span>
             </div>
 
             <!-- Title -->
 
             <h1
-              class="text-2xl
-                 font-bold
-                 tracking-tight
-                 text-white
-                 sm:text-3xl"
+              class="mt-1 text-xl
+                     font-semibold text-white"
             >
               Test Center Courses
             </h1>
 
             <p
-              class="mt-1 text-sm
-                 text-white/65"
+              class="text-lg text-white/65"
             >
               Create and manage the courses available in the Test Center.
             </p>
           </div>
 
           <!-- ======================================================
-           HEADER ACTIONS
-           ====================================================== -->
+               HEADER ACTIONS
+               ====================================================== -->
 
           <div
             class="flex shrink-0
-               items-center gap-2"
+                   items-center gap-2"
           >
             <!-- Add Course -->
 
@@ -130,29 +145,29 @@ interface CourseForm {
               (click)="startNewCourse()"
               [disabled]="saving()"
               class="hidden
-                 items-center
-                 rounded-lg
-                 bg-[#007979]
-                 px-4 py-1.5
-                 text-sm
-                 font-semibold
-                 text-white
-                 shadow-sm
-                 transition
-                 hover:bg-teal-400
-                 disabled:cursor-not-allowed
-                 disabled:opacity-50
-                 sm:inline-flex 
-                 cursor-pointer"
+                     items-center
+                     rounded-lg
+                     bg-[#007979]
+                     px-4 py-1.5
+                     text-sm
+                     font-semibold
+                     text-white
+                     shadow-sm
+                     transition
+                     hover:bg-teal-400
+                     disabled:cursor-not-allowed
+                     disabled:opacity-50
+                     sm:inline-flex
+                     cursor-pointer"
             >
-              <mat-icon class="mr-1"> add </mat-icon>
+              <mat-icon class="mr-1">
+                add
+              </mat-icon>
 
               Add Course
             </button>
 
-            <!-- ====================================================
-             THREE-DOT MENU
-             ==================================================== -->
+            <!-- THREE-DOT MENU -->
 
             <button
               mat-icon-button
@@ -160,77 +175,109 @@ interface CourseForm {
               aria-label="Test Center navigation"
               class="!text-white"
             >
-              <mat-icon> more_vert </mat-icon>
+              <mat-icon>
+                more_vert
+              </mat-icon>
             </button>
 
-            <!-- ====================================================
-             MATERIAL MENU
-             ==================================================== -->
+            <!-- MATERIAL MENU -->
 
-            <mat-menu #courseHeaderMenu="matMenu" xPosition="before">
-              <!-- Home -->
+            <mat-menu
+              #courseHeaderMenu="matMenu"
+              xPosition="before"
+            >
+              <a
+                mat-menu-item
+                routerLink="/admin"
+              >
+                <mat-icon>
+                  home
+                </mat-icon>
 
-              <a mat-menu-item routerLink="/admin">
-                <mat-icon> home </mat-icon>
-
-                <span> Home </span>
+                <span>
+                  Home
+                </span>
               </a>
 
-              <!-- Test Center -->
+              <a
+                mat-menu-item
+                routerLink="/test-center"
+              >
+                <mat-icon>
+                  school
+                </mat-icon>
 
-              <a mat-menu-item routerLink="/test-center">
-                <mat-icon> school </mat-icon>
-
-                <span> Test Center </span>
+                <span>
+                  Test Center
+                </span>
               </a>
 
               <mat-divider></mat-divider>
 
-              <!-- Test Center Administration -->
-
               <div
                 class="px-4 py-2
-                   text-[10px]
-                   font-semibold
-                   uppercase
-                   tracking-wider
-                   text-gray-500"
+                       text-[10px]
+                       font-semibold
+                       uppercase
+                       tracking-wider
+                       text-gray-500"
               >
                 Test Center
               </div>
 
-              <!-- Courses -->
+              <a
+                mat-menu-item
+                routerLink="/admin/test-center/courses"
+              >
+                <mat-icon>
+                  menu_book
+                </mat-icon>
 
-              <a mat-menu-item routerLink="/admin/test-center/courses">
-                <mat-icon> menu_book </mat-icon>
-
-                <span> Courses </span>
+                <span>
+                  Courses
+                </span>
               </a>
 
-              <!-- Topics -->
+              <a
+                mat-menu-item
+                routerLink="/admin/test-center/topics"
+              >
+                <mat-icon>
+                  account_tree
+                </mat-icon>
 
-              <a mat-menu-item routerLink="/admin/test-center/topics">
-                <mat-icon> account_tree </mat-icon>
-
-                <span> Topics </span>
+                <span>
+                  Topics
+                </span>
               </a>
 
-              <!-- Question Bank -->
+              <a
+                mat-menu-item
+                routerLink="/admin/test-center/questions"
+              >
+                <mat-icon>
+                  quiz
+                </mat-icon>
 
-              <a mat-menu-item routerLink="/admin/test-center/questions">
-                <mat-icon> quiz </mat-icon>
-
-                <span> Question Bank </span>
+                <span>
+                  Question Bank
+                </span>
               </a>
 
               <mat-divider></mat-divider>
 
-              <!-- Sign Out -->
+              <button
+                mat-menu-item
+                type="button"
+                (click)="signOut()"
+              >
+                <mat-icon>
+                  logout
+                </mat-icon>
 
-              <button mat-menu-item type="button" (click)="signOut()">
-                <mat-icon> logout </mat-icon>
-
-                <span> Sign Out </span>
+                <span>
+                  Sign Out
+                </span>
               </button>
             </mat-menu>
           </div>
@@ -238,32 +285,37 @@ interface CourseForm {
       </div>
     </header>
 
+    <!-- ============================================================
+         MAIN
+         ============================================================ -->
+
     <div
-      class="min-h-screen bg-gray-50
+      class="min-h-screen
+             bg-gray-50
              px-4 py-4
              sm:px-6
              lg:px-8"
     >
-      <div class="mx-auto ">
-        <!-- =====================================================
-             MAIN GRID
-             ===================================================== -->
+      <div class="mx-auto">
 
         <div
           class="grid gap-4
                  lg:grid-cols-[minmax(0,1fr)_360px]"
         >
-          <!-- ===================================================
+
+          <!-- =====================================================
                COURSE FORM
-               =================================================== -->
+               ===================================================== -->
 
           @if (showForm()) {
+
             <section
               class="rounded-xl
                      border border-gray-200
                      bg-white
                      shadow-sm"
             >
+
               <!-- Form Header -->
 
               <div
@@ -277,12 +329,17 @@ interface CourseForm {
                          gap-4"
                 >
                   <div>
+
                     <h2
                       class="text-base
                              font-semibold
                              text-gray-900"
                     >
-                      {{ editingCourseId() ? 'Edit Course' : 'Create Course' }}
+                      {{
+                        editingCourseId()
+                          ? 'Edit Course'
+                          : 'Create Course'
+                      }}
                     </h2>
 
                     <p
@@ -298,63 +355,59 @@ interface CourseForm {
                   </div>
 
                   @if (editingCourseId()) {
+
                     <div
                       class="flex
-           items-center
-           gap-2"
+                             items-center
+                             gap-2"
                     >
-                      <!-- Editing Status -->
 
                       <span
                         class="rounded-full
-             bg-gray-100
-             px-2.5 py-1
-             text-xs
-             font-medium
-             text-gray-600"
+                               bg-gray-100
+                               px-2.5 py-1
+                               text-xs
+                               font-medium
+                               text-gray-600"
                       >
                         Editing
                       </span>
-
-                      <!-- Cancel -->
 
                       <button
                         type="button"
                         (click)="cancelForm()"
                         [disabled]="saving()"
                         class="rounded-lg
-             border
-             border-gray-300
-             bg-white
-             px-3 py-1.5
-             text-xs
-             font-semibold
-             text-gray-700
-             transition
-             hover:bg-gray-50
-             disabled:cursor-not-allowed
-             disabled:opacity-50"
+                               border
+                               border-gray-300
+                               bg-white
+                               px-3 py-1.5
+                               text-xs
+                               font-semibold
+                               text-gray-700
+                               transition
+                               hover:bg-gray-50
+                               disabled:cursor-not-allowed
+                               disabled:opacity-50"
                       >
                         Cancel
                       </button>
-
-                      <!-- Update -->
 
                       <button
                         type="button"
                         (click)="saveCourse()"
                         [disabled]="saving()"
                         class="rounded-lg
-             bg-teal-600
-             px-3 py-1.5
-             text-xs
-             font-semibold
-             text-white
-             shadow-sm
-             transition
-             hover:bg-teal-700
-             disabled:cursor-not-allowed
-             disabled:opacity-50"
+                               bg-teal-600
+                               px-3 py-1.5
+                               text-xs
+                               font-semibold
+                               text-white
+                               shadow-sm
+                               transition
+                               hover:bg-teal-700
+                               disabled:cursor-not-allowed
+                               disabled:opacity-50"
                       >
                         @if (saving()) {
                           Saving...
@@ -370,7 +423,229 @@ interface CourseForm {
               <!-- Form -->
 
               <div class="p-5">
+
                 <div class="space-y-5">
+
+                  <!-- =================================================
+                       SCOPE / ORGANIZATION
+                       ================================================= -->
+
+                  <div
+                    class="grid gap-4
+                           md:grid-cols-2"
+                  >
+
+                    <!-- Course Scope -->
+
+                    <div>
+                      <label
+                        for="courseScope"
+                        class="mb-2 block
+                               text-sm
+                               font-semibold
+                               text-gray-700"
+                      >
+                        Course Scope
+                      </label>
+
+                      <select
+                        id="courseScope"
+                        name="courseScope"
+                        [(ngModel)]="form.scope"
+                        [disabled]="!!editingCourseId()"
+                        class="w-full
+                               rounded-lg
+                               border border-gray-300
+                               bg-white
+                               px-3 py-2.5
+                               text-sm
+                               text-gray-900
+                               shadow-sm
+                               focus:border-teal-600
+                               focus:outline-none
+                               focus:ring-2
+                               focus:ring-teal-200
+                               disabled:cursor-not-allowed
+                               disabled:bg-gray-100"
+                      >
+                        <option value="organization">
+                          Organization Course
+                        </option>
+
+                        <option value="platform">
+                          Zebron Platform Course
+                        </option>
+                      </select>
+
+                      <p
+                        class="mt-1.5
+                               text-xs
+                               text-gray-500"
+                      >
+                        {{
+                          form.scope === 'platform'
+                            ? 'Available to authenticated users across Zebron.'
+                            : 'Available only to members of the selected organization.'
+                        }}
+                      </p>
+                    </div>
+
+                    <!-- Organization -->
+
+                    @if (form.scope === 'organization') {
+
+                      <div>
+                        <label
+                          for="courseOrganization"
+                          class="mb-2 block
+                                 text-sm
+                                 font-semibold
+                                 text-gray-700"
+                        >
+                          Organization
+                          <span class="text-red-500">
+                            *
+                          </span>
+                        </label>
+
+                        <select
+                          id="courseOrganization"
+                          name="courseOrganization"
+                          [(ngModel)]="form.organizationId"
+                          [disabled]="!!editingCourseId() || organizationLoading()"
+                          class="w-full
+                                 rounded-lg
+                                 border border-gray-300
+                                 bg-white
+                                 px-3 py-2.5
+                                 text-sm
+                                 text-gray-900
+                                 shadow-sm
+                                 focus:border-teal-600
+                                 focus:outline-none
+                                 focus:ring-2
+                                 focus:ring-teal-200
+                                 disabled:cursor-not-allowed
+                                 disabled:bg-gray-100"
+                        >
+                          <option value="">
+                            Select an organization
+                          </option>
+
+                          @for (
+                            organization of organizations();
+                            track organization.id
+                          ) {
+                            <option
+                              [value]="organization.id"
+                            >
+                              {{ organization.name }}
+                            </option>
+                          }
+                        </select>
+
+                        @if (organizationLoading()) {
+
+                          <p
+                            class="mt-1.5
+                                   text-xs
+                                   text-gray-500"
+                          >
+                            Loading organizations...
+                          </p>
+
+                        } @else {
+
+                          <p
+                            class="mt-1.5
+                                   text-xs
+                                   text-gray-500"
+                          >
+                            This course will only be available to members
+                            of the selected organization.
+                          </p>
+
+                        }
+                      </div>
+                    }
+
+                  </div>
+
+                  <!-- =================================================
+                       PROGRAM
+                       ================================================= -->
+
+                  @if (form.scope === 'organization') {
+
+                    <div>
+                      <label
+                        for="courseProgram"
+                        class="mb-1.5 block
+                               text-sm
+                               font-medium
+                               text-gray-700"
+                      >
+                        Program
+                        <span class="text-red-500">
+                          *
+                        </span>
+                      </label>
+
+                      <select
+                        id="courseProgram"
+                        name="courseProgram"
+                        [(ngModel)]="form.programId"
+                        [disabled]="!!editingCourseId()"
+                        class="w-full
+                               rounded-lg
+                               border border-gray-300
+                               bg-white
+                               px-3 py-2.5
+                               text-sm
+                               text-gray-900
+                               outline-none
+                               transition
+                               focus:border-teal-500
+                               focus:ring-2
+                               focus:ring-teal-100
+                               disabled:cursor-not-allowed
+                               disabled:bg-gray-100"
+                      >
+                        <option value="">
+                          Select a program
+                        </option>
+
+                        <!--
+                          Temporary program catalog.
+
+                          These will be replaced by TestProgramService
+                          once organization-owned programs are connected.
+                        -->
+
+                        <option value="cyber">
+                          Cybersecurity
+                        </option>
+
+                        <option value="aws">
+                          AWS
+                        </option>
+
+                        <option value="linux">
+                          Linux
+                        </option>
+                      </select>
+
+                      <p
+                        class="mt-1.5
+                               text-xs
+                               text-gray-500"
+                      >
+                        Select the program that owns this course.
+                      </p>
+                    </div>
+
+                  }
+
                   <!-- =================================================
                        COURSE NAME / SLUG
                        ================================================= -->
@@ -379,6 +654,7 @@ interface CourseForm {
                     class="grid gap-4
                            md:grid-cols-2"
                   >
+
                     <!-- Course Name -->
 
                     <div>
@@ -390,7 +666,9 @@ interface CourseForm {
                                text-gray-700"
                       >
                         Course Name
-                        <span class="text-red-500">*</span>
+                        <span class="text-red-500">
+                          *
+                        </span>
                       </label>
 
                       <input
@@ -427,7 +705,9 @@ interface CourseForm {
                                text-gray-700"
                       >
                         URL Slug
-                        <span class="text-red-500">*</span>
+                        <span class="text-red-500">
+                          *
+                        </span>
                       </label>
 
                       <input
@@ -455,16 +735,18 @@ interface CourseForm {
                       />
 
                       <p
-                        class="mt-1 text-xs
+                        class="mt-1
+                               text-xs
                                text-gray-500"
                       >
                         {{
                           editingCourseId()
                             ? 'The slug cannot be changed after creation.'
-                            : 'Used in the course URL and as the course ID.'
+                            : 'Used in the course URL and as the course identifier.'
                         }}
                       </p>
                     </div>
+
                   </div>
 
                   <!-- =================================================
@@ -475,6 +757,7 @@ interface CourseForm {
                     class="grid gap-4
                            md:grid-cols-2"
                   >
+
                     <!-- Type -->
 
                     <div>
@@ -486,7 +769,9 @@ interface CourseForm {
                                text-gray-700"
                       >
                         Course Type
-                        <span class="text-red-500">*</span>
+                        <span class="text-red-500">
+                          *
+                        </span>
                       </label>
 
                       <select
@@ -506,17 +791,21 @@ interface CourseForm {
                                focus:ring-2
                                focus:ring-teal-100"
                       >
-                        <option value="">Select type</option>
+                        <option value="certification">
+                          Certification
+                        </option>
 
-                        <option value="certification">Certification</option>
+                        <option value="course">
+                          Course
+                        </option>
 
-                        <option value="assessment">Assessment</option>
+                        <option value="subject">
+                          Subject
+                        </option>
 
-                        <option value="practice">Practice</option>
-
-                        <option value="training">Training</option>
-
-                        <option value="other">Other</option>
+                        <option value="skill">
+                          Skill
+                        </option>
                       </select>
                     </div>
 
@@ -553,6 +842,7 @@ interface CourseForm {
                                focus:ring-teal-100"
                       />
                     </div>
+
                   </div>
 
                   <!-- =================================================
@@ -591,7 +881,8 @@ interface CourseForm {
                     />
 
                     <p
-                      class="mt-1 text-xs
+                      class="mt-1
+                             text-xs
                              text-gray-500"
                     >
                       Optional code used to identify the certification or exam.
@@ -664,7 +955,8 @@ interface CourseForm {
 
                       <span>
                         <span
-                          class="block text-sm
+                          class="block
+                                 text-sm
                                  font-medium
                                  text-gray-800"
                         >
@@ -672,7 +964,8 @@ interface CourseForm {
                         </span>
 
                         <span
-                          class="mt-0.5 block
+                          class="mt-0.5
+                                 block
                                  text-xs
                                  text-gray-500"
                         >
@@ -687,6 +980,7 @@ interface CourseForm {
                        ================================================= -->
 
                   @if (editingCourseId()) {
+
                     <div
                       class="flex items-center
                              justify-between
@@ -721,6 +1015,7 @@ interface CourseForm {
                         {{ editingCourseQuestionCount() }}
                       </span>
                     </div>
+
                   }
 
                   <!-- =================================================
@@ -736,6 +1031,7 @@ interface CourseForm {
                            sm:flex-row
                            sm:justify-end"
                   >
+
                     <button
                       type="button"
                       (click)="cancelForm()"
@@ -773,14 +1069,22 @@ interface CourseForm {
                       @if (saving()) {
                         Saving...
                       } @else {
-                        {{ editingCourseId() ? 'Update Course' : 'Create Course' }}
+                        {{
+                          editingCourseId()
+                            ? 'Update Course'
+                            : 'Create Course'
+                        }}
                       }
                     </button>
+
                   </div>
+
                 </div>
               </div>
             </section>
+
           } @else {
+
             <!-- ===================================================
                  EMPTY FORM STATE
                  =================================================== -->
@@ -821,7 +1125,11 @@ interface CourseForm {
                       d="M4 5.5A2.5 2.5 0 016.5 3h11A2.5 2.5 0 0120 5.5v13a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 18.5v-13z"
                     />
 
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8M8 11h8M8 15h5" />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M8 7h8M8 11h8M8 15h5"
+                    />
                   </svg>
                 </div>
 
@@ -834,11 +1142,13 @@ interface CourseForm {
                 </h2>
 
                 <p
-                  class="mt-2 text-sm
+                  class="mt-2
+                         text-sm
                          leading-6
                          text-gray-500"
                 >
-                  Select an existing course to edit it, or create a new Test Center course.
+                  Select an existing course to edit it, or create a new
+                  Test Center course.
                 </p>
 
                 <button
@@ -858,6 +1168,7 @@ interface CourseForm {
                 </button>
               </div>
             </section>
+
           }
 
           <!-- =====================================================
@@ -873,6 +1184,7 @@ interface CourseForm {
                    bg-white
                    shadow-sm"
           >
+
             <!-- Directory Header -->
 
             <div
@@ -885,6 +1197,7 @@ interface CourseForm {
                        justify-between"
               >
                 <div>
+
                   <h2
                     class="text-base
                            font-semibold
@@ -894,29 +1207,43 @@ interface CourseForm {
                   </h2>
 
                   <p
-                    class="mt-1 text-xs
+                    class="mt-1
+                           text-xs
                            text-gray-500"
                   >
                     {{ courses().length }}
-                    {{ courses().length === 1 ? 'course' : 'courses' }}
+                    {{
+                      courses().length === 1
+                        ? 'course'
+                        : 'courses'
+                    }}
                   </p>
+
                 </div>
 
                 @if (loadingCourses()) {
+
                   <span
                     class="text-xs
                            text-gray-500"
                   >
                     Loading...
                   </span>
+
                 }
+
               </div>
             </div>
 
             <!-- Course List -->
 
-            <div class="max-h-[650px] overflow-y-auto">
+            <div
+              class="max-h-[650px]
+                     overflow-y-auto"
+            >
+
               @if (loadingCourses()) {
+
                 <div
                   class="px-5 py-10
                          text-center
@@ -925,7 +1252,9 @@ interface CourseForm {
                 >
                   Loading courses...
                 </div>
+
               } @else if (courses().length === 0) {
+
                 <div
                   class="px-5 py-10
                          text-center"
@@ -939,18 +1268,26 @@ interface CourseForm {
                   </p>
 
                   <p
-                    class="mt-1 text-xs
+                    class="mt-1
+                           text-xs
                            text-gray-500"
                   >
                     Create your first Test Center course.
                   </p>
                 </div>
+
               } @else {
+
                 <div
                   class="divide-y
                          divide-gray-100"
                 >
-                  @for (course of courses(); track course.id) {
+
+                  @for (
+                    course of courses();
+                    track course.id
+                  ) {
+
                     <button
                       type="button"
                       (click)="editCourse(course)"
@@ -965,10 +1302,12 @@ interface CourseForm {
                                justify-between
                                gap-3"
                       >
+
                         <div
                           class="min-w-0
                                  flex-1"
                         >
+
                           <h3
                             class="truncate
                                    text-sm
@@ -979,7 +1318,8 @@ interface CourseForm {
                           </h3>
 
                           <p
-                            class="mt-1 truncate
+                            class="mt-1
+                                   truncate
                                    text-xs
                                    text-gray-500"
                           >
@@ -992,6 +1332,7 @@ interface CourseForm {
                                    items-center
                                    gap-2"
                           >
+
                             <span
                               class="rounded-full
                                      bg-gray-100
@@ -1003,6 +1344,22 @@ interface CourseForm {
                               {{ course.type }}
                             </span>
 
+                            @if (course.programId) {
+
+                              <span
+                                class="rounded-full
+                                       bg-blue-50
+                                       px-2 py-0.5
+                                       text-[11px]
+                                       font-medium
+                                       text-blue-700"
+                              >
+                                Program:
+                                {{ course.programId }}
+                              </span>
+
+                            }
+
                             <span
                               class="rounded-full
                                      px-2 py-0.5
@@ -1013,9 +1370,15 @@ interface CourseForm {
                               [class.bg-gray-100]="!course.active"
                               [class.text-gray-500]="!course.active"
                             >
-                              {{ course.active ? 'Active' : 'Inactive' }}
+                              {{
+                                course.active
+                                  ? 'Active'
+                                  : 'Inactive'
+                              }}
                             </span>
+
                           </div>
+
                         </div>
 
                         <div
@@ -1023,7 +1386,8 @@ interface CourseForm {
                                  text-right"
                         >
                           <span
-                            class="block text-sm
+                            class="block
+                                   text-sm
                                    font-bold
                                    text-[#032D42]"
                           >
@@ -1037,67 +1401,106 @@ interface CourseForm {
                             questions
                           </span>
                         </div>
+
                       </div>
                     </button>
+
                   }
+
                 </div>
+
               }
+
             </div>
           </section>
+
         </div>
       </div>
     </div>
   `,
 
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection:
+    ChangeDetectionStrategy.OnPush,
 })
-export class TestCourseAdminComponent implements OnInit {
+export class TestCourseAdminComponent
+  implements OnInit
+{
   // ============================================================
   // SERVICES
   // ============================================================
 
-  private readonly courseService = inject(TestCourseService);
+  private readonly courseService =
+    inject(TestCourseService);
 
-  private readonly authService = inject(AuthService);
+  private readonly authService =
+    inject(AuthService);
 
   private readonly organizationContext =
     inject(OrganizationContextService);
 
-  private readonly router = inject(Router);
+  private readonly router =
+    inject(Router);
 
-  private readonly toast = inject(HotToastService);
+  private readonly toast =
+    inject(HotToastService);
+
+  private readonly pageTitleService =
+    inject(PageTitleService);
 
   // ============================================================
   // DATA
   // ============================================================
 
-  protected readonly courses = signal<TestCourse[]>([]);
+  protected readonly courses =
+    signal<TestCourse[]>([]);
+
+  protected readonly organizations =
+    this.organizationContext.organizations;
+
+  protected readonly organizationLoading =
+    this.organizationContext.loading;
 
   // ============================================================
   // UI STATE
   // ============================================================
 
-  protected readonly loadingCourses = signal(false);
+  protected readonly loadingCourses =
+    signal(false);
 
-  protected readonly saving = signal(false);
+  protected readonly saving =
+    signal(false);
 
-  protected readonly showForm = signal(false);
+  protected readonly showForm =
+    signal(false);
 
-  protected readonly editingCourseId = signal<string | null>(null);
+  protected readonly editingCourseId =
+    signal<string | null>(null);
 
   // ============================================================
   // FORM
   // ============================================================
 
-  protected form: CourseForm = this.createEmptyForm();
-
-  
+  protected form: CourseForm =
+    this.createEmptyForm();
 
   // ============================================================
   // INITIALIZATION
   // ============================================================
 
   async ngOnInit(): Promise<void> {
+    this.pageTitleService.setTitle(
+      'Test Center Courses',
+    );
+
+    try {
+      await this.organizationContext.loadOrganizations();
+    } catch (error) {
+      console.error(
+        'Failed to load organizations for Test Center course administration:',
+        error,
+      );
+    }
+
     await this.loadCourses();
   }
 
@@ -1109,27 +1512,21 @@ export class TestCourseAdminComponent implements OnInit {
     try {
       this.loadingCourses.set(true);
 
-      const organizationId =
-        this.organizationContext.organizationId();
-
-      if (!organizationId) {
-        this.courses.set([]);
-        this.toast.error(
-          'Select an organization before managing Test Center courses.',
-        );
-        return;
-      }
-
       const courses =
-        await this.courseService.getAllCourses(
-          organizationId,
-        );
+        await this.courseService.getAllCoursesForAdmin();
 
       this.courses.set(courses);
     } catch (error) {
-      console.error('Failed to load Test Center courses:', error);
+      console.error(
+        'Failed to load Test Center courses:',
+        error,
+      );
 
-      this.toast.error('We could not load the Test Center courses.');
+      this.courses.set([]);
+
+      this.toast.error(
+        'We could not load the Test Center courses.',
+      );
     } finally {
       this.loadingCourses.set(false);
     }
@@ -1142,7 +1539,8 @@ export class TestCourseAdminComponent implements OnInit {
   protected startNewCourse(): void {
     this.editingCourseId.set(null);
 
-    this.form = this.createEmptyForm();
+    this.form =
+      this.createEmptyForm();
 
     this.showForm.set(true);
 
@@ -1156,23 +1554,43 @@ export class TestCourseAdminComponent implements OnInit {
   // EDIT COURSE
   // ============================================================
 
-  protected editCourse(course: TestCourse): void {
-    this.editingCourseId.set(course.id);
+  protected editCourse(
+    course: TestCourse,
+  ): void {
+    this.editingCourseId.set(
+      course.id,
+    );
 
     this.form = {
-      name: course.name ?? '',
+      name:
+        course.name ?? '',
 
-      slug: course.slug ?? '',
+      slug:
+        course.slug ?? '',
 
-      description: course.description ?? '',
+      description:
+        course.description ?? '',
 
-      provider: course.provider ?? '',
+      provider:
+        course.provider ?? '',
 
-      type: course.type ?? '',
+      type:
+        course.type ?? 'certification',
 
-      certificationCode: course.certificationCode ?? '',
+      certificationCode:
+        course.certificationCode ?? '',
 
-      active: course.active ?? true,
+      active:
+        course.active ?? true,
+
+      scope:
+        course.scope ?? 'organization',
+
+      organizationId:
+        course.organizationId ?? '',
+
+      programId:
+        course.programId ?? '',
     };
 
     this.showForm.set(true);
@@ -1199,7 +1617,10 @@ export class TestCourseAdminComponent implements OnInit {
       return;
     }
 
-    this.form.slug = this.slugify(this.form.name);
+    this.form.slug =
+      this.slugify(
+        this.form.name,
+      );
   }
 
   // ============================================================
@@ -1207,10 +1628,13 @@ export class TestCourseAdminComponent implements OnInit {
   // ============================================================
 
   protected async saveCourse(): Promise<void> {
-    const validationError = this.validateForm();
+    const validationError =
+      this.validateForm();
 
     if (validationError) {
-      this.toast.error(validationError);
+      this.toast.error(
+        validationError,
+      );
 
       return;
     }
@@ -1218,83 +1642,177 @@ export class TestCourseAdminComponent implements OnInit {
     try {
       this.saving.set(true);
 
-      const organizationId =
-        this.organizationContext.organizationId();
+      const editingId =
+        this.editingCourseId();
 
-      if (!organizationId) {
-        this.toast.error(
-          'Select an organization before managing Test Center courses.',
-        );
-        return;
-      }
-
-      const editingId = this.editingCourseId();
+      // ========================================================
+      // UPDATE
+      // ========================================================
 
       if (editingId) {
-        // -------------------------------------------------------
-        // UPDATE
-        // -------------------------------------------------------
+        const organizationId =
+          this.form.organizationId.trim();
+
+        if (!organizationId) {
+          this.toast.error(
+            'Select an organization before updating an organization course.',
+          );
+
+          return;
+        }
 
         await this.courseService.updateCourse(
           organizationId,
           editingId,
           {
-          name: this.form.name,
+            name:
+              this.form.name,
 
-          description: this.form.description,
+            description:
+              this.form.description,
 
-          provider: this.form.provider,
+            provider:
+              this.form.provider,
 
-          type: this.form.type,
+            type:
+              this.form.type,
 
-          certificationCode: this.form.certificationCode,
+            certificationCode:
+              this.form.certificationCode,
 
-          active: this.form.active,
+            active:
+              this.form.active,
+
+            programId:
+              this.form.programId,
           },
         );
 
-        this.toast.success('Course updated successfully.');
-      } else {
-        // -------------------------------------------------------
-        // CREATE
-        // -------------------------------------------------------
+        this.toast.success(
+          'Course updated successfully.',
+        );
+      }
+
+      // ========================================================
+      // CREATE — PLATFORM
+      // ========================================================
+
+      else if (
+        this.form.scope ===
+        'platform'
+      ) {
+        await this.courseService.createPlatformCourse(
+          {
+            name:
+              this.form.name,
+
+            slug:
+              this.form.slug,
+
+            description:
+              this.form.description,
+
+            provider:
+              this.form.provider,
+
+            type:
+              this.form.type,
+
+            certificationCode:
+              this.form.certificationCode,
+
+            active:
+              this.form.active,
+          },
+        );
+
+        this.toast.success(
+          'Platform course created successfully.',
+        );
+      }
+
+      // ========================================================
+      // CREATE — ORGANIZATION
+      // ========================================================
+
+      else {
+        const organizationId =
+          this.form.organizationId.trim();
+
+        if (!organizationId) {
+          this.toast.error(
+            'Select an organization before creating an organization course.',
+          );
+
+          return;
+        }
+
+        const programId =
+          this.form.programId.trim();
+
+        if (!programId) {
+          this.toast.error(
+            'Select a program before creating an organization course.',
+          );
+
+          return;
+        }
 
         await this.courseService.createCourse(
           organizationId,
           {
-          name: this.form.name,
+            name:
+              this.form.name,
 
-          slug: this.form.slug,
+            slug:
+              this.form.slug,
 
-          description: this.form.description,
+            description:
+              this.form.description,
 
-          provider: this.form.provider,
+            provider:
+              this.form.provider,
 
-          type: this.form.type,
+            type:
+              this.form.type,
 
-          certificationCode: this.form.certificationCode,
+            certificationCode:
+              this.form.certificationCode,
 
-          active: this.form.active,
+            active:
+              this.form.active,
+
+            programId,
           },
         );
 
-        this.toast.success('Course created successfully.');
+        this.toast.success(
+          'Organization course created successfully.',
+        );
       }
 
-      // Refresh directory.
+      // ========================================================
+      // REFRESH
+      // ========================================================
 
       await this.loadCourses();
 
-      // Close form.
-
       this.cancelForm();
+
     } catch (error) {
-      console.error('Failed to save Test Center course:', error);
+      console.error(
+        'Failed to save Test Center course:',
+        error,
+      );
 
       const message =
-        error instanceof Error ? error.message : 'We could not save the course. Please try again.';
+        error instanceof Error
+          ? error.message
+          : 'We could not save the course. Please try again.';
 
-      this.toast.error(message);
+      this.toast.error(
+        message,
+      );
     } finally {
       this.saving.set(false);
     }
@@ -1305,6 +1823,22 @@ export class TestCourseAdminComponent implements OnInit {
   // ============================================================
 
   private validateForm(): string | null {
+    if (
+      this.form.scope ===
+        'organization' &&
+      !this.form.organizationId.trim()
+    ) {
+      return 'Select an organization for this course.';
+    }
+
+    if (
+      this.form.scope ===
+        'organization' &&
+      !this.form.programId.trim()
+    ) {
+      return 'Select a program for this course.';
+    }
+
     if (!this.form.name.trim()) {
       return 'Course name is required.';
     }
@@ -1317,7 +1851,10 @@ export class TestCourseAdminComponent implements OnInit {
       return 'Course type is required.';
     }
 
-    if (this.form.slug.trim().length < 3) {
+    if (
+      this.form.slug.trim().length <
+      3
+    ) {
       return 'Course slug must contain at least 3 characters.';
     }
 
@@ -1333,7 +1870,8 @@ export class TestCourseAdminComponent implements OnInit {
 
     this.editingCourseId.set(null);
 
-    this.form = this.createEmptyForm();
+    this.form =
+      this.createEmptyForm();
   }
 
   // ============================================================
@@ -1341,15 +1879,22 @@ export class TestCourseAdminComponent implements OnInit {
   // ============================================================
 
   protected editingCourseQuestionCount(): number {
-    const courseId = this.editingCourseId();
+    const courseId =
+      this.editingCourseId();
 
     if (!courseId) {
       return 0;
     }
 
-    const course = this.courses().find((item) => item.id === courseId);
+    const course =
+      this.courses().find(
+        (item) =>
+          item.id === courseId,
+      );
 
-    return course?.questionCount ?? 0;
+    return (
+      course?.questionCount ?? 0
+    );
   }
 
   // ============================================================
@@ -1359,18 +1904,15 @@ export class TestCourseAdminComponent implements OnInit {
   private createEmptyForm(): CourseForm {
     return {
       name: '',
-
       slug: '',
-
       description: '',
-
       provider: 'Zebron',
-
       type: 'certification',
-
       certificationCode: '',
-
       active: true,
+      scope: 'organization',
+      organizationId: '',
+      programId: '',
     };
   }
 
@@ -1378,23 +1920,41 @@ export class TestCourseAdminComponent implements OnInit {
   // SLUG GENERATOR
   // ============================================================
 
-  private slugify(value: string): string {
+  private slugify(
+    value: string,
+  ): string {
     return value
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(
+        /[^a-z0-9]+/g,
+        '-',
+      )
+      .replace(
+        /^-+|-+$/g,
+        '');
   }
+
+  // ============================================================
+  // SIGN OUT
+  // ============================================================
 
   protected async signOut(): Promise<void> {
     try {
       await this.authService.logout();
 
-      await this.router.navigate(['/login']);
+      await this.router.navigate([
+        '/login',
+      ]);
     } catch (error) {
-      console.error('Unable to sign out:', error);
+      console.error(
+        'Unable to sign out:',
+        error,
+      );
 
-      this.toast.error('Unable to sign out. Please try again.');
+      this.toast.error(
+        'Unable to sign out. Please try again.',
+      );
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import {
   TaxCalculatorInput,
@@ -12,133 +12,74 @@ import {
 } from '../models/tax-calculator-result.model';
 
 import {
-  PAY_PERIODS_PER_YEAR,
   WORK_WEEKS_PER_YEAR,
 } from '../data/tax-constants';
 
 import {
-  MARYLAND_LOCAL_TAX_RATES_2026,
-} from '../data/maryland-local-tax-rates.data';
+  TaxPayConfiguration,
+  TaxBracket,
+} from '../../../core/models/tax-pay-configuration.model';
+
+import { TaxCalculatorConfigurationService } from './tax-calculator-configuration.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TaxCalculatorService {
-  // ============================================================
-  // 2026 FEDERAL TAX CONSTANTS
-  // ============================================================
+  private readonly configurationService =
+    inject(TaxCalculatorConfigurationService);
 
-  private readonly FEDERAL_STANDARD_DEDUCTIONS = {
-    single: 16_100,
-    'married-filing-separately': 16_100,
-    'married-filing-jointly': 32_200,
-    'head-of-household': 24_150,
-  } as const;
+  private configuration: TaxPayConfiguration | null =
+    null;
 
   /**
-   * 2026 federal income-tax brackets.
+   * Load the configuration used by the calculator.
    *
-   * These are taxable-income brackets, not gross-income brackets.
+   * The public calculator component should call this during
+   * initialization before allowing calculations.
    */
-  private readonly FEDERAL_BRACKETS = {
-    single: [
-      { upTo: 12_400, rate: 0.10 },
-      { upTo: 50_400, rate: 0.12 },
-      { upTo: 105_700, rate: 0.22 },
-      { upTo: 201_775, rate: 0.24 },
-      { upTo: 256_225, rate: 0.32 },
-      { upTo: 640_600, rate: 0.35 },
-      { upTo: Infinity, rate: 0.37 },
-    ],
-
-    'married-filing-separately': [
-      { upTo: 12_400, rate: 0.10 },
-      { upTo: 50_400, rate: 0.12 },
-      { upTo: 105_700, rate: 0.22 },
-      { upTo: 201_775, rate: 0.24 },
-      { upTo: 256_225, rate: 0.32 },
-      { upTo: 384_350, rate: 0.35 },
-      { upTo: Infinity, rate: 0.37 },
-    ],
-
-    'married-filing-jointly': [
-      { upTo: 24_800, rate: 0.10 },
-      { upTo: 100_800, rate: 0.12 },
-      { upTo: 211_400, rate: 0.22 },
-      { upTo: 403_550, rate: 0.24 },
-      { upTo: 512_450, rate: 0.32 },
-      { upTo: 768_700, rate: 0.35 },
-      { upTo: Infinity, rate: 0.37 },
-    ],
-
-    'head-of-household': [
-      { upTo: 17_700, rate: 0.10 },
-      { upTo: 67_450, rate: 0.12 },
-      { upTo: 105_700, rate: 0.22 },
-      { upTo: 201_750, rate: 0.24 },
-      { upTo: 256_200, rate: 0.32 },
-      { upTo: 640_600, rate: 0.35 },
-      { upTo: Infinity, rate: 0.37 },
-    ],
-  } as const;
-
-  // ============================================================
-  // 2026 MARYLAND TAX CONSTANTS
-  // ============================================================
+  setConfiguration(
+    configuration: TaxPayConfiguration,
+  ): void {
+    this.configuration =
+      structuredClone(configuration);
+  }
 
   /**
-   * Maryland 2026 standard deductions.
-   */
-  private readonly MARYLAND_STANDARD_DEDUCTIONS = {
-    single: 3_350,
-    'married-filing-separately': 3_350,
-    'married-filing-jointly': 6_700,
-    'head-of-household': 6_700,
-  } as const;
-
-  /**
-   * Maryland personal exemption amount before phaseout.
+   * Load the active configuration directly.
    *
-   * Maryland generally allows $3,200 per exemption.
+   * This is provided for callers that want the calculator
+   * service itself to initialize its configuration.
    */
-  private readonly MARYLAND_PERSONAL_EXEMPTION = 3_200;
+async loadConfiguration(): Promise<void> {
+  const configuration =
+    await this.configurationService.getActive();
+
+  if (!configuration) {
+    throw new Error(
+      'No active tax configuration is available.',
+    );
+  }
+
+  this.setConfiguration(configuration);
+}
 
   /**
-   * Additional Maryland exemption for a taxpayer or spouse
-   * who is age 65 or older and/or legally blind.
+   * Returns the configuration currently used by the calculator.
    */
-  private readonly MARYLAND_ADDITIONAL_AGE_BLIND_EXEMPTION =
-    1_000;
-
-  // ============================================================
-  // PAYROLL TAX CONSTANTS
-  // ============================================================
-
-  private readonly SOCIAL_SECURITY_RATE = 0.062;
-
-  private readonly MEDICARE_RATE = 0.0145;
-
-  private readonly ADDITIONAL_MEDICARE_RATE = 0.009;
-
-  private readonly SOCIAL_SECURITY_WAGE_BASE = 184_500;
+  getConfiguration(): TaxPayConfiguration | null {
+    return this.configuration;
+  }
 
   /**
-   * Employee Additional Medicare thresholds.
+   * Perform the calculation.
    */
-  private readonly ADDITIONAL_MEDICARE_THRESHOLDS = {
-    single: 200_000,
-    'married-filing-separately': 125_000,
-    'married-filing-jointly': 250_000,
-    'head-of-household': 200_000,
-  } as const;
-
-  // ============================================================
-  // PUBLIC CALCULATION
-  // ============================================================
-
   calculate(
     input: TaxCalculatorInput,
   ): TaxCalculatorResult {
+    const configuration =
+      this.requireConfiguration();
+
     const grossIncome =
       this.calculateGrossIncome(input);
 
@@ -170,19 +111,13 @@ export class TaxCalculatorService {
         input,
         contractorProfit,
         w2Income,
+        configuration,
       );
 
     // ----------------------------------------------------------
     // FEDERAL ADJUSTED INCOME
     // ----------------------------------------------------------
 
-    /**
-     * Federal adjusted income starts with gross income
-     * after business expenses and pre-tax deductions.
-     *
-     * For self-employed income, one-half of self-employment
-     * tax is deductible.
-     */
     const federalAdjustedIncome =
       Math.max(
         grossIncome -
@@ -191,6 +126,7 @@ export class TaxCalculatorService {
           this.calculateHalfSelfEmploymentTaxDeduction(
             selfEmploymentTax,
             input,
+            configuration,
           ),
         0,
       );
@@ -202,11 +138,8 @@ export class TaxCalculatorService {
     const federalStandardDeduction =
       this.getFederalStandardDeduction(
         input.taxProfile.filingStatus,
+        configuration,
       );
-
-    // ----------------------------------------------------------
-    // FEDERAL TAXABLE INCOME
-    // ----------------------------------------------------------
 
     const taxableIncome =
       Math.max(
@@ -223,6 +156,7 @@ export class TaxCalculatorService {
       this.calculateFederalIncomeTax(
         taxableIncome,
         input,
+        configuration,
       );
 
     // ----------------------------------------------------------
@@ -233,50 +167,47 @@ export class TaxCalculatorService {
       this.calculateSocialSecurityTax(
         input,
         w2Income,
+        configuration,
       );
 
     const medicareTax =
       this.calculateMedicareTax(
         input,
         w2Income,
+        configuration,
       );
 
     // ----------------------------------------------------------
-    // MARYLAND TAXABLE INCOME
+    // STATE TAXABLE INCOME
     // ----------------------------------------------------------
 
-    /**
-     * Maryland uses its own standard deduction and personal
-     * exemption rules.
-     *
-     * Therefore Maryland taxable income is calculated
-     * separately from federal taxable income.
-     */
-    const marylandTaxableIncome =
-      this.calculateMarylandTaxableIncome(
+    const stateTaxableIncome =
+      this.calculateStateTaxableIncome(
         federalAdjustedIncome,
         input,
+        configuration,
       );
 
     // ----------------------------------------------------------
-    // MARYLAND STATE TAX
+    // STATE TAX
     // ----------------------------------------------------------
 
     const stateTax =
       this.calculateStateTax(
-        marylandTaxableIncome,
+        stateTaxableIncome,
         input,
+        configuration,
       );
 
     // ----------------------------------------------------------
-    // MARYLAND LOCAL TAX
+    // LOCAL TAX
     // ----------------------------------------------------------
 
     const localTax =
       this.calculateLocalTax(
-        marylandTaxableIncome,
-        input.taxProfile.county,
+        stateTaxableIncome,
         input,
+        configuration,
       );
 
     // ----------------------------------------------------------
@@ -285,12 +216,14 @@ export class TaxCalculatorService {
 
     const additionalFederalWithholding =
       this.nonNegative(
-        input.taxProfile.additionalFederalWithholding,
+        input.taxProfile
+          .additionalFederalWithholding,
       );
 
     const additionalStateWithholding =
       this.nonNegative(
-        input.taxProfile.additionalStateWithholding,
+        input.taxProfile
+          .additionalStateWithholding,
       );
 
     // ----------------------------------------------------------
@@ -299,7 +232,8 @@ export class TaxCalculatorService {
 
     const estimatedTaxPayments =
       this.nonNegative(
-        input.contractorIncome?.estimatedTaxPayments ?? 0,
+        input.contractorIncome
+          ?.estimatedTaxPayments ?? 0,
       );
 
     // ----------------------------------------------------------
@@ -328,11 +262,6 @@ export class TaxCalculatorService {
     // NET ANNUAL INCOME
     // ----------------------------------------------------------
 
-    /**
-     * Estimated tax payments are treated as payments already
-     * made toward the user's tax obligation and therefore are
-     * added back when estimating remaining take-home cash flow.
-     */
     const netIncome =
       Math.max(
         grossIncome -
@@ -343,14 +272,17 @@ export class TaxCalculatorService {
         0,
       );
 
-    // ----------------------------------------------------------
-    // EFFECTIVE TAX RATE
-    // ----------------------------------------------------------
-
     const effectiveTaxRate =
       grossIncome > 0
         ? totalTaxes / grossIncome
         : 0;
+
+    // ----------------------------------------------------------
+    // PAY FREQUENCY
+    // ----------------------------------------------------------
+
+    const payFrequency =
+      configuration.payFrequency;
 
     // ----------------------------------------------------------
     // RETURN
@@ -395,45 +327,50 @@ export class TaxCalculatorService {
 
       effectiveTaxRate,
 
-      annual: this.buildPeriodResult(
-        grossIncome,
-        totalTaxes,
-        totalDeductions,
-        netIncome,
-        1,
-      ),
+      annual:
+        this.buildPeriodResult(
+          grossIncome,
+          totalTaxes,
+          totalDeductions,
+          netIncome,
+          payFrequency.annually,
+        ),
 
-      monthly: this.buildPeriodResult(
-        grossIncome,
-        totalTaxes,
-        totalDeductions,
-        netIncome,
-        PAY_PERIODS_PER_YEAR['monthly'],
-      ),
+      monthly:
+        this.buildPeriodResult(
+          grossIncome,
+          totalTaxes,
+          totalDeductions,
+          netIncome,
+          payFrequency.monthly,
+        ),
 
-      semimonthly: this.buildPeriodResult(
-        grossIncome,
-        totalTaxes,
-        totalDeductions,
-        netIncome,
-        PAY_PERIODS_PER_YEAR['semimonthly'],
-      ),
+      semimonthly:
+        this.buildPeriodResult(
+          grossIncome,
+          totalTaxes,
+          totalDeductions,
+          netIncome,
+          payFrequency.semimonthly,
+        ),
 
-      biweekly: this.buildPeriodResult(
-        grossIncome,
-        totalTaxes,
-        totalDeductions,
-        netIncome,
-        PAY_PERIODS_PER_YEAR['biweekly'],
-      ),
+      biweekly:
+        this.buildPeriodResult(
+          grossIncome,
+          totalTaxes,
+          totalDeductions,
+          netIncome,
+          payFrequency.biweekly,
+        ),
 
-      weekly: this.buildPeriodResult(
-        grossIncome,
-        totalTaxes,
-        totalDeductions,
-        netIncome,
-        PAY_PERIODS_PER_YEAR['weekly'],
-      ),
+      weekly:
+        this.buildPeriodResult(
+          grossIncome,
+          totalTaxes,
+          totalDeductions,
+          netIncome,
+          payFrequency.weekly,
+        ),
     };
   }
 
@@ -446,10 +383,6 @@ export class TaxCalculatorService {
   ): number {
     let total = 0;
 
-    // ----------------------------------------------------------
-    // W-2
-    // ----------------------------------------------------------
-
     if (
       input.workerType === 'w2' ||
       input.workerType === 'mixed'
@@ -461,16 +394,13 @@ export class TaxCalculatorService {
       }
     }
 
-    // ----------------------------------------------------------
-    // 1099
-    // ----------------------------------------------------------
-
     if (
       input.workerType === '1099' ||
       input.workerType === 'mixed'
     ) {
       total += this.nonNegative(
-        input.contractorIncome?.grossIncome ?? 0,
+        input.contractorIncome
+          ?.grossIncome ?? 0,
       );
     }
 
@@ -484,42 +414,34 @@ export class TaxCalculatorService {
   private calculateW2Income(
     income: W2Income,
   ): number {
-    // ----------------------------------------------------------
-    // SALARY
-    // ----------------------------------------------------------
-
     if (income.payType === 'salary') {
       return (
-        this.nonNegative(income.annualSalary) +
-        this.nonNegative(income.bonus) +
-        this.nonNegative(income.commission)
+        this.nonNegative(
+          income.annualSalary,
+        ) +
+        this.nonNegative(
+          income.bonus,
+        ) +
+        this.nonNegative(
+          income.commission,
+        )
       );
     }
 
-    // ----------------------------------------------------------
-    // HOURLY
-    // ----------------------------------------------------------
-
-    /**
-     * Hourly wages are annualized using the standard
-     * 52-work-week assumption.
-     *
-     * Example:
-     *
-     * $62 × 40 hours × 52 weeks
-     * = $128,960
-     *
-     * Overtime is calculated at 1.5× the regular hourly rate.
-     */
-
     const hourlyRate =
-      this.nonNegative(income.hourlyRate);
+      this.nonNegative(
+        income.hourlyRate,
+      );
 
     const regularHours =
-      this.nonNegative(income.regularHours);
+      this.nonNegative(
+        income.regularHours,
+      );
 
     const overtimeHours =
-      this.nonNegative(income.overtimeHours);
+      this.nonNegative(
+        income.overtimeHours,
+      );
 
     const regularPay =
       hourlyRate *
@@ -533,10 +455,14 @@ export class TaxCalculatorService {
       WORK_WEEKS_PER_YEAR;
 
     const bonus =
-      this.nonNegative(income.bonus);
+      this.nonNegative(
+        income.bonus,
+      );
 
     const commission =
-      this.nonNegative(income.commission);
+      this.nonNegative(
+        income.commission,
+      );
 
     return (
       regularPay +
@@ -548,10 +474,6 @@ export class TaxCalculatorService {
 
   // ============================================================
   // W-2 GROSS ONLY
-  //
-  // Used for FICA.
-  //
-  // Contractor income must NOT be treated as W-2 wages.
   // ============================================================
 
   private calculateW2GrossIncome(
@@ -565,7 +487,9 @@ export class TaxCalculatorService {
     }
 
     return input.w2Income
-      ? this.calculateW2Income(input.w2Income)
+      ? this.calculateW2Income(
+          input.w2Income,
+        )
       : 0;
   }
 
@@ -585,11 +509,14 @@ export class TaxCalculatorService {
 
     const gross =
       this.nonNegative(
-        input.contractorIncome?.grossIncome ?? 0,
+        input.contractorIncome
+          ?.grossIncome ?? 0,
       );
 
     const expenses =
-      this.calculateBusinessExpenses(input);
+      this.calculateBusinessExpenses(
+        input,
+      );
 
     return Math.max(
       gross - expenses,
@@ -612,12 +539,15 @@ export class TaxCalculatorService {
     }
 
     const expenses =
-      input.contractorIncome?.businessExpenses ?? [];
+      input.contractorIncome
+        ?.businessExpenses ?? [];
 
     return expenses.reduce(
       (total, expense) =>
         total +
-        this.nonNegative(expense.amount),
+        this.nonNegative(
+          expense.amount,
+        ),
       0,
     );
   }
@@ -633,7 +563,9 @@ export class TaxCalculatorService {
     return deductions.reduce(
       (total, deduction) =>
         total +
-        this.nonNegative(deduction.amount),
+        this.nonNegative(
+          deduction.amount,
+        ),
       0,
     );
   }
@@ -645,13 +577,24 @@ export class TaxCalculatorService {
   private getFederalStandardDeduction(
     filingStatus:
       TaxCalculatorInput['taxProfile']['filingStatus'],
+    configuration:
+      TaxPayConfiguration,
   ): number {
-    return (
-      this.FEDERAL_STANDARD_DEDUCTIONS[
-        filingStatus
-      ] ??
-      this.FEDERAL_STANDARD_DEDUCTIONS.single
-    );
+    switch (filingStatus) {
+      case 'married-filing-jointly':
+        return configuration.federal
+          .standardDeductionMarriedJointly;
+
+      case 'head-of-household':
+        return configuration.federal
+          .standardDeductionHeadOfHousehold;
+
+      case 'married-filing-separately':
+      case 'single':
+      default:
+        return configuration.federal
+          .standardDeductionSingle;
+    }
   }
 
   // ============================================================
@@ -661,6 +604,8 @@ export class TaxCalculatorService {
   private calculateFederalIncomeTax(
     taxableIncome: number,
     input: TaxCalculatorInput,
+    configuration:
+      TaxPayConfiguration,
   ): number {
     if (taxableIncome <= 0) {
       return 0;
@@ -669,53 +614,102 @@ export class TaxCalculatorService {
     const filingStatus =
       input.taxProfile.filingStatus;
 
-    const brackets =
-      this.FEDERAL_BRACKETS[
-        filingStatus
-      ] ??
-      this.FEDERAL_BRACKETS.single;
+    let brackets:
+      TaxBracket[];
 
-    let remainingIncome =
-      taxableIncome;
+    switch (filingStatus) {
+      case 'married-filing-jointly':
+        brackets =
+          configuration.federal
+            .bracketsMarriedJointly;
+        break;
 
-    let previousLimit = 0;
+      case 'head-of-household':
+        brackets =
+          configuration.federal
+            .bracketsHeadOfHousehold;
+        break;
+
+      case 'married-filing-separately':
+      case 'single':
+      default:
+        brackets =
+          configuration.federal
+            .bracketsSingle;
+        break;
+    }
+
+    return this.calculateProgressiveTax(
+      taxableIncome,
+      brackets,
+    );
+  }
+
+  // ============================================================
+  // PROGRESSIVE TAX
+  // ============================================================
+
+  private calculateProgressiveTax(
+    taxableIncome: number,
+    brackets: ReadonlyArray<TaxBracket>,
+  ): number {
+    if (
+      taxableIncome <= 0 ||
+      brackets.length === 0
+    ) {
+      return 0;
+    }
 
     let tax = 0;
 
     for (const bracket of brackets) {
-      if (remainingIncome <= 0) {
-        break;
+      const min =
+        this.nonNegative(
+          bracket.min,
+        );
+
+      const max =
+        bracket.max === null
+          ? Infinity
+          : Math.max(
+              bracket.max,
+              min,
+            );
+
+      if (taxableIncome <= min) {
+        continue;
       }
 
-      const bracketWidth =
-        bracket.upTo === Infinity
-          ? remainingIncome
-          : Math.min(
-              taxableIncome,
-              bracket.upTo,
-            ) - previousLimit;
+      const upper =
+        Math.min(
+          taxableIncome,
+          max,
+        );
 
-      const amountInBracket =
+      const amount =
         Math.max(
-          Math.min(
-            remainingIncome,
-            bracketWidth,
-          ),
+          upper - min,
           0,
         );
 
       tax +=
-        amountInBracket *
-        bracket.rate;
+        amount *
+        this.normalizeRate(
+          bracket.rate,
+        );
 
-      remainingIncome -=
-        amountInBracket;
-
-      previousLimit =
-        bracket.upTo;
+      if (
+        max !== Infinity &&
+        taxableIncome <= max
+      ) {
+        break;
+      }
     }
 
-    return Math.max(tax, 0);
+    return Math.max(
+      tax,
+      0,
+    );
   }
 
   // ============================================================
@@ -725,6 +719,8 @@ export class TaxCalculatorService {
   private calculateSocialSecurityTax(
     input: TaxCalculatorInput,
     w2Income: number,
+    configuration:
+      TaxPayConfiguration,
   ): number {
     if (
       input.workerType === '1099'
@@ -734,13 +730,20 @@ export class TaxCalculatorService {
 
     const taxableWages =
       Math.min(
-        Math.max(w2Income, 0),
-        this.SOCIAL_SECURITY_WAGE_BASE,
+        Math.max(
+          w2Income,
+          0,
+        ),
+        configuration.fica
+          .socialSecurityWageBase,
       );
 
     return (
       taxableWages *
-      this.SOCIAL_SECURITY_RATE
+      this.normalizeRate(
+        configuration.fica
+          .socialSecurityRate,
+      )
     );
   }
 
@@ -751,6 +754,8 @@ export class TaxCalculatorService {
   private calculateMedicareTax(
     input: TaxCalculatorInput,
     w2Income: number,
+    configuration:
+      TaxPayConfiguration,
   ): number {
     if (
       input.workerType === '1099'
@@ -759,27 +764,37 @@ export class TaxCalculatorService {
     }
 
     const wages =
-      this.nonNegative(w2Income);
+      this.nonNegative(
+        w2Income,
+      );
 
     const regularMedicare =
       wages *
-      this.MEDICARE_RATE;
+      this.normalizeRate(
+        configuration.fica
+          .medicareRate,
+      );
 
     const filingStatus =
       input.taxProfile.filingStatus;
 
     const threshold =
-      this.ADDITIONAL_MEDICARE_THRESHOLDS[
-        filingStatus
-      ] ??
-      this.ADDITIONAL_MEDICARE_THRESHOLDS.single;
+      filingStatus ===
+        'married-filing-jointly'
+        ? configuration.fica
+            .additionalMedicareThresholdMarriedJointly
+        : configuration.fica
+            .additionalMedicareThresholdSingle;
 
     const additionalMedicare =
       Math.max(
         wages - threshold,
         0,
       ) *
-      this.ADDITIONAL_MEDICARE_RATE;
+      this.normalizeRate(
+        configuration.fica
+          .additionalMedicareRate,
+      );
 
     return (
       regularMedicare +
@@ -795,6 +810,8 @@ export class TaxCalculatorService {
     input: TaxCalculatorInput,
     contractorProfit: number,
     w2Income: number,
+    configuration:
+      TaxPayConfiguration,
   ): number {
     if (
       input.workerType !== '1099' &&
@@ -803,32 +820,26 @@ export class TaxCalculatorService {
       return 0;
     }
 
-    if (contractorProfit <= 0) {
+    if (
+      contractorProfit <= 0
+    ) {
       return 0;
     }
 
-    /**
-     * Net earnings from self-employment are generally
-     * 92.35% of net self-employment profit for this
-     * calculation.
-     */
-    const netEarnings =
-      contractorProfit *
-      0.9235;
+   const netEarnings =
+  contractorProfit *
+  this.normalizeRate(
+    configuration.selfEmployment.taxableEarningsRate,
+  );
 
-    // ----------------------------------------------------------
-    // SOCIAL SECURITY PORTION
-    // ----------------------------------------------------------
-
-    /**
-     * W-2 wages consume the Social Security wage base first.
-     * The remaining wage base is available for self-employment
-     * income.
-     */
     const remainingSocialSecurityBase =
       Math.max(
-        this.SOCIAL_SECURITY_WAGE_BASE -
-          this.nonNegative(w2Income),
+        configuration
+          .selfEmployment
+          .socialSecurityWageBase -
+          this.nonNegative(
+            w2Income,
+          ),
         0,
       );
 
@@ -840,31 +851,34 @@ export class TaxCalculatorService {
 
     const socialSecurity =
       socialSecurityBase *
-      this.SOCIAL_SECURITY_RATE;
-
-    // ----------------------------------------------------------
-    // MEDICARE PORTION
-    // ----------------------------------------------------------
+      this.normalizeRate(
+        configuration
+          .selfEmployment
+          .selfEmploymentTaxRate,
+      );
 
     const medicare =
       netEarnings *
-      this.MEDICARE_RATE;
-
-    // ----------------------------------------------------------
-    // ADDITIONAL MEDICARE
-    // ----------------------------------------------------------
+      this.normalizeRate(
+        configuration.fica
+          .medicareRate,
+      );
 
     const filingStatus =
       input.taxProfile.filingStatus;
 
     const threshold =
-      this.ADDITIONAL_MEDICARE_THRESHOLDS[
-        filingStatus
-      ] ??
-      this.ADDITIONAL_MEDICARE_THRESHOLDS.single;
+      filingStatus ===
+        'married-filing-jointly'
+        ? configuration.fica
+            .additionalMedicareThresholdMarriedJointly
+        : configuration.fica
+            .additionalMedicareThresholdSingle;
 
     const combinedMedicareIncome =
-      this.nonNegative(w2Income) +
+      this.nonNegative(
+        w2Income,
+      ) +
       netEarnings;
 
     const additionalMedicare =
@@ -873,7 +887,10 @@ export class TaxCalculatorService {
           threshold,
         0,
       ) *
-      this.ADDITIONAL_MEDICARE_RATE;
+      this.normalizeRate(
+        configuration.fica
+          .additionalMedicareRate,
+      );
 
     return (
       socialSecurity +
@@ -889,6 +906,8 @@ export class TaxCalculatorService {
   private calculateHalfSelfEmploymentTaxDeduction(
     selfEmploymentTax: number,
     input: TaxCalculatorInput,
+    configuration:
+      TaxPayConfiguration,
   ): number {
     if (
       input.workerType !== '1099' &&
@@ -897,395 +916,130 @@ export class TaxCalculatorService {
       return 0;
     }
 
-    return selfEmploymentTax / 2;
-  }
-
-  // ============================================================
-  // MARYLAND TAXABLE INCOME
-  // ============================================================
-
-  private calculateMarylandTaxableIncome(
-    federalAdjustedIncome: number,
-    input: TaxCalculatorInput,
-  ): number {
-    if (
-      input.taxProfile.state !== 'MD' ||
-      federalAdjustedIncome <= 0
-    ) {
-      return 0;
-    }
-
-    const filingStatus =
-      input.taxProfile.filingStatus;
-
-    const standardDeduction =
-      this.MARYLAND_STANDARD_DEDUCTIONS[
-        filingStatus
-      ] ??
-      this.MARYLAND_STANDARD_DEDUCTIONS.single;
-
-    const personalExemption =
-      this.calculateMarylandPersonalExemption(
-        federalAdjustedIncome,
-        input,
-      );
-
-    return Math.max(
-      federalAdjustedIncome -
-        standardDeduction -
-        personalExemption,
-      0,
-    );
-  }
-
-  // ============================================================
-  // MARYLAND PERSONAL EXEMPTION
-  // ============================================================
-
-  private calculateMarylandPersonalExemption(
-    federalAdjustedIncome: number,
-    input: TaxCalculatorInput,
-  ): number {
-    if (
-      input.taxProfile.state !== 'MD' ||
-      federalAdjustedIncome <= 0
-    ) {
-      return 0;
-    }
-
-    const filingStatus =
-      input.taxProfile.filingStatus;
-
-    /**
-     * Maryland uses the same exemption phaseout thresholds
-     * for Joint, Head of Household, and Qualifying Surviving
-     * Spouse returns.
-     */
-    const jointLike =
-      filingStatus ===
-        'married-filing-jointly' ||
-      filingStatus ===
-        'head-of-household';
-
-    let exemptionAmount = 0;
-
-    // ----------------------------------------------------------
-    // SINGLE / MFS
-    // ----------------------------------------------------------
-
-    if (!jointLike) {
-      if (
-        federalAdjustedIncome <=
-        100_000
-      ) {
-        exemptionAmount = 3_200;
-      } else if (
-        federalAdjustedIncome <=
-        125_000
-      ) {
-        exemptionAmount = 1_600;
-      } else if (
-        federalAdjustedIncome <=
-        150_000
-      ) {
-        exemptionAmount = 800;
-      } else {
-        exemptionAmount = 0;
-      }
-    }
-
-    // ----------------------------------------------------------
-    // JOINT / HOH
-    // ----------------------------------------------------------
-
-    else {
-      if (
-        federalAdjustedIncome <=
-        150_000
-      ) {
-        exemptionAmount = 3_200;
-      } else if (
-        federalAdjustedIncome <=
-        175_000
-      ) {
-        exemptionAmount = 1_600;
-      } else if (
-        federalAdjustedIncome <=
-        200_000
-      ) {
-        exemptionAmount = 800;
-      } else {
-        exemptionAmount = 0;
-      }
-    }
-
-    // ----------------------------------------------------------
-    // TAXPAYER / SPOUSE AGE 65+ OR BLIND
-    // ----------------------------------------------------------
-
-    let totalExemption =
-      exemptionAmount;
-
-    if (
-      input.taxProfile
-        .taxpayerAge65OrOlder ||
-      input.taxProfile.taxpayerBlind
-    ) {
-      totalExemption +=
-        this.MARYLAND_ADDITIONAL_AGE_BLIND_EXEMPTION;
-    }
-
-    if (
-      filingStatus ===
-        'married-filing-jointly' &&
-      (
-        input.taxProfile
-          .spouseAge65OrOlder ||
-        input.taxProfile.spouseBlind
+    return (
+      selfEmploymentTax *
+      this.normalizeRate(
+        configuration
+          .selfEmployment
+          .seTaxDeductionRate,
       )
-    ) {
-      totalExemption +=
-        this.MARYLAND_ADDITIONAL_AGE_BLIND_EXEMPTION;
-    }
+    );
+  }
 
-    // ----------------------------------------------------------
-    // DEPENDENTS
-    // ----------------------------------------------------------
+  // ============================================================
+  // MARYLAND / STATE TAX
+  // ============================================================
 
-    /**
-     * Each qualifying dependent receives the applicable
-     * Maryland personal exemption amount.
-     *
-     * The current UI stores only the number of dependents,
-     * not whether an individual dependent is age 65+.
-     *
-     * Therefore the additional dependent age-65 exemption
-     * cannot yet be calculated per dependent.
-     */
-    const dependents =
+private calculateStateTax(
+  taxableIncome: number,
+  input: TaxCalculatorInput,
+  configuration: TaxPayConfiguration,
+): number {
+  if (
+    taxableIncome <= 0 ||
+    !input.taxProfile.state
+  ) {
+    return 0;
+  }
+
+  const state = configuration.state;
+
+  if (
+    state.stateCode !==
+    input.taxProfile.state
+  ) {
+    return 0;
+  }
+
+  const brackets = this.getStateTaxBrackets(
+    state,
+    input.taxProfile.filingStatus,
+  );
+
+  return this.calculateProgressiveTax(
+    taxableIncome,
+    brackets,
+  );
+}
+
+
+
+private calculateStateTaxableIncome(
+  adjustedIncome: number,
+  input: TaxCalculatorInput,
+  configuration: TaxPayConfiguration,
+): number {
+  const state =
+    configuration.state;
+
+  /*
+   * Maryland's standard deduction is 15% of Maryland
+   * adjusted gross income, subject to the configured
+   * minimum and maximum.
+   */
+  const standardDeduction =
+    Math.min(
       Math.max(
-        Number(
-          input.taxProfile.dependents ?? 0,
-        ) || 0,
-        0,
-      );
-
-    if (dependents > 0) {
-      totalExemption +=
-        exemptionAmount *
-        Math.floor(dependents);
-    }
-
-    return Math.max(
-      totalExemption,
-      0,
+        adjustedIncome *
+          this.normalizeRate(
+            state.standardDeductionRate,
+          ),
+        state.standardDeductionMinimum,
+      ),
+      state.standardDeductionMaximum,
     );
-  }
 
-  // ============================================================
-  // MARYLAND STATE TAX
-  // ============================================================
-
-  private calculateStateTax(
-    taxableIncome: number,
-    input: TaxCalculatorInput,
-  ): number {
-    if (
-      input.taxProfile.state !== 'MD' ||
-      taxableIncome <= 0
-    ) {
-      return 0;
-    }
-
-    /**
-     * Maryland 2026 graduated state income-tax rates.
-     *
-     * Single / Married Filing Separately:
-     *
-     * 2%      through $1,000
-     * 3%      $1,001 - $2,000
-     * 4%      $2,001 - $3,000
-     * 4.75%   $3,001 - $100,000
-     * 5.00%   $100,001 - $125,000
-     * 5.25%   $125,001 - $150,000
-     * 5.50%   $150,001 - $250,000
-     * 5.75%   $250,001 - $500,000
-     * 6.25%   $500,001 - $1,000,000
-     * 6.50%   over $1,000,000
-     *
-     * Married Filing Jointly / Head of Household:
-     *
-     * 2%      through $1,000
-     * 3%      $1,001 - $2,000
-     * 4%      $2,001 - $3,000
-     * 4.75%   $3,001 - $150,000
-     * 5.00%   $150,001 - $175,000
-     * 5.25%   $175,001 - $225,000
-     * 5.50%   $225,001 - $300,000
-     * 5.75%   $300,001 - $600,000
-     * 6.25%   $600,001 - $1,200,000
-     * 6.50%   over $1,200,000
-     */
-
-    const filingStatus =
-      input.taxProfile.filingStatus;
-
-    const singleLike =
-      filingStatus === 'single' ||
-      filingStatus ===
-        'married-filing-separately';
-
-    if (singleLike) {
-      return this.calculateMarylandTax(
-        taxableIncome,
-        [
-          {
-            upTo: 1_000,
-            rate: 0.02,
-          },
-          {
-            upTo: 2_000,
-            rate: 0.03,
-          },
-          {
-            upTo: 3_000,
-            rate: 0.04,
-          },
-          {
-            upTo: 100_000,
-            rate: 0.0475,
-          },
-          {
-            upTo: 125_000,
-            rate: 0.05,
-          },
-          {
-            upTo: 150_000,
-            rate: 0.0525,
-          },
-          {
-            upTo: 250_000,
-            rate: 0.055,
-          },
-          {
-            upTo: 500_000,
-            rate: 0.0575,
-          },
-          {
-            upTo: 1_000_000,
-            rate: 0.0625,
-          },
-          {
-            upTo: Infinity,
-            rate: 0.065,
-          },
-        ],
-      );
-    }
-
-    return this.calculateMarylandTax(
-      taxableIncome,
-      [
-        {
-          upTo: 1_000,
-          rate: 0.02,
-        },
-        {
-          upTo: 2_000,
-          rate: 0.03,
-        },
-        {
-          upTo: 3_000,
-          rate: 0.04,
-        },
-        {
-          upTo: 150_000,
-          rate: 0.0475,
-        },
-        {
-          upTo: 175_000,
-          rate: 0.05,
-        },
-        {
-          upTo: 225_000,
-          rate: 0.0525,
-        },
-        {
-          upTo: 300_000,
-          rate: 0.055,
-        },
-        {
-          upTo: 600_000,
-          rate: 0.0575,
-        },
-        {
-          upTo: 1_200_000,
-          rate: 0.0625,
-        },
-        {
-          upTo: Infinity,
-          rate: 0.065,
-        },
-      ],
+  /*
+   * The current calculator exposes dependents as a
+   * simple count. Each configured exemption is applied
+   * using the Maryland personal-exemption value.
+   *
+   * Age/blind additional exemptions are not applied here
+   * because those attributes are not currently represented
+   * by TaxCalculatorInput.
+   */
+  const dependents =
+    this.nonNegative(
+      input.taxProfile.dependents,
     );
-  }
 
-  // ============================================================
-  // MARYLAND STATE BRACKET CALCULATION
-  // ============================================================
+  const personalExemptions =
+    1 + dependents;
 
-  private calculateMarylandTax(
-    taxableIncome: number,
-    brackets: ReadonlyArray<{
-      upTo: number;
-      rate: number;
-    }>,
-  ): number {
-    let tax = 0;
-
-    let previousLimit = 0;
-
-    for (const bracket of brackets) {
-      if (
-        taxableIncome <=
-        previousLimit
-      ) {
-        break;
-      }
-
-      const upperLimit =
-        Math.min(
-          taxableIncome,
-          bracket.upTo,
-        );
-
-      const amount =
-        Math.max(
-          upperLimit -
-            previousLimit,
-          0,
-        );
-
-      tax +=
-        amount *
-        bracket.rate;
-
-      previousLimit =
-        bracket.upTo;
-
-      if (
-        bracket.upTo ===
-        Infinity
-      ) {
-        break;
-      }
-    }
-
-    return Math.max(
-      tax,
-      0,
+  const exemptionAmount =
+    personalExemptions *
+    this.nonNegative(
+      state.personalExemption,
     );
+
+  return Math.max(
+    adjustedIncome -
+      standardDeduction -
+      exemptionAmount,
+    0,
+  );
+}
+
+private getStateTaxBrackets(
+  state: TaxPayConfiguration['state'],
+  filingStatus:
+    TaxCalculatorInput['taxProfile']['filingStatus'],
+): TaxBracket[] {
+  switch (filingStatus) {
+    case 'married-filing-jointly':
+      return state.bracketsMarriedJointly;
+
+    case 'head-of-household':
+      return state.bracketsHeadOfHousehold;
+
+    case 'married-filing-separately':
+      return state.bracketsMarriedSeparately;
+
+    case 'single':
+    default:
+      return state.bracketsSingle;
   }
+}
 
   // ============================================================
   // LOCAL TAX
@@ -1293,171 +1047,61 @@ export class TaxCalculatorService {
 
   private calculateLocalTax(
     taxableIncome: number,
-    county: string,
     input: TaxCalculatorInput,
+    configuration:
+      TaxPayConfiguration,
   ): number {
     if (
-      !county ||
       taxableIncome <= 0 ||
-      input.taxProfile.state !== 'MD'
+      !input.taxProfile.county
     ) {
       return 0;
     }
 
-    // ----------------------------------------------------------
-    // NORMALIZE MARYLAND COUNTY IDENTIFIER
-    // ----------------------------------------------------------
+    if (
+      !input.taxProfile.state
+    ) {
+      return 0;
+    }
 
-    /**
-     * The UI may provide a Maryland county as:
-     *
-     * 24033
-     * 033
-     * md-033
-     *
-     * The local-tax data uses:
-     *
-     * md-033
-     *
-     * Example:
-     *
-     * 24033 = Prince George's County
-     *       -> md-033
-     */
-
-    const rawCounty =
-      county
+    const countyValue =
+      input.taxProfile.county
         .trim()
         .toLowerCase();
 
-    let countyKey =
-      rawCounty;
-
-    // Five-digit Maryland FIPS
-    if (
-      /^\d{5}$/.test(
-        rawCounty,
-      )
-    ) {
-      const stateFips =
-        rawCounty.substring(
-          0,
-          2,
-        );
-
-      const countyFips =
-        rawCounty.substring(
-          2,
-        );
-
-      if (
-        stateFips === '24'
-      ) {
-        countyKey =
-          `md-${countyFips}`;
-      }
-    }
-
-    // Three-digit county FIPS
-    else if (
-      /^\d{3}$/.test(
-        rawCounty,
-      )
-    ) {
-      countyKey =
-        `md-${rawCounty}`;
-    }
-
-    // Already normalized
-    else if (
-      /^md-\d{3}$/.test(
-        rawCounty,
-      )
-    ) {
-      countyKey =
-        rawCounty;
-    }
-
-    // ----------------------------------------------------------
-    // FIND LOCAL TAX RULE
-    // ----------------------------------------------------------
+    const stateCode =
+      input.taxProfile.state
+        .trim()
+        .toUpperCase();
 
     const rule =
-      MARYLAND_LOCAL_TAX_RATES_2026[
-        countyKey
-      ];
+      configuration.localTaxes.find(
+        (localTax) =>
+          localTax.stateCode
+            .trim()
+            .toUpperCase() ===
+            stateCode &&
+          (
+            localTax.countyCode
+              .trim()
+              .toLowerCase() ===
+              countyValue ||
+            localTax.countyName
+              .trim()
+              .toLowerCase() ===
+              countyValue
+          ),
+      );
 
     if (!rule) {
       return 0;
     }
 
-    const brackets =
-      rule.brackets;
-
-    // ----------------------------------------------------------
-    // CALCULATE LOCAL TAX
-    // ----------------------------------------------------------
-
-    return this.calculateMarylandLocalTax(
-      taxableIncome,
-      brackets,
-    );
-  }
-
-  // ============================================================
-  // MARYLAND LOCAL TAX BRACKET CALCULATION
-  // ============================================================
-
-  private calculateMarylandLocalTax(
-    taxableIncome: number,
-    brackets: ReadonlyArray<{
-      upTo: number;
-      rate: number;
-    }>,
-  ): number {
-    let tax = 0;
-
-    let previousLimit = 0;
-
-    for (const bracket of brackets) {
-      if (
-        taxableIncome <=
-        previousLimit
-      ) {
-        break;
-      }
-
-      const upperLimit =
-        Math.min(
-          taxableIncome,
-          bracket.upTo,
-        );
-
-      const amount =
-        Math.max(
-          upperLimit -
-            previousLimit,
-          0,
-        );
-
-      tax +=
-        amount *
-        bracket.rate;
-
-      previousLimit =
-        bracket.upTo;
-
-      if (
-        bracket.upTo ===
-        Infinity
-      ) {
-        break;
-      }
-    }
-
-    return Math.max(
-      tax,
-      0,
+    return (
+      taxableIncome *
+      this.normalizeRate(
+        rule.rate,
+      )
     );
   }
 
@@ -1472,28 +1116,70 @@ export class TaxCalculatorService {
     annualNet: number,
     periodsPerYear: number,
   ): PayPeriodResult {
+    const periods =
+      periodsPerYear > 0
+        ? periodsPerYear
+        : 1;
+
     return {
       grossIncome:
         annualGross /
-        periodsPerYear,
+        periods,
 
       taxes:
         annualTaxes /
-        periodsPerYear,
+        periods,
 
       deductions:
         annualDeductions /
-        periodsPerYear,
+        periods,
 
       netIncome:
         annualNet /
-        periodsPerYear,
+        periods,
     };
   }
 
   // ============================================================
   // HELPERS
   // ============================================================
+
+  private requireConfiguration():
+    TaxPayConfiguration {
+    if (!this.configuration) {
+      throw new Error(
+        'Tax calculator configuration has not been loaded.',
+      );
+    }
+
+    return this.configuration;
+  }
+
+  /**
+   * Configuration rates are stored as decimal fractions:
+   *
+   * 0.062 = 6.2%
+   *
+   * The helper also tolerates an accidental whole percentage:
+   *
+   * 6.2 -> 0.062
+   */
+  private normalizeRate(
+    rate: number,
+  ): number {
+    if (!Number.isFinite(rate)) {
+      return 0;
+    }
+
+    if (rate > 1) {
+      return rate / 100;
+    }
+
+    return Math.max(
+      rate,
+      0,
+    );
+  }
 
   private nonNegative(
     value: number | null | undefined,

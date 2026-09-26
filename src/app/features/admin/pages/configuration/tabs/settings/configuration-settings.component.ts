@@ -1,633 +1,919 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
-  OnInit,
   signal,
 } from '@angular/core';
 
-import { FormsModule } from '@angular/forms';
-
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
-import { SystemSetting } from '../../../../../../core/models/system-setting.model';
+import { Router } from '@angular/router';
 
-import { SettingsService } from '../../../../../../core/services/settings.service';
-import { LoggerService } from '../../../../../../core/services/logger.service';
+import {
+  ConfigurationFeature,
+  ConfigurationFeatureType,
+} from '../../models/configuration-feature.model';
+
+import { CONFIGURATION_FEATURES } from '../../configuration-feature.registry';
+
+import {
+  CONFIGURATION_APPLICATIONS,
+} from '../../../../../../core/registries/configuration-application.registry';
 
 @Component({
-  selector:
-    'app-configuration-settings',
+  selector: 'app-configuration-settings',
   standalone: true,
   imports: [
-    FormsModule,
     MatButtonModule,
-    MatCardModule,
-    MatFormFieldModule,
     MatIconModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
-    MatSlideToggleModule,
   ],
-  changeDetection:
-    ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6">
 
-      <!-- HEADER -->
+      <!-- ============================================================
+           SETTINGS HEADER
+           ============================================================ -->
 
-      <div>
+      <section
+        class="
+          rounded-2xl
+          border border-slate-200
+          bg-white
+          p-5
+          shadow-sm
+        "
+      >
+        <div>
+          <h2
+            class="
+              text-xl
+              font-semibold
+              text-slate-900
+            "
+          >
+            Settings
+          </h2>
 
-        <h2
-          class="text-xl font-semibold text-slate-900"
-        >
-          System Settings
-        </h2>
-
-        <p
-          class="mt-1 text-sm text-slate-600"
-        >
-          Configure runtime behavior without
-          changing application code.
-        </p>
-
-      </div>
-
-
-      <!-- LOADING -->
-
-      @if (loading()) {
-
-        <div
-          class="flex items-center
-                 justify-center py-16"
-        >
-
-          <mat-spinner
-            diameter="40"
-          />
-
+          <p
+            class="
+              mt-1
+              text-sm
+              leading-6
+              text-slate-500
+            "
+          >
+            Manage application-specific configuration
+            and platform settings from one place.
+          </p>
         </div>
 
-      }
-
-
-      <!-- ERROR -->
-
-      @if (error()) {
+        <!-- ==========================================================
+             SEARCH / FILTERS
+             ========================================================== -->
 
         <div
-          class="rounded-xl border
-                 border-red-200
-                 bg-red-50 p-4"
+          class="
+            mt-6
+            grid
+            grid-cols-1
+            gap-4
+            lg:grid-cols-[minmax(0,1fr)_16rem_14rem]
+          "
         >
 
-          <div
-            class="flex items-start gap-3"
-          >
-
-            <mat-icon
-              class="text-red-600"
+          <!-- Search -->
+          <div>
+            <label
+              for="settings-search"
+              class="
+                mb-2
+                block
+                text-sm
+                font-medium
+                text-slate-700
+              "
             >
-              error
-            </mat-icon>
+              Search settings
+            </label>
 
-            <div>
+            <div class="relative">
 
-              <p
-                class="font-medium
-                       text-red-900"
+              <mat-icon
+                class="
+                  pointer-events-none
+                  absolute
+                  left-3
+                  top-1/2
+                  -translate-y-1/2
+                  text-slate-400
+                "
               >
-                Configuration error
-              </p>
+                search
+              </mat-icon>
 
-              <p
-                class="mt-1 text-sm
-                       text-red-700"
-              >
-                {{ error() }}
-              </p>
+              <input
+                id="settings-search"
+                type="search"
+                autocomplete="off"
+                class="
+                  w-full
+                  rounded-xl
+                  border
+                  border-slate-300
+                  bg-white
+                  py-2.5
+                  pl-10
+                  pr-4
+                  text-sm
+                  text-slate-900
+                  outline-none
+                  transition
+                  focus:border-[#2a835f]
+                  focus:ring-2
+                  focus:ring-[#2a835f]/20
+                "
+                placeholder="Search settings..."
+                [value]="searchTerm()"
+                (input)="
+                  searchTerm.set(
+                    $any($event.target).value
+                  )
+                "
+              />
 
             </div>
+          </div>
 
+          <!-- Application -->
+          <div>
+            <label
+              for="settings-application"
+              class="
+                mb-2
+                block
+                text-sm
+                font-medium
+                text-slate-700
+              "
+            >
+              Application
+            </label>
+
+            <select
+              id="settings-application"
+              class="
+                w-full
+                rounded-xl
+                border
+                border-slate-300
+                bg-white
+                px-3
+                py-2.5
+                text-sm
+                text-slate-900
+                outline-none
+                focus:border-[#2a835f]
+                focus:ring-2
+                focus:ring-[#2a835f]/20
+              "
+              [value]="selectedApplication()"
+              (change)="
+                selectedApplication.set(
+                  $any($event.target).value
+                )
+              "
+            >
+              <option value="all">
+                All Applications
+              </option>
+
+              @for (
+                application of applications();
+                track application.key
+              ) {
+                <option
+                  [value]="application.key"
+                >
+                  {{ application.name }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <!-- Setting Type -->
+          <div>
+            <label
+              for="settings-type"
+              class="
+                mb-2
+                block
+                text-sm
+                font-medium
+                text-slate-700
+              "
+            >
+              Setting Type
+            </label>
+
+            <select
+              id="settings-type"
+              class="
+                w-full
+                rounded-xl
+                border
+                border-slate-300
+                bg-white
+                px-3
+                py-2.5
+                text-sm
+                text-slate-900
+                outline-none
+                focus:border-[#2a835f]
+                focus:ring-2
+                focus:ring-[#2a835f]/20
+              "
+              [value]="selectedType()"
+              (change)="
+                selectedType.set(
+                  $any($event.target).value
+                )
+              "
+            >
+              <option value="all">
+                All Settings
+              </option>
+
+              <option value="settings">
+                Settings
+              </option>
+
+              <option value="security">
+                Security
+              </option>
+
+              <option value="maintenance">
+                Maintenance
+              </option>
+            </select>
           </div>
 
         </div>
 
-      }
+        <!-- Filter summary -->
+        @if (hasFilters()) {
+          <div
+            class="
+              mt-4
+              flex
+              flex-wrap
+              items-center
+              justify-between
+              gap-3
+              border-t
+              border-slate-100
+              pt-4
+            "
+          >
 
-
-      @if (!loading()) {
-
-        @for (
-          group of groups();
-          track group
-        ) {
-
-          <section>
-
-            <div class="mb-3">
-
-              <h3
-                class="text-base font-semibold
-                       text-slate-900"
+            <p class="text-sm text-slate-500">
+              Showing
+              <span
+                class="
+                  font-semibold
+                  text-slate-800
+                "
               >
-                {{ group }}
-              </h3>
+                {{ filteredFeatures().length }}
+              </span>
 
-            </div>
+              {{
+                filteredFeatures().length === 1
+                  ? 'setting'
+                  : 'settings'
+              }}
+            </p>
 
-
-            <div
-              class="space-y-3"
+            <button
+              mat-button
+              type="button"
+              (click)="clearFilters()"
             >
+              <mat-icon>
+                clear
+              </mat-icon>
 
-              @for (
-                setting of settingsForGroup(group);
-                track setting.key
-              ) {
+              Clear filters
+            </button>
 
-                <mat-card
-                  appearance="outlined"
-                  class="!rounded-xl"
+          </div>
+        }
+
+      </section>
+
+
+      <!-- ============================================================
+           NO RESULTS
+           ============================================================ -->
+
+      @if (filteredFeatures().length === 0) {
+
+        <section
+          class="
+            rounded-2xl
+            border
+            border-dashed
+            border-slate-300
+            bg-slate-50
+            p-12
+            text-center
+          "
+        >
+
+          <mat-icon
+            class="
+              !h-12
+              !w-12
+              !text-5xl
+              text-slate-400
+            "
+          >
+            search_off
+          </mat-icon>
+
+          <h3
+            class="
+              mt-4
+              text-lg
+              font-semibold
+              text-slate-800
+            "
+          >
+            No settings found
+          </h3>
+
+          <p
+            class="
+              mx-auto
+              mt-2
+              max-w-md
+              text-sm
+              leading-6
+              text-slate-500
+            "
+          >
+            No settings match the current search
+            or filter criteria.
+          </p>
+
+          @if (hasFilters()) {
+            <button
+              mat-stroked-button
+              type="button"
+              class="mt-5"
+              (click)="clearFilters()"
+            >
+              <mat-icon>
+                filter_alt_off
+              </mat-icon>
+
+              Clear filters
+            </button>
+          }
+
+        </section>
+
+      } @else {
+
+        <!-- ============================================================
+             SETTINGS BY APPLICATION
+             ============================================================ -->
+
+        <div class="space-y-8">
+
+          @for (
+            group of groupedFeatures();
+            track group.key
+          ) {
+
+            <section>
+
+              <!-- Application heading -->
+              <div
+                class="
+                  mb-4
+                  flex
+                  items-center
+                  justify-between
+                  gap-4
+                "
+              >
+
+                <div
+                  class="
+                    flex
+                    items-center
+                    gap-3
+                  "
                 >
 
-                  <mat-card-content>
+                  <div
+                    class="
+                      flex
+                      h-10
+                      w-10
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-xl
+                      bg-[#2a835f]/10
+                    "
+                  >
+                    <mat-icon
+                      class="text-[#2a835f]"
+                    >
+                      apps
+                    </mat-icon>
+                  </div>
+
+                  <div>
+                    <h3
+                      class="
+                        text-lg
+                        font-semibold
+                        text-slate-900
+                      "
+                    >
+                      {{ group.name }}
+                    </h3>
+
+                    <p
+                      class="
+                        text-sm
+                        text-slate-500
+                      "
+                    >
+                      {{ group.features.length }}
+                      {{
+                        group.features.length === 1
+                          ? 'setting'
+                          : 'settings'
+                      }}
+                    </p>
+                  </div>
+
+                </div>
+
+                <span
+                  class="
+                    hidden
+                    rounded-full
+                    bg-slate-100
+                    px-3
+                    py-1
+                    text-xs
+                    font-medium
+                    text-slate-600
+                    sm:inline-flex
+                  "
+                >
+                  {{ group.key }}
+                </span>
+
+              </div>
+
+
+              <!-- Settings cards -->
+              <div
+                class="
+                  grid
+                  grid-cols-1
+                  gap-4
+                  md:grid-cols-2
+                  xl:grid-cols-3
+                "
+              >
+
+                @for (
+                  feature of group.features;
+                  track feature.key
+                ) {
+
+                  <button
+                    type="button"
+                    class="
+                      group
+                      rounded-2xl
+                      border
+                      border-slate-200
+                      bg-white
+                      p-5
+                      text-left
+                      shadow-sm
+                      transition
+                      hover:-translate-y-0.5
+                      hover:border-slate-300
+                      hover:shadow-md
+                      disabled:cursor-not-allowed
+                      disabled:opacity-70
+                    "
+                    [disabled]="!feature.route"
+                    (click)="openSetting(feature)"
+                  >
 
                     <div
-                      class="flex flex-col gap-4
-                             lg:flex-row
-                             lg:items-center
-                             lg:justify-between"
+                      class="
+                        flex
+                        items-start
+                        justify-between
+                        gap-4
+                      "
                     >
 
-                      <!-- DESCRIPTION -->
-
-                      <div>
-
-                        <div
-                          class="flex items-center
-                                 gap-2"
-                        >
-
-                          <h4
-                            class="font-medium
-                                   text-slate-900"
-                          >
-                            {{ setting.label }}
-                          </h4>
-
-                        </div>
-
-                        @if (
-                          setting.description
-                        ) {
-
-                          <p
-                            class="mt-1 max-w-2xl
-                                   text-sm
-                                   text-slate-600"
-                          >
-                            {{
-                              setting.description
-                            }}
-                          </p>
-
-                        }
-
-                        <p
-                          class="mt-2 font-mono
-                                 text-xs
-                                 text-slate-400"
-                        >
-                          {{ setting.key }}
-                        </p>
-
-                      </div>
-
-
-                      <!-- VALUE -->
-
                       <div
-                        class="flex
-                               w-full
-                               items-center
-                               gap-2
-                               lg:w-auto"
+                        class="
+                          flex
+                          h-11
+                          w-11
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-xl
+                          bg-slate-100
+                        "
                       >
-
-                        @if (
-                          setting.type ===
-                          'boolean'
-                        ) {
-
-                          <mat-slide-toggle
-                            [checked]="
-                              setting.value === true
-                            "
-                            [disabled]="
-                              !setting.editable ||
-                              savingKey() ===
-                                setting.key
-                            "
-                            (change)="
-                              updateBoolean(
-                                setting,
-                                $event.checked
-                              )
-                            "
-                          >
-                            {{
-                              setting.value === true
-                                ? 'Enabled'
-                                : 'Disabled'
-                            }}
-                          </mat-slide-toggle>
-
-                        }
-
-
-                        @if (
-                          setting.type ===
-                          'number'
-                        ) {
-
-                          <mat-form-field
-                            appearance="outline"
-                            class="w-full
-                                   sm:w-48"
-                          >
-
-                            <mat-label>
-                              Value
-                            </mat-label>
-
-                            <input
-                              matInput
-                              type="number"
-                              [ngModel]="
-                                setting.value
-                              "
-                              [disabled]="
-                                !setting.editable ||
-                                savingKey() ===
-                                  setting.key
-                              "
-                              (ngModelChange)="
-                                updateNumber(
-                                  setting,
-                                  $event
-                                )
-                              "
-                            />
-
-                          </mat-form-field>
-
-                        }
-
-
-                        @if (
-                          setting.type ===
-                          'string'
-                        ) {
-
-                          <mat-form-field
-                            appearance="outline"
-                            class="w-full
-                                   sm:w-72"
-                          >
-
-                            <mat-label>
-                              Value
-                            </mat-label>
-
-                            <input
-                              matInput
-                              type="text"
-                              [ngModel]="
-                                setting.value
-                              "
-                              [disabled]="
-                                !setting.editable ||
-                                savingKey() ===
-                                  setting.key
-                              "
-                              (ngModelChange)="
-                                updateString(
-                                  setting,
-                                  $event
-                                )
-                              "
-                            />
-
-                          </mat-form-field>
-
-                        }
-
-
-                        @if (
-                          savingKey() ===
-                          setting.key
-                        ) {
-
-                          <mat-spinner
-                            diameter="20"
-                          />
-
-                        }
-
+                        <mat-icon
+                          class="text-slate-700"
+                        >
+                          {{ feature.icon }}
+                        </mat-icon>
                       </div>
+
+                      <span
+                        class="
+                          rounded-full
+                          bg-slate-100
+                          px-2.5
+                          py-1
+                          text-xs
+                          font-medium
+                          text-slate-600
+                        "
+                      >
+                        {{
+                          featureTypeLabel(
+                            feature.type
+                          )
+                        }}
+                      </span>
 
                     </div>
 
 
-                    <!-- RESET -->
+                    <h4
+                      class="
+                        mt-4
+                        text-base
+                        font-semibold
+                        text-slate-900
+                        transition-colors
+                        group-hover:text-[#2a835f]
+                      "
+                    >
+                      {{ feature.name }}
+                    </h4>
 
-                    @if (
-                      setting.editable
-                    ) {
 
-                      <div
-                        class="mt-4 flex
-                               justify-end
-                               border-t
-                               border-slate-100
-                               pt-3"
-                      >
+                    <p
+                      class="
+                        mt-2
+                        text-sm
+                        leading-6
+                        text-slate-500
+                      "
+                    >
+                      {{ feature.description }}
+                    </p>
 
-                        <button
-                          mat-button
-                          type="button"
-                          [disabled]="
-                            savingKey() ===
-                            setting.key
-                          "
-                          (click)="
-                            resetSetting(setting)
+
+                    <div
+                      class="
+                        mt-4
+                        flex
+                        items-center
+                        gap-1
+                        text-sm
+                        font-medium
+                        text-slate-600
+                      "
+                    >
+
+                      @if (feature.route) {
+
+                        Configure
+
+                        <mat-icon
+                          class="
+                            !h-4
+                            !w-4
+                            !text-base
+                            transition-transform
+                            group-hover:translate-x-1
                           "
                         >
+                          arrow_forward
+                        </mat-icon>
 
-                          <mat-icon>
-                            restore
-                          </mat-icon>
+                      } @else {
 
-                          Reset to default
+                        Coming soon
 
-                        </button>
+                      }
 
-                      </div>
+                    </div>
 
-                    }
+                  </button>
 
-                  </mat-card-content>
+                }
 
-                </mat-card>
+              </div>
 
-              }
+            </section>
 
-            </div>
+          }
 
-          </section>
-
-        }
+        </div>
 
       }
 
     </div>
   `,
 })
-export class ConfigurationSettingsComponent
-  implements OnInit {
+export class ConfigurationSettingsComponent {
 
-  private readonly settingsService =
-    inject(SettingsService);
+  // ================================================================
+  // DEPENDENCIES
+  // ================================================================
 
-  private readonly logger =
-    inject(LoggerService);
+  private readonly router = inject(Router);
 
-  readonly settings =
-    this.settingsService.settings;
 
-  readonly loading =
-    signal(true);
+  // ================================================================
+  // CONFIGURATION FEATURES
+  //
+  // Settings is intentionally limited to configuration-oriented
+  // feature types. Operational Monitoring, Knowledge Center,
+  // Applications, and other Control Center capabilities remain
+  // separate tabs/capabilities.
+  // ================================================================
 
-  readonly savingKey =
-    signal<string | null>(null);
+  protected readonly configurationFeatures =
+    CONFIGURATION_FEATURES.filter(
+      (feature) =>
+        feature.type === 'settings' ||
+        feature.type === 'security' ||
+        feature.type === 'maintenance',
+    );
 
-  readonly error =
-    signal<string | null>(null);
 
-  readonly groups =
-    signal<string[]>([]);
+  // ================================================================
+  // CANONICAL APPLICATION LIST
+  //
+  // The application registry is the source of truth for the
+  // application selector. This prevents the Settings tab from
+  // creating its own independent application list.
+  // ================================================================
 
-  async ngOnInit(): Promise<void> {
-    await this.load();
-  }
-
-  async load(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
-
-    try {
-
-      await this.settingsService
-        .load();
-
-      this.refreshGroups();
-
-    } catch (error) {
-
-      this.logger.error(
-        'ConfigurationSettingsComponent',
-        'Failed to load settings.',
-        error,
-      );
-
-      this.error.set(
-        'The system settings could not be loaded.',
-      );
-
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
-  settingsForGroup(
-    group: string,
-  ): SystemSetting[] {
-
-    return this.settings()
+  protected readonly applications = computed(() =>
+    CONFIGURATION_APPLICATIONS
       .filter(
-        (setting) =>
-          setting.group ===
-          group,
-      );
-  }
+        (application) =>
+          application.enabled,
+      )
+      .map((application) => ({
+        key: application.key,
+        name: application.name,
+      })),
+  );
 
-  async updateBoolean(
-    setting: SystemSetting,
-    value: boolean,
-  ): Promise<void> {
 
-    await this.update(
-      setting,
-      value,
-    );
-  }
+  // ================================================================
+  // FILTER STATE
+  // ================================================================
 
-  async updateNumber(
-    setting: SystemSetting,
-    value: number,
-  ): Promise<void> {
+  protected readonly searchTerm =
+    signal('');
 
-    if (
-      typeof value !==
-      'number' ||
-      !Number.isFinite(value)
-    ) {
-      return;
-    }
+  protected readonly selectedApplication =
+    signal('all');
 
-    await this.update(
-      setting,
-      value,
-    );
-  }
+  protected readonly selectedType =
+    signal<
+      ConfigurationFeatureType | 'all'
+    >('all');
 
-  async updateString(
-    setting: SystemSetting,
-    value: string,
-  ): Promise<void> {
 
-    await this.update(
-      setting,
-      value,
-    );
-  }
+  // ================================================================
+  // FILTERED FEATURES
+  // ================================================================
 
-  async resetSetting(
-    setting: SystemSetting,
-  ): Promise<void> {
+  protected readonly filteredFeatures =
+    computed(() => {
 
-    this.savingKey.set(
-      setting.key,
-    );
+      const search =
+        this.searchTerm()
+          .trim()
+          .toLowerCase();
 
-    this.error.set(null);
+      const application =
+        this.selectedApplication();
 
-    try {
+      const type =
+        this.selectedType();
 
-      await this.settingsService
-        .reset(
-          setting.key,
-        );
+      return this.configurationFeatures.filter(
+        (feature) => {
 
-    } catch (error) {
+          // ----------------------------------------------------------
+          // Application filter
+          // ----------------------------------------------------------
 
-      this.logger.error(
-        'ConfigurationSettingsComponent',
-        'Failed to reset system setting.',
-        error,
-        {
-          settingKey:
-            setting.key,
+          const matchesApplication =
+            application === 'all' ||
+            feature.applicationKey ===
+              application;
+
+          if (!matchesApplication) {
+            return false;
+          }
+
+
+          // ----------------------------------------------------------
+          // Type filter
+          // ----------------------------------------------------------
+
+          const matchesType =
+            type === 'all' ||
+            feature.type === type;
+
+          if (!matchesType) {
+            return false;
+          }
+
+
+          // ----------------------------------------------------------
+          // Search filter
+          // ----------------------------------------------------------
+
+          if (!search) {
+            return true;
+          }
+
+          const searchableText = [
+            feature.applicationName,
+            feature.applicationKey,
+            feature.name,
+            feature.description,
+            feature.type,
+            ...feature.keywords,
+          ]
+            .join(' ')
+            .toLowerCase();
+
+          return searchableText.includes(
+            search,
+          );
         },
       );
+    });
 
-      this.error.set(
-        error instanceof Error
-          ? error.message
-          : 'Unable to reset the setting.',
+
+  // ================================================================
+  // GROUP SETTINGS BY APPLICATION
+  // ================================================================
+
+  protected readonly groupedFeatures =
+    computed(() => {
+
+      const groups =
+        new Map<
+          string,
+          {
+            key: string;
+            name: string;
+            features: ConfigurationFeature[];
+          }
+        >();
+
+      for (
+        const feature of
+        this.filteredFeatures()
+      ) {
+
+        const existing =
+          groups.get(
+            feature.applicationKey,
+          );
+
+        if (existing) {
+
+          existing.features.push(
+            feature,
+          );
+
+          continue;
+        }
+
+        groups.set(
+          feature.applicationKey,
+          {
+            key:
+              feature.applicationKey,
+
+            name:
+              feature.applicationName,
+
+            features: [
+              feature,
+            ],
+          },
+        );
+      }
+
+      return Array.from(
+        groups.values(),
       );
+    });
 
-    } finally {
-      this.savingKey.set(
-        null,
-      );
-    }
-  }
 
-  private async update(
-    setting: SystemSetting,
-    value:
-      string |
-      number |
-      boolean,
-  ): Promise<void> {
+  // ================================================================
+  // FILTER STATE
+  // ================================================================
 
-    if (
-      !setting.editable
-    ) {
-      return;
-    }
-
-    if (
-      setting.value ===
-      value
-    ) {
-      return;
-    }
-
-    this.savingKey.set(
-      setting.key,
+  protected readonly hasFilters =
+    computed(() =>
+      Boolean(
+        this.searchTerm().trim(),
+      ) ||
+      this.selectedApplication() !==
+        'all' ||
+      this.selectedType() !==
+        'all',
     );
 
-    this.error.set(null);
 
-    try {
+  // ================================================================
+  // NAVIGATION
+  // ================================================================
 
-      await this.settingsService
-        .set(
-          setting.key,
-          value,
-        );
+  protected openSetting(
+    feature: ConfigurationFeature,
+  ): void {
 
-    } catch (error) {
-
-      this.logger.error(
-        'ConfigurationSettingsComponent',
-        'Failed to update system setting.',
-        error,
-        {
-          settingKey:
-            setting.key,
-        },
-      );
-
-      this.error.set(
-        error instanceof Error
-          ? error.message
-          : 'Unable to update the system setting.',
-      );
-
-    } finally {
-      this.savingKey.set(
-        null,
-      );
+    if (!feature.route) {
+      return;
     }
+
+    void this.router.navigateByUrl(
+      feature.route,
+    );
   }
 
-  private refreshGroups(): void {
 
-    const groups =
-      Array.from(
-        new Set(
-          this.settings()
-            .map(
-              (setting) =>
-                setting.group,
-            ),
-        ),
+  // ================================================================
+  // DISPLAY HELPERS
+  // ================================================================
+
+  protected featureTypeLabel(
+    type: ConfigurationFeatureType,
+  ): string {
+
+    return type
+      .replace(/-/g, ' ')
+      .replace(
+        /\b\w/g,
+        (letter) =>
+          letter.toUpperCase(),
       );
+  }
 
-    this.groups.set(
-      groups,
+
+  // ================================================================
+  // RESET FILTERS
+  // ================================================================
+
+  protected clearFilters(): void {
+
+    this.searchTerm.set('');
+
+    this.selectedApplication.set(
+      'all',
+    );
+
+    this.selectedType.set(
+      'all',
     );
   }
 }

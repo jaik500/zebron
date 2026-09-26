@@ -1,85 +1,107 @@
 import { Injectable, inject } from '@angular/core';
 
 import {
-  ORGANIZATION_ROLE_PERMISSIONS,
   OrganizationRole,
   PlatformRole,
   PLATFORM_ROLE_PERMISSIONS,
+  ORGANIZATION_ROLE_PERMISSIONS,
 } from '../models/role.model';
 
-import { Permission as PermissionType } from '../models/permission.model';
-import { Group } from '../models/group.model';
+import {
+  Permission,
+  PERMISSIONS,
+} from '../models/permission.model';
 
-import { MembershipService } from './membership.service';
-import { GroupMembershipService } from './group-membership.service';
-import { GroupService } from './group.service';
+import { OrganizationMembershipService } from './organization-membership.service';
+import { UserAdminService } from './user-admin.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthorizationService {
-  private readonly membershipService =
-    inject(MembershipService);
+  private readonly membershipService = inject(
+    OrganizationMembershipService,
+  );
 
-  private readonly groupMembershipService =
-    inject(GroupMembershipService);
-
-  private readonly groupService =
-    inject(GroupService);
-
-  // ============================================================
-  // PLATFORM AUTHORIZATION
-  // ============================================================
+  private readonly userAdminService =
+  inject(UserAdminService);
 
   /**
-   * Check whether a platform role grants a permission.
+   * Get the permissions assigned to a platform role.
+   */
+  getPlatformPermissions(
+    role: PlatformRole | undefined,
+  ): Permission[] {
+    if (!role) {
+      return [];
+    }
+
+    return [
+      ...(
+        PLATFORM_ROLE_PERMISSIONS[role] ?? []
+      ),
+    ];
+  }
+
+  /**
+ * Resolve the canonical platform role for a user.
+ *
+ * The role is loaded from the user's persisted
+ * Firestore profile and is never accepted from
+ * the caller as an authorization claim.
+ */
+async getPlatformRole(
+  userId: string,
+): Promise<PlatformRole | undefined> {
+  const user =
+    await this.userAdminService.getUser(userId);
+
+  return user?.platformRole;
+}
+
+  /**
+   * Get the permissions assigned to an organization role.
+   */
+  getOrganizationPermissionsForRole(
+    role: OrganizationRole,
+  ): Permission[] {
+    return [
+      ...(
+        ORGANIZATION_ROLE_PERMISSIONS[role] ?? []
+      ),
+    ];
+  }
+
+  /**
+   * Determine whether a platform role has a permission.
    */
   hasPlatformPermission(
-    role: PlatformRole | null | undefined,
-    permission: PermissionType,
+    role: PlatformRole | undefined,
+    permission: Permission,
   ): boolean {
-    if (!role) {
-      return false;
-    }
-
-    return (
-      PLATFORM_ROLE_PERMISSIONS[role]?.includes(
-        permission,
-      ) ?? false
-    );
+    return this.getPlatformPermissions(role)
+      .includes(permission);
   }
 
-  // ============================================================
-  // ORGANIZATION AUTHORIZATION
-  // ============================================================
-
   /**
-   * Check whether an organization role grants
-   * a permission.
+   * Determine whether an organization role has a permission.
    */
   hasOrganizationPermission(
-    role: OrganizationRole | null | undefined,
-    permission: PermissionType,
+    role: OrganizationRole,
+    permission: Permission,
   ): boolean {
-    if (!role) {
-      return false;
-    }
-
-    return (
-      ORGANIZATION_ROLE_PERMISSIONS[role]?.includes(
-        permission,
-      ) ?? false
-    );
+    return this.getOrganizationPermissionsForRole(role)
+      .includes(permission);
   }
 
   /**
-   * Resolve the permissions granted by a user's
-   * active organization membership.
+   * Resolve the active organization permissions
+   * for a specific user.
    */
   async getOrganizationPermissions(
     userId: string,
     organizationId: string,
-  ): Promise<PermissionType[]> {
+  ): Promise<Permission[]> {
     const membership =
       await this.membershipService
         .getMembershipForUserAndOrganization(
@@ -91,29 +113,19 @@ export class AuthorizationService {
       return [];
     }
 
-    const permissions =
-      new Set<PermissionType>();
-
-    const rolePermissions =
-      ORGANIZATION_ROLE_PERMISSIONS[
-        membership.role
-      ] ?? [];
-
-    for (const permission of rolePermissions) {
-      permissions.add(permission);
-    }
-
-    return Array.from(permissions);
+    return this.getOrganizationPermissionsForRole(
+      membership.role as OrganizationRole,
+    );
   }
 
   /**
-   * Determine whether a user has an
-   * organization-level permission.
+   * Determine whether a user has a permission
+   * through their active organization membership.
    */
   async hasOrganizationPermissionForUser(
     userId: string,
     organizationId: string,
-    permission: PermissionType,
+    permission: Permission,
   ): Promise<boolean> {
     const permissions =
       await this.getOrganizationPermissions(
@@ -124,189 +136,107 @@ export class AuthorizationService {
     return permissions.includes(permission);
   }
 
-  // ============================================================
-  // GROUP MEMBERSHIPS
-  // ============================================================
-
   /**
-   * Get the active groups that a user belongs to
-   * within an organization.
+   * Combine platform and organization permissions.
    *
-   * Group membership alone is not sufficient.
-   * The group itself must also be active and belong
-   * to the requested organization.
+   * Platform permissions apply globally.
+   * Organization permissions apply within the
+   * specified organization.
    */
-  async getUserGroups(
+  async getEffectivePermissions(
     userId: string,
-    organizationId: string,
-  ): Promise<Group[]> {
-    const memberships =
-      await this.groupMembershipService
-        .getMembershipsForUser(userId);
+    organizationId: string | undefined,
+    platformRole: PlatformRole | undefined,
+  ): Promise<Permission[]> {
+    const permissions = new Set<Permission>();
 
-    const groups: Group[] = [];
-
-    for (const membership of memberships) {
-      if (!membership.active) {
-        continue;
-      }
-
-      const group =
-        await this.groupService.getGroup(
-          membership.groupId,
-        );
-
-      if (
-        !group ||
-        !group.active ||
-        group.organizationId !== organizationId
-      ) {
-        continue;
-      }
-
-      groups.push(group);
+    /**
+     * Platform permissions.
+     */
+    for (const permission of this.getPlatformPermissions(
+      platformRole,
+    )) {
+      permissions.add(permission);
     }
 
-    return groups;
-  }
-
-  // ============================================================
-  // GROUP AUTHORIZATION
-  // ============================================================
-
-  /**
-   * Resolve all permissions granted to a user
-   * through their active group roles.
-   *
-   * Authorization chain:
-   *
-   * User
-   *   ↓
-   * GroupMembership
-   *   ↓
-   * GroupRoleAssignment
-   *   ↓
-   * GroupRole
-   *   ↓
-   * GroupRolePermission
-   *   ↓
-   * Permission
-   */
-  async getGroupPermissions(
-    userId: string,
-    groupId: string,
-  ): Promise<PermissionType[]> {
     /**
-     * Verify that the user has an active membership
-     * in the requested group.
+     * Organization permissions.
      */
-    const membership =
-      await this.groupMembershipService
-        .getMembershipForUserAndGroup(
+    if (organizationId) {
+      const organizationPermissions =
+        await this.getOrganizationPermissions(
           userId,
-          groupId,
+          organizationId,
         );
 
-    if (!membership || !membership.active) {
-      return [];
-    }
-
-    /**
-     * Verify that the group itself exists and is active.
-     */
-    const group =
-      await this.groupService.getGroup(groupId);
-
-    if (!group || !group.active) {
-      return [];
-    }
-
-    const assignments =
-      await this.groupMembershipService
-        .getRoleAssignmentsForMembership(
-          membership.id,
-        );
-
-    const permissions =
-      new Set<PermissionType>();
-
-    for (const assignment of assignments) {
-      /**
-       * Ignore inactive role assignments.
-       */
-      if (!assignment.active) {
-        continue;
-      }
-
-      const role =
-        await this.groupMembershipService
-          .getGroupRole(
-            assignment.groupRoleId,
-          );
-
-      /**
-       * Ignore missing or inactive roles.
-       */
-      if (!role || !role.active) {
-        continue;
-      }
-
-      /**
-       * Defense-in-depth:
-       *
-       * A role must belong to the same group as
-       * the membership being evaluated.
-       */
-      if (role.groupId !== groupId) {
-        continue;
-      }
-
-      const rolePermissions =
-        await this.groupMembershipService
-          .getGroupRolePermissions(
-            role.id,
-          );
-
-      for (const rolePermission of rolePermissions) {
-        /**
-         * Ignore inactive permission assignments.
-         */
-        if (!rolePermission.active) {
-          continue;
-        }
-
-        /**
-         * Permission IDs are stable permission keys,
-         * for example:
-         *
-         * users.view
-         * users.manage
-         * tax-rules.view
-         */
-        permissions.add(
-          rolePermission.permissionId as PermissionType,
-        );
+      for (const permission of organizationPermissions) {
+        permissions.add(permission);
       }
     }
 
-    return Array.from(permissions);
+    return [...permissions];
   }
 
   /**
-   * Determine whether a user has a specific
-   * permission through a group.
+   * Determine whether the user has an effective
+   * permission through either platform authorization
+   * or organization membership.
    */
-  async hasGroupPermissionForUser(
+  async hasEffectivePermission(
     userId: string,
-    groupId: string,
-    permission: PermissionType,
+    organizationId: string | undefined,
+    platformRole: PlatformRole | undefined,
+    permission: Permission,
   ): Promise<boolean> {
     const permissions =
-      await this.getGroupPermissions(
+      await this.getEffectivePermissions(
         userId,
-        groupId,
+        organizationId,
+        platformRole,
       );
 
     return permissions.includes(permission);
   }
+
+  /**
+ * Resolve effective permissions for a user.
+ *
+ * Platform permissions come from the persisted
+ * platformRole.
+ *
+ * Organization permissions come from the user's
+ * active organization membership.
+ */
+async getEffectivePermissionsForUser(
+  userId: string,
+  organizationId?: string,
+): Promise<Permission[]> {
+  const platformRole =
+    await this.getPlatformRole(userId);
+
+  return this.getEffectivePermissions(
+    userId,
+    organizationId,
+    platformRole,
+  );
+}
+
+/**
+ * Determine whether a user has an effective
+ * permission without accepting the platform role
+ * from the caller.
+ */
+async hasEffectivePermissionForUser(
+  userId: string,
+  organizationId: string | undefined,
+  permission: Permission,
+): Promise<boolean> {
+  const permissions =
+    await this.getEffectivePermissionsForUser(
+      userId,
+      organizationId,
+    );
+
+  return permissions.includes(permission);
+}
 }

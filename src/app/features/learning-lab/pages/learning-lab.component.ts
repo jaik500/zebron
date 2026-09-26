@@ -45,6 +45,7 @@ import {
 import {
   LoggerService,
 } from '../../../core/services/logger.service';
+import { PageTitleService } from '../../../core/services/page-title.service';
 
 
 
@@ -72,7 +73,7 @@ import {
 
   template: `
     <div
-      class="min-h-screen bg-slate-50"
+      class="min-h-screen bg-slate-50 mt-15"
     >
 
       <!-- =====================================================
@@ -80,10 +81,10 @@ import {
            ===================================================== -->
 
       <section
-        class="border-b bg-white"
+        class="border-b bg-[#2a835f]"
       >
         <div
-          class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+          class="mx-auto max-w-7xl px-4  sm:px-6 lg:px-8"
         >
 
           <div
@@ -93,7 +94,7 @@ import {
             <div>
 
               <div
-                class="mb-3 flex items-center gap-2 text-sm text-slate-500"
+                class=" flex items-center gap-2 text-sm text-white-500"
               >
                 <mat-icon
                   class="!text-lg"
@@ -104,14 +105,9 @@ import {
                 Learning Lab
               </div>
 
-              <h1
-                class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
-              >
-                Your Learning Journey
-              </h1>
 
               <p
-                class="mt-2 max-w-2xl text-base leading-7 text-slate-600"
+                class=" max-w-2xl text-base leading-7 text-white"
               >
                 Track your learning activities, monitor progress,
                 build skills, and celebrate your achievements.
@@ -136,7 +132,7 @@ import {
               </a>
 
               <a
-                mat-stroked-button
+                mat-flat-button
                 routerLink="/find/training"
               >
                 <mat-icon>
@@ -1232,6 +1228,18 @@ export class LearningLabComponent {
     unit: 'activities',
   };
 
+  /**
+     * Page title service.
+     */
+    private readonly pageTitleService = inject(PageTitleService);
+
+      // ============================================================
+  // CONSTRUCTOR
+  // ============================================================
+
+  constructor() {
+    this.pageTitleService.setTitle('Learning Journey');
+  }
 
   // ===========================================================
   // COMPUTED DASHBOARD VALUES

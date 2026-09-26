@@ -6,13 +6,30 @@ export type TestCourseType =
   | 'subject'
   | 'skill';
 
+export type TestCourseScope =
+  | 'platform'
+  | 'organization';
+
+export type TestCourseAccessType =
+  | 'public'
+  | 'organization-members';
+
 export interface TestCourse {
   id: string;
 
+  organizationId: string | null;
+
+  scope: TestCourseScope;
+
+  accessType: TestCourseAccessType;
+
   /**
-   * Organization that owns this course.
+   * Program that owns/organizes the course.
+   *
+   * Organization courses require a program.
+   * Platform courses use null.
    */
-  organizationId: string;
+  programId: string | null;
 
   name: string;
 

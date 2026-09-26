@@ -267,6 +267,104 @@ export const OrganizationStore = signalStore(
       }
     },
 
+        // ======================================================
+    // SELECT ORGANIZATION
+    // ======================================================
+
+    /**
+     * Select an organization object as the current application
+     * context.
+     */
+    selectOrganization(
+      organization: Organization | null,
+    ): void {
+      patchState(store, {
+        selectedOrganization: organization,
+        error: null,
+      });
+    },
+
+    /**
+     * Select an organization by ID.
+     *
+     * Uses the already-loaded organization when available.
+     * Otherwise loads it from OrganizationService.
+     */
+      async selectOrganizationById(
+      organizationId: string,
+    ): Promise<Organization | null> {
+      const normalizedId = organizationId.trim();
+
+      if (!normalizedId) {
+        patchState(store, {
+          selectedOrganization: null,
+          error: null,
+        });
+
+        return null;
+      }
+
+      const existingOrganization =
+        store.organizations().find(
+          (organization) =>
+            organization.id === normalizedId,
+        );
+
+      if (existingOrganization) {
+        patchState(store, {
+          selectedOrganization: existingOrganization,
+          error: null,
+        });
+
+        return existingOrganization;
+      }
+
+      patchState(store, {
+        loading: true,
+        error: null,
+        selectedOrganization: null,
+      });
+
+      try {
+        const organization =
+          await organizationService.getOrganizationById(
+            normalizedId,
+          );
+
+        if (!organization) {
+          patchState(store, {
+            loading: false,
+            selectedOrganization: null,
+            error: 'Organization not found.',
+          });
+
+          return null;
+        }
+
+        patchState(store, {
+          loading: false,
+          selectedOrganization: organization,
+          error: null,
+        });
+
+        return organization;
+      } catch (error) {
+        console.error(
+          'Failed to select organization:',
+          error,
+        );
+
+        patchState(store, {
+          loading: false,
+          selectedOrganization: null,
+          error:
+            'Unable to load organization. Please try again.',
+        });
+
+        throw error;
+      }
+    },
+
     // ======================================================
     // FIND BY COMPANY NUMBER
     // ======================================================

@@ -2,6 +2,7 @@ import {
   Permission,
   PERMISSIONS,
 } from './permission.model';
+import type { OrganizationMembershipRole } from './organization-membership.model';
 
 export type PlatformRole =
   | 'platform-admin'
@@ -10,13 +11,11 @@ export type PlatformRole =
   | 'platform-auditor';
 
 export type OrganizationRole =
-  | 'owner'
-  | 'admin'
-  | 'manager'
-  | 'member';
+  OrganizationMembershipRole;
 
 export const PLATFORM_ROLE_PERMISSIONS:
   Record<PlatformRole, Permission[]> = {
+
   'platform-admin': [
     PERMISSIONS.APPLICATIONS_VIEW,
     PERMISSIONS.APPLICATIONS_MANAGE,
@@ -72,39 +71,244 @@ export const PLATFORM_ROLE_PERMISSIONS:
   ],
 };
 
-export const ORGANIZATION_ROLE_PERMISSIONS:
-  Record<OrganizationRole, Permission[]> = {
-  owner: [
+export const ORGANIZATION_ROLE_PERMISSIONS: Record<
+  OrganizationRole,
+  Permission[]
+> = {
+  // ===========================================================================
+  // Organization Owner
+  // ===========================================================================
+  //
+  // Full administrative access to the organization's applications,
+  // configuration, users, and organization settings.
+  //
+  org_owner: [
+    // Platform application access
     PERMISSIONS.APPLICATIONS_VIEW,
+    PERMISSIONS.APPLICATIONS_MANAGE,
+
+    // Organization settings
     PERMISSIONS.SETTINGS_VIEW,
     PERMISSIONS.SETTINGS_MANAGE,
+
+    // Feature configuration
     PERMISSIONS.FEATURES_VIEW,
     PERMISSIONS.FEATURES_MANAGE,
+
+    // Users
     PERMISSIONS.USERS_VIEW,
     PERMISSIONS.USERS_MANAGE,
+
+    // Organization
     PERMISSIONS.ORGANIZATIONS_VIEW,
     PERMISSIONS.ORGANIZATIONS_MANAGE,
+
+    // Resources
+    PERMISSIONS.RESOURCES_VIEW,
+    PERMISSIONS.RESOURCES_MANAGE,
+
+    // Community
+    PERMISSIONS.COMMUNITY_VIEW,
+    PERMISSIONS.COMMUNITY_CREATE,
+    PERMISSIONS.COMMUNITY_COMMENT,
+    PERMISSIONS.COMMUNITY_REACT,
+    PERMISSIONS.COMMUNITY_MODERATE,
+    PERMISSIONS.COMMUNITY_MANAGE,
+
+    // Jobs
+    PERMISSIONS.JOBS_VIEW,
+    PERMISSIONS.JOBS_MANAGE,
+
+    // Training
+    PERMISSIONS.TRAINING_VIEW,
+    PERMISSIONS.TRAINING_MANAGE,
+
+    // Test Center
+    PERMISSIONS.TEST_CENTER_VIEW,
+    PERMISSIONS.TEST_CENTER_MANAGE,
+    PERMISSIONS.TEST_CENTER_QUESTIONS_MANAGE,
+    PERMISSIONS.TEST_CENTER_QUESTIONS_REVIEW,
+    PERMISSIONS.TEST_CENTER_QUESTIONS_PUBLISH,
+
+    // Content
+    PERMISSIONS.CONTENT_VIEW,
+    PERMISSIONS.CONTENT_MANAGE,
+
+    // Knowledge
+    PERMISSIONS.KNOWLEDGE_VIEW,
+    PERMISSIONS.KNOWLEDGE_CREATE,
+    PERMISSIONS.KNOWLEDGE_MANAGE,
+    PERMISSIONS.KNOWLEDGE_PUBLISH,
+
+    // Mailbox
+    PERMISSIONS.MAILBOX_VIEW,
+    PERMISSIONS.MAILBOX_MANAGE,
+
+    // Business Operations
+    PERMISSIONS.BUSINESS_OPERATIONS_VIEW,
+    PERMISSIONS.BUSINESS_OPERATIONS_EXECUTE,
+
+    // Veya Cyber Range
+    PERMISSIONS.CYBER_RANGE_VIEW,
+    PERMISSIONS.CYBER_RANGE_LAUNCH,
+    PERMISSIONS.CYBER_RANGE_MANAGE,
+    PERMISSIONS.CYBER_RANGE_INSTRUCTOR,
   ],
 
-  admin: [
+  // ===========================================================================
+  // Organization Administrator
+  // ===========================================================================
+
+  org_admin: [
     PERMISSIONS.APPLICATIONS_VIEW,
+
     PERMISSIONS.SETTINGS_VIEW,
     PERMISSIONS.SETTINGS_MANAGE,
+
     PERMISSIONS.FEATURES_VIEW,
     PERMISSIONS.FEATURES_MANAGE,
+
     PERMISSIONS.USERS_VIEW,
     PERMISSIONS.USERS_MANAGE,
+
     PERMISSIONS.ORGANIZATIONS_VIEW,
+
+    PERMISSIONS.RESOURCES_VIEW,
+    PERMISSIONS.RESOURCES_MANAGE,
+
+    PERMISSIONS.COMMUNITY_VIEW,
+    PERMISSIONS.COMMUNITY_CREATE,
+    PERMISSIONS.COMMUNITY_COMMENT,
+    PERMISSIONS.COMMUNITY_REACT,
+    PERMISSIONS.COMMUNITY_MODERATE,
+    PERMISSIONS.COMMUNITY_MANAGE,
+
+    PERMISSIONS.JOBS_VIEW,
+    PERMISSIONS.JOBS_MANAGE,
+
+    PERMISSIONS.TRAINING_VIEW,
+    PERMISSIONS.TRAINING_MANAGE,
+
+    PERMISSIONS.TEST_CENTER_VIEW,
+    PERMISSIONS.TEST_CENTER_MANAGE,
+    PERMISSIONS.TEST_CENTER_QUESTIONS_MANAGE,
+    PERMISSIONS.TEST_CENTER_QUESTIONS_REVIEW,
+    PERMISSIONS.TEST_CENTER_QUESTIONS_PUBLISH,
+
+    PERMISSIONS.CONTENT_VIEW,
+    PERMISSIONS.CONTENT_MANAGE,
+
+    PERMISSIONS.KNOWLEDGE_VIEW,
+    PERMISSIONS.KNOWLEDGE_CREATE,
+    PERMISSIONS.KNOWLEDGE_MANAGE,
+    PERMISSIONS.KNOWLEDGE_PUBLISH,
+
+    PERMISSIONS.MAILBOX_VIEW,
+    PERMISSIONS.MAILBOX_MANAGE,
+
+    PERMISSIONS.BUSINESS_OPERATIONS_VIEW,
+    PERMISSIONS.BUSINESS_OPERATIONS_EXECUTE,
+
+    PERMISSIONS.CYBER_RANGE_VIEW,
+    PERMISSIONS.CYBER_RANGE_LAUNCH,
+    PERMISSIONS.CYBER_RANGE_MANAGE,
+    PERMISSIONS.CYBER_RANGE_INSTRUCTOR,
   ],
 
-  manager: [
+  // ===========================================================================
+  // Organization Manager
+  // ===========================================================================
+  //
+  // Operational management without organization-level administration.
+  //
+
+  org_manager: [
     PERMISSIONS.APPLICATIONS_VIEW,
+
     PERMISSIONS.SETTINGS_VIEW,
     PERMISSIONS.FEATURES_VIEW,
+
     PERMISSIONS.USERS_VIEW,
+
+    PERMISSIONS.ORGANIZATIONS_VIEW,
+
+    PERMISSIONS.RESOURCES_VIEW,
+
+    PERMISSIONS.COMMUNITY_VIEW,
+    PERMISSIONS.COMMUNITY_CREATE,
+    PERMISSIONS.COMMUNITY_COMMENT,
+    PERMISSIONS.COMMUNITY_REACT,
+
+    PERMISSIONS.JOBS_VIEW,
+    PERMISSIONS.TRAINING_VIEW,
+
+    PERMISSIONS.TEST_CENTER_VIEW,
+    PERMISSIONS.TEST_CENTER_QUESTIONS_REVIEW,
+
+    PERMISSIONS.CONTENT_VIEW,
+
+    PERMISSIONS.KNOWLEDGE_VIEW,
+    PERMISSIONS.KNOWLEDGE_CREATE,
+
+    PERMISSIONS.BUSINESS_OPERATIONS_VIEW,
+
+    PERMISSIONS.CYBER_RANGE_VIEW,
+    PERMISSIONS.CYBER_RANGE_LAUNCH,
   ],
 
-  member: [
+  // ===========================================================================
+  // Organization Staff
+  // ===========================================================================
+
+  org_staff: [
     PERMISSIONS.APPLICATIONS_VIEW,
+
+    PERMISSIONS.RESOURCES_VIEW,
+
+    PERMISSIONS.COMMUNITY_VIEW,
+    PERMISSIONS.COMMUNITY_CREATE,
+    PERMISSIONS.COMMUNITY_COMMENT,
+    PERMISSIONS.COMMUNITY_REACT,
+
+    PERMISSIONS.JOBS_VIEW,
+    PERMISSIONS.TRAINING_VIEW,
+
+    PERMISSIONS.TEST_CENTER_VIEW,
+
+    PERMISSIONS.CONTENT_VIEW,
+
+    PERMISSIONS.KNOWLEDGE_VIEW,
+
+    PERMISSIONS.BUSINESS_OPERATIONS_VIEW,
+
+    PERMISSIONS.CYBER_RANGE_VIEW,
+    PERMISSIONS.CYBER_RANGE_LAUNCH,
+  ],
+
+  // ===========================================================================
+  // Organization Member
+  // ===========================================================================
+
+  org_member: [
+    PERMISSIONS.APPLICATIONS_VIEW,
+
+    PERMISSIONS.RESOURCES_VIEW,
+
+    PERMISSIONS.COMMUNITY_VIEW,
+    PERMISSIONS.COMMUNITY_CREATE,
+    PERMISSIONS.COMMUNITY_COMMENT,
+    PERMISSIONS.COMMUNITY_REACT,
+
+    PERMISSIONS.JOBS_VIEW,
+    PERMISSIONS.TRAINING_VIEW,
+
+    PERMISSIONS.TEST_CENTER_VIEW,
+
+    PERMISSIONS.CONTENT_VIEW,
+
+    PERMISSIONS.KNOWLEDGE_VIEW,
+
+    PERMISSIONS.CYBER_RANGE_VIEW,
+    PERMISSIONS.CYBER_RANGE_LAUNCH,
   ],
 };

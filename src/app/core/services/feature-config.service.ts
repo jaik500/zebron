@@ -24,223 +24,243 @@ import {
   FeatureConfig,
 } from '../models/feature-config.model';
 
+import {
+  CONFIGURATION_APPLICATIONS,
+} from '../registries/configuration-application.registry';
 
 // ============================================================
 // DEFAULT FEATURE REGISTRY
 // ============================================================
 
 const DEFAULT_FEATURES: FeatureConfig[] = [
-
-  // ------------------------------------------------------------
-  // Authentication
-  // ------------------------------------------------------------
+  // ============================================================
+  // CORE PLATFORM
+  // ============================================================
 
   {
-    id: 'authentication',
-    key: 'authentication',
-    name: 'Authentication',
+    id: 'core',
+    key: 'core',
+    name: 'Core Platform',
     description:
-      'User authentication and identity management.',
+      'Core Zebron platform services, authentication, authorization, users, access control, and shared functionality.',
     availability: 'enabled',
     enabled: true,
     visibleInNavigation: false,
     allowNewUsers: true,
     core: true,
     dependencies: [],
-    icon: 'lock',
+    icon: 'hub',
     route: null,
     version: '1.0.0',
   },
 
-
-  // ------------------------------------------------------------
-  // Resources
-  // ------------------------------------------------------------
+  // ============================================================
+  // RESOURCES
+  // ============================================================
 
   {
     id: 'resources',
     key: 'resources',
     name: 'Resources',
     description:
-      'Zebron resource directory and discovery platform.',
+      'Manage and discover community resources, categories, locations, availability, and organizations.',
     availability: 'enabled',
     enabled: true,
     visibleInNavigation: true,
     allowNewUsers: true,
     core: false,
-    dependencies: [
-      'authentication',
-    ],
+    dependencies: ['core'],
     icon: 'library_books',
     route: '/resources',
     version: '1.0.0',
   },
 
-
-  // ------------------------------------------------------------
-  // Community
-  // ------------------------------------------------------------
+  // ============================================================
+  // COMMUNITY
+  // ============================================================
 
   {
     id: 'community',
     key: 'community',
     name: 'Community',
     description:
-      'Community discussions, posts, comments, reactions and social interactions.',
+      'Community discussions, posts, comments, reactions, notifications, messaging, and social interactions.',
     availability: 'enabled',
     enabled: true,
     visibleInNavigation: true,
     allowNewUsers: true,
     core: false,
-    dependencies: [
-      'authentication',
-    ],
-    icon: 'forum',
+    dependencies: ['core'],
+    icon: 'groups',
     route: '/community',
     version: '1.0.0',
   },
 
-
-  // ------------------------------------------------------------
-  // Learning Lab
-  // ------------------------------------------------------------
+  // ============================================================
+  // JOBS & TRAINING
+  // ============================================================
 
   {
-    id: 'learning-lab',
-    key: 'learning-lab',
-    name: 'Learning Lab',
+    id: 'jobs-training',
+    key: 'jobs-training',
+    name: 'Jobs & Training',
     description:
-      'Learning activities, progress and achievements.',
+      'Jobs, training opportunities, bootcamps, career resources, and employment-related functionality.',
     availability: 'enabled',
     enabled: true,
     visibleInNavigation: true,
     allowNewUsers: true,
     core: false,
-    dependencies: [
-      'authentication',
-    ],
-    icon: 'school',
-    route: '/learning-lab',
+    dependencies: ['core'],
+    icon: 'work',
+    route: '/jobs-training',
     version: '1.0.0',
   },
 
-
-  // ------------------------------------------------------------
-  // Test Center
-  // ------------------------------------------------------------
+  // ============================================================
+  // TEST CENTER
+  // ============================================================
 
   {
     id: 'test-center',
     key: 'test-center',
     name: 'Test Center',
     description:
-      'Courses, assessments, question banks and testing.',
+      'Test courses, assessments, question banks, practice tests, results, and progress.',
     availability: 'enabled',
     enabled: true,
     visibleInNavigation: true,
     allowNewUsers: true,
     core: false,
-    dependencies: [
-      'authentication',
-    ],
+    dependencies: ['core'],
     icon: 'quiz',
     route: '/test-center',
     version: '1.0.0',
   },
 
+  // ============================================================
+  // TAX & PAY CALCULATOR
+  // ============================================================
 
-  // ------------------------------------------------------------
-  // Business Operations
-  // ------------------------------------------------------------
+  {
+    id: 'tax-pay',
+    key: 'tax-pay',
+    name: 'Tax & Pay Calculator',
+    description:
+      'W-2 and 1099 tax, withholding, contractor, and net-pay calculations.',
+    availability: 'enabled',
+    enabled: true,
+    visibleInNavigation: true,
+    allowNewUsers: true,
+    core: false,
+    dependencies: ['core'],
+    icon: 'calculate',
+    route: '/tax-pay-calculator',
+    version: '1.0.0',
+  },
+
+  // ============================================================
+  // CONTENT
+  // ============================================================
+
+  {
+    id: 'content',
+    key: 'content',
+    name: 'Content',
+    description:
+      'Editorial content, pages, media, announcements, publishing workflows, and content management.',
+    availability: 'enabled',
+    enabled: true,
+    visibleInNavigation: true,
+    allowNewUsers: true,
+    core: false,
+    dependencies: ['core'],
+    icon: 'article',
+    route: null,
+    version: '1.0.0',
+  },
+
+  // ============================================================
+  // KNOWLEDGE
+  // ============================================================
+
+  {
+    id: 'knowledge',
+    key: 'knowledge',
+    name: 'Knowledge',
+    description:
+      'Knowledge articles, documentation, guides, FAQs, troubleshooting content, and operational runbooks.',
+    availability: 'enabled',
+    enabled: true,
+    visibleInNavigation: true,
+    allowNewUsers: true,
+    core: false,
+    dependencies: ['core'],
+    icon: 'menu_book',
+    route: '/admin/configuration/knowledge',
+    version: '1.0.0',
+  },
+
+  // ============================================================
+  // MAILBOX
+  // ============================================================
+
+  {
+    id: 'mailbox',
+    key: 'mailbox',
+    name: 'Mailbox',
+    description:
+      'Inbound and outbound email processing, mailbox routing, notifications, and email administration.',
+    availability: 'enabled',
+    enabled: true,
+    visibleInNavigation: false,
+    allowNewUsers: true,
+    core: false,
+    dependencies: ['core'],
+    icon: 'mail',
+    route: null,
+    version: '1.0.0',
+  },
+
+  // ============================================================
+  // BUSINESS OPERATIONS
+  // ============================================================
 
   {
     id: 'business-operations',
     key: 'business-operations',
     name: 'Business Operations',
     description:
-      'Business management and operational functionality.',
+      'Business workflows, operational processes, organizational operations, and administrative business functions.',
     availability: 'enabled',
     enabled: true,
     visibleInNavigation: true,
     allowNewUsers: true,
     core: false,
-    dependencies: [
-      'authentication',
-    ],
+    dependencies: ['core'],
     icon: 'business_center',
     route: null,
     version: '1.0.0',
   },
 
-
-  // ------------------------------------------------------------
-  // Messaging
-  // ------------------------------------------------------------
-
-  {
-    id: 'messaging',
-    key: 'messaging',
-    name: 'Messaging',
-    description:
-      'Private conversations and direct messaging.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: true,
-    allowNewUsers: true,
-    core: false,
-    dependencies: [
-      'authentication',
-    ],
-    icon: 'chat',
-    route: null,
-    version: '1.0.0',
-  },
-
-
-  // ------------------------------------------------------------
-  // Notifications
-  // ------------------------------------------------------------
+  // ============================================================
+  // CONFIGURATION
+  // ============================================================
 
   {
-    id: 'notifications',
-    key: 'notifications',
-    name: 'Notifications',
+    id: 'configuration',
+    key: 'configuration',
+    name: 'Configuration',
     description:
-      'User and system notifications.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: false,
-    allowNewUsers: true,
-    core: false,
-    dependencies: [
-      'authentication',
-    ],
-    icon: 'notifications',
-    route: null,
-    version: '1.0.0',
-  },
-
-
-  // ------------------------------------------------------------
-  // Admin Center
-  // ------------------------------------------------------------
-
-  {
-    id: 'admin-center',
-    key: 'admin-center',
-    name: 'Admin Center',
-    description:
-      'Administrative management and system control.',
+      'Application configuration, feature availability, system settings, maintenance, security, and administrative controls.',
     availability: 'enabled',
     enabled: true,
     visibleInNavigation: true,
     allowNewUsers: false,
     core: true,
-    dependencies: [
-      'authentication',
-    ],
-    icon: 'admin_panel_settings',
-    route: '/admin',
+    dependencies: ['core'],
+    icon: 'settings',
+    route: '/admin/configuration',
     version: '1.0.0',
   },
 ];

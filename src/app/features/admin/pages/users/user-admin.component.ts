@@ -7,199 +7,133 @@ import { HotToastService } from '@ngxpert/hot-toast';
 import { User } from '../../../../core/models/user.model';
 import { UserStore } from '../../../users/stores/user.store';
 import { AuthService } from '../../../../core/services/auth.service';
-import { MatMenuModule } from "@angular/material/menu";
-import { MatDividerModule } from "@angular/material/divider";
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
+import { PlatformRole } from '../../../../core/models/role.model';
 
 @Component({
   selector: 'app-user-admin',
   standalone: true,
   imports: [FormsModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule],
   template: `
- <header class="border-b border-gray-200 bg-[#032D42]">
-  <div
-    class="mx-auto flex max-w-7xl
+    <header class="border-b border-gray-200 bg-[#032D42]">
+      <div
+        class="mx-auto flex max-w-7xl
            items-center justify-between
            gap-4 px-4 py-4
            sm:px-6 lg:px-8"
-  >
-
-    <!-- Header information -->
-    <div class="min-w-0">
-      <p
-        class="text-xs
+      >
+        <!-- Header information -->
+        <div class="min-w-0">
+          <p
+            class="text-xs
                font-semibold
                uppercase
                tracking-wider
                text-[#7ED6D1]"
-      >
-        Administration
-      </p>
+          >
+            Administration
+          </p>
 
-      <h1
-        class="text-xl
+          <h1
+            class="text-xl
                font-bold
                text-white
                sm:text-3xl"
-      >
-        Users
-      </h1>
+          >
+            Users
+          </h1>
 
-      <p
-        class="mt-1
+          <p
+            class="mt-1
                text-sm
                text-white/80"
-      >
-        Manage Zebron user profiles, roles,
-        and account information.
-      </p>
-    </div>
+          >
+            Manage Zebron user profiles, roles, and account information.
+          </p>
+        </div>
 
-
-    <!-- =====================================================
+        <!-- =====================================================
          Angular Material administration menu
          ===================================================== -->
-    <button
-      mat-icon-button
-      [matMenuTriggerFor]="adminMenu"
-      aria-label="Open administration menu"
-      class="!shrink-0
+        <button
+          mat-icon-button
+          [matMenuTriggerFor]="adminMenu"
+          aria-label="Open administration menu"
+          class="!shrink-0
              !text-white
              hover:!bg-white/10"
-    >
-      <mat-icon>
-        more_vert
-      </mat-icon>
-    </button>
+        >
+          <mat-icon> more_vert </mat-icon>
+        </button>
 
-
-    <!-- =====================================================
+        <!-- =====================================================
          Administration menu
          ===================================================== -->
-    <mat-menu
-      #adminMenu="matMenu"
-      xPosition="before"
-      yPosition="below"
-      class="admin-header-menu"
-    >
+        <mat-menu
+          #adminMenu="matMenu"
+          xPosition="before"
+          yPosition="below"
+          class="admin-header-menu"
+        >
+          <!-- Home -->
+          <a mat-menu-item routerLink="/">
+            <mat-icon> home </mat-icon>
 
-      <!-- Home -->
-      <a
-        mat-menu-item
-        routerLink="/"
-      >
-        <mat-icon>
-          home
-        </mat-icon>
+            <span> Home </span>
+          </a>
 
-        <span>
-          Home
-        </span>
-      </a>
+          <!-- Admin Dashboard -->
+          <a mat-menu-item routerLink="/admin">
+            <mat-icon> dashboard </mat-icon>
 
+            <span> Admin Dashboard </span>
+          </a>
 
-      <!-- Admin Dashboard -->
-      <a
-        mat-menu-item
-        routerLink="/admin"
-      >
-        <mat-icon>
-          dashboard
-        </mat-icon>
+          <!-- Divider -->
+          <mat-divider></mat-divider>
 
-        <span>
-          Admin Dashboard
-        </span>
-      </a>
+          <!-- Resource Types -->
+          <a mat-menu-item routerLink="/admin/resources">
+            <mat-icon> category </mat-icon>
 
+            <span> Resource Types </span>
+          </a>
 
-      <!-- Divider -->
-      <mat-divider></mat-divider>
+          <!-- Organizations -->
+          <a mat-menu-item routerLink="/admin/organizations">
+            <mat-icon> business </mat-icon>
 
+            <span> Organizations </span>
+          </a>
 
-      <!-- Resource Types -->
-      <a
-        mat-menu-item
-        routerLink="/admin/resources"
-      >
-        <mat-icon>
-          category
-        </mat-icon>
+          <!-- Categories -->
+          <a mat-menu-item routerLink="/admin/categories">
+            <mat-icon> folder </mat-icon>
 
-        <span>
-          Resource Types
-        </span>
-      </a>
+            <span> Categories </span>
+          </a>
 
+          <!-- Submissions -->
+          <a mat-menu-item routerLink="/admin/submissions">
+            <mat-icon> assignment </mat-icon>
 
-      <!-- Organizations -->
-      <a
-        mat-menu-item
-        routerLink="/admin/organizations"
-      >
-        <mat-icon>
-          business
-        </mat-icon>
+            <span> Submissions </span>
+          </a>
 
-        <span>
-          Organizations
-        </span>
-      </a>
+          <!-- Divider -->
+          <mat-divider></mat-divider>
 
+          <!-- Sign Out -->
+          <button mat-menu-item type="button" (click)="signOut()">
+            <mat-icon> logout </mat-icon>
 
-      <!-- Categories -->
-      <a
-        mat-menu-item
-        routerLink="/admin/categories"
-      >
-        <mat-icon>
-          folder
-        </mat-icon>
-
-        <span>
-          Categories
-        </span>
-      </a>
-
-
-      <!-- Submissions -->
-      <a
-        mat-menu-item
-        routerLink="/admin/submissions"
-      >
-        <mat-icon>
-          assignment
-        </mat-icon>
-
-        <span>
-          Submissions
-        </span>
-      </a>
-
-
-      <!-- Divider -->
-      <mat-divider></mat-divider>
-
-
-      <!-- Sign Out -->
-      <button
-        mat-menu-item
-        type="button"
-        (click)="signOut()"
-      >
-        <mat-icon>
-          logout
-        </mat-icon>
-
-        <span>
-          Sign Out
-        </span>
-      </button>
-
-    </mat-menu>
-
-  </div>
-</header>
+            <span> Sign Out </span>
+          </button>
+        </mat-menu>
+      </div>
+    </header>
 
     <main class="mx-auto max-w-7xl p-6 sm:p-8">
       <!-- =========================================================
@@ -251,16 +185,16 @@ import { MatIconModule } from '@angular/material/icon';
             <label for="userSearch" class="sr-only"> Search users </label>
 
             <div class="relative">
-                <mat-icon
-                  class="pointer-events-none
+              <mat-icon
+                class="pointer-events-none
                absolute left-3 top-1/2
                -translate-y-1/2
                !h-5 !w-5
                !text-[20px]
                text-gray-400"
-                >
-                  search
-                </mat-icon>
+              >
+                search
+              </mat-icon>
 
               <input
                 id="userSearch"
@@ -350,7 +284,6 @@ import { MatIconModule } from '@angular/material/icon';
          sm:items-center
          sm:justify-between"
           >
-          
             <!-- =====================================================
        RIGHT SIDE: Add User + Total Users
        Opposite the search bar
@@ -610,12 +543,12 @@ import { MatIconModule } from '@angular/material/icon';
                                rounded-full
                                px-2.5 py-1
                                text-xs font-semibold"
-                        [class.bg-[#007979]/10]="user.role === 'admin'"
-                        [class.text-[#007979]]="user.role === 'admin'"
-                        [class.bg-gray-100]="user.role !== 'admin'"
-                        [class.text-gray-700]="user.role !== 'admin'"
+                        [class.bg-[#007979]/10]="user.platformRole === 'platform-admin'"
+                        [class.text-[#007979]]="user.platformRole === 'platform-admin'"
+                        [class.bg-gray-100]="user.platformRole !== 'platform-admin'"
+                        [class.text-gray-700]="user.platformRole !== 'platform-admin'"
                       >
-                        {{ user.role }}
+                        {{ user.platformRole || 'User' }}
                       </span>
                     </td>
 
@@ -785,12 +718,12 @@ import { MatIconModule } from '@angular/material/icon';
                            rounded-full
                            px-2.5 py-1
                            text-xs font-semibold"
-                    [class.bg-[#007979]/10]="user.role === 'admin'"
-                    [class.text-[#007979]]="user.role === 'admin'"
-                    [class.bg-gray-100]="user.role !== 'admin'"
-                    [class.text-gray-700]="user.role !== 'admin'"
+                    [class.bg-[#007979]/10]="user.platformRole === 'platform-admin'"
+                    [class.text-[#007979]]="user.platformRole === 'platform-admin'"
+                    [class.bg-gray-100]="user.platformRole !== 'platform-admin'"
+                    [class.text-gray-700]="user.platformRole !== 'platform-admin'"
                   >
-                    {{ user.role }}
+                    {{ user.platformRole || 'User' }}
                   </span>
                 </div>
 
@@ -1155,7 +1088,7 @@ import { MatIconModule } from '@angular/material/icon';
                   <select
                     id="adminRole"
                     name="adminRole"
-                    [(ngModel)]="form.role"
+                    [(ngModel)]="form.platformRole"
                     class="mt-1.5 block w-full
                            rounded-lg border
                            border-gray-300
@@ -1166,9 +1099,11 @@ import { MatIconModule } from '@angular/material/icon';
                            focus:ring-2
                            focus:ring-[#007979]/20"
                   >
-                    <option value="user">User</option>
-
-                    <option value="admin">Admin</option>
+                    <option [ngValue]="undefined">Standard User</option>
+                    <option value="platform-admin">Platform Administrator</option>
+                    <option value="platform-operator">Platform Operator</option>
+                    <option value="platform-support">Platform Support</option>
+                    <option value="platform-auditor">Platform Auditor</option>
                   </select>
                 </div>
 
@@ -1747,28 +1682,23 @@ export class UserAdminComponent implements OnInit {
 
   private readonly toast = inject(HotToastService);
 
-   /**
+  /**
    * Firebase authentication service.
    */
-  protected readonly authService =
-    inject(AuthService);
-
+  protected readonly authService = inject(AuthService);
 
   /**
    * Angular router.
    */
-  private readonly router =
-    inject(Router);
+  private readonly router = inject(Router);
 
-
-  
   // =============================================================
   // USER STATE
   // =============================================================
 
   readonly users = this.userStore.users;
 
-readonly loading = this.userStore.loading;
+  readonly loading = this.userStore.loading;
 
   protected readonly saving = signal(false);
 
@@ -1778,14 +1708,11 @@ readonly loading = this.userStore.loading;
 
   protected readonly resettingUserId = signal<string | null>(null);
 
-
-/**
+  /**
    * Prevent duplicate sign-out requests
    * while Firebase processes the request.
    */
-  protected readonly signingOut =
-    signal(false);
-
+  protected readonly signingOut = signal(false);
 
   // =============================================================
   // SEARCH
@@ -1818,7 +1745,7 @@ readonly loading = this.userStore.loading;
         user.firstName,
         user.lastName,
         user.email,
-        user.role,
+        user.platformRole,
         user.phone,
         user.countryOfOrigin,
         user.currentCountry,
@@ -1857,17 +1784,17 @@ readonly loading = this.userStore.loading;
   // =============================================================
 
   /**
- * Load all user profiles from the User Store.
- */
-private async loadUsers(): Promise<void> {
-  try {
-    await this.userStore.loadUsers();
-  } catch (error) {
-    console.error('Failed to load users:', error);
+   * Load all user profiles from the User Store.
+   */
+  private async loadUsers(): Promise<void> {
+    try {
+      await this.userStore.loadUsers();
+    } catch (error) {
+      console.error('Failed to load users:', error);
 
-    this.toast.error('Unable to load users.');
+      this.toast.error('Unable to load users.');
+    }
   }
-}
 
   // =============================================================
   // SEARCH
@@ -1912,7 +1839,7 @@ private async loadUsers(): Promise<void> {
 
       email: user.email ?? '',
 
-      role: user.role ?? 'user',
+      platformRole: user.platformRole,
 
       password: '',
       confirmPassword: '',
@@ -2043,7 +1970,7 @@ private async loadUsers(): Promise<void> {
 
           displayName,
 
-          role: this.form.role,
+          platformRole: this.form.platformRole,
 
           firstName: this.clean(this.form.firstName),
 
@@ -2089,7 +2016,7 @@ private async loadUsers(): Promise<void> {
 
         email,
 
-        role: this.form.role,
+        platformRole: this.form.platformRole,
 
         firstName: this.clean(this.form.firstName),
 
@@ -2223,13 +2150,11 @@ private async loadUsers(): Promise<void> {
     }
   }
 
-
- /**
+  /**
    * Sign the administrator out of Firebase,
    * show feedback, and return to the login page.
    */
   protected async signOut(): Promise<void> {
-
     /**
      * Prevent multiple sign-out requests
      * from repeated button clicks.
@@ -2238,52 +2163,31 @@ private async loadUsers(): Promise<void> {
       return;
     }
 
-
     this.signingOut.set(true);
 
-
     try {
-
       /**
        * Sign out through the existing
        * authentication service.
        */
       await this.authService.logout();
 
-
       /**
        * Show confirmation to the administrator.
        */
-      this.toast.success(
-        'You have been signed out.',
-      );
-
+      this.toast.success('You have been signed out.');
 
       /**
        * Return to the login page.
        */
-      await this.router.navigateByUrl(
-        '/login',
-      );
-
+      await this.router.navigateByUrl('/login');
     } catch (error) {
+      console.error('Failed to sign out:', error);
 
-      console.error(
-        'Failed to sign out:',
-        error,
-      );
-
-
-      this.toast.error(
-        'Unable to sign out. Please try again.',
-      );
-
+      this.toast.error('Unable to sign out. Please try again.');
     } finally {
-
       this.signingOut.set(false);
-
     }
-
   }
 
   // =============================================================
@@ -2362,7 +2266,7 @@ private async loadUsers(): Promise<void> {
     return {
       displayName: '',
       email: '',
-      role: 'user',
+      platformRole: undefined,
 
       password: '',
       confirmPassword: '',
@@ -2395,7 +2299,7 @@ private async loadUsers(): Promise<void> {
 interface UserForm {
   displayName: string;
   email: string;
-  role: 'user' | 'admin';
+  platformRole?: PlatformRole;
 
   password: string;
   confirmPassword: string;

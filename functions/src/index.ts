@@ -13,6 +13,7 @@ import {initializeApp} from "firebase-admin/app";
 import {randomUUID} from "node:crypto";
 import Stripe from "stripe";
 
+
 initializeApp();
 
 /**
@@ -26,6 +27,50 @@ const ZEBRON_FROM_EMAIL = "Zebron <noreply@zebron.org>";
 
 const db = getFirestore();
 const auth = getAuth();
+
+interface UpdateUserRequest {
+  uid: string;
+  profile: Record<string, unknown>;
+}
+
+interface UpdateUserResponse {
+  success: boolean;
+  uid: string;
+}
+
+interface DeleteUserRequest {
+  uid: string;
+}
+
+interface DeleteUserResponse {
+  success: boolean;
+  uid: string;
+}
+
+type PlatformRole =
+  | "platform-admin"
+  | "platform-operator"
+  | "platform-support"
+  | "platform-auditor";
+
+const PLATFORM_ROLES: readonly PlatformRole[] = [
+  "platform-admin",
+  "platform-operator",
+  "platform-support",
+  "platform-auditor",
+];
+
+function isPlatformRole(
+  value: string | undefined,
+): value is PlatformRole {
+  return (
+    value !== undefined &&
+    PLATFORM_ROLES.includes(
+      value as PlatformRole,
+    )
+  );
+}
+
 /**
  * Return the initialized Firestore instance.
  *
@@ -37,13 +82,20 @@ function getDb() {
 
 
 /**
- * Verify that the caller is authenticated
- * and has administrator privileges.
+ * Require the authenticated caller to be a platform administrator.
  *
- * This is used by all administrator-only
- * email functions.
+ * Canonical:
+ *   platformRole == "platform-admin"
+ *
+ * Temporary migration fallback:
+ *   role == "admin"
+ *
+ * The legacy role is only honored when platformRole
+ * has not yet been established.
  */
-async function requireAdmin(request: CallableRequest<unknown>): Promise<{
+async function requireAdmin(
+  request: CallableRequest<unknown>,
+): Promise<{
   uid: string;
   email?: string;
 }> {
@@ -68,12 +120,25 @@ async function requireAdmin(request: CallableRequest<unknown>): Promise<{
   const profileData = profile.data();
 
   /**
-   * Only users with the admin role may
-   * send email through the mailbox.
-   */
-  if (profileData?.["role"] !== "admin") {
-    throw new HttpsError("permission-denied", "Only administrators can send email.");
-  }
+ * Canonical authorization uses platformRole.
+ *
+ * Legacy compatibility is retained temporarily for
+ * existing users whose platformRole has not yet been
+ * migrated.
+ */
+const isPlatformAdmin =
+  profileData?.["platformRole"] === "platform-admin" ||
+  (
+    profileData?.["platformRole"] === undefined &&
+    profileData?.["role"] === "admin"
+  );
+
+if (!isPlatformAdmin) {
+  throw new HttpsError(
+    "permission-denied",
+    "Only platform administrators can send email.",
+  );
+}
 
   return {
     uid,
@@ -110,54 +175,99 @@ export const createUser = onCall(
       throw new HttpsError("permission-denied", "Administrator profile could not be found.");
     }
 
-    const adminData = adminProfile.data();
+const adminData = adminProfile.data();
 
-    /**
-     * Only administrators may create users.
-     */
-    if (adminData?.["role"] !== "admin") {
-      throw new HttpsError("permission-denied", "Only administrators can create users.");
-    }
+/**
+ * Authorize the caller using the canonical platform role.
+ *
+ * Legacy compatibility:
+ *   role: "admin" -> treated as platform-admin
+ *
+ * This allows existing administrator accounts to continue
+ * working during the platformRole migration.
+ */
+const callerPlatformRole = adminData?.["platformRole"];
+
+const callerIsPlatformAdmin =
+  callerPlatformRole === "platform-admin" ||
+  (
+    callerPlatformRole === undefined &&
+    adminData?.["role"] === "admin"
+  );
+
+if (!callerIsPlatformAdmin) {
+  throw new HttpsError(
+    "permission-denied",
+    "Only platform administrators can create users.",
+  );
+}
 
     /**
      * Extract submitted user information.
      */
-    const data = request.data as {
-      email?: unknown;
-      password?: unknown;
-      displayName?: unknown;
-      role?: unknown;
-    };
+  const data = request.data as {
+  email?: unknown;
+  password?: unknown;
+  displayName?: unknown;
+  role?: unknown;
+  platformRole?: unknown;
+};
 
-    const email = clean(data.email);
+       const email = clean(data.email);
 
-    const password = typeof data.password === "string" ? data.password : undefined;
+    const password =
+      typeof data.password === "string"
+        ? data.password
+        : undefined;
 
-    const displayName = clean(data.displayName);
+    const displayName =
+      clean(data.displayName);
 
-    const role = clean(data.role) ?? "user";
+    const legacyRole =
+      clean(data.role);
 
-    /**
-     * Validate the email address.
-     */
-    if (!email) {
-      throw new HttpsError("invalid-argument", "Email is required.");
-    }
-
-    /**
-     * Validate the password.
-     */
-    if (!password || password.length < 6) {
-      throw new HttpsError("invalid-argument", "Password must be at least 6 characters.");
-    }
+    const requestedPlatformRole =
+      clean(data.platformRole);
 
     /**
-     * Validate the requested role.
+     * Resolve the canonical platform role.
+     *
+     * New callers should provide platformRole.
+     *
+     * The legacy role is supported temporarily:
+     *
+     *   admin -> platform-admin
+     *   user  -> no platform role
      */
-    const allowedRoles = ["user", "admin"];
+    let platformRole: PlatformRole | null = null;
 
-    if (!allowedRoles.includes(role)) {
-      throw new HttpsError("invalid-argument", "Invalid user role.");
+    if (requestedPlatformRole) {
+      if (
+        !isPlatformRole(
+          requestedPlatformRole,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Invalid platform role.",
+        );
+      }
+
+      platformRole =
+        requestedPlatformRole;
+    } else if (
+      legacyRole === "admin"
+    ) {
+      platformRole =
+        "platform-admin";
+    } else if (
+      legacyRole &&
+      legacyRole !== "user"
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Invalid legacy user role.",
+      );
     }
 
     let firebaseUser;
@@ -199,7 +309,7 @@ export const createUser = onCall(
 
         email,
 
-        role,
+        platformRole,
 
         createdAt: FieldValue.serverTimestamp(),
 
@@ -242,7 +352,7 @@ export const createUser = onCall(
       adminUid,
       createdUserUid: firebaseUser.uid,
       email,
-      role,
+      platformRole,
     });
 
     /**
@@ -252,7 +362,204 @@ export const createUser = onCall(
       success: true,
       uid: firebaseUser.uid,
       email,
-      role,
+      platformRole,
+    };
+  },
+);
+
+/**
+ * Update an existing Zebron user.
+ *
+ * This operation is restricted to administrators.
+ *
+ * Protected fields such as uid, role, createdAt, and updatedAt
+ * cannot be supplied by the client.
+ */
+export const updateUser = onCall(
+  {
+    region: "us-central1",
+  },
+  async (request): Promise<UpdateUserResponse> => {
+    const admin = await requireAdmin(request);
+
+    const data = request.data as UpdateUserRequest | undefined;
+
+    if (!data || typeof data.uid !== "string" || !data.uid.trim()) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A valid user ID is required.",
+      );
+    }
+
+    if (!data.profile || typeof data.profile !== "object") {
+      throw new HttpsError(
+        "invalid-argument",
+        "A valid user profile is required.",
+      );
+    }
+
+    const userId = data.uid.trim();
+
+    /**
+     * These fields are controlled by the backend.
+     *
+     * In particular, clients cannot elevate a user's
+     * administrator role through this function.
+     */
+    const protectedFields = new Set([
+      "id",
+      "uid",
+      "role",
+      "createdAt",
+      "updatedAt",
+    ]);
+
+    const updates: Record<string, unknown> = {};
+
+    for (const [field, value] of Object.entries(data.profile)) {
+      if (protectedFields.has(field)) {
+        continue;
+      }
+
+      if (value !== undefined) {
+        updates[field] = value;
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      throw new HttpsError(
+        "invalid-argument",
+        "No editable user fields were supplied.",
+      );
+    }
+
+    updates["updatedAt"] = FieldValue.serverTimestamp();
+
+    const userReference = getDb()
+      .collection("users")
+      .doc(userId);
+
+    const existingUser = await userReference.get();
+
+    if (!existingUser.exists) {
+      throw new HttpsError(
+        "not-found",
+        "The requested user could not be found.",
+      );
+    }
+
+    try {
+      await userReference.update(updates);
+    } catch (error: unknown) {
+      logger.error("Failed to update Zebron user.", {
+        error,
+        adminUid: admin.uid,
+        targetUserUid: userId,
+      });
+
+      throw new HttpsError(
+        "internal",
+        "Unable to update the user.",
+      );
+    }
+
+    logger.info("Administrator updated a Zebron user.", {
+      adminUid: admin.uid,
+      targetUserUid: userId,
+      updatedFields: Object.keys(updates).filter(
+        (field) => field !== "updatedAt",
+      ),
+    });
+
+    return {
+      success: true,
+      uid: userId,
+    };
+  },
+);
+
+/**
+ * Delete a Zebron user.
+ *
+ * This removes:
+ *
+ * 1. The Firebase Authentication account.
+ * 2. The corresponding Firestore user profile.
+ *
+ * This operation is restricted to administrators.
+ */
+export const deleteUser = onCall(
+  {
+    region: "us-central1",
+  },
+  async (request): Promise<DeleteUserResponse> => {
+    const admin = await requireAdmin(request);
+
+    const data = request.data as DeleteUserRequest | undefined;
+
+    if (!data || typeof data.uid !== "string" || !data.uid.trim()) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A valid user ID is required.",
+      );
+    }
+
+    const userId = data.uid.trim();
+
+    /**
+     * Prevent an administrator from deleting their own account.
+     */
+    if (userId === admin.uid) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Administrators cannot delete their own account.",
+      );
+    }
+
+    const userReference = getDb()
+      .collection("users")
+      .doc(userId);
+
+    const existingUser = await userReference.get();
+
+    if (!existingUser.exists) {
+      throw new HttpsError(
+        "not-found",
+        "The requested user could not be found.",
+      );
+    }
+
+    try {
+      /**
+       * Delete the Firebase Authentication account.
+       */
+      await auth.deleteUser(userId);
+
+      /**
+       * Delete the corresponding Firestore profile.
+       */
+      await userReference.delete();
+    } catch (error: unknown) {
+      logger.error("Failed to delete Zebron user.", {
+        error,
+        adminUid: admin.uid,
+        targetUserUid: userId,
+      });
+
+      throw new HttpsError(
+        "internal",
+        "Unable to delete the user.",
+      );
+    }
+
+    logger.info("Administrator deleted a Zebron user.", {
+      adminUid: admin.uid,
+      targetUserUid: userId,
+    });
+
+    return {
+      success: true,
+      uid: userId,
     };
   },
 );

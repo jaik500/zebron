@@ -1,10 +1,15 @@
 import { Timestamp } from 'firebase/firestore';
 
+/**
+ * Represents a topic within a Test Center course.
+ */
 export interface TestTopic {
   id: string;
 
   /**
-   * Organization that owns this topic.
+   * Organization that owns the topic.
+   *
+   * This is the tenant boundary for Partner Test Center.
    */
   organizationId: string;
 
@@ -19,8 +24,14 @@ export interface TestTopic {
 
   description?: string;
 
+  /**
+   * Controls topic ordering within the course.
+   */
   sortOrder: number;
 
+  /**
+   * Cached number of questions belonging to the topic.
+   */
   questionCount: number;
 
   active: boolean;

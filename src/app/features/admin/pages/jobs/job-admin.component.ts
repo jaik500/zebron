@@ -12,6 +12,7 @@ import { MatDividerModule } from '@angular/material/divider';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 import { JobStore } from '../../../jobs/stores/job.store';
+import { PageTitleService } from '../../../../core/services/page-title.service';
 
 @Component({
   selector: 'app-job-admin',
@@ -23,7 +24,7 @@ import { JobStore } from '../../../jobs/stores/job.store';
   template: `
     <main
       class="min-h-screen
-             bg-gray-50"
+             bg-gray-50 mt-16"
     >
       <!-- =====================================================
            Header
@@ -31,7 +32,7 @@ import { JobStore } from '../../../jobs/stores/job.store';
       <header
         class="border-b
                border-gray-200
-               bg-[#032D42]"
+               bg-[#2a835f]"
       >
         <div
           class="mx-auto flex
@@ -39,34 +40,17 @@ import { JobStore } from '../../../jobs/stores/job.store';
                  items-center
                  justify-between
                  gap-4
-                 px-4 py-4
+                 px-4 py-1
                  sm:px-6
                  lg:px-8"
         >
           <!-- Title -->
           <div class="min-w-0">
-            <p
-              class="text-xs
-                     font-semibold
-                     uppercase
-                     tracking-wider
-                     text-[#7ED6D1]"
-            >
-              Job Management
-            </p>
 
-            <h1
-              class="text-xl
-                     font-bold
-                     text-white
-                     sm:text-3xl"
-            >
-              Jobs
-            </h1>
 
             <p
-              class="mt-1
-                     text-sm
+              class="
+                     text-md
                      text-white/80"
             >
               Manage the opportunities available through the Zebron Job Finder.
@@ -100,7 +84,9 @@ import { JobStore } from '../../../jobs/stores/job.store';
            font-medium
            text-[#007979]
            transition
-           hover:bg-[#007979]/5
+           hover:bg-[#007979]/50
+           hover:text-white
+           hover: border-white/20
            focus:outline-none
            focus:ring-2
            focus:ring-[#007979]/20"
@@ -478,7 +464,7 @@ import { JobStore } from '../../../jobs/stores/job.store';
                      gap-3"
             >
               <div>
-                <p
+                <!-- <p
                   class="text-xs
                          font-semibold
                          uppercase
@@ -486,12 +472,12 @@ import { JobStore } from '../../../jobs/stores/job.store';
                          text-gray-500"
                 >
                   Filters
-                </p>
+                </p> -->
 
                 <p
                   class="mt-0.5
                          text-xs
-                         text-gray-400"
+                         text-gray-800"
                 >
                   Narrow the job listing by column.
                 </p>
@@ -1566,6 +1552,8 @@ protected readonly error =
 
   protected readonly featuredFilter = signal('');
 
+  private readonly pageTitleService = inject(PageTitleService);
+
   // =========================================================
   // Filtered Jobs
   // =========================================================
@@ -1702,7 +1690,9 @@ protected readonly error =
   // Lifecycle
   // =========================================================
 
+
   ngOnInit(): void {
+    this.pageTitleService.setTitle('Job Management');
     void this.loadJobs();
   }
 

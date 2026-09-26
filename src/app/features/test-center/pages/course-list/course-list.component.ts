@@ -9,11 +9,8 @@ import {
 import { RouterLink } from '@angular/router';
 
 import { TestCourseService } from '../../services/test-course.service';
-
 import { TestCourse } from '../../models/test-course.model';
-
 import { OrganizationContextService } from '../../../../core/services/organization-context.service';
-
 
 @Component({
   selector: 'app-course-list',
@@ -233,6 +230,45 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        hover:shadow-md"
               >
 
+                <!-- Course scope -->
+
+                <div
+                  class="mb-3"
+                >
+                  @if (course.scope === 'platform') {
+
+                    <span
+                      class="inline-flex
+                             rounded-full
+                             bg-[#007979]/10
+                             px-2.5
+                             py-1
+                             text-xs
+                             font-semibold
+                             text-[#007979]"
+                    >
+                      Zebron Course
+                    </span>
+
+                  } @else {
+
+                    <span
+                      class="inline-flex
+                             rounded-full
+                             bg-gray-100
+                             px-2.5
+                             py-1
+                             text-xs
+                             font-semibold
+                             text-gray-700"
+                    >
+                      Organization Course
+                    </span>
+
+                  }
+                </div>
+
+
                 <!-- Course title -->
 
                 <h2
@@ -318,6 +354,9 @@ export class CourseListComponent
   private readonly courseService =
     inject(TestCourseService);
 
+  private readonly organizationContext =
+    inject(OrganizationContextService);
+
 
   // =========================================================
   // State
@@ -331,9 +370,6 @@ export class CourseListComponent
 
   protected readonly error =
     signal<string | null>(null);
-
-  private readonly organizationContext =
-  inject(OrganizationContextService);
 
 
   // =========================================================
@@ -357,31 +393,25 @@ export class CourseListComponent
     const organizationId =
       this.organizationContext.organizationId();
 
-    if (!organizationId) {
-      this.courses.set([]);
-
-      this.error.set(
-        'Select an organization before loading Test Center courses.',
-      );
-
-      return;
-    }
-
     const courses =
-      await this.courseService.getActiveCourses(
+      await this.courseService.getAvailableCourses(
         organizationId,
       );
 
     this.courses.set(courses);
+
   } catch (error) {
     console.error(
-      'Failed to load courses:',
+      'Failed to load Test Center courses:',
       error,
     );
+
+    this.courses.set([]);
 
     this.error.set(
       'Unable to load courses. Please try again later.',
     );
+
   } finally {
     this.loading.set(false);
   }

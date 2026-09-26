@@ -827,39 +827,39 @@ Mobile: Save icon only
                   </div>
 
                   <!-- =================================================
-                   Account role
-                   ================================================= -->
+ Account role
+ ================================================= -->
                   <div
                     class="border-t border-gray-200
-                       pt-7"
+     pt-7"
                   >
                     <label
-                      for="role"
+                      for="platformRole"
                       class="block text-sm
-                         font-medium text-gray-700"
+       font-medium text-gray-700"
                     >
-                      Account role
+                      Platform role
                     </label>
 
                     <input
-                      id="role"
-                      name="role"
+                      id="platformRole"
+                      name="platformRole"
                       type="text"
-                      [value]="user.role"
+                      [value]="user.platformRole || 'Standard User'"
                       disabled
                       class="mt-1.5 block w-full
-                         rounded-lg border
-                         border-gray-300
-                         bg-gray-50 px-4 py-2.5
-                         text-sm capitalize
-                         text-gray-500"
+       rounded-lg border
+       border-gray-300
+       bg-gray-50 px-4 py-2.5
+       text-sm
+       text-gray-500"
                     />
 
                     <p
                       class="mt-1.5 text-xs
-                         text-gray-500"
+       text-gray-500"
                     >
-                      Account roles are managed by Zebron administrators.
+                      Platform roles are managed by Zebron administrators.
                     </p>
                   </div>
 

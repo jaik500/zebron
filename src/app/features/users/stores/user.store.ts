@@ -9,6 +9,7 @@ import {
 } from '@ngrx/signals';
 
 import { User } from '../../../core/models/user.model';
+import { PlatformRole } from '../../../core/models/role.model';
 import { UserAdminService } from '../../../core/services/user-admin.service';
 
 
@@ -20,7 +21,13 @@ interface CreateUserRequest {
   email: string;
   password: string;
   displayName: string;
-  role: 'user' | 'admin';
+
+  /**
+   * Canonical platform authorization role.
+   *
+   * A normal user does not require a platform role.
+   */
+  platformRole?: PlatformRole;
 
   firstName?: string;
   lastName?: string;
@@ -48,7 +55,13 @@ interface CreateUserResponse {
   success: boolean;
   uid: string;
   email: string;
-  role: 'user' | 'admin';
+
+  /**
+   * Canonical platform authorization role.
+   *
+   * The backend returns the resolved role.
+   */
+  platformRole: PlatformRole | null;
 }
 
 
@@ -120,23 +133,31 @@ export const UserStore = signalStore(
 
 
       /**
-       * Number of administrators.
+       * Number of platform administrators.
+       *
+       * Organization administrators are NOT included here.
+       *
+       * Organization roles are managed through
+       * OrganizationMembership.
        */
       adminCount: computed(() =>
         users().filter(
           (user) =>
-            user.role === 'admin',
+            user.platformRole === 'platform-admin',
         ).length,
       ),
 
 
       /**
-       * Number of standard users.
+       * Number of users without a platform role.
+       *
+       * These users may still have organization
+       * memberships and organization-level permissions.
        */
       standardUserCount: computed(() =>
         users().filter(
           (user) =>
-            user.role === 'user',
+            !user.platformRole,
         ).length,
       ),
 

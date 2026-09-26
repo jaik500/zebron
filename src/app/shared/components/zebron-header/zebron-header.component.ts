@@ -59,6 +59,9 @@ import {
   PageTitleService,
 } from '../../../core/services/page-title.service';
 
+import {
+  LanguageSwitcherComponent,
+} from '../language-switcher/language-switcher.component';
 
 @Component({
   selector: 'app-zebron-header',
@@ -67,18 +70,19 @@ import {
   imports: [
     RouterLink,
     RouterLinkActive,
+
     MatIconModule,
     MatMenuModule,
     MatDividerModule,
     MatButtonModule,
     MatTooltipModule,
+
+    LanguageSwitcherComponent,
   ],
 
-  changeDetection:
-    ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 
   template: `
-
     <!-- =====================================================
          ZEBRON GLOBAL HEADER
          ===================================================== -->
@@ -98,7 +102,6 @@ import {
         shadow-sm
       "
     >
-
       <div
         class="
           mx-auto
@@ -108,7 +111,6 @@ import {
           lg:px-8
         "
       >
-
         <div
           class="
             flex
@@ -133,13 +135,11 @@ import {
               text-white
             "
           >
-
             <img
               src="/zebron-favicon.svg"
               alt="Zebron"
               class="h-9 w-9"
             />
-
           </a>
 
 
@@ -159,7 +159,6 @@ import {
               md:flex
             "
           >
-
             <span
               class="
                 block
@@ -168,42 +167,41 @@ import {
                 tracking-tight
                 text-white
                 text-3xl
+                pl-3
               "
               [attr.title]="currentTitle()"
             >
               {{ currentTitle() }}
             </span>
-
           </div>
 
 
-   <!-- =========================================================
-     MOBILE PAGE TITLE
-     ========================================================= -->
+          <!-- =================================================
+               MOBILE PAGE TITLE
+               ================================================= -->
 
-<div
-  class="
-    min-w-0
-    flex-1
-    md:hidden
-  "
->
-  <div
-    class="
-      max-w-[calc(100vw-120px)]
-      whitespace-normal
-      break-words
-      font-semibold
-      leading-tight
-      text-white
-      text-xl
-      tracking-tight
-      lg:max-w-[320px]
-    "
-  >
-    {{ currentTitle() }}
-  </div>
-</div>
+          <div
+            class="
+              min-w-0
+              flex-1
+              md:hidden
+            "
+          >
+            <div
+              class="
+                max-w-[calc(100vw-170px)]
+                whitespace-normal
+                break-words
+                font-semibold
+                leading-tight
+                text-white
+                text-xl
+                tracking-tight
+              "
+            >
+              {{ currentTitle() }}
+            </div>
+          </div>
 
 
           <!-- =================================================
@@ -222,21 +220,19 @@ import {
             "
             aria-label="Section navigation"
           >
-
             @for (
               item of contextItems();
               track item.key
             ) {
-
-             <a
-  [routerLink]="item.route"
-  [routerLinkActive]="[
-    '!bg-white/15',
-    '!text-white'
-  ]"
-  [routerLinkActiveOptions]="{
-    exact: item.route === '/'
-  }"
+              <a
+                [routerLink]="item.route"
+                [routerLinkActive]="[
+                  '!bg-white/15',
+                  '!text-white'
+                ]"
+                [routerLinkActiveOptions]="{
+                  exact: item.route === '/'
+                }"
                 class="
                   inline-flex
                   items-center
@@ -252,7 +248,6 @@ import {
                   hover:text-white
                 "
               >
-
                 <mat-icon
                   class="
                     !h-[18px]
@@ -267,90 +262,101 @@ import {
                 <span>
                   {{ item.label }}
                 </span>
-
               </a>
-
             }
-
           </nav>
 
 
           <!-- =================================================
-               DESKTOP PROFILE
+               GLOBAL HEADER ACTIONS
                ================================================= -->
 
           <div
             class="
-              hidden
+              flex
               shrink-0
               items-center
-              lg:flex
+              gap-1
             "
           >
 
-          <a
-  routerLink="/profile"
-  [routerLinkActive]="[
-    '!bg-white/15',
-    '!text-white'
-  ]"
-  aria-label="Profile"
-  matTooltip="Profile"
+            <!-- =================================================
+                 LANGUAGE SWITCHER
+                 ================================================= -->
+
+            <app-language-switcher />
+
+
+            <!-- =================================================
+                 DESKTOP PROFILE
+                 ================================================= -->
+
+            <div
               class="
-                flex
-                h-10
-                w-10
+                hidden
+                shrink-0
                 items-center
-                justify-center
-                rounded-full
-                text-slate-200
-                transition
-                hover:bg-white/10
-                hover:text-white
+                lg:flex
               "
             >
+              <a
+                routerLink="/profile"
+                [routerLinkActive]="[
+                  '!bg-white/15',
+                  '!text-white'
+                ]"
+                aria-label="Profile"
+                matTooltip="Profile"
+                class="
+                  flex
+                  h-10
+                  w-10
+                  items-center
+                  justify-center
+                  rounded-full
+                  text-slate-200
+                  transition
+                  hover:bg-white/10
+                  hover:text-white
+                "
+              >
+                <mat-icon>
+                  account_circle
+                </mat-icon>
+              </a>
+            </div>
 
+
+            <!-- =================================================
+                 MOBILE MENU BUTTON
+
+                 shrink-0 guarantees that the hamburger remains
+                 visible at the far right of the header.
+                 ================================================= -->
+
+            <button
+              mat-icon-button
+              type="button"
+              [matMenuTriggerFor]="mobileNavigationMenu"
+              aria-label="Open Zebron navigation"
+              class="
+                !h-10
+                !w-10
+                !shrink-0
+                !text-white
+                hover:!bg-white/10
+                lg:hidden
+              "
+            >
               <mat-icon>
-                account_circle
+                menu
               </mat-icon>
-
-            </a>
+            </button>
 
           </div>
 
-
-          <!-- =================================================
-               MOBILE MENU BUTTON
-
-               shrink-0 guarantees that the hamburger remains
-               visible at the far right of the header.
-               ================================================= -->
-
-          <button
-            mat-icon-button
-            type="button"
-            [matMenuTriggerFor]="mobileNavigationMenu"
-            aria-label="Open Zebron navigation"
-            class="
-              !h-10
-              !w-10
-              !shrink-0
-              !text-white
-              hover:!bg-white/10
-              lg:hidden
-            "
-          >
-
-            <mat-icon>
-              menu
-            </mat-icon>
-
-          </button>
-
         </div>
-
       </div>
-
     </header>
 
 
@@ -371,7 +377,6 @@ import {
         class="px-3 py-2"
         (click)="$event.stopPropagation()"
       >
-
         <div
           class="
             text-[10px]
@@ -396,7 +401,6 @@ import {
         >
           {{ currentTitle() }}
         </div>
-
       </div>
 
 
@@ -411,7 +415,6 @@ import {
         item of navigationService.visibleItems();
         track item.key
       ) {
-
         <button
           mat-menu-item
           type="button"
@@ -421,7 +424,6 @@ import {
           "
           (click)="navigateTo(item.route)"
         >
-
           <mat-icon
             class="
               !mr-2
@@ -438,13 +440,43 @@ import {
           >
             {{ item.label }}
           </span>
-
         </button>
-
       }
 
 
       <mat-divider></mat-divider>
+
+
+      <!-- =================================================
+           PROFILE
+           ================================================= -->
+
+      <button
+        mat-menu-item
+        type="button"
+        class="
+          !min-h-9
+          !h-9
+        "
+        (click)="navigateTo('/profile')"
+      >
+        <mat-icon
+          class="
+            !mr-2
+            !h-[18px]
+            !w-[18px]
+            !text-[18px]
+          "
+        >
+          account_circle
+        </mat-icon>
+
+        <span
+          class="text-sm"
+        >
+          Profile
+        </span>
+      </button>
 
 
       <!-- =================================================
@@ -460,7 +492,6 @@ import {
         "
         (click)="signOut()"
       >
-
         <mat-icon
           class="
             !mr-2
@@ -477,7 +508,6 @@ import {
         >
           Sign out
         </span>
-
       </button>
 
     </mat-menu>
@@ -548,7 +578,6 @@ export class ZebronHeaderComponent {
    */
   protected readonly contextItems =
     computed(() => {
-
       const url =
         this.currentUrl();
 
@@ -567,7 +596,6 @@ export class ZebronHeaderComponent {
   protected navigateTo(
     route: string,
   ): void {
-
     void this.router
       .navigateByUrl(route);
   }
@@ -578,16 +606,12 @@ export class ZebronHeaderComponent {
   // =========================================================
 
   protected async signOut(): Promise<void> {
-
     try {
-
       await this.authService.logout();
 
       await this.router
         .navigateByUrl('/');
-
     } catch (error) {
-
       this.logger.error(
         'ZebronHeaderComponent',
         'Unable to sign out.',
@@ -598,7 +622,6 @@ export class ZebronHeaderComponent {
               : String(error),
         },
       );
-
     }
   }
 
@@ -610,7 +633,6 @@ export class ZebronHeaderComponent {
   private resolveContext(
     url: string,
   ): NavigationContext {
-
     const path =
       url
         .split('?')[0]
@@ -625,7 +647,6 @@ export class ZebronHeaderComponent {
       path === '/community' ||
       path.startsWith('/community/')
     ) {
-
       return 'community';
     }
 
@@ -638,7 +659,6 @@ export class ZebronHeaderComponent {
       path === '/learning' ||
       path.startsWith('/learning/')
     ) {
-
       return 'learning-lab';
     }
 
@@ -651,7 +671,6 @@ export class ZebronHeaderComponent {
       path === '/test-center' ||
       path.startsWith('/test-center/')
     ) {
-
       return 'test-center';
     }
 
@@ -664,7 +683,6 @@ export class ZebronHeaderComponent {
       path === '/admin/business' ||
       path.startsWith('/admin/business/')
     ) {
-
       return 'business';
     }
 
@@ -677,7 +695,6 @@ export class ZebronHeaderComponent {
       path === '/admin' ||
       path.startsWith('/admin/')
     ) {
-
       return 'admin';
     }
 
@@ -690,7 +707,6 @@ export class ZebronHeaderComponent {
       path === '/resources' ||
       path.startsWith('/resources/')
     ) {
-
       return 'resources';
     }
 
@@ -708,13 +724,11 @@ export class ZebronHeaderComponent {
   // =========================================================
 
   constructor() {
-
     /**
      * Keep the URL state synchronized with Angular
      * navigation so contextual navigation updates whenever
      * the user moves between pages.
      */
-
     this.router.events
       .pipe(
         filter(
@@ -723,18 +737,15 @@ export class ZebronHeaderComponent {
           ): event is NavigationEnd =>
             event instanceof NavigationEnd,
         ),
-
         takeUntilDestroyed(
           this.destroyRef,
         ),
       )
       .subscribe(
         (event) => {
-
           this.currentUrl.set(
             event.urlAfterRedirects,
           );
-
         },
       );
   }

@@ -33,6 +33,8 @@ import { DEFAULT_TAX_PROFILE, DEFAULT_TAX_YEAR } from '../../data/tax-constants'
 import { CountyOption, US_COUNTIES_BY_STATE } from '../../data/us-counties.data';
 
 import { TaxCalculatorService } from '../../services/tax-calculator.service';
+import { PageTitleService } from '../../../../core/services/page-title.service';
+import { LoggerService } from '../../../../core/services/logger.service';
 
 @Component({
   selector: 'app-tax-pay-calculator',
@@ -53,9 +55,7 @@ import { TaxCalculatorService } from '../../services/tax-calculator.service';
       <div class="mx-auto max-w-6xl">
         <!-- Header -->
         <div class="mb-6">
-          <h1 class="text-2xl font-bold text-slate-900 md:text-3xl">Tax & Pay Calculator</h1>
-
-          <p class="mt-1 text-sm text-slate-600">
+                    <p class="mt-1 text-sm text-slate-600">
             Estimate your take-home pay or contractor income after taxes and deductions.
           </p>
         </div>
@@ -755,10 +755,23 @@ import { TaxCalculatorService } from '../../services/tax-calculator.service';
         >
           <button mat-stroked-button type="button" (click)="reset()">Reset</button>
 
-          <button mat-flat-button color="primary" type="button" (click)="calculate()">
-            <mat-icon>calculate</mat-icon>
-            Calculate Take-Home Pay
-          </button>
+          <button
+  mat-flat-button
+  color="primary"
+  type="button"
+  [disabled]="isCalculating()"
+  (click)="calculate()"
+>
+  <mat-icon>
+    {{ isCalculating() ? 'hourglass_top' : 'calculate' }}
+  </mat-icon>
+
+  {{
+    isCalculating()
+      ? 'Calculating...'
+      : 'Calculate Take-Home Pay'
+  }}
+</button>
         </div>
 
         <!-- Results -->
@@ -1009,6 +1022,9 @@ import { TaxCalculatorService } from '../../services/tax-calculator.service';
 export class TaxPayCalculatorComponent {
   private readonly taxCalculatorService = inject(TaxCalculatorService);
 
+  private readonly logger =
+  inject(LoggerService);
+
   /*
    * Worker type
    */
@@ -1028,6 +1044,14 @@ export class TaxPayCalculatorComponent {
     payFrequency: 'biweekly',
   });
 
+  protected readonly isCalculating =
+  signal(false);
+
+    /**
+     * Page title service.
+     */
+    private readonly pageTitleService = inject(PageTitleService);
+
   /*
    * 1099 income
    */
@@ -1038,7 +1062,7 @@ export class TaxPayCalculatorComponent {
   });
 
   /*
-   * 
+   *
   file
    *
    * localJurisdiction is used for the
@@ -1161,6 +1185,14 @@ export class TaxPayCalculatorComponent {
         return 'Estimated Take-Home Pay';
     }
   });
+
+    // ============================================================
+  // CONSTRUCTOR
+  // ============================================================
+
+  constructor() {
+    this.pageTitleService.setTitle('Tax & Pay Calculator');
+  }
 
   /*
    * Worker type
@@ -1334,27 +1366,61 @@ export class TaxPayCalculatorComponent {
   /*
    * Calculate
    */
-  protected calculate(): void {
+protected async calculate(): Promise<void> {
+  if (this.isCalculating()) {
+    return;
+  }
+
+  this.isCalculating.set(true);
+
+  try {
+    await this.taxCalculatorService.loadConfiguration();
+
     const deductions = this.deductions();
 
     const input: TaxCalculatorInput = {
       workerType: this.workerType(),
-
       taxProfile: this.taxProfile(),
 
-      w2Income: this.workerType() === '1099' ? undefined : this.w2Income(),
+      w2Income:
+        this.workerType() === '1099'
+          ? undefined
+          : this.w2Income(),
 
-      contractorIncome: this.workerType() === 'w2' ? undefined : this.contractorIncome(),
+      contractorIncome:
+        this.workerType() === 'w2'
+          ? undefined
+          : this.contractorIncome(),
 
-      preTaxDeductions: deductions.filter((deduction) => deduction.type === 'pre-tax'),
+      preTaxDeductions:
+        deductions.filter(
+          (deduction) =>
+            deduction.type === 'pre-tax',
+        ),
 
-      postTaxDeductions: deductions.filter((deduction) => deduction.type === 'post-tax'),
+      postTaxDeductions:
+        deductions.filter(
+          (deduction) =>
+            deduction.type === 'post-tax',
+        ),
     };
 
-    const calculation = this.taxCalculatorService.calculate(input);
+    const calculation =
+      this.taxCalculatorService.calculate(input);
 
     this.result.set(calculation);
+  } catch (error) {
+    this.result.set(null);
+
+    this.logger.error(
+      'TaxPayCalculatorComponent',
+      'Unable to calculate tax estimate.',
+      error,
+    );
+  } finally {
+    this.isCalculating.set(false);
   }
+}
 
   /*
    * Reset

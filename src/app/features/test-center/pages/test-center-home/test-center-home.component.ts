@@ -1,14 +1,6 @@
-import {
-  Component,
-  computed,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
-import {
-  RouterLink,
-} from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
@@ -17,21 +9,15 @@ import { TestCourseService } from '../../services/test-course.service';
 import { TestStore } from '../../store/test.store';
 import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 
-
 @Component({
   selector: 'app-test-center-home',
 
   standalone: true,
 
-  imports: [
-    RouterLink,
-    MatIconModule,
-  ],
+  imports: [RouterLink, MatIconModule],
 
   template: `
-
     <main class="min-h-screen bg-gray-50">
-
       <!-- ===================================================
            HEADER
            =================================================== -->
@@ -41,7 +27,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                border-white/10
                bg-[#032D42]"
       >
-
         <div
           class="mx-auto
                  flex
@@ -54,7 +39,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                  sm:px-6
                  lg:px-8"
         >
-
           <!-- Logo -->
 
           <a
@@ -65,12 +49,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                    gap-2
                    text-white"
           >
-
-            <img
-              src="/zebron-favicon.svg"
-              alt=""
-              class="h-7 w-7"
-            />
+            <img src="/zebron-favicon.svg" alt="" class="h-7 w-7" />
 
             <span
               class="text-lg
@@ -79,9 +58,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             >
               Zebron
             </span>
-
           </a>
-
 
           <!-- Navigation -->
 
@@ -92,7 +69,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                    md:flex"
             aria-label="Primary navigation"
           >
-
             <a
               routerLink="/resources"
               class="text-sm
@@ -146,13 +122,9 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             >
               Contact
             </a>
-
           </nav>
-
         </div>
-
       </header>
-
 
       <!-- ===================================================
            HERO
@@ -167,14 +139,11 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                sm:px-6
                lg:px-8"
       >
-
         <div
           class="mx-auto
                  max-w-7xl"
         >
-
           <div class="max-w-3xl">
-
             <p
               class="text-xs
                      font-bold
@@ -184,7 +153,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             >
               Zebron Test Center
             </p>
-
 
             <h1
               class="mt-1.5
@@ -196,7 +164,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               Practice. Learn. Get Ready.
             </h1>
 
-
             <p
               class="mt-2
                      max-w-2xl
@@ -206,11 +173,9 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      sm:text-base
                      sm:leading-6"
             >
-              Prepare for certifications, courses,
-              professional exams, and new skills with
-              focused practice questions.
+              Prepare for certifications, courses, professional exams, and new skills with focused
+              practice questions.
             </p>
-
 
             <!-- Search -->
 
@@ -226,22 +191,12 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      py-2.5
                      shadow-lg"
             >
-
-              <mat-icon
-                aria-hidden="true"
-                class="!text-gray-400"
-              >
-                search
-              </mat-icon>
+              <mat-icon aria-hidden="true" class="!text-gray-400"> search </mat-icon>
 
               <input
                 type="search"
                 [value]="searchTerm()"
-                (input)="
-                  searchTerm.set(
-                    $any($event.target).value
-                  )
-                "
+                (input)="searchTerm.set($any($event.target).value)"
                 placeholder="Search courses, certifications, topics..."
                 aria-label="Search Test Center"
                 class="w-full
@@ -252,15 +207,10 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        outline-none
                        placeholder:text-gray-400"
               />
-
             </div>
-
           </div>
-
         </div>
-
       </section>
-
 
       <!-- ===================================================
            MAIN CONTENT
@@ -274,15 +224,12 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                sm:px-6
                lg:px-8"
       >
-
         <!-- =================================================
              BROWSE
              ================================================= -->
 
         <div>
-
           <div class="mb-4">
-
             <h2
               class="text-xl
                      font-bold
@@ -296,12 +243,9 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      text-sm
                      text-gray-600"
             >
-              Find practice material based on
-              what you're learning.
+              Find practice material based on what you're learning.
             </p>
-
           </div>
-
 
           <div
             class="grid
@@ -309,7 +253,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                    sm:grid-cols-2
                    lg:grid-cols-4"
           >
-
             <!-- Certifications -->
 
             <a
@@ -328,7 +271,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      hover:bg-[#E5F4F4]
                      hover:shadow-md"
             >
-
               <div
                 class="flex
                        h-9
@@ -339,9 +281,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        bg-[#E5F4F4]
                        text-[#007979]"
               >
-                <mat-icon aria-hidden="true">
-                  workspace_premium
-                </mat-icon>
+                <mat-icon aria-hidden="true"> workspace_premium </mat-icon>
               </div>
 
               <h3
@@ -359,12 +299,9 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        leading-5
                        text-gray-600"
               >
-                Prepare for professional
-                certification exams.
+                Prepare for professional certification exams.
               </p>
-
             </a>
-
 
             <!-- Courses -->
 
@@ -384,7 +321,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      hover:bg-[#E5F4F4]
                      hover:shadow-md"
             >
-
               <div
                 class="flex
                        h-9
@@ -395,9 +331,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        bg-[#E5F4F4]
                        text-[#007979]"
               >
-                <mat-icon aria-hidden="true">
-                  menu_book
-                </mat-icon>
+                <mat-icon aria-hidden="true"> menu_book </mat-icon>
               </div>
 
               <h3
@@ -415,12 +349,9 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        leading-5
                        text-gray-600"
               >
-                Practice what you're learning
-                in a course or program.
+                Practice what you're learning in a course or program.
               </p>
-
             </a>
-
 
             <!-- Subjects -->
 
@@ -440,7 +371,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      hover:bg-[#E5F4F4]
                      hover:shadow-md"
             >
-
               <div
                 class="flex
                        h-9
@@ -451,9 +381,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        bg-[#E5F4F4]
                        text-[#007979]"
               >
-                <mat-icon aria-hidden="true">
-                  school
-                </mat-icon>
+                <mat-icon aria-hidden="true"> school </mat-icon>
               </div>
 
               <h3
@@ -471,12 +399,9 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        leading-5
                        text-gray-600"
               >
-                Test your knowledge across
-                academic subjects.
+                Test your knowledge across academic subjects.
               </p>
-
             </a>
-
 
             <!-- Skills -->
 
@@ -496,7 +421,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      hover:bg-[#E5F4F4]
                      hover:shadow-md"
             >
-
               <div
                 class="flex
                        h-9
@@ -507,9 +431,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        bg-[#E5F4F4]
                        text-[#007979]"
               >
-                <mat-icon aria-hidden="true">
-                  psychology
-                </mat-icon>
+                <mat-icon aria-hidden="true"> psychology </mat-icon>
               </div>
 
               <h3
@@ -527,32 +449,24 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        leading-5
                        text-gray-600"
               >
-                Strengthen practical and
-                professional skills.
+                Strengthen practical and professional skills.
               </p>
-
             </a>
-
           </div>
-
         </div>
-
 
         <!-- =================================================
              POPULAR COURSES
              ================================================= -->
 
         <div class="mt-8">
-
           <div
             class="flex
                    items-end
                    justify-between
                    gap-4"
           >
-
             <div>
-
               <h2
                 class="text-xl
                        font-bold
@@ -566,10 +480,8 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        text-sm
                        text-gray-600"
               >
-                Start practicing with available
-                courses and certifications.
+                Start practicing with available courses and certifications.
               </p>
-
             </div>
 
             <a
@@ -582,14 +494,11 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             >
               View all →
             </a>
-
           </div>
-
 
           <!-- Loading -->
 
           @if (loading()) {
-
             <div
               class="mt-4
                      grid
@@ -597,12 +506,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      md:grid-cols-2
                      lg:grid-cols-3"
             >
-
-              @for (
-                item of [1, 2, 3];
-                track item
-              ) {
-
+              @for (item of [1, 2, 3]; track item) {
                 <div
                   class="animate-pulse
                          rounded-xl
@@ -611,7 +515,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                          bg-white
                          p-5"
                 >
-
                   <div
                     class="h-10
                            w-10
@@ -650,20 +553,14 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                            rounded
                            bg-gray-200"
                   ></div>
-
                 </div>
-
               }
-
             </div>
-
           }
-
 
           <!-- Error -->
 
           @if (!loading() && error()) {
-
             <div
               class="mt-4
                      rounded-xl
@@ -676,16 +573,12 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             >
               {{ error() }}
             </div>
-
           }
-
 
           <!-- Courses -->
 
           @if (!loading() && !error()) {
-
             @if (filteredCourses().length > 0) {
-
               <div
                 class="mt-4
                        grid
@@ -693,17 +586,9 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        md:grid-cols-2
                        lg:grid-cols-3"
               >
-
-                @for (
-                  course of filteredCourses();
-                  track course.id
-                ) {
-
+                @for (course of filteredCourses(); track course.id) {
                   <a
-                    [routerLink]="[
-                      '/test-center/courses',
-                      course.slug
-                    ]"
+                    [routerLink]="['/test-center/courses', course.slug]"
                     class="group
                            rounded-xl
                            border
@@ -718,14 +603,12 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                            hover:bg-[#E5F4F4]
                            hover:shadow-md"
                   >
-
                     <div
                       class="flex
                              items-start
                              justify-between
                              gap-4"
                     >
-
                       <div
                         class="flex
                                h-10
@@ -737,19 +620,10 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                                bg-[#E5F4F4]
                                text-[#007979]"
                       >
-
-                        <mat-icon aria-hidden="true">
-                          school
-                        </mat-icon>
-
+                        <mat-icon aria-hidden="true"> school </mat-icon>
                       </div>
 
-
-                      @if (
-                        course.type ===
-                        'certification'
-                      ) {
-
+                      @if (course.type === 'certification') {
                         <span
                           class="rounded-full
                                  bg-[#E5F4F4]
@@ -761,11 +635,8 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                         >
                           Certification
                         </span>
-
                       }
-
                     </div>
-
 
                     <h3
                       class="mt-3
@@ -778,9 +649,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                       {{ course.name }}
                     </h3>
 
-
                     @if (course.provider) {
-
                       <p
                         class="mt-1
                                text-xs
@@ -789,9 +658,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                       >
                         {{ course.provider }}
                       </p>
-
                     }
-
 
                     <p
                       class="mt-2
@@ -803,7 +670,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                       {{ course.description }}
                     </p>
 
-
                     <div
                       class="mt-4
                              flex
@@ -813,7 +679,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                              border-gray-100
                              pt-3"
                     >
-
                       <span
                         class="text-xs
                                text-gray-500"
@@ -822,7 +687,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                         questions
                       </span>
 
-
                       <span
                         class="text-xs
                                font-semibold
@@ -830,17 +694,11 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                       >
                         Practice →
                       </span>
-
                     </div>
-
                   </a>
-
                 }
-
               </div>
-
             } @else {
-
               <div
                 class="mt-4
                        rounded-xl
@@ -852,7 +710,6 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                        py-10
                        text-center"
               >
-
                 <div
                   class="mx-auto
                          flex
@@ -864,11 +721,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                          bg-[#E5F4F4]
                          text-[#007979]"
                 >
-
-                  <mat-icon aria-hidden="true">
-                    search_off
-                  </mat-icon>
-
+                  <mat-icon aria-hidden="true"> search_off </mat-icon>
                 </div>
 
                 <h3
@@ -885,139 +738,76 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                          text-xs
                          text-gray-600"
                 >
-                  Try another course, certification,
-                  or topic.
+                  Try another course, certification, or topic.
                 </p>
-
               </div>
-
             }
-
           }
-
         </div>
-
       </section>
-
     </main>
   `,
 
   styles: [],
 })
-export class TestCenterHomeComponent
-  implements OnInit {
+export class TestCenterHomeComponent implements OnInit {
+  private readonly courseService = inject(TestCourseService);
 
-  private readonly courseService =
-    inject(TestCourseService);
-
-  private readonly organizationContext =
-    inject(OrganizationContextService);
+  private readonly organizationContext = inject(OrganizationContextService);
 
   /**
    * TestStore is injected now so the Test Center
    * follows the same state-management pattern as
    * the rest of the feature.
    */
-  private readonly testStore =
-    inject(TestStore);
+  private readonly testStore = inject(TestStore);
 
+  readonly courses = signal<TestCourse[]>([]);
 
-  readonly courses =
-    signal<TestCourse[]>([]);
+  readonly searchTerm = signal('');
 
-  readonly searchTerm =
-    signal('');
+  readonly loading = signal(true);
 
-  readonly loading =
-    signal(true);
-
-  readonly error =
-    signal('');
-
+  readonly error = signal('');
 
   /**
    * Filter courses locally so searching does not
    * create additional Firestore requests.
    */
-  readonly filteredCourses =
-    computed(() => {
+  readonly filteredCourses = computed(() => {
+    const search = this.searchTerm().trim().toLowerCase();
 
-      const search =
-        this.searchTerm()
-          .trim()
-          .toLowerCase();
+    if (!search) {
+      return this.courses();
+    }
 
-      if (!search) {
-        return this.courses();
-      }
-
-      return this.courses().filter(
-        (course) => {
-
-          return (
-            course.name
-              .toLowerCase()
-              .includes(search) ||
-
-            course.description
-              .toLowerCase()
-              .includes(search) ||
-
-            course.provider
-              ?.toLowerCase()
-              .includes(search) ||
-
-            course.certificationCode
-              ?.toLowerCase()
-              .includes(search)
-          );
-
-        },
+    return this.courses().filter((course) => {
+      return (
+        course.name.toLowerCase().includes(search) ||
+        course.description.toLowerCase().includes(search) ||
+        course.provider?.toLowerCase().includes(search) ||
+        course.certificationCode?.toLowerCase().includes(search)
       );
     });
-
+  });
 
   async ngOnInit(): Promise<void> {
-
     try {
-
       this.loading.set(true);
 
       this.error.set('');
 
-      const organizationId =
-        this.organizationContext.organizationId();
+      const organizationId = this.organizationContext.organizationId();
 
-      if (!organizationId) {
-        this.courses.set([]);
-        this.error.set(
-          'Select an organization before loading Test Center courses.',
-        );
-        return;
-      }
-
-      const courses =
-        await this.courseService
-          .getActiveCourses(organizationId);
+      const courses = await this.courseService.getAvailableCourses(organizationId);
 
       this.courses.set(courses);
-
     } catch (error) {
+      console.error('Failed to load Test Center courses:', error);
 
-      console.error(
-        'Failed to load Test Center courses:',
-        error,
-      );
-
-      this.error.set(
-        'We could not load the practice courses right now.',
-      );
-
+      this.error.set('We could not load the practice courses right now.');
     } finally {
-
       this.loading.set(false);
-
     }
-
   }
 }

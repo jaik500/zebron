@@ -1,7 +1,9 @@
 import {
   TestQuestionDifficulty,
+  TestQuestionOption,
+  TestQuestionStatus,
   TestQuestionType,
-} from './test-question.model';
+} from '../../../features/test-center/models/test-question.model';
 
 /**
  * Metadata describing a topic supplied by a question bank.
@@ -77,10 +79,7 @@ export interface TestQuestionImportRecord {
 
   readonly sourceReference?: string;
 
-  readonly status:
-    | 'draft'
-    | 'published'
-    | 'archived';
+  readonly status: TestQuestionStatus;
 }
 
 export interface TestQuestionImportResult {

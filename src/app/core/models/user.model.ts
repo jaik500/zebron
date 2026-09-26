@@ -1,13 +1,24 @@
-
+import { PlatformRole } from './role.model';
 
 export interface User {
   id: string;
-
   email: string;
-
   displayName: string;
 
-  role: 'user' | 'admin';
+  /**
+   * Canonical platform authorization role.
+   *
+   * Organization-specific roles are NOT stored here.
+   * They are represented by OrganizationMembership.
+   */
+  platformRole?: PlatformRole;
+
+  /**
+   * Legacy platform role.
+   *
+   * Retained temporarily while existing users are migrated.
+   */
+  role?: 'user' | 'admin';
 
   // Optional personal information.
   firstName?: string;
