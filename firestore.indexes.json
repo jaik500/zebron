@@ -153,7 +153,67 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "knowledgeArticleVersions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "articleId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "version",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+  "collectionGroup": "testPrograms",
+  "queryScope": "COLLECTION",
+  "fields": [
+    {
+      "fieldPath": "organizationId",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "name",
+      "order": "ASCENDING"
     }
+  ]
+},
+{
+  "collectionGroup": "testPrograms",
+  "queryScope": "COLLECTION",
+  "fields": [
+    {
+      "fieldPath": "organizationId",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "active",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "name",
+      "order": "ASCENDING"
+    }
+  ]
+},
+{
+  "collectionGroup": "testPrograms",
+  "queryScope": "COLLECTION",
+  "fields": [
+    {
+      "fieldPath": "organizationId",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "slug",
+      "order": "ASCENDING"
+    }
+  ]
+}
   ],
   "fieldOverrides": []
 }

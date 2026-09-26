@@ -17,9 +17,13 @@ function isCurrentUser(userId) {
 }
 
 /*
- * Current Zebron bootstrap/admin model:
+ * Platform role:
  *
  *   users/{uid}.role == "admin"
+ *
+ * Organization membership roles are separate and use the org_*
+ * namespace so platform and organization authorization cannot be
+ * confused.
  *
  * This is intentionally separate from the newer platform/
  * organization/group ACL model.
@@ -37,10 +41,58 @@ function isPlatformAdmin() {
     ).data.role == "admin";
 }
 
+// ============================================================
+// ORGANIZATIONS
+// ============================================================
+
+match /organizations/{organizationId} {
+
+  /*
+   * Platform administrators can read any organization.
+   *
+   * Partner users can read only organizations for which
+   * they have an active membership.
+   *
+   * This supports the Partner Portal organization selector
+   * without allowing users to enumerate arbitrary tenants.
+   */
+  allow get: if isPlatformAdmin()
+    || isOrganizationMember(organizationId);
+
+  /*
+   * Organization listing is intentionally restricted.
+   *
+   * Partner users must resolve their organizations through
+   * their own organization memberships rather than querying
+   * the entire organizations collection.
+   */
+  allow list: if isPlatformAdmin();
+
+  /*
+   * Organizations are platform-managed records.
+   *
+   * Partner organization administrators do not create or
+   * modify organization records through the Partner Portal.
+   */
+  allow create: if isPlatformAdmin();
+
+  allow update: if isPlatformAdmin();
+
+  allow delete: if isPlatformAdmin();
+}
+
 /*
  * Organization memberships use deterministic IDs:
  *
  *   {userId}_{organizationId}
+ *
+ * Organization roles are namespaced separately from platform roles:
+ *
+ *   org_owner
+ *   org_admin
+ *   org_manager
+ *   org_staff
+ *   org_member
  */
 function organizationMembershipPath(
   userId,
@@ -79,14 +131,55 @@ function isOrganizationAdmin(organizationId) {
               request.auth.uid,
               organizationId
             )
-          ).data.role == "owner"
+          ).data.role == "org_owner"
           ||
           get(
             organizationMembershipPath(
               request.auth.uid,
               organizationId
             )
-          ).data.role == "admin"
+          ).data.role == "org_admin"
+        )
+      )
+    );
+}
+
+function isOrganizationStaffOrAbove(
+  organizationId
+) {
+  return isAuthenticated()
+    && (
+      isPlatformAdmin()
+      || (
+        isOrganizationMember(organizationId)
+        && (
+          get(
+            organizationMembershipPath(
+              request.auth.uid,
+              organizationId
+            )
+          ).data.role == "org_owner"
+          ||
+          get(
+            organizationMembershipPath(
+              request.auth.uid,
+              organizationId
+            )
+          ).data.role == "org_admin"
+          ||
+          get(
+            organizationMembershipPath(
+              request.auth.uid,
+              organizationId
+            )
+          ).data.role == "org_manager"
+          ||
+          get(
+            organizationMembershipPath(
+              request.auth.uid,
+              organizationId
+            )
+          ).data.role == "org_staff"
         )
       )
     );
@@ -108,21 +201,21 @@ function isOrganizationManagerOrAbove(
               request.auth.uid,
               organizationId
             )
-          ).data.role == "owner"
+          ).data.role == "org_owner"
           ||
           get(
             organizationMembershipPath(
               request.auth.uid,
               organizationId
             )
-          ).data.role == "admin"
+          ).data.role == "org_admin"
           ||
           get(
             organizationMembershipPath(
               request.auth.uid,
               organizationId
             )
-          ).data.role == "manager"
+          ).data.role == "org_manager"
         )
       )
     );
@@ -163,6 +256,130 @@ function isActiveGroupMember(groupId) {
     && get(
       /databases/$(database)/documents/groupMemberships/$(request.auth.uid + "_" + groupId)
     ).data.active == true;
+}
+
+// ============================================================
+// ORGANIZATION APPLICATIONS
+// ============================================================
+
+/*
+ * Organization application records represent the activation and
+ * provisioning state of an application for a specific tenant.
+ *
+ * Path:
+ *
+ *   organizations/{organizationId}/applications/{applicationId}
+ *
+ * Application definitions themselves are platform metadata and are
+ * NOT stored here. These records only represent the organization's
+ * relationship with an application.
+ *
+ * Security principles:
+ *
+ *   1. Platform administrators have unrestricted access.
+ *   2. Organization members can read only ACTIVE applications.
+ *   3. Organization administrators can manage application records.
+ *   4. Ordinary members cannot activate applications.
+ *   5. An application cannot be moved between organizations.
+ *   6. The applicationId is immutable.
+ *
+ * Provisioning should normally be performed by trusted platform
+ * logic after an application has been approved/selected.
+ */
+
+match /organizations/{organizationId}/applications/{applicationId} {
+
+  /*
+   * Read a single application.
+   *
+   * Platform administrators can read any application.
+   *
+   * Organization administrators can inspect application lifecycle
+   * states such as selected, provisioning, failed, suspended, etc.
+   *
+   * Ordinary organization members can only see applications that
+   * are currently active.
+   */
+  allow get: if isPlatformAdmin()
+    || isOrganizationAdmin(organizationId)
+    || (
+      isOrganizationMember(organizationId)
+      && resource.data.status == "active"
+    );
+
+  /*
+   * Application queries.
+   *
+   * Organization members are expected to query only active
+   * applications for their organization.
+   *
+   * Organization administrators may query the complete application
+   * collection for lifecycle and provisioning management.
+   */
+  allow list: if isPlatformAdmin()
+    || isOrganizationAdmin(organizationId)
+    || (
+      isOrganizationMember(organizationId)
+      && resource.data.status == "active"
+    );
+
+  /*
+   * Application records may be created by:
+   *
+   *   - platform administrators
+   *   - organization administrators
+   *
+   * Organization administrators cannot directly create an ACTIVE
+   * application. Activation must occur through the controlled
+   * provisioning/activation workflow.
+   *
+   * This prevents an organization user from simply writing:
+   *
+   *   status: "active"
+   */
+  allow create: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(organizationId)
+      && request.resource.data.organizationId == organizationId
+      && request.resource.data.applicationId == applicationId
+      && request.resource.data.status in [
+        "available",
+        "selected"
+      ]
+    );
+
+  /*
+   * Updates must remain inside the same organization and must
+   * continue to represent the same application.
+   *
+   * Organization administrators can manage the application
+   * lifecycle but cannot directly transition an application to
+   * ACTIVE.
+   *
+   * Platform administrators can perform the complete lifecycle,
+   * including activation, suspension, deactivation, and recovery
+   * from provisioning failures.
+   */
+  allow update: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(organizationId)
+      && resource.data.organizationId == organizationId
+      && request.resource.data.organizationId == organizationId
+      && request.resource.data.applicationId == applicationId
+      && request.resource.data.applicationId
+        == resource.data.applicationId
+      && request.resource.data.status != "active"
+    );
+
+  /*
+   * Application records may be deleted by platform administrators
+   * or organization administrators.
+   *
+   * Deactivation should normally be preferred over deletion so
+   * that application lifecycle history can be preserved.
+   */
+  allow delete: if isPlatformAdmin()
+    || isOrganizationAdmin(organizationId);
 }
 
 
@@ -327,10 +544,12 @@ match /organizationMemberships/{membershipId} {
   allow list: if isPlatformAdmin()
     || (
       isAuthenticated()
+      && resource.data.keys().hasAll(["userId"])
       && resource.data.userId == request.auth.uid
     )
     || (
       isAuthenticated()
+      && resource.data.keys().hasAll(["organizationId"])
       && isOrganizationAdmin(
         resource.data.organizationId
       )
@@ -361,10 +580,11 @@ match /organizationMemberships/{membershipId} {
       && request.resource.data.organizationId
         == resource.data.organizationId
       && request.resource.data.role in [
-        "owner",
-        "admin",
-        "manager",
-        "member"
+        "org_owner",
+        "org_admin",
+        "org_manager",
+        "org_staff",
+        "org_member"
       ]
     );
 
@@ -931,12 +1151,87 @@ function isTestCenterMember(organizationId) {
 
 function isTestCenterAdmin(organizationId) {
   return isPlatformAdmin()
-    || isOrganizationAdmin(organizationId);
+    || isOrganizationManagerOrAbove(organizationId);
 }
 
 function canCreateTestCenterDocument(organizationId) {
   return isTestCenterAdmin(organizationId);
 }
+
+// ============================================================
+// TEST PROGRAM HELPERS
+// ============================================================
+
+/*
+ * Test Programs are organization-scoped.
+ *
+ * Platform administrators have unrestricted access.
+ *
+ * Active organization members may read programs belonging
+ * to their organization.
+ *
+ * Managers and above may create and update programs.
+ *
+ * Program ownership cannot cross organization boundaries.
+ */
+function testProgramBelongsToOrganization(
+  programId,
+  organizationId
+) {
+  return exists(
+    /databases/$(database)/documents/testPrograms/$(programId)
+  )
+  && get(
+    /databases/$(database)/documents/testPrograms/$(programId)
+  ).data.organizationId == organizationId;
+}
+
+function testCourseProgramBelongsToOrganization(
+  programId,
+  organizationId
+) {
+  return programId is string
+    && programId != ""
+    && testProgramBelongsToOrganization(
+      programId,
+      organizationId
+    );
+}
+
+function canCreateTestProgram(
+  organizationId
+) {
+  return isTestCenterAdmin(
+    organizationId
+  );
+}
+
+function canUpdateTestProgram(
+  organizationId,
+  programId
+) {
+  return isTestCenterAdmin(
+    organizationId
+  )
+  && testProgramBelongsToOrganization(
+    programId,
+    organizationId
+  );
+}
+
+function canDeleteTestProgram(
+  organizationId,
+  programId
+) {
+  return isTestCenterAdmin(
+    organizationId
+  )
+  && testProgramBelongsToOrganization(
+    programId,
+    organizationId
+  );
+}
+
 
 function testCenterCourseBelongsToOrganization(
   courseId,
@@ -1118,6 +1413,86 @@ match /knowledgeArticleVersions/{versionId} {
   allow delete: if false;
 }
 
+// ============================================================
+// TEST PROGRAMS
+// ============================================================
+
+match /testPrograms/{programId} {
+
+  /*
+   * Test Programs are organization-scoped.
+   *
+   * Platform administrators have unrestricted access.
+   *
+   * Active organization members may read programs belonging
+   * to their organization.
+   *
+   * Managers and above may create and update programs.
+   */
+
+  // ----------------------------------------------------------
+  // READ
+  // ----------------------------------------------------------
+
+  allow get: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && isOrganizationMember(
+        resource.data.organizationId
+      )
+    );
+
+  allow list: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && isOrganizationMember(
+        resource.data.organizationId
+      )
+    );
+
+  // ----------------------------------------------------------
+  // CREATE
+  // ----------------------------------------------------------
+
+  allow create: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && request.resource.data.organizationId is string
+      && request.resource.data.organizationId != ""
+      && isTestCenterAdmin(
+        request.resource.data.organizationId
+      )
+      && request.resource.data.courseCount == 0
+    );
+
+  // ----------------------------------------------------------
+  // UPDATE
+  // ----------------------------------------------------------
+
+  allow update: if isPlatformAdmin()
+    || (
+      isAuthenticated()
+      && resource.data.organizationId is string
+      && request.resource.data.organizationId
+        == resource.data.organizationId
+      && isTestCenterAdmin(
+        resource.data.organizationId
+      )
+      && request.resource.data.courseCount
+        == resource.data.courseCount
+    );
+
+  // ----------------------------------------------------------
+  // DELETE
+  // ----------------------------------------------------------
+
+  /*
+   * Disabled until Program/course reference protection
+   * is implemented as part of the lifecycle.
+   */
+  allow delete: if false;
+}
+
 
 
 // ============================================================
@@ -1127,51 +1502,123 @@ match /knowledgeArticleVersions/{versionId} {
 match /testCourses/{courseId} {
 
   /*
-   * Active courses are visible to active organization members.
-   * Platform administrators can inspect all courses.
+   * Platform courses:
+   *
+   * Zebron-owned, public, active courses can be read
+   * by authenticated users without organization membership.
    */
   allow get: if isPlatformAdmin()
     || (
-      resource.data.organizationId != null
-      && isTestCenterMember(resource.data.organizationId)
+      isAuthenticated()
+      && resource.data.scope == 'platform'
+      && resource.data.accessType == 'public'
+      && resource.data.organizationId == null
+      && resource.data.active == true
+    )
+    || (
+      resource.data.scope == 'organization'
+      && resource.data.accessType == 'organization-members'
+      && resource.data.organizationId != null
+      && isTestCenterMember(
+        resource.data.organizationId
+      )
       && resource.data.active == true
     );
 
   /*
-   * Queries must be constrained to an organization. Firestore
-   * evaluates the rule against documents that could be returned.
+   * Queries must be constrained by the client:
+   *
+   * Platform:
+   *   scope == platform
+   *   accessType == public
+   *   active == true
+   *
+   * Organization:
+   *   scope == organization
+   *   organizationId == current organization
+   *   accessType == organization-members
+   *   active == true
    */
   allow list: if isPlatformAdmin()
     || (
       isAuthenticated()
-      && resource.data.organizationId != null
-      && isOrganizationMember(resource.data.organizationId)
-      && resource.data.active == true
+      && (
+        (
+          resource.data.scope == 'platform'
+          && resource.data.accessType == 'public'
+          && resource.data.active == true
+        )
+        ||
+        (
+          resource.data.scope == 'organization'
+          && resource.data.accessType == 'organization-members'
+          && resource.data.organizationId != null
+          && isOrganizationMember(resource.data.organizationId)
+          && resource.data.active == true
+        )
+      )
     );
-
   /*
-   * Courses are managed by organization administrators.
+   * Organization administrators create organization courses.
    */
-  allow create: if canCreateTestCenterDocument(
-      request.resource.data.organizationId
-    )
-    && request.resource.data.organizationId is string
-
-
-  /*
-   * A course cannot be moved between organizations.
-   */
-  allow update: if isPlatformAdmin()
-    || (
-      request.resource.data.id == resource.data.id
-      && request.resource.data.organizationId
-         == resource.data.organizationId
-      && isOrganizationAdmin(resource.data.organizationId)
-    );
-
-  allow delete: if isTestCenterAdmin(
-    resource.data.organizationId
+  allow create: if
+  
+  request.resource.data.scope == 'organization'
+  && request.resource.data.accessType
+    == 'organization-members'
+  && request.resource.data.organizationId is string
+  && request.resource.data.programId is string
+  && request.resource.data.programId != ""
+  && canCreateTestCenterDocument(
+    request.resource.data.organizationId
+  )
+  && testCourseProgramBelongsToOrganization(
+    request.resource.data.programId,
+    request.resource.data.organizationId
   );
+
+  /*
+   * Platform courses are created/managed by platform admins.
+   */
+  allow create: if
+    isPlatformAdmin()
+    && request.resource.data.scope == 'platform'
+    && request.resource.data.accessType == 'public'
+    && request.resource.data.organizationId == null;
+
+  /*
+   * A course cannot be moved between organizations,
+   * and organization courses cannot be converted into
+   * platform courses by organization administrators.
+   */
+ allow update: if isPlatformAdmin()
+  || (
+    resource.data.scope == 'organization'
+    && resource.data.organizationId is string
+    && request.resource.data.scope == 'organization'
+    && request.resource.data.organizationId
+      == resource.data.organizationId
+    && request.resource.data.accessType
+      == 'organization-members'
+    && request.resource.data.programId is string
+    && request.resource.data.programId != ""
+    && canCreateTestCenterDocument(
+      resource.data.organizationId
+    )
+    && testCourseProgramBelongsToOrganization(
+      request.resource.data.programId,
+      resource.data.organizationId
+    )
+  );
+
+  allow delete: if isPlatformAdmin()
+    || (
+      resource.data.scope == 'organization'
+      && resource.data.organizationId is string
+      && canCreateTestCenterDocument(
+        resource.data.organizationId
+      )
+    );
 }
 
 
@@ -1200,12 +1647,7 @@ match /testTopics/{topicId} {
       && resource.data.active == true
     );
 
-    allow read: if
-isTestCenterMember(resource.data.organizationId)
-&& (
-  resource.data.status == 'published'
-  || isTestCenterAdmin(resource.data.organizationId)
-);
+
 
   /*
    * Topic creation is restricted to organization administrators.
@@ -1272,12 +1714,7 @@ match /testQuestions/{questionId} {
       && isOrganizationAdmin(resource.data.organizationId)
     );
 
-    allow read: if
-isTestCenterMember(resource.data.organizationId)
-&& (
-  resource.data.status == 'published'
-  || isTestCenterAdmin(resource.data.organizationId)
-);
+   
 
   /*
    * Only organization administrators can create questions.
@@ -1357,8 +1794,7 @@ match /testAttempts/{attemptId} {
     && isOrganizationMember(
       request.resource.data.organizationId
     )
-    && request.resource.data.userId == request.auth.uid
-
+    && request.resource.data.userId == request.auth.uid;
 
   /*
    * Attempts are historical records. Organization ownership and
@@ -1422,8 +1858,7 @@ match /testResults/{resultId} {
     && isOrganizationMember(
       request.resource.data.organizationId
     )
-    && request.resource.data.userId == request.auth.uid
-
+    && request.resource.data.userId == request.auth.uid;
 
   /*
    * Result identity and tenant ownership are immutable.
