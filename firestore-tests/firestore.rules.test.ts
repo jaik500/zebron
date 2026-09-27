@@ -106,27 +106,40 @@ describe('Zebron Firestore Security Rules', () => {
     } = {},
   ): Promise<void> {
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(), `groups/${groupId}`), {
-        organizationId,
-        name: options.name ?? `Group ${groupId}`,
-        slug: groupId,
-        active: options.active ?? true,
-        systemManaged: options.systemManaged ?? false,
-      });
+      await setDoc(
+        doc(
+          context.firestore(),
+          `organizations/${organizationId}/groups/${groupId}`,
+        ),
+        {
+          organizationId,
+          name: options.name ?? `Group ${groupId}`,
+          slug: groupId,
+          active: options.active ?? true,
+          systemManaged: options.systemManaged ?? false,
+        },
+      );
     });
   }
 
   async function seedGroupMembership(
     userId: string,
+    organizationId: string,
     groupId: string,
     active = true,
   ): Promise<void> {
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(), `groupMemberships/${userId}_${groupId}`), {
-        userId,
-        groupId,
-        active,
-      });
+      await setDoc(
+        doc(
+          context.firestore(),
+          `organizations/${organizationId}/groups/${groupId}/members/${userId}_${groupId}`,
+        ),
+        {
+          userId,
+          groupId,
+          active,
+        },
+      );
     });
   }
 
@@ -140,13 +153,21 @@ describe('Zebron Firestore Security Rules', () => {
     } = {},
   ): Promise<void> {
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(), `groupRoles/${groupRoleId}`), {
-        groupId,
-        name: options.name ?? `Role ${groupRoleId}`,
-        description: 'Test role',
-        active: options.active ?? true,
-        systemManaged: options.systemManaged ?? false,
-      });
+      const organizationId = 'org-1';
+
+      await setDoc(
+        doc(
+          context.firestore(),
+          `organizations/${organizationId}/groups/${groupId}/roles/${groupRoleId}`,
+        ),
+        {
+          groupId,
+          name: options.name ?? `Role ${groupRoleId}`,
+          description: 'Test role',
+          active: options.active ?? true,
+          systemManaged: options.systemManaged ?? false,
+        },
+      );
     });
   }
 
@@ -435,54 +456,124 @@ describe('organizations', () => {
 
   describe('groups', () => {
     it('allows an organization member to read an active group', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('user-1', 'org-1');
-
       await seedGroup('group-1', 'org-1');
 
       const db = testEnv.authenticatedContext('user-1').firestore();
 
-      await assertSucceeds(getDoc(doc(db, 'groups/group-1')));
+      await assertSucceeds(
+        getDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1',
+          ),
+        ),
+      );
     });
 
     it('denies a user from another organization', async () => {
+      await seedOrganization('org-1');
+      await seedOrganization('org-2');
       await seedOrganizationMembership('user-1', 'org-1');
-
       await seedGroup('group-1', 'org-2');
 
       const db = testEnv.authenticatedContext('user-1').firestore();
 
-      await assertFails(getDoc(doc(db, 'groups/group-1')));
+      await assertFails(
+        getDoc(
+          doc(
+            db,
+            'organizations/org-2/groups/group-1',
+          ),
+        ),
+      );
+    });
+
+    it('denies a member from reading an inactive group', async () => {
+      await seedOrganization('org-1');
+      await seedOrganizationMembership('user-1', 'org-1');
+      await seedGroup('group-1', 'org-1', { active: false });
+
+      const db = testEnv.authenticatedContext('user-1').firestore();
+
+      await assertFails(
+        getDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1',
+          ),
+        ),
+      );
     });
 
     it('allows an organization admin to create a group', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
 
       const db = testEnv.authenticatedContext('admin-1').firestore();
 
       await assertSucceeds(
-        setDoc(doc(db, 'groups/group-1'), {
-          organizationId: 'org-1',
-          name: 'Test Group',
-          slug: 'test-group',
-          active: true,
-          systemManaged: false,
-        }),
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1',
+          ),
+          {
+            organizationId: 'org-1',
+            name: 'Test Group',
+            slug: 'test-group',
+            active: true,
+            systemManaged: false,
+          },
+        ),
+      );
+    });
+
+    it('denies an organization admin from creating a group for another organization', async () => {
+      await seedOrganization('org-1');
+      await seedOrganization('org-2');
+      await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
+
+      const db = testEnv.authenticatedContext('admin-1').firestore();
+
+      await assertFails(
+        setDoc(
+          doc(
+            db,
+            'organizations/org-2/groups/group-1',
+          ),
+          {
+            organizationId: 'org-2',
+            name: 'Unauthorized Group',
+            slug: 'unauthorized-group',
+            active: true,
+            systemManaged: false,
+          },
+        ),
       );
     });
 
     it('denies a regular member from creating a group', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('user-1', 'org-1', 'org_member');
 
       const db = testEnv.authenticatedContext('user-1').firestore();
 
       await assertFails(
-        setDoc(doc(db, 'groups/group-1'), {
-          organizationId: 'org-1',
-          name: 'Unauthorized Group',
-          slug: 'unauthorized-group',
-          active: true,
-          systemManaged: false,
-        }),
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1',
+          ),
+          {
+            organizationId: 'org-1',
+            name: 'Unauthorized Group',
+            slug: 'unauthorized-group',
+            active: true,
+            systemManaged: false,
+          },
+        ),
       );
     });
   });
@@ -493,58 +584,107 @@ describe('organizations', () => {
 
   describe('group memberships', () => {
     it('allows a group member to read their own active membership', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('user-1', 'org-1');
-
       await seedGroup('group-1', 'org-1');
-
-      await seedGroupMembership('user-1', 'group-1');
+      await seedGroupMembership('user-1', 'org-1', 'group-1');
 
       const db = testEnv.authenticatedContext('user-1').firestore();
 
-      await assertSucceeds(getDoc(doc(db, 'groupMemberships/user-1_group-1')));
+      await assertSucceeds(
+        getDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/members/user-1_group-1',
+          ),
+        ),
+      );
     });
 
     it('denies a user from another organization', async () => {
+      await seedOrganization('org-1');
+      await seedOrganization('org-2');
       await seedOrganizationMembership('user-1', 'org-2');
-
       await seedGroup('group-1', 'org-1');
-
-      await seedGroupMembership('user-2', 'group-1');
+      await seedGroupMembership('user-2', 'org-1', 'group-1');
 
       const db = testEnv.authenticatedContext('user-1').firestore();
 
-      await assertFails(getDoc(doc(db, 'groupMemberships/user-2_group-1')));
+      await assertFails(
+        getDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/members/user-2_group-1',
+          ),
+        ),
+      );
     });
 
     it('allows an organization admin to create a group membership', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
-
       await seedGroup('group-1', 'org-1');
 
       const db = testEnv.authenticatedContext('admin-1').firestore();
 
       await assertSucceeds(
-        setDoc(doc(db, 'groupMemberships/user-2_group-1'), {
-          userId: 'user-2',
-          groupId: 'group-1',
-          active: true,
-        }),
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/members/user-2_group-1',
+          ),
+          {
+            userId: 'user-2',
+            groupId: 'group-1',
+            active: true,
+          },
+        ),
       );
     });
 
     it('denies a regular member from creating a group membership', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('user-1', 'org-1', 'org_member');
-
       await seedGroup('group-1', 'org-1');
 
       const db = testEnv.authenticatedContext('user-1').firestore();
 
       await assertFails(
-        setDoc(doc(db, 'groupMemberships/user-2_group-1'), {
-          userId: 'user-2',
-          groupId: 'group-1',
-          active: true,
-        }),
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/members/user-2_group-1',
+          ),
+          {
+            userId: 'user-2',
+            groupId: 'group-1',
+            active: true,
+          },
+        ),
+      );
+    });
+
+    it('prevents a membership from being moved to another group', async () => {
+      await seedOrganization('org-1');
+      await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
+      await seedGroup('group-1', 'org-1');
+      await seedGroup('group-2', 'org-1');
+      await seedGroupMembership('user-2', 'org-1', 'group-1');
+
+      const db = testEnv.authenticatedContext('admin-1').firestore();
+
+      await assertFails(
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/members/user-2_group-1',
+          ),
+          {
+            userId: 'user-2',
+            groupId: 'group-2',
+            active: true,
+          },
+        ),
       );
     });
   });
@@ -555,50 +695,204 @@ describe('organizations', () => {
 
   describe('group roles', () => {
     it('allows an organization admin to read group roles', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
-
       await seedGroup('group-1', 'org-1');
-
       await seedGroupRole('role-1', 'group-1');
 
       const db = testEnv.authenticatedContext('admin-1').firestore();
 
-      await assertSucceeds(getDoc(doc(db, 'groupRoles/role-1')));
+      await assertSucceeds(
+        getDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/roles/role-1',
+          ),
+        ),
+      );
     });
 
     it('allows an organization admin to create a group role', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
-
       await seedGroup('group-1', 'org-1');
 
       const db = testEnv.authenticatedContext('admin-1').firestore();
 
       await assertSucceeds(
-        setDoc(doc(db, 'groupRoles/role-1'), {
-          groupId: 'group-1',
-          name: 'Moderator',
-          description: 'Moderates community content',
-          active: true,
-          systemManaged: false,
-        }),
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/roles/role-1',
+          ),
+          {
+            groupId: 'group-1',
+            name: 'Moderator',
+            description: 'Moderates community content',
+            active: true,
+            systemManaged: false,
+          },
+        ),
       );
     });
 
     it('denies a regular member from creating a group role', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('user-1', 'org-1', 'org_member');
-
       await seedGroup('group-1', 'org-1');
 
       const db = testEnv.authenticatedContext('user-1').firestore();
 
       await assertFails(
-        setDoc(doc(db, 'groupRoles/role-1'), {
-          groupId: 'group-1',
-          name: 'Unauthorized Role',
-          description: 'Should not be allowed',
-          active: true,
-          systemManaged: false,
-        }),
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/roles/role-1',
+          ),
+          {
+            groupId: 'group-1',
+            name: 'Unauthorized Role',
+            description: 'Should not be allowed',
+            active: true,
+            systemManaged: false,
+          },
+        ),
+      );
+    });
+
+    it('prevents a role from being moved to another group', async () => {
+      await seedOrganization('org-1');
+      await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
+      await seedGroup('group-1', 'org-1');
+      await seedGroup('group-2', 'org-1');
+      await seedGroupRole('role-1', 'group-1');
+
+      const db = testEnv.authenticatedContext('admin-1').firestore();
+
+      await assertFails(
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/roles/role-1',
+          ),
+          {
+            groupId: 'group-2',
+            name: 'Moved Role',
+            description: 'Should not be allowed',
+            active: true,
+            systemManaged: false,
+          },
+        ),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // GROUP ROLE PERMISSIONS
+  // ---------------------------------------------------------------------------
+
+  describe('group role permissions', () => {
+    it('allows an organization admin to create a group role permission', async () => {
+      await seedOrganization('org-1');
+      await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
+      await seedGroup('group-1', 'org-1');
+      await seedGroupRole('role-1', 'group-1');
+
+      const db = testEnv.authenticatedContext('admin-1').firestore();
+
+      await assertSucceeds(
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/roles/role-1/permissions/permission-1',
+          ),
+          {
+            groupRoleId: 'role-1',
+            permission: 'community.moderate',
+            active: true,
+          },
+        ),
+      );
+    });
+
+    it('denies a regular member from creating a group role permission', async () => {
+      await seedOrganization('org-1');
+      await seedOrganizationMembership('user-1', 'org-1', 'org_member');
+      await seedGroup('group-1', 'org-1');
+      await seedGroupRole('role-1', 'group-1');
+
+      const db = testEnv.authenticatedContext('user-1').firestore();
+
+      await assertFails(
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/roles/role-1/permissions/permission-1',
+          ),
+          {
+            groupRoleId: 'role-1',
+            permission: 'community.moderate',
+            active: true,
+          },
+        ),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // GROUP ROLE ASSIGNMENTS
+  // ---------------------------------------------------------------------------
+
+  describe('group role assignments', () => {
+    it('allows an organization admin to create a role assignment', async () => {
+      await seedOrganization('org-1');
+      await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
+      await seedOrganizationMembership('user-1', 'org-1', 'org_member');
+      await seedGroup('group-1', 'org-1');
+      await seedGroupMembership('user-1', 'org-1', 'group-1');
+      await seedGroupRole('role-1', 'group-1');
+
+      const db = testEnv.authenticatedContext('admin-1').firestore();
+
+      await assertSucceeds(
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/roleAssignments/assignment-1',
+          ),
+          {
+            groupMembershipId: 'user-1_group-1',
+            groupRoleId: 'role-1',
+            active: true,
+          },
+        ),
+      );
+    });
+
+    it('denies an assignment that references a role from another group', async () => {
+      await seedOrganization('org-1');
+      await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
+      await seedOrganizationMembership('user-1', 'org-1', 'org_member');
+      await seedGroup('group-1', 'org-1');
+      await seedGroup('group-2', 'org-1');
+      await seedGroupMembership('user-1', 'org-1', 'group-1');
+      await seedGroupRole('role-1', 'group-1');
+      await seedGroupRole('role-2', 'group-2');
+
+      const db = testEnv.authenticatedContext('admin-1').firestore();
+
+      await assertFails(
+        setDoc(
+          doc(
+            db,
+            'organizations/org-1/groups/group-1/roleAssignments/assignment-1',
+          ),
+          {
+            groupMembershipId: 'user-1_group-1',
+            groupRoleId: 'role-2',
+            active: true,
+          },
+        ),
       );
     });
   });
@@ -861,7 +1155,7 @@ describe('organizations', () => {
       const db = testEnv.unauthenticatedContext().firestore();
 
       await assertFails(
-        setDoc(doc(db, 'groups/group-1'), {
+        setDoc(doc(db, 'organizations/org-1/groups/group-1'), {
           organizationId: 'org-1',
           name: 'Unauthorized Group',
           slug: 'unauthorized-group',
@@ -876,7 +1170,7 @@ describe('organizations', () => {
 
       const db = testEnv.unauthenticatedContext().firestore();
 
-      await assertFails(getDoc(doc(db, 'groups/group-1')));
+      await assertFails(getDoc(doc(db, 'organizations/org-1/groups/group-1')));
     });
   });
 
@@ -954,6 +1248,59 @@ describe('organizations', () => {
     });
 
     it('allows an organization member to query groups in their organization', async () => {
+  await seedOrganization('org-1');
+  await seedOrganization('org-2');
+
+  await seedOrganizationMembership(
+    'user-1',
+    'org-1',
+    'org_member',
+    true,
+  );
+
+  await seedGroup('group-1', 'org-1', {
+    active: true,
+    systemManaged: false,
+  });
+
+  await seedGroup('group-2', 'org-1', {
+    active: true,
+    systemManaged: false,
+  });
+
+  await seedGroup('group-3', 'org-2', {
+    active: true,
+    systemManaged: false,
+  });
+
+  const db = testEnv
+    .authenticatedContext('user-1')
+    .firestore();
+
+  const groupsQuery = query(
+    collection(
+      db,
+      'organizations/org-1/groups',
+    ),
+    where('active', '==', true),
+  );
+
+  const snapshot = await getDocs(groupsQuery);
+
+  expect(snapshot.docs).toHaveLength(2);
+
+  expect(
+    snapshot.docs
+      .map((entry) => entry.id)
+      .sort(),
+  ).toEqual([
+    'group-1',
+    'group-2',
+  ]);
+});
+
+    it('denies an organization member from querying groups without the active constraint', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('user-1', 'org-1', 'org_member', true);
 
       await seedGroup('group-1', 'org-1', {
@@ -962,65 +1309,37 @@ describe('organizations', () => {
       });
 
       await seedGroup('group-2', 'org-1', {
-        active: true,
-        systemManaged: false,
-      });
-
-      await seedGroup('group-3', 'org-2', {
-        active: true,
+        active: false,
         systemManaged: false,
       });
 
       const db = testEnv.authenticatedContext('user-1').firestore();
 
       const groupsQuery = query(
-        collection(db, 'groups'),
-        where('organizationId', '==', 'org-1'),
-        where('active', '==', true),
+        collection(db, 'organizations/org-1/groups'),
       );
-
-      const snapshot = await getDocs(groupsQuery);
-
-      expect(snapshot.docs).toHaveLength(2);
-
-      expect(snapshot.docs.map((entry) => entry.id).sort()).toEqual(['group-1', 'group-2']);
-    });
-
-    it('denies an organization member from using an unscoped group query', async () => {
-      await seedOrganizationMembership('user-1', 'org-1', 'org_member', true);
-
-      await seedGroup('group-1', 'org-1', {
-        active: true,
-        systemManaged: false,
-      });
-
-      await seedGroup('group-2', 'org-2', {
-        active: true,
-        systemManaged: false,
-      });
-
-      const db = testEnv.authenticatedContext('user-1').firestore();
-
-      const groupsQuery = query(collection(db, 'groups'));
 
       await assertFails(getDocs(groupsQuery));
     });
 
     it('allows a user to query their own group memberships', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('user-1', 'org-1', 'org_member', true);
-
       await seedGroup('group-1', 'org-1', {
         active: true,
         systemManaged: false,
       });
-
-      await seedGroupMembership('user-1', 'group-1', true);
+      await seedGroupMembership('user-1', 'org-1', 'group-1', true);
 
       const db = testEnv.authenticatedContext('user-1').firestore();
 
       const membershipsQuery = query(
-        collection(db, 'groupMemberships'),
+        collection(
+          db,
+          'organizations/org-1/groups/group-1/members',
+        ),
         where('userId', '==', 'user-1'),
+        where('active', '==', true),
       );
 
       const snapshot = await getDocs(membershipsQuery);
@@ -1030,18 +1349,22 @@ describe('organizations', () => {
     });
 
     it('denies an unscoped group membership query', async () => {
+      await seedOrganization('org-1');
       await seedOrganizationMembership('user-1', 'org-1', 'org_member', true);
-
       await seedGroup('group-1', 'org-1', {
         active: true,
         systemManaged: false,
       });
-
-      await seedGroupMembership('user-1', 'group-1', true);
+      await seedGroupMembership('user-1', 'org-1', 'group-1', true);
 
       const db = testEnv.authenticatedContext('user-1').firestore();
 
-      const membershipsQuery = query(collection(db, 'groupMemberships'));
+      const membershipsQuery = query(
+        collection(
+          db,
+          'organizations/org-1/groups/group-1/members',
+        ),
+      );
 
       await assertFails(getDocs(membershipsQuery));
     });
@@ -1061,7 +1384,12 @@ describe('organizations', () => {
 
       const db = testEnv.authenticatedContext('admin-1').firestore();
 
-      const rolesQuery = query(collection(db, 'groupRoles'), where('groupId', '==', 'group-1'));
+      const rolesQuery = query(
+        collection(
+          db,
+          'organizations/org-1/groups/group-1/roles',
+        ),
+      );
 
       const snapshot = await getDocs(rolesQuery);
 
@@ -1069,125 +1397,37 @@ describe('organizations', () => {
       expect(snapshot.docs[0].id).toBe('role-1');
     });
 
-    it('denies an unscoped group role query', async () => {
-      await seedOrganizationMembership('admin-1', 'org-1', 'org_admin', true);
+it('denies an organization member from querying group roles', async () => {
+  await seedOrganizationMembership(
+    'user-1',
+    'org-1',
+    'org_member',
+    true,
+  );
 
-      await seedGroup('group-1', 'org-1', {
-        active: true,
-        systemManaged: false,
-      });
-
-      await seedGroupRole('role-1', 'group-1', {
-        active: true,
-        systemManaged: false,
-        name: 'Group Admin',
-      });
-
-      const db = testEnv.authenticatedContext('admin-1').firestore();
-
-      const rolesQuery = query(collection(db, 'groupRoles'));
-
-      await assertFails(getDocs(rolesQuery));
-    });
-      it('allows an organization member to read their own organization', async () => {
-      await seedOrganization('org-a');
-
-      await seedOrganizationMembership(
-        'member-a',
-        'org-a',
-        'org_member',
-        true,
-      );
-
-      const db =
-        testEnv
-          .authenticatedContext('member-a')
-          .firestore();
-
-      await assertSucceeds(
-        getDoc(
-          doc(
-            db,
-            'organizations/org-a',
-          ),
-        ),
-      );
-    });
-
-    it('denies an organization member from reading another organization', async () => {
-      await seedOrganization('org-a');
-      await seedOrganization('org-b');
-
-      await seedOrganizationMembership(
-        'member-a',
-        'org-a',
-        'org_member',
-        true,
-      );
-
-      const db =
-        testEnv
-          .authenticatedContext('member-a')
-          .firestore();
-
-      await assertFails(
-        getDoc(
-          doc(
-            db,
-            'organizations/org-b',
-          ),
-        ),
-      );
-    });
-
-    it('denies an organization member from listing organizations', async () => {
-      await seedOrganization('org-a');
-      await seedOrganization('org-b');
-
-      await seedOrganizationMembership(
-        'member-a',
-        'org-a',
-        'org_member',
-        true,
-      );
-
-      const db =
-        testEnv
-          .authenticatedContext('member-a')
-          .firestore();
-
-      await assertFails(
-        getDocs(
-          collection(
-            db,
-            'organizations',
-          ),
-        ),
-      );
-    });
-
-    it('allows a platform admin to list organizations', async () => {
-      await seedUser(
-        'platform-admin',
-        'admin',
-      );
-
-      await seedOrganization('org-a');
-      await seedOrganization('org-b');
-
-      const db =
-        testEnv
-          .authenticatedContext('platform-admin')
-          .firestore();
-
-      await assertSucceeds(
-        getDocs(
-          collection(
-            db,
-            'organizations',
-          ),
-        ),
-      );
-    });
+  await seedGroup('group-1', 'org-1', {
+    active: true,
+    systemManaged: false,
   });
+
+  await seedGroupRole('role-1', 'group-1', {
+    active: true,
+    systemManaged: false,
+    name: 'Group Admin',
+  });
+
+  const db = testEnv
+    .authenticatedContext('user-1')
+    .firestore();
+
+  const rolesQuery = query(
+    collection(
+      db,
+      'organizations/org-1/groups/group-1/roles',
+    ),
+  );
+
+  await assertFails(getDocs(rolesQuery));
+});
+    });
 });

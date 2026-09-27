@@ -237,41 +237,299 @@ function isOrganizationManagerOrAbove(
     );
 }
 
-function groupExists(groupId) {
+// ============================================================
+// GROUP SECURITY HELPERS
+// ============================================================
+
+/*
+ * Groups are organization-scoped.
+ *
+ * Canonical Firestore hierarchy:
+ *
+ *   organizations/{organizationId}/groups/{groupId}
+ *     ├── members/{membershipId}
+ *     ├── roles/{roleId}
+ *     │   └── permissions/{permissionId}
+ *     └── roleAssignments/{assignmentId}
+ *
+ * Group membership IDs are Firestore-generated. Rules never assume
+ * a deterministic membership document ID.
+ */
+
+function groupPath(
+  organizationId,
+  groupId
+) {
+  return /databases/$(database)/documents/organizations/$(organizationId)/groups/$(groupId);
+}
+
+function groupExists(
+  organizationId,
+  groupId
+) {
   return exists(
-    /databases/$(database)/documents/groups/$(groupId)
+    groupPath(
+      organizationId,
+      groupId
+    )
   );
 }
 
-function groupBelongsToOrganization(
-  groupId,
-  organizationId
+function isActiveGroup(
+  organizationId,
+  groupId
 ) {
-  return groupExists(groupId)
-    && get(
-      /databases/$(database)/documents/groups/$(groupId)
-    ).data.organizationId == organizationId;
+  return groupExists(
+    organizationId,
+    groupId
+  )
+  && get(
+    groupPath(
+      organizationId,
+      groupId
+    )
+  ).data.active == true;
 }
 
-function groupOrganizationId(groupId) {
-  return get(
-    /databases/$(database)/documents/groups/$(groupId)
-  ).data.organizationId;
+function groupMembershipPath(
+  organizationId,
+  groupId,
+  membershipId
+) {
+  return /databases/$(database)/documents/organizations/$(organizationId)/groups/$(groupId)/members/$(membershipId);
 }
 
-/*
- * Group memberships use deterministic IDs:
- *
- *   {userId}_{groupId}
- */
-function isActiveGroupMember(groupId) {
+function groupMembershipExists(
+  organizationId,
+  groupId,
+  membershipId
+) {
+  return exists(
+    groupMembershipPath(
+      organizationId,
+      groupId,
+      membershipId
+    )
+  );
+}
+
+function activeGroupMembershipExists(
+  organizationId,
+  groupId,
+  membershipId
+) {
+  return groupMembershipExists(
+    organizationId,
+    groupId,
+    membershipId
+  )
+  && get(
+    groupMembershipPath(
+      organizationId,
+      groupId,
+      membershipId
+    )
+  ).data.active == true;
+}
+
+function isOwnGroupMembership(
+  organizationId,
+  groupId,
+  membershipId
+) {
   return isAuthenticated()
-    && exists(
-      /databases/$(database)/documents/groupMemberships/$(request.auth.uid + "_" + groupId)
+    && activeGroupMembershipExists(
+      organizationId,
+      groupId,
+      membershipId
     )
     && get(
-      /databases/$(database)/documents/groupMemberships/$(request.auth.uid + "_" + groupId)
-    ).data.active == true;
+      groupMembershipPath(
+        organizationId,
+        groupId,
+        membershipId
+      )
+    ).data.userId == request.auth.uid;
+}
+
+function groupRolePath(
+  organizationId,
+  groupId,
+  roleId
+) {
+  return /databases/$(database)/documents/organizations/$(organizationId)/groups/$(groupId)/roles/$(roleId);
+}
+
+function groupRoleExists(
+  organizationId,
+  groupId,
+  roleId
+) {
+  return exists(
+    groupRolePath(
+      organizationId,
+      groupId,
+      roleId
+    )
+  );
+}
+
+function activeGroupRoleExists(
+  organizationId,
+  groupId,
+  roleId
+) {
+  return groupRoleExists(
+    organizationId,
+    groupId,
+    roleId
+  )
+  && get(
+    groupRolePath(
+      organizationId,
+      groupId,
+      roleId
+    )
+  ).data.active == true;
+}
+
+function groupRoleBelongsToGroup(
+  organizationId,
+  groupId,
+  roleId
+) {
+  return groupRoleExists(
+    organizationId,
+    groupId,
+    roleId
+  )
+  && get(
+    groupRolePath(
+      organizationId,
+      groupId,
+      roleId
+    )
+  ).data.groupId == groupId;
+}
+
+function groupRolePermissionPath(
+  organizationId,
+  groupId,
+  roleId,
+  permissionId
+) {
+  return /databases/$(database)/documents/organizations/$(organizationId)/groups/$(groupId)/roles/$(roleId)/permissions/$(permissionId);
+}
+
+function groupRolePermissionExists(
+  organizationId,
+  groupId,
+  roleId,
+  permissionId
+) {
+  return exists(
+    groupRolePermissionPath(
+      organizationId,
+      groupId,
+      roleId,
+      permissionId
+    )
+  );
+}
+
+function activeGroupRolePermissionExists(
+  organizationId,
+  groupId,
+  roleId,
+  permissionId
+) {
+  return groupRolePermissionExists(
+    organizationId,
+    groupId,
+    roleId,
+    permissionId
+  )
+  && get(
+    groupRolePermissionPath(
+      organizationId,
+      groupId,
+      roleId,
+      permissionId
+    )
+  ).data.active == true;
+}
+
+function groupRoleAssignmentPath(
+  organizationId,
+  groupId,
+  assignmentId
+) {
+  return /databases/$(database)/documents/organizations/$(organizationId)/groups/$(groupId)/roleAssignments/$(assignmentId);
+}
+
+function groupRoleAssignmentExists(
+  organizationId,
+  groupId,
+  assignmentId
+) {
+  return exists(
+    groupRoleAssignmentPath(
+      organizationId,
+      groupId,
+      assignmentId
+    )
+  );
+}
+
+function activeGroupRoleAssignmentExists(
+  organizationId,
+  groupId,
+  assignmentId
+) {
+  return groupRoleAssignmentExists(
+    organizationId,
+    groupId,
+    assignmentId
+  )
+  && get(
+    groupRoleAssignmentPath(
+      organizationId,
+      groupId,
+      assignmentId
+    )
+  ).data.active == true;
+}
+
+function groupAssignmentReferencesSameGroup(
+  organizationId,
+  groupId,
+  groupMembershipId,
+  groupRoleId
+) {
+  return activeGroupMembershipExists(
+    organizationId,
+    groupId,
+    groupMembershipId
+  )
+  && activeGroupRoleExists(
+    organizationId,
+    groupId,
+    groupRoleId
+  )
+  && get(
+    groupMembershipPath(
+      organizationId,
+      groupId,
+      groupMembershipId
+    )
+  ).data.groupId == groupId
+  && get(
+    groupRolePath(
+      organizationId,
+      groupId,
+      groupRoleId
+    )
+  ).data.groupId == groupId;
 }
 
 // ============================================================
@@ -512,11 +770,25 @@ match /users/{userId} {
    * Users can update their own profile, but cannot elevate
    * their platform role through the client.
    */
-  allow update: if (
+  allow update: if
+    isPlatformAdmin()
+    || (
       isCurrentUser(userId)
       && request.resource.data.role == resource.data.role
-    )
-    || isPlatformAdmin();
+      && (
+        (
+          !resource.data.keys().hasAny(["platformRole"])
+          && !request.resource.data.keys().hasAny(["platformRole"])
+        )
+        ||
+        (
+          resource.data.keys().hasAny(["platformRole"])
+          && request.resource.data.keys().hasAny(["platformRole"])
+          && request.resource.data.platformRole
+            == resource.data.platformRole
+        )
+      )
+    );
 
   allow delete: if isPlatformAdmin();
 }
@@ -602,86 +874,69 @@ match /organizationMemberships/{membershipId} {
         "org_staff",
         "org_member"
       ]
+      && (
+        request.auth.uid != resource.data.userId
+        || request.resource.data.role == resource.data.role
+      )
     );
 
   allow delete: if isPlatformAdmin()
-    || isOrganizationAdmin(
-      resource.data.organizationId
+    || (
+      isOrganizationAdmin(
+        resource.data.organizationId
+      )
+      && (
+        request.auth.uid != resource.data.userId
+        || resource.data.role != "org_owner"
+      )
     );
 }
 
 
 // ============================================================
-// GROUPS
+// ORGANIZATION GROUPS
 // ============================================================
 
-match /groups/{groupId} {
+/*
+ * Groups are tenant-scoped. There are intentionally no top-level
+ * /groups, /groupMemberships, /groupRoles, /groupRoleAssignments,
+ * or /groupRolePermissions collections.
+ */
 
-  /*
-   * Organization members can read active groups
-   * in their organization.
-   */
+match /organizations/{organizationId}/groups/{groupId} {
+
   allow get: if isPlatformAdmin()
+    || isOrganizationAdmin(organizationId)
     || (
-      isOrganizationMember(
-        resource.data.organizationId
-      )
+      isOrganizationMember(organizationId)
       && resource.data.active == true
     );
 
-  /*
-   * Group queries are restricted to active groups belonging
-   * to organizations of which the requester is a member.
-   *
-   * Supported query pattern:
-   *
-   *   where("organizationId", "==", organizationId)
-   */
   allow list: if isPlatformAdmin()
+    || isOrganizationAdmin(organizationId)
     || (
-      isAuthenticated()
-      && isOrganizationMember(
-        resource.data.organizationId
-      )
+      isOrganizationMember(organizationId)
       && resource.data.active == true
     );
 
-  /*
-   * Groups can only be created by organization administrators.
-   */
   allow create: if isPlatformAdmin()
     || (
-      isOrganizationAdmin(
-        request.resource.data.organizationId
-      )
+      isOrganizationAdmin(organizationId)
       && request.resource.data.systemManaged == false
+      && request.resource.data.name is string
+      && request.resource.data.slug is string
     );
 
-  /*
-   * A group cannot be moved between organizations.
-   *
-   * System-managed groups cannot be modified by ordinary
-   * organization administrators.
-   */
   allow update: if isPlatformAdmin()
     || (
-      isOrganizationAdmin(
-        resource.data.organizationId
-      )
+      isOrganizationAdmin(organizationId)
       && resource.data.systemManaged == false
-      && request.resource.data.organizationId
-        == resource.data.organizationId
       && request.resource.data.systemManaged == false
     );
 
-  /*
-   * System-managed groups are protected.
-   */
   allow delete: if isPlatformAdmin()
     || (
-      isOrganizationAdmin(
-        resource.data.organizationId
-      )
+      isOrganizationAdmin(organizationId)
       && resource.data.systemManaged == false
     );
 }
@@ -691,107 +946,99 @@ match /groups/{groupId} {
 // GROUP MEMBERSHIPS
 // ============================================================
 
-match /groupMemberships/{membershipId} {
+match /organizations/{organizationId}/groups/{groupId}/members/{membershipId} {
 
   /*
-   * A member may read their own active membership.
+   * Platform administrators can inspect all memberships.
    *
-   * Organization administrators may read memberships for
-   * groups belonging to their organization.
+   * Organization administrators can inspect memberships for
+   * active groups in their organization.
+   *
+   * A user can inspect their own active group membership.
    */
   allow get: if isPlatformAdmin()
     || (
-      isAuthenticated()
-      && resource.data.userId == request.auth.uid
-      && isActiveGroupMember(
-        resource.data.groupId
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
     )
     || (
-      groupExists(
-        resource.data.groupId
+      isOwnGroupMembership(
+        organizationId,
+        groupId,
+        membershipId
       )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          resource.data.groupId
-        )
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
     );
 
   /*
-   * Queries are restricted to:
-   *
-   * 1. The authenticated user's own memberships.
-   *
-   * 2. Memberships belonging to groups administered by the
-   *    requester's organization.
-   *
-   * Supported query patterns:
-   *
-   *   where("userId", "==", currentUserId)
-   *
-   *   where("groupId", "==", groupId)
+   * The user's group-membership query must be constrained by
+   * userId. Organization administrators may query a group's
+   * memberships.
    */
   allow list: if isPlatformAdmin()
     || (
-      isAuthenticated()
-      && resource.data.userId == request.auth.uid
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
+      )
     )
     || (
-      isAuthenticated()
-      && groupExists(
-        resource.data.groupId
+      isOrganizationMember(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          resource.data.groupId
-        )
-      )
+      && resource.data.userId == request.auth.uid
+      && resource.data.active == true
     );
 
   /*
-   * Only organization administrators may add group members.
+   * Only organization administrators can add group members.
+   *
+   * The membership document must belong to the Group represented
+   * by the URL.
    */
   allow create: if isPlatformAdmin()
     || (
-      groupExists(
-        request.resource.data.groupId
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          request.resource.data.groupId
-        )
-      )
+      && request.resource.data.groupId == groupId
+      && request.resource.data.userId is string
+      && request.resource.data.userId != ""
+      && request.resource.data.active == true
     );
 
   /*
-   * Group and user ownership cannot be changed during update.
+   * Membership identity and group ownership are immutable.
    */
   allow update: if isPlatformAdmin()
     || (
-      groupExists(
-        resource.data.groupId
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          resource.data.groupId
-        )
-      )
-      && request.resource.data.groupId
-        == resource.data.groupId
-      && request.resource.data.userId
-        == resource.data.userId
+      && resource.data.groupId == groupId
+      && request.resource.data.groupId == groupId
+      && resource.data.userId == request.resource.data.userId
     );
 
   allow delete: if isPlatformAdmin()
     || (
-      groupExists(
-        resource.data.groupId
-      )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          resource.data.groupId
-        )
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
     );
 }
@@ -801,92 +1048,220 @@ match /groupMemberships/{membershipId} {
 // GROUP ROLES
 // ============================================================
 
-match /groupRoles/{groupRoleId} {
+match /organizations/{organizationId}/groups/{groupId}/roles/{roleId} {
 
   /*
-   * Only administrators of the owning organization can inspect
-   * group ACL configuration.
+   * Organization administrators manage Group ACL configuration.
+   *
+   * Active organization members may read active roles because
+   * role configuration is consumed by authorization evaluation.
    */
   allow get: if isPlatformAdmin()
     || (
-      groupExists(
-        resource.data.groupId
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          resource.data.groupId
-        )
+    )
+    || (
+      isOrganizationMember(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
+      && resource.data.active == true
     );
 
-  /*
-   * Only organization administrators may query group roles.
-   *
-   * Supported query pattern:
-   *
-   *   where("groupId", "==", groupId)
-   */
   allow list: if isPlatformAdmin()
     || (
-      isAuthenticated()
-      && groupExists(
-        resource.data.groupId
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          resource.data.groupId
-        )
+    )
+    || (
+      isOrganizationMember(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
+      && resource.data.active == true
     );
 
   /*
-   * Roles belong to a specific group.
+   * Organization administrators may create only ordinary roles.
+   * System-managed roles are platform-controlled.
    */
   allow create: if isPlatformAdmin()
     || (
-      groupExists(
-        request.resource.data.groupId
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          request.resource.data.groupId
-        )
-      )
+      && request.resource.data.groupId == groupId
       && request.resource.data.systemManaged == false
+      && request.resource.data.name is string
+      && request.resource.data.name != ""
     );
 
-  /*
-   * A role cannot be moved to another group.
-   *
-   * System-managed roles are protected.
-   */
   allow update: if isPlatformAdmin()
     || (
-      groupExists(
-        resource.data.groupId
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          resource.data.groupId
-        )
-      )
+      && resource.data.groupId == groupId
+      && request.resource.data.groupId == groupId
       && resource.data.systemManaged == false
-      && request.resource.data.groupId
-        == resource.data.groupId
       && request.resource.data.systemManaged == false
     );
 
   allow delete: if isPlatformAdmin()
     || (
-      groupExists(
-        resource.data.groupId
-      )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          resource.data.groupId
-        )
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
       && resource.data.systemManaged == false
+    );
+}
+
+
+// ============================================================
+// GROUP ROLE PERMISSIONS
+// ============================================================
+
+match /organizations/{organizationId}/groups/{groupId}/roles/{roleId}/permissions/{permissionId} {
+
+  /*
+   * Permission records are scoped to the role in the URL.
+   *
+   * Active organization members may read active permissions
+   * needed for authorization evaluation.
+   */
+  allow get: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
+      )
+      && activeGroupRoleExists(
+        organizationId,
+        groupId,
+        roleId
+      )
+      && resource.data.groupRoleId == roleId
+      && resource.data.active == true
+    )
+    || (
+      isOrganizationMember(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
+      )
+      && activeGroupRoleExists(
+        organizationId,
+        groupId,
+        roleId
+      )
+      && resource.data.groupRoleId == roleId
+      && resource.data.active == true
+    );
+
+  /*
+   * Organization administrators may query the full permission
+   * configuration. Members may query active permissions.
+   */
+  allow list: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
+      )
+      && activeGroupRoleExists(
+        organizationId,
+        groupId,
+        roleId
+      )
+      && resource.data.groupRoleId == roleId
+    )
+    || (
+      isOrganizationMember(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
+      )
+      && activeGroupRoleExists(
+        organizationId,
+        groupId,
+        roleId
+      )
+      && resource.data.groupRoleId == roleId
+      && resource.data.active == true
+    );
+
+  /*
+   * Permission values are stable permission keys. The permission
+   * document cannot be attached to a different GroupRole.
+   */
+  allow create: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
+      )
+      && groupRoleBelongsToGroup(
+        organizationId,
+        groupId,
+        roleId
+      )
+      && request.resource.data.groupRoleId == roleId
+      && request.resource.data.permission is string
+      && request.resource.data.permission != ""
+      && request.resource.data.active == true
+    );
+
+  /*
+   * The GroupRole reference and permission key are immutable.
+   * Administrators may change lifecycle state.
+   */
+  allow update: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
+      )
+      && groupRoleBelongsToGroup(
+        organizationId,
+        groupId,
+        roleId
+      )
+      && resource.data.groupRoleId == roleId
+      && request.resource.data.groupRoleId == roleId
+      && request.resource.data.permission == resource.data.permission
+    );
+
+  allow delete: if isPlatformAdmin()
+    || (
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
+      )
+      && groupRoleBelongsToGroup(
+        organizationId,
+        groupId,
+        roleId
+      )
     );
 }
 
@@ -895,127 +1270,114 @@ match /groupRoles/{groupRoleId} {
 // GROUP ROLE ASSIGNMENTS
 // ============================================================
 
-match /groupRoleAssignments/{assignmentId} {
+match /organizations/{organizationId}/groups/{groupId}/roleAssignments/{assignmentId} {
 
   /*
-   * Assignment ownership is derived from:
-   *
-   * assignment
-   *   -> groupMembership
-   *   -> group
-   *
-   * and:
-   *
-   * assignment
-   *   -> groupRole
-   *   -> group
-   *
-   * The membership and role must belong to the same group.
+   * Assignment references must point to an active membership and
+   * active role belonging to this exact Group.
    */
   allow get: if isPlatformAdmin()
     || (
-      exists(
-        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && exists(
-        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      && groupAssignmentReferencesSameGroup(
+        organizationId,
+        groupId,
+        resource.data.groupMembershipId,
+        resource.data.groupRoleId
       )
-      && get(
-        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-      ).data.groupId
-        ==
-      get(
-        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-      ).data.groupId
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          get(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          ).data.groupId
-        )
+    )
+    || (
+      isOrganizationMember(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
+      )
+      && isOwnGroupMembership(
+        organizationId,
+        groupId,
+        resource.data.groupMembershipId
+      )
+      && activeGroupRoleExists(
+        organizationId,
+        groupId,
+        resource.data.groupRoleId
       )
     );
 
   /*
-   * Only organization administrators of the associated group
-   * may query role assignments.
+   * Organization administrators may query assignments for a Group.
    *
-   * Supported query patterns:
-   *
-   *   where("groupMembershipId", "==", membershipId)
-   *
-   *   where("groupRoleId", "==", groupRoleId)
+   * Normal members may query only assignments belonging to their
+   * own active Group membership.
    */
   allow list: if isPlatformAdmin()
     || (
-      isAuthenticated()
-      && exists(
-        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && exists(
-        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+    )
+    || (
+      isOrganizationMember(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && get(
-        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-      ).data.groupId
-        ==
-      get(
-        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-      ).data.groupId
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          get(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          ).data.groupId
-        )
+      && resource.data.groupMembershipId is string
+      && isOwnGroupMembership(
+        organizationId,
+        groupId,
+        resource.data.groupMembershipId
       )
+      && resource.data.active == true
     );
 
+  /*
+   * Only organization administrators may assign Group roles.
+   *
+   * Both references must belong to the same Group and both must
+   * be active.
+   */
   allow create: if isPlatformAdmin()
     || (
-      exists(
-        /databases/$(database)/documents/groupMemberships/$(request.resource.data.groupMembershipId)
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && exists(
-        /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
+      && groupAssignmentReferencesSameGroup(
+        organizationId,
+        groupId,
+        request.resource.data.groupMembershipId,
+        request.resource.data.groupRoleId
       )
-      && get(
-        /databases/$(database)/documents/groupMemberships/$(request.resource.data.groupMembershipId)
-      ).data.groupId
-        ==
-      get(
-        /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
-      ).data.groupId
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          get(
-            /databases/$(database)/documents/groupMemberships/$(request.resource.data.groupMembershipId)
-          ).data.groupId
-        )
-      )
+      && request.resource.data.active == true
     );
 
+  /*
+   * Assignment references are immutable. Lifecycle state may change.
+   */
   allow update: if isPlatformAdmin()
     || (
-      exists(
-        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
-      && exists(
-        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
+      && activeGroupMembershipExists(
+        organizationId,
+        groupId,
+        resource.data.groupMembershipId
       )
-      && get(
-        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-      ).data.groupId
-        ==
-      get(
-        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-      ).data.groupId
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          get(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          ).data.groupId
-        )
+      && activeGroupRoleExists(
+        organizationId,
+        groupId,
+        resource.data.groupRoleId
       )
       && request.resource.data.groupMembershipId
         == resource.data.groupMembershipId
@@ -1025,125 +1387,18 @@ match /groupRoleAssignments/{assignmentId} {
 
   allow delete: if isPlatformAdmin()
     || (
-      exists(
-        /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-      )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          get(
-            /databases/$(database)/documents/groupMemberships/$(resource.data.groupMembershipId)
-          ).data.groupId
-        )
+      isOrganizationAdmin(organizationId)
+      && isActiveGroup(
+        organizationId,
+        groupId
       )
     );
 }
 
 
 // ============================================================
-// GROUP ROLE PERMISSIONS
+// END ORGANIZATION GROUP SECURITY
 // ============================================================
-
-match /groupRolePermissions/{groupRolePermissionId} {
-
-  /*
-   * Permission records are configuration.
-   *
-   * Ownership is derived from the referenced group role.
-   */
-  allow get: if isPlatformAdmin()
-    || (
-      exists(
-        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-      )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          get(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          ).data.groupId
-        )
-      )
-    );
-
-  /*
-   * Only organization administrators of the group owning the
-   * referenced role may query role permissions.
-   *
-   * Supported query pattern:
-   *
-   *   where("groupRoleId", "==", groupRoleId)
-   */
-  allow list: if isPlatformAdmin()
-    || (
-      isAuthenticated()
-      && exists(
-        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-      )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          get(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          ).data.groupId
-        )
-      )
-    );
-
-  /*
-   * Permission IDs are stable permission keys such as:
-   *
-   * users.view
-   * users.manage
-   * tax-rules.view
-   * tax-rules.manage
-   * tax-rules.publish
-   */
-  allow create: if isPlatformAdmin()
-    || (
-      exists(
-        /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
-      )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          get(
-            /databases/$(database)/documents/groupRoles/$(request.resource.data.groupRoleId)
-          ).data.groupId
-        )
-      )
-    );
-
-  allow update: if isPlatformAdmin()
-    || (
-      exists(
-        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-      )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          get(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          ).data.groupId
-        )
-      )
-      && request.resource.data.groupRoleId
-        == resource.data.groupRoleId
-      && request.resource.data.permissionId
-        == resource.data.permissionId
-    );
-
-  allow delete: if isPlatformAdmin()
-    || (
-      exists(
-        /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-      )
-      && isOrganizationAdmin(
-        groupOrganizationId(
-          get(
-            /databases/$(database)/documents/groupRoles/$(resource.data.groupRoleId)
-          ).data.groupId
-        )
-      )
-    );
-}
-
-
 
 // ============================================================
 // TEST CENTER HELPERS

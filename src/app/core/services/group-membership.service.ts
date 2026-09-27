@@ -1,14 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
-import {
-  GroupMembership,
-
-} from '../models/group-membership.model';
-
-import { GroupRole } from '../models/group-role.model';
-import { GroupRolePermission } from '../models/group-role-permission.model';
-import { GroupRoleAssignment } from '../models/group-role-assignment.model';
-import { GroupMembershipRepository } from '../repositories/firestore/group-membership.repository';
+import { GroupMembership } from '../models/group-membership.model';
+import { GroupMembershipRepository } from '../repositories/group-membership.repository';
 import { FirestoreGroupMembershipRepository } from '../repositories/firestore/firestore-group-membership.repository';
 
 @Injectable({
@@ -19,114 +12,118 @@ export class GroupMembershipService {
     inject(FirestoreGroupMembershipRepository);
 
   async getMembership(
+    organizationId: string,
+    groupId: string,
     membershipId: string,
   ): Promise<GroupMembership | null> {
-    return this.repository.getMembership(membershipId);
+    return this.repository.getMembership(
+      organizationId,
+      groupId,
+      membershipId,
+    );
   }
 
   async getMembershipsForGroup(
+    organizationId: string,
     groupId: string,
   ): Promise<GroupMembership[]> {
-    return this.repository.getMembershipsForGroup(groupId);
-  }
-
-  async getMembershipsForUser(
-    userId: string,
-  ): Promise<GroupMembership[]> {
-    return this.repository.getMembershipsForUser(userId);
-  }
-
-  async getMembershipForUserAndGroup(
-    userId: string,
-    groupId: string,
-  ): Promise<GroupMembership | null> {
-    return this.repository.getMembershipForUserAndGroup(
-      userId,
+    return this.repository.getMembershipsForGroup(
+      organizationId,
       groupId,
     );
   }
 
+  async getMembershipsForUser(
+    organizationId: string,
+    userId: string,
+  ): Promise<GroupMembership[]> {
+    return this.repository.getMembershipsForUser(
+      organizationId,
+      userId,
+    );
+  }
+
+  async getMembershipForUserAndGroup(
+    organizationId: string,
+    groupId: string,
+    userId: string,
+  ): Promise<GroupMembership | null> {
+    return this.repository.getMembershipForUserAndGroup(
+      organizationId,
+      groupId,
+      userId,
+    );
+  }
+
   async createMembership(
-    membership: Omit<GroupMembership, 'id'>,
+    organizationId: string,
+    groupId: string,
+    membership: Omit<
+      GroupMembership,
+      'id' | 'groupId'
+    >,
   ): Promise<string> {
-    return this.repository.createMembership(membership);
+    return this.repository.createMembership(
+      organizationId,
+      groupId,
+      membership,
+    );
   }
 
   async updateMembership(
+    organizationId: string,
+    groupId: string,
     membershipId: string,
-    changes: Partial<Omit<GroupMembership, 'id'>>,
+    changes: Partial<
+      Omit<
+        GroupMembership,
+        'id' | 'groupId' | 'userId'
+      >
+    >,
   ): Promise<void> {
     return this.repository.updateMembership(
+      organizationId,
+      groupId,
       membershipId,
       changes,
     );
   }
 
   async deleteMembership(
+    organizationId: string,
+    groupId: string,
     membershipId: string,
   ): Promise<void> {
     return this.repository.deleteMembership(
+      organizationId,
+      groupId,
       membershipId,
     );
   }
 
-  /**
-   * Determine whether a user is an active member
-   * of a group.
-   */
   async isGroupMember(
+    organizationId: string,
     userId: string,
     groupId: string,
   ): Promise<boolean> {
     const membership =
       await this.getMembershipForUserAndGroup(
-        userId,
+        organizationId,
         groupId,
+        userId,
       );
 
     return membership?.active === true;
   }
 
-  /**
-   * Get role assignments for a group membership.
-   */
-  async getRoleAssignmentsForMembership(
-    groupMembershipId: string,
-  ): Promise<GroupRoleAssignment[]> {
-    return this.repository.getRoleAssignmentsForMembership(
-      groupMembershipId,
-    );
-  }
-
-  /**
-   * Get a group role by ID.
-   */
-  async getGroupRole(
-    groupRoleId: string,
-  ): Promise<GroupRole | null> {
-    return this.repository.getGroupRole(
-      groupRoleId,
-    );
-  }
-
-  /**
-   * Get permissions assigned to a group role.
-   */
-  async getGroupRolePermissions(
-    groupRoleId: string,
-  ): Promise<GroupRolePermission[]> {
-    return this.repository.getGroupRolePermissions(
-      groupRoleId,
-    );
-  }
-
-  /**
-   * Deactivate a membership.
-   */
   async deactivateMembership(
+    organizationId: string,
+    groupId: string,
     membershipId: string,
   ): Promise<void> {
     return this.updateMembership(
+      organizationId,
+      groupId,
       membershipId,
       {
         active: false,
@@ -134,13 +131,14 @@ export class GroupMembershipService {
     );
   }
 
-  /**
-   * Reactivate a membership.
-   */
   async activateMembership(
+    organizationId: string,
+    groupId: string,
     membershipId: string,
   ): Promise<void> {
     return this.updateMembership(
+      organizationId,
+      groupId,
       membershipId,
       {
         active: true,

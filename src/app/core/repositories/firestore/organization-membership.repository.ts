@@ -24,9 +24,7 @@ export abstract class OrganizationMembershipRepository {
 
   abstract updateMembership(
     membershipId: string,
-    changes: Partial<
-      Omit<OrganizationMembership, 'id'>
-    >,
+    changes: Partial<Omit<OrganizationMembership, 'id'>>,
   ): Promise<void>;
 
   abstract deleteMembership(

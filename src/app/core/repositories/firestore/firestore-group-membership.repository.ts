@@ -1,37 +1,19 @@
+import { Injectable, inject } from '@angular/core';
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
+  Firestore,
   getDoc,
   getDocs,
   query,
-  setDoc,
   updateDoc,
   where,
 } from 'firebase/firestore';
 
-import { Injectable, inject } from '@angular/core';
-import { Firestore } from 'firebase/firestore';
-
-import {
-  GroupMembership,
-} from '../../models/group-membership.model';
-
-import {
-  GroupRole,
-} from '../../models/group-role.model';
-
-import {
-  GroupRolePermission,
-} from '../../models/group-role-permission.model';
-
-import {
-  GroupRoleAssignment,
-} from '../../models/group-role-assignment.model';
-
-import {
-  GroupMembershipRepository,
-} from './group-membership.repository';
+import { GroupMembership } from '../../models/group-membership.model';
+import { GroupMembershipRepository } from '../group-membership.repository';
 
 @Injectable({
   providedIn: 'root',
@@ -41,66 +23,58 @@ export class FirestoreGroupMembershipRepository
 {
   private readonly firestore = inject(Firestore);
 
-  private readonly membershipCollection =
-    'groupMemberships';
-
-  private readonly assignmentCollection =
-    'groupRoleAssignments';
-
-  private readonly roleCollection =
-    'groupRoles';
-
-  private readonly permissionCollection =
-    'groupRolePermissions';
+  /**
+   * Organization-scoped group membership collection.
+   *
+   * /organizations/{organizationId}/groups/{groupId}/members
+   */
+  private membershipsCollection(
+    organizationId: string,
+    groupId: string,
+  ) {
+    return collection(
+      this.firestore,
+      'organizations',
+      organizationId,
+      'groups',
+      groupId,
+      'members',
+    );
+  }
 
   /**
-   * Deterministic GroupMembership document ID.
+   * Organization-scoped group membership document.
    *
-   * Format:
-   *   {userId}_{groupId}
+   * /organizations/{organizationId}/groups/{groupId}/members/{membershipId}
    */
-  private membershipId(
-    userId: string,
+  private membershipDocument(
+    organizationId: string,
     groupId: string,
-  ): string {
-    return `${userId}_${groupId}`;
-  }
-
-  private membershipCollectionRef() {
-    return collection(
+    membershipId: string,
+  ) {
+    return doc(
       this.firestore,
-      this.membershipCollection,
+      'organizations',
+      organizationId,
+      'groups',
+      groupId,
+      'members',
+      membershipId,
     );
   }
 
-  private assignmentCollectionRef() {
-    return collection(
-      this.firestore,
-      this.assignmentCollection,
-    );
-  }
-
-  private roleCollectionRef() {
-    return collection(
-      this.firestore,
-      this.roleCollection,
-    );
-  }
-
-  private permissionCollectionRef() {
-    return collection(
-      this.firestore,
-      this.permissionCollection,
-    );
-  }
-
+  /**
+   * Get one membership by ID.
+   */
   async getMembership(
+    organizationId: string,
+    groupId: string,
     membershipId: string,
   ): Promise<GroupMembership | null> {
     const snapshot = await getDoc(
-      doc(
-        this.firestore,
-        this.membershipCollection,
+      this.membershipDocument(
+        organizationId,
+        groupId,
         membershipId,
       ),
     );
@@ -115,152 +89,188 @@ export class FirestoreGroupMembershipRepository
     } as GroupMembership;
   }
 
+  /**
+   * Get all memberships for a specific group.
+   *
+   * This operation is intended for organization/group
+   * administrators. Normal members should use the
+   * user-specific methods instead.
+   */
   async getMembershipsForGroup(
+    organizationId: string,
     groupId: string,
   ): Promise<GroupMembership[]> {
     const snapshot = await getDocs(
-      query(
-        this.membershipCollectionRef(),
-        where('groupId', '==', groupId),
+      this.membershipsCollection(
+        organizationId,
+        groupId,
       ),
     );
 
-    return snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    })) as GroupMembership[];
+    return snapshot.docs.map(
+      (item) =>
+        ({
+          id: item.id,
+          ...item.data(),
+        }) as GroupMembership,
+    );
   }
 
+  /**
+   * Get the active memberships for a user within
+   * an organization.
+   *
+   * Firestore does not allow us to perform an
+   * unrestricted cross-group membership query here.
+   *
+   * Therefore:
+   *
+   * 1. Load only active groups in the organization.
+   * 2. Query each group's members collection.
+   * 3. Restrict membership records to the requested user.
+   * 4. Restrict membership records to active memberships.
+   */
   async getMembershipsForUser(
+    organizationId: string,
     userId: string,
   ): Promise<GroupMembership[]> {
+    const groupsSnapshot = await getDocs(
+      query(
+        collection(
+          this.firestore,
+          'organizations',
+          organizationId,
+          'groups',
+        ),
+        where('active', '==', true),
+      ),
+    );
+
+    const memberships: GroupMembership[] = [];
+
+    for (const group of groupsSnapshot.docs) {
+      const membersSnapshot = await getDocs(
+        query(
+          this.membershipsCollection(
+            organizationId,
+            group.id,
+          ),
+          where('userId', '==', userId),
+          where('active', '==', true),
+        ),
+      );
+
+      memberships.push(
+        ...membersSnapshot.docs.map(
+          (item) =>
+            ({
+              id: item.id,
+              ...item.data(),
+            }) as GroupMembership,
+        ),
+      );
+    }
+
+    return memberships;
+  }
+
+  /**
+   * Get a user's membership in a specific group.
+   */
+  async getMembershipForUserAndGroup(
+    organizationId: string,
+    groupId: string,
+    userId: string,
+  ): Promise<GroupMembership | null> {
     const snapshot = await getDocs(
       query(
-        this.membershipCollectionRef(),
+        this.membershipsCollection(
+          organizationId,
+          groupId,
+        ),
         where('userId', '==', userId),
       ),
     );
 
-    return snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    })) as GroupMembership[];
-  }
+    const item = snapshot.docs[0];
 
-  async getMembershipForUserAndGroup(
-    userId: string,
-    groupId: string,
-  ): Promise<GroupMembership | null> {
-    const membershipId = this.membershipId(
-      userId,
-      groupId,
-    );
-
-    return this.getMembership(membershipId);
-  }
-
-  async createMembership(
-    membership: Omit<GroupMembership, 'id'>,
-  ): Promise<string> {
-    const id = this.membershipId(
-      membership.userId,
-      membership.groupId,
-    );
-
-    const reference = doc(
-      this.firestore,
-      this.membershipCollection,
-      id,
-    );
-
-    await setDoc(reference, membership);
-
-    return id;
-  }
-
-  async updateMembership(
-    membershipId: string,
-    changes: Partial<Omit<GroupMembership, 'id'>>,
-  ): Promise<void> {
-    const reference = doc(
-      this.firestore,
-      this.membershipCollection,
-      membershipId,
-    );
-
-    await updateDoc(reference, changes);
-  }
-
-  async deleteMembership(
-    membershipId: string,
-  ): Promise<void> {
-    const reference = doc(
-      this.firestore,
-      this.membershipCollection,
-      membershipId,
-    );
-
-    await deleteDoc(reference);
-  }
-
-  async getRoleAssignmentsForMembership(
-    groupMembershipId: string,
-  ): Promise<GroupRoleAssignment[]> {
-    const snapshot = await getDocs(
-      query(
-        this.assignmentCollectionRef(),
-        where(
-          'groupMembershipId',
-          '==',
-          groupMembershipId,
-        ),
-      ),
-    );
-
-    return snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    })) as GroupRoleAssignment[];
-  }
-
-  async getGroupRole(
-    groupRoleId: string,
-  ): Promise<GroupRole | null> {
-    const snapshot = await getDoc(
-      doc(
-        this.firestore,
-        this.roleCollection,
-        groupRoleId,
-      ),
-    );
-
-    if (!snapshot.exists()) {
+    if (!item) {
       return null;
     }
 
     return {
-      id: snapshot.id,
-      ...snapshot.data(),
-    } as GroupRole;
-  }
-
-  async getGroupRolePermissions(
-    groupRoleId: string,
-  ): Promise<GroupRolePermission[]> {
-    const snapshot = await getDocs(
-      query(
-        this.permissionCollectionRef(),
-        where(
-          'groupRoleId',
-          '==',
-          groupRoleId,
-        ),
-      ),
-    );
-
-    return snapshot.docs.map((item) => ({
       id: item.id,
       ...item.data(),
-    })) as GroupRolePermission[];
+    } as GroupMembership;
+  }
+
+  /**
+   * Create a membership inside the specified group.
+   *
+   * groupId is deliberately taken from the method
+   * parameter rather than trusting the caller's object.
+   */
+  async createMembership(
+    organizationId: string,
+    groupId: string,
+    membership: Omit<GroupMembership, 'id' | 'groupId'>,
+  ): Promise<string> {
+    const reference = await addDoc(
+      this.membershipsCollection(
+        organizationId,
+        groupId,
+      ),
+      {
+        ...membership,
+        groupId,
+      },
+    );
+
+    return reference.id;
+  }
+
+  /**
+   * Update mutable membership properties.
+   *
+   * groupId and userId are intentionally excluded
+   * because the Firestore rules treat the group and
+   * user identity as immutable membership ownership.
+   */
+  async updateMembership(
+    organizationId: string,
+    groupId: string,
+    membershipId: string,
+    changes: Partial<
+      Omit<
+        GroupMembership,
+        'id' | 'groupId' | 'userId'
+      >
+    >,
+  ): Promise<void> {
+    await updateDoc(
+      this.membershipDocument(
+        organizationId,
+        groupId,
+        membershipId,
+      ),
+      changes,
+    );
+  }
+
+  /**
+   * Delete a membership from the specified group.
+   */
+  async deleteMembership(
+    organizationId: string,
+    groupId: string,
+    membershipId: string,
+  ): Promise<void> {
+    await deleteDoc(
+      this.membershipDocument(
+        organizationId,
+        groupId,
+        membershipId,
+      ),
+    );
   }
 }

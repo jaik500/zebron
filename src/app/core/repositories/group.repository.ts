@@ -2,6 +2,7 @@ import { Group } from '../models/group.model';
 
 export interface GroupRepository {
   getGroup(
+    organizationId: string,
     groupId: string,
   ): Promise<Group | null>;
 
@@ -19,11 +20,13 @@ export interface GroupRepository {
   ): Promise<string>;
 
   updateGroup(
+    organizationId: string,
     groupId: string,
-    changes: Partial<Omit<Group, 'id'>>,
+    changes: Partial<Omit<Group, 'id' | 'organizationId'>>,
   ): Promise<void>;
 
   deleteGroup(
+    organizationId: string,
     groupId: string,
   ): Promise<void>;
 }
