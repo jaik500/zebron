@@ -57,6 +57,7 @@
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.17.19",
+    "firebase-functions-test": "^3.4.1",
     "typescript": "~5.9.2",
     "vitest": "^4.1.11"
   }

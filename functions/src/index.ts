@@ -12,6 +12,14 @@ import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {initializeApp} from "firebase-admin/app";
 import {randomUUID} from "node:crypto";
 import Stripe from "stripe";
+import {
+  provisionOrganization as provisionOrganizationFunction,
+} from "./organization-provisioning";
+import {
+  createOrganizationInvitation,
+  getOrganizationInvitations,
+  completeOrganizationInviteMembersStep,
+} from "./organization-invitations";
 
 
 initializeApp();
@@ -60,6 +68,12 @@ const PLATFORM_ROLES: readonly PlatformRole[] = [
   "platform-auditor",
 ];
 
+/**
+ * Determines whether a value is a recognized platform role.
+ *
+ * @param value The role value to validate.
+ * @returns True when the value is a supported platform role.
+ */
 function isPlatformRole(
   value: string | undefined,
 ): value is PlatformRole {
@@ -126,19 +140,19 @@ async function requireAdmin(
  * existing users whose platformRole has not yet been
  * migrated.
  */
-const isPlatformAdmin =
+  const isPlatformAdmin =
   profileData?.["platformRole"] === "platform-admin" ||
   (
     profileData?.["platformRole"] === undefined &&
     profileData?.["role"] === "admin"
   );
 
-if (!isPlatformAdmin) {
-  throw new HttpsError(
-    "permission-denied",
-    "Only platform administrators can send email.",
-  );
-}
+  if (!isPlatformAdmin) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only platform administrators can send email.",
+    );
+  }
 
   return {
     uid,
@@ -175,9 +189,9 @@ export const createUser = onCall(
       throw new HttpsError("permission-denied", "Administrator profile could not be found.");
     }
 
-const adminData = adminProfile.data();
+    const adminData = adminProfile.data();
 
-/**
+    /**
  * Authorize the caller using the canonical platform role.
  *
  * Legacy compatibility:
@@ -186,26 +200,26 @@ const adminData = adminProfile.data();
  * This allows existing administrator accounts to continue
  * working during the platformRole migration.
  */
-const callerPlatformRole = adminData?.["platformRole"];
+    const callerPlatformRole = adminData?.["platformRole"];
 
-const callerIsPlatformAdmin =
+    const callerIsPlatformAdmin =
   callerPlatformRole === "platform-admin" ||
   (
     callerPlatformRole === undefined &&
     adminData?.["role"] === "admin"
   );
 
-if (!callerIsPlatformAdmin) {
-  throw new HttpsError(
-    "permission-denied",
-    "Only platform administrators can create users.",
-  );
-}
+    if (!callerIsPlatformAdmin) {
+      throw new HttpsError(
+        "permission-denied",
+        "Only platform administrators can create users.",
+      );
+    }
 
     /**
      * Extract submitted user information.
      */
-  const data = request.data as {
+    const data = request.data as {
   email?: unknown;
   password?: unknown;
   displayName?: unknown;
@@ -213,7 +227,7 @@ if (!callerIsPlatformAdmin) {
   platformRole?: unknown;
 };
 
-       const email = clean(data.email);
+    const email = clean(data.email);
 
     const password =
       typeof data.password === "string"
@@ -2307,3 +2321,943 @@ export {
 export {
   refreshCommunityTrendingScores,
 } from "./community-ranking-scheduler";
+
+/**
+ * Create a persistent audit record inside the current Firestore transaction.
+ *
+ * Audit records are written by trusted backend functions rather than
+ * directly by the Angular client.
+ */
+function createAuditRecord(
+  transaction: FirebaseFirestore.Transaction,
+  input: {
+    action: string;
+    entityType: string;
+    entityId: string;
+    actorId: string;
+    actorEmail?: string;
+    metadata?: Record<string, unknown>;
+    reason?: string;
+  },
+): void {
+  const auditRef = db
+    .collection("auditLogs")
+    .doc();
+
+  transaction.set(
+    auditRef,
+    {
+      action: input.action,
+      entityType: input.entityType,
+      entityId: input.entityId,
+
+      actorId: input.actorId,
+      actorName: null,
+      actorEmail: input.actorEmail ?? null,
+      actorType: "user",
+
+      outcome: "success",
+      source: "backend",
+
+      reason:
+        input.reason ??
+        null,
+
+      metadata:
+        input.metadata ??
+        {},
+
+      before: null,
+      after: null,
+
+      createdAt:
+        FieldValue.serverTimestamp(),
+    },
+  );
+}
+
+export const provisionOrganization =
+  provisionOrganizationFunction;
+
+/**
+ * Update the organization profile during tenant onboarding.
+ *
+ * This is intentionally implemented as a trusted callable instead of
+ * allowing the Angular client to write protected organization fields.
+ *
+ * Allowed organization profile fields:
+ *   - name
+ *   - companyNumber
+ *   - description
+ *   - website
+ *   - phone
+ *   - email
+ *   - slug
+ *   - locationId
+ *
+ * Protected lifecycle/security fields such as status, active, verified,
+ * ownerUserId, approvedAt, activatedAt, createdAt, and updatedAt are
+ * controlled by the backend.
+ */
+export const updateOrganizationOnboardingProfile = onCall(
+  {
+    region: "us-central1",
+  },
+  async (request) => {
+    const db = getFirestore();
+
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "You must be signed in to update the organization profile.",
+      );
+    }
+
+    const callerUid = request.auth.uid;
+    const callerEmail =
+      typeof request.auth.token.email === "string" ?
+        request.auth.token.email :
+        null;
+
+    const data = request.data as {
+      organizationId?: unknown;
+      profile?: {
+        name?: unknown;
+        companyNumber?: unknown;
+        description?: unknown;
+        website?: unknown;
+        phone?: unknown;
+        email?: unknown;
+        slug?: unknown;
+        locationId?: unknown;
+      };
+    } | undefined;
+
+    const organizationId = clean(data?.organizationId);
+
+    if (!organizationId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "organizationId is required.",
+      );
+    }
+
+    if (!data?.profile || typeof data.profile !== "object") {
+      throw new HttpsError(
+        "invalid-argument",
+        "An organization profile is required.",
+      );
+    }
+
+    const profile = data.profile;
+
+    const organizationRef = db
+      .collection("organizations")
+      .doc(organizationId);
+
+    const membershipRef = db
+      .collection("organizationMemberships")
+      .doc(`${callerUid}_${organizationId}`);
+
+    const onboardingRef = db
+      .collection("organizationOnboarding")
+      .doc(organizationId);
+
+    const userRef = db
+      .collection("users")
+      .doc(callerUid);
+
+    const result = await db.runTransaction(async (transaction) => {
+      const organizationSnapshot =
+        await transaction.get(organizationRef);
+
+      const membershipSnapshot =
+        await transaction.get(membershipRef);
+
+      const onboardingSnapshot =
+        await transaction.get(onboardingRef);
+
+      const userSnapshot =
+        await transaction.get(userRef);
+
+      if (!organizationSnapshot.exists) {
+        throw new HttpsError(
+          "not-found",
+          "The organization could not be found.",
+        );
+      }
+
+      if (!onboardingSnapshot.exists) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Organization onboarding has not been initialized.",
+        );
+      }
+
+      const organization =
+        organizationSnapshot.data() ?? {};
+
+      const onboarding =
+        onboardingSnapshot.data() ?? {};
+
+      const membership =
+        membershipSnapshot.exists ?
+          membershipSnapshot.data() ?? {} :
+          {};
+
+      const user =
+        userSnapshot.exists ?
+          userSnapshot.data() ?? {} :
+          {};
+
+      const isPlatformAdmin =
+        user["platformRole"] === "platform-admin" ||
+        (
+          user["platformRole"] === undefined &&
+          user["role"] === "admin"
+        );
+
+      const membershipRole =
+        membership["role"];
+
+      const isOrganizationAdmin =
+        membershipSnapshot.exists &&
+        membership["active"] === true &&
+        (
+          membershipRole === "org_owner" ||
+          membershipRole === "org_admin"
+        );
+
+      if (!isPlatformAdmin && !isOrganizationAdmin) {
+        throw new HttpsError(
+          "permission-denied",
+          "Only the organization owner, organization administrator, or platform administrator can update the organization profile.",
+        );
+      }
+
+      if (organization["status"] !== "onboarding") {
+        throw new HttpsError(
+          "failed-precondition",
+          `The organization is not currently in onboarding. Current status: ${String(organization["status"] ?? "unknown")}.`,
+        );
+      }
+
+      const name = clean(profile.name);
+      const companyNumber =
+        clean(profile.companyNumber);
+      const description =
+        clean(profile.description);
+      const website =
+        clean(profile.website);
+      const phone =
+        clean(profile.phone);
+      const email =
+        clean(profile.email)?.toLowerCase();
+      const slug =
+        clean(profile.slug)?.toLowerCase();
+      const locationId =
+        clean(profile.locationId);
+
+      if (
+        name !== undefined &&
+        (name.length < 2 || name.length > 200)
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Organization name must be between 2 and 200 characters.",
+        );
+      }
+
+      if (
+        website !== undefined &&
+        website.length > 500
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Website URL is too long.",
+        );
+      }
+
+      if (
+        email !== undefined &&
+        (
+          email.length > 254 ||
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "A valid organization email address is required.",
+        );
+      }
+
+      if (
+        slug !== undefined &&
+        (
+          slug.length < 2 ||
+          slug.length > 100 ||
+          !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Organization slug must contain only lowercase letters, numbers, and single hyphens.",
+        );
+      }
+
+      const updates: Record<string, unknown> = {
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+
+      if (name !== undefined) {
+        updates["name"] = name;
+        updates["normalizedName"] =
+          name.toLowerCase();
+      }
+
+      if (companyNumber !== undefined) {
+        updates["companyNumber"] =
+          companyNumber;
+      }
+
+      if (description !== undefined) {
+        updates["description"] =
+          description;
+      }
+
+      if (website !== undefined) {
+        updates["website"] =
+          website;
+      }
+
+      if (phone !== undefined) {
+        updates["phone"] =
+          phone;
+      }
+
+      if (email !== undefined) {
+        updates["email"] =
+          email;
+      }
+
+      if (slug !== undefined) {
+        updates["slug"] =
+          slug;
+      }
+
+      if (locationId !== undefined) {
+        updates["locationId"] =
+          locationId;
+      }
+
+      const currentName =
+        typeof organization["name"] === "string" ?
+          organization["name"] :
+          undefined;
+
+      if (name === undefined && !currentName) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Organization name is required.",
+        );
+      }
+
+      const currentCompletedSteps =
+        Array.isArray(
+          onboarding["completedSteps"],
+        ) ?
+          onboarding["completedSteps"].filter(
+            (step): step is string =>
+              typeof step === "string",
+          ) :
+          [];
+
+      const completedSteps =
+        Array.from(
+          new Set([
+            ...currentCompletedSteps,
+            "organization_profile",
+          ]),
+        );
+
+      const currentStep =
+        typeof onboarding["currentStep"] === "string" ?
+          onboarding["currentStep"] :
+          "organization_profile";
+
+      const shouldAdvance =
+        currentStep === "organization_profile";
+
+      const nextStep =
+        shouldAdvance ?
+          "owner_profile" :
+          currentStep;
+
+      const updatedFields =
+        Object.keys(updates).filter(
+          (field) => field !== "updatedAt",
+        );
+
+      const onboardingUpdates:
+        Record<string, unknown> = {
+          completedSteps,
+          updatedAt:
+            FieldValue.serverTimestamp(),
+        };
+
+      if (shouldAdvance) {
+        onboardingUpdates["currentStep"] =
+          "owner_profile";
+      }
+
+      transaction.update(
+        organizationRef,
+        updates,
+      );
+
+      transaction.update(
+        onboardingRef,
+        onboardingUpdates,
+      );
+
+      const auditRef =
+        db.collection("auditLogs").doc();
+
+      const actorEmail =
+        typeof user["email"] === "string" ?
+          user["email"] :
+          callerEmail;
+
+      transaction.set(auditRef, {
+        action:
+          "ORGANIZATION_PROFILE_UPDATED",
+        entityType:
+          "organization",
+        entityId:
+          organizationId,
+        actorId:
+          callerUid,
+        actorName:
+          null,
+        actorEmail,
+        actorType:
+          "user",
+        outcome:
+          "success",
+        source:
+          "backend",
+        reason:
+          "Organization onboarding profile updated.",
+
+        metadata: {
+          organizationId,
+          organizationStatus:
+            "onboarding",
+          completedStep:
+            "organization_profile",
+          nextStep,
+          updatedFields,
+        },
+
+        before: {
+          name:
+            organization["name"] ?? null,
+          companyNumber:
+            organization["companyNumber"] ?? null,
+          description:
+            organization["description"] ?? null,
+          website:
+            organization["website"] ?? null,
+          phone:
+            organization["phone"] ?? null,
+          email:
+            organization["email"] ?? null,
+          slug:
+            organization["slug"] ?? null,
+          locationId:
+            organization["locationId"] ?? null,
+        },
+
+        after: {
+          name:
+            updates["name"] ??
+            organization["name"] ??
+            null,
+
+          companyNumber:
+            updates["companyNumber"] ??
+            organization["companyNumber"] ??
+            null,
+
+          description:
+            updates["description"] ??
+            organization["description"] ??
+            null,
+
+          website:
+            updates["website"] ??
+            organization["website"] ??
+            null,
+
+          phone:
+            updates["phone"] ??
+            organization["phone"] ??
+            null,
+
+          email:
+            updates["email"] ??
+            organization["email"] ??
+            null,
+
+          slug:
+            updates["slug"] ??
+            organization["slug"] ??
+            null,
+
+          locationId:
+            updates["locationId"] ??
+            organization["locationId"] ??
+            null,
+        },
+
+        createdAt:
+          FieldValue.serverTimestamp(),
+      });
+
+      return {
+        organizationId,
+        currentStep: nextStep,
+        completedSteps,
+      };
+    });
+
+    logger.info(
+      "Organization onboarding profile updated.",
+      {
+        organizationId:
+          result.organizationId,
+        actorId:
+          callerUid,
+        nextStep:
+          result.currentStep,
+      },
+    );
+
+    return {
+      success: true,
+      ...result,
+    };
+  },
+);
+
+/**
+ * Update the organization owner's profile during onboarding.
+ *
+ * The owner profile is intentionally updated through a trusted
+ * backend function rather than directly from the browser.
+ *
+ * Editable:
+ * - firstName
+ * - lastName
+ * - preferredName
+ * - phone
+ *
+ * Email is read from the authenticated Firebase account and is
+ * therefore not accepted from the client.
+ *
+ * Successful completion advances:
+ *
+ * owner_profile -> invite_members
+ */
+export const updateOrganizationOnboardingOwnerProfile = onCall(
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "You must be signed in to update the owner profile.",
+      );
+    }
+
+    const callerUid = request.auth.uid;
+
+    const data =
+      request.data as {
+        organizationId?: unknown;
+        profile?: {
+          firstName?: unknown;
+          lastName?: unknown;
+          preferredName?: unknown;
+          phone?: unknown;
+        };
+      };
+
+    const organizationId =
+      typeof data.organizationId === "string" ?
+        data.organizationId.trim() :
+        "";
+
+    if (!organizationId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Organization ID is required.",
+      );
+    }
+
+    const profile = data.profile;
+
+    if (!profile || typeof profile !== "object") {
+      throw new HttpsError(
+        "invalid-argument",
+        "Owner profile is required.",
+      );
+    }
+
+    const cleanString = (
+      value: unknown,
+    ): string | undefined => {
+      if (typeof value !== "string") {
+        return undefined;
+      }
+
+      const normalized = value.trim();
+
+      return normalized || undefined;
+    };
+
+    const firstName =
+      cleanString(profile.firstName);
+
+    const lastName =
+      cleanString(profile.lastName);
+
+    const preferredName =
+      cleanString(profile.preferredName);
+
+    const phone =
+      cleanString(profile.phone);
+
+    if (!firstName) {
+      throw new HttpsError(
+        "invalid-argument",
+        "First name is required.",
+      );
+    }
+
+    if (!lastName) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Last name is required.",
+      );
+    }
+
+    if (firstName.length > 100) {
+      throw new HttpsError(
+        "invalid-argument",
+        "First name is too long.",
+      );
+    }
+
+    if (lastName.length > 100) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Last name is too long.",
+      );
+    }
+
+    if (
+      preferredName &&
+      preferredName.length > 100
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Preferred name is too long.",
+      );
+    }
+
+    if (
+      phone &&
+      phone.length > 50
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Phone number is too long.",
+      );
+    }
+
+    const userRef = db.doc(
+      `users/${callerUid}`,
+    );
+
+    const organizationRef = db.doc(
+      `organizations/${organizationId}`,
+    );
+
+    const onboardingRef = db.doc(
+      `organizationOnboarding/${organizationId}`,
+    );
+
+    const membershipRef = db.doc(
+      `organizationMemberships/${callerUid}_${organizationId}`,
+    );
+
+    const result =
+      await db.runTransaction(
+        async (transaction) => {
+          const [
+            userSnapshot,
+            organizationSnapshot,
+            onboardingSnapshot,
+            membershipSnapshot,
+          ] = await Promise.all([
+            transaction.get(userRef),
+            transaction.get(organizationRef),
+            transaction.get(onboardingRef),
+            transaction.get(membershipRef),
+          ]);
+
+          if (!userSnapshot.exists) {
+            throw new HttpsError(
+              "not-found",
+              "Your user profile could not be found.",
+            );
+          }
+
+          if (!organizationSnapshot.exists) {
+            throw new HttpsError(
+              "not-found",
+              "The organization could not be found.",
+            );
+          }
+
+          if (!onboardingSnapshot.exists) {
+            throw new HttpsError(
+              "not-found",
+              "The organization onboarding record could not be found.",
+            );
+          }
+
+          if (!membershipSnapshot.exists) {
+            throw new HttpsError(
+              "permission-denied",
+              "You are not a member of this organization.",
+            );
+          }
+
+          const user =
+            userSnapshot.data() ?? {};
+
+          const organization =
+            organizationSnapshot.data() ?? {};
+
+          const onboarding =
+            onboardingSnapshot.data() ?? {};
+
+          const membership =
+            membershipSnapshot.data() ?? {};
+
+          const isPlatformAdmin =
+            user["platformRole"] ===
+              "platform-admin" ||
+            (
+              user["platformRole"] === undefined &&
+              user["role"] === "admin"
+            );
+
+          const membershipActive =
+            membership["active"] === true;
+
+          const membershipRole =
+            membership["role"];
+
+          const isOrganizationOwner =
+            membershipActive &&
+            membershipRole === "org_owner" &&
+            onboarding["ownerUserId"] === callerUid;
+
+          if (
+            !isPlatformAdmin &&
+            !isOrganizationOwner
+          ) {
+            throw new HttpsError(
+              "permission-denied",
+              "Only the organization owner can update the owner profile.",
+            );
+          }
+
+          if (
+            organization["status"] !==
+            "onboarding"
+          ) {
+            throw new HttpsError(
+              "failed-precondition",
+              "The organization is not currently in onboarding.",
+            );
+          }
+
+          if (
+            onboarding["status"] !==
+            "in_progress"
+          ) {
+            throw new HttpsError(
+              "failed-precondition",
+              "The organization onboarding process is not active.",
+            );
+          }
+
+          if (
+            onboarding["currentStep"] !==
+            "owner_profile"
+          ) {
+            throw new HttpsError(
+              "failed-precondition",
+              "The owner profile is not the current onboarding step.",
+            );
+          }
+
+          const completedSteps =
+            Array.isArray(
+              onboarding["completedSteps"],
+            ) ?
+              onboarding[
+                "completedSteps"
+              ].filter(
+                (
+                  step,
+                ): step is string =>
+                  typeof step === "string",
+              ) :
+              [];
+
+          const nextCompletedSteps =
+            Array.from(
+              new Set([
+                ...completedSteps,
+                "owner_profile",
+              ]),
+            );
+
+          const now =
+            FieldValue.serverTimestamp();
+
+          const existingPreferredName =
+            user["preferredName"];
+
+          const displayName =
+            [
+              firstName,
+              lastName,
+            ]
+              .filter(Boolean)
+              .join(" ");
+
+          transaction.update(
+            userRef,
+            {
+              firstName,
+              lastName,
+              preferredName:
+                preferredName ??
+                existingPreferredName ??
+                null,
+              phone: phone ?? null,
+              displayName,
+              updatedAt: now,
+            },
+          );
+
+          transaction.update(
+            onboardingRef,
+            {
+              completedSteps:
+                nextCompletedSteps,
+              currentStep:
+                "invite_members",
+              status:
+                "in_progress",
+              completedAt: null,
+              updatedAt: now,
+            },
+          );
+
+          createAuditRecord(
+            transaction,
+            {
+              action:
+                "ORGANIZATION_OWNER_PROFILE_UPDATED",
+              entityType:
+                "organizationOnboarding",
+              entityId:
+                organizationId,
+              actorId:
+                callerUid,
+              actorEmail:
+                typeof request.auth?.token?.email ===
+                "string" ?
+                  request.auth.token.email :
+                  undefined,
+              metadata: {
+                organizationId,
+                ownerUserId:
+                  callerUid,
+                organizationName:
+                  organization["name"] ?? null,
+                completedStep:
+                  "owner_profile",
+                nextStep:
+                  "invite_members",
+              },
+            },
+          );
+
+          return {
+            organizationId,
+            onboardingId:
+              onboarding["id"] ??
+              organizationId,
+            currentStep:
+              "invite_members",
+            completedSteps:
+              nextCompletedSteps,
+          };
+        },
+      );
+
+    logger.info(
+      "Organization owner profile updated.",
+      {
+        organizationId,
+        actorId: callerUid,
+        nextStep:
+          result.currentStep,
+      },
+    );
+
+    return {
+      success: true,
+      ...result,
+    };
+  },
+);
+
+export {
+  createOrganizationInvitation,
+  getOrganizationInvitations,
+  completeOrganizationInviteMembersStep,
+};
+
+export {
+  acceptOrganizationInvitation,
+} from "./organization-invitation-acceptance";
+
+export {
+  cancelOrganizationInvitation,
+} from "./organization-invitation-cancellation";
+
+export {
+  expireOrganizationInvitations,
+  expirePendingOrganizationInvitations,
+} from "./organization-invitation-expiration";
+
+export {
+  resendOrganizationInvitation,
+} from "./organization-invitation-resend";

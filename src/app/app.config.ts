@@ -61,6 +61,14 @@ import {
   FirestoreOrganizationApplicationRepository,
 } from './core/repositories/firestore-organization-application.repository';
 
+import {
+  ORGANIZATION_APPLICATION_REQUEST_REPOSITORY,
+} from './core/repositories/organization-application-request.repository';
+
+import {
+  FirestoreOrganizationApplicationRequestRepository,
+} from './core/repositories/firestore-organization-application-request.repository';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -136,6 +144,10 @@ export const appConfig: ApplicationConfig = {
 {
   provide: ORGANIZATION_APPLICATION_REPOSITORY,
   useClass: FirestoreOrganizationApplicationRepository,
+},
+{
+  provide: ORGANIZATION_APPLICATION_REQUEST_REPOSITORY,
+  useClass: FirestoreOrganizationApplicationRequestRepository,
 },
 
     // ─────────────────────────────────────────────

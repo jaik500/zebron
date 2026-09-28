@@ -27,21 +27,12 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
     <div class="min-h-screen bg-gray-50 pt-16">
 
       <!-- HEADER -->
-      <header class="border-b border-white/10 bg-[#032D42]">
-        <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <header class="border-b border-white/10 bg-[#2a835f]">
+        <div class="mx-auto max-w-7xl px-4 py-1 sm:px-6 lg:px-8">
 
-          <p class="text-sm font-medium text-white/60">
-            Partner Portal
-          </p>
-
-          <h1 class="mt-1 text-3xl font-bold text-white">
+          <h1 class="text-2xl font-bold text-white/70">
             Select an Organization
           </h1>
-
-          <p class="mt-2 max-w-2xl text-sm text-white/70">
-            Choose the organization you want to manage or access.
-          </p>
-
         </div>
       </header>
 

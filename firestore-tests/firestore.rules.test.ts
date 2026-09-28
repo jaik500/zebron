@@ -1429,5 +1429,41 @@ it('denies an organization member from querying group roles', async () => {
 
   await assertFails(getDocs(rolesQuery));
 });
+
+it('denies client reads of organization invitations', async () => {
+  const user = testEnv.authenticatedContext('user-1');
+
+  await assertFails(
+    getDoc(
+      doc(
+        user.firestore(),
+        'organizationInvitations',
+        'invitation-1',
+      ),
+    ),
+  );
+});
+
+it('denies client creation of organization invitations', async () => {
+  const user = testEnv.authenticatedContext('user-1');
+
+  await assertFails(
+    setDoc(
+      doc(
+        user.firestore(),
+        'organizationInvitations',
+        'invitation-1',
+      ),
+      {
+        organizationId: 'org-1',
+        email: 'test@example.com',
+        normalizedEmail: 'test@example.com',
+        role: 'org_member',
+        invitedByUserId: 'user-1',
+        status: 'pending',
+      },
+    ),
+  );
+});
     });
 });

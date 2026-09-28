@@ -25,7 +25,6 @@ import { LoggerService } from './logger.service';
   providedIn: 'root',
 })
 export class AuthService {
-
   // ============================================================
   // SERVICES
   // ============================================================
@@ -47,7 +46,6 @@ export class AuthService {
   private readonly logger =
     inject(LoggerService);
 
-
   // ============================================================
   // AUTHENTICATION STATE
   // ============================================================
@@ -55,26 +53,25 @@ export class AuthService {
   /**
    * Current Firebase Authentication user.
    *
-   * This represents the authentication identity and should
-   * be used for authentication checks.
+   * Firebase Authentication is the authoritative source for
+   * authentication identity.
    */
   private readonly authenticatedUser =
     signal<FirebaseUser | null>(null);
-
 
   /**
    * Current Zebron Firestore user profile.
    *
    * This contains application-specific information such as:
    *
-   * - role
+   * - platformRole
+   * - legacy role
    * - display name
    * - email
    * - profile information
    */
   private readonly currentUser =
     signal<User | null>(null);
-
 
   /**
    * Indicates whether authentication/profile state is
@@ -83,13 +80,11 @@ export class AuthService {
   private readonly loading =
     signal(true);
 
-
   // ============================================================
   // INITIALIZATION
   // ============================================================
 
   constructor() {
-
     /**
      * Listen for Firebase authentication changes.
      *
@@ -99,7 +94,6 @@ export class AuthService {
     onAuthStateChanged(
       firebaseAuth,
       async (firebaseUser) => {
-
         // --------------------------------------------------------
         // Update Firebase authentication state.
         // --------------------------------------------------------
@@ -108,20 +102,15 @@ export class AuthService {
           firebaseUser,
         );
 
-
         // --------------------------------------------------------
         // No authenticated Firebase user.
         // --------------------------------------------------------
 
         if (!firebaseUser) {
-
           this.currentUser.set(null);
-
           this.loading.set(false);
-
           return;
         }
-
 
         // --------------------------------------------------------
         // Load corresponding Zebron Firestore profile.
@@ -134,7 +123,6 @@ export class AuthService {
     );
   }
 
-
   // ============================================================
   // USER PROFILE LOADING
   // ============================================================
@@ -145,11 +133,9 @@ export class AuthService {
   private async loadUserProfile(
     firebaseUser: FirebaseUser,
   ): Promise<void> {
-
     this.loading.set(true);
 
     try {
-
       const userRef =
         doc(
           firestore,
@@ -157,17 +143,14 @@ export class AuthService {
           firebaseUser.uid,
         );
 
-
       const snapshot =
         await getDoc(userRef);
-
 
       // --------------------------------------------------------
       // Profile does not exist.
       // --------------------------------------------------------
 
       if (!snapshot.exists()) {
-
         this.logger.warn(
           'AuthService',
           'No Firestore user profile found for authenticated user.',
@@ -177,10 +160,8 @@ export class AuthService {
         );
 
         this.currentUser.set(null);
-
         return;
       }
-
 
       // --------------------------------------------------------
       // Build application user.
@@ -191,20 +172,18 @@ export class AuthService {
         ...snapshot.data(),
       } as User;
 
-
       this.logger.debug(
         'AuthService',
         'Loaded Firestore user profile.',
         {
           userId: firebaseUser.uid,
+          platformRole: user.platformRole,
+          legacyRole: user.role,
         },
       );
 
-
       this.currentUser.set(user);
-
     } catch (error) {
-
       this.logger.error(
         'AuthService',
         'Failed to load user profile.',
@@ -214,15 +193,11 @@ export class AuthService {
         },
       );
 
-
       this.currentUser.set(null);
-
     } finally {
-
       this.loading.set(false);
     }
   }
-
 
   // ============================================================
   // PUBLIC AUTHENTICATION STATE
@@ -239,7 +214,6 @@ export class AuthService {
     return this.currentUser.asReadonly();
   }
 
-
   /**
    * Current Firebase Authentication user.
    *
@@ -250,7 +224,6 @@ export class AuthService {
   get firebaseUser() {
     return this.authenticatedUser.asReadonly();
   }
-
 
   /**
    * Indicates whether authentication/profile state
@@ -264,18 +237,55 @@ export class AuthService {
     return this.loading.asReadonly();
   }
 
+  /**
+   * Indicates whether the current Zebron user has
+   * platform administrator privileges.
+   *
+   * Canonical authorization:
+   *
+   *   platformRole === 'platform-admin'
+   *
+   * Legacy compatibility:
+   *
+   *   role === 'admin'
+   *
+   * The legacy role is retained temporarily so existing
+   * administrator accounts continue to work during migration.
+   */
+  get isAdmin(): boolean {
+    const user = this.currentUser();
+
+    if (!user) {
+      return false;
+    }
+
+    return (
+      user.platformRole === 'platform-admin' ||
+      user.role === 'admin'
+    );
+  }
 
   /**
- * Indicates whether the current Zebron user has
- * platform administrator privileges.
- *
- * Platform authorization is based on the canonical
- * platformRole field.
- */
-get isAdmin(): boolean {
-  return this.currentUser()?.platformRole === 'platform-admin';
-}
+   * Canonical platform administrator check.
+   *
+   * This intentionally checks only platformRole.
+   *
+   * Use this when code needs to distinguish a fully migrated
+   * platform administrator from a legacy administrator record.
+   */
+  get isPlatformAdmin(): boolean {
+    return (
+      this.currentUser()?.platformRole ===
+      'platform-admin'
+    );
+  }
 
+  /**
+   * Returns the current platform role.
+   */
+  get platformRole() {
+    return this.currentUser()?.platformRole;
+  }
 
   // ============================================================
   // SIGN IN
@@ -299,13 +309,10 @@ get isAdmin(): boolean {
     email: string,
     password: string,
   ): Promise<void> {
-
     const normalizedEmail =
       email.trim().toLowerCase();
 
-
     try {
-
       // --------------------------------------------------------
       // Authenticate with Firebase.
       // --------------------------------------------------------
@@ -317,7 +324,6 @@ get isAdmin(): boolean {
           password,
         );
 
-
       // --------------------------------------------------------
       // Keep Firebase authentication state current.
       // --------------------------------------------------------
@@ -326,7 +332,6 @@ get isAdmin(): boolean {
         credential.user,
       );
 
-
       // --------------------------------------------------------
       // Explicitly load the Firestore profile.
       // --------------------------------------------------------
@@ -334,7 +339,6 @@ get isAdmin(): boolean {
       await this.loadUserProfile(
         credential.user,
       );
-
 
       // --------------------------------------------------------
       // Record successful authentication.
@@ -377,9 +381,7 @@ get isAdmin(): boolean {
             'email-password',
         },
       });
-
     } catch (error) {
-
       // --------------------------------------------------------
       // Record failed authentication attempt.
       //
@@ -422,7 +424,6 @@ get isAdmin(): boolean {
         },
       });
 
-
       this.logger.warn(
         'AuthService',
         'Authentication attempt failed.',
@@ -431,11 +432,9 @@ get isAdmin(): boolean {
         },
       );
 
-
       throw error;
     }
   }
-
 
   // ============================================================
   // SIGN OUT
@@ -449,10 +448,8 @@ get isAdmin(): boolean {
    * available.
    */
   async logout(): Promise<void> {
-
     const firebaseUser =
       this.authenticatedUser();
-
 
     // ----------------------------------------------------------
     // Nothing to do if no user is authenticated.
@@ -462,21 +459,16 @@ get isAdmin(): boolean {
       return;
     }
 
-
     const actorId =
       firebaseUser.uid;
-
 
     const actorName =
       firebaseUser.displayName ?? null;
 
-
     const actorEmail =
       firebaseUser.email ?? null;
 
-
     try {
-
       // --------------------------------------------------------
       // Record logout before Firebase clears authentication.
       // --------------------------------------------------------
@@ -515,7 +507,6 @@ get isAdmin(): boolean {
         },
       });
 
-
       // --------------------------------------------------------
       // Sign out from Firebase.
       // --------------------------------------------------------
@@ -524,17 +515,13 @@ get isAdmin(): boolean {
         firebaseAuth,
       );
 
-
       // --------------------------------------------------------
       // Clear local application state.
       // --------------------------------------------------------
 
       this.authenticatedUser.set(null);
-
       this.currentUser.set(null);
-
     } catch (error) {
-
       this.logger.error(
         'AuthService',
         'Failed to sign out user.',
@@ -544,11 +531,9 @@ get isAdmin(): boolean {
         },
       );
 
-
       throw error;
     }
   }
-
 
   // ============================================================
   // PROFILE
@@ -580,30 +565,23 @@ get isAdmin(): boolean {
       photoUrl?: string;
     },
   ): Promise<void> {
-
     const firebaseUser =
       this.authenticatedUser();
 
-
     if (!firebaseUser) {
-
       throw new Error(
         'No authenticated user found.',
       );
     }
 
-
     const trimmedDisplayName =
       profile.displayName.trim();
 
-
     if (!trimmedDisplayName) {
-
       throw new Error(
         'Display name is required.',
       );
     }
-
 
     // ----------------------------------------------------------
     // Update Firebase Authentication profile.
@@ -617,13 +595,18 @@ get isAdmin(): boolean {
       },
     );
 
-
     // ----------------------------------------------------------
     // Prepare Firestore profile.
+    //
+    // IMPORTANT:
+    // No role or platformRole fields are accepted from this
+    // profile update method.
+    //
+    // This prevents normal profile editing from changing
+    // platform authorization.
     // ----------------------------------------------------------
 
     const profileData = {
-
       displayName:
         trimmedDisplayName,
 
@@ -670,12 +653,11 @@ get isAdmin(): boolean {
         serverTimestamp(),
     };
 
-
     // ----------------------------------------------------------
     // Update Firestore profile.
     //
     // merge:true preserves fields that aren't part of this
-    // profile form, including role and other application data.
+    // profile form, including platformRole and role.
     // ----------------------------------------------------------
 
     const userRef =
@@ -685,7 +667,6 @@ get isAdmin(): boolean {
         firebaseUser.uid,
       );
 
-
     await setDoc(
       userRef,
       profileData,
@@ -693,7 +674,6 @@ get isAdmin(): boolean {
         merge: true,
       },
     );
-
 
     // ----------------------------------------------------------
     // Refresh local user state.
@@ -704,7 +684,6 @@ get isAdmin(): boolean {
     );
   }
 
-
   // ============================================================
   // REGISTRATION
   // ============================================================
@@ -712,34 +691,30 @@ get isAdmin(): boolean {
   /**
    * Register a new Zebron user.
    *
-   * New users are always assigned the "user" role.
+   * New registrations are always assigned the canonical
+   * platformRole of "user".
    *
-   * Administrator privileges must be granted separately.
+   * Administrator privileges must be granted separately
+   * through trusted administrator functionality.
    */
   async register(
     email: string,
     password: string,
     displayName: string,
   ): Promise<void> {
-
     const normalizedEmail =
       email.trim().toLowerCase();
-
 
     const normalizedDisplayName =
       displayName.trim();
 
-
     if (!normalizedDisplayName) {
-
       throw new Error(
         'Display name is required.',
       );
     }
 
-
     try {
-
       // --------------------------------------------------------
       // Create Firebase account.
       // --------------------------------------------------------
@@ -750,7 +725,6 @@ get isAdmin(): boolean {
           normalizedEmail,
           password,
         );
-
 
       // --------------------------------------------------------
       // Store display name in Firebase Authentication.
@@ -763,7 +737,6 @@ get isAdmin(): boolean {
             normalizedDisplayName,
         },
       );
-
 
       // --------------------------------------------------------
       // Create corresponding Firestore profile.
@@ -778,7 +751,6 @@ get isAdmin(): boolean {
           credential.user.uid,
         );
 
-
       await setDoc(
         userRef,
         {
@@ -789,6 +761,10 @@ get isAdmin(): boolean {
           displayName:
             normalizedDisplayName,
 
+          platformRole:
+            'user',
+
+          // Retained for legacy compatibility.
           role:
             'user',
 
@@ -800,7 +776,6 @@ get isAdmin(): boolean {
         },
       );
 
-
       // --------------------------------------------------------
       // Keep local authentication state current.
       // --------------------------------------------------------
@@ -809,7 +784,6 @@ get isAdmin(): boolean {
         credential.user,
       );
 
-
       // --------------------------------------------------------
       // Load newly-created profile.
       // --------------------------------------------------------
@@ -817,7 +791,6 @@ get isAdmin(): boolean {
       await this.loadUserProfile(
         credential.user,
       );
-
 
       // --------------------------------------------------------
       // Audit successful registration.
@@ -859,13 +832,14 @@ get isAdmin(): boolean {
           authenticationMethod:
             'email-password',
 
+          platformRole:
+            'user',
+
           assignedRole:
             'user',
         },
       });
-
     } catch (error) {
-
       // --------------------------------------------------------
       // Audit failed registration.
       //
@@ -908,7 +882,6 @@ get isAdmin(): boolean {
         },
       });
 
-
       this.logger.warn(
         'AuthService',
         'User registration attempt failed.',
@@ -917,11 +890,9 @@ get isAdmin(): boolean {
         },
       );
 
-
       throw error;
     }
   }
-
 
   // ============================================================
   // AUTHENTICATION ERROR HANDLING
@@ -936,13 +907,11 @@ get isAdmin(): boolean {
   private getAuthenticationErrorMessage(
     error: unknown,
   ): string {
-
     if (
       typeof error === 'object' &&
       error !== null &&
       'code' in error
     ) {
-
       const code =
         (
           error as {
@@ -950,66 +919,54 @@ get isAdmin(): boolean {
           }
         ).code;
 
-
       if (
         typeof code === 'string'
       ) {
-
         switch (code) {
-
           case 'auth/invalid-credential':
             return (
               'Invalid authentication credentials.'
             );
-
 
           case 'auth/invalid-email':
             return (
               'The supplied email address is invalid.'
             );
 
-
           case 'auth/user-disabled':
             return (
               'The user account is disabled.'
             );
-
 
           case 'auth/user-not-found':
             return (
               'The user account was not found.'
             );
 
-
           case 'auth/wrong-password':
             return (
               'The supplied authentication credentials are invalid.'
             );
-
 
           case 'auth/email-already-in-use':
             return (
               'The email address is already associated with an account.'
             );
 
-
           case 'auth/weak-password':
             return (
               'The supplied password does not meet the required security policy.'
             );
-
 
           case 'auth/network-request-failed':
             return (
               'The authentication request failed because of a network error.'
             );
 
-
           case 'auth/too-many-requests':
             return (
               'Too many authentication attempts were made.'
             );
-
 
           default:
             return (
@@ -1019,13 +976,11 @@ get isAdmin(): boolean {
       }
     }
 
-
     if (
       error instanceof Error
     ) {
       return error.message;
     }
-
 
     return (
       'Authentication operation failed.'

@@ -3,19 +3,68 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 import { featureGuard } from './core/guards/feature.guard';
+import { partnerAdminGuard } from './core/guards/partner-admin.guard';
+import { partnerOrganizationGuard } from './core/guards/partner-organization.guard';
 
 import { resourceResolver } from './features/resources/resolvers/resource.resolver';
+
 import { AboutComponent } from './features/about/pages/about/about.component';
-import { CommunityNotificationsComponent } from './features/community/pages/community-notifications/community-notifications.component';
-import { PartnerAdminComponent } from './features/partner/pages/partner-admin/partner-admin.component';
-import { PartnerSettingsComponent } from './features/partner/pages/partner-settings/partner-settings.component';
-import { partnerAdminGuard } from './core/guards/partner-admin.guard';
 
 export const routes: Routes = [
 
   // =====================================================
-  // PUBLIC RESOURCE LIST
+  // PUBLIC
   // =====================================================
+
+  // -----------------------------------------------------
+  // HOME
+  // -----------------------------------------------------
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import(
+        './features/home/pages/home/home.component'
+      ).then(
+        (m) => m.HomeComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // LOGIN
+  // -----------------------------------------------------
+  {
+    path: 'login',
+    data: {
+      title: 'Zebron | Login',
+    },
+    loadComponent: () =>
+      import(
+        './features/auth/pages/login/login.component'
+      ).then(
+        (m) => m.LoginComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // REGISTRATION
+  // -----------------------------------------------------
+  {
+    path: 'register',
+    data: {
+      title: 'Zebron | Register',
+    },
+    loadComponent: () =>
+      import(
+        './features/auth/pages/register/register.component'
+      ).then(
+        (m) => m.RegisterComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // RESOURCES
+  // -----------------------------------------------------
   {
     path: 'resources',
     canActivate: [featureGuard],
@@ -31,25 +80,6 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // PUBLIC CONTACT FORM
-  // =====================================================
-  {
-    path: 'contact',
-    data: {
-      title: 'Contact Us',
-    },
-    loadComponent: () =>
-      import(
-        './features/contact/pages/contact/contact'
-      ).then(
-        (m) => m.ContactComponent,
-      ),
-  },
-
-  // =====================================================
-  // PUBLIC RESOURCE DETAIL
-  // =====================================================
   {
     path: 'resources/:slug',
     canActivate: [featureGuard],
@@ -68,57 +98,9 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // LOGIN
-  // =====================================================
-  {
-    path: 'login',
-    data: {
-      title: 'Zebron | Login',
-    },
-    loadComponent: () =>
-      import(
-        './features/auth/pages/login/login.component'
-      ).then(
-        (m) => m.LoginComponent,
-      ),
-  },
-
-  // =====================================================
-  // PUBLIC REGISTRATION
-  // =====================================================
-  {
-    path: 'register',
-    data: {
-      title: 'Zebron | Register',
-    },
-    loadComponent: () =>
-      import(
-        './features/auth/pages/register/register.component'
-      ).then(
-        (m) => m.RegisterComponent,
-      ),
-  },
-
-  // =====================================================
-  // PUBLIC DONATION
-  // =====================================================
-  {
-    path: 'donate',
-    data: {
-      title: 'Help us make resources easier to find',
-    },
-    loadComponent: () =>
-      import(
-        './features/donate/pages/donate/donate.component'
-      ).then(
-        (m) => m.DonateComponent,
-      ),
-  },
-
-  // =====================================================
+  // -----------------------------------------------------
   // RESOURCE FINDER
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'find',
     data: {
@@ -132,9 +114,9 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
+  // -----------------------------------------------------
   // JOB FINDER
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'find/job',
     data: {
@@ -148,25 +130,6 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // PUBLIC JOB DETAIL
-  // =====================================================
-  {
-    path: 'jobs/:id',
-    data: {
-      title: 'Zebron | Job detail',
-    },
-    loadComponent: () =>
-      import(
-        './features/jobs/pages/job-detail/job-detail.component'
-      ).then(
-        (m) => m.JobDetailComponent,
-      ),
-  },
-
-  // =====================================================
-  // JOB FINDER RESULTS
-  // =====================================================
   {
     path: 'find/job/results',
     data: {
@@ -180,9 +143,9 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
+  // -----------------------------------------------------
   // TRAINING FINDER
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'find/training',
     data: {
@@ -196,9 +159,6 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // TRAINING FINDER RESULTS
-  // =====================================================
   {
     path: 'find/training/results',
     data: {
@@ -212,9 +172,57 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
+  // -----------------------------------------------------
+  // JOB DETAILS
+  // -----------------------------------------------------
+  {
+    path: 'jobs/:id',
+    data: {
+      title: 'Zebron | Job detail',
+    },
+    loadComponent: () =>
+      import(
+        './features/jobs/pages/job-detail/job-detail.component'
+      ).then(
+        (m) => m.JobDetailComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // CONTACT
+  // -----------------------------------------------------
+  {
+    path: 'contact',
+    data: {
+      title: 'Contact Us',
+    },
+    loadComponent: () =>
+      import(
+        './features/contact/pages/contact/contact'
+      ).then(
+        (m) => m.ContactComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // DONATIONS
+  // -----------------------------------------------------
+  {
+    path: 'donate',
+    data: {
+      title: 'Help us make resources easier to find',
+    },
+    loadComponent: () =>
+      import(
+        './features/donate/pages/donate/donate.component'
+      ).then(
+        (m) => m.DonateComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
   // ABOUT
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'about',
     data: {
@@ -223,252 +231,9 @@ export const routes: Routes = [
     component: AboutComponent,
   },
 
-  // =====================================================
-  // ADMIN TAX & PAY
-  // =====================================================
-  {
-    path: 'admin/tax-pay',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Tax & Pay',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/tax-pay/tax-pay-admin.component'
-      ).then(
-        (m) => m.TaxPayAdminComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN CONTENT & OPERATIONS
-  // =====================================================
-  {
-    path: 'admin/content-operations',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Content & Operations',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/content-operations/pages/content-operations.component'
-      ).then(
-        (m) => m.ContentOperationsComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN CONTENT & OPERATIONS - MILESTONES
-  // =====================================================
-  {
-    path: 'admin/content-operations/milestones',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Content & Operations | Milestones',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/content-operations/pages/milestones/content-milestones.component'
-      ).then(
-        (m) => m.ContentMilestonesComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN CONTENT & OPERATIONS - CAPTURE MOMENTS
-  // =====================================================
-  {
-    path: 'admin/content-operations/captures',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Content & Operations | Capture Moments',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/content-operations/pages/captures/content-captures.component'
-      ).then(
-        (m) => m.ContentCapturesComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN CONTENT & OPERATIONS - TOOLS
-  // =====================================================
-  {
-    path: 'admin/content-operations/tools',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Content & Operations | Tools',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/content-operations/pages/tools/content-tools.component'
-      ).then(
-        (m) => m.ContentToolsComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN CONTENT & OPERATIONS - CONTENT
-  // =====================================================
-  {
-    path: 'admin/content-operations/content',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Content & Operations | Content',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/content-operations/pages/content/content-page.component'
-      ).then(
-        (m) => m.ContentPageComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN CONTENT & OPERATIONS - CREATE CONTENT
-  // =====================================================
-  {
-    path: 'admin/content-operations/content/create',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Content & Operations | Create Content',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/content-operations/pages/content/create-content.component'
-      ).then(
-        (m) => m.CreateContentComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN CONTENT & OPERATIONS - EDIT CONTENT
-  // =====================================================
-  {
-    path: 'admin/content-operations/content/:id/edit',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Content & Operations | Edit Content',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/content-operations/pages/content/edit-content.component'
-      ).then(
-        (m) => m.EditContentComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN CONTENT & OPERATIONS - CONTENT IDEAS
-  // =====================================================
-  {
-    path: 'admin/content-operations/ideas',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Content Ideas',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/content-operations/pages/ideas/content-ideas.component'
-      ).then(
-        (m) => m.ContentIdeasComponent,
-      ),
-  },
-
-  // =====================================================
-  // TEST CENTER
-  // =====================================================
-  {
-    path: 'test-center',
-    canActivate: [featureGuard],
-    data: {
-      featureKey: 'test-center',
-      title: 'Test Center',
-    },
-    loadComponent: () =>
-      import(
-        './features/test-center/pages/test-center-home/test-center-home.component'
-      ).then(
-        (m) => m.TestCenterHomeComponent,
-      ),
-  },
-
-  // =====================================================
-  // TEST CENTER COURSE
-  // =====================================================
-  {
-    path: 'test-center/courses/:slug',
-    canActivate: [featureGuard],
-    data: {
-      featureKey: 'test-center',
-      title: 'Test Center | Course detail',
-    },
-    loadComponent: () =>
-      import(
-        './features/test-center/pages/course-detail/course-detail.component'
-      ).then(
-        (m) => m.TestCourseDetailComponent,
-      ),
-  },
-
-  // =====================================================
-  // TEST CENTER SETUP
-  // =====================================================
-  {
-    path: 'test-center/setup',
-    canActivate: [featureGuard],
-    data: {
-      featureKey: 'test-center',
-      title: 'Test Center | Setup',
-    },
-    loadComponent: () =>
-      import(
-        './features/test-center/pages/test-setup/test-setup.component'
-      ).then(
-        (m) => m.TestSetupComponent,
-      ),
-  },
-
-  // =====================================================
-  // TEST CENTER PRACTICE
-  // =====================================================
-  {
-    path: 'test-center/practice',
-    canActivate: [featureGuard],
-    data: {
-      featureKey: 'test-center',
-      title: 'Test Center | Practice',
-    },
-    loadComponent: () =>
-      import(
-        './features/test-center/pages/test-practice/test-practice.component'
-      ).then(
-        (m) => m.TestPracticeComponent,
-      ),
-  },
-
-  // =====================================================
-  // TEST CENTER COURSES
-  // =====================================================
-  {
-    path: 'test-center/courses',
-    canActivate: [featureGuard],
-    data: {
-      featureKey: 'test-center',
-      title: 'Test Center | Courses',
-    },
-    loadComponent: () =>
-      import(
-        './features/test-center/pages/course-list/course-list.component'
-      ).then(
-        (m) => m.CourseListComponent,
-      ),
-  },
-
-  // =====================================================
+  // -----------------------------------------------------
   // TAX & PAY CALCULATOR
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'tax-calculator',
     data: {
@@ -483,8 +248,133 @@ export const routes: Routes = [
   },
 
   // =====================================================
-  // PROTECTED COMMUNITY
+  // AUTHENTICATED USER
   // =====================================================
+
+  // -----------------------------------------------------
+  // USER PROFILE
+  // -----------------------------------------------------
+  {
+    path: 'profile',
+    canActivate: [authGuard],
+    data: {
+      title: 'Zebron | Profile',
+    },
+    loadComponent: () =>
+      import(
+        './features/profile/pages/user-profile/user-profile'
+      ).then(
+        (m) => m.UserProfileComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // RESOURCE SUBMISSION
+  // -----------------------------------------------------
+  {
+    path: 'submit',
+    canActivate: [authGuard, featureGuard],
+    data: {
+      featureKey: 'resources',
+      title: 'Submit a resource',
+    },
+    loadComponent: () =>
+      import(
+        './features/submissions/pages/submit-resource/submit-resource.component'
+      ).then(
+        (m) => m.SubmitResourceComponent,
+      ),
+  },
+
+ // ============================================================
+// ORGANIZATION APPLICATION
+// ============================================================
+
+{
+  path: 'organizations/apply',
+  canActivate: [authGuard],
+  data: {
+    title: 'Organization Application',
+  },
+  loadComponent: () =>
+    import(
+      './features/organizations/application/organization-application-form.component'
+    ).then(
+      (m) => m.OrganizationApplicationFormComponent,
+    ),
+},
+
+{
+  path: 'organizations/apply/:id',
+  canActivate: [authGuard],
+  data: {
+    title: 'Edit Organization Application',
+  },
+  loadComponent: () =>
+    import(
+      './features/organizations/application/organization-application-form.component'
+    ).then(
+      (m) => m.OrganizationApplicationFormComponent,
+    ),
+},
+
+{
+  path: 'organizations/application/:id',
+  canActivate: [authGuard],
+  data: {
+    title: 'Organization Application Status',
+  },
+  loadComponent: () =>
+    import(
+      './features/organizations/application/organization-application-status.component'
+    ).then(
+      (m) => m.OrganizationApplicationStatusComponent,
+    ),
+},
+
+// ============================================================
+// ADMIN — ORGANIZATION APPLICATIONS
+// ============================================================
+
+{
+  path: 'admin/organizations/applications',
+  canActivate: [adminGuard],
+  data: {
+    title: 'Organization Applications',
+  },
+  loadComponent: () =>
+    import(
+      './features/admin/pages/organizations/organization-application-admin.component'
+    ).then(
+      (m) => m.OrganizationApplicationAdminComponent,
+    ),
+},
+
+{
+  path: 'partner/org/:organizationId/onboarding',
+  canActivate: [
+    authGuard,
+    partnerOrganizationGuard,
+  ],
+  data: {
+    title: 'Partner | Organization Onboarding',
+  },
+  loadComponent: () =>
+    import(
+      './features/partner/pages/partner-onboarding/partner-onboarding.component'
+    ).then(
+      (m) => m.PartnerOnboardingComponent,
+    ),
+},
+
+
+  // =====================================================
+  // COMMUNITY
+  // =====================================================
+
+  // -----------------------------------------------------
+  // COMMUNITY HOME
+  // -----------------------------------------------------
   {
     path: 'community',
     canActivate: [authGuard, featureGuard],
@@ -500,9 +390,9 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
+  // -----------------------------------------------------
   // COMMUNITY USER PROFILE
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'community/users/:userId',
     canActivate: [authGuard, featureGuard],
@@ -518,9 +408,9 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // COMMUNITY POST DETAIL
-  // =====================================================
+  // -----------------------------------------------------
+  // COMMUNITY POST
+  // -----------------------------------------------------
   {
     path: 'community/post/:postId',
     canActivate: [authGuard, featureGuard],
@@ -536,9 +426,9 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
+  // -----------------------------------------------------
   // COMMUNITY MEMBERS
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'community/members',
     canActivate: [authGuard, featureGuard],
@@ -554,9 +444,9 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
+  // -----------------------------------------------------
   // COMMUNITY NOTIFICATIONS
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'community/notifications',
     canActivate: [authGuard, featureGuard],
@@ -572,63 +462,9 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // LEARNING LABS
-  // =====================================================
-  {
-    path: 'learning',
-    canActivate: [featureGuard],
-    data: {
-      featureKey: 'test-center',
-      title: 'Zebron | Learning Lab',
-    },
-    loadComponent: () =>
-      import(
-        './features/learning-lab/pages/learning-lab.component'
-      ).then(
-        (m) => m.LearningLabComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN COMMUNITY - TOPICS
-  // =====================================================
-  {
-    path: 'admin/community/topics',
-    canActivate: [adminGuard, featureGuard],
-    data: {
-      featureKey: 'community',
-      title: 'Admin | Community | Topics',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/community/topics/community-topics-admin'
-      ).then(
-        (m) => m.CommunityTopicsAdminComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN TEST CENTER TOPICS
-  // =====================================================
-  {
-    path: 'admin/test-center/topics',
-    canActivate: [adminGuard, featureGuard],
-    data: {
-      featureKey: 'test-center',
-      title: 'Zebron | Test Center topics',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/test-topics/test-topic-admin.component'
-      ).then(
-        (m) => m.TestTopicAdminComponent,
-      ),
-  },
-
-  // =====================================================
+  // -----------------------------------------------------
   // COMMUNITY CHAT
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'community/chat',
     canActivate: [authGuard, featureGuard],
@@ -645,44 +481,102 @@ export const routes: Routes = [
   },
 
   // =====================================================
-  // ADMIN TEST CENTER
+  // TEST CENTER
   // =====================================================
+
+  // -----------------------------------------------------
+  // TEST CENTER HOME
+  // -----------------------------------------------------
   {
-    path: 'admin/test-center',
-    canActivate: [adminGuard, featureGuard],
+    path: 'test-center',
+    canActivate: [featureGuard],
     data: {
       featureKey: 'test-center',
-      title: 'Admin | Test Center',
+      title: 'Test Center',
     },
     loadComponent: () =>
       import(
-        './features/admin/pages/test-center/test-center-admin-component'
+        './features/test-center/pages/test-center-home/test-center-home.component'
       ).then(
-        (m) => m.TestCenterAdminComponent,
+        (m) => m.TestCenterHomeComponent,
       ),
   },
 
-  // =====================================================
-  // ADMIN TEST CENTER QUESTIONS
-  // =====================================================
+  // -----------------------------------------------------
+  // TEST CENTER COURSES
+  // -----------------------------------------------------
   {
-    path: 'admin/test-center/questions',
-    canActivate: [adminGuard, featureGuard],
+    path: 'test-center/courses',
+    canActivate: [featureGuard],
     data: {
       featureKey: 'test-center',
-      title: 'Admin | Test Center questions',
+      title: 'Test Center | Courses',
     },
     loadComponent: () =>
       import(
-        './features/admin/pages/test-questions/test-question-admin.component'
+        './features/test-center/pages/course-list/course-list.component'
       ).then(
-        (m) => m.TestQuestionAdminComponent,
+        (m) => m.CourseListComponent,
       ),
   },
 
-  // =====================================================
+  // -----------------------------------------------------
+  // TEST CENTER COURSE DETAIL
+  // -----------------------------------------------------
+  {
+    path: 'test-center/courses/:slug',
+    canActivate: [featureGuard],
+    data: {
+      featureKey: 'test-center',
+      title: 'Test Center | Course detail',
+    },
+    loadComponent: () =>
+      import(
+        './features/test-center/pages/course-detail/course-detail.component'
+      ).then(
+        (m) => m.TestCourseDetailComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // TEST CENTER SETUP
+  // -----------------------------------------------------
+  {
+    path: 'test-center/setup',
+    canActivate: [featureGuard],
+    data: {
+      featureKey: 'test-center',
+      title: 'Test Center | Setup',
+    },
+    loadComponent: () =>
+      import(
+        './features/test-center/pages/test-setup/test-setup.component'
+      ).then(
+        (m) => m.TestSetupComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // TEST CENTER PRACTICE
+  // -----------------------------------------------------
+  {
+    path: 'test-center/practice',
+    canActivate: [featureGuard],
+    data: {
+      featureKey: 'test-center',
+      title: 'Test Center | Practice',
+    },
+    loadComponent: () =>
+      import(
+        './features/test-center/pages/test-practice/test-practice.component'
+      ).then(
+        (m) => m.TestPracticeComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
   // TEST CENTER RESULTS
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'test-center/results',
     canActivate: [featureGuard],
@@ -699,251 +593,211 @@ export const routes: Routes = [
   },
 
   // =====================================================
-// PARTNER PORTAL - ORGANIZATION SELECTOR
-// =====================================================
-{
-  path: 'partner',
-  canActivate: [authGuard],
-  data: {
-    title: 'Partner | Organization Selection',
-  },
-  loadComponent: () =>
-    import(
-      './features/partner/pages/partner-portal/partner-portal.component'
-    ).then(
-      (m) => m.PartnerPortalComponent,
-    ),
-},
-
-// =====================================================
-// PARTNER ORGANIZATION DASHBOARD
-// =====================================================
-{
-  path: 'partner/org/:organizationId/dashboard',
-  canActivate: [
-    authGuard,
-    partnerAdminGuard,
-  ],
-  data: {
-    title: 'Partner | Organization Dashboard',
-  },
-  loadComponent: () =>
-    import(
-      './features/partner/pages/partner-admin/partner-admin.component'
-    ).then(
-      (m) => m.PartnerAdminComponent,
-    ),
-},
-
- // =====================================================
-// PARTNER TEST CENTER
-// =====================================================
-{
-  path: 'partner/org/:organizationId/test-center',
-  canActivate: [
-    authGuard,
-    featureGuard,
-  ],
-  data: {
-    featureKey: 'test-center',
-    title: 'Partner | Test Center',
-  },
-  loadComponent: () =>
-    import(
-      './features/partner/test-center/partner-test-center.component'
-    ).then(
-      (m) => m.PartnerTestCenterComponent,
-    ),
-},
-
-
-// =====================================================
-// PARTNER ADMINISTRATION DASHBOARD
-// =====================================================
-{
-  path: 'partner/dashboard',
-  canActivate: [
-    authGuard,
-    partnerAdminGuard,
-  ],
-  children: [
-
-    // -------------------------------------------------
-    // Partner Administration Home
-    // -------------------------------------------------
-    {
-      path: '',
-      pathMatch: 'full',
-      loadComponent: () =>
-        import(
-          './features/partner/pages/partner-admin/partner-admin.component'
-        ).then(
-          (m) => m.PartnerAdminComponent,
-        ),
-    },
-
-    // -------------------------------------------------
-    // Partner Settings
-    // -------------------------------------------------
-    {
-      path: 'settings',
-      loadComponent: () =>
-        import(
-          './features/partner/pages/partner-settings/partner-settings.component'
-        ).then(
-          (m) => m.PartnerSettingsComponent,
-        ),
-    },
-
-  ],
-},
-
-// -------------------------------------------------
-// Partner Test Center Questions
-// -------------------------------------------------
-{
-  path: 'partner/test-center/questions',
-  canActivate: [
-    authGuard,
-    featureGuard,
-  ],
-  data: {
-    title: 'Partner | Test Center Questions',
-    featureKey: 'test-center',
-  },
-  loadComponent: () =>
-    import(
-      './features/partner/pages/partner-test-questions/partner-test-questions.component'
-    ).then(
-      (m) => m.PartnerTestQuestionsComponent,
-    ),
-},
-
-
-// =====================================================
-// PARTNER PROGRAMS
-// =====================================================
-//
-// Programs are separate from the Administration shell
-// because org_manager is allowed to manage Programs,
-// while partnerAdminGuard is intended for the broader
-// Administration area.
-//
-{
-  path: 'partner/dashboard/programs',
-  canActivate: [authGuard],
-  data: {
-    title: 'Partner | Programs',
-  },
-  loadComponent: () =>
-    import(
-      './features/partner/pages/partner-programs/partner-programs.component'
-    ).then(
-      (m) => m.PartnerProgramsComponent,
-    ),
-},
-
+  // LEARNING
   // =====================================================
-  // ADMIN KNOWLEDGE CENTER
-  // =====================================================
+
   {
-    path: 'admin/configuration/knowledge',
-    canActivate: [adminGuard],
+    path: 'learning',
+    canActivate: [featureGuard],
     data: {
-      title: 'Admin | Knowledge Center',
+      featureKey: 'test-center',
+      title: 'Zebron | Learning Lab',
     },
     loadComponent: () =>
       import(
-        './features/admin/pages/knowledge/knowledge-center.component'
+        './features/learning-lab/pages/learning-lab.component'
       ).then(
-        (m) => m.KnowledgeCenterComponent,
+        (m) => m.LearningLabComponent,
       ),
   },
 
   // =====================================================
-  // ADMIN KNOWLEDGE CENTER - NEW ARTICLE
+  // PARTNER PORTAL
   // =====================================================
+
+  // -----------------------------------------------------
+  // ORGANIZATION SELECTOR
+  // -----------------------------------------------------
   {
-    path: 'admin/configuration/knowledge/new',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | New Knowledge Article',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/knowledge/components/knowledge-article-editor/knowledge-article-editor.component'
-      ).then(
-        (m) => m.KnowledgeArticleEditorComponent,
-      ),
-  },
-
-
-
-  // =====================================================
-  // ADMIN KNOWLEDGE CENTER - EDIT ARTICLE
-  // =====================================================
-  {
-    path: 'admin/configuration/knowledge/:id/edit',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Edit Knowledge Article',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/knowledge/components/knowledge-article-editor/knowledge-article-editor.component'
-      ).then(
-        (m) => m.KnowledgeArticleEditorComponent,
-      ),
-  },
-
-   {
-  path: 'admin/configuration/knowledge/:id',
-  canActivate: [adminGuard],
-  data: { title: 'Admin | Knowledge Article' },
-  loadComponent: () =>
-    import(
-      './features/admin/pages/knowledge/components/knowledge-article-detail/knowledge-article-detail.component'
-    ).then((m) => m.KnowledgeArticleDetailComponent),
-},
-
-  // =====================================================
-  // ADMIN PROTECTED USER PROFILE
-  // =====================================================
-  {
-    path: 'profile',
-    data: {
-      title: 'Zebron | Profile',
-    },
+    path: 'partner',
     canActivate: [authGuard],
-    loadComponent: () =>
-      import(
-        './features/profile/pages/user-profile/user-profile'
-      ).then(
-        (m) => m.UserProfileComponent,
-      ),
-  },
-
-  // =====================================================
-  // PROTECTED RESOURCE SUBMISSION
-  // =====================================================
-  {
-    path: 'submit',
-    canActivate: [authGuard, featureGuard],
     data: {
-      featureKey: 'resources',
-      title: 'Submit a resource',
+      title: 'Partner | Organization Selection',
     },
     loadComponent: () =>
       import(
-        './features/submissions/pages/submit-resource/submit-resource.component'
+        './features/partner/pages/partner-portal/partner-portal.component'
       ).then(
-        (m) => m.SubmitResourceComponent,
+        (m) => m.PartnerPortalComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ORGANIZATION DASHBOARD
+  // -----------------------------------------------------
+  {
+    path: 'partner/org/:organizationId/dashboard',
+    canActivate: [
+      authGuard,
+      partnerOrganizationGuard,
+      partnerAdminGuard,
+    ],
+    data: {
+      title: 'Partner | Organization Dashboard',
+    },
+    loadComponent: () =>
+      import(
+        './features/partner/pages/partner-admin/partner-admin.component'
+      ).then(
+        (m) => m.PartnerAdminComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ORGANIZATION TEST CENTER
+  // -----------------------------------------------------
+  {
+    path: 'partner/org/:organizationId/test-center',
+    canActivate: [
+      authGuard,
+      partnerOrganizationGuard,
+      featureGuard,
+    ],
+    data: {
+      featureKey: 'test-center',
+      title: 'Partner | Test Center',
+    },
+    loadComponent: () =>
+      import(
+        './features/partner/test-center/partner-test-center.component'
+      ).then(
+        (m) => m.PartnerTestCenterComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // PARTNER ADMINISTRATION
+  // -----------------------------------------------------
+  {
+    path: 'partner/dashboard',
+    canActivate: [
+      authGuard,
+      partnerAdminGuard,
+    ],
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import(
+            './features/partner/pages/partner-admin/partner-admin.component'
+          ).then(
+            (m) => m.PartnerAdminComponent,
+          ),
+      },
+
+      {
+        path: 'settings',
+        loadComponent: () =>
+          import(
+            './features/partner/pages/partner-settings/partner-settings.component'
+          ).then(
+            (m) => m.PartnerSettingsComponent,
+          ),
+      },
+    ],
+  },
+
+  // -----------------------------------------------------
+  // PARTNER PROGRAMS
+  // -----------------------------------------------------
+  {
+    path: 'partner/dashboard/programs',
+    canActivate: [authGuard],
+    data: {
+      title: 'Partner | Programs',
+    },
+    loadComponent: () =>
+      import(
+        './features/partner/pages/partner-programs/partner-programs.component'
+      ).then(
+        (m) => m.PartnerProgramsComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // PARTNER TEST CENTER QUESTIONS
+  // -----------------------------------------------------
+  {
+    path: 'partner/test-center/questions',
+    canActivate: [
+      authGuard,
+      featureGuard,
+    ],
+    data: {
+      title: 'Partner | Test Center Questions',
+      featureKey: 'test-center',
+    },
+    loadComponent: () =>
+      import(
+        './features/partner/pages/partner-test-questions/partner-test-questions.component'
+      ).then(
+        (m) => m.PartnerTestQuestionsComponent,
       ),
   },
 
   // =====================================================
-  // ADMIN RESOURCE MANAGEMENT
+  // ADMINISTRATION
   // =====================================================
+
+  // -----------------------------------------------------
+  // ADMIN DASHBOARD
+  // -----------------------------------------------------
+  {
+    path: 'admin',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/admin-dashboard/admin-dashboard.component'
+      ).then(
+        (m) => m.AdminDashboardComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ADMIN ORGANIZATIONS
+  // -----------------------------------------------------
+  {
+    path: 'admin/organizations',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Organizations',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/organizations/organization-admin.component'
+      ).then(
+        (m) => m.OrganizationAdminComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ADMIN USERS
+  // -----------------------------------------------------
+  {
+    path: 'admin/users',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/users/user-admin.component'
+      ).then(
+        (m) => m.UserAdminComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ADMIN RESOURCES
+  // -----------------------------------------------------
   {
     path: 'admin/resources',
     canActivate: [adminGuard, featureGuard],
@@ -959,122 +813,9 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // ADMIN ORGANIZATION MANAGEMENT
-  // =====================================================
-  {
-    path: 'admin/organizations',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Organizations',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/organizations/organization-admin.component'
-      ).then(
-        (m) => m.OrganizationAdminComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN ADD JOB
-  // =====================================================
-  {
-    path: 'admin/jobs/new',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Add a job',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/jobs/job-form/job-form.component'
-      ).then(
-        (m) => m.JobFormComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN JOB MANAGEMENT
-  // =====================================================
-  {
-    path: 'admin/jobs',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Jobs',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/jobs/job-admin.component'
-      ).then(
-        (m) => m.JobAdminComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN EDIT JOB
-  // =====================================================
-  {
-    path: 'admin/jobs/:id/edit',
-    canActivate: [adminGuard],
-    data: {
-      title: 'Admin | Edit a job',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/jobs/job-form/job-form.component'
-      ).then(
-        (m) => m.JobFormComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN TEST CENTER COURSES
-  // =====================================================
-  {
-    path: 'admin/test-center/courses',
-    canActivate: [adminGuard, featureGuard],
-    data: {
-      featureKey: 'test-center',
-    },
-    loadComponent: () =>
-      import(
-        './features/admin/pages/test-courses/test-course-admin.component'
-      ).then(
-        (m) => m.TestCourseAdminComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN USER MANAGEMENT
-  // =====================================================
-  {
-    path: 'admin/users',
-    canActivate: [adminGuard],
-    loadComponent: () =>
-      import(
-        './features/admin/pages/users/user-admin.component'
-      ).then(
-        (m) => m.UserAdminComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN SUBMISSION MANAGEMENT
-  // =====================================================
-  {
-    path: 'admin/submissions',
-    canActivate: [adminGuard],
-    loadComponent: () =>
-      import(
-        './features/admin/pages/submissions/submission-admin.component'
-      ).then(
-        (m) => m.SubmissionAdminComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN RESOURCE TYPE MANAGEMENT
-  // =====================================================
+  // -----------------------------------------------------
+  // ADMIN RESOURCE TYPES
+  // -----------------------------------------------------
   {
     path: 'admin/resource-types',
     canActivate: [adminGuard, featureGuard],
@@ -1089,37 +830,23 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // ADMIN SENT EMAILS
-  // =====================================================
+  // -----------------------------------------------------
+  // ADMIN CATEGORIES
+  // -----------------------------------------------------
   {
-    path: 'admin/contact/sent',
+    path: 'admin/categories',
     canActivate: [adminGuard],
     loadComponent: () =>
       import(
-        './features/admin/pages/contact/sent/sent-email.component'
+        './features/admin/pages/categories/category-admin.component'
       ).then(
-        (m) => m.SentEmailComponent,
+        (m) => m.CategoryAdminComponent,
       ),
   },
 
-  // =====================================================
-  // ADMIN CONTACT MAILBOX
-  // =====================================================
-  {
-    path: 'admin/contact',
-    canActivate: [adminGuard],
-    loadComponent: () =>
-      import(
-        './features/admin/pages/contact/contact-mailbox.component'
-      ).then(
-        (m) => m.ContactMailboxComponent,
-      ),
-  },
-
-  // =====================================================
-  // ADMIN LOCATION MANAGEMENT
-  // =====================================================
+  // -----------------------------------------------------
+  // ADMIN LOCATIONS
+  // -----------------------------------------------------
   {
     path: 'admin/locations',
     canActivate: [adminGuard],
@@ -1131,9 +858,224 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
+  // -----------------------------------------------------
+  // ADMIN SUBMISSIONS
+  // -----------------------------------------------------
+  {
+    path: 'admin/submissions',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/submissions/submission-admin.component'
+      ).then(
+        (m) => m.SubmissionAdminComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ADMIN JOBS
+  // -----------------------------------------------------
+  {
+    path: 'admin/jobs',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Jobs',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/jobs/job-admin.component'
+      ).then(
+        (m) => m.JobAdminComponent,
+      ),
+  },
+
+  {
+    path: 'admin/jobs/new',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Add a job',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/jobs/job-form/job-form.component'
+      ).then(
+        (m) => m.JobFormComponent,
+      ),
+  },
+
+  {
+    path: 'admin/jobs/:id/edit',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Edit a job',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/jobs/job-form/job-form.component'
+      ).then(
+        (m) => m.JobFormComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ADMIN TAX & PAY
+  // -----------------------------------------------------
+  {
+    path: 'admin/tax-pay',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Tax & Pay',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/tax-pay/tax-pay-admin.component'
+      ).then(
+        (m) => m.TaxPayAdminComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ADMIN TEST CENTER
+  // -----------------------------------------------------
+  {
+    path: 'admin/test-center',
+    canActivate: [adminGuard, featureGuard],
+    data: {
+      featureKey: 'test-center',
+      title: 'Admin | Test Center',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/test-center/test-center-admin-component'
+      ).then(
+        (m) => m.TestCenterAdminComponent,
+      ),
+  },
+
+  {
+    path: 'admin/test-center/courses',
+    canActivate: [adminGuard, featureGuard],
+    data: {
+      featureKey: 'test-center',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/test-courses/test-course-admin.component'
+      ).then(
+        (m) => m.TestCourseAdminComponent,
+      ),
+  },
+
+  {
+    path: 'admin/test-center/questions',
+    canActivate: [adminGuard, featureGuard],
+    data: {
+      featureKey: 'test-center',
+      title: 'Zebron | Test Center questions',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/test-questions/test-question-admin.component'
+      ).then(
+        (m) => m.TestQuestionAdminComponent,
+      ),
+  },
+
+  {
+    path: 'admin/test-center/topics',
+    canActivate: [adminGuard, featureGuard],
+    data: {
+      featureKey: 'test-center',
+      title: 'Zebron | Test Center topics',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/test-topics/test-topic-admin.component'
+      ).then(
+        (m) => m.TestTopicAdminComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ADMIN COMMUNITY
+  // -----------------------------------------------------
+  {
+    path: 'admin/community/topics',
+    canActivate: [adminGuard, featureGuard],
+    data: {
+      featureKey: 'community',
+      title: 'Admin | Community | Topics',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/community/topics/community-topics-admin'
+      ).then(
+        (m) => m.CommunityTopicsAdminComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ADMIN KNOWLEDGE CENTER
+  // -----------------------------------------------------
+  {
+    path: 'admin/configuration/knowledge',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Knowledge Center',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/knowledge/knowledge-center.component'
+      ).then(
+        (m) => m.KnowledgeCenterComponent,
+      ),
+  },
+
+  {
+    path: 'admin/configuration/knowledge/new',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | New Knowledge Article',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/knowledge/components/knowledge-article-editor/knowledge-article-editor.component'
+      ).then(
+        (m) => m.KnowledgeArticleEditorComponent,
+      ),
+  },
+
+  {
+    path: 'admin/configuration/knowledge/:id/edit',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Edit Knowledge Article',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/knowledge/components/knowledge-article-editor/knowledge-article-editor.component'
+      ).then(
+        (m) => m.KnowledgeArticleEditorComponent,
+      ),
+  },
+
+  {
+    path: 'admin/configuration/knowledge/:id',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Knowledge Article',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/knowledge/components/knowledge-article-detail/knowledge-article-detail.component'
+      ).then(
+        (m) => m.KnowledgeArticleDetailComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
   // ADMIN CONFIGURATION / CONTROL CENTER
-  // =====================================================
+  // -----------------------------------------------------
   {
     path: 'admin/configuration',
     canActivate: [adminGuard],
@@ -1148,37 +1090,124 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // ADMIN DASHBOARD
-  // =====================================================
+  // -----------------------------------------------------
+  // ADMIN CONTENT & OPERATIONS
+  // -----------------------------------------------------
   {
-    path: 'admin',
+    path: 'admin/content-operations',
     canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Content & Operations',
+    },
     loadComponent: () =>
       import(
-        './features/admin/pages/admin-dashboard/admin-dashboard.component'
+        './features/admin/pages/content-operations/pages/content-operations.component'
       ).then(
-        (m) => m.AdminDashboardComponent,
+        (m) => m.ContentOperationsComponent,
       ),
   },
 
-  // =====================================================
-  // ADMIN CATEGORY MANAGEMENT
-  // =====================================================
   {
-    path: 'admin/categories',
+    path: 'admin/content-operations/milestones',
     canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Content & Operations | Milestones',
+    },
     loadComponent: () =>
       import(
-        './features/admin/pages/categories/category-admin.component'
+        './features/admin/pages/content-operations/pages/milestones/content-milestones.component'
       ).then(
-        (m) => m.CategoryAdminComponent,
+        (m) => m.ContentMilestonesComponent,
       ),
   },
 
-  // =====================================================
-  // BUSINESS OPERATIONS
-  // =====================================================
+  {
+    path: 'admin/content-operations/captures',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Content & Operations | Capture Moments',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/content-operations/pages/captures/content-captures.component'
+      ).then(
+        (m) => m.ContentCapturesComponent,
+      ),
+  },
+
+  {
+    path: 'admin/content-operations/tools',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Content & Operations | Tools',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/content-operations/pages/tools/content-tools.component'
+      ).then(
+        (m) => m.ContentToolsComponent,
+      ),
+  },
+
+  {
+    path: 'admin/content-operations/content',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Content & Operations | Content',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/content-operations/pages/content/content-page.component'
+      ).then(
+        (m) => m.ContentPageComponent,
+      ),
+  },
+
+  {
+    path: 'admin/content-operations/content/create',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Content & Operations | Create Content',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/content-operations/pages/content/create-content.component'
+      ).then(
+        (m) => m.CreateContentComponent,
+      ),
+  },
+
+  {
+    path: 'admin/content-operations/content/:id/edit',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Admin | Content & Operations | Edit Content',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/content-operations/pages/content/edit-content.component'
+      ).then(
+        (m) => m.EditContentComponent,
+      ),
+  },
+
+  {
+    path: 'admin/content-operations/ideas',
+    canActivate: [adminGuard],
+    data: {
+      title: 'Content Ideas',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/content-operations/pages/ideas/content-ideas.component'
+      ).then(
+        (m) => m.ContentIdeasComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ADMIN BUSINESS OPERATIONS
+  // -----------------------------------------------------
   {
     path: 'admin/business',
     canActivate: [adminGuard, featureGuard],
@@ -1193,9 +1222,6 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // BUSINESS PROFILE
-  // =====================================================
   {
     path: 'admin/business/profile',
     canActivate: [adminGuard, featureGuard],
@@ -1210,14 +1236,41 @@ export const routes: Routes = [
       ),
   },
 
+  // -----------------------------------------------------
+  // ADMIN CONTACT
+  // -----------------------------------------------------
+  {
+    path: 'admin/contact',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/contact/contact-mailbox.component'
+      ).then(
+        (m) => m.ContactMailboxComponent,
+      ),
+  },
+
+  {
+    path: 'admin/contact/sent',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin/pages/contact/sent/sent-email.component'
+      ).then(
+        (m) => m.SentEmailComponent,
+      ),
+  },
+
   // =====================================================
+  // SYSTEM
+  // =====================================================
+
+  // -----------------------------------------------------
   // FEATURE UNAVAILABLE
-  // =====================================================
+  // -----------------------------------------------------
   //
   // IMPORTANT:
   // This route must NOT use featureGuard.
-  // Otherwise disabled applications would create
-  // a redirect loop.
   //
   {
     path: 'feature-unavailable',
@@ -1229,75 +1282,9 @@ export const routes: Routes = [
       ),
   },
 
-  // =====================================================
-  // DEFAULT ROUTE
-  // =====================================================
-  {
-    path: '',
-    pathMatch: 'full',
-    loadComponent: () =>
-      import(
-        './features/home/pages/home/home.component'
-      ).then(
-        (m) => m.HomeComponent,
-      ),
-  },
-
-  // =====================================================
-  // PUBLIC PRIVACY
-  // =====================================================
-  {
-    path: 'privacy',
-    loadComponent: () =>
-      import(
-        './features/privacy/pages/privacy/privacy.component'
-      ).then(
-        (m) => m.PrivacyComponent,
-      ),
-  },
-
-  // =====================================================
-  // PUBLIC TERMS
-  // =====================================================
-  {
-    path: 'terms',
-    loadComponent: () =>
-      import(
-        './features/terms/pages/terms/terms.component'
-      ).then(
-        (m) => m.TermsComponent,
-      ),
-  },
-
-  // =====================================================
-  // PUBLIC FAQ
-  // =====================================================
-  {
-    path: 'faq',
-    loadComponent: () =>
-      import(
-        './features/faq/pages/faq/faq.component'
-      ).then(
-        (m) => m.FaqComponent,
-      ),
-  },
-
-  // =====================================================
-  // PUBLIC ACCESSIBILITY
-  // =====================================================
-  {
-    path: 'accessibility',
-    loadComponent: () =>
-      import(
-        './features/accessibility/pages/accessibility/accessibility.component'
-      ).then(
-        (m) => m.AccessibilityComponent,
-      ),
-  },
-
-  // =====================================================
-  // FALLBACK / NOT FOUND
-  // =====================================================
+  // -----------------------------------------------------
+  // NOT FOUND
+  // -----------------------------------------------------
   {
     path: '**',
     loadComponent: () =>

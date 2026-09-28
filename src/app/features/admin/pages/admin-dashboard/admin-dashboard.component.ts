@@ -1008,6 +1008,13 @@ export class AdminDashboardComponent {
       actionLabel: 'Manage Knowledge',
       icon: 'menu_book',
     },
+     {
+      title: 'Platform Apps Requests',
+      description: 'Manage Requests for access to the platform resources and tools',
+      route: '/admin/organizations/applications',
+      actionLabel: 'Manage Requests',
+      icon: 'business',
+    },
   ];
 
   // ============================================================

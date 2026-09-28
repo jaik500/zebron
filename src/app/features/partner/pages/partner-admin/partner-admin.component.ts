@@ -464,44 +464,127 @@ interface DashboardCard {
 
             </div>
 
-            <!-- ROLE -->
+       <!-- =========================================================
+     ACCESS / ONBOARDING
+     ========================================================= -->
+
+<div
+  class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:min-w-[250px]"
+>
+
+  @if (isOrganizationOnboarding()) {
+
+    <!-- ONBOARDING ACTION -->
+
+    <a
+      [routerLink]="[
+        '/partner/org',
+        context.organizationId(),
+        'onboarding'
+      ]"
+      class="group block h-full rounded-lg transition-colors"
+      aria-label="Continue organization onboarding"
+    >
+
+      <div class="flex items-start justify-between gap-4">
+
+        <div>
+
+          <p
+            class="text-xs font-semibold uppercase tracking-wider text-[#007979]"
+          >
+            Organization Setup
+          </p>
+
+          <div class="mt-3 flex items-center gap-3">
 
             <div
-              class="hidden sm:block rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:min-w-[250px]"
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50"
             >
+              <mat-icon class="text-[#007979]">
+                checklist
+              </mat-icon>
+            </div>
+
+            <div>
 
               <p
-                class="text-xs font-semibold uppercase tracking-wider text-gray-500"
+                class="font-semibold text-gray-900 group-hover:text-[#007979]"
               >
-                Access
+                Continue Onboarding
               </p>
 
-              <div class="mt-3 flex items-center gap-3">
-
-                <div
-                  class="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50"
-                >
-                  <mat-icon class="text-[#007979]">
-                    {{ accessIcon() }}
-                  </mat-icon>
-                </div>
-
-                <div>
-
-                  <p class="font-semibold text-gray-900">
-                    {{ roleLabel() }}
-                  </p>
-
-                  <p class="text-sm text-gray-500">
-                    {{ accessDescription() }}
-                  </p>
-
-                </div>
-
-              </div>
+              <p class="text-sm text-gray-500">
+                Complete your organization setup
+              </p>
 
             </div>
 
+          </div>
+
+        </div>
+
+        <mat-icon
+          class="mt-1 text-gray-300 transition-colors group-hover:text-[#007979]"
+        >
+          arrow_forward
+        </mat-icon>
+
+      </div>
+
+      <div
+        class="mt-5 rounded-lg bg-teal-50 px-3 py-2"
+      >
+
+        <p class="text-xs font-medium text-[#007979]">
+          Setup in progress
+        </p>
+
+        <p class="mt-1 text-xs text-gray-600">
+          Complete the remaining onboarding steps to activate your organization.
+        </p>
+
+      </div>
+
+    </a>
+
+  } @else {
+
+    <!-- NORMAL ACCESS -->
+
+    <p
+      class="text-xs font-semibold uppercase tracking-wider text-gray-500"
+    >
+      Access
+    </p>
+
+    <div class="mt-3 flex items-center gap-3">
+
+      <div
+        class="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50"
+      >
+        <mat-icon class="text-[#007979]">
+          {{ accessIcon() }}
+        </mat-icon>
+      </div>
+
+      <div>
+
+        <p class="font-semibold text-gray-900">
+          {{ roleLabel() }}
+        </p>
+
+        <p class="text-sm text-gray-500">
+          {{ accessDescription() }}
+        </p>
+
+      </div>
+
+    </div>
+
+  }
+
+</div>
           </section>
 
           <!-- =====================================================
@@ -849,6 +932,16 @@ protected readonly roleLabel = computed(() => {
     default:
       return 'Organization member';
   }
+});
+
+protected readonly isOrganizationOnboarding = computed(() => {
+  const organization = this.context.organization();
+  const role = this.access.role();
+
+  return (
+    organization?.status === 'onboarding' &&
+    role === 'org_owner'
+  );
 });
 
   /**

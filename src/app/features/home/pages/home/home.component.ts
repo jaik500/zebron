@@ -47,49 +47,44 @@ import { MatIconModule } from '@angular/material/icon';
                  lg:px-8 lg:py-20"
         >
           <div class="max-w-3xl">
-           
-      <div class="max-w-5xl">
-
-        <!-- =================================================
+            <div class="max-w-5xl">
+              <!-- =================================================
              ZEBRON WORDMARK
 
              The mirrored lowercase "e" is the visual brand
              treatment. aria-label preserves accessibility.
              ================================================= -->
 
-        <div
-          aria-label="Zebron"
-          class="flex items-center
+              <div
+                aria-label="Zebron"
+                class="flex items-center
                  text-7xl
                  font-black
                  leading-none
                  text-white
                  sm:text-8xl
                  lg:text-[10rem]"
-        >
+              >
+                <span>Z</span>
 
-          <span>Z</span>
-
-          <span
-            aria-hidden="true"
-            class="mx-[-0.01em] inline-block
+                <span
+                  aria-hidden="true"
+                  class="mx-[-0.01em] inline-block
                    text-[#12BFC3]"
-            style="transform: scaleX(-1);"
-          >
-            e
-          </span>
+                  style="transform: scaleX(-1);"
+                >
+                  e
+                </span>
 
-          <span>bron</span>
+                <span>bron</span>
+              </div>
 
-        </div>
-
-
-        <!-- =================================================
+              <!-- =================================================
              HERO HEADLINE
              ================================================= -->
 
-        <h1
-          class="mt-5
+              <h1
+                class="mt-5
                  max-w-4xl
                  text-3xl
                  font-extrabold
@@ -98,35 +93,30 @@ import { MatIconModule } from '@angular/material/icon';
                  text-white
                  sm:text-4xl
                  lg:text-5xl"
-        >
-          Everything you need to discover,
-          explore, and move forward.
-        </h1>
+              >
+                Everything you need to discover, explore, and move forward.
+              </h1>
 
-
-        <!-- =================================================
+              <!-- =================================================
              HERO DESCRIPTION
              ================================================= -->
 
-        <p
-          class="mt-6
+              <p
+                class="mt-6
                  max-w-3xl
                  text-lg
                  leading-8
                  text-white/80
                  sm:text-xl"
-        >
-          Connect with resources, organizations,
-          services, opportunities, information,
-          and more—all in one place.
-        </p>
+              >
+                Connect with resources, organizations, services, opportunities, information, and
+                more—all in one place.
+              </p>
 
-
-        <!-- =================================================
+              <!-- =================================================
              HERO ACTIONS
              ================================================= -->
-
-      </div>
+            </div>
 
             <!-- Primary actions -->
 
@@ -364,7 +354,9 @@ import { MatIconModule } from '@angular/material/icon';
                        rounded-xl
                        bg-[#E5F4F4]"
               >
-                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]"> school </mat-icon>
+                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]">
+                  school
+                </mat-icon>
               </div>
 
               <h3
@@ -402,7 +394,7 @@ import { MatIconModule } from '@angular/material/icon';
               </span>
             </a>
 
-                <!-- Test Center -->
+            <!-- Test Center -->
 
             <a
               routerLink="/test-center"
@@ -435,7 +427,8 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-2 text-sm leading-6
                        text-gray-600"
               >
-                Challenge yourself today, and build the competitive edge you need to stand out tomorrow.
+                Challenge yourself today, and build the competitive edge you need to stand out
+                tomorrow.
               </p>
 
               <span
@@ -458,8 +451,7 @@ import { MatIconModule } from '@angular/material/icon';
               </span>
             </a>
 
-            
-                <!-- Community -->
+            <!-- Community -->
 
             <a
               routerLink="/community"
@@ -478,7 +470,9 @@ import { MatIconModule } from '@angular/material/icon';
                        rounded-xl
                        bg-[#E5F4F4]"
               >
-                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]"> diversity_3 </mat-icon>
+                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]">
+                  diversity_3
+                </mat-icon>
               </div>
 
               <h3
@@ -492,7 +486,8 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-2 text-sm leading-6
                        text-gray-600"
               >
-                Connect with people, exchange experiences, ask questions and discover helpful resources.
+                Connect with people, exchange experiences, ask questions and discover helpful
+                resources.
               </p>
 
               <span
@@ -515,7 +510,7 @@ import { MatIconModule } from '@angular/material/icon';
               </span>
             </a>
 
-                <!-- Tav & Pay Calculator -->
+            <!-- Tav & Pay Calculator -->
 
             <a
               routerLink="/tax-calculator"
@@ -534,7 +529,9 @@ import { MatIconModule } from '@angular/material/icon';
                        rounded-xl
                        bg-[#E5F4F4]"
               >
-                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]"> calculate </mat-icon>
+                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]">
+                  calculate
+                </mat-icon>
               </div>
 
               <h3
@@ -548,7 +545,8 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-2 text-sm leading-6
                        text-gray-600"
               >
-                Crunch your numbers, clear your doubts, and keep more of your hard-earned money with a smarter tax calculator
+                Crunch your numbers, clear your doubts, and keep more of your hard-earned money with
+                a smarter tax calculator
               </p>
 
               <span
@@ -565,6 +563,62 @@ import { MatIconModule } from '@angular/material/icon';
                          !text-[17px]
                          transition-transform
                          group-hover:translate-x-1"
+                >
+                  arrow_forward
+                </mat-icon>
+              </span>
+            </a>
+
+            <!-- Organization Application -->
+            <a
+              routerLink="/organizations/apply"
+              class="group rounded-2xl
+         border border-gray-200
+         bg-[#E5F4F4] p-6
+         shadow-sm
+         transition
+         hover:-translate-y-1
+         hover:border-[#007979]/40
+         hover:shadow-md"
+            >
+              <div
+                class="flex h-12 w-12
+           items-center justify-center
+           rounded-xl
+           bg-[#E5F4F4]"
+              >
+                <mat-icon aria-hidden="true" class="!text-[#007979]"> business </mat-icon>
+              </div>
+
+              <h3
+                class="mt-6 text-xl font-bold
+           text-[#032D42]"
+              >
+                Organization Application
+              </h3>
+
+              <p
+                class="mt-2 text-sm leading-6
+           text-gray-600"
+              >
+                Apply to bring your organization onto Zebron and request access to the applications
+                and tools your organization needs.
+              </p>
+
+              <span
+                class="mt-5 inline-flex
+           items-center gap-1
+           text-sm font-bold
+           text-[#007979]"
+              >
+                Apply for an Organization
+
+                <mat-icon
+                  aria-hidden="true"
+                  class="!m-0 !h-5 !w-5
+             !text-[17px]
+             transition-transform
+             group-hover:translate-x-1"
                 >
                   arrow_forward
                 </mat-icon>
@@ -958,56 +1012,50 @@ import { MatIconModule } from '@angular/material/icon';
      SUPPORT ZEBRON
      ======================================================= -->
 
-<section class="bg-[#032D42]">
-
-  <div
-    class="mx-auto max-w-7xl
+            <section class="bg-[#032D42]">
+              <div
+                class="mx-auto max-w-7xl
            px-5 py-14
            sm:px-6 sm:py-16
            lg:px-8"
-  >
-
-    <div
-      class="flex flex-col gap-7
+              >
+                <div
+                  class="flex flex-col gap-7
              md:flex-row
              md:items-center
              md:justify-between"
-    >
-
-      <div class="max-w-2xl">
-
-        <p
-          class="text-sm font-bold uppercase
+                >
+                  <div class="max-w-2xl">
+                    <p
+                      class="text-sm font-bold uppercase
                  tracking-wider
                  text-[#65CFCF]"
-        >
-          Support Zebron
-        </p>
+                    >
+                      Support Zebron
+                    </p>
 
-        <h2
-          class="mt-2 text-2xl font-bold
+                    <h2
+                      class="mt-2 text-2xl font-bold
                  tracking-tight
                  text-white
                  sm:text-3xl"
-        >
-          Help make resources easier to find.
-        </h2>
+                    >
+                      Help make resources easier to find.
+                    </h2>
 
-        <p
-          class="mt-3 text-sm leading-6
+                    <p
+                      class="mt-3 text-sm leading-6
                  text-white/70
                  sm:text-base"
-        >
-          Your support helps Zebron connect people
-          with trusted resources, organizations,
-          services, and opportunities.
-        </p>
+                    >
+                      Your support helps Zebron connect people with trusted resources,
+                      organizations, services, and opportunities.
+                    </p>
+                  </div>
 
-      </div>
-
-      <a
-        routerLink="/donate"
-        class="inline-flex shrink-0
+                  <a
+                    routerLink="/donate"
+                    class="inline-flex shrink-0
                items-center justify-center
                gap-2 rounded-lg
                bg-[#007979]
@@ -1017,25 +1065,20 @@ import { MatIconModule } from '@angular/material/icon';
                shadow-sm
                transition
                hover:bg-[#008989]"
-      >
+                  >
+                    Support Zebron
 
-        Support Zebron
-
-        <mat-icon
-          aria-hidden="true"
-          class="!m-0 !h-5 !w-5
+                    <mat-icon
+                      aria-hidden="true"
+                      class="!m-0 !h-5 !w-5
                  !text-[18px]"
-        >
-          favorite
-        </mat-icon>
-
-      </a>
-
-    </div>
-
-  </div>
-
-</section>
+                    >
+                      favorite
+                    </mat-icon>
+                  </a>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </section>

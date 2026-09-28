@@ -16,25 +16,20 @@ export const partnerAdminGuard: CanActivateFn = async () => {
 
   /*
    * Platform administrators have unrestricted platform access.
-   * They do not need an organization membership to enter
-   * Partner Administration.
    */
   if (authService.isAdmin) {
     return true;
   }
 
-  try {
-    await context.initialize();
+  /*
+   * partnerOrganizationGuard is responsible for establishing
+   * and validating the organization context before this guard
+   * runs.
+   */
+  const role = context.organizationRole();
 
-    const role = context.organizationRole();
-
-    return (
-      role === 'org_owner' ||
-      role === 'org_admin'
-    )
-      ? true
-      : router.createUrlTree(['/partner']);
-  } catch {
-    return router.createUrlTree(['/partner']);
-  }
+  return role === 'org_owner' ||
+    role === 'org_admin'
+    ? true
+    : router.createUrlTree(['/partner']);
 };
