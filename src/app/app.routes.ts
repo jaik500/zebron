@@ -367,6 +367,19 @@ export const routes: Routes = [
     ),
 },
 
+{
+  path: 'organization/invitations/accept',
+  data: {
+    title: 'Zebron | Accept Organization Invitation',
+  },
+  loadComponent: () =>
+    import(
+      './features/partner/pages/organization-invitation-acceptance/organization-invitation-acceptance.component'
+    ).then(
+      (m) => m.OrganizationInvitationAcceptanceComponent,
+    ),
+},
+
 
   // =====================================================
   // COMMUNITY
@@ -636,22 +649,21 @@ export const routes: Routes = [
   // ORGANIZATION DASHBOARD
   // -----------------------------------------------------
   {
-    path: 'partner/org/:organizationId/dashboard',
-    canActivate: [
-      authGuard,
-      partnerOrganizationGuard,
-      partnerAdminGuard,
-    ],
-    data: {
-      title: 'Partner | Organization Dashboard',
-    },
-    loadComponent: () =>
-      import(
-        './features/partner/pages/partner-admin/partner-admin.component'
-      ).then(
-        (m) => m.PartnerAdminComponent,
-      ),
+  path: 'partner/org/:organizationId/dashboard',
+  canActivate: [
+    authGuard,
+    partnerOrganizationGuard,
+  ],
+  data: {
+    title: 'Partner | Organization Dashboard',
   },
+  loadComponent: () =>
+    import(
+      './features/partner/pages/partner-admin/partner-admin.component'
+    ).then(
+      (m) => m.PartnerAdminComponent,
+    ),
+},
 
   // -----------------------------------------------------
   // ORGANIZATION TEST CENTER
@@ -712,39 +724,43 @@ export const routes: Routes = [
   // PARTNER PROGRAMS
   // -----------------------------------------------------
   {
-    path: 'partner/dashboard/programs',
-    canActivate: [authGuard],
-    data: {
-      title: 'Partner | Programs',
-    },
-    loadComponent: () =>
-      import(
-        './features/partner/pages/partner-programs/partner-programs.component'
-      ).then(
-        (m) => m.PartnerProgramsComponent,
-      ),
+  path: 'partner/org/:organizationId/programs',
+  canActivate: [
+    authGuard,
+    partnerOrganizationGuard,
+  ],
+  data: {
+    title: 'Partner | Programs',
   },
+  loadComponent: () =>
+    import(
+      './features/partner/pages/partner-programs/partner-programs.component'
+    ).then(
+      (m) => m.PartnerProgramsComponent,
+    ),
+},
 
   // -----------------------------------------------------
   // PARTNER TEST CENTER QUESTIONS
   // -----------------------------------------------------
   {
-    path: 'partner/test-center/questions',
-    canActivate: [
-      authGuard,
-      featureGuard,
-    ],
-    data: {
-      title: 'Partner | Test Center Questions',
-      featureKey: 'test-center',
-    },
-    loadComponent: () =>
-      import(
-        './features/partner/pages/partner-test-questions/partner-test-questions.component'
-      ).then(
-        (m) => m.PartnerTestQuestionsComponent,
-      ),
+  path: 'partner/org/:organizationId/test-center/questions',
+  canActivate: [
+    authGuard,
+    partnerOrganizationGuard,
+    featureGuard,
+  ],
+  data: {
+    title: 'Partner | Test Center Questions',
+    featureKey: 'test-center',
   },
+  loadComponent: () =>
+    import(
+      './features/partner/pages/partner-test-questions/partner-test-questions.component'
+    ).then(
+      (m) => m.PartnerTestQuestionsComponent,
+    ),
+},
 
   // =====================================================
   // ADMINISTRATION

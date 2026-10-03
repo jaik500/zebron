@@ -1909,6 +1909,24 @@ match /organizationInvitations/{invitationId} {
     }
 
     // ============================================================
+// ORGANIZATION SETTINGS
+// ============================================================
+
+match /organizationSettings/{organizationId} {
+
+  // Organization configuration is administrative data.
+  // Only platform administrators and organization owners/admins
+  // may read or manage it.
+  allow get: if isOrganizationAdmin(organizationId);
+
+  allow create: if isOrganizationAdmin(organizationId);
+
+  allow update: if isOrganizationAdmin(organizationId);
+
+  allow delete: if isOrganizationAdmin(organizationId);
+}
+
+    // ============================================================
     // DEFAULT DENY
     // ============================================================
 

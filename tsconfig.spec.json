@@ -5,7 +5,13 @@
     "types": [
       "vitest/globals",
       "node"
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@functions/*": [
+        "functions/node_modules/*"
+      ]
+    }
   },
   "include": [
     "src/**/*.d.ts",

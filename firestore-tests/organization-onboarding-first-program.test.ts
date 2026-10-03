@@ -282,7 +282,7 @@ describe('completeOrganizationFirstProgram', () => {
       },
       onboarding: {
         firstProgramId: 'cyber-security',
-        currentStep: 'courses',
+        currentStep: 'first_course',
         status: 'in_progress',
       },
     });
@@ -316,7 +316,7 @@ describe('completeOrganizationFirstProgram', () => {
     expect(onboarding).toMatchObject({
       organizationId: ORGANIZATION_ID,
       status: 'in_progress',
-      currentStep: 'courses',
+      currentStep: 'first_course',
       firstProgramId: 'cyber-security',
     });
 

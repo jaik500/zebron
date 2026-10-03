@@ -153,7 +153,10 @@ interface TopicForm {
                 <span>Partner Portal</span>
               </a>
 
-              <a mat-menu-item routerLink="/partner/test-center">
+              <a
+                mat-menu-item
+                [routerLink]="['/partner/org', context.organizationId(), 'test-center']"
+              >
                 <mat-icon>quiz</mat-icon>
                 <span>Test Center</span>
               </a>
@@ -318,7 +321,6 @@ interface TopicForm {
 
                   @if (loadingPrograms()) {
                     <p class="mt-1 text-xs text-gray-500">Loading programs...</p>
-
                   } @else if (programs().length === 0) {
                     <p class="mt-1 text-xs text-amber-600">
                       Your organization does not have an active program yet. Create a program before
@@ -697,7 +699,6 @@ interface TopicForm {
                   </div>
                 }
               </div>
-
             } @else if (!loadingCourses()) {
               <div class="grid gap-4 lg:grid-cols-2">
                 @for (course of filteredCourses(); track course.id) {
@@ -776,7 +777,12 @@ interface TopicForm {
                     <div class="mt-4 flex flex-wrap gap-2 border-t border-gray-100 pt-4">
                       <a
                         mat-stroked-button
-                        [routerLink]="['/partner/test-center/questions']"
+                        [routerLink]="[
+                          '/partner/org',
+                          context.organizationId(),
+                          'test-center',
+                          'questions',
+                        ]"
                         [queryParams]="{
                           courseId: course.id,
                         }"
@@ -812,7 +818,6 @@ interface TopicForm {
                         <p class="mt-2 text-xs text-gray-500">
                           No topics have been created for this course yet.
                         </p>
-
                       } @else {
                         <div class="mt-3 space-y-2">
                           @for (topic of getTopicsForCourse(course.id); track topic.id) {
@@ -906,7 +911,6 @@ interface TopicForm {
                   </button>
                 }
               </div>
-
             } @else if (!loadingTopics()) {
               <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
                 <div class="divide-y divide-gray-100">
@@ -988,8 +992,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
   private readonly topicService = inject(TestTopicService);
 
-  private readonly questionService =
-  inject(TestQuestionService);
+  private readonly questionService = inject(TestQuestionService);
 
   private readonly router = inject(Router);
 
@@ -1119,64 +1122,48 @@ export class PartnerTestCenterComponent implements OnInit {
   // ============================================================
 
   private async loadCourses(): Promise<void> {
-  const organizationId =
-    this.context.organizationId();
+    const organizationId = this.context.organizationId();
 
-  if (!organizationId) {
-    this.courses.set([]);
-    return;
+    if (!organizationId) {
+      this.courses.set([]);
+      return;
+    }
+
+    try {
+      this.loadingCourses.set(true);
+
+      const organizationCourses = await this.courseService.getAllCourses(organizationId);
+
+      const courses = organizationCourses.filter(
+        (course) => course.scope === 'organization' && course.organizationId === organizationId,
+      );
+
+      const coursesWithCounts = await Promise.all(
+        courses.map(async (course) => {
+          const questionCount = await this.questionService.getQuestionCountForCourse(
+            organizationId,
+            course.id,
+          );
+
+          return {
+            ...course,
+            questionCount,
+          };
+        }),
+      );
+
+      this.courses.set(coursesWithCounts);
+    } catch (error) {
+      this.courses.set([]);
+
+      const message =
+        error instanceof Error ? error.message : 'We could not load your organization courses.';
+
+      this.toast.error(message);
+    } finally {
+      this.loadingCourses.set(false);
+    }
   }
-
-  try {
-    this.loadingCourses.set(true);
-
-    const organizationCourses =
-      await this.courseService.getAllCourses(
-        organizationId,
-      );
-
-    const courses =
-      organizationCourses.filter(
-        (course) =>
-          course.scope === 'organization' &&
-          course.organizationId === organizationId,
-      );
-
-    const coursesWithCounts =
-      await Promise.all(
-        courses.map(
-          async (course) => {
-            const questionCount =
-              await this.questionService
-                .getQuestionCountForCourse(
-                  organizationId,
-                  course.id,
-                );
-
-            return {
-              ...course,
-              questionCount,
-            };
-          },
-        ),
-      );
-
-    this.courses.set(
-      coursesWithCounts,
-    );
-  } catch (error) {
-    this.courses.set([]);
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'We could not load your organization courses.';
-
-    this.toast.error(message);
-  } finally {
-    this.loadingCourses.set(false);
-  }
-}
 
   // ============================================================
   // LOAD PROGRAMS
@@ -1205,82 +1192,57 @@ export class PartnerTestCenterComponent implements OnInit {
   // LOAD TOPICS
   // ============================================================
 
- private async loadTopics(): Promise<void> {
-  const organizationId =
-    this.context.organizationId();
+  private async loadTopics(): Promise<void> {
+    const organizationId = this.context.organizationId();
 
-  if (!organizationId) {
-    this.topics.set([]);
-    return;
-  }
+    if (!organizationId) {
+      this.topics.set([]);
+      return;
+    }
 
-  const courses =
-    this.courses();
+    const courses = this.courses();
 
-  if (courses.length === 0) {
-    this.topics.set([]);
-    return;
-  }
+    if (courses.length === 0) {
+      this.topics.set([]);
+      return;
+    }
 
-  try {
-    this.loadingTopics.set(true);
+    try {
+      this.loadingTopics.set(true);
 
-    const topicGroups =
-      await Promise.all(
-        courses.map(
-          (course) =>
-            this.topicService.getAllTopics(
-              organizationId,
-              course.id,
-            ),
-        ),
+      const topicGroups = await Promise.all(
+        courses.map((course) => this.topicService.getAllTopics(organizationId, course.id)),
       );
 
-    const topics =
-      topicGroups
-        .flat()
-        .sort(
-          (a, b) =>
-            a.sortOrder -
-            b.sortOrder,
-        );
+      const topics = topicGroups.flat().sort((a, b) => a.sortOrder - b.sortOrder);
 
-    const topicsWithCounts =
-      await Promise.all(
-        topics.map(
-          async (topic) => {
-            const questionCount =
-              await this.questionService
-                .getQuestionCountForTopic(
-                  organizationId,
-                  topic.courseId,
-                  topic.id,
-                );
+      const topicsWithCounts = await Promise.all(
+        topics.map(async (topic) => {
+          const questionCount = await this.questionService.getQuestionCountForTopic(
+            organizationId,
+            topic.courseId,
+            topic.id,
+          );
 
-            return {
-              ...topic,
-              questionCount,
-            };
-          },
-        ),
+          return {
+            ...topic,
+            questionCount,
+          };
+        }),
       );
 
-    this.topics.set(
-      topicsWithCounts,
-    );
-  } catch (error) {
-    this.topics.set([]);
+      this.topics.set(topicsWithCounts);
+    } catch (error) {
+      this.topics.set([]);
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'We could not load your organization topics.';
+      const message =
+        error instanceof Error ? error.message : 'We could not load your organization topics.';
 
-    this.toast.error(message);
-  } finally {
-    this.loadingTopics.set(false);
+      this.toast.error(message);
+    } finally {
+      this.loadingTopics.set(false);
+    }
   }
-}
 
   // ============================================================
   // CREATE COURSE
@@ -1331,7 +1293,7 @@ export class PartnerTestCenterComponent implements OnInit {
       return;
     }
 
-    this.router.navigate(['/partner/dashboard/programs']);
+    this.router.navigate(['/partner/org', this.context.organizationId(), 'programs']);
   }
 
   // ============================================================

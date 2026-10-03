@@ -26,6 +26,17 @@ export interface OrganizationOnboarding {
 
   completedSteps: OrganizationOnboardingStep[];
 
+  /**
+   * Test Center onboarding references.
+   *
+   * These are populated progressively by the backend as
+   * the organization completes the corresponding step.
+   */
+  firstProgramId?: string;
+  firstCourseId?: string;
+  firstTopicId?: string;
+  firstQuestionId?: string;
+
   startedAt?: Timestamp;
   completedAt?: Timestamp;
 

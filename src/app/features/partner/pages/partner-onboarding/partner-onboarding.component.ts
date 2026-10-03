@@ -7,6 +7,8 @@ import { MatButtonModule } from '@angular/material/button';
 
 import { MatCardModule } from '@angular/material/card';
 
+import { MatCheckboxModule } from '@angular/material/checkbox';
+
 import { MatDividerModule } from '@angular/material/divider';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -23,7 +25,6 @@ import { doc, getDoc, getFirestore } from 'firebase/firestore';
 
 import { Organization } from '../../../../core/models/organization.model';
 
-
 import {
   OrganizationOnboarding,
   OrganizationOnboardingStep,
@@ -39,10 +40,11 @@ import {
   OrganizationInvitationRole,
 } from '../../../../core/models/organization-invitation.model';
 
-import {
-  OrganizationInvitationService,
-} from '../../services/organization-invitation.service';
+import { OrganizationInvitationService } from '../../services/organization-invitation.service';
 import { MatSelectModule } from '@angular/material/select';
+import { FormsModule } from '@angular/forms';
+
+import { TestCourseType } from '../../../test-center/models/test-course.model';
 
 interface OnboardingStep {
   key: OrganizationOnboardingStep;
@@ -51,14 +53,18 @@ interface OnboardingStep {
   icon: string;
 }
 
+
+
 @Component({
   selector: 'app-partner-onboarding',
   standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MatDividerModule,
     MatFormFieldModule,
     MatIconModule,
@@ -623,7 +629,7 @@ interface OnboardingStep {
 
                           <span>Saving...</span>
                         } @else {
-                          <mat-icon> arrow_forward </mat-icon>
+                          <mat-icon> menu_book </mat-icon>
 
                           <span> Save & Continue </span>
                         }
@@ -635,279 +641,1194 @@ interface OnboardingStep {
             }
 
             @if (isCurrentStep('invite_members')) {
+              <section class="onboarding-form-section">
+                <div class="form-header">
+                  <div class="form-header-icon">
+                    <mat-icon>group_add</mat-icon>
+                  </div>
 
+                  <div>
+                    <div class="form-kicker">STEP 3</div>
+
+                    <h2>Invite Team Members</h2>
+
+                    <p>Invite people who should have access to your organization.</p>
+                  </div>
+                </div>
+
+                @if (invitationError()) {
+                  <div class="form-error" role="alert">
+                    <mat-icon> error_outline </mat-icon>
+
+                    <span>
+                      {{ invitationError() }}
+                    </span>
+                  </div>
+                }
+
+                <div class="form-section">
+                  <div class="section-heading">
+                    <div class="section-heading-icon">
+                      <mat-icon> person_add </mat-icon>
+                    </div>
+
+                    <div>
+                      <h3>Add a Team Member</h3>
+
+                      <p>Send an invitation and assign the appropriate organization role.</p>
+                    </div>
+                  </div>
+
+                  <div class="field-grid">
+                    <mat-form-field appearance="outline" class="organization-form-field">
+                      <mat-label> Email Address </mat-label>
+
+                      <mat-icon matPrefix> email </mat-icon>
+
+                      <input
+                        matInput
+                        type="email"
+                        [value]="invitationEmail()"
+                        (input)="invitationEmail.set($any($event.target).value)"
+                        autocomplete="email"
+                      />
+
+                      <mat-hint>
+                        The person will receive an invitation to join your organization.
+                      </mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="organization-form-field">
+                      <mat-label> Organization Role </mat-label>
+
+                      <mat-icon matPrefix> badge </mat-icon>
+
+                      <mat-select
+                        [value]="invitationRole()"
+                        (selectionChange)="invitationRole.set($event.value)"
+                      >
+                        @for (role of invitationRoles; track role.value) {
+                          <mat-option [value]="role.value">
+                            {{ role.label }}
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="invite-action-row">
+                    <button
+                      type="button"
+                      mat-stroked-button
+                      class="secondary-button"
+                      [disabled]="invitationSaving()"
+                      (click)="addInvitation()"
+                    >
+                      <mat-icon> add </mat-icon>
+
+                      Add Invitation
+                    </button>
+                  </div>
+                </div>
+
+                @if (invitations().length > 0) {
+                  <div class="form-section">
+                    <div class="section-heading">
+                      <div class="section-heading-icon">
+                        <mat-icon> mail </mat-icon>
+                      </div>
+
+                      <div>
+                        <h3>Invitations</h3>
+
+                        <p>Team members who have been invited to join your organization.</p>
+                      </div>
+                    </div>
+
+                    <div class="invitation-list">
+                      @for (invitation of invitations(); track invitation.id) {
+                        <div class="invitation-item">
+                          <div class="invitation-icon">
+                            <mat-icon> person </mat-icon>
+                          </div>
+
+                          <div class="invitation-details">
+                            <strong>
+                              {{ invitation.email }}
+                            </strong>
+
+                            <span>
+                              {{ invitationRoleLabel(invitation.role) }}
+                            </span>
+                          </div>
+
+                          <span class="invitation-status">
+                            {{ invitation.status }}
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+
+                <div class="form-actions">
+                  <button
+                    type="button"
+                    mat-stroked-button
+                    class="secondary-button"
+                    [disabled]="invitationSaving()"
+                    (click)="goBack()"
+                  >
+                    <mat-icon> arrow_back </mat-icon>
+
+                    Back
+                  </button>
+
+                  <div class="form-actions-right">
+                    <button
+                      type="button"
+                      mat-button
+                      class="skip-button"
+                      [disabled]="invitationSaving()"
+                      (click)="continueInviteMembers()"
+                    >
+                      Skip for now
+                    </button>
+
+                    <button
+                      type="button"
+                      mat-flat-button
+                      class="save-button"
+                      [disabled]="invitationSaving()"
+                      (click)="continueInviteMembers()"
+                    >
+                      <span> Continue </span>
+
+                      <mat-icon> arrow_forward </mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </section>
+            }
+
+            @if (onboarding()?.currentStep === 'configuration') {
+              <section class="onboarding-form-section">
+                <div class="form-header">
+                  <div class="form-header-icon">
+                    <mat-icon>settings</mat-icon>
+                  </div>
+
+                  <div>
+                    <div class="form-kicker">STEP 4</div>
+                    <h2>Organization Configuration</h2>
+                    <p>
+                      Configure how your organization will use Zebron and how members
+                      will interact with courses and testing.
+                    </p>
+                  </div>
+                </div>
+
+                @if (configurationSaveError()) {
+                  <div class="form-error" role="alert">
+                    <mat-icon>error_outline</mat-icon>
+                    <span>{{ configurationSaveError() }}</span>
+                  </div>
+                }
+
+                <div class="form-section">
+                  <div class="section-heading">
+                    <div class="section-heading-icon">
+                      <mat-icon>quiz</mat-icon>
+                    </div>
+
+                    <div>
+                      <h3>Test Center</h3>
+                      <p>Control testing access for your organization.</p>
+                    </div>
+                  </div>
+
+                  <div class="configuration-options">
+                    <label class="configuration-option">
+                      <div class="configuration-option-content">
+                        <div class="configuration-option-title">
+                          Test Center Enabled
+                        </div>
+
+                        <div class="configuration-option-description">
+                          Enable testing features for your organization.
+                        </div>
+                      </div>
+
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="configuration.testCenterEnabled"
+                        [disabled]="configurationSaving()"
+                      />
+                    </label>
+
+                    <label class="configuration-option">
+                      <div class="configuration-option-content">
+                        <div class="configuration-option-title">
+                          Allow Member Testing
+                        </div>
+
+                        <div class="configuration-option-description">
+                          Allow organization members to take available tests.
+                        </div>
+                      </div>
+
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="configuration.allowMemberTesting"
+                        [disabled]="configurationSaving() || !configuration.testCenterEnabled"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-section">
+                  <div class="section-heading">
+                    <div class="section-heading-icon">
+                      <mat-icon>manage_accounts</mat-icon>
+                    </div>
+
+                    <div>
+                      <h3>Member Access</h3>
+                      <p>Define course visibility and default member access.</p>
+                    </div>
+                  </div>
+
+                  <div class="field-grid">
+                    <mat-form-field appearance="outline" class="organization-form-field">
+                      <mat-label>Course Visibility</mat-label>
+                      <mat-icon matPrefix>visibility</mat-icon>
+
+                      <mat-select
+                        [(ngModel)]="configuration.courseVisibility"
+                        [disabled]="configurationSaving()"
+                      >
+                        <mat-option value="all">All Members</mat-option>
+                        <mat-option value="members">Organization Members</mat-option>
+                        <mat-option value="admins">Administrators Only</mat-option>
+                      </mat-select>
+
+                      <mat-hint>
+                        Controls who can view organization courses.
+                      </mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="organization-form-field">
+                      <mat-label>Default Member Role</mat-label>
+                      <mat-icon matPrefix>person</mat-icon>
+
+                      <mat-select
+                        [(ngModel)]="configuration.defaultMemberRole"
+                        [disabled]="configurationSaving()"
+                      >
+                        <mat-option value="org_member">
+                          Organization Member
+                        </mat-option>
+
+                        <mat-option value="org_staff">
+                          Organization Staff
+                        </mat-option>
+
+                        <mat-option value="org_manager">
+                          Organization Manager
+                        </mat-option>
+                      </mat-select>
+
+                      <mat-hint>
+                        Role assigned to newly registered members.
+                      </mat-hint>
+                    </mat-form-field>
+                  </div>
+
+                  <label class="configuration-option">
+                    <div class="configuration-option-content">
+                      <div class="configuration-option-title">
+                        Allow Self Registration
+                      </div>
+
+                      <div class="configuration-option-description">
+                        Allow users to register themselves with the organization.
+                      </div>
+                    </div>
+
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="configuration.allowSelfRegistration"
+                      [disabled]="configurationSaving()"
+                    />
+                  </label>
+                </div>
+
+                <div class="form-section">
+                  <div class="section-heading">
+                    <div class="section-heading-icon">
+                      <mat-icon>notifications</mat-icon>
+                    </div>
+
+                    <div>
+                      <h3>Notifications</h3>
+                      <p>Choose which organization events should generate notifications.</p>
+                    </div>
+                  </div>
+
+                  <div class="configuration-options">
+                    <label class="configuration-option">
+                      <div class="configuration-option-content">
+                        <div class="configuration-option-title">
+                          Administrator Notifications
+                        </div>
+
+                        <div class="configuration-option-description">
+                          Notify organization administrators about relevant activity.
+                        </div>
+                      </div>
+
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="configuration.adminNotifications"
+                        [disabled]="configurationSaving()"
+                      />
+                    </label>
+
+                    <label class="configuration-option">
+                      <div class="configuration-option-content">
+                        <div class="configuration-option-title">
+                          Test Result Notifications
+                        </div>
+
+                        <div class="configuration-option-description">
+                          Send notifications when members complete tests.
+                        </div>
+                      </div>
+
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="configuration.testResultNotifications"
+                        [disabled]="configurationSaving()"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-section">
+                  <div class="section-heading">
+                    <div class="section-heading-icon">
+                      <mat-icon>palette</mat-icon>
+                    </div>
+
+                    <div>
+                      <h3>Organization Branding</h3>
+                      <p>
+                        Choose the primary and secondary colors for your organization.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="field-grid">
+                    <mat-form-field appearance="outline" class="organization-form-field">
+                      <mat-label>Primary Color</mat-label>
+                      <mat-icon matPrefix>format_color_fill</mat-icon>
+
+                      <input
+                        matInput
+                        type="text"
+                        maxlength="7"
+                        [(ngModel)]="configuration.primaryColor"
+                        [disabled]="configurationSaving()"
+                        placeholder="#007979"
+                      />
+
+                      <mat-hint>Hex color, for example #007979.</mat-hint>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="organization-form-field">
+                      <mat-label>Secondary Color</mat-label>
+                      <mat-icon matPrefix>format_color_fill</mat-icon>
+
+                      <input
+                        matInput
+                        type="text"
+                        maxlength="7"
+                        [(ngModel)]="configuration.secondaryColor"
+                        [disabled]="configurationSaving()"
+                        placeholder="#032D42"
+                      />
+
+                      <mat-hint>Hex color, for example #032D42.</mat-hint>
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button
+                    type="button"
+                    mat-stroked-button
+                    class="secondary-button"
+                    [disabled]="configurationSaving()"
+                    (click)="goBack()"
+                  >
+                    <mat-icon>arrow_back</mat-icon>
+                    Back
+                  </button>
+
+                  <button
+                    type="button"
+                    mat-flat-button
+                    class="primary-button save-button"
+                    [disabled]="configurationSaving()"
+                    (click)="saveConfiguration()"
+                  >
+                    @if (configurationSaving()) {
+                      <mat-spinner
+                        diameter="19"
+                        class="button-spinner"
+                      ></mat-spinner>
+                      <span>Saving...</span>
+                    } @else {
+                      <span>Save & Continue</span>
+                    }
+
+                    <mat-icon
+                      iconPositionEnd
+                      [class.icon-hidden]="configurationSaving()"
+                    >
+                      arrow_forward
+                    </mat-icon>
+                  </button>
+                </div>
+              </section>
+            }
+
+            @if (onboarding()?.currentStep === 'first_program') {
+              <section class="onboarding-form-section">
+                <div class="form-header">
+                  <div class="form-header-icon">
+                    <mat-icon>school</mat-icon>
+                  </div>
+
+                  <div>
+                    <div class="form-kicker">STEP 5</div>
+
+                    <h2>First Program</h2>
+
+                    <p>Create the first program your organization will use in the Test Center.</p>
+                  </div>
+                </div>
+
+                @if (firstProgramSaveError()) {
+                  <div class="form-error" role="alert">
+                    <mat-icon>error_outline</mat-icon>
+
+                    <span>
+                      {{ firstProgramSaveError() }}
+                    </span>
+                  </div>
+                }
+
+                <form
+                  [formGroup]="firstProgramForm"
+                  class="organization-form"
+                  (ngSubmit)="saveFirstProgram()"
+                >
+                  <div class="form-section">
+                    <div class="section-heading">
+                      <div class="section-heading-icon">
+                        <mat-icon>school</mat-icon>
+                      </div>
+
+                      <div>
+                        <h3>Program Information</h3>
+
+                        <p>Define the first learning program for your organization.</p>
+                      </div>
+                    </div>
+
+                    <div class="field-grid">
+                      <!-- Program Name -->
+                      <mat-form-field appearance="outline" class="organization-form-field">
+                        <mat-label>Program Name</mat-label>
+
+                        <mat-icon matPrefix> school </mat-icon>
+
+                        <input
+                          matInput
+                          formControlName="name"
+                          autocomplete="off"
+                          
+                        />
+
+                        @if (firstProgramForm.controls.name.hasError('required')) {
+                          <mat-error> Program name is required. </mat-error>
+                        }
+
+                        @if (firstProgramForm.controls.name.hasError('maxlength')) {
+                          <mat-error> Program name cannot exceed 150 characters. </mat-error>
+                        }
+                      </mat-form-field>
+
+                      <!-- Program Slug -->
+                      <mat-form-field appearance="outline" class="organization-form-field">
+                        <mat-label>Program Slug</mat-label>
+
+                        <mat-icon matPrefix> link </mat-icon>
+
+                        <input
+                          matInput
+                          formControlName="slug"
+                          autocomplete="off"
+                          readonly
+                        />
+
+                        <mat-hint>Automatically generated & Used as the program's unique identifier. </mat-hint>
+
+                        @if (firstProgramForm.controls.slug.hasError('required')) {
+                          <mat-error> Program slug is required. </mat-error>
+                        }
+
+                        @if (firstProgramForm.controls.slug.hasError('maxlength')) {
+                          <mat-error> Program slug cannot exceed 150 characters. </mat-error>
+                        }
+                      </mat-form-field>
+
+                      <!-- Description -->
+                      <mat-form-field
+                        appearance="outline"
+                        class="organization-form-field full-field"
+                      >
+                        <mat-label>Description</mat-label>
+
+                        <mat-icon matPrefix> description </mat-icon>
+
+                        <textarea
+                          matInput
+                          formControlName="description"
+                          rows="5"
+                          
+                        ></textarea>
+
+                        <mat-hint> Optional. Maximum 2,000 characters. </mat-hint>
+
+                        @if (firstProgramForm.controls.description.hasError('maxlength')) {
+                          <mat-error> Description cannot exceed 2,000 characters. </mat-error>
+                        }
+                      </mat-form-field>
+                    </div>
+                  </div>
+
+                  <div class="form-actions">
+                    <button
+                      type="button"
+                      mat-stroked-button
+                      class="secondary-button"
+                      [disabled]="firstProgramSaving()"
+                      (click)="goBack()"
+                    >
+                      <mat-icon> arrow_back </mat-icon>
+
+                      Back
+                    </button>
+
+                    <button
+                      type="submit"
+                      mat-flat-button
+                      class="save-button"
+                      [disabled]="firstProgramSaving() || firstProgramForm.invalid"
+                    >
+                      <span class="button-content">
+                        @if (firstProgramSaving()) {
+                          <mat-spinner diameter="18" class="button-spinner"></mat-spinner>
+
+                          <span>Saving...</span>
+                        } @else {
+                          <span>Save & Continue</span>
+
+                          <mat-icon> arrow_forward </mat-icon>
+                        }
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              </section>
+            }
+
+           @if (onboarding()?.currentStep === 'first_course') {
+              <section class="onboarding-form-section">
+                <div class="form-header">
+                  <div class="form-header-icon">
+                    <mat-icon>menu_book</mat-icon>
+                  </div>
+
+                  <div>
+                    <div class="form-kicker">STEP 6</div>
+
+                    <h2>First Course</h2>
+
+                    <p>
+                      Create the first course your organization will use within its first program.
+                    </p>
+                  </div>
+                </div>
+
+                @if (firstCourseSaveError()) {
+                  <div class="form-error" role="alert">
+                    <mat-icon>error_outline</mat-icon>
+
+                    <span>
+                      {{ firstCourseSaveError() }}
+                    </span>
+                  </div>
+                }
+
+                <form
+                  [formGroup]="firstCourseForm"
+                  class="organization-form"
+                  (ngSubmit)="saveFirstCourse()"
+                >
+                  <div class="form-section">
+                    <div class="section-heading">
+                      <div class="section-heading-icon">
+                        <mat-icon>school</mat-icon>
+                      </div>
+
+                      <div>
+                        <h3>Program Ready</h3>
+
+                        <p>
+                          Your first program has been created. The course you create here will be
+                          automatically linked to that program.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="first-course-program-card">
+                      <div class="first-course-program-icon">
+                        <mat-icon>check_circle</mat-icon>
+                      </div>
+
+                      <div class="first-course-program-content">
+                        <span class="first-course-program-label">
+                          FIRST PROGRAM
+                        </span>
+
+                        <strong>Program Created Successfully</strong>
+
+                        <p>
+                          Your first course will be added to this program automatically.
+                        </p>
+                      </div>
+
+                      <mat-icon class="first-course-program-check">
+                        check_circle
+                      </mat-icon>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <div class="section-heading">
+                      <div class="section-heading-icon">
+                        <mat-icon>menu_book</mat-icon>
+                      </div>
+
+                      <div>
+                        <h3>Course Information</h3>
+
+                        <p>
+                          Provide the information members will see when they access this course.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="field-grid">
+                      <!-- Course Name -->
+                      <mat-form-field
+                        appearance="outline"
+                        class="organization-form-field"
+                      >
+                        <mat-label>Course Name</mat-label>
+
+                        <mat-icon matPrefix>menu_book</mat-icon>
+
+                        <input
+                          matInput
+                          formControlName="name"
+                          autocomplete="off"
+                          placeholder="e.g. AWS Cloud Practitioner"
+                        />
+
+                        <mat-hint>
+                          Enter the name of the course.
+                        </mat-hint>
+
+                        @if (firstCourseForm.controls.name.hasError('required')) {
+                          <mat-error>
+                            Course name is required.
+                          </mat-error>
+                        }
+
+                        @if (firstCourseForm.controls.name.hasError('maxlength')) {
+                          <mat-error>
+                            Course name cannot exceed 150 characters.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+
+                      <!-- Course Slug -->
+                      <mat-form-field
+                        appearance="outline"
+                        class="organization-form-field"
+                      >
+                        <mat-label>Course Slug</mat-label>
+
+                        <mat-icon matPrefix>link</mat-icon>
+
+                        <input
+                          matInput
+                          formControlName="slug"
+                          autocomplete="off"
+                          readonly
+                          aria-readonly="true"
+                        />
+
+                        <mat-hint>
+                          Automatically generated from the course name.
+                        </mat-hint>
+
+                        @if (firstCourseForm.controls.slug.hasError('required')) {
+                          <mat-error>
+                            Course slug is required.
+                          </mat-error>
+                        }
+
+                        @if (firstCourseForm.controls.slug.hasError('maxlength')) {
+                          <mat-error>
+                            Course slug cannot exceed 150 characters.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+
+                      <!-- Description -->
+                      <mat-form-field
+                        appearance="outline"
+                        class="organization-form-field full-field"
+                      >
+                        <mat-label>Description</mat-label>
+
+                        <mat-icon matPrefix>description</mat-icon>
+
+                        <textarea
+                          matInput
+                          formControlName="description"
+                          rows="5"
+                          placeholder="Describe what learners will gain from this course."
+                        ></textarea>
+
+                        <mat-hint>
+                          Required. Maximum 2,000 characters.
+                        </mat-hint>
+
+                        @if (
+                          firstCourseForm.controls.description.hasError('required')
+                          && firstCourseForm.controls.description.touched
+                        ) {
+                          <mat-error>
+                            Course description is required.
+                          </mat-error>
+                        }
+
+                        @if (firstCourseForm.controls.description.hasError('maxlength')) {
+                          <mat-error>
+                            Description cannot exceed 2,000 characters.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+
+                      <!-- Course Type -->
+                      <mat-form-field
+                        appearance="outline"
+                        class="organization-form-field"
+                      >
+                        <mat-label>Course Type</mat-label>
+
+                        <mat-icon matPrefix>category</mat-icon>
+
+                        <mat-select formControlName="type">
+                          @for (courseType of courseTypes; track courseType.value) {
+                            <mat-option [value]="courseType.value">
+                              {{ courseType.label }}
+                            </mat-option>
+                          }
+                        </mat-select>
+
+                        <mat-hint>
+                          Select how this offering is classified.
+                        </mat-hint>
+                      </mat-form-field>
+
+                      <!-- Provider -->
+                      <mat-form-field
+                        appearance="outline"
+                        class="organization-form-field"
+                      >
+                        <mat-label>Provider</mat-label>
+
+                        <mat-icon matPrefix>business</mat-icon>
+
+                        <input
+                          matInput
+                          formControlName="provider"
+                          autocomplete="organization"
+                          placeholder="e.g. AWS, CompTIA, Microsoft"
+                        />
+
+                        <mat-hint>
+                          Optional. Identify the course provider.
+                        </mat-hint>
+
+                        @if (firstCourseForm.controls.provider.hasError('maxlength')) {
+                          <mat-error>
+                            Provider cannot exceed 200 characters.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+                    </div>
+                  </div>
+
+                  <div class="form-actions">
+                    <button
+                      type="button"
+                      mat-stroked-button
+                      class="secondary-button"
+                      [disabled]="firstCourseSaving()"
+                      (click)="goBack()"
+                    >
+                      <mat-icon>arrow_back</mat-icon>
+                      Back
+                    </button>
+
+                    <button
+                      type="submit"
+                      mat-flat-button
+                      class="save-button"
+                      [disabled]="firstCourseSaving() || firstCourseForm.invalid"
+                    >
+                      <span class="button-content">
+                        @if (firstCourseSaving()) {
+                          <mat-spinner
+                            diameter="18"
+                            class="button-spinner"
+                          ></mat-spinner>
+
+                          <span>Saving...</span>
+                        } @else {
+                          <span>Save & Continue</span>
+                        }
+
+                        <mat-icon
+                          iconPositionEnd
+                          [class.icon-hidden]="firstCourseSaving()"
+                        >
+                          arrow_forward
+                        </mat-icon>
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              </section>
+            }
+
+       <!-- =================================================
+     STEP 7
+     ================================================= -->
+@if (onboarding()?.currentStep === 'first_topic') {
   <section class="onboarding-form-section">
-
     <div class="form-header">
       <div class="form-header-icon">
-        <mat-icon>group_add</mat-icon>
+        <mat-icon>topic</mat-icon>
       </div>
 
       <div>
-        <div class="form-kicker">
-          STEP 3
-        </div>
+        <div class="form-kicker">STEP 7</div>
 
-        <h2>
-          Invite Team Members
-        </h2>
+        <h2>First Topic</h2>
 
         <p>
-          Invite people who should have access to your organization.
+          Create the first topic for your organization's first course.
         </p>
       </div>
     </div>
 
-    @if (invitationError()) {
-      <div
-        class="form-error"
-        role="alert"
-      >
-        <mat-icon>
-          error_outline
-        </mat-icon>
+    @if (firstTopicSaveError()) {
+      <div class="form-error" role="alert">
+        <mat-icon>error_outline</mat-icon>
 
         <span>
-          {{ invitationError() }}
+          {{ firstTopicSaveError() }}
         </span>
       </div>
     }
 
-    <div class="form-section">
+    <form
+      [formGroup]="firstTopicForm"
+      class="organization-form"
+      (ngSubmit)="saveFirstTopic()"
+    >
+      <!-- COURSE CONTEXT -->
+      <div class="form-section">
+        <div class="section-heading">
+          <div class="section-heading-icon">
+            <mat-icon>menu_book</mat-icon>
+          </div>
 
-      <div class="section-heading">
+          <div>
+            <h3>Course</h3>
 
-        <div class="section-heading-icon">
-          <mat-icon>
-            person_add
-          </mat-icon>
+            <p>
+              This topic will be created under your organization's
+              first course.
+            </p>
+          </div>
         </div>
 
-        <div>
-          <h3>
-            Add a Team Member
-          </h3>
+        <div class="first-course-program-card">
+          <div class="first-course-program-icon">
+            <mat-icon>menu_book</mat-icon>
+          </div>
 
-          <p>
-            Send an invitation and assign the appropriate
-            organization role.
-          </p>
+          <div class="first-course-program-content">
+            <span class="first-course-program-label">
+              FIRST COURSE
+            </span>
+
+            <strong>
+              {{ firstCourseNameForTopic() }}
+            </strong>
+
+            <p>
+              The first topic will be associated with this course.
+            </p>
+          </div>
         </div>
-
       </div>
 
-      <div class="field-grid">
+      <!-- TOPIC DETAILS -->
+      <div class="form-section">
+        <div class="section-heading">
+          <div class="section-heading-icon">
+            <mat-icon>topic</mat-icon>
+          </div>
 
+          <div>
+            <h3>Topic Details</h3>
+
+            <p>
+              Give the topic a clear name and description.
+            </p>
+          </div>
+        </div>
+
+        <!-- Topic Name -->
         <mat-form-field
           appearance="outline"
-          class="organization-form-field"
+          class="organization-form-field full-field"
         >
-          <mat-label>
-            Email Address
-          </mat-label>
+          <mat-label>Topic Name</mat-label>
 
-          <mat-icon matPrefix>
-            email
-          </mat-icon>
+          <mat-icon matPrefix>topic</mat-icon>
 
           <input
             matInput
-            type="email"
-            [value]="invitationEmail()"
-            (input)="invitationEmail.set($any($event.target).value)"
-            autocomplete="email"
-            
+            formControlName="name"
+            autocomplete="off"
+            placeholder="e.g. Introduction to AWS"
           />
 
           <mat-hint>
-            The person will receive an invitation to join
-            your organization.
+            Use a clear name that describes the topic.
           </mat-hint>
+
+          @if (firstTopicForm.controls.name.hasError('required')) {
+            <mat-error>
+              Topic name is required.
+            </mat-error>
+          }
+
+          @if (firstTopicForm.controls.name.hasError('maxlength')) {
+            <mat-error>
+              Topic name cannot exceed 150 characters.
+            </mat-error>
+          }
         </mat-form-field>
 
+        <!-- Slug -->
         <mat-form-field
           appearance="outline"
-          class="organization-form-field"
+          class="organization-form-field full-field"
         >
-          <mat-label>
-            Organization Role
-          </mat-label>
+          <mat-label>Topic Slug</mat-label>
 
-          <mat-icon matPrefix>
-            badge
-          </mat-icon>
+          <mat-icon matPrefix>link</mat-icon>
 
-          <mat-select
-            [value]="invitationRole()"
-            (selectionChange)="invitationRole.set($event.value)"
-          >
-            @for (role of invitationRoles; track role.value) {
-              <mat-option [value]="role.value">
-                {{ role.label }}
-              </mat-option>
-            }
-          </mat-select>
+          <input
+            matInput
+            formControlName="slug"
+            readonly
+            aria-readonly="true"
+          />
+
+          <mat-hint>
+            Automatically generated from the topic name.
+          </mat-hint>
+
+          @if (firstTopicForm.controls.slug.hasError('required')) {
+            <mat-error>
+              Topic slug is required.
+            </mat-error>
+          }
+
+          @if (firstTopicForm.controls.slug.hasError('maxlength')) {
+            <mat-error>
+              Topic slug cannot exceed 150 characters.
+            </mat-error>
+          }
         </mat-form-field>
 
+        <!-- Description -->
+        <mat-form-field
+          appearance="outline"
+          class="organization-form-field full-field"
+        >
+          <mat-label>Description</mat-label>
+
+          <mat-icon matPrefix>description</mat-icon>
+
+          <textarea
+            matInput
+            formControlName="description"
+            rows="5"
+            placeholder="Describe what learners will study in this topic."
+          ></textarea>
+
+          <mat-hint>
+            Optional. Maximum 2,000 characters.
+          </mat-hint>
+
+          @if (firstTopicForm.controls.description.hasError('maxlength')) {
+            <mat-error>
+              Topic description cannot exceed 2,000 characters.
+            </mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Active -->
+        <div class="form-toggle-row">
+          <div>
+            <strong>Active Topic</strong>
+
+            <p>
+              Make this topic available immediately after onboarding.
+            </p>
+          </div>
+
+          <mat-checkbox
+            formControlName="active"
+            class="first-course-program-check"
+          >
+            Active
+          </mat-checkbox>
+        </div>
       </div>
 
-      <div class="invite-action-row">
+      <!-- ERROR -->
+      @if (firstTopicSaveError()) {
+        <div class="save-error">
+          <div class="save-error-icon">
+            <mat-icon>error_outline</mat-icon>
+          </div>
 
+          <div class="save-error-content">
+            <h4>Unable to create first topic</h4>
+
+            <p>
+              {{ firstTopicSaveError() }}
+            </p>
+          </div>
+        </div>
+      }
+
+      <!-- ACTIONS -->
+      <div class="form-actions">
         <button
           type="button"
           mat-stroked-button
           class="secondary-button"
-          [disabled]="invitationSaving()"
-          (click)="addInvitation()"
+          [disabled]="firstTopicSaving()"
+          (click)="goBack()"
         >
-          <mat-icon>
-            add
-          </mat-icon>
+          <mat-icon>arrow_back</mat-icon>
 
-          Add Invitation
-        </button>
-
-      </div>
-
-    </div>
-
-
-    @if (invitations().length > 0) {
-
-      <div class="form-section">
-
-        <div class="section-heading">
-
-          <div class="section-heading-icon">
-            <mat-icon>
-              mail
-            </mat-icon>
-          </div>
-
-          <div>
-            <h3>
-              Invitations
-            </h3>
-
-            <p>
-              Team members who have been invited to join
-              your organization.
-            </p>
-          </div>
-
-        </div>
-
-        <div class="invitation-list">
-
-          @for (
-            invitation of invitations();
-            track invitation.id
-          ) {
-
-            <div class="invitation-item">
-
-              <div class="invitation-icon">
-                <mat-icon>
-                  person
-                </mat-icon>
-              </div>
-
-              <div class="invitation-details">
-
-                <strong>
-                  {{ invitation.email }}
-                </strong>
-
-                <span>
-                  {{ invitationRoleLabel(invitation.role) }}
-                </span>
-
-              </div>
-
-              <span class="invitation-status">
-                {{ invitation.status }}
-              </span>
-
-            </div>
-
-          }
-
-        </div>
-
-      </div>
-
-    }
-
-
-    <div class="form-actions">
-
-      <button
-        type="button"
-        mat-stroked-button
-        class="secondary-button"
-        [disabled]="invitationSaving()"
-        (click)="goBack()"
-      >
-        <mat-icon>
-          arrow_back
-        </mat-icon>
-
-        Back
-      </button>
-
-      <div class="form-actions-right">
-
-        <button
-          type="button"
-          mat-button
-          class="skip-button"
-          [disabled]="invitationSaving()"
-          (click)="continueInviteMembers()"
-        >
-          Skip for now
+          Back
         </button>
 
         <button
-          type="button"
+          type="submit"
           mat-flat-button
-          class="save-button"
-          [disabled]="invitationSaving()"
-          (click)="continueInviteMembers()"
+          class="primary-button save-button"
+          [disabled]="firstTopicSaving() || firstTopicForm.invalid"
         >
-          <span>
-            Continue
+          <span class="button-content">
+            @if (firstTopicSaving()) {
+              <mat-spinner
+                diameter="18"
+                class="button-spinner"
+              ></mat-spinner>
+
+              <span>Saving...</span>
+            } @else {
+              <span>Save & Continue</span>
+            }
           </span>
 
-          <mat-icon>
+          <mat-icon
+            iconPositionEnd
+            [class.icon-hidden]="firstTopicSaving()"
+          >
             arrow_forward
           </mat-icon>
         </button>
-
       </div>
-
-    </div>
-
+    </form>
   </section>
 }
 
-            <!-- =================================================
-                 FUTURE STEPS
-                 ================================================= -->
-            @else {
-              <div class="future-step">
-                <div class="future-step-icon">
-                  <mat-icon> construction </mat-icon>
-                </div>
+<!-- =================================================
+     STEP 8
+     ================================================= -->
+@if (onboarding()?.currentStep === 'first_question') {
+  <div class="future-step">
+    <div class="future-step-icon">
+      <mat-icon>quiz</mat-icon>
+    </div>
 
-                <span class="future-step-label"> NEXT ONBOARDING STEP </span>
+    <span class="future-step-label">
+      NEXT ONBOARDING STEP
+    </span>
 
-                <h3>
-                  {{ currentStepLabel() }}
-                </h3>
+    <h3>
+      First Question
+    </h3>
 
-                <p>This step is next in the organization's onboarding journey.</p>
-              </div>
-            }
+    <p>
+      The first topic has been created. The next step is to
+      create the organization's first question.
+    </p>
+  </div>
+}
+
+          
           </section>
         }
       </div>
@@ -1865,6 +2786,99 @@ interface OnboardingStep {
       }
 
       /* ============================================================
+       FIRST COURSE
+       ============================================================ */
+
+      .first-course-program-card {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 0.25rem;
+        border: 1px solid #cfe4e5;
+        border-radius: 0.8rem;
+        background: #f7fbfb;
+        padding: 1rem 1.1rem;
+      }
+
+      .first-course-program-icon {
+        display: flex;
+        width: 2.4rem;
+        height: 2.4rem;
+        flex: 0 0 2.4rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.7rem;
+        background: var(--zebron-pale);
+        color: var(--zebron-teal);
+      }
+
+      .first-course-program-icon mat-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+        font-size: 1.25rem;
+      }
+
+      .first-course-program-content {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .first-course-program-label {
+        display: block;
+        margin-bottom: 0.15rem;
+        color: var(--zebron-teal);
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .first-course-program-content strong {
+        display: block;
+        color: var(--zebron-navy);
+        font-size: 0.88rem;
+        font-weight: 750;
+      }
+
+      .first-course-program-content p {
+        margin: 0.2rem 0 0;
+        color: var(--text-secondary);
+        font-size: 0.76rem;
+        line-height: 1.45;
+      }
+
+      .form-toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1.25rem;
+        padding: 1rem 1.1rem;
+        border: 1px solid #dbe7ea;
+        border-radius: 0.9rem;
+        background: #f8fbfc;
+      }
+
+      .form-toggle-row strong {
+        display: block;
+        color: var(--zebron-navy);
+        font-size: 0.9rem;
+      }
+
+      .form-toggle-row p {
+        margin: 0.25rem 0 0;
+        color: #6f8b92;
+        font-size: 0.78rem;
+      }
+
+      .first-course-program-check {
+        flex: 0 0 auto;
+        color: var(--zebron-teal);
+      }
+
+      /* ============================================================
        FUTURE STEP
        ============================================================ */
 
@@ -2025,7 +3039,7 @@ export class PartnerOnboardingComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly formBuilder = inject(FormBuilder);
   private readonly onboardingService = inject(OrganizationOnboardingService);
-    
+
   private readonly invitationService = inject(OrganizationInvitationService);
   /**
    * Page title service.
@@ -2047,21 +3061,16 @@ export class PartnerOnboardingComponent implements OnInit {
 
   protected readonly ownerSaving = signal(false);
 
-  protected readonly ownerSaveError = signal<string | null>(null)
-  protected readonly invitations =
-  signal<OrganizationInvitation[]>([]);
+  protected readonly ownerSaveError = signal<string | null>(null);
+  protected readonly invitations = signal<OrganizationInvitation[]>([]);
 
-protected readonly invitationSaving =
-  signal(false);
+  protected readonly invitationSaving = signal(false);
 
-protected readonly invitationError =
-  signal<string | null>(null);
+  protected readonly invitationError = signal<string | null>(null);
 
-protected readonly invitationEmail =
-  signal('');
+  protected readonly invitationEmail = signal('');
 
-protected readonly invitationRole =
-  signal<OrganizationInvitationRole>('org_member');;
+  protected readonly invitationRole = signal<OrganizationInvitationRole>('org_member');
 
   protected readonly steps: OnboardingStep[] = [
     {
@@ -2115,26 +3124,71 @@ protected readonly invitationRole =
   ];
 
   protected readonly invitationRoles: {
-  value: OrganizationInvitationRole;
+    value: OrganizationInvitationRole;
+    label: string;
+  }[] = [
+    {
+      value: 'org_admin',
+      label: 'Organization Admin',
+    },
+    {
+      value: 'org_manager',
+      label: 'Organization Manager',
+    },
+    {
+      value: 'org_staff',
+      label: 'Organization Staff',
+    },
+    {
+      value: 'org_member',
+      label: 'Organization Member',
+    },
+  ];
+
+  protected readonly courseTypes: {
+  value: TestCourseType;
   label: string;
 }[] = [
   {
-    value: 'org_admin',
-    label: 'Organization Admin',
+    value: 'course',
+    label: 'Course',
   },
   {
-    value: 'org_manager',
-    label: 'Organization Manager',
+    value: 'certification',
+    label: 'Certification',
   },
   {
-    value: 'org_staff',
-    label: 'Organization Staff',
+    value: 'subject',
+    label: 'Subject',
   },
   {
-    value: 'org_member',
-    label: 'Organization Member',
+    value: 'skill',
+    label: 'Skill',
   },
 ];
+
+  protected readonly firstCourseSaving = signal(false);
+  protected readonly firstCourseSaveError = signal<string | null>(null);
+
+  protected readonly firstCourseForm = this.formBuilder.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(150)]],
+    slug: ['', [Validators.required, Validators.maxLength(150)]],
+    description: ['', [Validators.required, Validators.maxLength(2000)]],
+    provider: ['', [Validators.maxLength(200)]],
+    type: 'course' as TestCourseType,
+    active: true,
+  });
+
+  protected readonly firstTopicSaving = signal(false);
+
+  protected readonly firstTopicSaveError = signal<string | null>(null);
+
+  protected readonly firstTopicForm = this.formBuilder.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(150)]],
+    slug: ['', [Validators.required, Validators.maxLength(150)]],
+    description: ['', [Validators.maxLength(2000)]],
+    active: true,
+  });
 
   protected readonly organizationForm = this.formBuilder.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(150)]],
@@ -2171,7 +3225,74 @@ protected readonly invitationRole =
     phone: ['', [Validators.maxLength(50)]],
   });
 
+  protected readonly firstProgramSaving = signal(false);
+
+  protected readonly firstProgramSaveError = signal<string | null>(null);
+
+  protected readonly firstProgramForm = this.formBuilder.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(150)]],
+
+    slug: ['', [Validators.required, Validators.maxLength(150)]],
+
+    description: ['', [Validators.maxLength(2000)]],
+  });
+
+  protected readonly configurationSaving = signal(false);
+
+  protected readonly configurationSaveError = signal<string | null>(null);
+
+  protected configuration = {
+    testCenterEnabled: true,
+    allowMemberTesting: true,
+    courseVisibility: 'all' as 'all' | 'members' | 'admins',
+
+    allowSelfRegistration: false,
+
+    defaultMemberRole: 'org_member' as 'org_member' | 'org_staff' | 'org_manager',
+
+    adminNotifications: true,
+    testResultNotifications: true,
+
+    primaryColor: '#007979',
+    secondaryColor: '#032D42',
+  };
+
+  protected firstCourseNameForTopic(): string {
+  return (
+    this.firstCourseForm.controls.name.value.trim() ||
+    'First Course'
+  );
+}
+
   ngOnInit(): void {
+    this.firstProgramForm.controls.name.valueChanges.subscribe((name) => {
+      const slug = this.generateProgramSlug(name);
+
+      this.firstProgramForm.controls.slug.setValue(slug, {
+        emitEvent: false,
+      });
+    });
+
+    this.firstCourseForm.controls.name.valueChanges.subscribe((name) => {
+      const slug = this.generateCourseSlug(name);
+
+      this.firstCourseForm.controls.slug.setValue(slug, {
+        emitEvent: false,
+      });
+
+      this.firstCourseSaveError.set(null);
+    });
+
+    this.firstTopicForm.controls.name.valueChanges.subscribe((name) => {
+      const slug = this.generateTopicSlug(name);
+
+      this.firstTopicForm.controls.slug.setValue(slug, {
+        emitEvent: false,
+      });
+
+      this.firstTopicSaveError.set(null);
+    });
+
     void this.load();
   }
 
@@ -2202,14 +3323,15 @@ protected readonly invitationRole =
       }
 
       this.onboarding.set(onboarding);
-      //console.log('CURRENT STEP:', onboarding.currentStep);
-      //console.log('COMPLETED STEPS:', onboarding.completedSteps);
+      console.log('CURRENT STEP:', onboarding.currentStep);
+      console.log('COMPLETED STEPS:', onboarding.completedSteps);
       this.organization.set(organization);
 
       this.pageTitleService.setTitle(`${organization.name}`);
 
-      this.populateOrganizationForm(organization);
-      this.populateOwnerForm();
+this.populateOrganizationForm(organization);
+this.populateOwnerForm();
+await this.loadOrganizationConfiguration(organizationId);
     } catch (error: unknown) {
       console.error('Failed to load organization onboarding.', error);
 
@@ -2275,21 +3397,14 @@ protected readonly invitationRole =
       const formValue = this.organizationForm.getRawValue();
 
       const profile: OrganizationOnboardingProfileInput = {
-        name: formValue.name,
-
-        slug: formValue.slug,
-
-        companyNumber: formValue.companyNumber,
-
-        description: formValue.description,
-
-        website: formValue.website,
-
-        phone: formValue.phone,
-
-        email: formValue.email,
-
-        locationId: formValue.locationId,
+        name: formValue.name.trim(),
+        slug: formValue.slug.trim(),
+        companyNumber: formValue.companyNumber.trim(),
+        description: formValue.description.trim(),
+        website: formValue.website.trim(),
+        phone: formValue.phone.trim(),
+        email: formValue.email.trim(),
+        locationId: formValue.locationId.trim(),
       };
 
       const response = await this.onboardingService.updateOrganizationProfile(
@@ -2297,22 +3412,29 @@ protected readonly invitationRole =
         profile,
       );
 
-      if (!response.success) {
+      if (!response?.success) {
         throw new Error('The organization profile could not be saved.');
       }
 
       /*
-       * The Cloud Function owns the onboarding
-       * state transition.
+       * The backend owns the onboarding transition.
+       *
+       * Expected:
+       *
+       * organization_profile
+       *        ↓
+       * owner_profile
        */
       const updatedOnboarding = await this.onboardingService.getOnboarding(organizationId);
 
+      if (!updatedOnboarding) {
+        throw new Error(
+          'The organization profile was saved, but the updated onboarding state could not be loaded.',
+        );
+      }
+
       this.onboarding.set(updatedOnboarding);
 
-      /*
-       * Reload organization data because the backend
-       * may normalize the submitted values.
-       */
       const updatedOrganization = await this.getOrganization(organizationId);
 
       this.organization.set(updatedOrganization);
@@ -2322,9 +3444,13 @@ protected readonly invitationRole =
       }
 
       /*
-       * Clear any previous save error after a
-       * successful operation.
+       * Step 2 needs the owner profile loaded only
+       * after the backend has moved us to owner_profile.
        */
+      if (updatedOnboarding.currentStep === 'owner_profile') {
+        this.populateOwnerForm();
+      }
+
       this.saveError.set(null);
     } catch (error: unknown) {
       console.error('Failed to save organization profile.', error);
@@ -2385,17 +3511,19 @@ protected readonly invitationRole =
     return Math.min(100, Math.round(((completed + 1) / this.steps.length) * 100));
   }
 
-  protected goBack(): void {
-    const organizationId = this.organizationId();
+protected goBack(): void {
+  const organizationId = this.organizationId();
 
-    if (organizationId) {
-      void this.router.navigate(['/partner/org', organizationId, 'dashboard']);
-
-      return;
-    }
-
-    void this.router.navigate(['/partner/dashboard']);
+  if (!organizationId) {
+    return;
   }
+
+  void this.router.navigate([
+    '/partner/org',
+    organizationId,
+    'dashboard',
+  ]);
+}
 
   private getErrorMessage(error: unknown, fallback: string): string {
     if (error && typeof error === 'object' && 'message' in error) {
@@ -2506,121 +3634,495 @@ protected readonly invitationRole =
     }
   }
   protected async addInvitation(): Promise<void> {
-  this.invitationError.set(null);
+    this.invitationError.set(null);
 
-  const organizationId = this.organizationId();
+    const organizationId = this.organizationId();
 
-  if (!organizationId) {
-    this.invitationError.set(
-      'Organization ID is missing.',
-    );
+    if (!organizationId) {
+      this.invitationError.set('Organization ID is missing.');
 
-    return;
-  }
+      return;
+    }
 
-  const email = this.invitationEmail()
-    .trim()
-    .toLowerCase();
+    const email = this.invitationEmail().trim().toLowerCase();
 
-  if (!email) {
-    this.invitationError.set(
-      'Enter an email address.',
-    );
+    if (!email) {
+      this.invitationError.set('Enter an email address.');
 
-    return;
-  }
+      return;
+    }
 
-  this.invitationSaving.set(true);
+    this.invitationSaving.set(true);
 
-  try {
-    const response =
-      await this.invitationService.createInvitation({
+    try {
+      const response = await this.invitationService.createInvitation({
         organizationId,
         email,
         role: this.invitationRole(),
       });
 
-    if (!response.success) {
-      throw new Error(
-        'The invitation could not be created.',
-      );
+      if (!response.success) {
+        throw new Error('The invitation could not be created.');
+      }
+
+      this.invitationEmail.set('');
+
+      await this.loadInvitations();
+    } catch (error: unknown) {
+      console.error('Failed to create organization invitation.', error);
+
+      this.invitationError.set(this.getErrorMessage(error, 'Unable to create invitation.'));
+    } finally {
+      this.invitationSaving.set(false);
+    }
+  }
+  protected invitationRoleLabel(role: OrganizationInvitationRole): string {
+    return this.invitationRoles.find((item) => item.value === role)?.label ?? role;
+  }
+  private async loadInvitations(): Promise<void> {
+    const organizationId = this.organizationId();
+
+    if (!organizationId) {
+      return;
     }
 
-    this.invitationEmail.set('');
+    const response = await this.invitationService.getInvitations(organizationId);
 
-    await this.loadInvitations();
-
-  } catch (error: unknown) {
-    console.error(
-      'Failed to create organization invitation.',
-      error,
-    );
-
-    this.invitationError.set(
-      this.getErrorMessage(
-        error,
-        'Unable to create invitation.',
-      ),
-    );
-  } finally {
-    this.invitationSaving.set(false);
+    this.invitations.set(response.invitations);
   }
-}
-protected invitationRoleLabel(
-  role: OrganizationInvitationRole,
-): string {
-  return (
-    this.invitationRoles.find(
-      (item) => item.value === role,
-    )?.label ?? role
-  );
-}
-private async loadInvitations(): Promise<void> {
+  protected async continueInviteMembers(): Promise<void> {
+    const organization = this.organization();
+    const onboarding = this.onboarding();
+
+    if (!organization || !onboarding) {
+      return;
+    }
+
+    this.invitationSaving.set(true);
+    this.invitationError.set(null);
+
+    try {
+      await this.invitationService.completeInviteMembersStep(organization.id);
+
+      await this.load();
+    } catch (error) {
+      console.error('Failed to complete invite members onboarding step:', error);
+
+      this.invitationError.set(
+        error instanceof Error ? error.message : 'Unable to continue onboarding. Please try again.',
+      );
+    } finally {
+      this.invitationSaving.set(false);
+    }
+  }
+
+  private async loadOrganizationConfiguration(organizationId: string): Promise<void> {
+    try {
+      const settingsRef = doc(this.firestore, 'organizationSettings', organizationId);
+
+      const snapshot = await getDoc(settingsRef);
+
+      if (!snapshot.exists()) {
+        return;
+      }
+
+      const settings = snapshot.data() as Record<string, unknown>;
+
+      this.configuration = {
+        testCenterEnabled:
+          typeof settings['testCenterEnabled'] === 'boolean' ? settings['testCenterEnabled'] : true,
+
+        allowMemberTesting:
+          typeof settings['allowMemberTesting'] === 'boolean'
+            ? settings['allowMemberTesting']
+            : true,
+
+        courseVisibility:
+          settings['courseVisibility'] === 'members' ||
+          settings['courseVisibility'] === 'admins' ||
+          settings['courseVisibility'] === 'all'
+            ? settings['courseVisibility']
+            : 'all',
+
+        allowSelfRegistration:
+          typeof settings['allowSelfRegistration'] === 'boolean'
+            ? settings['allowSelfRegistration']
+            : false,
+
+        defaultMemberRole:
+          settings['defaultMemberRole'] === 'org_staff' ||
+          settings['defaultMemberRole'] === 'org_manager' ||
+          settings['defaultMemberRole'] === 'org_member'
+            ? settings['defaultMemberRole']
+            : 'org_member',
+
+        adminNotifications:
+          typeof settings['adminNotifications'] === 'boolean'
+            ? settings['adminNotifications']
+            : true,
+
+        testResultNotifications:
+          typeof settings['testResultNotifications'] === 'boolean'
+            ? settings['testResultNotifications']
+            : true,
+
+        primaryColor:
+          typeof settings['primaryColor'] === 'string' ? settings['primaryColor'] : '#007979',
+
+        secondaryColor:
+          typeof settings['secondaryColor'] === 'string' ? settings['secondaryColor'] : '#032D42',
+      };
+    } catch (error) {
+      console.error('Failed to load organization configuration.', error);
+    }
+  }
+
+  protected async saveConfiguration(): Promise<void> {
+    this.configurationSaveError.set(null);
+
+    const organizationId = this.organizationId();
+
+    if (!organizationId) {
+      this.configurationSaveError.set('Organization ID is missing.');
+
+      return;
+    }
+
+    this.configurationSaving.set(true);
+
+    try {
+      const response = await this.onboardingService.completeOrganizationConfiguration(
+        organizationId,
+        this.configuration,
+      );
+
+      if (!response.success) {
+        throw new Error('The organization configuration could not be saved.');
+      }
+
+      /**
+       * Reload the authoritative onboarding state.
+       */
+      const updatedOnboarding = await this.onboardingService.getOnboarding(organizationId);
+
+      /**
+       * The onboarding document should exist because
+       * the Cloud Function just completed Step 4.
+       */
+      if (!updatedOnboarding) {
+        throw new Error(
+          'Organization onboarding could not be found after configuration was saved.',
+        );
+      }
+
+      /**
+       * Update the component state only after confirming
+       * the backend returned a valid onboarding document.
+       */
+      this.onboarding.set(updatedOnboarding);
+
+      /**
+       * The backend should have advanced onboarding to
+       * first_program.
+       */
+      if (updatedOnboarding.currentStep !== 'first_program') {
+        throw new Error(
+          'Configuration was saved, but onboarding did not advance to the first program step.',
+        );
+      }
+
+      this.configurationSaveError.set(null);
+    } catch (error: unknown) {
+      console.error('Failed to save organization configuration.', error);
+
+      this.configurationSaveError.set(
+        this.getErrorMessage(error, 'Unable to save organization configuration.'),
+      );
+    } finally {
+      this.configurationSaving.set(false);
+    }
+  }
+
+  protected async saveFirstProgram(): Promise<void> {
+    this.firstProgramSaveError.set(null);
+
+    if (this.firstProgramForm.invalid) {
+      this.firstProgramForm.markAllAsTouched();
+      return;
+    }
+
+    const organizationId = this.organizationId();
+
+    if (!organizationId) {
+      this.firstProgramSaveError.set('Organization ID is missing.');
+
+      return;
+    }
+
+    this.firstProgramSaving.set(true);
+
+    try {
+      const formValue = this.firstProgramForm.getRawValue();
+
+      const response = await this.onboardingService.completeOrganizationFirstProgram(
+        organizationId,
+        {
+          name: formValue.name.trim(),
+          slug: formValue.slug.trim(),
+          description: formValue.description.trim(),
+        },
+      );
+
+      if (!response.success) {
+        throw new Error('The first program could not be created.');
+      }
+
+      /**
+       * Reload the authoritative onboarding state.
+       *
+       * The Cloud Function owns:
+       *
+       * first_program
+       *       ↓
+       * courses
+       */
+      const updatedOnboarding = await this.onboardingService.getOnboarding(organizationId);
+
+      if (!updatedOnboarding) {
+        throw new Error(
+          'The first program was created, but the updated onboarding state could not be loaded.',
+        );
+      }
+
+      this.onboarding.set(updatedOnboarding);
+
+      if (updatedOnboarding.currentStep !== 'first_course') {
+        throw new Error(
+          'The first program was created, but onboarding did not advance to the first-course step.',
+        );
+      }
+
+      this.firstProgramSaveError.set(null);
+    } catch (error: unknown) {
+      console.error('Failed to create first organization program.', error);
+
+      this.firstProgramSaveError.set(
+        this.getErrorMessage(error, 'Unable to create the first program.'),
+      );
+    } finally {
+      this.firstProgramSaving.set(false);
+    }
+  }
+
+  protected async saveFirstCourse(): Promise<void> {
+    this.firstCourseSaveError.set(null);
+
+    if (this.firstCourseForm.invalid) {
+      this.firstCourseForm.markAllAsTouched();
+      return;
+    }
+
+    const organizationId = this.organizationId();
+
+    if (!organizationId) {
+      this.firstCourseSaveError.set('Organization ID is missing.');
+      return;
+    }
+
+    const firstProgramId = this.onboarding()?.firstProgramId?.trim();
+
+    if (!firstProgramId) {
+      this.firstCourseSaveError.set(
+        'The first program could not be identified. Please return to the previous step.',
+      );
+      return;
+    }
+
+    this.firstCourseSaving.set(true);
+
+    try {
+      const formValue = this.firstCourseForm.getRawValue();
+
+      const response =
+        await this.onboardingService.completeOrganizationFirstCourse(
+          organizationId,
+          {
+            name: formValue.name.trim(),
+            slug: formValue.slug.trim(),
+            description: formValue.description.trim(),
+            provider: formValue.provider.trim() || undefined,
+            type: formValue.type,
+            active: formValue.active,
+          },
+        );
+
+      if (!response.success) {
+        throw new Error('The first course could not be created.');
+      }
+
+      /*
+       * The Cloud Function owns the authoritative onboarding
+       * transition:
+       *
+       * first_course
+       *      ↓
+       * first_topic
+       */
+      const updatedOnboarding =
+        await this.onboardingService.getOnboarding(organizationId);
+
+      if (!updatedOnboarding) {
+        throw new Error(
+          'The first course was created, but the updated onboarding state could not be loaded.',
+        );
+      }
+
+      this.onboarding.set(updatedOnboarding);
+
+      if (updatedOnboarding.currentStep !== 'first_topic') {
+        throw new Error(
+          'The first course was created, but onboarding did not advance to the first-topic step.',
+        );
+      }
+
+      this.firstCourseSaveError.set(null);
+    } catch (error: unknown) {
+      console.error(
+        'Failed to create first organization course.',
+        error,
+      );
+
+      this.firstCourseSaveError.set(
+        this.getErrorMessage(
+          error,
+          'Unable to create the first course.',
+        ),
+      );
+    } finally {
+      this.firstCourseSaving.set(false);
+    }
+  }
+
+protected async saveFirstTopic(): Promise<void> {
+  this.firstTopicSaveError.set(null);
+
+  if (this.firstTopicForm.invalid) {
+    this.firstTopicForm.markAllAsTouched();
+    return;
+  }
+
   const organizationId = this.organizationId();
 
   if (!organizationId) {
-    return;
-  }
-
-  const response =
-    await this.invitationService.getInvitations(
-      organizationId,
+    this.firstTopicSaveError.set(
+      'Organization ID is missing.',
     );
-
-  this.invitations.set(
-    response.invitations,
-  );
-}
-protected async continueInviteMembers(): Promise<void> {
-  const organization = this.organization();
-  const onboarding = this.onboarding();
-
-  if (!organization || !onboarding) {
     return;
   }
 
-  this.invitationSaving.set(true);
-  this.invitationError.set(null);
+  const firstCourseId = this.onboarding()?.firstCourseId?.trim();
+
+  if (!firstCourseId) {
+    this.firstTopicSaveError.set(
+      'The first course could not be identified. Please return to the previous step.',
+    );
+    return;
+  }
+
+  this.firstTopicSaving.set(true);
 
   try {
-    await this.invitationService.completeInviteMembersStep(
-      organization.id,
-    );
+    const formValue = this.firstTopicForm.getRawValue();
 
-    await this.load();
-  } catch (error) {
+    const response =
+      await this.onboardingService.completeOrganizationFirstTopic(
+        organizationId,
+        {
+          name: formValue.name.trim(),
+          slug: formValue.slug.trim(),
+          description: formValue.description.trim() || undefined,
+          active: formValue.active,
+        },
+      );
+
+    if (!response.success) {
+      throw new Error(
+        'The first topic could not be created.',
+      );
+    }
+
+    /*
+     * The Cloud Function is the authoritative owner of:
+     *
+     *   first_topic
+     *       ↓
+     *   testTopics/{firstTopicId}
+     *       ↓
+     *   first_question
+     */
+    const updatedOnboarding =
+      await this.onboardingService.getOnboarding(
+        organizationId,
+      );
+
+    if (!updatedOnboarding) {
+      throw new Error(
+        'The first topic was created, but the onboarding record could not be reloaded.',
+      );
+    }
+
+    this.onboarding.set(updatedOnboarding);
+
+    if (
+      updatedOnboarding.currentStep !==
+      'first_question'
+    ) {
+      throw new Error(
+        'The first topic was created, but onboarding did not advance to the first-question step.',
+      );
+    }
+
+    this.firstTopicSaveError.set(null);
+  } catch (error: unknown) {
     console.error(
-      'Failed to complete invite members onboarding step:',
+      'Failed to create first organization topic.',
       error,
     );
 
-    this.invitationError.set(
-      error instanceof Error
-        ? error.message
-        : 'Unable to continue onboarding. Please try again.',
+    this.firstTopicSaveError.set(
+      this.getErrorMessage(
+        error,
+        'Unable to create the first topic.',
+      ),
     );
   } finally {
-    this.invitationSaving.set(false);
+    this.firstTopicSaving.set(false);
   }
 }
+
+  private generateTopicSlug(name: string): string {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+private generateCourseSlug(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+private generateProgramSlug(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+
+
 }
