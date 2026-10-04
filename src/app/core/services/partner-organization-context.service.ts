@@ -48,6 +48,9 @@ export class PartnerOrganizationContextService {
   private readonly selectedOrganizationState =
     signal<Organization | null>(null);
 
+    private initializePromise: Promise<void> | null = null;
+private initializeOrganizationId: string | null = null;
+
   readonly memberships = computed(
     () => this.membershipsState(),
   );
@@ -128,126 +131,170 @@ export class PartnerOrganizationContextService {
    * Platform administrators are allowed to initialize successfully even
    * when they have zero organization memberships.
    */
- async initialize(
+async initialize(
   preferredOrganizationId?: string | null,
 ): Promise<void> {
-    if (this.loading()) {
-      return;
+  const preferredId =
+    preferredOrganizationId?.trim() || null;
+
+  /*
+   * If this exact organization is already being initialized,
+   * wait for that initialization to finish instead of returning
+   * before the context has been populated.
+   */
+  if (
+    this.initializePromise &&
+    this.initializeOrganizationId === preferredId
+  ) {
+    return this.initializePromise;
+  }
+
+  this.initializeOrganizationId = preferredId;
+
+  this.initializePromise = this.initializeInternal(
+    preferredId,
+  );
+
+  try {
+    await this.initializePromise;
+  } finally {
+    if (
+      this.initializeOrganizationId === preferredId
+    ) {
+      this.initializePromise = null;
+      this.initializeOrganizationId = null;
+    }
+  }
+}
+
+private async initializeInternal(
+  preferredOrganizationId: string | null,
+): Promise<void> {
+  this.loading.set(true);
+  this.error.set(null);
+
+  try {
+    const user = this.authService.firebaseUser();
+
+    if (!user?.uid) {
+      throw new Error(
+        'You must be signed in to access the Partner Portal.',
+      );
     }
 
-    this.loading.set(true);
-    this.error.set(null);
-
-    try {
-      const user = this.authService.firebaseUser();
-
-      if (!user?.uid) {
-        throw new Error(
-          'You must be signed in to access the Partner Portal.',
-        );
-      }
-
-      const memberships =
-        await this.membershipRepository.getMembershipsForUser(
-          user.uid,
-        );
-
-      const activeMemberships = memberships.filter(
-        (membership) => membership.active === true,
+    const memberships =
+      await this.membershipRepository.getMembershipsForUser(
+        user.uid,
       );
 
-      this.membershipsState.set(activeMemberships);
+    const activeMemberships =
+      memberships.filter(
+        (membership) =>
+          membership.active === true,
+      );
 
-      const organizationResults = await Promise.all(
-        activeMemberships.map((membership) =>
-          this.organizationRepository.getOrganization(
-            membership.organizationId,
-          ),
+    this.membershipsState.set(
+      activeMemberships,
+    );
+
+    const organizationResults =
+      await Promise.all(
+        activeMemberships.map(
+          (membership) =>
+            this.organizationRepository.getOrganization(
+              membership.organizationId,
+            ),
         ),
       );
 
-      const organizations = organizationResults.filter(
+    const organizations =
+      organizationResults.filter(
         (
           organization,
         ): organization is Organization =>
           organization?.active === true,
       );
 
-      this.organizationsState.set(organizations);
+    this.organizationsState.set(
+      organizations,
+    );
 
-      const currentId =
-  this.selectedOrganizationState()?.id;
+    const currentId =
+      this.selectedOrganizationState()?.id ??
+      null;
 
-const preferredId =
-  preferredOrganizationId?.trim() || null;
+    const selected =
+      (
+        preferredOrganizationId
+          ? organizations.find(
+              (organization) =>
+                organization.id ===
+                preferredOrganizationId,
+            )
+          : null
+      ) ??
+      organizations.find(
+        (organization) =>
+          organization.id === currentId,
+      ) ??
+      organizations[0] ??
+      null;
 
-const selected =
-  (
-    preferredId
-      ? organizations.find(
-          organization =>
-            organization.id === preferredId,
-        )
-      : null
-  ) ??
-  organizations.find(
-    organization =>
-      organization.id === currentId,
-  ) ??
-  organizations[0] ??
-  null;
-
-  if (
-  preferredId &&
-  !organizations.some(
-    organization =>
-      organization.id === preferredId,
-  )
-) {
-  throw new Error(
-    'You do not have access to the selected organization.',
-  );
-}
-
-      this.selectedOrganizationState.set(selected);
-
-      /**
-       * Platform administrators do not require an organization.
-       */
-      if (this.isPlatformAdmin()) {
-        return;
-      }
-
-      /**
-       * Organization-scoped partner users must belong to at least
-       * one active organization.
-       */
-      if (!selected) {
-        throw new Error(
-          'Your account is not associated with an active partner organization.',
-        );
-      }
-    } catch (error) {
-      /**
-       * Do not wipe the context for a platform administrator simply
-       * because they have no organization memberships.
-       */
-      if (!this.isPlatformAdmin()) {
-        this.organizationsState.set([]);
-        this.selectedOrganizationState.set(null);
-      }
-
-      this.error.set(
-        error instanceof Error
-          ? error.message
-          : 'Unable to load your partner organization.',
+    if (
+      preferredOrganizationId &&
+      !organizations.some(
+        (organization) =>
+          organization.id ===
+          preferredOrganizationId,
+      )
+    ) {
+      throw new Error(
+        'You do not have access to the selected organization.',
       );
-
-      throw error;
-    } finally {
-      this.loading.set(false);
     }
+
+    this.selectedOrganizationState.set(
+      selected,
+    );
+
+    /*
+     * Platform administrators do not require
+     * an organization membership.
+     */
+    if (this.isPlatformAdmin()) {
+      return;
+    }
+
+    /*
+     * Organization-scoped partner users must belong
+     * to at least one active organization.
+     */
+    if (!selected) {
+      throw new Error(
+        'Your account is not associated with an active partner organization.',
+      );
+    }
+  } catch (error) {
+    /*
+     * Do not wipe the context for a platform administrator
+     * simply because they have no organization memberships.
+     */
+    if (!this.isPlatformAdmin()) {
+      this.organizationsState.set([]);
+      this.selectedOrganizationState.set(null);
+    }
+
+    this.error.set(
+      error instanceof Error
+        ? error.message
+        : 'Unable to load your partner organization.',
+    );
+
+    throw error;
+  } finally {
+    this.loading.set(false);
   }
+}
 
   /**
    * Select an organization.

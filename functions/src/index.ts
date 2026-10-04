@@ -20,7 +20,7 @@ import {
   getOrganizationInvitations,
   completeOrganizationInviteMembersStep,
 } from "./organization-invitations";
-
+import { completeOrganizationFirstQuestion } from "./organization-onboarding-first-question";
 
 initializeApp();
 
@@ -3261,3 +3261,5 @@ export {
 export {
   resendOrganizationInvitation,
 } from "./organization-invitation-resend";
+
+export { completeOrganizationFirstQuestion };

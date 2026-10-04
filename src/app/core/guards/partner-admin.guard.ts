@@ -14,10 +14,54 @@ export const partnerAdminGuard: CanActivateFn = async () => {
   );
   const router = inject(Router);
 
+  console.log(
+    '========== PARTNER ADMIN GUARD =========='
+  );
+
+  console.log(
+    'Firebase user:',
+    authService.firebaseUser(),
+  );
+
+  console.log(
+    'Auth profile:',
+    authService.user(),
+  );
+
+  console.log(
+    'Is platform admin:',
+    authService.isAdmin,
+  );
+
+  console.log(
+    'Context organization ID:',
+    context.organizationId(),
+  );
+
+  console.log(
+    'Context organization role:',
+    context.organizationRole(),
+  );
+
+  console.log(
+    'Context memberships:',
+    context.memberships(),
+  );
+
+  console.log(
+    'Context error:',
+    context.error(),
+  );
+
   /*
-   * Platform administrators have unrestricted platform access.
+   * Platform administrators have unrestricted
+   * organization-scoped access.
    */
   if (authService.isAdmin) {
+    console.log(
+      'PARTNER ADMIN GUARD: PLATFORM ADMIN ACCESS GRANTED'
+    );
+
     return true;
   }
 
@@ -28,8 +72,30 @@ export const partnerAdminGuard: CanActivateFn = async () => {
    */
   const role = context.organizationRole();
 
-  return role === 'org_owner' ||
+  if (
+    role === 'org_owner' ||
     role === 'org_admin'
-    ? true
-    : router.createUrlTree(['/partner']);
+  ) {
+    console.log(
+      'PARTNER ADMIN GUARD: ORGANIZATION ADMIN ACCESS GRANTED',
+      {
+        role,
+      },
+    );
+
+    return true;
+  }
+
+  console.error(
+    'PARTNER ADMIN GUARD: ACCESS DENIED',
+    {
+      role,
+      organizationId:
+        context.organizationId(),
+    },
+  );
+
+  return router.createUrlTree([
+    '/partner',
+  ]);
 };

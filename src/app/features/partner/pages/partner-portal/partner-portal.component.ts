@@ -11,7 +11,7 @@ import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 
-import { PartnerOrganizationContextService } from '../../../../core/services/partner-organization-context.service';
+import { OrganizationStore } from '../../../organizations/stores/organization.store';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
 @Component({
@@ -39,7 +39,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
       <!-- CONTENT -->
       <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
-        @if (context.loading()) {
+        @if (organizationStore.loading()) {
 
           <section
             class="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm"
@@ -53,7 +53,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
             </p>
           </section>
 
-        } @else if (context.error()) {
+        } @else if (organizationStore.error()) {
 
           <section
             class="rounded-2xl border border-red-200 bg-red-50 p-6"
@@ -70,7 +70,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                 </h2>
 
                 <p class="mt-1 text-sm text-red-700">
-                  {{ context.error() }}
+                  {{ organizationStore.error() }}
                 </p>
 
                 <button
@@ -86,7 +86,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
             </div>
           </section>
 
-        } @else if (context.organizations().length === 0) {
+        } @else if (organizationStore.organizations().length === 0) {
 
           <section
             class="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm"
@@ -122,7 +122,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
           >
 
             @for (
-              organization of context.organizations();
+              organization of organizationStore.organizations();
               track organization.id
             ) {
 
@@ -238,8 +238,8 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
 })
 export class PartnerPortalComponent implements OnInit {
 
-  protected readonly context =
-    inject(PartnerOrganizationContextService);
+ protected readonly organizationStore =
+  inject(OrganizationStore);
 
   private readonly pageTitleService =
     inject(PageTitleService);
@@ -252,13 +252,13 @@ export class PartnerPortalComponent implements OnInit {
     );
   }
 
-  protected async initialize(): Promise<void> {
-    try {
-      await this.context.initialize();
-    } catch {
-      // Context exposes the user-facing error.
-    }
+ protected async initialize(): Promise<void> {
+  try {
+    await this.organizationStore.loadAvailableOrganizations();
+  } catch {
+    // The store exposes the user-facing error.
   }
+}
 
   protected organizationInitials(
     name: string | null | undefined,
@@ -284,7 +284,7 @@ export class PartnerPortalComponent implements OnInit {
 protected roleFor(
   organizationId: string,
 ): string {
-  const role = this.context
+  const role = this.organizationStore
     .memberships()
     .find(
       membership =>

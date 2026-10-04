@@ -9,7 +9,7 @@ import {
 
 import { FormsModule } from '@angular/forms';
 
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 
@@ -23,7 +23,7 @@ import { TestProgram } from '../../../../features/test-center/models/test-progra
 
 import { TestProgramService } from '../../../../features/test-center/services/test-program.service';
 
-import { PartnerOrganizationContextService } from '../../../../core/services/partner-organization-context.service';
+import { OrganizationStore } from '../../../organizations/stores/organization.store';
 
 import { PartnerAccessService } from '../../../../core/services/partner-access.service';
 
@@ -57,7 +57,7 @@ interface ProgramForm {
             <div class="min-w-0">
               <div class="flex items-center gap-2 text-sm text-white/60">
                 <a
-                  [routerLink]="['/partner/org', context.organizationId(), 'dashboard']"
+                  [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'dashboard']"
                   class="hover:text-white"
                 >
                   Partner Dashboard
@@ -77,7 +77,7 @@ interface ProgramForm {
 
             <div class="hidden items-center gap-2 sm:flex">
               <a
-                [routerLink]="['/partner/org', context.organizationId(), 'dashboard']"
+                [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'dashboard']"
                 class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
               >
                 <mat-icon> arrow_back </mat-icon>
@@ -113,7 +113,7 @@ interface ProgramForm {
               <mat-menu #programMenu="matMenu">
                 <a
                   mat-menu-item
-                  [routerLink]="['/partner/org', context.organizationId(), 'dashboard']"
+                  [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'dashboard']"
                 >
                   <mat-icon> dashboard </mat-icon>
 
@@ -122,7 +122,7 @@ interface ProgramForm {
 
                 <a
                   mat-menu-item
-                  [routerLink]="['/partner/org', context.organizationId(), 'test-center']"
+                  [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'test-center']"
                 >
                   <mat-icon> quiz </mat-icon>
 
@@ -154,7 +154,7 @@ interface ProgramForm {
         <!-- CONTEXT LOADING -->
         <!-- =================================================== -->
 
-        @if (context.loading()) {
+        @if (organizationStore.loading()) {
           <section class="rounded-xl border border-gray-200 bg-white p-10 text-center">
             <mat-icon class="!h-8 !w-8 !text-3xl text-gray-400"> sync </mat-icon>
 
@@ -166,7 +166,7 @@ interface ProgramForm {
         <!-- ERROR -->
         <!-- =================================================== -->
 
-        @else if (context.error()) {
+        @else if (organizationStore.error()) {
           <section class="rounded-xl border border-red-200 bg-red-50 p-6">
             <div class="flex gap-3">
               <mat-icon class="text-red-600"> error_outline </mat-icon>
@@ -175,7 +175,7 @@ interface ProgramForm {
                 <h2 class="font-semibold text-red-900">Partner access unavailable</h2>
 
                 <p class="mt-1 text-sm text-red-700">
-                  {{ context.error() }}
+                  {{ organizationStore.error() }}
                 </p>
               </div>
             </div>
@@ -229,7 +229,7 @@ interface ProgramForm {
                     [(ngModel)]="form.name"
                     (ngModelChange)="onNameChange()"
                     class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 outline-none transition focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/10"
-                    placeholder="e.g. ServiceNow Certification Program"
+                    
                   />
                 </label>
 
@@ -242,7 +242,7 @@ interface ProgramForm {
                     [(ngModel)]="form.slug"
                     [disabled]="!!editingProgramId()"
                     class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 outline-none transition focus:border-[#007979] disabled:bg-gray-100"
-                    placeholder="servicenow-certification-program"
+                    
                   />
 
                   @if (editingProgramId()) {
@@ -261,7 +261,6 @@ interface ProgramForm {
                     [(ngModel)]="form.description"
                     rows="4"
                     class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 outline-none transition focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/10"
-                    placeholder="Describe the purpose and learning path for this program."
                   ></textarea>
                 </label>
 
@@ -422,7 +421,7 @@ interface ProgramForm {
                     <div class="mt-4 border-t border-gray-100 pt-4">
                       <a
                         mat-stroked-button
-                        [routerLink]="['/partner/org', context.organizationId(), 'test-center']"
+                        [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'test-center']"
                         [queryParams]="{
                           programId: program.id,
                         }"
@@ -447,7 +446,7 @@ export class PartnerProgramsComponent implements OnInit {
   // SERVICES
   // ============================================================
 
-  protected readonly context = inject(PartnerOrganizationContextService);
+  protected readonly organizationStore = inject(OrganizationStore);
 
   protected readonly access = inject(PartnerAccessService);
 
@@ -458,6 +457,9 @@ export class PartnerProgramsComponent implements OnInit {
   private readonly toast = inject(HotToastService);
 
   private readonly pageTitleService = inject(PageTitleService);
+
+  private readonly route = inject(ActivatedRoute);
+
 
   // ============================================================
   // STATE
@@ -477,9 +479,9 @@ export class PartnerProgramsComponent implements OnInit {
   // COMPUTED
   // ============================================================
 
-  protected readonly organizationName = computed(
-    () => this.context.organization()?.name ?? 'Partner',
-  );
+ protected readonly organizationName = computed(
+  () => this.organizationStore.selectedOrganization()?.name ?? 'Partner',
+);
 
   // ============================================================
   // FORM
@@ -497,37 +499,46 @@ export class PartnerProgramsComponent implements OnInit {
     this.pageTitleService.setTitle(`${this.organizationName()} Programs`);
   }
 
-  protected async initialize(): Promise<void> {
-    try {
-      await this.context.initialize();
+protected async initialize(): Promise<void> {
+  try {
+    const organizationId = this.router.routerState.snapshot.root.firstChild
+      ?.paramMap.get('organizationId');
 
-      if (!this.access.canManagePrograms() && !this.access.isPlatformAdmin()) {
-        await this.router.navigate(['/partner/org', this.context.organizationId(), 'dashboard']);
-
-        return;
-      }
-
-      await this.loadPrograms();
-    } catch {
-      /*
-       * PartnerOrganizationContextService
-       * exposes the user-facing error state.
-       */
+    if (!organizationId) {
+      return;
     }
+
+    await this.organizationStore.loadOrganizationContext(organizationId);
+
+    if (!this.access.canManagePrograms() && !this.access.isPlatformAdmin()) {
+      await this.router.navigate([
+        '/partner/org',
+        this.organizationStore.selectedOrganizationId(),
+        'dashboard',
+      ]);
+
+      return;
+    }
+
+    await this.loadPrograms();
+  } catch {
+    // OrganizationStore exposes the user-facing context error state.
   }
+}
 
   // ============================================================
   // LOAD
   // ============================================================
 
   private async loadPrograms(): Promise<void> {
-    const organizationId = this.context.organizationId();
+   const organizationId = this.organizationStore.selectedOrganizationId();
 
-    if (!organizationId) {
-      this.programs.set([]);
+if (!organizationId) {
+  this.programs.set([]);
+  return;
+}
 
-      return;
-    }
+await this.organizationStore.loadOrganizationContext(organizationId);
 
     try {
       this.loadingPrograms.set(true);
@@ -557,11 +568,10 @@ export class PartnerProgramsComponent implements OnInit {
       return;
     }
 
-    if (!this.context.organizationId()) {
-      this.toast.error('No partner organization is selected.');
-
-      return;
-    }
+   if (!this.organizationStore.selectedOrganizationId()) {
+  this.toast.error('No partner organization is selected.');
+  return;
+}
 
     this.editingProgramId.set(null);
 
@@ -614,69 +624,67 @@ export class PartnerProgramsComponent implements OnInit {
   // SAVE
   // ============================================================
 
-  protected async saveProgram(): Promise<void> {
-    if (!this.access.canManagePrograms()) {
-      this.toast.error('You do not have permission to manage programs.');
+protected async saveProgram(): Promise<void> {
+  if (!this.access.canManagePrograms()) {
+    this.toast.error('You do not have permission to manage programs.');
 
-      return;
-    }
-
-    const organizationId = this.context.organizationId();
-
-    if (!organizationId) {
-      this.toast.error('No partner organization is selected.');
-
-      return;
-    }
-
-    const validationError = this.validateForm();
-
-    if (validationError) {
-      this.toast.error(validationError);
-
-      return;
-    }
-
-    try {
-      this.saving.set(true);
-
-      const editingId = this.editingProgramId();
-
-      if (editingId) {
-        await this.programService.updateProgram(organizationId, editingId, {
-          name: this.form.name.trim(),
-
-          description: this.form.description.trim(),
-
-          active: this.form.active,
-        });
-
-        this.toast.success('Program updated successfully.');
-      } else {
-        await this.programService.createProgram(organizationId, {
-          name: this.form.name.trim(),
-
-          slug: this.form.slug.trim(),
-
-          description: this.form.description.trim(),
-
-          active: this.form.active,
-        });
-
-        this.toast.success('Program created successfully.');
-      }
-
-      await this.loadPrograms();
-
-      this.cancelForm();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save the program.';
-
-      this.toast.error(message);
-    } finally {
-      this.saving.set(false);
-    }
+    return;
   }
+
+  const organizationId = this.organizationStore.selectedOrganizationId();
+
+  if (!organizationId) {
+    this.toast.error('No partner organization is selected.');
+
+    return;
+  }
+
+  const validationError = this.validateForm();
+
+  if (validationError) {
+    this.toast.error(validationError);
+
+    return;
+  }
+
+  try {
+    this.saving.set(true);
+
+    const editingId = this.editingProgramId();
+
+    if (editingId) {
+      await this.programService.updateProgram(organizationId, editingId, {
+        name: this.form.name.trim(),
+        description: this.form.description.trim(),
+        active: this.form.active,
+      });
+
+      this.toast.success('Program updated successfully.');
+    } else {
+      await this.programService.createProgram(organizationId, {
+        name: this.form.name.trim(),
+        slug: this.form.slug.trim(),
+        description: this.form.description.trim(),
+        active: this.form.active,
+      });
+
+      this.toast.success('Program created successfully.');
+    }
+
+    await this.loadPrograms();
+
+    this.cancelForm();
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Unable to save the program.';
+
+    this.toast.error(message);
+  } finally {
+    this.saving.set(false);
+  }
+}
 
   // ============================================================
   // CANCEL

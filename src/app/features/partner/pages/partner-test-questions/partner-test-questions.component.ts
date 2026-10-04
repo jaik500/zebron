@@ -17,7 +17,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { HotToastService } from '@ngxpert/hot-toast';
 
 import { PartnerAccessService } from '../../../../core/services/partner-access.service';
-import { PartnerOrganizationContextService } from '../../../../core/services/partner-organization-context.service';
+import { OrganizationStore } from '../../../organizations/stores/organization.store';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
 import { TestCourse } from '../../../test-center/models/test-course.model';
@@ -81,7 +81,11 @@ interface QuestionForm {
                 <span>/</span>
 
                 <a
-                  [routerLink]="['/partner/org', context.organizationId(), 'test-center']"
+                  [routerLink]="[
+                    '/partner/org',
+                    organizationStore.selectedOrganizationId(),
+                    'test-center',
+                  ]"
                   class="hover:text-white"
                 >
                   Test Center
@@ -102,7 +106,11 @@ interface QuestionForm {
 
             <a
               mat-stroked-button
-              [routerLink]="['/partner/org', context.organizationId(), 'test-center']"
+              [routerLink]="[
+                '/partner/org',
+                organizationStore.selectedOrganizationId(),
+                'test-center',
+              ]"
               class="!border-white/40 !text-white"
             >
               <mat-icon> arrow_back </mat-icon>
@@ -122,13 +130,13 @@ interface QuestionForm {
         <!-- CONTEXT LOADING -->
         <!-- ==================================================== -->
 
-        @if (context.loading()) {
+        @if (organizationStore.contextLoading()) {
           <section class="rounded-xl border border-gray-200 bg-white p-8 text-center">
             <mat-icon class="!h-8 !w-8 !text-3xl text-gray-500"> sync </mat-icon>
 
             <p class="mt-3 text-sm text-gray-600">Loading your partner organization...</p>
           </section>
-        } @else if (context.error()) {
+        } @else if (organizationStore.contextError()) {
           <!-- ================================================== -->
           <!-- CONTEXT ERROR -->
           <!-- ================================================== -->
@@ -137,7 +145,7 @@ interface QuestionForm {
             <h2 class="font-semibold text-red-900">Partner access unavailable</h2>
 
             <p class="mt-1 text-sm text-red-700">
-              {{ context.error() }}
+              {{ organizationStore.contextError() }}
             </p>
 
             <button
@@ -652,7 +660,7 @@ export class PartnerTestQuestionsComponent implements OnInit {
   // SERVICES
   // ============================================================
 
-  protected readonly context = inject(PartnerOrganizationContextService);
+  protected readonly organizationStore = inject(OrganizationStore);
 
   protected readonly access = inject(PartnerAccessService);
 
@@ -722,9 +730,13 @@ export class PartnerTestQuestionsComponent implements OnInit {
 
   protected async initialize(): Promise<void> {
     try {
-      await this.context.initialize();
+      const organizationId = this.route.snapshot.paramMap.get('organizationId');
 
-      const organizationId = this.context.organizationId();
+      if (!organizationId) {
+        return;
+      }
+
+      await this.organizationStore.loadOrganizationContext(organizationId);
 
       if (!organizationId) {
         return;
@@ -784,7 +796,7 @@ export class PartnerTestQuestionsComponent implements OnInit {
       return;
     }
 
-    const organizationId = this.context.organizationId();
+    const organizationId = this.organizationStore.selectedOrganizationId();
 
     if (!organizationId) {
       return;
@@ -843,7 +855,7 @@ export class PartnerTestQuestionsComponent implements OnInit {
   // ============================================================
 
   private async loadQuestions(): Promise<void> {
-    const organizationId = this.context.organizationId();
+    const organizationId = this.organizationStore.selectedOrganizationId();
 
     const topicId = this.selectedTopicId();
 
@@ -873,7 +885,7 @@ export class PartnerTestQuestionsComponent implements OnInit {
   // ============================================================
 
   protected startNewQuestion(): void {
-    const organizationId = this.context.organizationId();
+    const organizationId = this.organizationStore.selectedOrganizationId();
 
     if (!organizationId) {
       this.toast.error('No partner organization is selected.');
@@ -1018,7 +1030,7 @@ export class PartnerTestQuestionsComponent implements OnInit {
       return;
     }
 
-    const organizationId = this.context.organizationId();
+    const organizationId = this.organizationStore.selectedOrganizationId();
 
     if (!organizationId) {
       this.toast.error('No partner organization is selected.');
@@ -1140,7 +1152,10 @@ export class PartnerTestQuestionsComponent implements OnInit {
 
     await this.runAction(
       () =>
-        this.questionService.submitQuestionForReview(this.context.organizationId()!, question.id),
+        this.questionService.submitQuestionForReview(
+          this.organizationStore.selectedOrganizationId()!,
+          question.id,
+        ),
 
       'Question submitted for manager review.',
     );
@@ -1156,7 +1171,11 @@ export class PartnerTestQuestionsComponent implements OnInit {
     }
 
     await this.runAction(
-      () => this.questionService.startQuestionReview(this.context.organizationId()!, question.id),
+      () =>
+        this.questionService.startQuestionReview(
+          this.organizationStore.selectedOrganizationId()!,
+          question.id,
+        ),
 
       'Question moved into manager review.',
     );
@@ -1172,7 +1191,11 @@ export class PartnerTestQuestionsComponent implements OnInit {
     }
 
     await this.runAction(
-      () => this.questionService.returnQuestion(this.context.organizationId()!, question.id),
+      () =>
+        this.questionService.returnQuestion(
+          this.organizationStore.selectedOrganizationId()!,
+          question.id,
+        ),
 
       'Question returned to staff.',
     );
@@ -1188,7 +1211,11 @@ export class PartnerTestQuestionsComponent implements OnInit {
     }
 
     await this.runAction(
-      () => this.questionService.approveQuestion(this.context.organizationId()!, question.id),
+      () =>
+        this.questionService.approveQuestion(
+          this.organizationStore.selectedOrganizationId()!,
+          question.id,
+        ),
 
       'Question approved.',
     );
@@ -1204,7 +1231,11 @@ export class PartnerTestQuestionsComponent implements OnInit {
     }
 
     await this.runAction(
-      () => this.questionService.publishQuestion(this.context.organizationId()!, question.id),
+      () =>
+        this.questionService.publishQuestion(
+          this.organizationStore.selectedOrganizationId()!,
+          question.id,
+        ),
 
       'Question published.',
     );
@@ -1242,7 +1273,7 @@ export class PartnerTestQuestionsComponent implements OnInit {
       return;
     }
 
-    const organizationId = this.context.organizationId();
+    const organizationId = this.organizationStore.selectedOrganizationId();
 
     if (!organizationId) {
       return;

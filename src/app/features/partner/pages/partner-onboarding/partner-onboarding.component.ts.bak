@@ -7,8 +7,6 @@ import { MatButtonModule } from '@angular/material/button';
 
 import { MatCardModule } from '@angular/material/card';
 
-import { MatCheckboxModule } from '@angular/material/checkbox';
-
 import { MatDividerModule } from '@angular/material/divider';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -21,8 +19,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { MatRadioModule } from '@angular/material/radio';
-
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
 
 import { Organization } from '../../../../core/models/organization.model';
@@ -33,7 +29,6 @@ import {
 } from '../../../../core/models/organization-onboarding.model';
 
 import {
-  OrganizationOnboardingFirstQuestionDifficulty,
   OrganizationOnboardingProfileInput,
   OrganizationOnboardingService,
 } from '../../services/organization-onboarding.service';
@@ -47,6 +42,8 @@ import { OrganizationInvitationService } from '../../services/organization-invit
 import { MatSelectModule } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
 
+import { OrganizationConfigurationInput } from '../../services/organization-onboarding.service';
+import { TestCourseService } from '../../../test-center/services/test-course.service';
 import { TestCourseType } from '../../../test-center/models/test-course.model';
 
 interface OnboardingStep {
@@ -56,7 +53,14 @@ interface OnboardingStep {
   icon: string;
 }
 
-
+interface FirstCourseForm {
+  name: string;
+  slug: string;
+  description: string;
+  provider: string;
+  type: TestCourseType;
+  active: boolean;
+}
 
 @Component({
   selector: 'app-partner-onboarding',
@@ -67,7 +71,6 @@ interface OnboardingStep {
     FormsModule,
     MatButtonModule,
     MatCardModule,
-    MatCheckboxModule,
     MatDividerModule,
     MatFormFieldModule,
     MatIconModule,
@@ -75,7 +78,6 @@ interface OnboardingStep {
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatSelectModule,
-    MatRadioModule,
   ],
   template: `
     <div class="onboarding-page">
@@ -815,298 +817,6 @@ interface OnboardingStep {
               </section>
             }
 
-            @if (onboarding()?.currentStep === 'configuration') {
-              <section class="onboarding-form-section">
-                <div class="form-header">
-                  <div class="form-header-icon">
-                    <mat-icon>settings</mat-icon>
-                  </div>
-
-                  <div>
-                    <div class="form-kicker">STEP 4</div>
-                    <h2>Organization Configuration</h2>
-                    <p>
-                      Configure how your organization will use Zebron and how members
-                      will interact with courses and testing.
-                    </p>
-                  </div>
-                </div>
-
-                @if (configurationSaveError()) {
-                  <div class="form-error" role="alert">
-                    <mat-icon>error_outline</mat-icon>
-                    <span>{{ configurationSaveError() }}</span>
-                  </div>
-                }
-
-                <div class="form-section">
-                  <div class="section-heading">
-                    <div class="section-heading-icon">
-                      <mat-icon>quiz</mat-icon>
-                    </div>
-
-                    <div>
-                      <h3>Test Center</h3>
-                      <p>Control testing access for your organization.</p>
-                    </div>
-                  </div>
-
-                  <div class="configuration-options">
-                    <label class="configuration-option">
-                      <div class="configuration-option-content">
-                        <div class="configuration-option-title">
-                          Test Center Enabled
-                        </div>
-
-                        <div class="configuration-option-description">
-                          Enable testing features for your organization.
-                        </div>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="configuration.testCenterEnabled"
-                        [disabled]="configurationSaving()"
-                      />
-                    </label>
-
-                    <label class="configuration-option">
-                      <div class="configuration-option-content">
-                        <div class="configuration-option-title">
-                          Allow Member Testing
-                        </div>
-
-                        <div class="configuration-option-description">
-                          Allow organization members to take available tests.
-                        </div>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="configuration.allowMemberTesting"
-                        [disabled]="configurationSaving() || !configuration.testCenterEnabled"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div class="form-section">
-                  <div class="section-heading">
-                    <div class="section-heading-icon">
-                      <mat-icon>manage_accounts</mat-icon>
-                    </div>
-
-                    <div>
-                      <h3>Member Access</h3>
-                      <p>Define course visibility and default member access.</p>
-                    </div>
-                  </div>
-
-                  <div class="field-grid">
-                    <mat-form-field appearance="outline" class="organization-form-field">
-                      <mat-label>Course Visibility</mat-label>
-                      <mat-icon matPrefix>visibility</mat-icon>
-
-                      <mat-select
-                        [(ngModel)]="configuration.courseVisibility"
-                        [disabled]="configurationSaving()"
-                      >
-                        <mat-option value="all">All Members</mat-option>
-                        <mat-option value="members">Organization Members</mat-option>
-                        <mat-option value="admins">Administrators Only</mat-option>
-                      </mat-select>
-
-                      <mat-hint>
-                        Controls who can view organization courses.
-                      </mat-hint>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline" class="organization-form-field">
-                      <mat-label>Default Member Role</mat-label>
-                      <mat-icon matPrefix>person</mat-icon>
-
-                      <mat-select
-                        [(ngModel)]="configuration.defaultMemberRole"
-                        [disabled]="configurationSaving()"
-                      >
-                        <mat-option value="org_member">
-                          Organization Member
-                        </mat-option>
-
-                        <mat-option value="org_staff">
-                          Organization Staff
-                        </mat-option>
-
-                        <mat-option value="org_manager">
-                          Organization Manager
-                        </mat-option>
-                      </mat-select>
-
-                      <mat-hint>
-                        Role assigned to newly registered members.
-                      </mat-hint>
-                    </mat-form-field>
-                  </div>
-
-                  <label class="configuration-option">
-                    <div class="configuration-option-content">
-                      <div class="configuration-option-title">
-                        Allow Self Registration
-                      </div>
-
-                      <div class="configuration-option-description">
-                        Allow users to register themselves with the organization.
-                      </div>
-                    </div>
-
-                    <input
-                      type="checkbox"
-                      [(ngModel)]="configuration.allowSelfRegistration"
-                      [disabled]="configurationSaving()"
-                    />
-                  </label>
-                </div>
-
-                <div class="form-section">
-                  <div class="section-heading">
-                    <div class="section-heading-icon">
-                      <mat-icon>notifications</mat-icon>
-                    </div>
-
-                    <div>
-                      <h3>Notifications</h3>
-                      <p>Choose which organization events should generate notifications.</p>
-                    </div>
-                  </div>
-
-                  <div class="configuration-options">
-                    <label class="configuration-option">
-                      <div class="configuration-option-content">
-                        <div class="configuration-option-title">
-                          Administrator Notifications
-                        </div>
-
-                        <div class="configuration-option-description">
-                          Notify organization administrators about relevant activity.
-                        </div>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="configuration.adminNotifications"
-                        [disabled]="configurationSaving()"
-                      />
-                    </label>
-
-                    <label class="configuration-option">
-                      <div class="configuration-option-content">
-                        <div class="configuration-option-title">
-                          Test Result Notifications
-                        </div>
-
-                        <div class="configuration-option-description">
-                          Send notifications when members complete tests.
-                        </div>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="configuration.testResultNotifications"
-                        [disabled]="configurationSaving()"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div class="form-section">
-                  <div class="section-heading">
-                    <div class="section-heading-icon">
-                      <mat-icon>palette</mat-icon>
-                    </div>
-
-                    <div>
-                      <h3>Organization Branding</h3>
-                      <p>
-                        Choose the primary and secondary colors for your organization.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="field-grid">
-                    <mat-form-field appearance="outline" class="organization-form-field">
-                      <mat-label>Primary Color</mat-label>
-                      <mat-icon matPrefix>format_color_fill</mat-icon>
-
-                      <input
-                        matInput
-                        type="text"
-                        maxlength="7"
-                        [(ngModel)]="configuration.primaryColor"
-                        [disabled]="configurationSaving()"
-                        placeholder="#007979"
-                      />
-
-                      <mat-hint>Hex color, for example #007979.</mat-hint>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline" class="organization-form-field">
-                      <mat-label>Secondary Color</mat-label>
-                      <mat-icon matPrefix>format_color_fill</mat-icon>
-
-                      <input
-                        matInput
-                        type="text"
-                        maxlength="7"
-                        [(ngModel)]="configuration.secondaryColor"
-                        [disabled]="configurationSaving()"
-                        placeholder="#032D42"
-                      />
-
-                      <mat-hint>Hex color, for example #032D42.</mat-hint>
-                    </mat-form-field>
-                  </div>
-                </div>
-
-                <div class="form-actions">
-                  <button
-                    type="button"
-                    mat-stroked-button
-                    class="secondary-button"
-                    [disabled]="configurationSaving()"
-                    (click)="goBack()"
-                  >
-                    <mat-icon>arrow_back</mat-icon>
-                    Back
-                  </button>
-
-                  <button
-                    type="button"
-                    mat-flat-button
-                    class="primary-button save-button"
-                    [disabled]="configurationSaving()"
-                    (click)="saveConfiguration()"
-                  >
-                    @if (configurationSaving()) {
-                      <mat-spinner
-                        diameter="19"
-                        class="button-spinner"
-                      ></mat-spinner>
-                      <span>Saving...</span>
-                    } @else {
-                      <span>Save & Continue</span>
-                    }
-
-                    <mat-icon
-                      iconPositionEnd
-                      [class.icon-hidden]="configurationSaving()"
-                    >
-                      arrow_forward
-                    </mat-icon>
-                  </button>
-                </div>
-              </section>
-            }
-
             @if (onboarding()?.currentStep === 'first_program') {
               <section class="onboarding-form-section">
                 <div class="form-header">
@@ -1162,7 +872,7 @@ interface OnboardingStep {
                           matInput
                           formControlName="name"
                           autocomplete="off"
-                          
+                          placeholder="e.g. Cybersecurity"
                         />
 
                         @if (firstProgramForm.controls.name.hasError('required')) {
@@ -1184,10 +894,10 @@ interface OnboardingStep {
                           matInput
                           formControlName="slug"
                           autocomplete="off"
-                          readonly
+                          placeholder="e.g. cybersecurity"
                         />
 
-                        <mat-hint>Automatically generated & Used as the program's unique identifier. </mat-hint>
+                        <mat-hint> Used as the program's unique identifier. </mat-hint>
 
                         @if (firstProgramForm.controls.slug.hasError('required')) {
                           <mat-error> Program slug is required. </mat-error>
@@ -1211,7 +921,7 @@ interface OnboardingStep {
                           matInput
                           formControlName="description"
                           rows="5"
-                          
+                          placeholder="Describe this program..."
                         ></textarea>
 
                         <mat-hint> Optional. Maximum 2,000 characters. </mat-hint>
@@ -1259,7 +969,7 @@ interface OnboardingStep {
               </section>
             }
 
-           @if (onboarding()?.currentStep === 'first_course') {
+            @if (onboarding()?.currentStep === 'courses') {
               <section class="onboarding-form-section">
                 <div class="form-header">
                   <div class="form-header-icon">
@@ -1267,878 +977,88 @@ interface OnboardingStep {
                   </div>
 
                   <div>
-                    <div class="form-kicker">STEP 6</div>
+                    <div class="form-kicker">NEXT PHASE</div>
 
-                    <h2>First Course</h2>
+                    <h2>Courses</h2>
 
                     <p>
-                      Create the first course your organization will use within its first program.
+                      Your first program is ready. The next step is to add courses to that program.
                     </p>
                   </div>
                 </div>
 
-                @if (firstCourseSaveError()) {
-                  <div class="form-error" role="alert">
-                    <mat-icon>error_outline</mat-icon>
+                <div class="form-section">
+                  <div class="section-heading">
+                    <div class="section-heading-icon">
+                      <mat-icon>check_circle</mat-icon>
+                    </div>
 
-                    <span>
-                      {{ firstCourseSaveError() }}
+                    <div>
+                      <h3>Program Created</h3>
+
+                      <p>Your organization's first program has been created successfully.</p>
+                    </div>
+                  </div>
+
+                  <div class="future-step">
+                    <div class="future-step-icon">
+                      <mat-icon>menu_book</mat-icon>
+                    </div>
+
+                    <span class="future-step-label"> NEXT ONBOARDING PHASE </span>
+
+                    <h3>Courses</h3>
+
+                    <p>Courses will organize the learning content within your program.</p>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button
+                    type="button"
+                    mat-stroked-button
+                    class="secondary-button"
+                    (click)="goBack()"
+                  >
+                    <mat-icon> arrow_back </mat-icon>
+
+                    Back
+                  </button>
+
+                  <button
+                    type="button"
+                    mat-flat-button
+                    class="save-button"
+                    disabled
+                  >
+                    <span class="button-content">
+                      <span> First Course Coming Next </span>
+
+                      <mat-icon> arrow_forward </mat-icon>
                     </span>
-                  </div>
-                }
-
-                <form
-                  [formGroup]="firstCourseForm"
-                  class="organization-form"
-                  (ngSubmit)="saveFirstCourse()"
-                >
-                  <div class="form-section">
-                    <div class="section-heading">
-                      <div class="section-heading-icon">
-                        <mat-icon>school</mat-icon>
-                      </div>
-
-                      <div>
-                        <h3>Program Ready</h3>
-
-                        <p>
-                          Your first program has been created. The course you create here will be
-                          automatically linked to that program.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div class="first-course-program-card">
-                      <div class="first-course-program-icon">
-                        <mat-icon>check_circle</mat-icon>
-                      </div>
-
-                      <div class="first-course-program-content">
-                        <span class="first-course-program-label">
-                          FIRST PROGRAM
-                        </span>
-
-                        <strong>Program Created Successfully</strong>
-
-                        <p>
-                          Your first course will be added to this program automatically.
-                        </p>
-                      </div>
-
-                      <mat-icon class="first-course-program-check">
-                        check_circle
-                      </mat-icon>
-                    </div>
-                  </div>
-
-                  <div class="form-section">
-                    <div class="section-heading">
-                      <div class="section-heading-icon">
-                        <mat-icon>menu_book</mat-icon>
-                      </div>
-
-                      <div>
-                        <h3>Course Information</h3>
-
-                        <p>
-                          Provide the information members will see when they access this course.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div class="field-grid">
-                      <!-- Course Name -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field"
-                      >
-                        <mat-label>Course Name</mat-label>
-
-                        <mat-icon matPrefix>menu_book</mat-icon>
-
-                        <input
-                          matInput
-                          formControlName="name"
-                          autocomplete="off"
-                         
-                        />
-
-                        <mat-hint>
-                          Enter the name of the course.
-                        </mat-hint>
-
-                        @if (firstCourseForm.controls.name.hasError('required')) {
-                          <mat-error>
-                            Course name is required.
-                          </mat-error>
-                        }
-
-                        @if (firstCourseForm.controls.name.hasError('maxlength')) {
-                          <mat-error>
-                            Course name cannot exceed 150 characters.
-                          </mat-error>
-                        }
-                      </mat-form-field>
-
-                      <!-- Course Slug -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field"
-                      >
-                        <mat-label>Course Slug</mat-label>
-
-                        <mat-icon matPrefix>link</mat-icon>
-
-                        <input
-                          matInput
-                          formControlName="slug"
-                          autocomplete="off"
-                          readonly
-                          aria-readonly="true"
-                        />
-
-                        <mat-hint>
-                          Automatically generated from the course name.
-                        </mat-hint>
-
-                        @if (firstCourseForm.controls.slug.hasError('required')) {
-                          <mat-error>
-                            Course slug is required.
-                          </mat-error>
-                        }
-
-                        @if (firstCourseForm.controls.slug.hasError('maxlength')) {
-                          <mat-error>
-                            Course slug cannot exceed 150 characters.
-                          </mat-error>
-                        }
-                      </mat-form-field>
-
-                      <!-- Description -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field full-field"
-                      >
-                        <mat-label>Description</mat-label>
-
-                        <mat-icon matPrefix>description</mat-icon>
-
-                        <textarea
-                          matInput
-                          formControlName="description"
-                          rows="5"
-                          
-                        ></textarea>
-
-                        <mat-hint>
-                          Required. Maximum 2,000 characters.
-                        </mat-hint>
-
-                        @if (
-                          firstCourseForm.controls.description.hasError('required')
-                          && firstCourseForm.controls.description.touched
-                        ) {
-                          <mat-error>
-                            Course description is required.
-                          </mat-error>
-                        }
-
-                        @if (firstCourseForm.controls.description.hasError('maxlength')) {
-                          <mat-error>
-                            Description cannot exceed 2,000 characters.
-                          </mat-error>
-                        }
-                      </mat-form-field>
-
-                      <!-- Course Type -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field"
-                      >
-                        <mat-label>Course Type</mat-label>
-
-                        <mat-icon matPrefix>category</mat-icon>
-
-                        <mat-select formControlName="type">
-                          @for (courseType of courseTypes; track courseType.value) {
-                            <mat-option [value]="courseType.value">
-                              {{ courseType.label }}
-                            </mat-option>
-                          }
-                        </mat-select>
-
-                        <mat-hint>
-                          Select how this offering is classified.
-                        </mat-hint>
-                      </mat-form-field>
-
-                      <!-- Provider -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field"
-                      >
-                        <mat-label>Provider</mat-label>
-
-                        <mat-icon matPrefix>business</mat-icon>
-
-                        <input
-                          matInput
-                          formControlName="provider"
-                          autocomplete="organization"
-                          
-                        />
-
-                        <mat-hint>
-                          Optional. Identify the course provider.
-                        </mat-hint>
-
-                        @if (firstCourseForm.controls.provider.hasError('maxlength')) {
-                          <mat-error>
-                            Provider cannot exceed 200 characters.
-                          </mat-error>
-                        }
-                      </mat-form-field>
-                    </div>
-                  </div>
-
-                  <div class="form-actions">
-                    <button
-                      type="button"
-                      mat-stroked-button
-                      class="secondary-button"
-                      [disabled]="firstCourseSaving()"
-                      (click)="goBack()"
-                    >
-                      <mat-icon>arrow_back</mat-icon>
-                      Back
-                    </button>
-
-                    <button
-                      type="submit"
-                      mat-flat-button
-                      class="save-button"
-                      [disabled]="firstCourseSaving() || firstCourseForm.invalid"
-                    >
-                      <span class="button-content">
-                        @if (firstCourseSaving()) {
-                          <mat-spinner
-                            diameter="18"
-                            class="button-spinner"
-                          ></mat-spinner>
-
-                          <span>Saving...</span>
-                        } @else {
-                          <span>Save & Continue</span>
-                        }
-
-                        <mat-icon
-                          iconPositionEnd
-                          [class.icon-hidden]="firstCourseSaving()"
-                        >
-                          arrow_forward
-                        </mat-icon>
-                      </span>
-                    </button>
-                  </div>
-                </form>
+                  </button>
+                </div>
               </section>
             }
 
-       <!-- =================================================
-     STEP 7
-     ================================================= -->
-@if (onboarding()?.currentStep === 'first_topic') {
-  <section class="onboarding-form-section">
-    <div class="form-header">
-      <div class="form-header-icon">
-        <mat-icon>topic</mat-icon>
-      </div>
+            <!-- =================================================
+                 FUTURE STEPS
+                 ================================================= -->
+            @else {
+              <div class="future-step">
+                <div class="future-step-icon">
+                  <mat-icon> construction </mat-icon>
+                </div>
 
-      <div>
-        <div class="form-kicker">STEP 7</div>
+                <span class="future-step-label"> NEXT ONBOARDING STEP </span>
 
-        <h2>First Topic</h2>
+                <h3>
+                  {{ currentStepLabel() }}
+                </h3>
 
-        <p>
-          Create the first topic for your organization's first course.
-        </p>
-      </div>
-    </div>
-
-    @if (firstTopicSaveError()) {
-      <div class="form-error" role="alert">
-        <mat-icon>error_outline</mat-icon>
-
-        <span>
-          {{ firstTopicSaveError() }}
-        </span>
-      </div>
-    }
-
-    <form
-      [formGroup]="firstTopicForm"
-      class="organization-form"
-      (ngSubmit)="saveFirstTopic()"
-    >
-      <!-- COURSE CONTEXT -->
-      <div class="form-section">
-        <div class="section-heading">
-          <div class="section-heading-icon">
-            <mat-icon>menu_book</mat-icon>
-          </div>
-
-          <div>
-            <h3>Course</h3>
-
-            <p>
-              This topic will be created under your organization's
-              first course.
-            </p>
-          </div>
-        </div>
-
-        <div class="first-course-program-card">
-          <div class="first-course-program-icon">
-            <mat-icon>menu_book</mat-icon>
-          </div>
-
-          <div class="first-course-program-content">
-            <span class="first-course-program-label">
-              FIRST COURSE
-            </span>
-
-            <strong>
-              {{ firstCourseNameForTopic() }}
-            </strong>
-
-            <p>
-              The first topic will be associated with this course.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- TOPIC DETAILS -->
-      <div class="form-section">
-        <div class="section-heading">
-          <div class="section-heading-icon">
-            <mat-icon>topic</mat-icon>
-          </div>
-
-          <div>
-            <h3>Topic Details</h3>
-
-            <p>
-              Give the topic a clear name and description.
-            </p>
-          </div>
-        </div>
-
-        <!-- Topic Name -->
-        <mat-form-field
-          appearance="outline"
-          class="organization-form-field full-field"
-        >
-          <mat-label>Topic Name</mat-label>
-
-          <mat-icon matPrefix>topic</mat-icon>
-
-          <input
-            matInput
-            formControlName="name"
-            autocomplete="off"
-           
-          />
-
-          <mat-hint>
-            Use a clear name that describes the topic.
-          </mat-hint>
-
-          @if (firstTopicForm.controls.name.hasError('required')) {
-            <mat-error>
-              Topic name is required.
-            </mat-error>
-          }
-
-          @if (firstTopicForm.controls.name.hasError('maxlength')) {
-            <mat-error>
-              Topic name cannot exceed 150 characters.
-            </mat-error>
-          }
-        </mat-form-field>
-
-        <!-- Slug -->
-        <mat-form-field
-          appearance="outline"
-          class="organization-form-field full-field"
-        >
-          <mat-label>Topic Slug</mat-label>
-
-          <mat-icon matPrefix>link</mat-icon>
-
-          <input
-            matInput
-            formControlName="slug"
-            readonly
-            aria-readonly="true"
-          />
-
-          <mat-hint>
-            Automatically generated from the topic name.
-          </mat-hint>
-
-          @if (firstTopicForm.controls.slug.hasError('required')) {
-            <mat-error>
-              Topic slug is required.
-            </mat-error>
-          }
-
-          @if (firstTopicForm.controls.slug.hasError('maxlength')) {
-            <mat-error>
-              Topic slug cannot exceed 150 characters.
-            </mat-error>
-          }
-        </mat-form-field>
-
-        <!-- Description -->
-        <mat-form-field
-          appearance="outline"
-          class="organization-form-field full-field"
-        >
-          <mat-label>Description</mat-label>
-
-          <mat-icon matPrefix>description</mat-icon>
-
-          <textarea
-            matInput
-            formControlName="description"
-            rows="5"
-            
-          ></textarea>
-
-          <mat-hint>
-            Optional. Maximum 2,000 characters.
-          </mat-hint>
-
-          @if (firstTopicForm.controls.description.hasError('maxlength')) {
-            <mat-error>
-              Topic description cannot exceed 2,000 characters.
-            </mat-error>
-          }
-        </mat-form-field>
-
-        <!-- Active -->
-        <div class="form-toggle-row">
-          <div>
-            <strong>Active Topic</strong>
-
-            <p>
-              Make this topic available immediately after onboarding.
-            </p>
-          </div>
-
-          <mat-checkbox
-            formControlName="active"
-            class="first-course-program-check"
-          >
-            Active
-          </mat-checkbox>
-        </div>
-      </div>
-
-      <!-- ERROR -->
-      @if (firstTopicSaveError()) {
-        <div class="save-error">
-          <div class="save-error-icon">
-            <mat-icon>error_outline</mat-icon>
-          </div>
-
-          <div class="save-error-content">
-            <h4>Unable to create first topic</h4>
-
-            <p>
-              {{ firstTopicSaveError() }}
-            </p>
-          </div>
-        </div>
-      }
-
-      <!-- ACTIONS -->
-      <div class="form-actions">
-        <button
-          type="button"
-          mat-stroked-button
-          class="secondary-button"
-          [disabled]="firstTopicSaving()"
-          (click)="goBack()"
-        >
-          <mat-icon>arrow_back</mat-icon>
-
-          Back
-        </button>
-
-        <button
-          type="submit"
-          mat-flat-button
-          class="primary-button save-button"
-          [disabled]="firstTopicSaving() || firstTopicForm.invalid"
-        >
-          <span class="button-content">
-            @if (firstTopicSaving()) {
-              <mat-spinner
-                diameter="18"
-                class="button-spinner"
-              ></mat-spinner>
-
-              <span>Saving...</span>
-            } @else {
-              <span>Save & Continue</span>
+                <p>This step is next in the organization's onboarding journey.</p>
+              </div>
             }
-          </span>
-
-          <mat-icon
-            iconPositionEnd
-            [class.icon-hidden]="firstTopicSaving()"
-          >
-            arrow_forward
-          </mat-icon>
-        </button>
-      </div>
-    </form>
-  </section>
-}
-
-<!-- =================================================
-     STEP 8
-     ================================================= -->
-@if (onboarding()?.currentStep === 'first_question') {
-  <section class="onboarding-form-section">
-    <div class="form-kicker">
-      STEP 8
-    </div>
-
-    <div class="form-heading-row">
-      <div>
-        <h2>
-          Create Your First Question
-        </h2>
-
-        <p>
-          Add the first question members will answer in
-          your organization's Test Center.
-        </p>
-      </div>
-
-      <div class="form-heading-icon">
-        <mat-icon>quiz</mat-icon>
-      </div>
-    </div>
-
-    <div class="first-question-context-card mb-2">
-       <div
-    class="flex shrink-0 items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4"
-  >
-    <div
-      class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100"
-    >
-      <mat-icon>account_tree</mat-icon>
-    </div>
-
-    <div class="min-w-0">
-      <strong
-        class="block text-base font-bold text-slate-900"
-      >
-        {{ firstTopicName() }}
-      </strong>
-
-      <p class="mt-1 text-xs text-slate-500">
-        Your first question will be associated with this topic.
-      </p>
-    </div>
-  </div>
-      
-    </div>
-
-    @if (firstQuestionSaveError()) {
-      <div
-        class="form-error-banner"
-        role="alert"
-      >
-        <mat-icon>error</mat-icon>
-
-        <span>
-          {{ firstQuestionSaveError() }}
-        </span>
-      </div>
-    }
-
-   <form
-  [formGroup]="firstQuestionForm"
-  (ngSubmit)="saveFirstQuestion()"
-  class="w-full space-y-5"
->
-  <!-- QUESTION -->
-  <div class="w-full">
-    <mat-form-field
-      appearance="outline"
-      class="!w-full"
-    >
-      <mat-label>
-        Question
-      </mat-label>
-
-      <textarea
-        matInput
-        rows="5"
-        formControlName="question"
-        placeholder="Enter the question members will answer"
-      ></textarea>
-
-      <mat-hint align="end">
-        {{
-          firstQuestionForm.controls.question.value.length
-        }}/5000
-      </mat-hint>
-
-      @if (
-        firstQuestionForm.controls.question.hasError('required')
-        && firstQuestionForm.controls.question.touched
-      ) {
-        <mat-error>
-          Question text is required.
-        </mat-error>
-      }
-
-      @if (
-        firstQuestionForm.controls.question.hasError('maxlength')
-      ) {
-        <mat-error>
-          Question cannot exceed 5000 characters.
-        </mat-error>
-      }
-    </mat-form-field>
-  </div>
-
-  <!-- ANSWER OPTIONS -->
-  <div class="w-full">
-    <!-- Section heading -->
-    <div
-      class="mb-3 flex items-center justify-between gap-4"
-    >
-      <div>
-        <h3 class="m-0 text-base font-bold text-gray-900">
-          Answer Options
-        </h3>
-
-        <p class="mt-1 text-xs text-gray-500">
-          Enter four possible answers and select the correct answer.
-        </p>
-      </div>
-
-      <span
-        class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold tracking-wide text-slate-600"
-      >
-        4 OPTIONS
-      </span>
-    </div>
-
-    <!-- Options -->
-    <div
-      formArrayName="options"
-      class="flex w-full flex-col gap-2"
-    >
-      @for (
-        option of firstQuestionOptions.controls;
-        track option.get('id')?.value;
-        let i = $index
-      ) {
-        <div
-          [formGroupName]="i"
-          class="grid w-full grid-cols-[40px_minmax(0,1fr)_auto] items-start gap-3"
-        >
-          <!-- Letter -->
-          <div
-            class="mt-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700"
-          >
-            {{ option.get('id')?.value }}
-          </div>
-
-          <!-- Answer -->
-          <mat-form-field
-            appearance="outline"
-            class="!w-full !min-w-0"
-          >
-            <mat-label>
-              Option {{ i + 1 }}
-            </mat-label>
-
-            <input
-              matInput
-              formControlName="text"
-              placeholder="Enter answer option"
-            />
-
-            <mat-hint align="end">
-              {{
-                option.get('text')?.value?.length || 0
-              }}/1000
-            </mat-hint>
-
-            @if (
-              option.get('text')?.hasError('required')
-              && option.get('text')?.touched
-            ) {
-              <mat-error>
-                Answer option is required.
-              </mat-error>
-            }
-
-            @if (
-              option.get('text')?.hasError('maxlength')
-            ) {
-              <mat-error>
-                Answer option cannot exceed 1000 characters.
-              </mat-error>
-            }
-          </mat-form-field>
-
-          <!-- Correct -->
-          <mat-radio-button
-            class="mt-2 shrink-0 whitespace-nowrap"
-            [value]="option.get('id')?.value"
-            (change)="selectFirstQuestionCorrectAnswer(
-              option.get('id')?.value ?? ''
-            )"
-            [checked]="
-              firstQuestionForm.controls.correctAnswer.value ===
-              option.get('id')?.value
-            "
-          >
-            Correct
-          </mat-radio-button>
-        </div>
-      }
-    </div>
-
-    <!-- Validation -->
-    @if (
-      firstQuestionForm.controls.correctAnswer.hasError('required')
-      && firstQuestionForm.controls.correctAnswer.touched
-    ) {
-      <div
-        class="mt-2 flex items-center gap-2 text-xs text-red-600"
-      >
-        <mat-icon class="!h-[18px] !w-[18px] !text-[18px]">
-          info
-        </mat-icon>
-
-        <span>
-          Select the correct answer.
-        </span>
-      </div>
-    }
-  </div>
-
-  <!-- DIFFICULTY -->
-  <div class="w-full">
-    <mat-form-field
-      appearance="outline"
-      class="!w-full"
-    >
-      <mat-label>
-        Difficulty
-      </mat-label>
-
-      <mat-select
-        formControlName="difficulty"
-      >
-        @for (
-          difficulty of questionDifficulties;
-          track difficulty.value
-        ) {
-          <mat-option
-            [value]="difficulty.value"
-          >
-            {{ difficulty.label }}
-          </mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-  </div>
-
-  <!-- EXPLANATION -->
-  <div class="w-full">
-    <mat-form-field
-      appearance="outline"
-      class="!w-full"
-    >
-      <mat-label>
-        Explanation
-      </mat-label>
-
-      <textarea
-        matInput
-        rows="4"
-        formControlName="explanation"
-        placeholder="Explain why the selected answer is correct"
-      ></textarea>
-
-      <mat-hint align="end">
-        {{
-          firstQuestionForm.controls.explanation.value.length
-        }}/5000
-      </mat-hint>
-
-      @if (
-        firstQuestionForm.controls.explanation.hasError('maxlength')
-      ) {
-        <mat-error>
-          Explanation cannot exceed 5000 characters.
-        </mat-error>
-      }
-    </mat-form-field>
-  </div>
-
-  <!-- ACTIONS -->
-  <div class="flex justify-end pt-2">
-    <button
-      mat-flat-button
-      color="primary"
-      type="submit"
-      [disabled]="
-        firstQuestionSaving() ||
-        firstQuestionForm.invalid
-      "
-      class="!px-6"
-    >
-      @if (firstQuestionSaving()) {
-        <mat-spinner
-          diameter="18"
-          class="button-spinner"
-        ></mat-spinner>
-
-        <span>
-          Saving...
-        </span>
-      } @else {
-        <span>
-          Complete Onboarding
-        </span>
-      }
-
-      <mat-icon
-        iconPositionEnd
-        [class.icon-hidden]="firstQuestionSaving()"
-      >
-        check_circle
-      </mat-icon>
-    </button>
-  </div>
-</form>
-  </section>
-}
-
-          
           </section>
         }
       </div>
@@ -3096,99 +2016,6 @@ interface OnboardingStep {
       }
 
       /* ============================================================
-       FIRST COURSE
-       ============================================================ */
-
-      .first-course-program-card {
-        display: flex;
-        align-items: center;
-        gap: 0.9rem;
-        width: 100%;
-        box-sizing: border-box;
-        margin-top: 0.25rem;
-        border: 1px solid #cfe4e5;
-        border-radius: 0.8rem;
-        background: #f7fbfb;
-        padding: 1rem 1.1rem;
-      }
-
-      .first-course-program-icon {
-        display: flex;
-        width: 2.4rem;
-        height: 2.4rem;
-        flex: 0 0 2.4rem;
-        align-items: center;
-        justify-content: center;
-        border-radius: 0.7rem;
-        background: var(--zebron-pale);
-        color: var(--zebron-teal);
-      }
-
-      .first-course-program-icon mat-icon {
-        width: 1.25rem;
-        height: 1.25rem;
-        font-size: 1.25rem;
-      }
-
-      .first-course-program-content {
-        min-width: 0;
-        flex: 1;
-      }
-
-      .first-course-program-label {
-        display: block;
-        margin-bottom: 0.15rem;
-        color: var(--zebron-teal);
-        font-size: 0.62rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .first-course-program-content strong {
-        display: block;
-        color: var(--zebron-navy);
-        font-size: 0.88rem;
-        font-weight: 750;
-      }
-
-      .first-course-program-content p {
-        margin: 0.2rem 0 0;
-        color: var(--text-secondary);
-        font-size: 0.76rem;
-        line-height: 1.45;
-      }
-
-      .form-toggle-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-top: 1.25rem;
-        padding: 1rem 1.1rem;
-        border: 1px solid #dbe7ea;
-        border-radius: 0.9rem;
-        background: #f8fbfc;
-      }
-
-      .form-toggle-row strong {
-        display: block;
-        color: var(--zebron-navy);
-        font-size: 0.9rem;
-      }
-
-      .form-toggle-row p {
-        margin: 0.25rem 0 0;
-        color: #6f8b92;
-        font-size: 0.78rem;
-      }
-
-      .first-course-program-check {
-        flex: 0 0 auto;
-        color: var(--zebron-teal);
-      }
-
-      /* ============================================================
        FUTURE STEP
        ============================================================ */
 
@@ -3338,156 +2165,6 @@ interface OnboardingStep {
         .button-spinner {
           flex: 0 0 auto;
         }
-
-        .first-question-context-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 0 0 28px;
-  padding: 18px 20px;
-  border: 1px solid rgba(3, 45, 66, 0.12);
-  border-radius: 14px;
-  background: #f7fafc;
-}
-
-.first-question-context-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
-  border-radius: 12px;
-  background: rgba(3, 45, 66, 0.08);
-}
-
-.first-question-context-icon mat-icon {
-  color: var(--zebron-navy);
-}
-
-.first-question-context-content {
-  min-width: 0;
-}
-
-.first-question-context-content > span {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.65;
-}
-
-.first-question-context-content strong {
-  display: block;
-  font-size: 16px;
-  line-height: 1.35;
-}
-
-.first-question-context-content p {
-  margin: 4px 0 0;
-  font-size: 13px;
-  opacity: 0.7;
-}
-
-.first-question-options-section {
-  margin-top: 12px;
-}
-
-.first-question-section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 16px;
-}
-
-.first-question-section-heading h3 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.first-question-section-heading p {
-  margin: 5px 0 0;
-  font-size: 13px;
-  opacity: 0.7;
-}
-
-.first-question-option-count {
-  flex: 0 0 auto;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  background: rgba(3, 45, 66, 0.08);
-}
-
-.first-question-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.first-question-option-row {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-}
-
-.first-question-option-letter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: rgba(3, 45, 66, 0.08);
-  font-weight: 700;
-}
-
-.first-question-option-input {
-  width: 100%;
-}
-
-.first-question-validation-message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  font-size: 13px;
-}
-
-.first-question-validation-message mat-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-
-.first-question-settings-grid {
-  display: grid;
-  grid-template-columns: minmax(220px, 320px);
-  margin-top: 24px;
-}
-
-@media (max-width: 700px) {
-  .first-question-option-row {
-    grid-template-columns: 36px minmax(0, 1fr);
-  }
-
-  .first-question-option-row mat-radio-button {
-    grid-column: 2;
-  }
-
-  .first-question-section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
-  }
-}
       }
     `,
   ],
@@ -3499,6 +2176,7 @@ export class PartnerOnboardingComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly formBuilder = inject(FormBuilder);
   private readonly onboardingService = inject(OrganizationOnboardingService);
+private readonly courseService = inject(TestCourseService);
 
   private readonly invitationService = inject(OrganizationInvitationService);
   /**
@@ -3627,28 +2305,22 @@ export class PartnerOnboardingComponent implements OnInit {
   },
 ];
 
+protected updateFirstCourseName(name: string): void {
+  this.firstCourse.name = name;
+  this.firstCourse.slug = this.generateCourseSlug(name);
+  this.firstCourseSaveError.set(null);
+}
   protected readonly firstCourseSaving = signal(false);
-  protected readonly firstCourseSaveError = signal<string | null>(null);
+protected readonly firstCourseSaveError = signal<string | null>(null);
 
-  protected readonly firstCourseForm = this.formBuilder.nonNullable.group({
-    name: ['', [Validators.required, Validators.maxLength(150)]],
-    slug: ['', [Validators.required, Validators.maxLength(150)]],
-    description: ['', [Validators.required, Validators.maxLength(2000)]],
-    provider: ['', [Validators.maxLength(200)]],
-    type: 'course' as TestCourseType,
-    active: true,
-  });
-
-  protected readonly firstTopicSaving = signal(false);
-
-  protected readonly firstTopicSaveError = signal<string | null>(null);
-
-  protected readonly firstTopicForm = this.formBuilder.nonNullable.group({
-    name: ['', [Validators.required, Validators.maxLength(150)]],
-    slug: ['', [Validators.required, Validators.maxLength(150)]],
-    description: ['', [Validators.maxLength(2000)]],
-    active: true,
-  });
+protected readonly firstCourse = {
+  name: '',
+  slug: '',
+  description: '',
+  provider: '',
+  type: 'course' as TestCourseType,
+  active: true,
+};
 
   protected readonly organizationForm = this.formBuilder.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(150)]],
@@ -3717,104 +2389,7 @@ export class PartnerOnboardingComponent implements OnInit {
     secondaryColor: '#032D42',
   };
 
-  protected firstCourseNameForTopic(): string {
-  return (
-    this.firstCourseForm.controls.name.value.trim() ||
-    'First Course'
-  );
-}
-
-protected readonly firstTopicName = signal<string>('First topic');
-
-protected readonly firstQuestionSaving =
-  signal(false);
-
-protected readonly firstQuestionSaveError =
-  signal<string | null>(null);
-
-protected readonly firstQuestionForm =
-  this.formBuilder.nonNullable.group({
-    question: [
-      '',
-      [
-        Validators.required,
-        Validators.maxLength(5000),
-      ],
-    ],
-
-    options:
-      this.formBuilder.array([
-        this.createFirstQuestionOption('A'),
-        this.createFirstQuestionOption('B'),
-        this.createFirstQuestionOption('C'),
-        this.createFirstQuestionOption('D'),
-      ]),
-
-    correctAnswer: [
-      'A',
-      [Validators.required],
-    ],
-
-    difficulty:
-      'medium' as OrganizationOnboardingFirstQuestionDifficulty,
-
-    explanation: [
-      '',
-      [Validators.maxLength(5000)],
-    ],
-  });
-
-protected readonly questionDifficulties: {
-  value: OrganizationOnboardingFirstQuestionDifficulty;
-  label: string;
-}[] = [
-  {
-    value: 'easy',
-    label: 'Easy',
-  },
-  {
-    value: 'medium',
-    label: 'Medium',
-  },
-  {
-    value: 'hard',
-    label: 'Hard',
-  },
-];
-
-protected get firstQuestionOptions() {
-  return this.firstQuestionForm.controls.options;
-}
-
   ngOnInit(): void {
-    this.firstProgramForm.controls.name.valueChanges.subscribe((name) => {
-      const slug = this.generateProgramSlug(name);
-
-      this.firstProgramForm.controls.slug.setValue(slug, {
-        emitEvent: false,
-      });
-    });
-
-    this.firstCourseForm.controls.name.valueChanges.subscribe((name) => {
-      const slug = this.generateCourseSlug(name);
-
-      this.firstCourseForm.controls.slug.setValue(slug, {
-        emitEvent: false,
-      });
-
-      this.firstCourseSaveError.set(null);
-    });
-
-    this.firstTopicForm.controls.name.valueChanges.subscribe((name) => {
-      const slug = this.generateTopicSlug(name);
-
-      this.firstTopicForm.controls.slug.setValue(slug, {
-        emitEvent: false,
-      });
-
-      this.firstTopicSaveError.set(null);
-    });
-
     void this.load();
   }
 
@@ -3845,8 +2420,8 @@ protected get firstQuestionOptions() {
       }
 
       this.onboarding.set(onboarding);
-      console.log('CURRENT STEP:', onboarding.currentStep);
-      console.log('COMPLETED STEPS:', onboarding.completedSteps);
+      //console.log('CURRENT STEP:', onboarding.currentStep);
+      //console.log('COMPLETED STEPS:', onboarding.completedSteps);
       this.organization.set(organization);
 
       this.pageTitleService.setTitle(`${organization.name}`);
@@ -4437,350 +3012,103 @@ protected goBack(): void {
   }
 
   protected async saveFirstCourse(): Promise<void> {
-    this.firstCourseSaveError.set(null);
-
-    if (this.firstCourseForm.invalid) {
-      this.firstCourseForm.markAllAsTouched();
-      return;
-    }
-
-    const organizationId = this.organizationId();
-
-    if (!organizationId) {
-      this.firstCourseSaveError.set('Organization ID is missing.');
-      return;
-    }
-
-    const firstProgramId = this.onboarding()?.firstProgramId?.trim();
-
-    if (!firstProgramId) {
-      this.firstCourseSaveError.set(
-        'The first program could not be identified. Please return to the previous step.',
-      );
-      return;
-    }
-
-    this.firstCourseSaving.set(true);
-
-    try {
-      const formValue = this.firstCourseForm.getRawValue();
-
-      const response =
-        await this.onboardingService.completeOrganizationFirstCourse(
-          organizationId,
-          {
-            name: formValue.name.trim(),
-            slug: formValue.slug.trim(),
-            description: formValue.description.trim(),
-            provider: formValue.provider.trim() || undefined,
-            type: formValue.type,
-            active: formValue.active,
-          },
-        );
-
-      if (!response.success) {
-        throw new Error('The first course could not be created.');
-      }
-
-      /*
-       * The Cloud Function owns the authoritative onboarding
-       * transition:
-       *
-       * first_course
-       *      ↓
-       * first_topic
-       */
-      const updatedOnboarding =
-        await this.onboardingService.getOnboarding(organizationId);
-
-      if (!updatedOnboarding) {
-        throw new Error(
-          'The first course was created, but the updated onboarding state could not be loaded.',
-        );
-      }
-
-      this.onboarding.set(updatedOnboarding);
-
-      if (updatedOnboarding.currentStep !== 'first_topic') {
-        throw new Error(
-          'The first course was created, but onboarding did not advance to the first-topic step.',
-        );
-      }
-
-      this.firstCourseSaveError.set(null);
-    } catch (error: unknown) {
-      console.error(
-        'Failed to create first organization course.',
-        error,
-      );
-
-      this.firstCourseSaveError.set(
-        this.getErrorMessage(
-          error,
-          'Unable to create the first course.',
-        ),
-      );
-    } finally {
-      this.firstCourseSaving.set(false);
-    }
-  }
-
-protected async saveFirstTopic(): Promise<void> {
-  this.firstTopicSaveError.set(null);
-
-  if (this.firstTopicForm.invalid) {
-    this.firstTopicForm.markAllAsTouched();
-    return;
-  }
-
-  const organizationId = this.organizationId();
+  const organizationId = this.organization()?.id;
 
   if (!organizationId) {
-    this.firstTopicSaveError.set(
-      'Organization ID is missing.',
+    this.firstCourseSaveError.set(
+      'The organization could not be identified.',
     );
     return;
   }
 
-  const firstCourseId = this.onboarding()?.firstCourseId?.trim();
+  const programId = this.firstProgram?.id?.trim();
 
-  if (!firstCourseId) {
-    this.firstTopicSaveError.set(
-      'The first course could not be identified. Please return to the previous step.',
+  if (!programId) {
+    this.firstCourseSaveError.set(
+      'The first program could not be identified. Please return to the previous step.',
     );
     return;
   }
 
-  this.firstTopicSaving.set(true);
+  const name = this.firstCourse.name.trim();
+  const slug = this.generateCourseSlug(name);
+  const description = this.firstCourse.description.trim();
+  const provider = this.firstCourse.provider.trim();
+
+  if (!name) {
+    this.firstCourseSaveError.set('Course name is required.');
+    return;
+  }
+
+  if (!slug) {
+    this.firstCourseSaveError.set(
+      'A valid course name is required to generate the course slug.',
+    );
+    return;
+  }
+
+  if (!description) {
+    this.firstCourseSaveError.set('Course description is required.');
+    return;
+  }
+
+  this.firstCourseSaving.set(true);
+  this.firstCourseSaveError.set(null);
 
   try {
-    const formValue = this.firstTopicForm.getRawValue();
+    const courseId = await this.courseService.createCourse(
+      organizationId,
+      {
+        name,
+        slug,
+        description,
+        provider: provider || undefined,
+        type: this.firstCourse.type,
+        active: this.firstCourse.active,
+        programId,
+      },
+    );
 
-    const response =
-      await this.onboardingService.completeOrganizationFirstTopic(
-        organizationId,
-        {
-          name: formValue.name.trim(),
-          slug: formValue.slug.trim(),
-          description: formValue.description.trim() || undefined,
-          active: formValue.active,
-        },
-      );
-
-    if (!response.success) {
+    if (!courseId) {
       throw new Error(
-        'The first topic could not be created.',
+        'The course was not created because no course ID was returned.',
       );
     }
 
-    this.firstTopicName.set(
-      response.topic.name?.trim() || 'First topic',
-    );
-
-    /*
-     * The Cloud Function is the authoritative owner of:
-     *
-     *   first_topic
-     *       ↓
-     *   testTopics/{firstTopicId}
-     *       ↓
-     *   first_question
-     */
     const updatedOnboarding =
-      await this.onboardingService.getOnboarding(
+      await this.onboardingService.getOrganizationOnboarding(
         organizationId,
       );
 
     if (!updatedOnboarding) {
       throw new Error(
-        'The first topic was created, but the onboarding record could not be reloaded.',
+        'The course was created, but the onboarding record could not be reloaded.',
       );
     }
 
     this.onboarding.set(updatedOnboarding);
 
-    if (
-      updatedOnboarding.currentStep !==
-      'first_question'
-    ) {
+    if (updatedOnboarding.currentStep !== 'first_topic') {
       throw new Error(
-        'The first topic was created, but onboarding did not advance to the first-question step.',
+        'The first course was created, but onboarding did not advance to the first-topic step.',
       );
     }
-
-    this.firstTopicSaveError.set(null);
   } catch (error: unknown) {
     console.error(
-      'Failed to create first organization topic.',
+      'Failed to create first organization course.',
       error,
     );
 
-    this.firstTopicSaveError.set(
+    this.firstCourseSaveError.set(
       this.getErrorMessage(
         error,
-        'Unable to create the first topic.',
+        'Unable to create the first course.',
       ),
     );
   } finally {
-    this.firstTopicSaving.set(false);
+    this.firstCourseSaving.set(false);
   }
 }
-
-protected selectFirstQuestionCorrectAnswer(
-  answerId: string,
-): void {
-  this.firstQuestionForm.controls.correctAnswer.setValue(
-    answerId,
-  );
-
-  this.firstQuestionForm.controls.correctAnswer.markAsDirty();
-  this.firstQuestionForm.controls.correctAnswer.markAsTouched();
-}
-
-protected async saveFirstQuestion(): Promise<void> {
-  this.firstQuestionSaveError.set(null);
-
-  if (this.firstQuestionForm.invalid) {
-    this.firstQuestionForm.markAllAsTouched();
-    return;
-  }
-
-  const organizationId =
-    this.organizationId();
-
-  if (!organizationId) {
-    this.firstQuestionSaveError.set(
-      'Organization ID is missing.',
-    );
-    return;
-  }
-
- const onboarding = this.onboarding();
-
-if (!onboarding?.firstCourseId?.trim()) {
-  this.firstQuestionSaveError.set(
-    'The first course could not be identified. Please return to the previous step.',
-  );
-  return;
-}
-
-if (!onboarding.firstTopicId?.trim()) {
-  this.firstQuestionSaveError.set(
-    'The first topic could not be identified. Please return to the previous step.',
-  );
-  return;
-}
-
-  this.firstQuestionSaving.set(true);
-
-  try {
-    const formValue =
-      this.firstQuestionForm.getRawValue();
-
-    const response =
-      await this.onboardingService
-        .completeOrganizationFirstQuestion(
-          organizationId,
-          {
-            question:
-              formValue.question.trim(),
-
-            options:
-              formValue.options.map(
-                (option) => ({
-                  id:
-                    option.id.trim(),
-
-                  text:
-                    option.text.trim(),
-                }),
-              ),
-
-            correctAnswer:
-              formValue.correctAnswer.trim(),
-
-            difficulty:
-              formValue.difficulty,
-
-            explanation:
-              formValue.explanation.trim() ||
-              undefined,
-          },
-        );
-
-    if (!response.success) {
-      throw new Error(
-        'The first question could not be created.',
-      );
-    }
-
-    const updatedOnboarding =
-      await this.onboardingService.getOnboarding(
-        organizationId,
-      );
-
-    if (!updatedOnboarding) {
-      throw new Error(
-        'The first question was created, but the onboarding record could not be reloaded.',
-      );
-    }
-
-    this.onboarding.set(
-      updatedOnboarding,
-    );
-
-    if (
-      updatedOnboarding.status !==
-      'completed'
-    ) {
-      throw new Error(
-        'The first question was created, but onboarding was not completed.',
-      );
-    }
-
-    if (
-      updatedOnboarding.currentStep !==
-      'first_question'
-    ) {
-      throw new Error(
-        'The first question was created, but onboarding did not reach its completed state.',
-      );
-    }
-
-    this.firstQuestionSaveError.set(null);
-
-    // Step 8 is the final onboarding step. Once the backend has
-    // authoritatively marked onboarding as completed, take the user
-    // to the organization dashboard rather than leaving them on Step 8.
-    await this.router.navigate([
-      '/partner/org',
-      organizationId,
-      'dashboard',
-    ]);
-  } catch (error: unknown) {
-    console.error(
-      'Failed to create first organization question.',
-      error,
-    );
-
-    this.firstQuestionSaveError.set(
-      this.getErrorMessage(
-        error,
-        'Unable to create the first question.',
-      ),
-    );
-  } finally {
-    this.firstQuestionSaving.set(false);
-  }
-}
-
-  private generateTopicSlug(name: string): string {
-    return name
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
 
 private generateCourseSlug(name: string): string {
   return name
@@ -4789,27 +3117,4 @@ private generateCourseSlug(name: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
-private generateProgramSlug(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-private createFirstQuestionOption(
-  id: string,
-) {
-  return this.formBuilder.nonNullable.group({
-    id: [id],
-    text: [
-      '',
-      [
-        Validators.required,
-        Validators.maxLength(1000),
-      ],
-    ],
-  });
-}
-
 }

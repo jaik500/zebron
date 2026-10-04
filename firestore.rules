@@ -852,6 +852,80 @@ match /organizationInvitations/{invitationId} {
     }
 
     // ============================================================
+// ORGANIZATION SETTINGS
+// ============================================================
+
+/*
+ * Organization settings are tenant-scoped configuration.
+ *
+ * Organization owners and administrators may read and modify
+ * settings for their organization.
+ *
+ * Platform administrators retain full access.
+ *
+ * Ordinary organization members may not access administrative
+ * organization settings.
+ */
+match /organizationSettings/{organizationId} {
+
+  // ----------------------------------------------------------
+  // READ
+  // ----------------------------------------------------------
+
+  allow get: if isPlatformAdmin()
+    || isOrganizationAdmin(organizationId);
+
+  // Settings are a single document per organization.
+  // Unscoped collection queries are not allowed.
+  allow list: if false;
+
+  // ----------------------------------------------------------
+  // CREATE
+  // ----------------------------------------------------------
+
+  allow create: if isPlatformAdmin()
+    || isOrganizationAdmin(organizationId);
+
+  // ----------------------------------------------------------
+  // UPDATE
+  // ----------------------------------------------------------
+
+  allow update: if isPlatformAdmin()
+    || isOrganizationAdmin(organizationId);
+
+  // ----------------------------------------------------------
+  // DELETE
+  // ----------------------------------------------------------
+
+  allow delete: if isPlatformAdmin();
+}
+
+    // ============================================================
+    // PARTNER ORGANIZATION SETTINGS
+    // ============================================================
+
+    /*
+     * Partner organization settings are stored at:
+     *
+     *   organizations/{organizationId}/settings/partner
+     *
+     * Only platform administrators and organization owners/admins
+     * may read or manage these settings.
+     */
+    match /organizations/{organizationId}/settings/partner {
+
+      allow get: if isOrganizationAdmin(organizationId);
+
+      allow list: if false;
+
+      allow create: if isOrganizationAdmin(organizationId);
+
+      allow update: if isOrganizationAdmin(organizationId);
+
+      allow delete: if isOrganizationAdmin(organizationId);
+    }
+
+    // ============================================================
     // GROUP MEMBERSHIPS
     // ============================================================
 

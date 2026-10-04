@@ -7,12 +7,12 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { HotToastService } from '@ngxpert/hot-toast';
 
-import { PartnerOrganizationContextService } from '../../../../core/services/partner-organization-context.service';
+import { OrganizationStore } from '../../../organizations/stores/organization.store';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import { PartnerSettingsService } from '../../services/partner-settings.service';
 import {
@@ -912,8 +912,8 @@ interface SettingsSection {
   `],
 })
 export class PartnerSettingsComponent implements OnInit {
-  private readonly context =
-    inject(PartnerOrganizationContextService);
+ protected readonly organizationStore =
+  inject(OrganizationStore);
 
   private readonly settingsService =
     inject(PartnerSettingsService);
@@ -923,6 +923,9 @@ export class PartnerSettingsComponent implements OnInit {
 
   private readonly toast =
     inject(HotToastService);
+
+    private readonly route =
+  inject(ActivatedRoute);
 
   protected readonly isLoading =
     signal(true);
@@ -936,17 +939,17 @@ export class PartnerSettingsComponent implements OnInit {
   protected readonly activeSection =
     signal('organization');
 
-  protected readonly organizationName =
-    computed(
-      () =>
-        this.context.organization()?.name ??
-        'Partner',
-    );
+ protected readonly organizationName =
+  computed(
+    () =>
+      this.organizationStore.selectedOrganization()?.name ??
+      'Partner',
+  );
 
   protected readonly roleLabel =
     computed(() => {
       const role =
-        this.context.organizationRole();
+        this.organizationStore.organizationRole();
 
       switch (role) {
         case 'org_owner':
@@ -960,6 +963,9 @@ export class PartnerSettingsComponent implements OnInit {
 
         case 'org_member':
           return 'Member';
+
+        case 'org_staff':
+          return 'Staff';
 
         default:
           return 'Partner';
@@ -1021,44 +1027,46 @@ protected readonly canEditSettings = computed(
   }
 
   protected async initialize(): Promise<void> {
-    this.isLoading.set(true);
-    this.errorMessage.set(null);
+  this.isLoading.set(true);
+  this.errorMessage.set(null);
 
-    try {
-      await this.context.initialize();
+  try {
+    const organizationId =
+      this.route.snapshot.paramMap.get('organizationId');
 
-      const organizationId =
-        this.context.organizationId();
-
-      if (!organizationId) {
-        throw new Error(
-          'No partner organization is selected.',
-        );
-      }
-
-      this.pageTitleService.setTitle(
-        `${this.organizationName()} Settings`,
+    if (!organizationId) {
+      throw new Error(
+        'Organization ID is missing from the URL.',
       );
-
-      this.settings =
-        await this.settingsService.getSettings(
-          organizationId,
-        );
-    } catch (error) {
-      console.error(
-        'Failed to initialize partner settings:',
-        error,
-      );
-
-      this.errorMessage.set(
-        error instanceof Error
-          ? error.message
-          : 'The organization settings could not be loaded.',
-      );
-    } finally {
-      this.isLoading.set(false);
     }
+
+    await this.organizationStore.loadOrganizationContext(
+      organizationId,
+    );
+
+    this.pageTitleService.setTitle(
+      `${this.organizationName()} Settings`,
+    );
+
+    this.settings =
+      await this.settingsService.getSettings(
+        organizationId,
+      );
+  } catch (error) {
+    console.error(
+      'Failed to initialize partner settings:',
+      error,
+    );
+
+    this.errorMessage.set(
+      error instanceof Error
+        ? error.message
+        : 'The organization settings could not be loaded.',
+    );
+  } finally {
+    this.isLoading.set(false);
   }
+}
 
   protected selectSection(
     sectionId: string,
@@ -1068,7 +1076,7 @@ protected readonly canEditSettings = computed(
 
   protected async saveSettings(): Promise<void> {
     const organizationId =
-      this.context.organizationId();
+      this.organizationStore.selectedOrganizationId();
 
     if (!organizationId) {
       this.toast.error(

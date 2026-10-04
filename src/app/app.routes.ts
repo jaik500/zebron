@@ -358,6 +358,7 @@ export const routes: Routes = [
   ],
   data: {
     title: 'Partner | Organization Onboarding',
+    organizationAdminOnly: true,
   },
   loadComponent: () =>
     import(

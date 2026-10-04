@@ -2050,10 +2050,21 @@ export class JobFormComponent implements OnInit {
        * =====================================================
        */
 
-      const organization = await this.organizationStore.findOrCreateOrganization(
-        formValue.companyName.trim(),
-        formValue.companyNumber.trim(),
-      );
+const organization =
+  await this.organizationStore.findOrCreateOrganization({
+    name: formValue.companyName.trim(),
+    companyNumber: formValue.companyNumber.trim(),
+    slug: formValue.companyName
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, ''),
+    verified: false,
+    active: true,
+    website: formValue.organizationWebsite.trim(),
+    phone: formValue.organizationPhone.trim(),
+    email: formValue.organizationEmail.trim(),
+  });
 
       const job: Omit<Job, 'id' | 'createdAt' | 'updatedAt'> = {
         title: formValue.title.trim(),
