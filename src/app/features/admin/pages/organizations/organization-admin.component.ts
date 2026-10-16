@@ -1,10 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  OnInit,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -23,17 +18,17 @@ import { OrganizationStore } from '../../../organizations/stores/organization.st
 import { LocationStore } from '../../../locations/stores/location.store';
 import { UserStore } from '../../../users/stores/user.store';
 
+import {
+  OrganizationLifecycleService,
+  type OrganizationLifecycleAction,
+} from '../../../../core/services/organization-lifecycle.service';
+
 @Component({
   selector: 'app-organization-admin',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterLink,
-  ],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="min-h-screen bg-gray-50">
-
       <!-- =========================================================
            HEADER
            ========================================================= -->
@@ -60,21 +55,35 @@ import { UserStore } from '../../../users/stores/user.store';
             </h1>
 
             <p class="mt-1 text-sm text-white/80">
-              Create and manage organizations associated
-              with Zebron resources.
+              Create and manage organizations associated with Zebron resources.
             </p>
           </div>
 
-          <a
-            routerLink="/admin"
-            class="shrink-0 rounded-lg border
-                   border-gray-300 bg-white px-3 py-2
-                   text-sm font-semibold text-gray-700
-                   hover:border-[#032D42]
-                   hover:text-[#032D42]"
-          >
-            Admin Dashboard
-          </a>
+          <div class="flex flex-wrap items-center justify-end gap-2">
+            <!-- TEMPORARY: remove this repair button after Hive is repaired. -->
+            <button
+              type="button"
+              (click)="repairHiveApplicationRequest()"
+              [disabled]="repairSaving()"
+              class="shrink-0 rounded-lg border border-amber-300
+                     bg-amber-50 px-3 py-2 text-sm font-semibold
+                     text-amber-900 hover:bg-amber-100
+                     disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {{ repairSaving() ? 'Repairing Hive...' : 'Temporary: Repair Hive Request' }}
+            </button>
+
+            <a
+              routerLink="/admin"
+              class="shrink-0 rounded-lg border
+                     border-gray-300 bg-white px-3 py-2
+                     text-sm font-semibold text-gray-700
+                     hover:border-[#032D42]
+                     hover:text-[#032D42]"
+            >
+              Admin Dashboard
+            </a>
+          </div>
         </div>
       </header>
 
@@ -83,7 +92,6 @@ import { UserStore } from '../../../users/stores/user.store';
            ========================================================= -->
 
       <main class="mx-auto max-w-6xl p-4 sm:p-2">
-
         <!-- =======================================================
              ORGANIZATION MANAGEMENT
              ======================================================= -->
@@ -93,13 +101,11 @@ import { UserStore } from '../../../users/stores/user.store';
                  border-gray-200 bg-white shadow-sm"
         >
           <div class="grid gap-0 lg:grid-cols-3">
-
             <!-- ===================================================
                  ORGANIZATION FORM
                  =================================================== -->
 
             <div class="lg:col-span-2 p-4 sm:p-6">
-
               <div
                 class="flex flex-col gap-1
                        border-b border-gray-200 pb-5"
@@ -108,21 +114,11 @@ import { UserStore } from '../../../users/stores/user.store';
                   class="text-xs font-semibold uppercase
                          tracking-wide text-[#007979]"
                 >
-                  {{
-                    editingId()
-                      ? 'Edit organization'
-                      : 'New organization'
-                  }}
+                  {{ editingId() ? 'Edit organization' : 'New organization' }}
                 </p>
 
-                <h2
-                  class="text-xl font-semibold text-[#032D42]"
-                >
-                  {{
-                    editingId()
-                      ? 'Update organization'
-                      : 'Create organization'
-                  }}
+                <h2 class="text-xl font-semibold text-[#032D42]">
+                  {{ editingId() ? 'Update organization' : 'Create organization' }}
                 </h2>
 
                 <p class="text-sm text-gray-500">
@@ -138,31 +134,21 @@ import { UserStore } from '../../../users/stores/user.store';
                    FORM
                    ================================================= -->
 
-              <form
-                class="mt-6 space-y-7"
-                (ngSubmit)="saveOrganization()"
-              >
-
+              <form class="mt-6 space-y-7" (ngSubmit)="saveOrganization()">
                 <!-- =================================================
                      BASIC INFORMATION
                      ================================================= -->
 
                 <section>
                   <div class="mb-4">
-                    <h3
-                      class="text-sm font-semibold text-gray-900"
-                    >
-                      Basic information
-                    </h3>
+                    <h3 class="text-sm font-semibold text-gray-900">Basic information</h3>
 
                     <p class="mt-1 text-xs text-gray-500">
-                      Core information used to identify
-                      the organization.
+                      Core information used to identify the organization.
                     </p>
                   </div>
 
                   <div class="grid gap-5 sm:grid-cols-2">
-
                     <!-- Name -->
 
                     <div class="sm:col-span-2">
@@ -224,11 +210,8 @@ import { UserStore } from '../../../users/stores/user.store';
                                focus:ring-[#007979]/20"
                       />
 
-                      <p
-                        class="mt-1.5 text-xs text-gray-500"
-                      >
-                        Automatically generated from the
-                        organization name.
+                      <p class="mt-1.5 text-xs text-gray-500">
+                        Automatically generated from the organization name.
                       </p>
                     </div>
 
@@ -268,24 +251,16 @@ import { UserStore } from '../../../users/stores/user.store';
                      CONTACT INFORMATION
                      ================================================= -->
 
-                <section
-                  class="border-t border-gray-200 pt-6"
-                >
+                <section class="border-t border-gray-200 pt-6">
                   <div class="mb-4">
-                    <h3
-                      class="text-sm font-semibold text-gray-900"
-                    >
-                      Contact information
-                    </h3>
+                    <h3 class="text-sm font-semibold text-gray-900">Contact information</h3>
 
                     <p class="mt-1 text-xs text-gray-500">
-                      Optional ways users can contact the
-                      organization.
+                      Optional ways users can contact the organization.
                     </p>
                   </div>
 
                   <div class="grid gap-5 sm:grid-cols-2">
-
                     <!-- Website -->
 
                     <div>
@@ -382,25 +357,17 @@ import { UserStore } from '../../../users/stores/user.store';
                      LOCATION
                      ================================================= -->
 
-                <section
-                  class="border-t border-gray-200 pt-6"
-                >
+                <section class="border-t border-gray-200 pt-6">
                   <div class="mb-4">
-                    <h3
-                      class="text-sm font-semibold text-gray-900"
-                    >
-                      Location
-                    </h3>
+                    <h3 class="text-sm font-semibold text-gray-900">Location</h3>
 
                     <p class="mt-1 text-xs text-gray-500">
                       The location is stored separately in the
-                      <code>locations</code> collection and
-                      linked to this organization.
+                      <code>locations</code> collection and linked to this organization.
                     </p>
                   </div>
 
                   <div class="grid gap-5 sm:grid-cols-2">
-
                     <!-- Address -->
 
                     <div class="sm:col-span-2">
@@ -558,19 +525,12 @@ import { UserStore } from '../../../users/stores/user.store';
                      STATUS
                      ================================================= -->
 
-                <section
-                  class="border-t border-gray-200 pt-6"
-                >
+                <section class="border-t border-gray-200 pt-6">
                   <div class="mb-4">
-                    <h3
-                      class="text-sm font-semibold text-gray-900"
-                    >
-                      Status
-                    </h3>
+                    <h3 class="text-sm font-semibold text-gray-900">Status</h3>
                   </div>
 
                   <div class="flex flex-wrap gap-6">
-
                     <label
                       class="flex cursor-pointer
                              items-center gap-3"
@@ -585,9 +545,7 @@ import { UserStore } from '../../../users/stores/user.store';
                                focus:ring-[#007979]"
                       />
 
-                      <span class="text-sm text-gray-700">
-                        Verified organization
-                      </span>
+                      <span class="text-sm text-gray-700"> Verified organization </span>
                     </label>
 
                     <label
@@ -604,9 +562,7 @@ import { UserStore } from '../../../users/stores/user.store';
                                focus:ring-[#007979]"
                       />
 
-                      <span class="text-sm text-gray-700">
-                        Active organization
-                      </span>
+                      <span class="text-sm text-gray-700"> Active organization </span>
                     </label>
                   </div>
                 </section>
@@ -681,7 +637,6 @@ import { UserStore } from '../../../users/stores/user.store';
                      lg:border-l lg:border-t-0"
             >
               <div class="p-6 sm:p-8">
-
                 <div
                   class="flex items-start
                          justify-between gap-3"
@@ -701,11 +656,8 @@ import { UserStore } from '../../../users/stores/user.store';
                       Existing organizations
                     </h2>
 
-                    <p
-                      class="mt-1 text-sm text-gray-500"
-                    >
-                      Select an organization to edit or
-                      delete it.
+                    <p class="mt-1 text-sm text-gray-500">
+                      Select an organization to edit or delete it.
                     </p>
                   </div>
 
@@ -730,18 +682,13 @@ import { UserStore } from '../../../users/stores/user.store';
                     class="mt-6 rounded-xl border
                            border-gray-200 bg-white p-5"
                   >
-                    <p class="text-sm text-gray-500">
-                      Loading organizations...
-                    </p>
+                    <p class="text-sm text-gray-500">Loading organizations...</p>
                   </div>
                 }
 
                 <!-- Empty -->
 
-                @if (
-                  !loading() &&
-                  organizations().length === 0
-                ) {
+                @if (!loading() && organizations().length === 0) {
                   <div
                     class="mt-6 rounded-xl border
                            border-dashed border-gray-300
@@ -754,11 +701,8 @@ import { UserStore } from '../../../users/stores/user.store';
                       No organizations found.
                     </p>
 
-                    <p
-                      class="mt-1 text-xs text-gray-500"
-                    >
-                      Create the first organization using
-                      the form.
+                    <p class="mt-1 text-xs text-gray-500">
+                      Create the first organization using the form.
                     </p>
                   </div>
                 }
@@ -771,15 +715,11 @@ import { UserStore } from '../../../users/stores/user.store';
                            border border-gray-200
                            bg-white shadow-sm"
                   >
-                    @for (
-                      organization of organizations();
-                      track organization.id
-                    ) {
+                    @for (organization of organizations(); track organization.id) {
                       <div
                         class="border-b border-gray-200
                                p-4 last:border-b-0"
                       >
-
                         <div
                           class="flex items-start
                                  justify-between gap-3"
@@ -805,24 +745,12 @@ import { UserStore } from '../../../users/stores/user.store';
                             class="shrink-0 rounded-full
                                    px-2 py-1 text-xs
                                    font-medium"
-                            [class.bg-green-100]="
-                              organization.active
-                            "
-                            [class.text-green-700]="
-                              organization.active
-                            "
-                            [class.bg-gray-100]="
-                              !organization.active
-                            "
-                            [class.text-gray-600]="
-                              !organization.active
-                            "
+                            [class.bg-green-100]="organization.active"
+                            [class.text-green-700]="organization.active"
+                            [class.bg-gray-100]="!organization.active"
+                            [class.text-gray-600]="!organization.active"
                           >
-                            {{
-                              organization.active
-                                ? 'Active'
-                                : 'Inactive'
-                            }}
+                            {{ organizationStatus(organization) | titlecase }}
                           </span>
                         </div>
 
@@ -866,16 +794,10 @@ import { UserStore } from '../../../users/stores/user.store';
                             }
                           </div>
 
-                          <div
-                            class="flex shrink-0 gap-1.5"
-                          >
+                          <div class="flex shrink-0 gap-1.5">
                             <button
                               type="button"
-                              (click)="
-                                editOrganization(
-                                  organization
-                                )
-                              "
+                              (click)="editOrganization(organization)"
                               [disabled]="saving()"
                               class="rounded-md border
                                      border-gray-300
@@ -890,13 +812,85 @@ import { UserStore } from '../../../users/stores/user.store';
                               Edit
                             </button>
 
+                            @if (canPerformLifecycleAction(organization, 'suspend')) {
+                              <button
+                                type="button"
+                                (click)="performLifecycleAction(organization, 'suspend')"
+                                [disabled]="saving() || lifecycleSavingId() !== null"
+                                class="rounded-md border
+                                       border-amber-200
+                                       bg-white px-2.5 py-1.5
+                                       text-xs font-medium
+                                       text-amber-700
+                                       hover:bg-amber-50
+                                       disabled:opacity-50"
+                              >
+                                {{
+                                  lifecycleSavingId() === organization.id
+                                    ? 'Suspending...'
+                                    : 'Suspend'
+                                }}
+                              </button>
+                            }
+
+                            @if (canPerformLifecycleAction(organization, 'reactivate')) {
+                              <button
+                                type="button"
+                                (click)="performLifecycleAction(organization, 'reactivate')"
+                                [disabled]="saving() || lifecycleSavingId() !== null"
+                                class="rounded-md border
+                                       border-emerald-200
+                                       bg-white px-2.5 py-1.5
+                                       text-xs font-medium
+                                       text-emerald-700
+                                       hover:bg-emerald-50
+                                       disabled:opacity-50"
+                              >
+                                {{
+                                  lifecycleSavingId() === organization.id
+                                    ? 'Reactivating...'
+                                    : 'Reactivate'
+                                }}
+                              </button>
+                            }
+
+                            @if (canPerformLifecycleAction(organization, 'archive')) {
+                              <button
+                                type="button"
+                                (click)="performLifecycleAction(organization, 'archive')"
+                                [disabled]="saving() || lifecycleSavingId() !== null"
+                                class="rounded-md border
+                                       border-slate-300
+                                       bg-white px-2.5 py-1.5
+                                       text-xs font-medium
+                                       text-slate-700
+                                       hover:bg-slate-50
+                                       disabled:opacity-50"
+                              >
+                                Archive
+                              </button>
+                            }
+
+                            @if (canPerformLifecycleAction(organization, 'restore')) {
+                              <button
+                                type="button"
+                                (click)="performLifecycleAction(organization, 'restore')"
+                                [disabled]="saving() || lifecycleSavingId() !== null"
+                                class="rounded-md border
+                                       border-blue-200
+                                       bg-white px-2.5 py-1.5
+                                       text-xs font-medium
+                                       text-blue-700
+                                       hover:bg-blue-50
+                                       disabled:opacity-50"
+                              >
+                                Restore
+                              </button>
+                            }
+
                             <button
                               type="button"
-                              (click)="
-                                deleteOrganization(
-                                  organization
-                                )
-                              "
+                              (click)="deleteOrganization(organization)"
                               [disabled]="saving()"
                               class="rounded-md border
                                      border-red-200
@@ -930,7 +924,6 @@ import { UserStore } from '../../../users/stores/user.store';
                    border border-gray-200 bg-white
                    shadow-sm"
           >
-
             <!-- Header -->
 
             <div
@@ -955,9 +948,7 @@ import { UserStore } from '../../../users/stores/user.store';
                   Members
                 </h2>
 
-                <p
-                  class="mt-1 text-sm text-gray-500"
-                >
+                <p class="mt-1 text-sm text-gray-500">
                   Manage users who can access
                   {{ form.name }} organization resources.
                 </p>
@@ -995,11 +986,8 @@ import { UserStore } from '../../../users/stores/user.store';
                     Add organization member
                   </h3>
 
-                  <p
-                    class="mt-1 text-xs text-gray-500"
-                  >
-                    Select an existing Zebron user and
-                    assign their organization role.
+                  <p class="mt-1 text-xs text-gray-500">
+                    Select an existing Zebron user and assign their organization role.
                   </p>
                 </div>
 
@@ -1007,7 +995,6 @@ import { UserStore } from '../../../users/stores/user.store';
                   class="grid gap-4
                          md:grid-cols-[minmax(0,1fr)_220px_auto]"
                 >
-
                   <!-- User -->
 
                   <div>
@@ -1024,9 +1011,7 @@ import { UserStore } from '../../../users/stores/user.store';
                       id="memberUser"
                       name="memberUser"
                       [ngModel]="selectedMemberUserId()"
-                      (ngModelChange)="
-                        selectedMemberUserId.set($event)
-                      "
+                      (ngModelChange)="selectedMemberUserId.set($event)"
                       class="w-full rounded-lg
                              border border-gray-300
                              bg-white px-3 py-2.5
@@ -1036,21 +1021,11 @@ import { UserStore } from '../../../users/stores/user.store';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     >
-                      <option value="">
-                        Select a user
-                      </option>
+                      <option value="">Select a user</option>
 
-                      @for (
-                        user of userStore.users();
-                        track user.id
-                      ) {
+                      @for (user of userStore.users(); track user.id) {
                         <option [value]="user.id">
-                          {{
-                            user.displayName ||
-                            user.preferredName ||
-                            user.email ||
-                            user.id
-                          }}
+                          {{ user.displayName || user.preferredName || user.email || user.id }}
                           @if (user.email) {
                             — {{ user.email }}
                           }
@@ -1075,9 +1050,7 @@ import { UserStore } from '../../../users/stores/user.store';
                       id="memberRole"
                       name="memberRole"
                       [ngModel]="selectedMemberRole()"
-                      (ngModelChange)="
-                        selectedMemberRole.set($event)
-                      "
+                      (ngModelChange)="selectedMemberRole.set($event)"
                       class="w-full rounded-lg
                              border border-gray-300
                              bg-white px-3 py-2.5
@@ -1087,10 +1060,7 @@ import { UserStore } from '../../../users/stores/user.store';
                              focus:ring-2
                              focus:ring-[#007979]/20"
                     >
-                      @for (
-                        role of membershipRoles;
-                        track role
-                      ) {
+                      @for (role of membershipRoles; track role) {
                         <option [value]="role">
                           {{ role | titlecase }}
                         </option>
@@ -1100,9 +1070,7 @@ import { UserStore } from '../../../users/stores/user.store';
 
                   <!-- Actions -->
 
-                  <div
-                    class="flex items-end gap-2"
-                  >
+                  <div class="flex items-end gap-2">
                     <button
                       type="button"
                       (click)="addMember()"
@@ -1115,11 +1083,7 @@ import { UserStore } from '../../../users/stores/user.store';
                              disabled:cursor-not-allowed
                              disabled:opacity-50"
                     >
-                      {{
-                        membershipSaving()
-                          ? 'Adding...'
-                          : 'Add'
-                      }}
+                      {{ membershipSaving() ? 'Adding...' : 'Add' }}
                     </button>
 
                     <button
@@ -1161,25 +1125,16 @@ import { UserStore } from '../../../users/stores/user.store';
                  ===================================================== -->
 
             <div class="p-5">
-
               @if (membershipLoading()) {
                 <div
                   class="rounded-xl border
                          border-gray-200
                          bg-gray-50 p-6 text-center"
                 >
-                  <p
-                    class="text-sm text-gray-500"
-                  >
-                    Loading members...
-                  </p>
+                  <p class="text-sm text-gray-500">Loading members...</p>
                 </div>
-              }
 
-              @else if (
-                !membershipLoading() &&
-                memberships().length === 0
-              ) {
+              } @else if (!membershipLoading() && memberships().length === 0) {
                 <div
                   class="rounded-xl border
                          border-dashed border-gray-300
@@ -1196,18 +1151,15 @@ import { UserStore } from '../../../users/stores/user.store';
                     class="mt-1 text-xs
                            text-gray-500"
                   >
-                    Add a user to give them access
-                    to organization resources.
+                    Add a user to give them access to organization resources.
                   </p>
                 </div>
-              }
 
-              @else {
+              } @else {
                 <div
                   class="overflow-hidden rounded-xl
                          border border-gray-200"
                 >
-
                   <!-- Table header -->
 
                   <div
@@ -1227,10 +1179,7 @@ import { UserStore } from '../../../users/stores/user.store';
 
                   <!-- Members -->
 
-                  @for (
-                    membership of memberships();
-                    track membership.id
-                  ) {
+                  @for (membership of memberships(); track membership.id) {
                     <div
                       class="grid gap-4
                              border-t border-gray-200
@@ -1239,7 +1188,6 @@ import { UserStore } from '../../../users/stores/user.store';
                              md:grid-cols-[minmax(0,1fr)_160px_110px_90px]
                              md:items-center"
                     >
-
                       <!-- User -->
 
                       <div class="min-w-0">
@@ -1248,22 +1196,14 @@ import { UserStore } from '../../../users/stores/user.store';
                                  font-semibold
                                  text-gray-900"
                         >
-                          {{
-                            getUserName(
-                              membership.userId
-                            )
-                          }}
+                          {{ getUserName(membership.userId) }}
                         </p>
 
                         <p
                           class="mt-1 truncate
                                  text-xs text-gray-500"
                         >
-                          {{
-                            getUserEmail(
-                              membership.userId
-                            )
-                          }}
+                          {{ getUserEmail(membership.userId) }}
                         </p>
                       </div>
 
@@ -1272,12 +1212,7 @@ import { UserStore } from '../../../users/stores/user.store';
                       <div>
                         <select
                           [ngModel]="membership.role"
-                          (ngModelChange)="
-                            updateMemberRole(
-                              membership,
-                              $event
-                            )
-                          "
+                          (ngModelChange)="updateMemberRole(membership, $event)"
                           [disabled]="membershipSaving()"
                           class="w-full rounded-lg
                                  border border-gray-300
@@ -1286,10 +1221,7 @@ import { UserStore } from '../../../users/stores/user.store';
                                  focus:border-[#007979]
                                  focus:outline-none"
                         >
-                          @for (
-                            role of membershipRoles;
-                            track role
-                          ) {
+                          @for (role of membershipRoles; track role) {
                             <option [value]="role">
                               {{ role | titlecase }}
                             </option>
@@ -1302,35 +1234,18 @@ import { UserStore } from '../../../users/stores/user.store';
                       <div>
                         <button
                           type="button"
-                          (click)="
-                            updateMemberActive(
-                              membership,
-                              !membership.active
-                            )
-                          "
+                          (click)="updateMemberActive(membership, !membership.active)"
                           [disabled]="membershipSaving()"
                           class="rounded-full
                                  px-2.5 py-1
                                  text-xs font-medium
                                  transition"
-                          [class.bg-green-100]="
-                            membership.active
-                          "
-                          [class.text-green-700]="
-                            membership.active
-                          "
-                          [class.bg-gray-100]="
-                            !membership.active
-                          "
-                          [class.text-gray-600]="
-                            !membership.active
-                          "
+                          [class.bg-green-100]="membership.active"
+                          [class.text-green-700]="membership.active"
+                          [class.bg-gray-100]="!membership.active"
+                          [class.text-gray-600]="!membership.active"
                         >
-                          {{
-                            membership.active
-                              ? 'Active'
-                              : 'Inactive'
-                          }}
+                          {{ membership.active ? 'Active' : 'Inactive' }}
                         </button>
                       </div>
 
@@ -1342,11 +1257,7 @@ import { UserStore } from '../../../users/stores/user.store';
                       >
                         <button
                           type="button"
-                          (click)="
-                            removeMember(
-                              membership
-                            )
-                          "
+                          (click)="removeMember(membership)"
                           [disabled]="membershipSaving()"
                           class="rounded-md border
                                  border-red-200
@@ -1375,64 +1286,49 @@ export class OrganizationAdminComponent implements OnInit {
   // Services
   // ===============================================================
 
-  private readonly locationStore =
-    inject(LocationStore);
+  private readonly locationStore = inject(LocationStore);
 
-  private readonly toast =
-    inject(HotToastService);
+  private readonly toast = inject(HotToastService);
 
-  private readonly membershipService =
-    inject(OrganizationMembershipService);
+  private readonly membershipService = inject(OrganizationMembershipService);
 
-  protected readonly organizationStore =
-    inject(OrganizationStore);
+  private readonly organizationLifecycleService = inject(OrganizationLifecycleService);
 
-  protected readonly userStore =
-    inject(UserStore);
+  protected readonly organizationStore = inject(OrganizationStore);
+
+  protected readonly userStore = inject(UserStore);
 
   // ===============================================================
   // Organization state
   // ===============================================================
 
-  protected readonly organizations =
-    this.organizationStore.organizations;
+  protected readonly organizations = this.organizationStore.organizations;
 
-  protected readonly loading =
-    this.organizationStore.loading;
+  protected readonly loading = this.organizationStore.loading;
 
-  protected readonly storeError =
-    this.organizationStore.error;
+  protected readonly storeError = this.organizationStore.error;
 
-  protected readonly error =
-    signal<string | null>(null);
+  protected readonly error = signal<string | null>(null);
 
   // ===============================================================
   // Membership state
   // ===============================================================
 
-  protected readonly memberships =
-    signal<OrganizationMembership[]>([]);
+  protected readonly memberships = signal<OrganizationMembership[]>([]);
 
-  protected readonly membershipLoading =
-    signal(false);
+  protected readonly membershipLoading = signal(false);
 
-  protected readonly membershipSaving =
-    signal(false);
+  protected readonly membershipSaving = signal(false);
 
-  protected readonly membershipError =
-    signal<string | null>(null);
+  protected readonly membershipError = signal<string | null>(null);
 
-  protected readonly showMemberForm =
-    signal(false);
+  protected readonly showMemberForm = signal(false);
 
-  protected readonly selectedMemberUserId =
-    signal('');
+  protected readonly selectedMemberUserId = signal('');
 
-  protected readonly selectedMemberRole =
-  signal<OrganizationMembershipRole>('org_member');
+  protected readonly selectedMemberRole = signal<OrganizationMembershipRole>('org_member');
 
-protected readonly membershipRoles:
-  OrganizationMembershipRole[] = [
+  protected readonly membershipRoles: OrganizationMembershipRole[] = [
     'org_owner',
     'org_admin',
     'org_manager',
@@ -1444,11 +1340,14 @@ protected readonly membershipRoles:
   // Local UI state
   // ===============================================================
 
-  protected readonly saving =
-    signal(false);
+  protected readonly saving = signal(false);
 
-  protected readonly editingId =
-    signal<string | null>(null);
+  protected readonly lifecycleSavingId = signal<string | null>(null);
+
+  /** Temporary UI state for the one-time Hive request repair. */
+  protected readonly repairSaving = signal(false);
+
+  protected readonly editingId = signal<string | null>(null);
 
   // ===============================================================
   // Organization form
@@ -1489,14 +1388,9 @@ protected readonly membershipRoles:
     try {
       await this.organizationStore.loadOrganizations();
     } catch (error) {
-      console.error(
-        'Failed to load organizations:',
-        error,
-      );
+      console.error('Failed to load organizations:', error);
 
-      this.error.set(
-        'Unable to load organizations.',
-      );
+      this.error.set('Unable to load organizations.');
     }
   }
 
@@ -1508,10 +1402,7 @@ protected readonly membershipRoles:
     try {
       await this.userStore.loadUsers();
     } catch (error) {
-      console.error(
-        'Failed to load users:',
-        error,
-      );
+      console.error('Failed to load users:', error);
     }
   }
 
@@ -1524,74 +1415,49 @@ protected readonly membershipRoles:
       return;
     }
 
-    const name =
-      this.form.name?.trim() || '';
+    const name = this.form.name?.trim() || '';
 
-    const slug =
-      this.form.slug?.trim().toLowerCase() || '';
+    const slug = this.form.slug?.trim().toLowerCase() || '';
 
     if (!name) {
-      this.toast.error(
-        'Organization name is required.',
-      );
+      this.toast.error('Organization name is required.');
 
       return;
     }
 
     if (!slug) {
-      this.toast.error(
-        'Organization slug is required.',
-      );
+      this.toast.error('Organization slug is required.');
 
       return;
     }
 
-    const description =
-      this.form.description?.trim() || '';
+    const description = this.form.description?.trim() || '';
 
-    const website =
-      this.form.website?.trim() || '';
+    const website = this.form.website?.trim() || '';
 
-    const phone =
-      this.form.phone?.trim() || '';
+    const phone = this.form.phone?.trim() || '';
 
-    const email =
-      this.form.email?.trim() || '';
+    const email = this.form.email?.trim() || '';
 
-    const address =
-      this.form.address?.trim() || '';
+    const address = this.form.address?.trim() || '';
 
-    const city =
-      this.form.city?.trim() || '';
+    const city = this.form.city?.trim() || '';
 
-    const state =
-      this.form.state?.trim().toUpperCase() || '';
+    const state = this.form.state?.trim().toUpperCase() || '';
 
-    const zipCode =
-      this.form.zipCode?.trim() || '';
+    const zipCode = this.form.zipCode?.trim() || '';
 
-    const country =
-      this.form.country?.trim() || '';
+    const country = this.form.country?.trim() || '';
 
-    const hasLocation =
-      !!(
-        address ||
-        city ||
-        state ||
-        zipCode ||
-        country
-      );
+    const hasLocation = !!(address || city || state || zipCode || country);
 
     if (hasLocation && !country) {
-      this.toast.error(
-        'Country is required for a location.',
-      );
+      this.toast.error('Country is required for a location.');
 
       return;
     }
 
-    const normalizedCountry =
-      country.toLowerCase();
+    const normalizedCountry = country.toLowerCase();
 
     const isUnitedStates =
       normalizedCountry === 'united states' ||
@@ -1599,41 +1465,25 @@ protected readonly membershipRoles:
       normalizedCountry === 'us';
 
     if (hasLocation && !address) {
-      this.toast.error(
-        'Street address is required when adding a location.',
-      );
+      this.toast.error('Street address is required when adding a location.');
 
       return;
     }
 
     if (hasLocation && !city) {
-      this.toast.error(
-        'City is required when adding a location.',
-      );
+      this.toast.error('City is required when adding a location.');
 
       return;
     }
 
-    if (
-      hasLocation &&
-      isUnitedStates &&
-      !state
-    ) {
-      this.toast.error(
-        'State is required for United States locations.',
-      );
+    if (hasLocation && isUnitedStates && !state) {
+      this.toast.error('State is required for United States locations.');
 
       return;
     }
 
-    if (
-      hasLocation &&
-      isUnitedStates &&
-      !zipCode
-    ) {
-      this.toast.error(
-        'ZIP code is required for United States locations.',
-      );
+    if (hasLocation && isUnitedStates && !zipCode) {
+      this.toast.error('ZIP code is required for United States locations.');
 
       return;
     }
@@ -1641,15 +1491,10 @@ protected readonly membershipRoles:
     this.saving.set(true);
     this.error.set(null);
 
-    const editingId =
-      this.editingId();
+    const editingId = this.editingId();
 
     try {
-      const organization:
-        Omit<
-          Organization,
-          'id' | 'createdAt' | 'updatedAt'
-        > = {
+      const organization: Omit<Organization, 'id' | 'createdAt' | 'updatedAt'> = {
         name,
         slug,
         verified: this.form.verified,
@@ -1657,23 +1502,19 @@ protected readonly membershipRoles:
       };
 
       if (description) {
-        organization.description =
-          description;
+        organization.description = description;
       }
 
       if (website) {
-        organization.website =
-          website;
+        organization.website = website;
       }
 
       if (phone) {
-        organization.phone =
-          phone;
+        organization.phone = phone;
       }
 
       if (email) {
-        organization.email =
-          email;
+        organization.email = email;
       }
 
       // =============================================================
@@ -1702,39 +1543,21 @@ protected readonly membershipRoles:
         }
 
         if (editingId) {
-          const existingOrganization =
-            this.organizations().find(
-              (item) =>
-                item.id === editingId,
-            );
+          const existingOrganization = this.organizations().find((item) => item.id === editingId);
 
-          if (
-            existingOrganization?.locationId
-          ) {
-            await this.locationStore.updateLocation(
-              existingOrganization.locationId,
-              location,
-            );
+          if (existingOrganization?.locationId) {
+            await this.locationStore.updateLocation(existingOrganization.locationId, location);
 
-            organization.locationId =
-              existingOrganization.locationId;
+            organization.locationId = existingOrganization.locationId;
           } else {
-            const locationId =
-              await this.locationStore.createLocation(
-                location,
-              );
+            const locationId = await this.locationStore.createLocation(location);
 
-            organization.locationId =
-              locationId;
+            organization.locationId = locationId;
           }
         } else {
-          const locationId =
-            await this.locationStore.createLocation(
-              location,
-            );
+          const locationId = await this.locationStore.createLocation(location);
 
-          organization.locationId =
-            locationId;
+          organization.locationId = locationId;
         }
       }
 
@@ -1743,41 +1566,24 @@ protected readonly membershipRoles:
       // =============================================================
 
       if (editingId) {
-        await this.organizationStore.updateOrganization(
-          editingId,
-          organization,
-        );
+        await this.organizationStore.updateOrganization(editingId, organization);
 
-        this.toast.success(
-          'Organization updated successfully.',
-        );
+        this.toast.success('Organization updated successfully.');
       } else {
-        await this.organizationStore.createOrganization(
-          organization,
-        );
+        await this.organizationStore.createOrganization(organization);
 
-        this.toast.success(
-          'Organization created successfully.',
-        );
+        this.toast.success('Organization created successfully.');
       }
 
       this.resetForm();
     } catch (error) {
-      console.error(
-        'Failed to save organization:',
-        error,
-      );
+      console.error('Failed to save organization:', error);
 
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Unable to save organization.';
+      const message = error instanceof Error ? error.message : 'Unable to save organization.';
 
       this.error.set(message);
 
-      this.toast.error(
-        `Unable to save organization: ${message}`,
-      );
+      this.toast.error(`Unable to save organization: ${message}`);
     } finally {
       this.saving.set(false);
     }
@@ -1787,9 +1593,7 @@ protected readonly membershipRoles:
   // Load organization memberships
   // ===============================================================
 
-  private async loadMemberships(
-    organizationId: string | null,
-  ): Promise<void> {
+  private async loadMemberships(organizationId: string | null): Promise<void> {
     if (!organizationId) {
       this.memberships.set([]);
       return;
@@ -1799,26 +1603,15 @@ protected readonly membershipRoles:
     this.membershipError.set(null);
 
     try {
-      const memberships =
-        await this.membershipService
-          .getOrganizationMembers(
-            organizationId,
-          );
+      const memberships = await this.membershipService.getOrganizationMembers(organizationId);
 
-      this.memberships.set(
-        memberships,
-      );
+      this.memberships.set(memberships);
     } catch (error) {
-      console.error(
-        'Failed to load organization memberships:',
-        error,
-      );
+      console.error('Failed to load organization memberships:', error);
 
       this.memberships.set([]);
 
-      this.membershipError.set(
-        'Unable to load organization members.',
-      );
+      this.membershipError.set('Unable to load organization members.');
     } finally {
       this.membershipLoading.set(false);
     }
@@ -1830,9 +1623,7 @@ protected readonly membershipRoles:
 
   protected startAddMember(): void {
     if (!this.editingId()) {
-      this.toast.error(
-        'Select an organization before adding members.',
-      );
+      this.toast.error('Select an organization before adding members.');
 
       return;
     }
@@ -1859,41 +1650,28 @@ protected readonly membershipRoles:
       return;
     }
 
-    const organizationId =
-      this.editingId();
+    const organizationId = this.editingId();
 
-    const userId =
-      this.selectedMemberUserId().trim();
+    const userId = this.selectedMemberUserId().trim();
 
-    const role =
-      this.selectedMemberRole();
+    const role = this.selectedMemberRole();
 
     if (!organizationId) {
-      this.toast.error(
-        'Select an organization before adding a member.',
-      );
+      this.toast.error('Select an organization before adding a member.');
 
       return;
     }
 
     if (!userId) {
-      this.toast.error(
-        'Select a user.',
-      );
+      this.toast.error('Select a user.');
 
       return;
     }
 
-    const alreadyMember =
-      this.memberships().some(
-        (membership) =>
-          membership.userId === userId,
-      );
+    const alreadyMember = this.memberships().some((membership) => membership.userId === userId);
 
     if (alreadyMember) {
-      this.toast.error(
-        'This user is already a member of the organization.',
-      );
+      this.toast.error('This user is already a member of the organization.');
 
       return;
     }
@@ -1902,33 +1680,19 @@ protected readonly membershipRoles:
     this.membershipError.set(null);
 
     try {
-      await this.membershipService.addMember(
-        organizationId,
-        userId,
-        role,
-      );
+      await this.membershipService.addMember(organizationId, userId, role);
 
-      this.toast.success(
-        'Member added successfully.',
-      );
+      this.toast.success('Member added successfully.');
 
       this.showMemberForm.set(false);
       this.selectedMemberUserId.set('');
       this.selectedMemberRole.set('org_member');
 
-      await this.loadMemberships(
-        organizationId,
-      );
+      await this.loadMemberships(organizationId);
     } catch (error) {
-      console.error(
-        'Failed to add organization member:',
-        error,
-      );
+      console.error('Failed to add organization member:', error);
 
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Unable to add organization member.';
+      const message = error instanceof Error ? error.message : 'Unable to add organization member.';
 
       this.membershipError.set(message);
       this.toast.error(message);
@@ -1945,10 +1709,7 @@ protected readonly membershipRoles:
     membership: OrganizationMembership,
     role: OrganizationMembershipRole,
   ): Promise<void> {
-    if (
-      this.membershipSaving() ||
-      membership.role === role
-    ) {
+    if (this.membershipSaving() || membership.role === role) {
       return;
     }
 
@@ -1956,36 +1717,24 @@ protected readonly membershipRoles:
     this.membershipError.set(null);
 
     try {
-      await this.membershipService.updateMemberRole(
-        membership.id,
-        role,
+      await this.membershipService.updateMemberRole(membership.id, role);
+
+      this.memberships.update((members) =>
+        members.map((item) =>
+          item.id === membership.id
+            ? {
+                ...item,
+                role,
+              }
+            : item,
+        ),
       );
 
-      this.memberships.update(
-        (members) =>
-          members.map((item) =>
-            item.id === membership.id
-              ? {
-                  ...item,
-                  role,
-                }
-              : item,
-          ),
-      );
-
-      this.toast.success(
-        'Member role updated.',
-      );
+      this.toast.success('Member role updated.');
     } catch (error) {
-      console.error(
-        'Failed to update member role:',
-        error,
-      );
+      console.error('Failed to update member role:', error);
 
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Unable to update member role.';
+      const message = error instanceof Error ? error.message : 'Unable to update member role.';
 
       this.membershipError.set(message);
       this.toast.error(message);
@@ -2002,10 +1751,7 @@ protected readonly membershipRoles:
     membership: OrganizationMembership,
     active: boolean,
   ): Promise<void> {
-    if (
-      this.membershipSaving() ||
-      membership.active === active
-    ) {
+    if (this.membershipSaving() || membership.active === active) {
       return;
     }
 
@@ -2013,38 +1759,24 @@ protected readonly membershipRoles:
     this.membershipError.set(null);
 
     try {
-      await this.membershipService.setMemberActive(
-        membership.id,
-        active,
+      await this.membershipService.setMemberActive(membership.id, active);
+
+      this.memberships.update((members) =>
+        members.map((item) =>
+          item.id === membership.id
+            ? {
+                ...item,
+                active,
+              }
+            : item,
+        ),
       );
 
-      this.memberships.update(
-        (members) =>
-          members.map((item) =>
-            item.id === membership.id
-              ? {
-                  ...item,
-                  active,
-                }
-              : item,
-          ),
-      );
-
-      this.toast.success(
-        active
-          ? 'Member activated.'
-          : 'Member deactivated.',
-      );
+      this.toast.success(active ? 'Member activated.' : 'Member deactivated.');
     } catch (error) {
-      console.error(
-        'Failed to update member status:',
-        error,
-      );
+      console.error('Failed to update member status:', error);
 
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Unable to update member status.';
+      const message = error instanceof Error ? error.message : 'Unable to update member status.';
 
       this.membershipError.set(message);
       this.toast.error(message);
@@ -2057,16 +1789,12 @@ protected readonly membershipRoles:
   // Remove member
   // ===============================================================
 
-  protected async removeMember(
-    membership: OrganizationMembership,
-  ): Promise<void> {
+  protected async removeMember(membership: OrganizationMembership): Promise<void> {
     if (this.membershipSaving()) {
       return;
     }
 
-    const confirmed = window.confirm(
-      'Remove this user from the organization?',
-    );
+    const confirmed = window.confirm('Remove this user from the organization?');
 
     if (!confirmed) {
       return;
@@ -2076,31 +1804,16 @@ protected readonly membershipRoles:
     this.membershipError.set(null);
 
     try {
-      await this.membershipService.removeMember(
-        membership.id,
-      );
+      await this.membershipService.removeMember(membership.id);
 
-      this.memberships.update(
-        (members) =>
-          members.filter(
-            (item) =>
-              item.id !== membership.id,
-          ),
-      );
+      this.memberships.update((members) => members.filter((item) => item.id !== membership.id));
 
-      this.toast.success(
-        'Member removed successfully.',
-      );
+      this.toast.success('Member removed successfully.');
     } catch (error) {
-      console.error(
-        'Failed to remove organization member:',
-        error,
-      );
+      console.error('Failed to remove organization member:', error);
 
       const message =
-        error instanceof Error
-          ? error.message
-          : 'Unable to remove organization member.';
+        error instanceof Error ? error.message : 'Unable to remove organization member.';
 
       this.membershipError.set(message);
       this.toast.error(message);
@@ -2113,26 +1826,18 @@ protected readonly membershipRoles:
   // Edit organization
   // ===============================================================
 
-  protected async editOrganization(
-    organization: Organization,
-  ): Promise<void> {
+  protected async editOrganization(organization: Organization): Promise<void> {
     this.error.set(null);
 
-    this.editingId.set(
-      organization.id,
-    );
+    this.editingId.set(organization.id);
 
     this.form = {
       name: organization.name,
       slug: organization.slug,
-      description:
-        organization.description ?? '',
-      website:
-        organization.website ?? '',
-      phone:
-        organization.phone ?? '',
-      email:
-        organization.email ?? '',
+      description: organization.description ?? '',
+      website: organization.website ?? '',
+      phone: organization.phone ?? '',
+      email: organization.email ?? '',
 
       address: '',
       city: '',
@@ -2150,41 +1855,27 @@ protected readonly membershipRoles:
 
     if (organization.locationId) {
       try {
-        const location =
-          await this.locationStore.getLocation(
-            organization.locationId,
-          );
+        const location = await this.locationStore.getLocation(organization.locationId);
 
         if (location) {
           this.form = {
             ...this.form,
 
-            address:
-              location.address ?? '',
+            address: location.address ?? '',
 
-            city:
-              location.city ?? '',
+            city: location.city ?? '',
 
-            state:
-              location.state ?? '',
+            state: location.state ?? '',
 
-            zipCode:
-              location.zipCode ?? '',
+            zipCode: location.zipCode ?? '',
 
-            country:
-              location.country ||
-              'United States',
+            country: location.country || 'United States',
           };
         }
       } catch (error) {
-        console.error(
-          'Failed to load organization location:',
-          error,
-        );
+        console.error('Failed to load organization location:', error);
 
-        this.error.set(
-          'Unable to load the organization location.',
-        );
+        this.error.set('Unable to load the organization location.');
       }
     }
 
@@ -2192,9 +1883,7 @@ protected readonly membershipRoles:
     // Load members
     // =============================================================
 
-    await this.loadMemberships(
-      organization.id,
-    );
+    await this.loadMemberships(organization.id);
 
     // =============================================================
     // Scroll to form
@@ -2215,55 +1904,205 @@ protected readonly membershipRoles:
   }
 
   // ===============================================================
+  // Resolve organization lifecycle status
+  // ===============================================================
+
+  protected organizationStatus(organization: Organization): string {
+    // Preserve compatibility with older organization records.
+    return organization.status ?? (organization.active ? 'active' : 'suspended');
+  }
+
+  // ===============================================================
+  // Determine whether an organization supports a lifecycle action
+  // ===============================================================
+
+  protected canPerformLifecycleAction(
+    organization: Organization,
+    action: OrganizationLifecycleAction,
+  ): boolean {
+    const status = this.organizationStatus(organization);
+
+    switch (action) {
+      case 'suspend':
+      case 'archive':
+        return status === 'active' || status === 'onboarding';
+
+      case 'reactivate':
+        return status === 'suspended';
+
+      case 'restore':
+        return status === 'archived';
+
+      default:
+        return false;
+    }
+  }
+
+  // ===============================================================
+  // Execute organization lifecycle action
+  // ===============================================================
+
+  protected async performLifecycleAction(
+    organization: Organization,
+    action: OrganizationLifecycleAction,
+  ): Promise<void> {
+    if (
+      this.saving() ||
+      this.lifecycleSavingId() !== null ||
+      !this.canPerformLifecycleAction(organization, action)
+    ) {
+      return;
+    }
+
+    const actionLabels: Record<OrganizationLifecycleAction, string> = {
+      suspend: 'Suspend',
+      reactivate: 'Reactivate',
+      archive: 'Archive',
+      restore: 'Restore',
+    };
+
+    const label = actionLabels[action];
+
+    const confirmed = window.confirm(`${label} "${organization.name}"?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    const reasonPrompts: Record<OrganizationLifecycleAction, string> = {
+      suspend: 'Why should this organization be suspended?',
+      reactivate: 'Why should this organization be reactivated?',
+      archive: 'Why should this organization be archived?',
+      restore: 'Why should this organization be restored?',
+    };
+
+    const reason = window.prompt(reasonPrompts[action]);
+
+    if (reason === null) {
+      return;
+    }
+
+    if (!reason.trim()) {
+      this.toast.error('A reason is required for this operation.');
+      return;
+    }
+
+    this.error.set(null);
+    this.lifecycleSavingId.set(organization.id);
+
+    try {
+      const result = await this.organizationLifecycleService.transition(
+        action,
+        organization.id,
+        reason.trim(),
+      );
+
+      this.toast.success(`${organization.name} is now ${result.status}.`);
+
+      // Reload the authoritative organization records.
+      await this.loadOrganizations();
+    } catch (error) {
+      console.error(`Failed to ${action} organization:`, error);
+
+      const message = error instanceof Error ? error.message : `Unable to ${action} organization.`;
+
+      this.error.set(message);
+      this.toast.error(message);
+    } finally {
+      this.lifecycleSavingId.set(null);
+    }
+  }
+
+  // ===============================================================
+  // TEMPORARY: Repair Hive application request
+  // Remove this method and its button after the repair is verified.
+  // The callable independently enforces platform-admin authorization.
+  // ===============================================================
+
+  protected async repairHiveApplicationRequest(): Promise<void> {
+    if (this.repairSaving()) {
+      return;
+    }
+
+    const requestId = 'kNotqjjwpX3crMqbpziU';
+    const confirmed = window.confirm(
+      'Repair Hive’s application request?\n\n' +
+        'This will activate the request only if its associated organization ' +
+        'has completed core onboarding. It will not change requested applications.',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.repairSaving.set(true);
+    this.error.set(null);
+
+    try {
+      const result =
+        await this.organizationLifecycleService.repairApplicationRequest(requestId);
+
+      console.info('Hive application request repair result:', result);
+
+      if (result.repaired) {
+        this.toast.success('Hive application request was successfully repaired.');
+      } else {
+        this.toast.success('Hive application request is already active. No changes were needed.');
+      }
+    } catch (error) {
+      console.error('Failed to repair Hive application request:', error);
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to repair Hive application request.';
+
+      this.error.set(message);
+      this.toast.error(message);
+    } finally {
+      this.repairSaving.set(false);
+    }
+  }
+
+  // ===============================================================
   // Delete organization
   // ===============================================================
 
-  protected deleteOrganization(
-    organization: Organization,
-  ): void {
-    this.toast.show(
-      DeleteConfirmationComponent,
-      {
-        position: 'top-center',
+  protected deleteOrganization(organization: Organization): void {
+    this.toast.show(DeleteConfirmationComponent, {
+      position: 'top-center',
 
-        autoClose: false,
-        dismissible: false,
+      autoClose: false,
+      dismissible: false,
 
-        theme: 'toast',
+      theme: 'toast',
 
-        style: {
-          width: '360px',
-          maxWidth:
-            'calc(100vw - 32px)',
-          padding: '20px',
-          marginTop: '70px',
-          background: '#FBF5DD',
-          color: '#032D42',
-        },
+      style: {
+        width: '360px',
+        maxWidth: 'calc(100vw - 32px)',
+        padding: '20px',
+        marginTop: '70px',
+        background: '#FBF5DD',
+        color: '#032D42',
+      },
 
-        data: {
-          title: 'Delete organization?',
+      data: {
+        title: 'Delete organization?',
 
-          message:
-            `${organization.name} will be permanently deleted.`,
+        message: `${organization.name} will be permanently deleted.`,
 
-          onConfirm: async () => {
-            await this.confirmDeleteOrganization(
-              organization,
-            );
-          },
+        onConfirm: async () => {
+          await this.confirmDeleteOrganization(organization);
         },
       },
-    );
+    });
   }
 
   // ===============================================================
   // Confirm organization deletion
   // ===============================================================
 
-  private async confirmDeleteOrganization(
-    organization: Organization,
-  ): Promise<void> {
+  private async confirmDeleteOrganization(organization: Organization): Promise<void> {
     if (this.saving()) {
       return;
     }
@@ -2272,39 +2111,23 @@ protected readonly membershipRoles:
     this.saving.set(true);
 
     try {
-      await this.organizationStore.deleteOrganization(
-        organization.id,
-      );
+      await this.organizationStore.deleteOrganization(organization.id);
 
       if (organization.locationId) {
-        await this.locationStore.deleteLocation(
-          organization.locationId,
-        );
+        await this.locationStore.deleteLocation(organization.locationId);
       }
 
-      if (
-        this.editingId() ===
-        organization.id
-      ) {
+      if (this.editingId() === organization.id) {
         this.resetForm();
       }
 
-      this.toast.success(
-        'Organization deleted successfully.',
-      );
+      this.toast.success('Organization deleted successfully.');
     } catch (error) {
-      console.error(
-        'Failed to delete organization:',
-        error,
-      );
+      console.error('Failed to delete organization:', error);
 
-      this.error.set(
-        'Unable to delete organization. Please try again.',
-      );
+      this.error.set('Unable to delete organization. Please try again.');
 
-      this.toast.error(
-        'Unable to delete organization. Please try again.',
-      );
+      this.toast.error('Unable to delete organization. Please try again.');
     } finally {
       this.saving.set(false);
     }
@@ -2325,9 +2148,7 @@ protected readonly membershipRoles:
 
     this.selectedMemberUserId.set('');
 
-    this.selectedMemberRole.set(
-      'org_member',
-    );
+    this.selectedMemberRole.set('org_member');
 
     this.membershipError.set(null);
 
@@ -2359,33 +2180,19 @@ protected readonly membershipRoles:
       return;
     }
 
-    this.form.slug =
-      this.form.name
-        .trim()
-        .toLowerCase()
-        .replace(
-          /[^a-z0-9]+/g,
-          '-',
-        )
-        .replace(
-          /^-+|-+$/g,
-          '');
+    this.form.slug = this.form.name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 
   // ===============================================================
   // User helpers
   // ===============================================================
 
-  protected getUserName(
-    userId: string,
-  ): string {
-    const user =
-      this.userStore
-        .users()
-        .find(
-          (item) =>
-            item.id === userId,
-        );
+  protected getUserName(userId: string): string {
+    const user = this.userStore.users().find((item) => item.id === userId);
 
     if (!user) {
       return userId;
@@ -2394,27 +2201,14 @@ protected readonly membershipRoles:
     return (
       user.displayName ||
       user.preferredName ||
-      [
-        user.firstName,
-        user.lastName,
-      ]
-        .filter(Boolean)
-        .join(' ') ||
+      [user.firstName, user.lastName].filter(Boolean).join(' ') ||
       user.email ||
       userId
     );
   }
 
-  protected getUserEmail(
-    userId: string,
-  ): string {
-    const user =
-      this.userStore
-        .users()
-        .find(
-          (item) =>
-            item.id === userId,
-        );
+  protected getUserEmail(userId: string): string {
+    const user = this.userStore.users().find((item) => item.id === userId);
 
     return user?.email ?? '';
   }
