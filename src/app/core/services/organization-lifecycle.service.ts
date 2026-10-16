@@ -3,12 +3,18 @@ import { httpsCallable } from 'firebase/functions';
 
 import { firebaseFunctions } from './firebase-config';
 
+/**
+ * Supported organization lifecycle actions.
+ */
 export type OrganizationLifecycleAction =
   | 'suspend'
   | 'reactivate'
   | 'archive'
   | 'restore';
 
+/**
+ * Result returned by an organization lifecycle Cloud Function.
+ */
 export interface OrganizationLifecycleResult {
   success: boolean;
   organizationId: string;
@@ -16,24 +22,21 @@ export interface OrganizationLifecycleResult {
   status: string;
 }
 
+/**
+ * Request payload for organization lifecycle operations.
+ */
 interface OrganizationLifecycleRequest {
   organizationId: string;
   reason: string;
 }
 
-export interface OrganizationApplicationRequestRepairResult {
-  success: boolean;
-  repaired: boolean;
-  requestId: string;
-  organizationId: string;
-  previousStatus: string;
-  status: string;
-}
-
-interface OrganizationApplicationRequestRepairPayload {
-  requestId: string;
-}
-
+/**
+ * Organization lifecycle service.
+ *
+ * Invokes the backend Cloud Functions responsible for organization
+ * lifecycle transitions. Authorization and lifecycle validation
+ * are enforced by the backend.
+ */
 @Injectable({
   providedIn: 'root',
 })
@@ -42,6 +45,17 @@ export class OrganizationLifecycleService {
 
   /**
    * Perform a supported organization lifecycle transition.
+   *
+   * Supported actions:
+   * - suspend
+   * - reactivate
+   * - archive
+   * - restore
+   *
+   * @param action The lifecycle action to perform.
+   * @param organizationId The organization to update.
+   * @param reason The administrative reason for the operation.
+   * @returns The result of the lifecycle transition.
    */
   async transition(
     action: OrganizationLifecycleAction,
@@ -69,31 +83,6 @@ export class OrganizationLifecycleService {
     const result = await callable({
       organizationId,
       reason: reason.trim(),
-    });
-
-    return result.data;
-  }
-
-  /**
-   * Repair an application request left in onboarding after the
-   * associated organization's core onboarding has been completed.
-   *
-   * The backend independently enforces platform-admin authorization
-   * and validates the request, organization, and onboarding records.
-   */
-  async repairApplicationRequest(
-    requestId: string,
-  ): Promise<OrganizationApplicationRequestRepairResult> {
-    const callable = httpsCallable<
-      OrganizationApplicationRequestRepairPayload,
-      OrganizationApplicationRequestRepairResult
-    >(
-      this.functions,
-      'repairOrganizationApplicationRequestStatus',
-    );
-
-    const result = await callable({
-      requestId: requestId.trim(),
     });
 
     return result.data;

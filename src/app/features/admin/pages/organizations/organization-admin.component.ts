@@ -59,31 +59,16 @@ import {
             </p>
           </div>
 
-          <div class="flex flex-wrap items-center justify-end gap-2">
-            <!-- TEMPORARY: remove this repair button after Hive is repaired. -->
-            <button
-              type="button"
-              (click)="repairHiveApplicationRequest()"
-              [disabled]="repairSaving()"
-              class="shrink-0 rounded-lg border border-amber-300
-                     bg-amber-50 px-3 py-2 text-sm font-semibold
-                     text-amber-900 hover:bg-amber-100
-                     disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {{ repairSaving() ? 'Repairing Hive...' : 'Temporary: Repair Hive Request' }}
-            </button>
-
-            <a
-              routerLink="/admin"
-              class="shrink-0 rounded-lg border
-                     border-gray-300 bg-white px-3 py-2
-                     text-sm font-semibold text-gray-700
-                     hover:border-[#032D42]
-                     hover:text-[#032D42]"
-            >
-              Admin Dashboard
-            </a>
-          </div>
+          <a
+            routerLink="/admin"
+            class="shrink-0 rounded-lg border
+                   border-gray-300 bg-white px-3 py-2
+                   text-sm font-semibold text-gray-700
+                   hover:border-[#032D42]
+                   hover:text-[#032D42]"
+          >
+            Admin Dashboard
+          </a>
         </div>
       </header>
 
@@ -1344,9 +1329,6 @@ export class OrganizationAdminComponent implements OnInit {
 
   protected readonly lifecycleSavingId = signal<string | null>(null);
 
-  /** Temporary UI state for the one-time Hive request repair. */
-  protected readonly repairSaving = signal(false);
-
   protected readonly editingId = signal<string | null>(null);
 
   // ===============================================================
@@ -2010,57 +1992,6 @@ export class OrganizationAdminComponent implements OnInit {
       this.toast.error(message);
     } finally {
       this.lifecycleSavingId.set(null);
-    }
-  }
-
-  // ===============================================================
-  // TEMPORARY: Repair Hive application request
-  // Remove this method and its button after the repair is verified.
-  // The callable independently enforces platform-admin authorization.
-  // ===============================================================
-
-  protected async repairHiveApplicationRequest(): Promise<void> {
-    if (this.repairSaving()) {
-      return;
-    }
-
-    const requestId = 'kNotqjjwpX3crMqbpziU';
-    const confirmed = window.confirm(
-      'Repair Hive’s application request?\n\n' +
-        'This will activate the request only if its associated organization ' +
-        'has completed core onboarding. It will not change requested applications.',
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    this.repairSaving.set(true);
-    this.error.set(null);
-
-    try {
-      const result =
-        await this.organizationLifecycleService.repairApplicationRequest(requestId);
-
-      console.info('Hive application request repair result:', result);
-
-      if (result.repaired) {
-        this.toast.success('Hive application request was successfully repaired.');
-      } else {
-        this.toast.success('Hive application request is already active. No changes were needed.');
-      }
-    } catch (error) {
-      console.error('Failed to repair Hive application request:', error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Unable to repair Hive application request.';
-
-      this.error.set(message);
-      this.toast.error(message);
-    } finally {
-      this.repairSaving.set(false);
     }
   }
 
