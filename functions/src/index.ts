@@ -1,5 +1,8 @@
 /* eslint-disable max-len */
 
+// Initialize Firebase Admin before importing modules that use Firebase services.
+import "./firebase-admin";
+
 import {
   onCall,
   onRequest,
@@ -9,7 +12,6 @@ import {
 import * as logger from "firebase-functions/logger";
 import {getAuth} from "firebase-admin/auth";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
-import {initializeApp} from "firebase-admin/app";
 import {randomUUID} from "node:crypto";
 import Stripe from "stripe";
 import {
@@ -21,8 +23,18 @@ import {
   completeOrganizationInviteMembersStep,
 } from "./organization-invitations";
 import { completeOrganizationFirstQuestion } from "./organization-onboarding-first-question";
+import {
+  suspendOrganization,
+  reactivateOrganization,
+  archiveOrganization,
+  restoreOrganization,
+  repairOrganizationApplicationRequestStatus,
+} from "./organization-lifecycle";
 
-initializeApp();
+import {
+  completeOrganizationConfiguration,
+} from "./organization-onboarding-configuration";
+
 
 /**
  * Resend configuration.
@@ -3243,6 +3255,7 @@ export {
   createOrganizationInvitation,
   getOrganizationInvitations,
   completeOrganizationInviteMembersStep,
+  completeOrganizationConfiguration,
 };
 
 export {
@@ -3263,3 +3276,12 @@ export {
 } from "./organization-invitation-resend";
 
 export { completeOrganizationFirstQuestion };
+
+export {
+  suspendOrganization,
+  reactivateOrganization,
+  archiveOrganization,
+  restoreOrganization,
+  repairOrganizationApplicationRequestStatus,
+};
+
