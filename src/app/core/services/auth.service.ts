@@ -14,6 +14,7 @@ import {
   getDoc,
   serverTimestamp,
   setDoc,
+  writeBatch,
 } from 'firebase/firestore';
 
 import { firebaseAuth, firestore } from './firebase-config';
@@ -136,19 +137,13 @@ export class AuthService {
     this.loading.set(true);
 
     try {
-      const userRef =
-        doc(
-          firestore,
-          'users',
-          firebaseUser.uid,
-        );
+      const userRef = doc(
+        firestore,
+        'users',
+        firebaseUser.uid,
+      );
 
-      const snapshot =
-        await getDoc(userRef);
-
-      // --------------------------------------------------------
-      // Profile does not exist.
-      // --------------------------------------------------------
+      const snapshot = await getDoc(userRef);
 
       if (!snapshot.exists()) {
         this.logger.warn(
@@ -163,13 +158,9 @@ export class AuthService {
         return;
       }
 
-      // --------------------------------------------------------
-      // Build application user.
-      // --------------------------------------------------------
-
       const user = {
-        id: snapshot.id,
         ...snapshot.data(),
+        id: snapshot.id,
       } as User;
 
       this.logger.debug(
@@ -183,20 +174,125 @@ export class AuthService {
       );
 
       this.currentUser.set(user);
+
+      // Ensure this signed-in user's public Community profile exists.
+      // Never copy private fields or authorization roles into it.
+      await this.ensureCommunityProfile(
+        firebaseUser,
+        snapshot.data(),
+      );
     } catch (error) {
       this.logger.error(
         'AuthService',
-        'Failed to load user profile.',
+        'Failed to load user profile or ensure Community profile.',
         error,
         {
           userId: firebaseUser.uid,
         },
       );
 
-      this.currentUser.set(null);
+      // Keep a successfully loaded private user profile available if
+      // only public-profile recovery failed.
+      // (The public-profile helper logs and handles its own errors.)
+      if (!this.currentUser()) {
+        this.currentUser.set(null);
+      }
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /**
+   * Create a missing public Community profile for the currently
+   * authenticated user. Existing public profiles are left untouched.
+   *
+   * This is a minimal, safe recovery path for accounts created before
+   * communityProfiles was introduced. It deliberately copies only
+   * allowlisted public fields from the user's own private document.
+   */
+  private async ensureCommunityProfile(
+    firebaseUser: FirebaseUser,
+    privateData: Record<string, unknown>,
+  ): Promise<void> {
+    const publicProfileRef = doc(
+      firestore,
+      'communityProfiles',
+      firebaseUser.uid,
+    );
+
+    try {
+      const publicProfileSnapshot = await getDoc(
+        publicProfileRef,
+      );
+
+      if (publicProfileSnapshot.exists()) {
+        return;
+      }
+
+      const displayName =
+        this.readProfileString(privateData, 'displayName') ||
+        firebaseUser.displayName?.trim() ||
+        'Zebron User';
+
+      const publicProfile = {
+        displayName,
+        firstName: this.readProfileString(privateData, 'firstName'),
+        lastName: this.readProfileString(privateData, 'lastName'),
+        preferredName: this.readProfileString(privateData, 'preferredName'),
+        photoUrl:
+          this.readProfileString(privateData, 'photoUrl') ||
+          firebaseUser.photoURL?.trim() ||
+          '',
+        bio: this.readProfileString(privateData, 'bio'),
+        website: this.readProfileString(privateData, 'website'),
+        countryOfOrigin: this.readProfileString(privateData, 'countryOfOrigin'),
+        currentCountry: this.readProfileString(privateData, 'currentCountry'),
+        city: this.readProfileString(privateData, 'city'),
+        state: this.readProfileString(privateData, 'state'),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      await setDoc(
+        publicProfileRef,
+        publicProfile,
+        { merge: false },
+      );
+
+      this.logger.info(
+        'AuthService',
+        'Created missing public Community profile.',
+        {
+          userId: firebaseUser.uid,
+        },
+      );
+    } catch (error) {
+      // A missing public profile should not prevent the user from
+      // signing in. Log the issue so rules/schema failures are visible.
+      this.logger.warn(
+  'AuthService',
+  'Could not create missing public Community profile.',
+  {
+    userId: firebaseUser.uid,
+    error:
+      error instanceof Error
+        ? error.message
+        : String(error),
+  },
+);
+    }
+  }
+
+  /**
+   * Read a string from a private profile without exposing arbitrary
+   * fields. Only callers explicitly select approved public fields.
+   */
+  private readProfileString(
+    data: Record<string, unknown>,
+    field: string,
+  ): string {
+    const value = data[field];
+    return typeof value === 'string' ? value.trim() : '';
   }
 
   // ============================================================
@@ -654,26 +750,65 @@ export class AuthService {
     };
 
     // ----------------------------------------------------------
-    // Update Firestore profile.
+    // Prepare the public Community profile.
     //
-    // merge:true preserves fields that aren't part of this
-    // profile form, including platformRole and role.
+    // Keep private account/security fields in users/{uid} only.
+    // Never copy email, phone, postalCode, preferredLanguage,
+    // role, or platformRole into communityProfiles/{uid}.
     // ----------------------------------------------------------
 
-    const userRef =
-      doc(
-        firestore,
-        'users',
-        firebaseUser.uid,
-      );
-
-    await setDoc(
-      userRef,
-      profileData,
-      {
-        merge: true,
-      },
+    const userRef = doc(
+      firestore,
+      'users',
+      firebaseUser.uid,
     );
+
+    const communityProfileRef = doc(
+      firestore,
+      'communityProfiles',
+      firebaseUser.uid,
+    );
+
+    // Read the public profile first so an existing createdAt value
+    // is preserved. If this is the first public profile write,
+    // initialize createdAt below.
+    const existingCommunityProfile = await getDoc(
+      communityProfileRef,
+    );
+
+    const communityProfileData: Record<string, unknown> = {
+      displayName: trimmedDisplayName,
+      firstName: profile.firstName?.trim() || '',
+      lastName: profile.lastName?.trim() || '',
+      preferredName: profile.preferredName?.trim() || '',
+      countryOfOrigin: profile.countryOfOrigin?.trim() || '',
+      currentCountry: profile.currentCountry?.trim() || '',
+      city: profile.city?.trim() || '',
+      state: profile.state?.trim() || '',
+      bio: profile.bio?.trim() || '',
+      website: profile.website?.trim() || '',
+      photoUrl: profile.photoUrl?.trim() || '',
+      updatedAt: serverTimestamp(),
+    };
+
+    if (!existingCommunityProfile.exists()) {
+      communityProfileData['createdAt'] = serverTimestamp();
+    }
+
+    // ----------------------------------------------------------
+    // Atomically update both Firestore documents.
+    //
+    // The users document retains private fields and authorization
+    // fields. The communityProfiles document contains only fields
+    // intended to be visible to authenticated Community members.
+    // ----------------------------------------------------------
+
+    const batch = writeBatch(firestore);
+
+    batch.set(userRef, profileData, { merge: true });
+    batch.set(communityProfileRef, communityProfileData, { merge: true });
+
+    await batch.commit();
 
     // ----------------------------------------------------------
     // Refresh local user state.
@@ -739,42 +874,54 @@ export class AuthService {
       );
 
       // --------------------------------------------------------
-      // Create corresponding Firestore profile.
+      // Create private and public Firestore profiles atomically.
       //
-      // New registrations are NEVER administrators.
+      // New registrations are NEVER administrators. The private
+      // users document contains account/security fields; the public
+      // Community document contains only approved profile fields.
       // --------------------------------------------------------
 
-      const userRef =
-        doc(
-          firestore,
-          'users',
-          credential.user.uid,
-        );
-
-      await setDoc(
-        userRef,
-        {
-          email:
-            credential.user.email ??
-            normalizedEmail,
-
-          displayName:
-            normalizedDisplayName,
-
-          platformRole:
-            'user',
-
-          // Retained for legacy compatibility.
-          role:
-            'user',
-
-          createdAt:
-            serverTimestamp(),
-
-          updatedAt:
-            serverTimestamp(),
-        },
+      const userRef = doc(
+        firestore,
+        'users',
+        credential.user.uid,
       );
+
+      const communityProfileRef = doc(
+        firestore,
+        'communityProfiles',
+        credential.user.uid,
+      );
+
+      const batch = writeBatch(firestore);
+
+      batch.set(userRef, {
+        email: credential.user.email ?? normalizedEmail,
+        displayName: normalizedDisplayName,
+        platformRole: 'user',
+        // Retained for legacy compatibility.
+        role: 'user',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      batch.set(communityProfileRef, {
+        displayName: normalizedDisplayName,
+        firstName: '',
+        lastName: '',
+        preferredName: '',
+        countryOfOrigin: '',
+        currentCountry: '',
+        city: '',
+        state: '',
+        bio: '',
+        website: '',
+        photoUrl: '',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      await batch.commit();
 
       // --------------------------------------------------------
       // Keep local authentication state current.

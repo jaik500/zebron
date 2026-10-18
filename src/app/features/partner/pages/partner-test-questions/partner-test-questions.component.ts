@@ -17,7 +17,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { HotToastService } from '@ngxpert/hot-toast';
 
 import { PartnerAccessService } from '../../../../core/services/partner-access.service';
-import { OrganizationStore } from '../../../organizations/stores/organization.store';
+import { OrganizationContextStore  } from '../../../organizations/stores/organization-context.store';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
 import { TestCourse } from '../../../test-center/models/test-course.model';
@@ -660,7 +660,7 @@ export class PartnerTestQuestionsComponent implements OnInit {
   // SERVICES
   // ============================================================
 
-  protected readonly organizationStore = inject(OrganizationStore);
+  protected readonly organizationStore = inject(OrganizationContextStore );
 
   protected readonly access = inject(PartnerAccessService);
 

@@ -14,7 +14,7 @@ import { Location } from '../../../../core/models/location.model';
 
 import { OrganizationMembershipService } from '../../../../core/services/organization-membership.service';
 
-import { OrganizationStore } from '../../../organizations/stores/organization.store';
+import { OrganizationContextStore  } from '../../../organizations/stores/organization-context.store';
 import { LocationStore } from '../../../locations/stores/location.store';
 import { UserStore } from '../../../users/stores/user.store';
 
@@ -22,53 +22,34 @@ import {
   OrganizationLifecycleService,
   type OrganizationLifecycleAction,
 } from '../../../../core/services/organization-lifecycle.service';
+import { MatIconModule } from '@angular/material/icon';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatButtonModule } from '@angular/material/button';
 
 @Component({
   selector: 'app-organization-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, MatIconModule, MatExpansionModule, MatButtonModule],
   template: `
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-gray-50 mt-16">
       <!-- =========================================================
            HEADER
            ========================================================= -->
 
-      <header class="border-b border-gray-200 bg-[#032D42]">
+      <header class="border-b border-gray-200 bg-[#007979]">
         <div
           class="mx-auto flex max-w-7xl items-center
-                 justify-between gap-4 px-4 py-4
+                 justify-between gap-4 px-4 py-1
                  sm:px-6 lg:px-8"
         >
           <div>
-            <p
-              class="text-xs font-semibold uppercase
-                     tracking-wider text-[#7ED6D1]"
-            >
-              Administration
-            </p>
-
-            <h1
-              class="text-xl font-bold text-white
-                     sm:text-3xl"
-            >
-              Organization
-            </h1>
-
-            <p class="mt-1 text-sm text-white/80">
+            <p class="text-sm text-white/80">
               Create and manage organizations associated with Zebron resources.
             </p>
+
           </div>
 
-          <a
-            routerLink="/admin"
-            class="shrink-0 rounded-lg border
-                   border-gray-300 bg-white px-3 py-2
-                   text-sm font-semibold text-gray-700
-                   hover:border-[#032D42]
-                   hover:text-[#032D42]"
-          >
-            Admin Dashboard
-          </a>
+       
         </div>
       </header>
 
@@ -93,7 +74,7 @@ import {
             <div class="lg:col-span-2 p-4 sm:p-6">
               <div
                 class="flex flex-col gap-1
-                       border-b border-gray-200 pb-5"
+                       border-b border-gray-200 pb-5 "
               >
                 <p
                   class="text-xs font-semibold uppercase
@@ -621,7 +602,7 @@ import {
                      bg-gray-50/60
                      lg:border-l lg:border-t-0"
             >
-              <div class="p-6 sm:p-8">
+              <div class="p-4 sm:p-4">
                 <div
                   class="flex items-start
                          justify-between gap-3"
@@ -696,200 +677,143 @@ import {
 
                 @if (organizations().length > 0) {
                   <div
-                    class="mt-6 overflow-hidden rounded-xl
-                           border border-gray-200
-                           bg-white shadow-sm"
+                    class="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
                   >
                     @for (organization of organizations(); track organization.id) {
-                      <div
-                        class="border-b border-gray-200
-                               p-4 last:border-b-0"
-                      >
-                        <div
-                          class="flex items-start
-                                 justify-between gap-3"
+                      <div class="border-b border-gray-200 last:border-b-0">
+                        <mat-expansion-panel
+                          class="!overflow-hidden !rounded-xl !border !border-gray-200 !shadow-none
+         !bg-white
+         [&.mat-expanded]:!bg-white"
                         >
-                          <div class="min-w-0">
-                            <h3
-                              class="truncate text-sm
-                                     font-semibold
-                                     text-gray-900"
-                            >
-                              {{ organization.name }}
-                            </h3>
-
-                            <p
-                              class="mt-1 truncate
-                                     text-xs text-gray-500"
-                            >
-                              {{ organization.slug }}
-                            </p>
-                          </div>
-
-                          <span
-                            class="shrink-0 rounded-full
-                                   px-2 py-1 text-xs
-                                   font-medium"
-                            [class.bg-green-100]="organization.active"
-                            [class.text-green-700]="organization.active"
-                            [class.bg-gray-100]="!organization.active"
-                            [class.text-gray-600]="!organization.active"
+                          <!-- First line: Organization name, status, and toggle arrow -->
+                          <mat-expansion-panel-header
+                            class="!bg-gray-50 !px-4
+           [&.mat-expanded]:!bg-white"
                           >
-                            {{ organizationStatus(organization) | titlecase }}
-                          </span>
-                        </div>
+                            <mat-panel-title class="!mr-3 !min-w-0">
+                              <span class="truncate text-sm font-semibold text-gray-900">
+                                {{ organization.name }}
+                              </span>
+                            </mat-panel-title>
 
-                        @if (organization.description) {
-                          <p
-                            class="mt-3 line-clamp-2
-                                   text-sm leading-5
-                                   text-gray-600"
-                          >
-                            {{ organization.description }}
-                          </p>
-                        }
+                            <mat-panel-description class="!mr-2 !flex-grow-0 !items-center">
+                              <span
+                                class="shrink-0 rounded-full px-2 py-1 text-xs font-medium"
+                                [class.bg-green-100]="organization.active"
+                                [class.text-green-700]="organization.active"
+                                [class.bg-gray-100]="!organization.active"
+                                [class.text-gray-600]="!organization.active"
+                              >
+                                {{ organizationStatus(organization) | titlecase }}
+                              </span>
+                            </mat-panel-description>
+                          </mat-expansion-panel-header>
 
-                        <div
-                          class="mt-4 flex items-center
-                                 justify-between gap-3"
-                        >
-                          <div class="shrink-0">
+                          <!-- Everything below the header is collapsible -->
+
+                          <!-- Description and verification badge -->
+                          <div class="flex items-center justify-between gap-3">
+                            @if (organization.description) {
+                              <p
+                                class="line-clamp-2 min-w-0 flex-1 text-sm leading-5 text-gray-600"
+                              >
+                                {{ organization.description }}
+                              </p>
+                            }
+
                             @if (organization.verified) {
                               <span
-                                class="inline-flex
-                                       rounded-full
-                                       bg-[#007979]/10
-                                       px-2.5 py-1
-                                       text-xs font-medium
-                                       text-[#007979]"
+                                class="inline-flex shrink-0 items-center text-xs font-medium text-[#007979]"
                               >
-                                Verified
-                              </span>
-                            } @else {
-                              <span
-                                class="inline-flex
-                                       rounded-full
-                                       bg-gray-100
-                                       px-2.5 py-1
-                                       text-xs font-medium
-                                       text-gray-500"
-                              >
-                                Not verified
+                                <mat-icon aria-label="Verified organization"> verified </mat-icon>
                               </span>
                             }
                           </div>
 
-                          <div class="flex shrink-0 gap-1.5">
-                            <button
-                              type="button"
-                              (click)="editOrganization(organization)"
-                              [disabled]="saving()"
-                              class="rounded-md border
-                                     border-gray-300
-                                     bg-white px-2.5 py-1.5
-                                     text-xs font-medium
-                                     text-gray-700
-                                     transition
-                                     hover:border-[#007979]/40
-                                     hover:bg-[#007979]/5
-                                     disabled:opacity-50"
-                            >
-                              Edit
-                            </button>
+                          <!-- Organization actions -->
+                          <div class="mt-4 flex items-center justify-between gap-3">
+                            <div class="shrink-0"></div>
 
-                            @if (canPerformLifecycleAction(organization, 'suspend')) {
+                            <div class="flex shrink-0 flex-wrap justify-end gap-1.5">
+                              <!-- Edit -->
                               <button
                                 type="button"
-                                (click)="performLifecycleAction(organization, 'suspend')"
-                                [disabled]="saving() || lifecycleSavingId() !== null"
-                                class="rounded-md border
-                                       border-amber-200
-                                       bg-white px-2.5 py-1.5
-                                       text-xs font-medium
-                                       text-amber-700
-                                       hover:bg-amber-50
-                                       disabled:opacity-50"
+                                (click)="editOrganization(organization)"
+                                [disabled]="saving()"
+                                class="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 transition hover:border-[#007979]/40 hover:bg-[#007979]/5 disabled:opacity-50"
                               >
-                                {{
-                                  lifecycleSavingId() === organization.id
-                                    ? 'Suspending...'
-                                    : 'Suspend'
-                                }}
+                                View/Edit
                               </button>
-                            }
 
-                            @if (canPerformLifecycleAction(organization, 'reactivate')) {
+                              <!-- Suspend -->
+                              @if (canPerformLifecycleAction(organization, 'suspend')) {
+                                <button
+                                  type="button"
+                                  (click)="performLifecycleAction(organization, 'suspend')"
+                                  [disabled]="saving() || lifecycleSavingId() !== null"
+                                  class="rounded-md border border-amber-200 bg-white px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+                                >
+                                  {{
+                                    lifecycleSavingId() === organization.id
+                                      ? 'Suspending...'
+                                      : 'Suspend'
+                                  }}
+                                </button>
+                              }
+
+                              <!-- Reactivate -->
+                              @if (canPerformLifecycleAction(organization, 'reactivate')) {
+                                <button
+                                  type="button"
+                                  (click)="performLifecycleAction(organization, 'reactivate')"
+                                  [disabled]="saving() || lifecycleSavingId() !== null"
+                                  class="rounded-md border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                                >
+                                  {{
+                                    lifecycleSavingId() === organization.id
+                                      ? 'Reactivating...'
+                                      : 'Reactivate'
+                                  }}
+                                </button>
+                              }
+
+                              <!-- Archive -->
+                              @if (canPerformLifecycleAction(organization, 'archive')) {
+                                <button
+                                  type="button"
+                                  (click)="performLifecycleAction(organization, 'archive')"
+                                  [disabled]="saving() || lifecycleSavingId() !== null"
+                                  class="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                                >
+                                  Archive
+                                </button>
+                              }
+
+                              <!-- Restore -->
+                              @if (canPerformLifecycleAction(organization, 'restore')) {
+                                <button
+                                  type="button"
+                                  (click)="performLifecycleAction(organization, 'restore')"
+                                  [disabled]="saving() || lifecycleSavingId() !== null"
+                                  class="rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                                >
+                                  Restore
+                                </button>
+                              }
+
+                              <!-- Delete -->
                               <button
                                 type="button"
-                                (click)="performLifecycleAction(organization, 'reactivate')"
-                                [disabled]="saving() || lifecycleSavingId() !== null"
-                                class="rounded-md border
-                                       border-emerald-200
-                                       bg-white px-2.5 py-1.5
-                                       text-xs font-medium
-                                       text-emerald-700
-                                       hover:bg-emerald-50
-                                       disabled:opacity-50"
+                                (click)="deleteOrganization(organization)"
+                                [disabled]="saving()"
+                                class="rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                               >
-                                {{
-                                  lifecycleSavingId() === organization.id
-                                    ? 'Reactivating...'
-                                    : 'Reactivate'
-                                }}
+                                Delete
                               </button>
-                            }
-
-                            @if (canPerformLifecycleAction(organization, 'archive')) {
-                              <button
-                                type="button"
-                                (click)="performLifecycleAction(organization, 'archive')"
-                                [disabled]="saving() || lifecycleSavingId() !== null"
-                                class="rounded-md border
-                                       border-slate-300
-                                       bg-white px-2.5 py-1.5
-                                       text-xs font-medium
-                                       text-slate-700
-                                       hover:bg-slate-50
-                                       disabled:opacity-50"
-                              >
-                                Archive
-                              </button>
-                            }
-
-                            @if (canPerformLifecycleAction(organization, 'restore')) {
-                              <button
-                                type="button"
-                                (click)="performLifecycleAction(organization, 'restore')"
-                                [disabled]="saving() || lifecycleSavingId() !== null"
-                                class="rounded-md border
-                                       border-blue-200
-                                       bg-white px-2.5 py-1.5
-                                       text-xs font-medium
-                                       text-blue-700
-                                       hover:bg-blue-50
-                                       disabled:opacity-50"
-                              >
-                                Restore
-                              </button>
-                            }
-
-                            <button
-                              type="button"
-                              (click)="deleteOrganization(organization)"
-                              [disabled]="saving()"
-                              class="rounded-md border
-                                     border-red-200
-                                     bg-white px-2.5 py-1.5
-                                     text-xs font-medium
-                                     text-red-600
-                                     transition
-                                     hover:bg-red-50
-                                     disabled:opacity-50"
-                            >
-                              Delete
-                            </button>
+                            </div>
                           </div>
-                        </div>
+                        </mat-expansion-panel>
                       </div>
                     }
                   </div>
@@ -1118,7 +1042,6 @@ import {
                 >
                   <p class="text-sm text-gray-500">Loading members...</p>
                 </div>
-
               } @else if (!membershipLoading() && memberships().length === 0) {
                 <div
                   class="rounded-xl border
@@ -1139,7 +1062,6 @@ import {
                     Add a user to give them access to organization resources.
                   </p>
                 </div>
-
               } @else {
                 <div
                   class="overflow-hidden rounded-xl
@@ -1279,7 +1201,7 @@ export class OrganizationAdminComponent implements OnInit {
 
   private readonly organizationLifecycleService = inject(OrganizationLifecycleService);
 
-  protected readonly organizationStore = inject(OrganizationStore);
+  protected readonly organizationStore = inject(OrganizationContextStore );
 
   protected readonly userStore = inject(UserStore);
 
@@ -1356,6 +1278,8 @@ export class OrganizationAdminComponent implements OnInit {
   // ===============================================================
   // Lifecycle
   // ===============================================================
+
+  protected readonly provisioningRepairing = signal(false);
 
   ngOnInit(): void {
     void this.loadOrganizations();
@@ -2143,4 +2067,42 @@ export class OrganizationAdminComponent implements OnInit {
 
     return user?.email ?? '';
   }
+
+  protected async repairHiveProvisioning(): Promise<void> {
+  const requestId = 'kNotqjjwpX3crMqbpziU';
+
+  const confirmed = window.confirm(
+    'Repair Hive provisioning? This will create the missing Core entitlement ' +
+    'and provision Core and Community. Test Center will not be provisioned.'
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  this.provisioningRepairing.set(true);
+
+  try {
+    const result =
+      await this.organizationLifecycleService.repairApplicationProvisioning(
+        requestId
+      );
+
+    console.log('Hive provisioning recovery result:', result);
+
+    this.toast.success(
+      'Hive provisioning recovery completed successfully.'
+    );
+  } catch (error) {
+    console.error('Hive provisioning recovery failed:', error);
+
+    this.toast.error(
+      error instanceof Error
+        ? error.message
+        : 'Hive provisioning recovery failed. Check the console for details.'
+    );
+  } finally {
+    this.provisioningRepairing.set(false);
+  }
+}
 }

@@ -1141,9 +1141,13 @@ export class ChatCallService {
   // CURRENT USER
   // ============================================================
 
-  private currentUserId(): string | null {
-    return this.authService.user()?.id ?? null;
-  }
+ private currentUserId(): string | null {
+  return (
+    this.authService.firebaseUser()?.uid ??
+    this.authService.user()?.id ??
+    null
+  );
+}
 
   // ============================================================
   // MAP CALL

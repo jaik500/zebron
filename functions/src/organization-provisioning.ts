@@ -14,6 +14,14 @@ import {
   getFirestore,
 } from "firebase-admin/firestore";
 
+import {
+  getApplicationProvisioningPolicy,
+} from "./application-provisioning-policy";
+
+import {
+  provisionOrganizationApplications,
+} from "./application-provisioning";
+
 import {randomUUID} from "node:crypto";
 
 /*
@@ -50,6 +58,20 @@ type OrganizationApplicationStatus =
   | "deactivated"
   | "failed";
 
+type OrganizationOnboardingStep =
+  | "organization_profile"
+  | "owner_profile"
+  | "invite_members"
+  | "configuration";
+
+interface RequestedApplicationDefinition {
+  applicationId?: unknown;
+}
+
+type RequestedApplicationInput =
+  | string
+  | RequestedApplicationDefinition;
+
 interface OrganizationApplicationRequest {
   id: string;
   applicantUserId: string;
@@ -65,7 +87,7 @@ interface OrganizationApplicationRequest {
   country?: string;
   state?: string;
   city?: string;
-  requestedApplications: string[];
+  requestedApplications: RequestedApplicationInput[];
   status: OrganizationApplicationRequestStatus;
   submittedAt?: unknown;
   reviewedAt?: unknown;
@@ -220,24 +242,71 @@ function createOrganizationSlug(
  * catalog. Do not allow arbitrary objects to be injected into the
  * organization entitlement collection.
  */
-function normalizeRequestedApplications(
+const BASE_ORGANIZATION_ONBOARDING_STEPS: OrganizationOnboardingStep[] = [
+  "organization_profile",
+  "owner_profile",
+  "invite_members",
+  "configuration",
+];
+
+/**
+ * Application provisioning is independent of organization onboarding.
+ *
+ * The organization provisioner creates one entitlement for each
+ * requested application. Application-specific setup and resource
+ * creation belong to the application itself, not this workflow.
+ */
+interface NormalizedRequestedApplication {
+  applicationId: string;
+}
+
+/**
+ * Normalize requested application IDs from trusted request data.
+ *
+ * Supports legacy requests such as ["test-center"] and the newer
+ * application-aware request shape. Any client-provided onboarding
+ * metadata is intentionally ignored.
+ */
+function normalizeRequestedApplicationDefinitions(
   value: unknown,
-): string[] {
+): NormalizedRequestedApplication[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
-  return Array.from(
-    new Set(
-      value
-        .filter(
-          (item): item is string =>
-            typeof item === "string",
-        )
-        .map((item) => item.trim().toLowerCase())
-        .filter(Boolean),
-    ),
-  );
+  const applicationIds = new Set<string>();
+
+  for (const item of value as RequestedApplicationInput[]) {
+    let applicationId = "";
+
+    if (typeof item === "string") {
+      applicationId = item.trim().toLowerCase();
+    } else if (item && typeof item === "object") {
+      applicationId =
+        typeof item.applicationId === "string" ?
+          item.applicationId.trim().toLowerCase() :
+          "";
+    }
+
+    if (applicationId) {
+      applicationIds.add(applicationId);
+    }
+  }
+
+  return Array.from(applicationIds).map((applicationId) => ({
+    applicationId,
+  }));
+}
+
+/**
+ * Organization onboarding is always the four core organization steps.
+ *
+ * Application-specific setup is tracked on each application entitlement
+ * and must not extend the mandatory organization onboarding workflow.
+ * The parameter remains to preserve existing provisioning call sites.
+ */
+function buildRequiredOnboardingSteps(): OrganizationOnboardingStep[] {
+  return [...BASE_ORGANIZATION_ONBOARDING_STEPS];
 }
 
 /*
@@ -391,32 +460,129 @@ export const provisionOrganization = onCall(
          * existing organization instead of creating another tenant.
          */
 
-        if (
-          application.organizationId &&
-          (
-            application.status === "onboarding" ||
-            application.status === "active"
-          )
-        ) {
-          const existingOrganizationRef =
-            db
-              .collection("organizations")
-              .doc(application.organizationId);
+if (
+  application.organizationId &&
+  (
+    application.status === "onboarding" ||
+    application.status === "active"
+  )
+) {
+  const organizationId = application.organizationId;
 
-          const existingOrganization =
-            await transaction.get(
-              existingOrganizationRef,
-            );
+  const existingOrganizationRef = db
+    .collection("organizations")
+    .doc(organizationId);
 
-          if (existingOrganization.exists) {
-            return {
-              alreadyProvisioned: true,
-              organizationId:
-                application.organizationId,
-              status: application.status,
-            };
-          }
+  const existingOrganization = await transaction.get(
+    existingOrganizationRef,
+  );
+
+  if (existingOrganization.exists) {
+    const applicationsRef = existingOrganizationRef
+      .collection("applications");
+
+    const coreRef = applicationsRef.doc("core");
+
+    /*
+     * Resolve the requested applications before performing writes.
+     */
+    const requestedDefinitions =
+      normalizeRequestedApplicationDefinitions(
+        application.requestedApplications,
+      );
+
+    const requestedEntitlements = requestedDefinitions
+      .filter(({ applicationId }) => applicationId !== "core")
+      .map(({ applicationId }) => {
+        const policy =
+          getApplicationProvisioningPolicy(applicationId);
+
+        if (!policy || !policy.enabled) {
+          throw new HttpsError(
+            "failed-precondition",
+            `Requested application "${applicationId}" is not enabled or configured.`,
+          );
         }
+
+        return {
+          applicationId,
+          policy,
+          ref: applicationsRef.doc(applicationId),
+        };
+      });
+
+    const corePolicy = getApplicationProvisioningPolicy("core");
+
+    if (!corePolicy || !corePolicy.enabled) {
+      throw new HttpsError(
+        "failed-precondition",
+        "The foundational Core application is not enabled or configured.",
+      );
+    }
+
+    /*
+     * Read every entitlement before performing any writes.
+     */
+    const coreSnapshot = await transaction.get(coreRef);
+
+    const requestedSnapshots = await Promise.all(
+      requestedEntitlements.map(({ ref }) =>
+        transaction.get(ref),
+      ),
+    );
+
+    /*
+     * Restore only missing entitlement records.
+     * Existing records and their statuses/configuration are preserved.
+     */
+    if (!coreSnapshot.exists) {
+      transaction.set(coreRef, {
+        applicationId: "core",
+        organizationId,
+        status: "selected" as OrganizationApplicationStatus,
+        version: 1,
+        provisioningStrategy: corePolicy.provisioningStrategy,
+        activatedAt: null,
+        activatedBy: null,
+        provisionedAt: null,
+        configuration: {},
+        provisioningError: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+
+    requestedEntitlements.forEach(
+      ({ applicationId, policy, ref }, index) => {
+        if (requestedSnapshots[index].exists) {
+          return;
+        }
+
+        transaction.set(ref, {
+          applicationId,
+          organizationId,
+          status: "selected" as OrganizationApplicationStatus,
+          version: 1,
+          provisioningStrategy: policy.provisioningStrategy,
+          activatedAt: null,
+          activatedBy: null,
+          provisionedAt: null,
+          configuration: {},
+          provisioningError: null,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      },
+    );
+
+    return {
+  alreadyProvisioned: true,
+  organizationId,
+  status: application.status,
+  requestedApplications: requestedDefinitions.map(
+    ({ applicationId }) => applicationId,
+  ),
+};
+  }
+}
 
         /*
          * ------------------------------------------------------------
@@ -638,6 +804,55 @@ export const provisionOrganization = onCall(
         );
 
         /*
+ * ------------------------------------------------------------
+ * FOUNDATIONAL CORE ENTITLEMENT
+ * ------------------------------------------------------------
+ *
+ * Every organization requires the core platform entitlement.
+ * This is foundational infrastructure, not an optional
+ * application selected by the organization.
+ *
+ * Optional application entitlements are created separately
+ * from the approved list of requested applications.
+ */
+
+const corePolicy = getApplicationProvisioningPolicy("core");
+
+if (!corePolicy || !corePolicy.enabled) {
+  throw new HttpsError(
+    "failed-precondition",
+    "The foundational core application is not enabled or configured.",
+  );
+}
+
+/*
+ * FOUNDATIONAL CORE ENTITLEMENT
+ *
+ * Every organization must have a Core entitlement.
+ * Create it in the same transaction as the organization.
+ *
+ * Firestore transaction atomicity ensures that Core and the
+ * organization are committed together or neither is committed.
+ */
+const coreApplicationRef = organizationRef
+  .collection("applications")
+  .doc("core");
+
+transaction.create(coreApplicationRef, {
+  applicationId: "core",
+  organizationId,
+  status: "selected" as OrganizationApplicationStatus,
+  version: 1,
+  provisioningStrategy: corePolicy.provisioningStrategy,
+  activatedAt: null,
+  activatedBy: null,
+  provisionedAt: null,
+  configuration: {},
+  provisioningError: null,
+  updatedAt: now,
+});
+
+        /*
          * ------------------------------------------------------------
          * APPLICATION ENTITLEMENTS
          * ------------------------------------------------------------
@@ -651,53 +866,63 @@ export const provisionOrganization = onCall(
          * creation request.
          */
 
-        const requestedApplications =
-          normalizeRequestedApplications(
+        const requestedApplicationDefinitions =
+          normalizeRequestedApplicationDefinitions(
             application.requestedApplications,
           );
 
-        for (
-          const applicationId
-          of requestedApplications
-        ) {
-          const applicationRef =
-            organizationRef
-              .collection("applications")
-              .doc(applicationId);
+for (const requestedApplication of requestedApplicationDefinitions) {
+  const applicationId = requestedApplication.applicationId;
 
-          transaction.set(
-            applicationRef,
-            {
-              applicationId,
+  /*
+   * Core is created separately as a foundational entitlement
+   * for every organization. Do not create it a second time.
+   */
+  if (applicationId === "core") {
+    continue;
+  }
 
-              organizationId,
+  const policy = getApplicationProvisioningPolicy(applicationId);
 
-              status:
-                "selected" as OrganizationApplicationStatus,
+  if (!policy) {
+    throw new HttpsError(
+      "invalid-argument",
+      `Unsupported application: ${applicationId}`,
+    );
+  }
 
-              version: 1,
+  if (!policy.enabled) {
+    throw new HttpsError(
+      "failed-precondition",
+      `Application is not currently enabled: ${applicationId}`,
+    );
+  }
 
-              /*
-               * The application provisioning service will determine
-               * the actual provisioning implementation later.
-               */
-              provisioningStrategy:
-                "default",
+  const applicationRef = organizationRef
+    .collection("applications")
+    .doc(applicationId);
 
-              activatedAt: null,
+  transaction.set(applicationRef, {
+    applicationId,
+    organizationId,
+    status: "selected" as OrganizationApplicationStatus,
+    version: 1,
+    provisioningStrategy: policy.provisioningStrategy,
+    activatedAt: null,
+    activatedBy: null,
+    provisionedAt: null,
+    configuration: {},
+    provisioningError: null,
+    updatedAt: now,
+  });
+}
 
-              activatedBy: null,
-
-              provisionedAt: null,
-
-              configuration: {},
-
-              provisioningError: null,
-
-              updatedAt: now,
-            },
+        const requestedApplications =
+          requestedApplicationDefinitions.map(
+            (item) => item.applicationId,
           );
-        }
+
+        const requiredSteps = buildRequiredOnboardingSteps();
 
         /*
          * ------------------------------------------------------------
@@ -718,7 +943,15 @@ export const provisionOrganization = onCall(
             status:
               "in_progress",
 
+            /*
+             * Core organization onboarding is application-agnostic
+             * and always consists of the four required organization
+             * setup steps.
+             */
+            requiredSteps,
+
             currentStep:
+              requiredSteps[0] ??
               "organization_profile",
 
             completedSteps: [],
@@ -856,7 +1089,10 @@ export const provisionOrganization = onCall(
                 applicantUserId,
 
               firstStep:
+                requiredSteps[0] ??
                 "organization_profile",
+
+              requiredSteps,
             },
           },
         );
@@ -898,28 +1134,113 @@ export const provisionOrganization = onCall(
       },
     );
 
-    logger.info(
-      "Organization provisioning completed.",
-      {
-        requestId,
+/*
+ * ------------------------------------------------------------
+ * ORGANIZATION PROVISIONING RESULT
+ * ------------------------------------------------------------
+ *
+ * This callable creates the organization and its requested
+ * application entitlements.
+ *
+ * Application activation happens after core organization
+ * onboarding completes. Do not invoke the shared application
+ * provisioning engine here.
+ *
+ * Idempotent recovery must restore missing records without
+ * changing existing application statuses or configuration.
+ */
 
-        organizationId:
-          result.organizationId,
+const organizationId = result.organizationId;
 
-        alreadyProvisioned:
-          result.alreadyProvisioned,
+const organizationSnapshot = await db
+  .collection("organizations")
+  .doc(organizationId)
+  .get();
 
-        actorId:
-          admin.uid,
-      },
-    );
+if (!organizationSnapshot.exists) {
+  throw new HttpsError(
+    "internal",
+    "The organization was not created successfully.",
+  );
+}
 
-    return {
-      success: true,
-
-      requestId,
-
-      ...result,
-    };
+logger.info(
+  "Organization provisioning completed.",
+  {
+    requestId,
+    organizationId,
+    alreadyProvisioned: result.alreadyProvisioned,
+    actorId: admin.uid,
+    requestedApplications: result.requestedApplications ?? [],
+    applicationActivationDeferred: true,
   },
+);
+
+return {
+  success: true,
+  requestId,
+  ...result,
+  provisioningResults: [],
+};
+
+/*
+ * Do not automatically provision every existing entitlement here.
+ *
+ * Organization recovery must not change unrelated application
+ * statuses or attempt custom provisioning for applications that
+ * have no registered provisioning handler.
+ *
+ * Entitlement creation and application provisioning are separate
+ * lifecycle operations.
+ */
+/*
+ * --------------------------------------------------------------
+ * APPLICATION PROVISIONING
+ * --------------------------------------------------------------
+ *
+ * Always process the foundational Core entitlement and the
+ * applications explicitly requested by this organization.
+ *
+ * Do not automatically provision unrelated entitlements.
+ * Organization onboarding remains a separate lifecycle.
+ */
+
+const requestedApplicationIds = [
+  ...new Set([
+    "core",
+    ...(result.requestedApplications ?? []),
+  ]),
+];
+
+const provisioningResults =
+  await provisionOrganizationApplications(
+    db,
+    organizationId,
+    admin.uid,
+    {
+      mode: "requested",
+      applicationIds: requestedApplicationIds,
+    },
+  );
+
+logger.info(
+  "Organization provisioning completed.",
+  {
+    requestId,
+    organizationId,
+    alreadyProvisioned: result.alreadyProvisioned,
+    actorId: admin.uid,
+    provisioningResults,
+  },
+);
+
+return {
+  success: true,
+  requestId,
+  ...result,
+  provisioningResults,
+};
+  },
+  //
+  
 );

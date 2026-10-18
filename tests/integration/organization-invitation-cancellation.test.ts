@@ -25,11 +25,11 @@ import {
   deleteApp,
   getApps,
   initializeApp,
-} from "../functions/node_modules/firebase-admin/lib/app";
+} from "../../functions/node_modules/firebase-admin/lib/app";
 
 import {
   cancelOrganizationInvitation,
-} from "../functions/src/organization-invitation-cancellation";
+} from "../../functions/src/organization-invitation-cancellation";
 
 describe(
   "Zebron Organization Invitation Cancellation",

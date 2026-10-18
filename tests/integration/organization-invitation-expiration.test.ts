@@ -18,7 +18,7 @@ import {
 
 import {
   expirePendingOrganizationInvitations,
-} from "../functions/src/organization-invitation-expiration";
+} from "../../functions/src/organization-invitation-expiration";
 
 import fs from "node:fs";
 

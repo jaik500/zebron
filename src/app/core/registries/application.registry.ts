@@ -2,7 +2,11 @@ import {
   ApplicationCategory,
   ApplicationDefinition,
 } from '../models/application-definition.model';
-import { Permission, PERMISSIONS } from '../models/permission.model';
+
+import {
+  Permission,
+  PERMISSIONS,
+} from '../models/permission.model';
 
 /**
  * Canonical application catalog for the Zebron platform.
@@ -165,6 +169,7 @@ export const APPLICATION_DEFINITIONS: ApplicationDefinition[] = [
     ],
     features: [],
     implementationKey: 'test-center',
+
     version: 1,
     enabled: true,
   },
@@ -384,7 +389,7 @@ export const APPLICATION_DEFINITIONS: ApplicationDefinition[] = [
     version: 1,
     enabled: false,
   },
-] as const;
+];
 
 /**
  * Strongly typed application ID.
@@ -533,6 +538,7 @@ export function getApplicationsByPermission(
  */
 export function validateApplicationRegistry(): string[] {
   const errors: string[] = [];
+
   const ids = new Set<string>();
   const keys = new Set<string>();
 

@@ -25,9 +25,9 @@ import {
   deleteApp,
   getApps,
   initializeApp,
-} from '../functions/node_modules/firebase-admin/lib/app';
+} from '../../functions/node_modules/firebase-admin/lib/app';
 
-import { acceptOrganizationInvitation } from '../functions/src/organization-invitation-acceptance';
+import { acceptOrganizationInvitation } from '../../functions/src/organization-invitation-acceptance';
 
 describe('Zebron Organization Invitation Acceptance', () => {
   let testEnv: RulesTestEnvironment;

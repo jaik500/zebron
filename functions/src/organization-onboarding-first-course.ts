@@ -1,8 +1,19 @@
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {
+  onCall,
+  HttpsError,
+} from "firebase-functions/v2/https";
+
 import {
   FieldValue,
   getFirestore,
 } from "firebase-admin/firestore";
+
+import {
+  advanceTestCenterSetup,
+  assertCurrentTestCenterSetupStep,
+  initializeTestCenterSetup,
+  type TestCenterSetupState,
+} from "./test-center-setup-transition";
 
 type FirstCourseInput = {
   organizationId: string;
@@ -16,14 +27,17 @@ type FirstCourseInput = {
   active: boolean;
 };
 
-/**
- * Validates that a value is a string within the specified length range.
- *
- * @param value Value to validate.
- * @param minLength Minimum allowed string length.
- * @param maxLength Maximum allowed string length.
- * @returns True when the value is a string within the specified length range.
- */
+type EntitlementOnboarding = Partial<TestCenterSetupState> & {
+  steps?: unknown;
+};
+
+type TestCenterEntitlement = {
+  applicationId?: string;
+  organizationId?: string;
+  status?: string;
+  onboarding?: EntitlementOnboarding;
+};
+
 function isValidString(
   value: unknown,
   minLength = 1,
@@ -36,13 +50,6 @@ function isValidString(
   );
 }
 
-/**
- * Normalizes a course slug for consistent storage and lookup.
- *
- * @param value Slug value to normalize.
- * @returns Normalized lowercase slug containing only alphanumeric characters
- * and hyphens.
- */
 function normalizeSlug(value: string): string {
   return value
     .trim()
@@ -59,11 +66,9 @@ export const completeOrganizationFirstCourse = onCall(
   async (request) => {
     const db = getFirestore();
 
-    /*
-     * ----------------------------------------------------------------------
-     * AUTHENTICATION
-     * ----------------------------------------------------------------------
-     */
+    // ---------------------------------------------------------
+    // Authentication
+    // ---------------------------------------------------------
 
     if (!request.auth) {
       throw new HttpsError(
@@ -73,14 +78,11 @@ export const completeOrganizationFirstCourse = onCall(
     }
 
     const callerUid = request.auth.uid;
-
-    /*
-     * ----------------------------------------------------------------------
-     * INPUT VALIDATION
-     * ----------------------------------------------------------------------
-     */
-
     const data = request.data as Partial<FirstCourseInput>;
+
+    // ---------------------------------------------------------
+    // Input validation
+    // ---------------------------------------------------------
 
     const organizationId = data.organizationId;
     const name = data.name;
@@ -172,6 +174,7 @@ export const completeOrganizationFirstCourse = onCall(
       );
     }
 
+    const normalizedOrganizationId = organizationId.trim();
     const normalizedSlug = normalizeSlug(slug);
 
     if (!normalizedSlug) {
@@ -181,307 +184,298 @@ export const completeOrganizationFirstCourse = onCall(
       );
     }
 
-    /*
-     * ----------------------------------------------------------------------
-     * TRANSACTION
-     * ----------------------------------------------------------------------
-     */
+    // ---------------------------------------------------------
+    // Firestore references
+    // ---------------------------------------------------------
 
-    const result = await db.runTransaction(
-      async (transaction) => {
-        /*
-         * --------------------------------------------------------------
-         * ORGANIZATION
-         * --------------------------------------------------------------
-         */
+    const organizationRef = db
+      .collection("organizations")
+      .doc(normalizedOrganizationId);
 
-        const organizationRef = db
-          .collection("organizations")
-          .doc(organizationId);
+    const membershipRef = db
+      .collection("organizationMemberships")
+      .doc(`${callerUid}_${normalizedOrganizationId}`);
 
-        const organizationSnapshot =
-          await transaction.get(organizationRef);
+    const entitlementRef = organizationRef
+      .collection("applications")
+      .doc("test-center");
 
-        if (!organizationSnapshot.exists) {
-          throw new HttpsError(
-            "not-found",
-            "Organization was not found.",
-          );
-        }
+    // ---------------------------------------------------------
+    // Transaction
+    // ---------------------------------------------------------
 
-        /*
-         * --------------------------------------------------------------
-         * MEMBERSHIP
-         * --------------------------------------------------------------
-         */
+    const result = await db.runTransaction(async (transaction) => {
+      // Organization must exist.
+      const organizationSnapshot =
+        await transaction.get(organizationRef);
 
-        const membershipRef = db
-          .collection("organizationMemberships")
-          .doc(`${callerUid}_${organizationId}`);
-
-        const membershipSnapshot =
-          await transaction.get(membershipRef);
-
-        if (!membershipSnapshot.exists) {
-          throw new HttpsError(
-            "permission-denied",
-            "You are not a member of this organization.",
-          );
-        }
-
-        const membership = membershipSnapshot.data();
-
-        if (membership?.active !== true) {
-          throw new HttpsError(
-            "permission-denied",
-            "Your organization membership is not active.",
-          );
-        }
-
-        const role = membership.role;
-
-        if (
-          role !== "org_owner" &&
-          role !== "org_admin"
-        ) {
-          throw new HttpsError(
-            "permission-denied",
-            "Only an organization owner or administrator " +
-            "can complete onboarding.",
-          );
-        }
-
-        /*
-         * --------------------------------------------------------------
-         * ONBOARDING STATE
-         * --------------------------------------------------------------
-         */
-
-        const onboardingRef = db
-          .collection("organizationOnboarding")
-          .doc(organizationId);
-
-        const onboardingSnapshot =
-          await transaction.get(onboardingRef);
-
-        if (!onboardingSnapshot.exists) {
-          throw new HttpsError(
-            "failed-precondition",
-            "Organization onboarding has not been initialized.",
-          );
-        }
-
-        const onboarding = onboardingSnapshot.data();
-
-        if (onboarding?.status !== "in_progress") {
-          throw new HttpsError(
-            "failed-precondition",
-            "Organization onboarding is not in progress.",
-          );
-        }
-
-        if (onboarding?.currentStep !== "first_course") {
-          throw new HttpsError(
-            "failed-precondition",
-            "The current onboarding step is " +
-            `"${onboarding?.currentStep ?? "unknown"}", ` +
-            "not \"first_course\".",
-          );
-        }
-
-        /*
-         * --------------------------------------------------------------
-         * FIRST PROGRAM
-         * --------------------------------------------------------------
-         */
-
-        const firstProgramId = onboarding?.firstProgramId;
-
-        if (
-          typeof firstProgramId !== "string" ||
-          !firstProgramId.trim()
-        ) {
-          throw new HttpsError(
-            "failed-precondition",
-            "The first program has not been configured.",
-          );
-        }
-
-        const programRef = db
-          .collection("testPrograms")
-          .doc(firstProgramId);
-
-        const programSnapshot =
-          await transaction.get(programRef);
-
-        if (!programSnapshot.exists) {
-          throw new HttpsError(
-            "not-found",
-            "The first program could not be found.",
-          );
-        }
-
-        const program = programSnapshot.data();
-
-        if (program?.organizationId !== organizationId) {
-          throw new HttpsError(
-            "permission-denied",
-            "The first program does not belong to this organization.",
-          );
-        }
-
-        /*
-         * --------------------------------------------------------------
-         * PREVENT DUPLICATE FIRST COURSE
-         * --------------------------------------------------------------
-         */
-
-        const existingCourseId = onboarding?.firstCourseId;
-
-        if (
-          typeof existingCourseId === "string" &&
-          existingCourseId.length > 0
-        ) {
-          throw new HttpsError(
-            "already-exists",
-            "The organization already has a first course configured.",
-          );
-        }
-
-        /*
-         * --------------------------------------------------------------
-         * COURSE DOCUMENT
-         * --------------------------------------------------------------
-         */
-
-        const courseRef = db
-          .collection("testCourses")
-          .doc();
-
-        /*
-         * The course slug must be unique within the organization.
-         */
-
-        const existingCourseQuery = db
-          .collection("testCourses")
-          .where(
-            "organizationId",
-            "==",
-            organizationId,
-          )
-          .where(
-            "slug",
-            "==",
-            normalizedSlug,
-          )
-          .limit(1);
-
-        const existingCourseSnapshot =
-          await transaction.get(existingCourseQuery);
-
-        if (!existingCourseSnapshot.empty) {
-          throw new HttpsError(
-            "already-exists",
-            `A course with the slug "${normalizedSlug}" ` +
-            "already exists in this organization.",
-          );
-        }
-
-        /*
-         * --------------------------------------------------------------
-         * CREATE COURSE
-         * --------------------------------------------------------------
-         */
-
-        const now = FieldValue.serverTimestamp();
-
-        transaction.create(
-          courseRef,
-          {
-            organizationId,
-            scope: "organization",
-            accessType: "organization-members",
-            programId: firstProgramId,
-            name: name.trim(),
-            slug: normalizedSlug,
-            description: description.trim(),
-            provider:
-              typeof provider === "string" &&
-              provider.trim() ?
-                provider.trim() :
-                null,
-            type,
-            certificationCode:
-              typeof certificationCode === "string" &&
-              certificationCode.trim() ?
-                certificationCode.trim() :
-                null,
-            imageUrl:
-              typeof imageUrl === "string" &&
-              imageUrl.trim() ?
-                imageUrl.trim() :
-                null,
-            active,
-            questionCount: 0,
-            createdBy: callerUid,
-            createdAt: now,
-            updatedAt: now,
-          },
+      if (!organizationSnapshot.exists) {
+        throw new HttpsError(
+          "not-found",
+          "Organization was not found.",
         );
+      }
 
-        /*
-         * --------------------------------------------------------------
-         * ADVANCE ONBOARDING
-         * --------------------------------------------------------------
-         */
+      // Membership must exist and be active.
+      const membershipSnapshot =
+        await transaction.get(membershipRef);
 
-        const existingCompletedSteps =
-          Array.isArray(onboarding?.completedSteps) ?
-            onboarding.completedSteps.filter(
-              (step: unknown): step is string =>
-                typeof step === "string",
-            ) :
-            [];
-
-        const completedSteps = Array.from(
-          new Set([
-            ...existingCompletedSteps,
-            "first_course",
-          ]),
+      if (!membershipSnapshot.exists) {
+        throw new HttpsError(
+          "permission-denied",
+          "You are not a member of this organization.",
         );
+      }
 
-        transaction.update(
-          onboardingRef,
-          {
-            firstCourseId: courseRef.id,
-            completedSteps,
-            currentStep: "first_topic",
-            status: "in_progress",
-            completedAt: null,
-            updatedAt: now,
-          },
+      const membership = membershipSnapshot.data();
+
+      if (membership?.active !== true) {
+        throw new HttpsError(
+          "permission-denied",
+          "Your organization membership is not active.",
         );
+      }
 
-        return {
-          courseId: courseRef.id,
-          organizationId,
-          programId: firstProgramId,
-          name: name.trim(),
-          slug: normalizedSlug,
-          description: description.trim(),
-          provider:
-            typeof provider === "string" &&
-            provider.trim() ?
-              provider.trim() :
-              null,
-          type,
-          active,
-          questionCount: 0,
-          currentStep: "first_topic",
-          completedSteps,
-        };
-      },
-    );
+      // Only owners and administrators may create the first course.
+      if (
+        membership.role !== "org_owner" &&
+        membership.role !== "org_admin"
+      ) {
+        throw new HttpsError(
+          "permission-denied",
+          "Only an organization owner or administrator can create the first course.",
+        );
+      }
+
+      // -------------------------------------------------------
+      // Test Center entitlement
+      // -------------------------------------------------------
+
+      const entitlementSnapshot =
+        await transaction.get(entitlementRef);
+
+      if (!entitlementSnapshot.exists) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The organization does not have a Test Center entitlement.",
+        );
+      }
+
+      const entitlement =
+        entitlementSnapshot.data() as TestCenterEntitlement;
+
+      if (
+        entitlement.applicationId !== undefined &&
+        entitlement.applicationId !== "test-center"
+      ) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The application entitlement is invalid.",
+        );
+      }
+
+      if (
+        entitlement.organizationId !== undefined &&
+        entitlement.organizationId !== normalizedOrganizationId
+      ) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The application entitlement belongs to another organization.",
+        );
+      }
+
+      // The entitlement can be selected while setup is in progress.
+      // Do not require status === "active" here.
+      const persistedOnboarding = entitlement.onboarding;
+
+      if (
+        !persistedOnboarding ||
+        !Array.isArray(persistedOnboarding.steps)
+      ) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Test Center setup has not been initialized.",
+        );
+      }
+
+      // Recalculate the current step from trusted configured steps
+      // and persisted completed steps instead of trusting a stale
+      // currentStep value.
+      const setup = initializeTestCenterSetup(
+        persistedOnboarding.steps,
+        persistedOnboarding,
+      );
+
+      assertCurrentTestCenterSetupStep(
+        setup,
+        "first_course",
+      );
+
+      // -------------------------------------------------------
+      // First program validation
+      // -------------------------------------------------------
+
+      const firstProgramId = setup.firstProgramId;
+
+      if (
+        typeof firstProgramId !== "string" ||
+        !firstProgramId.trim()
+      ) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The first program has not been configured.",
+        );
+      }
+
+      const programRef = db
+        .collection("testPrograms")
+        .doc(firstProgramId);
+
+      const programSnapshot =
+        await transaction.get(programRef);
+
+      if (!programSnapshot.exists) {
+        throw new HttpsError(
+          "not-found",
+          "The first program could not be found.",
+        );
+      }
+
+      const program = programSnapshot.data();
+
+      if (
+        program?.organizationId !== normalizedOrganizationId
+      ) {
+        throw new HttpsError(
+          "permission-denied",
+          "The first program does not belong to this organization.",
+        );
+      }
+
+      // -------------------------------------------------------
+      // Duplicate first-course protection
+      // -------------------------------------------------------
+
+      if (
+        typeof setup.firstCourseId === "string" &&
+        setup.firstCourseId.trim()
+      ) {
+        throw new HttpsError(
+          "already-exists",
+          "The organization already has a first course configured.",
+        );
+      }
+
+      // -------------------------------------------------------
+      // Course slug uniqueness within the organization
+      // -------------------------------------------------------
+
+      const existingCourseQuery = db
+        .collection("testCourses")
+        .where("organizationId", "==", normalizedOrganizationId)
+        .where("slug", "==", normalizedSlug)
+        .limit(1);
+
+      const existingCourseSnapshot =
+        await transaction.get(existingCourseQuery);
+
+      if (!existingCourseSnapshot.empty) {
+        throw new HttpsError(
+          "already-exists",
+          `A course with the slug "${normalizedSlug}" already exists in this organization.`,
+        );
+      }
+
+      // -------------------------------------------------------
+      // Create course
+      // -------------------------------------------------------
+
+      const courseRef = db
+        .collection("testCourses")
+        .doc();
+
+      const now = FieldValue.serverTimestamp();
+
+      const course = {
+        organizationId: normalizedOrganizationId,
+        scope: "organization",
+        accessType: "organization-members",
+        programId: firstProgramId,
+        name: name.trim(),
+        slug: normalizedSlug,
+        description: description.trim(),
+        provider:
+          typeof provider === "string" && provider.trim()
+            ? provider.trim()
+            : null,
+        type,
+        certificationCode:
+          typeof certificationCode === "string" &&
+          certificationCode.trim()
+            ? certificationCode.trim()
+            : null,
+        imageUrl:
+          typeof imageUrl === "string" && imageUrl.trim()
+            ? imageUrl.trim()
+            : null,
+        active,
+        questionCount: 0,
+        createdBy: callerUid,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      // -------------------------------------------------------
+      // Advance Test Center setup
+      // -------------------------------------------------------
+
+      const transition = advanceTestCenterSetup(
+        setup,
+        "first_course",
+      );
+
+      const updatedOnboarding = {
+        ...setup,
+        steps: [...setup.steps],
+        firstCourseId: courseRef.id,
+        completedSteps: transition.completedSteps,
+        currentStep: transition.currentStep,
+        status: transition.status,
+        startedAt: setup.startedAt ?? now,
+        completedAt: transition.isComplete ? now : null,
+        updatedAt: now,
+      };
+
+      // All transaction reads have completed before these writes.
+      transaction.create(courseRef, course);
+
+      transaction.update(entitlementRef, {
+        onboarding: updatedOnboarding,
+        updatedAt: now,
+      });
+
+      return {
+        courseId: courseRef.id,
+        organizationId: normalizedOrganizationId,
+        programId: firstProgramId,
+        name: name.trim(),
+        slug: normalizedSlug,
+        description: description.trim(),
+        provider:
+          typeof provider === "string" && provider.trim()
+            ? provider.trim()
+            : null,
+        type,
+        active,
+        questionCount: 0,
+        onboarding: updatedOnboarding,
+        isComplete: transition.isComplete,
+      };
+    });
+
+    // ---------------------------------------------------------
+    // Response
+    // ---------------------------------------------------------
 
     return {
       success: true,
@@ -499,9 +493,10 @@ export const completeOrganizationFirstCourse = onCall(
       },
       onboarding: {
         firstCourseId: result.courseId,
-        currentStep: result.currentStep,
-        completedSteps: result.completedSteps,
-        status: "in_progress",
+        currentStep: result.onboarding.currentStep,
+        completedSteps: result.onboarding.completedSteps,
+        status: result.onboarding.status,
+        isComplete: result.isComplete,
       },
     };
   },

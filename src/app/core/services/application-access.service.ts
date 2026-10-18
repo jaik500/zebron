@@ -4,10 +4,9 @@ import { ApplicationDefinition } from '../models/application-definition.model';
 import { OrganizationApplication } from '../models/organization-application.model';
 
 import { ApplicationRegistryService } from './application-registry.service';
-import { AuthorizationService } from './authorization.service';
 
-import { OrganizationApplicationRepository } from '../repositories/organization-application.repository';
 import {
+  OrganizationApplicationRepository,
   ORGANIZATION_APPLICATION_REPOSITORY,
 } from '../repositories/organization-application.repository';
 
@@ -26,20 +25,16 @@ export interface ApplicationAccessResult {
 
   application: ApplicationDefinition | null;
 
-  organizationApplication:
-    | OrganizationApplication
-    | null;
+  organizationApplication: OrganizationApplication | null;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class ApplicationAccessService {
-  private readonly applicationRegistry =
-    inject(ApplicationRegistryService);
-
-  private readonly authorization =
-    inject(AuthorizationService);
+  private readonly applicationRegistry = inject(
+    ApplicationRegistryService,
+  );
 
   private readonly organizationApplications =
     inject<OrganizationApplicationRepository>(
@@ -51,62 +46,40 @@ export class ApplicationAccessService {
   // ============================================================
 
   /**
-   * Determine whether a user can access an application.
+   * Checks whether an application is available to an organization.
    *
-   * Authorization chain:
+   * This service checks application availability and activation.
+   * It deliberately does not inject AuthorizationService.
    *
-   * Authenticated User
-   *        ↓
-   * Platform Role
-   *        +
-   * Organization Membership
-   *        ↓
-   * Effective Permissions
-   *        ↓
-   * Application exists and is enabled
-   *        ↓
-   * Organization application is active
-   *        ↓
-   * Required application permission
-   *        ↓
-   * ALLOW
+   * Authentication and organization access must be checked by
+   * their respective route guards.
    *
-   * The user's platform role is resolved internally by
-   * AuthorizationService from the persisted User profile.
-   *
-   * Callers never provide a platform role.
+   * Firestore Security Rules and Cloud Functions must independently
+   * enforce authorization for protected data and operations.
    */
   async checkAccess(
     userId: string,
     organizationId: string,
     applicationId: string,
   ): Promise<ApplicationAccessResult> {
-    // ----------------------------------------------------------
-    // INPUT VALIDATION
-    // ----------------------------------------------------------
-
     const normalizedUserId = userId.trim();
-    const normalizedOrganizationId =
-      organizationId.trim();
-    const normalizedApplicationId =
-      applicationId.trim();
+    const normalizedOrganizationId = organizationId.trim();
+    const normalizedApplicationId = applicationId.trim();
 
     if (!normalizedUserId) {
-      return {
-        allowed: false,
-        reason: 'membership-required',
-        application: null,
-        organizationApplication: null,
-      };
+      return this.deny(
+        'membership-required',
+        null,
+        null,
+      );
     }
 
     if (!normalizedApplicationId) {
-      return {
-        allowed: false,
-        reason: 'application-not-found',
-        application: null,
-        organizationApplication: null,
-      };
+      return this.deny(
+        'application-not-found',
+        null,
+        null,
+      );
     }
 
     // ----------------------------------------------------------
@@ -119,12 +92,11 @@ export class ApplicationAccessService {
       );
 
     if (!application) {
-      return {
-        allowed: false,
-        reason: 'application-not-found',
-        application: null,
-        organizationApplication: null,
-      };
+      return this.deny(
+        'application-not-found',
+        null,
+        null,
+      );
     }
 
     // ----------------------------------------------------------
@@ -132,221 +104,83 @@ export class ApplicationAccessService {
     // ----------------------------------------------------------
 
     if (!application.enabled) {
-      return {
-        allowed: false,
-        reason: 'application-disabled',
+      return this.deny(
+        'application-disabled',
         application,
-        organizationApplication: null,
-      };
+        null,
+      );
     }
 
     // ----------------------------------------------------------
     // PLATFORM APPLICATION
     // ----------------------------------------------------------
 
-    /**
-     * Applications that do not require an organization
-     * do not require an OrganizationApplication record.
-     *
-     * Examples include public/platform applications such
-     * as the tax calculator.
-     *
-     * If the application declares permissions, those
-     * permissions are evaluated against the user's effective
-     * platform permissions.
-     */
     if (!application.requiresOrganization) {
-      // No permission requirement.
-      if (application.permissions.length === 0) {
-        return {
-          allowed: true,
-          reason: 'allowed',
-          application,
-          organizationApplication: null,
-        };
-      }
-
-      /**
-       * Resolve permissions from the user's persisted
-       * platformRole.
-       */
-      const effectivePermissions =
-        await this.authorization
-          .getEffectivePermissionsForUser(
-            normalizedUserId,
-            undefined,
-          );
-
-      const hasPermission =
-        application.permissions.some(
-          (permission) =>
-            effectivePermissions.includes(permission),
-        );
-
-      if (!hasPermission) {
-        return {
-          allowed: false,
-          reason: 'permission-required',
-          application,
-          organizationApplication: null,
-        };
-      }
-
-      return {
-        allowed: true,
-        reason: 'allowed',
-        application,
-        organizationApplication: null,
-      };
+      return this.allow(application, null);
     }
 
     // ----------------------------------------------------------
     // ORGANIZATION CONTEXT
     // ----------------------------------------------------------
 
-    /**
-     * Organization applications require an organization
-     * context.
-     */
     if (!normalizedOrganizationId) {
-      return {
-        allowed: false,
-        reason: 'organization-required',
+      return this.deny(
+        'organization-required',
         application,
-        organizationApplication: null,
-      };
+        null,
+      );
     }
 
     // ----------------------------------------------------------
-    // ORGANIZATION APPLICATION
+    // ORGANIZATION APPLICATION ENTITLEMENT
     // ----------------------------------------------------------
 
-    /**
-     * The organization must have the application activated.
-     *
-     * Application authorization and application activation
-     * are separate concerns:
-     *
-     * OrganizationApplication
-     *        ↓
-     * status === active
-     *
-     * then:
-     *
-     * Effective Permissions
-     *        ↓
-     * required application permission
-     */
     const organizationApplication =
       await this.organizationApplications.getApplication(
         normalizedOrganizationId,
         normalizedApplicationId,
       );
 
-    if (
-      !organizationApplication ||
-      organizationApplication.status !== 'active'
-    ) {
-      return {
-        allowed: false,
-        reason: 'application-not-active',
+    if (!organizationApplication) {
+      return this.deny(
+        'application-not-active',
         application,
-        organizationApplication,
-      };
-    }
-
-    // ----------------------------------------------------------
-    // APPLICATION PERMISSIONS
-    // ----------------------------------------------------------
-
-    /**
-     * An activated application with no declared
-     * permissions does not require additional
-     * authorization.
-     */
-    if (application.permissions.length === 0) {
-      return {
-        allowed: true,
-        reason: 'allowed',
-        application,
-        organizationApplication,
-      };
-    }
-
-    // ----------------------------------------------------------
-    // EFFECTIVE PERMISSIONS
-    // ----------------------------------------------------------
-
-    /**
-     * Effective permissions combine:
-     *
-     * Platform Role
-     *        +
-     * Organization Membership Role
-     *
-     * The platform role is resolved internally from
-     * users/{userId}.
-     */
-    const effectivePermissions =
-      await this.authorization
-        .getEffectivePermissionsForUser(
-          normalizedUserId,
-          normalizedOrganizationId,
-        );
-
-    /**
-     * An application may declare multiple permissions.
-     *
-     * The user only needs one of the application's
-     * declared permissions to gain access.
-     */
-    const hasPermission =
-      application.permissions.some(
-        (permission) =>
-          effectivePermissions.includes(permission),
+        null,
       );
+    }
 
-    if (!hasPermission) {
-      return {
-        allowed: false,
-        reason: 'permission-required',
+    if (organizationApplication.status !== 'active') {
+      return this.deny(
+        'application-not-active',
         application,
         organizationApplication,
-      };
+      );
     }
 
     // ----------------------------------------------------------
-    // ALLOW
+    // ACCESS GRANTED
     // ----------------------------------------------------------
 
-    return {
-      allowed: true,
-      reason: 'allowed',
+    return this.allow(
       application,
       organizationApplication,
-    };
+    );
   }
 
   // ============================================================
   // SIMPLE ACCESS CHECK
   // ============================================================
 
-  /**
-   * Convenience method that returns only the access decision.
-   *
-   * The user's platform role is resolved internally.
-   */
   async canAccessApplication(
     userId: string,
     organizationId: string,
     applicationId: string,
   ): Promise<boolean> {
-    const result =
-      await this.checkAccess(
-        userId,
-        organizationId,
-        applicationId,
-      );
+    const result = await this.checkAccess(
+      userId,
+      organizationId,
+      applicationId,
+    );
 
     return result.allowed;
   }
@@ -356,21 +190,15 @@ export class ApplicationAccessService {
   // ============================================================
 
   /**
-   * Determine whether an application is currently active
-   * for an organization.
-   *
-   * This checks activation only. It does not perform
-   * authorization.
+   * Checks application activation only.
+   * This does not authenticate users or authorize operations.
    */
   async isApplicationActive(
     organizationId: string,
     applicationId: string,
   ): Promise<boolean> {
-    const normalizedOrganizationId =
-      organizationId.trim();
-
-    const normalizedApplicationId =
-      applicationId.trim();
+    const normalizedOrganizationId = organizationId.trim();
+    const normalizedApplicationId = applicationId.trim();
 
     if (
       !normalizedOrganizationId ||
@@ -392,19 +220,12 @@ export class ApplicationAccessService {
   // ORGANIZATION APPLICATION
   // ============================================================
 
-  /**
-   * Retrieve the application's tenant-specific
-   * activation record.
-   */
   async getOrganizationApplication(
     organizationId: string,
     applicationId: string,
   ): Promise<OrganizationApplication | null> {
-    const normalizedOrganizationId =
-      organizationId.trim();
-
-    const normalizedApplicationId =
-      applicationId.trim();
+    const normalizedOrganizationId = organizationId.trim();
+    const normalizedApplicationId = applicationId.trim();
 
     if (
       !normalizedOrganizationId ||
@@ -423,15 +244,10 @@ export class ApplicationAccessService {
   // APPLICATION DEFINITION
   // ============================================================
 
-  /**
-   * Retrieve the platform-level application definition
-   * from the application registry.
-   */
   getApplicationDefinition(
     applicationId: string,
   ): ApplicationDefinition | null {
-    const normalizedApplicationId =
-      applicationId.trim();
+    const normalizedApplicationId = applicationId.trim();
 
     if (!normalizedApplicationId) {
       return null;
@@ -440,5 +256,34 @@ export class ApplicationAccessService {
     return this.applicationRegistry.getById(
       normalizedApplicationId,
     );
+  }
+
+  // ============================================================
+  // RESULT HELPERS
+  // ============================================================
+
+  private allow(
+    application: ApplicationDefinition,
+    organizationApplication: OrganizationApplication | null,
+  ): ApplicationAccessResult {
+    return {
+      allowed: true,
+      reason: 'allowed',
+      application,
+      organizationApplication,
+    };
+  }
+
+  private deny(
+    reason: ApplicationAccessResult['reason'],
+    application: ApplicationDefinition | null,
+    organizationApplication: OrganizationApplication | null,
+  ): ApplicationAccessResult {
+    return {
+      allowed: false,
+      reason,
+      application,
+      organizationApplication,
+    };
   }
 }

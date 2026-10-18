@@ -13,7 +13,7 @@ import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 
 import { MatIconModule } from '@angular/material/icon';
 
-import { OrganizationOnboardingService } from '../../services/organization-onboarding.service';
+import { PartnerOrganizationOnboardingService } from '../../services/partner-organization-onboarding.service';
 
 @Component({
   selector: 'app-organization-invitation-acceptance',
@@ -1148,7 +1148,7 @@ export class OrganizationInvitationAcceptanceComponent implements OnInit {
 
   private readonly router = inject(Router);
 
-  private readonly onboardingService = inject(OrganizationOnboardingService);
+  private readonly onboardingService = inject(PartnerOrganizationOnboardingService);
 
   private readonly destroyRef = inject(DestroyRef);
 

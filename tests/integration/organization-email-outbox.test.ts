@@ -13,12 +13,12 @@ import {
   deleteApp,
   getApps,
   initializeApp,
-} from "../functions/node_modules/firebase-admin/lib/app";
+} from "../../functions/node_modules/firebase-admin/lib/app";
 
 import {
   getFirestore,
   Timestamp,
-} from "../functions/node_modules/firebase-admin/lib/firestore";
+} from "../../functions/node_modules/firebase-admin/lib/firestore";
 
 import {
   initializeTestEnvironment,
@@ -30,7 +30,7 @@ import fs from "node:fs";
 import {
   processOrganizationEmailOutbox,
   sendOrganizationEmailOutbox,
-} from "../functions/src/organization-email-outbox";
+} from "../../functions/src/organization-email-outbox";
 
 /* -------------------------------------------------------------------------- */
 /* Test configuration                                                         */

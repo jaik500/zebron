@@ -27,11 +27,11 @@ import {
   deleteApp,
   getApps,
   initializeApp,
-} from '../functions/node_modules/firebase-admin/lib/app';
+} from '../../functions/node_modules/firebase-admin/lib/app';
 
 import {
   createOrganizationInvitation,
-} from '../functions/src/organization-invitation-create';
+} from '../../functions/src/organization-invitation-create';
 
 describe('Zebron Organization Invitation Creation', () => {
   let testEnv: RulesTestEnvironment;

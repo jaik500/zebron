@@ -12,7 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { HotToastService } from '@ngxpert/hot-toast';
 
-import { OrganizationStore } from '../../../organizations/stores/organization.store';
+import { OrganizationContextStore  } from '../../../organizations/stores/organization-context.store';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import { PartnerSettingsService } from '../../services/partner-settings.service';
 import {
@@ -913,7 +913,7 @@ interface SettingsSection {
 })
 export class PartnerSettingsComponent implements OnInit {
  protected readonly organizationStore =
-  inject(OrganizationStore);
+  inject(OrganizationContextStore );
 
   private readonly settingsService =
     inject(PartnerSettingsService);

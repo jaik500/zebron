@@ -5,14 +5,14 @@ import {
 } from '@angular/core';
 
 import { Organization } from '../../core/models/organization.model';
-import { OrganizationStore } from '../../features/organizations/stores/organization.store';
+import { OrganizationContextStore  } from '../../features/organizations/stores/organization-context.store';
 
 @Injectable({
   providedIn: 'root',
 })
 export class OrganizationContextService {
   private readonly organizationStore =
-    inject(OrganizationStore);
+    inject(OrganizationContextStore );
 
   // ============================================================
   // CURRENT ORGANIZATION

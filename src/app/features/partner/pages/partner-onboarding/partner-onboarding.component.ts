@@ -21,8 +21,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { MatRadioModule } from '@angular/material/radio';
-
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
 
 import { Organization } from '../../../../core/models/organization.model';
@@ -33,10 +31,9 @@ import {
 } from '../../../../core/models/organization-onboarding.model';
 
 import {
-  OrganizationOnboardingFirstQuestionDifficulty,
   OrganizationOnboardingProfileInput,
-  OrganizationOnboardingService,
-} from '../../services/organization-onboarding.service';
+  PartnerOrganizationOnboardingService,
+} from '../../services/partner-organization-onboarding.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import {
   OrganizationInvitation,
@@ -47,16 +44,12 @@ import { OrganizationInvitationService } from '../../services/organization-invit
 import { MatSelectModule } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
 
-import { TestCourseType } from '../../../test-center/models/test-course.model';
-
 interface OnboardingStep {
   key: OrganizationOnboardingStep;
   label: string;
   description: string;
   icon: string;
 }
-
-
 
 @Component({
   selector: 'app-partner-onboarding',
@@ -75,7 +68,6 @@ interface OnboardingStep {
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatSelectModule,
-    MatRadioModule,
   ],
   template: `
     <div class="onboarding-page">
@@ -180,7 +172,91 @@ interface OnboardingStep {
         <!-- =======================================================
              ONBOARDING CONTENT
              ======================================================= -->
-        @else if (onboarding()) {
+        @else if (onboarding() && showReviewPage()) {
+          <section class="state-card onboarding-review-card">
+            <div class="state-content">
+              <div class="state-icon success-icon">
+                <mat-icon>task_alt</mat-icon>
+              </div>
+
+              <h2>Review your organization setup</h2>
+
+              <p>
+                The configuration has been submitted and your organization's onboarding is complete.
+                Review the details below before continuing to your Partner Dashboard.
+              </p>
+
+              <div class="review-summary">
+                <div class="review-summary-row">
+                  <span>Organization</span>
+                  <strong>{{ organization()?.name || 'Your organization' }}</strong>
+                </div>
+                <div class="review-summary-row">
+                  <span>Onboarding status</span>
+                  <strong>Completed</strong>
+                </div>
+                <div class="review-summary-row">
+                  <span>Setup steps</span>
+                  <strong>4 of 4 completed</strong>
+                </div>
+                <div class="review-summary-row">
+                  <span>Default member role</span>
+                  <strong>{{ configuration.defaultMemberRole }}</strong>
+                </div>
+                <div class="review-summary-row">
+                  <span>Self-registration</span>
+                  <strong>{{
+                    configuration.allowSelfRegistration ? 'Enabled' : 'Disabled'
+                  }}</strong>
+                </div>
+                <div class="review-summary-row">
+                  <span>Administrator notifications</span>
+                  <strong>{{ configuration.adminNotifications ? 'Enabled' : 'Disabled' }}</strong>
+                </div>
+              </div>
+
+              <div class="review-branding">
+                <span>Organization branding</span>
+                <div class="review-color-row">
+                  <span
+                    class="review-color-swatch"
+                    [style.backgroundColor]="configuration.primaryColor"
+                  ></span>
+                  <span>Primary: {{ configuration.primaryColor }}</span>
+                </div>
+                <div class="review-color-row">
+                  <span
+                    class="review-color-swatch"
+                    [style.backgroundColor]="configuration.secondaryColor"
+                  ></span>
+                  <span>Secondary: {{ configuration.secondaryColor }}</span>
+                </div>
+              </div>
+
+              <div class="form-actions review-actions">
+                <button
+                  type="button"
+                  mat-stroked-button
+                  class="secondary-button"
+                  (click)="editOrganizationSetup()"
+                >
+                  <mat-icon>edit</mat-icon>
+                  <span>Edit Setup</span>
+                </button>
+
+                <button
+                  type="button"
+                  mat-flat-button
+                  class="primary-button save-button"
+                  (click)="goToPartnerDashboard()"
+                >
+                  <span>Go to Partner Dashboard</span>
+                  <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+                </button>
+              </div>
+            </div>
+          </section>
+        } @else if (onboarding()) {
           <!-- =====================================================
                PROGRESS CARD
                ===================================================== -->
@@ -212,11 +288,19 @@ interface OnboardingStep {
             <div class="progress-body">
               <div class="steps-grid">
                 @for (step of steps; track step.key; let index = $index) {
-                  <div
+                  <button
+                    type="button"
                     class="step-card"
                     [class.step-current]="isCurrentStep(step.key)"
                     [class.step-completed]="isStepCompleted(step.key)"
                     [class.step-upcoming]="!isCurrentStep(step.key) && !isStepCompleted(step.key)"
+                    [class.step-reviewing]="reviewingStep() === step.key"
+                    [disabled]="!isStepCompleted(step.key)"
+                    [attr.aria-label]="
+                      isStepCompleted(step.key) ? 'Review ' + step.label : step.label
+                    "
+                    [attr.aria-current]="isCurrentStep(step.key) ? 'step' : null"
+                    (click)="reviewCompletedStep(step.key)"
                   >
                     <div class="step-content">
                       <!-- Step title -->
@@ -250,7 +334,7 @@ interface OnboardingStep {
                         }
                       </div>
                     </div>
-                  </div>
+                  </button>
                 }
               </div>
             </div>
@@ -259,24 +343,30 @@ interface OnboardingStep {
           <!-- =====================================================
                MAIN FORM CARD
                ===================================================== -->
-          <section class="form-card">
+          <section class="form-card" [class.reviewing-step]="isReviewingCompletedStep()">
             <!-- Form header -->
             <div class="form-header">
               <div class="form-step-indicator">
                 <div class="form-step-number">
-                  {{ currentStepNumber() }}
+                  {{ displayedStepNumber() }}
                 </div>
 
                 <div>
-                  <span class="form-step-label"> STEP {{ currentStepNumber() }} </span>
+                  <span class="form-step-label"> STEP {{ displayedStepNumber() }} </span>
 
                   <h2>
-                    {{ currentStepLabel() }}
+                    {{ displayedStepLabel() }}
                   </h2>
 
                   <p>
-                    @if (onboarding()?.currentStep === 'organization_profile') {
+                    @if (displayedStep() === 'organization_profile') {
                       Tell us about your organization.
+                    } @else if (displayedStep() === 'owner_profile') {
+                      Confirm the primary administrator's information.
+                    } @else if (displayedStep() === 'invite_members') {
+                      Confirm the primary administrator's information.
+                    } @else if (displayedStep() === 'configuration') {
+                      Set organization-wide access, notifications, and branding preferences.
                     } @else {
                       Complete this step to continue your organization's setup.
                     }
@@ -287,10 +377,40 @@ interface OnboardingStep {
 
             <div class="form-divider"></div>
 
+            @if (isReviewingCompletedStep()) {
+              <div class="review-banner" role="status">
+                <div class="review-banner-icon">
+                  <mat-icon>visibility</mat-icon>
+                </div>
+                <div class="review-banner-content">
+                  <strong>Reviewing completed step</strong>
+                  <span
+                    >This step is read-only. Your current onboarding progress is unchanged.</span
+                  >
+                </div>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="review-return-button"
+                  (click)="returnToCurrentStep()"
+                >
+                  <mat-icon>arrow_forward</mat-icon>
+                  Return to Current Step
+                </button>
+              </div>
+            }
+
+            @if (reviewError()) {
+              <div class="form-error review-error" role="alert">
+                <mat-icon>error_outline</mat-icon>
+                <span>{{ reviewError() }}</span>
+              </div>
+            }
+
             <!-- =================================================
                  STEP 1
                  ================================================= -->
-            @if (onboarding()?.currentStep === 'organization_profile') {
+            @if (displayedStep() === 'organization_profile') {
               <form
                 [formGroup]="organizationForm"
                 (ngSubmit)="saveOrganizationProfile()"
@@ -469,45 +589,26 @@ interface OnboardingStep {
                   </button>
 
                   <button
+                    type="button"
                     mat-flat-button
-                    type="submit"
                     class="primary-button save-button"
-                    [disabled]="saving() || organizationForm.invalid"
+                    [disabled]="saving() || organizationForm.invalid || isReviewingCompletedStep()"
+                    (click)="saveOrganizationProfile()"
                   >
                     @if (saving()) {
                       <mat-spinner diameter="19" class="button-spinner"></mat-spinner>
-
-                      <span> Saving... </span>
+                      <span>Saving...</span>
                     } @else {
-                      <span> Save & Continue </span>
+                      <span>Save &amp; Continue</span>
+                      <ng-container>
+                        <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+                      </ng-container>
                     }
-
-                    <!--
-                      Keep this mat-icon outside @if/@else.
-                      This prevents Angular Material NG8011.
-                    -->
-                    <mat-icon iconPositionEnd [class.icon-hidden]="saving()">
-                      arrow_forward
-                    </mat-icon>
                   </button>
                 </div>
               </form>
-            } @else if (onboarding()?.currentStep === 'owner_profile') {
+            } @else if (displayedStep() === 'owner_profile') {
               <section class="onboarding-form-section">
-                <div class="form-header">
-                  <div class="form-header-icon">
-                    <mat-icon> person </mat-icon>
-                  </div>
-
-                  <div>
-                    <div class="form-kicker">STEP 2</div>
-
-                    <h2>Owner Profile</h2>
-
-                    <p>Confirm the primary administrator's information.</p>
-                  </div>
-                </div>
-
                 @if (ownerSaveError()) {
                   <div class="form-error" role="alert">
                     <mat-icon> error_outline </mat-icon>
@@ -614,7 +715,8 @@ interface OnboardingStep {
                       mat-stroked-button
                       class="secondary-button"
                       (click)="goBack()"
-                      [disabled]="ownerSaving()"
+                      [disabled]="ownerSaving() || isReviewingCompletedStep()"
+                      (click)="goToPreviousStep()"
                     >
                       <mat-icon> arrow_back </mat-icon>
 
@@ -623,43 +725,27 @@ interface OnboardingStep {
 
                     <button
                       type="submit"
-                      mat-flat-button
-                      class="save-button"
+                      mat-stroked-button
+                      class="primary-button save-button"
                       [disabled]="ownerSaving() || ownerForm.invalid"
                     >
-                      <span class="button-content">
-                        @if (ownerSaving()) {
-                          <mat-spinner diameter="18" class="button-spinner"></mat-spinner>
-
-                          <span>Saving...</span>
-                        } @else {
-                          <mat-icon> menu_book </mat-icon>
-
-                          <span> Save & Continue </span>
-                        }
-                      </span>
+                      @if (ownerSaving()) {
+                        <mat-spinner diameter="18" class="button-spinner"></mat-spinner>
+                        <span>Saving...</span>
+                      } @else {
+                        <span>Save &amp; Continue</span>
+                        <ng-container>
+                          <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+                        </ng-container>
+                      }
                     </button>
                   </div>
                 </form>
               </section>
             }
 
-            @if (isCurrentStep('invite_members')) {
+            @if (displayedStep() === 'invite_members') {
               <section class="onboarding-form-section">
-                <div class="form-header">
-                  <div class="form-header-icon">
-                    <mat-icon>group_add</mat-icon>
-                  </div>
-
-                  <div>
-                    <div class="form-kicker">STEP 3</div>
-
-                    <h2>Invite Team Members</h2>
-
-                    <p>Invite people who should have access to your organization.</p>
-                  </div>
-                </div>
-
                 @if (invitationError()) {
                   <div class="form-error" role="alert">
                     <mat-icon> error_outline </mat-icon>
@@ -781,7 +867,7 @@ interface OnboardingStep {
                     mat-stroked-button
                     class="secondary-button"
                     [disabled]="invitationSaving()"
-                    (click)="goBack()"
+                    (click)="goToPreviousStep()"
                   >
                     <mat-icon> arrow_back </mat-icon>
 
@@ -801,8 +887,8 @@ interface OnboardingStep {
 
                     <button
                       type="button"
-                      mat-flat-button
-                      class="save-button"
+                       mat-stroked-button
+                      class="primary-button save-button"
                       [disabled]="invitationSaving()"
                       (click)="continueInviteMembers()"
                     >
@@ -815,81 +901,8 @@ interface OnboardingStep {
               </section>
             }
 
-            @if (onboarding()?.currentStep === 'configuration') {
+            @if (displayedStep() === 'configuration') {
               <section class="onboarding-form-section">
-                <div class="form-header">
-                  <div class="form-header-icon">
-                    <mat-icon>settings</mat-icon>
-                  </div>
-
-                  <div>
-                    <div class="form-kicker">STEP 4</div>
-                    <h2>Organization Configuration</h2>
-                    <p>
-                      Configure how your organization will use Zebron and how members
-                      will interact with courses and testing.
-                    </p>
-                  </div>
-                </div>
-
-                @if (configurationSaveError()) {
-                  <div class="form-error" role="alert">
-                    <mat-icon>error_outline</mat-icon>
-                    <span>{{ configurationSaveError() }}</span>
-                  </div>
-                }
-
-                <div class="form-section">
-                  <div class="section-heading">
-                    <div class="section-heading-icon">
-                      <mat-icon>quiz</mat-icon>
-                    </div>
-
-                    <div>
-                      <h3>Test Center</h3>
-                      <p>Control testing access for your organization.</p>
-                    </div>
-                  </div>
-
-                  <div class="configuration-options">
-                    <label class="configuration-option">
-                      <div class="configuration-option-content">
-                        <div class="configuration-option-title">
-                          Test Center Enabled
-                        </div>
-
-                        <div class="configuration-option-description">
-                          Enable testing features for your organization.
-                        </div>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="configuration.testCenterEnabled"
-                        [disabled]="configurationSaving()"
-                      />
-                    </label>
-
-                    <label class="configuration-option">
-                      <div class="configuration-option-content">
-                        <div class="configuration-option-title">
-                          Allow Member Testing
-                        </div>
-
-                        <div class="configuration-option-description">
-                          Allow organization members to take available tests.
-                        </div>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="configuration.allowMemberTesting"
-                        [disabled]="configurationSaving() || !configuration.testCenterEnabled"
-                      />
-                    </label>
-                  </div>
-                </div>
-
                 <div class="form-section">
                   <div class="section-heading">
                     <div class="section-heading-icon">
@@ -904,24 +917,6 @@ interface OnboardingStep {
 
                   <div class="field-grid">
                     <mat-form-field appearance="outline" class="organization-form-field">
-                      <mat-label>Course Visibility</mat-label>
-                      <mat-icon matPrefix>visibility</mat-icon>
-
-                      <mat-select
-                        [(ngModel)]="configuration.courseVisibility"
-                        [disabled]="configurationSaving()"
-                      >
-                        <mat-option value="all">All Members</mat-option>
-                        <mat-option value="members">Organization Members</mat-option>
-                        <mat-option value="admins">Administrators Only</mat-option>
-                      </mat-select>
-
-                      <mat-hint>
-                        Controls who can view organization courses.
-                      </mat-hint>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline" class="organization-form-field">
                       <mat-label>Default Member Role</mat-label>
                       <mat-icon matPrefix>person</mat-icon>
 
@@ -929,30 +924,20 @@ interface OnboardingStep {
                         [(ngModel)]="configuration.defaultMemberRole"
                         [disabled]="configurationSaving()"
                       >
-                        <mat-option value="org_member">
-                          Organization Member
-                        </mat-option>
+                        <mat-option value="org_member"> Organization Member </mat-option>
 
-                        <mat-option value="org_staff">
-                          Organization Staff
-                        </mat-option>
+                        <mat-option value="org_staff"> Organization Staff </mat-option>
 
-                        <mat-option value="org_manager">
-                          Organization Manager
-                        </mat-option>
+                        <mat-option value="org_manager"> Organization Manager </mat-option>
                       </mat-select>
 
-                      <mat-hint>
-                        Role assigned to newly registered members.
-                      </mat-hint>
+                      <mat-hint> Role assigned to newly registered members. </mat-hint>
                     </mat-form-field>
                   </div>
 
                   <label class="configuration-option">
                     <div class="configuration-option-content">
-                      <div class="configuration-option-title">
-                        Allow Self Registration
-                      </div>
+                      <div class="configuration-option-title">Allow Self Registration</div>
 
                       <div class="configuration-option-description">
                         Allow users to register themselves with the organization.
@@ -982,9 +967,7 @@ interface OnboardingStep {
                   <div class="configuration-options">
                     <label class="configuration-option">
                       <div class="configuration-option-content">
-                        <div class="configuration-option-title">
-                          Administrator Notifications
-                        </div>
+                        <div class="configuration-option-title">Administrator Notifications</div>
 
                         <div class="configuration-option-description">
                           Notify organization administrators about relevant activity.
@@ -994,24 +977,6 @@ interface OnboardingStep {
                       <input
                         type="checkbox"
                         [(ngModel)]="configuration.adminNotifications"
-                        [disabled]="configurationSaving()"
-                      />
-                    </label>
-
-                    <label class="configuration-option">
-                      <div class="configuration-option-content">
-                        <div class="configuration-option-title">
-                          Test Result Notifications
-                        </div>
-
-                        <div class="configuration-option-description">
-                          Send notifications when members complete tests.
-                        </div>
-                      </div>
-
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="configuration.testResultNotifications"
                         [disabled]="configurationSaving()"
                       />
                     </label>
@@ -1026,9 +991,7 @@ interface OnboardingStep {
 
                     <div>
                       <h3>Organization Branding</h3>
-                      <p>
-                        Choose the primary and secondary colors for your organization.
-                      </p>
+                      <p>Choose the primary and secondary colors for your organization.</p>
                     </div>
                   </div>
 
@@ -1067,13 +1030,14 @@ interface OnboardingStep {
                   </div>
                 </div>
 
+                <!-- Final onboarding step: save configuration and submit onboarding. -->
                 <div class="form-actions">
                   <button
                     type="button"
                     mat-stroked-button
                     class="secondary-button"
-                    [disabled]="configurationSaving()"
-                    (click)="goBack()"
+                    [disabled]="configurationSaving() || isReviewingCompletedStep()"
+                    (click)="goToPreviousStep()"
                   >
                     <mat-icon>arrow_back</mat-icon>
                     Back
@@ -1081,1064 +1045,24 @@ interface OnboardingStep {
 
                   <button
                     type="button"
-                    mat-flat-button
-                    class="primary-button save-button"
-                    [disabled]="configurationSaving()"
+                    mat-stroked-button
+                      class="primary-button save-button"
+                    [disabled]="configurationSaving() || isReviewingCompletedStep()"
                     (click)="saveConfiguration()"
                   >
                     @if (configurationSaving()) {
-                      <mat-spinner
-                        diameter="19"
-                        class="button-spinner"
-                      ></mat-spinner>
-                      <span>Saving...</span>
+                      <mat-spinner diameter="19" class="button-spinner text-white"></mat-spinner>
+                      <span>Submitting...</span>
                     } @else {
-                      <span>Save & Continue</span>
+                      <span>Submit</span>
+                      <ng-container>
+                        <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+                      </ng-container>
                     }
-
-                    <mat-icon
-                      iconPositionEnd
-                      [class.icon-hidden]="configurationSaving()"
-                    >
-                      arrow_forward
-                    </mat-icon>
                   </button>
                 </div>
               </section>
             }
-
-            @if (onboarding()?.currentStep === 'first_program') {
-              <section class="onboarding-form-section">
-                <div class="form-header">
-                  <div class="form-header-icon">
-                    <mat-icon>school</mat-icon>
-                  </div>
-
-                  <div>
-                    <div class="form-kicker">STEP 5</div>
-
-                    <h2>First Program</h2>
-
-                    <p>Create the first program your organization will use in the Test Center.</p>
-                  </div>
-                </div>
-
-                @if (firstProgramSaveError()) {
-                  <div class="form-error" role="alert">
-                    <mat-icon>error_outline</mat-icon>
-
-                    <span>
-                      {{ firstProgramSaveError() }}
-                    </span>
-                  </div>
-                }
-
-                <form
-                  [formGroup]="firstProgramForm"
-                  class="organization-form"
-                  (ngSubmit)="saveFirstProgram()"
-                >
-                  <div class="form-section">
-                    <div class="section-heading">
-                      <div class="section-heading-icon">
-                        <mat-icon>school</mat-icon>
-                      </div>
-
-                      <div>
-                        <h3>Program Information</h3>
-
-                        <p>Define the first learning program for your organization.</p>
-                      </div>
-                    </div>
-
-                    <div class="field-grid">
-                      <!-- Program Name -->
-                      <mat-form-field appearance="outline" class="organization-form-field">
-                        <mat-label>Program Name</mat-label>
-
-                        <mat-icon matPrefix> school </mat-icon>
-
-                        <input
-                          matInput
-                          formControlName="name"
-                          autocomplete="off"
-                          
-                        />
-
-                        @if (firstProgramForm.controls.name.hasError('required')) {
-                          <mat-error> Program name is required. </mat-error>
-                        }
-
-                        @if (firstProgramForm.controls.name.hasError('maxlength')) {
-                          <mat-error> Program name cannot exceed 150 characters. </mat-error>
-                        }
-                      </mat-form-field>
-
-                      <!-- Program Slug -->
-                      <mat-form-field appearance="outline" class="organization-form-field">
-                        <mat-label>Program Slug</mat-label>
-
-                        <mat-icon matPrefix> link </mat-icon>
-
-                        <input
-                          matInput
-                          formControlName="slug"
-                          autocomplete="off"
-                          readonly
-                        />
-
-                        <mat-hint>Automatically generated & Used as the program's unique identifier. </mat-hint>
-
-                        @if (firstProgramForm.controls.slug.hasError('required')) {
-                          <mat-error> Program slug is required. </mat-error>
-                        }
-
-                        @if (firstProgramForm.controls.slug.hasError('maxlength')) {
-                          <mat-error> Program slug cannot exceed 150 characters. </mat-error>
-                        }
-                      </mat-form-field>
-
-                      <!-- Description -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field full-field"
-                      >
-                        <mat-label>Description</mat-label>
-
-                        <mat-icon matPrefix> description </mat-icon>
-
-                        <textarea
-                          matInput
-                          formControlName="description"
-                          rows="5"
-                          
-                        ></textarea>
-
-                        <mat-hint> Optional. Maximum 2,000 characters. </mat-hint>
-
-                        @if (firstProgramForm.controls.description.hasError('maxlength')) {
-                          <mat-error> Description cannot exceed 2,000 characters. </mat-error>
-                        }
-                      </mat-form-field>
-                    </div>
-                  </div>
-
-                  <div class="form-actions">
-                    <button
-                      type="button"
-                      mat-stroked-button
-                      class="secondary-button"
-                      [disabled]="firstProgramSaving()"
-                      (click)="goBack()"
-                    >
-                      <mat-icon> arrow_back </mat-icon>
-
-                      Back
-                    </button>
-
-                    <button
-                      type="submit"
-                      mat-flat-button
-                      class="save-button"
-                      [disabled]="firstProgramSaving() || firstProgramForm.invalid"
-                    >
-                      <span class="button-content">
-                        @if (firstProgramSaving()) {
-                          <mat-spinner diameter="18" class="button-spinner"></mat-spinner>
-
-                          <span>Saving...</span>
-                        } @else {
-                          <span>Save & Continue</span>
-
-                          <mat-icon> arrow_forward </mat-icon>
-                        }
-                      </span>
-                    </button>
-                  </div>
-                </form>
-              </section>
-            }
-
-           @if (onboarding()?.currentStep === 'first_course') {
-              <section class="onboarding-form-section">
-                <div class="form-header">
-                  <div class="form-header-icon">
-                    <mat-icon>menu_book</mat-icon>
-                  </div>
-
-                  <div>
-                    <div class="form-kicker">STEP 6</div>
-
-                    <h2>First Course</h2>
-
-                    <p>
-                      Create the first course your organization will use within its first program.
-                    </p>
-                  </div>
-                </div>
-
-                @if (firstCourseSaveError()) {
-                  <div class="form-error" role="alert">
-                    <mat-icon>error_outline</mat-icon>
-
-                    <span>
-                      {{ firstCourseSaveError() }}
-                    </span>
-                  </div>
-                }
-
-                <form
-                  [formGroup]="firstCourseForm"
-                  class="organization-form"
-                  (ngSubmit)="saveFirstCourse()"
-                >
-                  <div class="form-section">
-                    <div class="section-heading">
-                      <div class="section-heading-icon">
-                        <mat-icon>school</mat-icon>
-                      </div>
-
-                      <div>
-                        <h3>Program Ready</h3>
-
-                        <p>
-                          Your first program has been created. The course you create here will be
-                          automatically linked to that program.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div class="first-course-program-card">
-                      <div class="first-course-program-icon">
-                        <mat-icon>check_circle</mat-icon>
-                      </div>
-
-                      <div class="first-course-program-content">
-                        <span class="first-course-program-label">
-                          FIRST PROGRAM
-                        </span>
-
-                        <strong>Program Created Successfully</strong>
-
-                        <p>
-                          Your first course will be added to this program automatically.
-                        </p>
-                      </div>
-
-                      <mat-icon class="first-course-program-check">
-                        check_circle
-                      </mat-icon>
-                    </div>
-                  </div>
-
-                  <div class="form-section">
-                    <div class="section-heading">
-                      <div class="section-heading-icon">
-                        <mat-icon>menu_book</mat-icon>
-                      </div>
-
-                      <div>
-                        <h3>Course Information</h3>
-
-                        <p>
-                          Provide the information members will see when they access this course.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div class="field-grid">
-                      <!-- Course Name -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field"
-                      >
-                        <mat-label>Course Name</mat-label>
-
-                        <mat-icon matPrefix>menu_book</mat-icon>
-
-                        <input
-                          matInput
-                          formControlName="name"
-                          autocomplete="off"
-                         
-                        />
-
-                        <mat-hint>
-                          Enter the name of the course.
-                        </mat-hint>
-
-                        @if (firstCourseForm.controls.name.hasError('required')) {
-                          <mat-error>
-                            Course name is required.
-                          </mat-error>
-                        }
-
-                        @if (firstCourseForm.controls.name.hasError('maxlength')) {
-                          <mat-error>
-                            Course name cannot exceed 150 characters.
-                          </mat-error>
-                        }
-                      </mat-form-field>
-
-                      <!-- Course Slug -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field"
-                      >
-                        <mat-label>Course Slug</mat-label>
-
-                        <mat-icon matPrefix>link</mat-icon>
-
-                        <input
-                          matInput
-                          formControlName="slug"
-                          autocomplete="off"
-                          readonly
-                          aria-readonly="true"
-                        />
-
-                        <mat-hint>
-                          Automatically generated from the course name.
-                        </mat-hint>
-
-                        @if (firstCourseForm.controls.slug.hasError('required')) {
-                          <mat-error>
-                            Course slug is required.
-                          </mat-error>
-                        }
-
-                        @if (firstCourseForm.controls.slug.hasError('maxlength')) {
-                          <mat-error>
-                            Course slug cannot exceed 150 characters.
-                          </mat-error>
-                        }
-                      </mat-form-field>
-
-                      <!-- Description -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field full-field"
-                      >
-                        <mat-label>Description</mat-label>
-
-                        <mat-icon matPrefix>description</mat-icon>
-
-                        <textarea
-                          matInput
-                          formControlName="description"
-                          rows="5"
-                          
-                        ></textarea>
-
-                        <mat-hint>
-                          Required. Maximum 2,000 characters.
-                        </mat-hint>
-
-                        @if (
-                          firstCourseForm.controls.description.hasError('required')
-                          && firstCourseForm.controls.description.touched
-                        ) {
-                          <mat-error>
-                            Course description is required.
-                          </mat-error>
-                        }
-
-                        @if (firstCourseForm.controls.description.hasError('maxlength')) {
-                          <mat-error>
-                            Description cannot exceed 2,000 characters.
-                          </mat-error>
-                        }
-                      </mat-form-field>
-
-                      <!-- Course Type -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field"
-                      >
-                        <mat-label>Course Type</mat-label>
-
-                        <mat-icon matPrefix>category</mat-icon>
-
-                        <mat-select formControlName="type">
-                          @for (courseType of courseTypes; track courseType.value) {
-                            <mat-option [value]="courseType.value">
-                              {{ courseType.label }}
-                            </mat-option>
-                          }
-                        </mat-select>
-
-                        <mat-hint>
-                          Select how this offering is classified.
-                        </mat-hint>
-                      </mat-form-field>
-
-                      <!-- Provider -->
-                      <mat-form-field
-                        appearance="outline"
-                        class="organization-form-field"
-                      >
-                        <mat-label>Provider</mat-label>
-
-                        <mat-icon matPrefix>business</mat-icon>
-
-                        <input
-                          matInput
-                          formControlName="provider"
-                          autocomplete="organization"
-                          
-                        />
-
-                        <mat-hint>
-                          Optional. Identify the course provider.
-                        </mat-hint>
-
-                        @if (firstCourseForm.controls.provider.hasError('maxlength')) {
-                          <mat-error>
-                            Provider cannot exceed 200 characters.
-                          </mat-error>
-                        }
-                      </mat-form-field>
-                    </div>
-                  </div>
-
-                  <div class="form-actions">
-                    <button
-                      type="button"
-                      mat-stroked-button
-                      class="secondary-button"
-                      [disabled]="firstCourseSaving()"
-                      (click)="goBack()"
-                    >
-                      <mat-icon>arrow_back</mat-icon>
-                      Back
-                    </button>
-
-                    <button
-                      type="submit"
-                      mat-flat-button
-                      class="save-button"
-                      [disabled]="firstCourseSaving() || firstCourseForm.invalid"
-                    >
-                      <span class="button-content">
-                        @if (firstCourseSaving()) {
-                          <mat-spinner
-                            diameter="18"
-                            class="button-spinner"
-                          ></mat-spinner>
-
-                          <span>Saving...</span>
-                        } @else {
-                          <span>Save & Continue</span>
-                        }
-
-                        <mat-icon
-                          iconPositionEnd
-                          [class.icon-hidden]="firstCourseSaving()"
-                        >
-                          arrow_forward
-                        </mat-icon>
-                      </span>
-                    </button>
-                  </div>
-                </form>
-              </section>
-            }
-
-       <!-- =================================================
-     STEP 7
-     ================================================= -->
-@if (onboarding()?.currentStep === 'first_topic') {
-  <section class="onboarding-form-section">
-    <div class="form-header">
-      <div class="form-header-icon">
-        <mat-icon>topic</mat-icon>
-      </div>
-
-      <div>
-        <div class="form-kicker">STEP 7</div>
-
-        <h2>First Topic</h2>
-
-        <p>
-          Create the first topic for your organization's first course.
-        </p>
-      </div>
-    </div>
-
-    @if (firstTopicSaveError()) {
-      <div class="form-error" role="alert">
-        <mat-icon>error_outline</mat-icon>
-
-        <span>
-          {{ firstTopicSaveError() }}
-        </span>
-      </div>
-    }
-
-    <form
-      [formGroup]="firstTopicForm"
-      class="organization-form"
-      (ngSubmit)="saveFirstTopic()"
-    >
-      <!-- COURSE CONTEXT -->
-      <div class="form-section">
-        <div class="section-heading">
-          <div class="section-heading-icon">
-            <mat-icon>menu_book</mat-icon>
-          </div>
-
-          <div>
-            <h3>Course</h3>
-
-            <p>
-              This topic will be created under your organization's
-              first course.
-            </p>
-          </div>
-        </div>
-
-        <div class="first-course-program-card">
-          <div class="first-course-program-icon">
-            <mat-icon>menu_book</mat-icon>
-          </div>
-
-          <div class="first-course-program-content">
-            <span class="first-course-program-label">
-              FIRST COURSE
-            </span>
-
-            <strong>
-              {{ firstCourseNameForTopic() }}
-            </strong>
-
-            <p>
-              The first topic will be associated with this course.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- TOPIC DETAILS -->
-      <div class="form-section">
-        <div class="section-heading">
-          <div class="section-heading-icon">
-            <mat-icon>topic</mat-icon>
-          </div>
-
-          <div>
-            <h3>Topic Details</h3>
-
-            <p>
-              Give the topic a clear name and description.
-            </p>
-          </div>
-        </div>
-
-        <!-- Topic Name -->
-        <mat-form-field
-          appearance="outline"
-          class="organization-form-field full-field"
-        >
-          <mat-label>Topic Name</mat-label>
-
-          <mat-icon matPrefix>topic</mat-icon>
-
-          <input
-            matInput
-            formControlName="name"
-            autocomplete="off"
-           
-          />
-
-          <mat-hint>
-            Use a clear name that describes the topic.
-          </mat-hint>
-
-          @if (firstTopicForm.controls.name.hasError('required')) {
-            <mat-error>
-              Topic name is required.
-            </mat-error>
-          }
-
-          @if (firstTopicForm.controls.name.hasError('maxlength')) {
-            <mat-error>
-              Topic name cannot exceed 150 characters.
-            </mat-error>
-          }
-        </mat-form-field>
-
-        <!-- Slug -->
-        <mat-form-field
-          appearance="outline"
-          class="organization-form-field full-field"
-        >
-          <mat-label>Topic Slug</mat-label>
-
-          <mat-icon matPrefix>link</mat-icon>
-
-          <input
-            matInput
-            formControlName="slug"
-            readonly
-            aria-readonly="true"
-          />
-
-          <mat-hint>
-            Automatically generated from the topic name.
-          </mat-hint>
-
-          @if (firstTopicForm.controls.slug.hasError('required')) {
-            <mat-error>
-              Topic slug is required.
-            </mat-error>
-          }
-
-          @if (firstTopicForm.controls.slug.hasError('maxlength')) {
-            <mat-error>
-              Topic slug cannot exceed 150 characters.
-            </mat-error>
-          }
-        </mat-form-field>
-
-        <!-- Description -->
-        <mat-form-field
-          appearance="outline"
-          class="organization-form-field full-field"
-        >
-          <mat-label>Description</mat-label>
-
-          <mat-icon matPrefix>description</mat-icon>
-
-          <textarea
-            matInput
-            formControlName="description"
-            rows="5"
-            
-          ></textarea>
-
-          <mat-hint>
-            Optional. Maximum 2,000 characters.
-          </mat-hint>
-
-          @if (firstTopicForm.controls.description.hasError('maxlength')) {
-            <mat-error>
-              Topic description cannot exceed 2,000 characters.
-            </mat-error>
-          }
-        </mat-form-field>
-
-        <!-- Active -->
-        <div class="form-toggle-row">
-          <div>
-            <strong>Active Topic</strong>
-
-            <p>
-              Make this topic available immediately after onboarding.
-            </p>
-          </div>
-
-          <mat-checkbox
-            formControlName="active"
-            class="first-course-program-check"
-          >
-            Active
-          </mat-checkbox>
-        </div>
-      </div>
-
-      <!-- ERROR -->
-      @if (firstTopicSaveError()) {
-        <div class="save-error">
-          <div class="save-error-icon">
-            <mat-icon>error_outline</mat-icon>
-          </div>
-
-          <div class="save-error-content">
-            <h4>Unable to create first topic</h4>
-
-            <p>
-              {{ firstTopicSaveError() }}
-            </p>
-          </div>
-        </div>
-      }
-
-      <!-- ACTIONS -->
-      <div class="form-actions">
-        <button
-          type="button"
-          mat-stroked-button
-          class="secondary-button"
-          [disabled]="firstTopicSaving()"
-          (click)="goBack()"
-        >
-          <mat-icon>arrow_back</mat-icon>
-
-          Back
-        </button>
-
-        <button
-          type="submit"
-          mat-flat-button
-          class="primary-button save-button"
-          [disabled]="firstTopicSaving() || firstTopicForm.invalid"
-        >
-          <span class="button-content">
-            @if (firstTopicSaving()) {
-              <mat-spinner
-                diameter="18"
-                class="button-spinner"
-              ></mat-spinner>
-
-              <span>Saving...</span>
-            } @else {
-              <span>Save & Continue</span>
-            }
-          </span>
-
-          <mat-icon
-            iconPositionEnd
-            [class.icon-hidden]="firstTopicSaving()"
-          >
-            arrow_forward
-          </mat-icon>
-        </button>
-      </div>
-    </form>
-  </section>
-}
-
-<!-- =================================================
-     STEP 8
-     ================================================= -->
-@if (onboarding()?.currentStep === 'first_question') {
-  <section class="onboarding-form-section">
-    <div class="form-kicker">
-      STEP 8
-    </div>
-
-    <div class="form-heading-row">
-      <div>
-        <h2>
-          Create Your First Question
-        </h2>
-
-        <p>
-          Add the first question members will answer in
-          your organization's Test Center.
-        </p>
-      </div>
-
-      <div class="form-heading-icon">
-        <mat-icon>quiz</mat-icon>
-      </div>
-    </div>
-
-    <div class="first-question-context-card mb-2">
-       <div
-    class="flex shrink-0 items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4"
-  >
-    <div
-      class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100"
-    >
-      <mat-icon>account_tree</mat-icon>
-    </div>
-
-    <div class="min-w-0">
-      <strong
-        class="block text-base font-bold text-slate-900"
-      >
-        {{ firstTopicName() }}
-      </strong>
-
-      <p class="mt-1 text-xs text-slate-500">
-        Your first question will be associated with this topic.
-      </p>
-    </div>
-  </div>
-      
-    </div>
-
-    @if (firstQuestionSaveError()) {
-      <div
-        class="form-error-banner"
-        role="alert"
-      >
-        <mat-icon>error</mat-icon>
-
-        <span>
-          {{ firstQuestionSaveError() }}
-        </span>
-      </div>
-    }
-
-   <form
-  [formGroup]="firstQuestionForm"
-  (ngSubmit)="saveFirstQuestion()"
-  class="w-full space-y-5"
->
-  <!-- QUESTION -->
-  <div class="w-full">
-    <mat-form-field
-      appearance="outline"
-      class="!w-full"
-    >
-      <mat-label>
-        Question
-      </mat-label>
-
-      <textarea
-        matInput
-        rows="5"
-        formControlName="question"
-        placeholder="Enter the question members will answer"
-      ></textarea>
-
-      <mat-hint align="end">
-        {{
-          firstQuestionForm.controls.question.value.length
-        }}/5000
-      </mat-hint>
-
-      @if (
-        firstQuestionForm.controls.question.hasError('required')
-        && firstQuestionForm.controls.question.touched
-      ) {
-        <mat-error>
-          Question text is required.
-        </mat-error>
-      }
-
-      @if (
-        firstQuestionForm.controls.question.hasError('maxlength')
-      ) {
-        <mat-error>
-          Question cannot exceed 5000 characters.
-        </mat-error>
-      }
-    </mat-form-field>
-  </div>
-
-  <!-- ANSWER OPTIONS -->
-  <div class="w-full">
-    <!-- Section heading -->
-    <div
-      class="mb-3 flex items-center justify-between gap-4"
-    >
-      <div>
-        <h3 class="m-0 text-base font-bold text-gray-900">
-          Answer Options
-        </h3>
-
-        <p class="mt-1 text-xs text-gray-500">
-          Enter four possible answers and select the correct answer.
-        </p>
-      </div>
-
-      <span
-        class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold tracking-wide text-slate-600"
-      >
-        4 OPTIONS
-      </span>
-    </div>
-
-    <!-- Options -->
-    <div
-      formArrayName="options"
-      class="flex w-full flex-col gap-2"
-    >
-      @for (
-        option of firstQuestionOptions.controls;
-        track option.get('id')?.value;
-        let i = $index
-      ) {
-        <div
-          [formGroupName]="i"
-          class="grid w-full grid-cols-[40px_minmax(0,1fr)_auto] items-start gap-3"
-        >
-          <!-- Letter -->
-          <div
-            class="mt-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700"
-          >
-            {{ option.get('id')?.value }}
-          </div>
-
-          <!-- Answer -->
-          <mat-form-field
-            appearance="outline"
-            class="!w-full !min-w-0"
-          >
-            <mat-label>
-              Option {{ i + 1 }}
-            </mat-label>
-
-            <input
-              matInput
-              formControlName="text"
-              placeholder="Enter answer option"
-            />
-
-            <mat-hint align="end">
-              {{
-                option.get('text')?.value?.length || 0
-              }}/1000
-            </mat-hint>
-
-            @if (
-              option.get('text')?.hasError('required')
-              && option.get('text')?.touched
-            ) {
-              <mat-error>
-                Answer option is required.
-              </mat-error>
-            }
-
-            @if (
-              option.get('text')?.hasError('maxlength')
-            ) {
-              <mat-error>
-                Answer option cannot exceed 1000 characters.
-              </mat-error>
-            }
-          </mat-form-field>
-
-          <!-- Correct -->
-          <mat-radio-button
-            class="mt-2 shrink-0 whitespace-nowrap"
-            [value]="option.get('id')?.value"
-            (change)="selectFirstQuestionCorrectAnswer(
-              option.get('id')?.value ?? ''
-            )"
-            [checked]="
-              firstQuestionForm.controls.correctAnswer.value ===
-              option.get('id')?.value
-            "
-          >
-            Correct
-          </mat-radio-button>
-        </div>
-      }
-    </div>
-
-    <!-- Validation -->
-    @if (
-      firstQuestionForm.controls.correctAnswer.hasError('required')
-      && firstQuestionForm.controls.correctAnswer.touched
-    ) {
-      <div
-        class="mt-2 flex items-center gap-2 text-xs text-red-600"
-      >
-        <mat-icon class="!h-[18px] !w-[18px] !text-[18px]">
-          info
-        </mat-icon>
-
-        <span>
-          Select the correct answer.
-        </span>
-      </div>
-    }
-  </div>
-
-  <!-- DIFFICULTY -->
-  <div class="w-full">
-    <mat-form-field
-      appearance="outline"
-      class="!w-full"
-    >
-      <mat-label>
-        Difficulty
-      </mat-label>
-
-      <mat-select
-        formControlName="difficulty"
-      >
-        @for (
-          difficulty of questionDifficulties;
-          track difficulty.value
-        ) {
-          <mat-option
-            [value]="difficulty.value"
-          >
-            {{ difficulty.label }}
-          </mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-  </div>
-
-  <!-- EXPLANATION -->
-  <div class="w-full">
-    <mat-form-field
-      appearance="outline"
-      class="!w-full"
-    >
-      <mat-label>
-        Explanation
-      </mat-label>
-
-      <textarea
-        matInput
-        rows="4"
-        formControlName="explanation"
-        placeholder="Explain why the selected answer is correct"
-      ></textarea>
-
-      <mat-hint align="end">
-        {{
-          firstQuestionForm.controls.explanation.value.length
-        }}/5000
-      </mat-hint>
-
-      @if (
-        firstQuestionForm.controls.explanation.hasError('maxlength')
-      ) {
-        <mat-error>
-          Explanation cannot exceed 5000 characters.
-        </mat-error>
-      }
-    </mat-form-field>
-  </div>
-
-  <!-- ACTIONS -->
-  <div class="flex justify-end pt-2">
-    <button
-      mat-flat-button
-      color="primary"
-      type="submit"
-      [disabled]="
-        firstQuestionSaving() ||
-        firstQuestionForm.invalid
-      "
-      class="!px-6"
-    >
-      @if (firstQuestionSaving()) {
-        <mat-spinner
-          diameter="18"
-          class="button-spinner"
-        ></mat-spinner>
-
-        <span>
-          Saving...
-        </span>
-      } @else {
-        <span>
-          Complete Onboarding
-        </span>
-      }
-
-      <mat-icon
-        iconPositionEnd
-        [class.icon-hidden]="firstQuestionSaving()"
-      >
-        check_circle
-      </mat-icon>
-    </button>
-  </div>
-</form>
-  </section>
-}
-
-          
           </section>
         }
       </div>
@@ -2147,10 +1071,6 @@ interface OnboardingStep {
 
   styles: [
     `
-      /* ============================================================
-       ZEBRON COLOR SYSTEM
-       ============================================================ */
-
       :host {
         --zebron-navy: #032d42;
         --zebron-navy-light: #08445c;
@@ -2179,10 +1099,6 @@ interface OnboardingStep {
         min-height: 100%;
       }
 
-      /* ============================================================
-       PAGE
-       ============================================================ */
-
       .onboarding-page {
         min-height: 100vh;
         background: linear-gradient(180deg, #f1f7f8 0%, #f8fafb 36%, #f5f8fa 100%);
@@ -2194,10 +1110,6 @@ interface OnboardingStep {
         margin: 0 auto;
         padding: 1.5rem 0 4rem;
       }
-
-      /* ============================================================
-       HEADER
-       ============================================================ */
 
       .page-header {
         margin-bottom: 1.5rem;
@@ -2290,10 +1202,6 @@ interface OnboardingStep {
         font-weight: 650;
       }
 
-      /* ============================================================
-       STATE CARDS
-       ============================================================ */
-
       .state-card {
         display: flex;
         min-height: 420px;
@@ -2348,10 +1256,6 @@ interface OnboardingStep {
       .state-action {
         margin-top: 1.5rem;
       }
-
-      /* ============================================================
-       PROGRESS CARD
-       ============================================================ */
 
       .progress-card {
         overflow: hidden;
@@ -2450,15 +1354,13 @@ interface OnboardingStep {
 
       .steps-grid {
         display: grid;
-        grid-template-columns: repeat(8, minmax(0, 1fr));
-        gap: 0.65rem;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 0.75rem;
       }
 
-      /* ============================================================
-   STEP CARD
-   ============================================================ */
-
       .step-card {
+        appearance: none;
+        font: inherit;
         min-height: 112px;
 
         display: flex;
@@ -2480,12 +1382,6 @@ interface OnboardingStep {
           box-shadow 160ms ease,
           transform 160ms ease;
       }
-
-      .step-card:hover {
-        transform: translateY(-1px);
-      }
-
-      /* Current */
       .step-current {
         border-color: #52b7b7;
         background: var(--zebron-pale);
@@ -2493,21 +1389,15 @@ interface OnboardingStep {
         box-shadow: 0 4px 14px rgba(0, 121, 121, 0.1);
       }
 
-      /* Completed */
       .step-completed {
         border-color: #9bdad7;
         background: #f3fbfb;
       }
 
-      /* Upcoming */
       .step-upcoming {
         border-color: var(--border-light);
         background: #ffffff;
       }
-
-      /* ============================================================
-   STEP CONTENT
-   ============================================================ */
 
       .step-content {
         display: flex;
@@ -2520,10 +1410,6 @@ interface OnboardingStep {
 
         text-align: center;
       }
-
-      /* ============================================================
-   STEP TITLE
-   ============================================================ */
 
       .step-title {
         width: 100%;
@@ -2542,10 +1428,6 @@ interface OnboardingStep {
         color: var(--zebron-teal-dark);
       }
 
-      /* ============================================================
-   STEP DESCRIPTION
-   ============================================================ */
-
       .step-description {
         width: 100%;
 
@@ -2558,10 +1440,6 @@ interface OnboardingStep {
 
         text-align: center;
       }
-
-      /* ============================================================
-   BOTTOM INDICATOR
-   ============================================================ */
 
       .step-indicator {
         display: flex;
@@ -2578,10 +1456,6 @@ interface OnboardingStep {
 
         gap: 0.4rem;
       }
-
-      /* ============================================================
-   STEP NUMBER
-   ============================================================ */
 
       .step-number {
         display: inline-flex;
@@ -2610,7 +1484,6 @@ interface OnboardingStep {
           box-shadow 160ms ease;
       }
 
-      /* Number on current step */
       .step-number-current {
         background: var(--zebron-teal);
         color: #ffffff;
@@ -2618,13 +1491,11 @@ interface OnboardingStep {
         box-shadow: 0 3px 8px rgba(0, 121, 121, 0.22);
       }
 
-      /* Number on completed step */
       .step-number-completed {
         background: var(--zebron-navy);
         color: #ffffff;
       }
 
-      /* Check icon */
       .step-number mat-icon {
         width: 0.9rem;
         height: 0.9rem;
@@ -2633,10 +1504,6 @@ interface OnboardingStep {
 
         line-height: 0.9rem;
       }
-
-      /* ============================================================
-   CURRENT STATUS
-   ============================================================ */
 
       .step-status {
         display: inline-flex;
@@ -2667,9 +1534,6 @@ interface OnboardingStep {
 
         box-shadow: 0 3px 8px rgba(0, 121, 121, 0.2);
       }
-      /* ============================================================
-       FORM CARD
-       ============================================================ */
 
       .form-card {
         overflow: hidden;
@@ -2733,15 +1597,6 @@ interface OnboardingStep {
       .onboarding-form-section {
         padding: 2rem 1.75rem 1.75rem;
       }
-
-      .owner-profile-content {
-        width: 100%;
-      }
-
-      .owner-form {
-        padding: 0;
-      }
-
       .form-kicker {
         color: var(--zebron-teal);
         font-size: 0.65rem;
@@ -2774,10 +1629,6 @@ interface OnboardingStep {
       .organization-form {
         padding: 2rem 1.75rem 1.75rem;
       }
-
-      /* ============================================================
-       FORM SECTIONS
-       ============================================================ */
 
       .form-section {
         margin-bottom: 2.25rem;
@@ -2827,19 +1678,10 @@ interface OnboardingStep {
         line-height: 1.5;
       }
 
-      /* ============================================================
-   FORM FIELD LAYOUT
-   ============================================================ */
-
       .field-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
 
-        /*
-   * Horizontal gap between columns.
-   * Larger vertical gap prevents Material hints from
-   * visually running into the next field.
-   */
         column-gap: 1.25rem;
         row-gap: 1.25rem;
 
@@ -2851,18 +1693,11 @@ interface OnboardingStep {
         margin-bottom: 1.75rem;
       }
 
-      /*
- * Give every Material field its own vertical breathing room.
- */
       .organization-form-field {
         display: block;
         width: 100%;
         margin-bottom: 1.75rem;
       }
-
-      /* ============================================================
-       MATERIAL FORM FIELDS
-       ============================================================ */
 
       :host ::ng-deep .organization-form-field .mat-mdc-text-field-wrapper {
         min-height: 56px;
@@ -2873,9 +1708,6 @@ interface OnboardingStep {
           box-shadow 160ms ease;
       }
 
-      /*
-     * Normal field outline.
-     */
       :host ::ng-deep .organization-form-field .mdc-notched-outline__leading,
       :host ::ng-deep .organization-form-field .mdc-notched-outline__notch,
       :host ::ng-deep .organization-form-field .mdc-notched-outline__trailing {
@@ -2885,13 +1717,6 @@ interface OnboardingStep {
           border-width 160ms ease;
       }
 
-      /*
-     * Selected / focused field:
-     *
-     * gray → white
-     * teal outline
-     * subtle teal glow
-     */
       :host ::ng-deep .organization-form-field .mat-mdc-text-field-wrapper.mdc-text-field--focused {
         background-color: #ffffff;
         box-shadow: 0 0 0 3px rgba(0, 121, 121, 0.08);
@@ -2916,9 +1741,6 @@ interface OnboardingStep {
         border-width: 2px;
       }
 
-      /*
-     * Floating label when focused.
-     */
       :host
         ::ng-deep
         .organization-form-field
@@ -2927,27 +1749,18 @@ interface OnboardingStep {
         color: var(--zebron-teal) !important;
       }
 
-      /*
-     * Input text.
-     */
       :host ::ng-deep .organization-form-field input.mat-mdc-input-element,
       :host ::ng-deep .organization-form-field textarea.mat-mdc-input-element {
         color: var(--zebron-navy);
         font-size: 0.9rem;
       }
 
-      /*
-     * Placeholder.
-     */
       :host ::ng-deep .organization-form-field input::placeholder,
       :host ::ng-deep .organization-form-field textarea::placeholder {
         color: #91a2a9;
         opacity: 1;
       }
 
-      /*
-     * Prefix icons.
-     */
       :host ::ng-deep .organization-form-field .mat-mdc-form-field-icon-prefix mat-icon {
         margin-right: 0.5rem;
         color: #78909a;
@@ -2963,9 +1776,6 @@ interface OnboardingStep {
         color: var(--zebron-teal);
       }
 
-      /*
-     * Hints.
-     */
       :host ::ng-deep .organization-form-field .mat-mdc-form-field-hint-wrapper {
         padding-left: 0.25rem;
       }
@@ -2975,17 +1785,10 @@ interface OnboardingStep {
         font-size: 0.7rem;
       }
 
-      /*
-     * Textarea.
-     */
       :host ::ng-deep .organization-form-field textarea {
         min-height: 100px;
         resize: vertical;
       }
-
-      /* ============================================================
-       SAVE ERROR
-       ============================================================ */
 
       .save-error {
         display: flex;
@@ -3029,10 +1832,6 @@ interface OnboardingStep {
         font-size: 0.78rem;
         line-height: 1.5;
       }
-
-      /* ============================================================
-       FORM ACTIONS
-       ============================================================ */
 
       .form-actions {
         display: flex;
@@ -3095,70 +1894,6 @@ interface OnboardingStep {
         visibility: hidden;
       }
 
-      /* ============================================================
-       FIRST COURSE
-       ============================================================ */
-
-      .first-course-program-card {
-        display: flex;
-        align-items: center;
-        gap: 0.9rem;
-        width: 100%;
-        box-sizing: border-box;
-        margin-top: 0.25rem;
-        border: 1px solid #cfe4e5;
-        border-radius: 0.8rem;
-        background: #f7fbfb;
-        padding: 1rem 1.1rem;
-      }
-
-      .first-course-program-icon {
-        display: flex;
-        width: 2.4rem;
-        height: 2.4rem;
-        flex: 0 0 2.4rem;
-        align-items: center;
-        justify-content: center;
-        border-radius: 0.7rem;
-        background: var(--zebron-pale);
-        color: var(--zebron-teal);
-      }
-
-      .first-course-program-icon mat-icon {
-        width: 1.25rem;
-        height: 1.25rem;
-        font-size: 1.25rem;
-      }
-
-      .first-course-program-content {
-        min-width: 0;
-        flex: 1;
-      }
-
-      .first-course-program-label {
-        display: block;
-        margin-bottom: 0.15rem;
-        color: var(--zebron-teal);
-        font-size: 0.62rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .first-course-program-content strong {
-        display: block;
-        color: var(--zebron-navy);
-        font-size: 0.88rem;
-        font-weight: 750;
-      }
-
-      .first-course-program-content p {
-        margin: 0.2rem 0 0;
-        color: var(--text-secondary);
-        font-size: 0.76rem;
-        line-height: 1.45;
-      }
-
       .form-toggle-row {
         display: flex;
         align-items: center;
@@ -3183,50 +1918,6 @@ interface OnboardingStep {
         font-size: 0.78rem;
       }
 
-      .first-course-program-check {
-        flex: 0 0 auto;
-        color: var(--zebron-teal);
-      }
-
-      /* ============================================================
-       FUTURE STEP
-       ============================================================ */
-
-      .future-step {
-        display: flex;
-        min-height: 360px;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 3rem 2rem;
-        text-align: center;
-      }
-
-      .future-step-icon {
-        display: flex;
-        width: 4rem;
-        height: 4rem;
-        align-items: center;
-        justify-content: center;
-        border-radius: 1rem;
-        background: var(--zebron-pale);
-        color: var(--zebron-teal);
-      }
-
-      .future-step-icon mat-icon {
-        width: 2rem;
-        height: 2rem;
-        font-size: 2rem;
-      }
-
-      .future-step-label {
-        margin-top: 1.25rem;
-        color: var(--zebron-teal);
-        font-size: 0.65rem;
-        font-weight: 800;
-        letter-spacing: 0.1em;
-      }
-
       .future-step h3 {
         margin: 0.35rem 0 0;
         color: var(--zebron-navy);
@@ -3241,14 +1932,7 @@ interface OnboardingStep {
         font-size: 0.85rem;
       }
 
-      /* ============================================================
-       RESPONSIVE
-       ============================================================ */
-
       @media (max-width: 1280px) {
-        .steps-grid {
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
       }
 
       @media (max-width: 900px) {
@@ -3264,10 +1948,15 @@ interface OnboardingStep {
         .progress-summary {
           width: 100%;
         }
+      }
 
-        .steps-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
+      /* Step 8 fields span the full available form width. */
+      .onboarding-form .full-width,
+      .onboarding-form .full-width mat-form-field {
+        width: 100%;
+      }
+
+      @media (max-width: 700px) {
       }
 
       @media (max-width: 640px) {
@@ -3338,156 +2027,87 @@ interface OnboardingStep {
         .button-spinner {
           flex: 0 0 auto;
         }
+      }
 
-        .first-question-context-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 0 0 28px;
-  padding: 18px 20px;
-  border: 1px solid rgba(3, 45, 66, 0.12);
-  border-radius: 14px;
-  background: #f7fafc;
-}
+      .step-card.step-completed {
+        cursor: pointer;
+      }
 
-.first-question-context-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
-  border-radius: 12px;
-  background: rgba(3, 45, 66, 0.08);
-}
+      .step-card.step-completed:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(3, 45, 66, 0.12);
+      }
 
-.first-question-context-icon mat-icon {
-  color: var(--zebron-navy);
-}
+      .step-card.step-completed:focus-visible {
+        outline: 3px solid var(--zebron-cyan);
+        outline-offset: 2px;
+      }
 
-.first-question-context-content {
-  min-width: 0;
-}
+      .step-card.step-reviewing {
+        box-shadow: 0 0 0 2px var(--zebron-teal);
+      }
 
-.first-question-context-content > span {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.65;
-}
+      .review-banner {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 20px 0 0;
+        padding: 14px 16px;
+        border: 1px solid #b9e5e2;
+        border-radius: 12px;
+        background: var(--zebron-pale);
+      }
 
-.first-question-context-content strong {
-  display: block;
-  font-size: 16px;
-  line-height: 1.35;
-}
+      .review-banner-icon {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        place-items: center;
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--zebron-teal);
+      }
 
-.first-question-context-content p {
-  margin: 4px 0 0;
-  font-size: 13px;
-  opacity: 0.7;
-}
+      .review-banner-content {
+        display: grid;
+        gap: 3px;
+        flex: 1;
+      }
 
-.first-question-options-section {
-  margin-top: 12px;
-}
+      .review-banner-content strong {
+        color: var(--text-primary);
+      }
 
-.first-question-section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 16px;
-}
+      .review-banner-content span {
+        color: var(--text-secondary);
+        font-size: 0.88rem;
+      }
 
-.first-question-section-heading h3 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-}
+      .review-return-button {
+        flex: 0 0 auto;
+      }
 
-.first-question-section-heading p {
-  margin: 5px 0 0;
-  font-size: 13px;
-  opacity: 0.7;
-}
+      .reviewing-step .organization-form,
+      .reviewing-step .onboarding-form,
+      .reviewing-step .form-actions {
+        pointer-events: none;
+      }
 
-.first-question-option-count {
-  flex: 0 0 auto;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  background: rgba(3, 45, 66, 0.08);
-}
+      .reviewing-step .review-banner,
+      .reviewing-step .review-banner * {
+        pointer-events: auto;
+      }
 
-.first-question-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+      @media (max-width: 700px) {
+        .review-banner {
+          align-items: flex-start;
+          flex-wrap: wrap;
+        }
 
-.first-question-option-row {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-}
-
-.first-question-option-letter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: rgba(3, 45, 66, 0.08);
-  font-weight: 700;
-}
-
-.first-question-option-input {
-  width: 100%;
-}
-
-.first-question-validation-message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  font-size: 13px;
-}
-
-.first-question-validation-message mat-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-
-.first-question-settings-grid {
-  display: grid;
-  grid-template-columns: minmax(220px, 320px);
-  margin-top: 24px;
-}
-
-@media (max-width: 700px) {
-  .first-question-option-row {
-    grid-template-columns: 36px minmax(0, 1fr);
-  }
-
-  .first-question-option-row mat-radio-button {
-    grid-column: 2;
-  }
-
-  .first-question-section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
-  }
-}
+        .review-return-button {
+          width: 100%;
+        }
       }
     `,
   ],
@@ -3498,7 +2118,7 @@ export class PartnerOnboardingComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly formBuilder = inject(FormBuilder);
-  private readonly onboardingService = inject(OrganizationOnboardingService);
+  private readonly onboardingService = inject(PartnerOrganizationOnboardingService);
 
   private readonly invitationService = inject(OrganizationInvitationService);
   /**
@@ -3517,6 +2137,10 @@ export class PartnerOnboardingComponent implements OnInit {
 
   protected readonly onboarding = signal<OrganizationOnboarding | null>(null);
 
+  protected readonly reviewingStep = signal<OrganizationOnboardingStep | null>(null);
+  protected readonly reviewLoading = signal(false);
+  protected readonly reviewError = signal<string | null>(null);
+
   protected readonly organizationId = signal<string | null>(null);
 
   protected readonly ownerSaving = signal(false);
@@ -3532,56 +2156,60 @@ export class PartnerOnboardingComponent implements OnInit {
 
   protected readonly invitationRole = signal<OrganizationInvitationRole>('org_member');
 
-  protected readonly steps: OnboardingStep[] = [
-    {
+  protected readonly isEditingSetup = signal(false);
+
+  /** Presentation metadata for the four core organization onboarding steps. */
+  protected readonly stepMetadata: Partial<Record<OrganizationOnboardingStep, OnboardingStep>> = {
+    organization_profile: {
       key: 'organization_profile',
       label: 'Organization Profile',
       description: 'Organization details',
       icon: 'business',
     },
-    {
+    owner_profile: {
       key: 'owner_profile',
       label: 'Owner Profile',
       description: 'Owner information',
       icon: 'person',
     },
-    {
+    invite_members: {
       key: 'invite_members',
       label: 'Invite Team',
       description: 'Add team members',
       icon: 'group_add',
     },
-    {
+    configuration: {
       key: 'configuration',
       label: 'Configuration',
       description: 'Configure organization',
       icon: 'settings',
     },
-    {
-      key: 'first_program',
-      label: 'First Program',
-      description: 'Create a program',
-      icon: 'school',
-    },
-    {
-      key: 'first_course',
-      label: 'First Course',
-      description: 'Create a course',
-      icon: 'menu_book',
-    },
-    {
-      key: 'first_topic',
-      label: 'First Topic',
-      description: 'Create a topic',
-      icon: 'topic',
-    },
-    {
-      key: 'first_question',
-      label: 'First Question',
-      description: 'Create a question',
-      icon: 'quiz',
-    },
+  };
+
+  /** Canonical core onboarding workflow, including legacy organizations. */
+  private readonly legacyBaseOnboardingSteps: OrganizationOnboardingStep[] = [
+    'organization_profile',
+    'owner_profile',
+    'invite_members',
+    'configuration',
   ];
+
+  /**
+   * Organization onboarding is always the four-step core workflow.
+   * Application-specific setup is managed by each application entitlement.
+   */
+  protected get requiredOnboardingSteps(): OrganizationOnboardingStep[] {
+    return [...this.legacyBaseOnboardingSteps];
+  }
+
+  /**
+   * Render only the steps required by this organization.
+   */
+  protected get steps(): OnboardingStep[] {
+    return this.requiredOnboardingSteps
+      .map((step) => this.stepMetadata[step])
+      .filter((step): step is OnboardingStep => step !== undefined);
+  }
 
   protected readonly invitationRoles: {
     value: OrganizationInvitationRole;
@@ -3604,51 +2232,6 @@ export class PartnerOnboardingComponent implements OnInit {
       label: 'Organization Member',
     },
   ];
-
-  protected readonly courseTypes: {
-  value: TestCourseType;
-  label: string;
-}[] = [
-  {
-    value: 'course',
-    label: 'Course',
-  },
-  {
-    value: 'certification',
-    label: 'Certification',
-  },
-  {
-    value: 'subject',
-    label: 'Subject',
-  },
-  {
-    value: 'skill',
-    label: 'Skill',
-  },
-];
-
-  protected readonly firstCourseSaving = signal(false);
-  protected readonly firstCourseSaveError = signal<string | null>(null);
-
-  protected readonly firstCourseForm = this.formBuilder.nonNullable.group({
-    name: ['', [Validators.required, Validators.maxLength(150)]],
-    slug: ['', [Validators.required, Validators.maxLength(150)]],
-    description: ['', [Validators.required, Validators.maxLength(2000)]],
-    provider: ['', [Validators.maxLength(200)]],
-    type: 'course' as TestCourseType,
-    active: true,
-  });
-
-  protected readonly firstTopicSaving = signal(false);
-
-  protected readonly firstTopicSaveError = signal<string | null>(null);
-
-  protected readonly firstTopicForm = this.formBuilder.nonNullable.group({
-    name: ['', [Validators.required, Validators.maxLength(150)]],
-    slug: ['', [Validators.required, Validators.maxLength(150)]],
-    description: ['', [Validators.maxLength(2000)]],
-    active: true,
-  });
 
   protected readonly organizationForm = this.formBuilder.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(150)]],
@@ -3685,136 +2268,22 @@ export class PartnerOnboardingComponent implements OnInit {
     phone: ['', [Validators.maxLength(50)]],
   });
 
-  protected readonly firstProgramSaving = signal(false);
-
-  protected readonly firstProgramSaveError = signal<string | null>(null);
-
-  protected readonly firstProgramForm = this.formBuilder.nonNullable.group({
-    name: ['', [Validators.required, Validators.maxLength(150)]],
-
-    slug: ['', [Validators.required, Validators.maxLength(150)]],
-
-    description: ['', [Validators.maxLength(2000)]],
-  });
-
   protected readonly configurationSaving = signal(false);
 
   protected readonly configurationSaveError = signal<string | null>(null);
 
+  /** Show the confirmation/review screen after the backend completes onboarding. */
+  protected readonly showReviewPage = signal(false);
+
   protected configuration = {
-    testCenterEnabled: true,
-    allowMemberTesting: true,
-    courseVisibility: 'all' as 'all' | 'members' | 'admins',
-
     allowSelfRegistration: false,
-
     defaultMemberRole: 'org_member' as 'org_member' | 'org_staff' | 'org_manager',
-
     adminNotifications: true,
-    testResultNotifications: true,
-
     primaryColor: '#007979',
     secondaryColor: '#032D42',
   };
 
-  protected firstCourseNameForTopic(): string {
-  return (
-    this.firstCourseForm.controls.name.value.trim() ||
-    'First Course'
-  );
-}
-
-protected readonly firstTopicName = signal<string>('First topic');
-
-protected readonly firstQuestionSaving =
-  signal(false);
-
-protected readonly firstQuestionSaveError =
-  signal<string | null>(null);
-
-protected readonly firstQuestionForm =
-  this.formBuilder.nonNullable.group({
-    question: [
-      '',
-      [
-        Validators.required,
-        Validators.maxLength(5000),
-      ],
-    ],
-
-    options:
-      this.formBuilder.array([
-        this.createFirstQuestionOption('A'),
-        this.createFirstQuestionOption('B'),
-        this.createFirstQuestionOption('C'),
-        this.createFirstQuestionOption('D'),
-      ]),
-
-    correctAnswer: [
-      'A',
-      [Validators.required],
-    ],
-
-    difficulty:
-      'medium' as OrganizationOnboardingFirstQuestionDifficulty,
-
-    explanation: [
-      '',
-      [Validators.maxLength(5000)],
-    ],
-  });
-
-protected readonly questionDifficulties: {
-  value: OrganizationOnboardingFirstQuestionDifficulty;
-  label: string;
-}[] = [
-  {
-    value: 'easy',
-    label: 'Easy',
-  },
-  {
-    value: 'medium',
-    label: 'Medium',
-  },
-  {
-    value: 'hard',
-    label: 'Hard',
-  },
-];
-
-protected get firstQuestionOptions() {
-  return this.firstQuestionForm.controls.options;
-}
-
   ngOnInit(): void {
-    this.firstProgramForm.controls.name.valueChanges.subscribe((name) => {
-      const slug = this.generateProgramSlug(name);
-
-      this.firstProgramForm.controls.slug.setValue(slug, {
-        emitEvent: false,
-      });
-    });
-
-    this.firstCourseForm.controls.name.valueChanges.subscribe((name) => {
-      const slug = this.generateCourseSlug(name);
-
-      this.firstCourseForm.controls.slug.setValue(slug, {
-        emitEvent: false,
-      });
-
-      this.firstCourseSaveError.set(null);
-    });
-
-    this.firstTopicForm.controls.name.valueChanges.subscribe((name) => {
-      const slug = this.generateTopicSlug(name);
-
-      this.firstTopicForm.controls.slug.setValue(slug, {
-        emitEvent: false,
-      });
-
-      this.firstTopicSaveError.set(null);
-    });
-
     void this.load();
   }
 
@@ -3851,9 +2320,9 @@ protected get firstQuestionOptions() {
 
       this.pageTitleService.setTitle(`${organization.name}`);
 
-this.populateOrganizationForm(organization);
-this.populateOwnerForm();
-await this.loadOrganizationConfiguration(organizationId);
+      this.populateOrganizationForm(organization);
+      this.populateOwnerForm();
+      await this.loadOrganizationConfiguration(organizationId);
     } catch (error: unknown) {
       console.error('Failed to load organization onboarding.', error);
 
@@ -3984,11 +2453,114 @@ await this.loadOrganizationConfiguration(organizationId);
   }
 
   protected isCurrentStep(step: OrganizationOnboardingStep): boolean {
-    return this.onboarding()?.currentStep === step;
+    return this.displayedStep() === step;
   }
 
   protected isStepCompleted(step: OrganizationOnboardingStep): boolean {
     return this.onboarding()?.completedSteps?.includes(step) ?? false;
+  }
+
+  protected isReviewingCompletedStep(): boolean {
+    return this.reviewingStep() !== null;
+  }
+
+  protected displayedStep(): OrganizationOnboardingStep | null {
+    // Completed organizations can reopen the configuration form for settings edits.
+    if (this.isEditingSetup()) {
+      return 'configuration';
+    }
+
+    const reviewing = this.reviewingStep();
+    if (reviewing && this.requiredOnboardingSteps.includes(reviewing)) {
+      return reviewing;
+    }
+
+    const onboarding = this.onboarding();
+    if (!onboarding) {
+      return null;
+    }
+
+    const currentStep = onboarding.currentStep;
+    if (currentStep && this.requiredOnboardingSteps.includes(currentStep)) {
+      return currentStep;
+    }
+
+    return (
+      this.requiredOnboardingSteps.find(
+        (step) => !(onboarding.completedSteps ?? []).includes(step),
+      ) ?? 'configuration'
+    );
+  }
+
+  protected displayedStepNumber(): number {
+    const step = this.displayedStep();
+
+    if (!step) {
+      return 1;
+    }
+
+    const index = this.requiredOnboardingSteps.indexOf(step);
+
+    return index >= 0 ? index + 1 : 1;
+  }
+
+  protected displayedStepLabel(): string {
+    const step = this.displayedStep();
+
+    if (!step) {
+      return 'Organization Onboarding';
+    }
+
+    return this.stepMetadata[step]?.label ?? 'Organization Onboarding';
+  }
+
+  protected async reviewCompletedStep(step: OrganizationOnboardingStep): Promise<void> {
+    if (!this.isStepCompleted(step)) {
+      return;
+    }
+
+    this.reviewLoading.set(true);
+    this.reviewError.set(null);
+
+    try {
+      const organizationId = this.organizationId();
+      const onboarding = this.onboarding();
+
+      if (!organizationId || !onboarding) {
+        throw new Error('Onboarding information is not available.');
+      }
+
+      switch (step) {
+        case 'organization_profile':
+          if (this.organization()) {
+            this.populateOrganizationForm(this.organization()!);
+          }
+          break;
+        case 'owner_profile':
+          await this.loadOwnerProfile(onboarding.ownerUserId);
+          break;
+        case 'invite_members':
+          await this.loadInvitations();
+          break;
+        case 'configuration':
+          await this.loadOrganizationConfiguration(organizationId);
+          break;
+      }
+
+      this.reviewingStep.set(step);
+    } catch (error: unknown) {
+      console.error('Failed to load completed onboarding step for review.', error);
+      this.reviewError.set(
+        this.getErrorMessage(error, 'Unable to load the completed step for review.'),
+      );
+    } finally {
+      this.reviewLoading.set(false);
+    }
+  }
+
+  protected returnToCurrentStep(): void {
+    this.reviewingStep.set(null);
+    this.reviewError.set(null);
   }
 
   protected currentStepNumber(): number {
@@ -3998,7 +2570,7 @@ await this.loadOrganizationConfiguration(organizationId);
       return 1;
     }
 
-    const index = this.steps.findIndex((step) => step.key === currentStep);
+    const index = this.requiredOnboardingSteps.indexOf(currentStep);
 
     return index >= 0 ? index + 1 : 1;
   }
@@ -4006,9 +2578,9 @@ await this.loadOrganizationConfiguration(organizationId);
   protected currentStepLabel(): string {
     const currentStep = this.onboarding()?.currentStep;
 
-    const step = this.steps.find((item) => item.key === currentStep);
-
-    return step?.label ?? 'Organization Onboarding';
+    return currentStep && this.requiredOnboardingSteps.includes(currentStep)
+      ? (this.stepMetadata[currentStep]?.label ?? 'Organization Onboarding')
+      : 'Organization Onboarding';
   }
 
   protected progressPercentage(): number {
@@ -4018,34 +2590,61 @@ await this.loadOrganizationConfiguration(organizationId);
       return 0;
     }
 
-    const completed = onboarding.completedSteps?.length ?? 0;
-
-    /*
-     * Count the active step toward visual progress.
-     *
-     * Step 1 of 8 therefore displays 13% rather than
-     * appearing to have no progress at all.
-     */
     if (onboarding.status === 'completed') {
       return 100;
     }
 
-    return Math.min(100, Math.round(((completed + 1) / this.steps.length) * 100));
+    const requiredSteps = this.requiredOnboardingSteps;
+
+    if (requiredSteps.length === 0) {
+      return 0;
+    }
+
+    const completedSteps = new Set(onboarding.completedSteps ?? []);
+    const completedCount = requiredSteps.filter((step) => completedSteps.has(step)).length;
+
+    return Math.min(100, Math.round((completedCount / requiredSteps.length) * 100));
   }
 
-protected goBack(): void {
-  const organizationId = this.organizationId();
+  protected async goToPreviousStep(): Promise<void> {
+    const currentStep = this.displayedStep();
+    const currentIndex = currentStep ? this.requiredOnboardingSteps.indexOf(currentStep) : -1;
 
-  if (!organizationId) {
-    return;
+    if (currentIndex <= 0) {
+      this.goBack();
+      return;
+    }
+
+    const previousStep = this.requiredOnboardingSteps[currentIndex - 1];
+    if (this.isStepCompleted(previousStep)) {
+      await this.reviewCompletedStep(previousStep);
+      return;
+    }
+
+    this.reviewingStep.set(null);
+    this.reviewError.set(null);
   }
 
-  void this.router.navigate([
-    '/partner/org',
-    organizationId,
-    'dashboard',
-  ]);
-}
+  protected goBack(): void {
+    const organizationId = this.organizationId();
+
+    if (!organizationId) {
+      return;
+    }
+
+    void this.router.navigate(['/partner/org', organizationId, 'dashboard']);
+  }
+
+  protected async goToPartnerDashboard(): Promise<void> {
+    const organizationId = this.organizationId();
+    const onboarding = this.onboarding();
+
+    if (!organizationId || onboarding?.status !== 'completed') {
+      return;
+    }
+
+    await this.router.navigate(['/partner/org', organizationId, 'dashboard']);
+  }
 
   private getErrorMessage(error: unknown, fallback: string): string {
     if (error && typeof error === 'object' && 'message' in error) {
@@ -4251,46 +2850,22 @@ protected goBack(): void {
       const settings = snapshot.data() as Record<string, unknown>;
 
       this.configuration = {
-        testCenterEnabled:
-          typeof settings['testCenterEnabled'] === 'boolean' ? settings['testCenterEnabled'] : true,
-
-        allowMemberTesting:
-          typeof settings['allowMemberTesting'] === 'boolean'
-            ? settings['allowMemberTesting']
-            : true,
-
-        courseVisibility:
-          settings['courseVisibility'] === 'members' ||
-          settings['courseVisibility'] === 'admins' ||
-          settings['courseVisibility'] === 'all'
-            ? settings['courseVisibility']
-            : 'all',
-
         allowSelfRegistration:
           typeof settings['allowSelfRegistration'] === 'boolean'
             ? settings['allowSelfRegistration']
             : false,
-
         defaultMemberRole:
           settings['defaultMemberRole'] === 'org_staff' ||
           settings['defaultMemberRole'] === 'org_manager' ||
           settings['defaultMemberRole'] === 'org_member'
             ? settings['defaultMemberRole']
             : 'org_member',
-
         adminNotifications:
           typeof settings['adminNotifications'] === 'boolean'
             ? settings['adminNotifications']
             : true,
-
-        testResultNotifications:
-          typeof settings['testResultNotifications'] === 'boolean'
-            ? settings['testResultNotifications']
-            : true,
-
         primaryColor:
           typeof settings['primaryColor'] === 'string' ? settings['primaryColor'] : '#007979',
-
         secondaryColor:
           typeof settings['secondaryColor'] === 'string' ? settings['secondaryColor'] : '#032D42',
       };
@@ -4315,7 +2890,11 @@ protected goBack(): void {
     try {
       const response = await this.onboardingService.completeOrganizationConfiguration(
         organizationId,
-        this.configuration,
+        // The onboarding UI sends only organization-wide settings. Keep the
+        // service/callable contract aligned with this core-only payload.
+        this.configuration as Parameters<
+          PartnerOrganizationOnboardingService['completeOrganizationConfiguration']
+        >[1],
       );
 
       if (!response.success) {
@@ -4343,473 +2922,43 @@ protected goBack(): void {
        */
       this.onboarding.set(updatedOnboarding);
 
-      /**
-       * The backend should have advanced onboarding to
-       * first_program.
-       */
-      if (updatedOnboarding.currentStep !== 'first_program') {
+      if (updatedOnboarding.status !== 'completed') {
         throw new Error(
-          'Configuration was saved, but onboarding did not advance to the first program step.',
+          'Configuration was saved, but the backend has not marked organization onboarding as completed. Please try again or contact support.',
         );
       }
 
       this.configurationSaveError.set(null);
+      this.isEditingSetup.set(false);
+      this.reviewingStep.set(null);
+      this.showReviewPage.set(true);
     } catch (error: unknown) {
       console.error('Failed to save organization configuration.', error);
 
+      const message = this.getErrorMessage(error, 'Unable to submit organization configuration.');
       this.configurationSaveError.set(
-        this.getErrorMessage(error, 'Unable to save organization configuration.'),
+        /test.?center|test center setting/i.test(message)
+          ? 'Unable to submit organization configuration. Please try again.'
+          : message,
       );
     } finally {
       this.configurationSaving.set(false);
     }
   }
 
-  protected async saveFirstProgram(): Promise<void> {
-    this.firstProgramSaveError.set(null);
-
-    if (this.firstProgramForm.invalid) {
-      this.firstProgramForm.markAllAsTouched();
-      return;
-    }
-
+  protected async editOrganizationSetup(): Promise<void> {
     const organizationId = this.organizationId();
 
     if (!organizationId) {
-      this.firstProgramSaveError.set('Organization ID is missing.');
-
+      this.configurationSaveError.set('Organization ID is missing.');
       return;
     }
 
-    this.firstProgramSaving.set(true);
-
-    try {
-      const formValue = this.firstProgramForm.getRawValue();
-
-      const response = await this.onboardingService.completeOrganizationFirstProgram(
-        organizationId,
-        {
-          name: formValue.name.trim(),
-          slug: formValue.slug.trim(),
-          description: formValue.description.trim(),
-        },
-      );
-
-      if (!response.success) {
-        throw new Error('The first program could not be created.');
-      }
-
-      /**
-       * Reload the authoritative onboarding state.
-       *
-       * The Cloud Function owns:
-       *
-       * first_program
-       *       ↓
-       * courses
-       */
-      const updatedOnboarding = await this.onboardingService.getOnboarding(organizationId);
-
-      if (!updatedOnboarding) {
-        throw new Error(
-          'The first program was created, but the updated onboarding state could not be loaded.',
-        );
-      }
-
-      this.onboarding.set(updatedOnboarding);
-
-      if (updatedOnboarding.currentStep !== 'first_course') {
-        throw new Error(
-          'The first program was created, but onboarding did not advance to the first-course step.',
-        );
-      }
-
-      this.firstProgramSaveError.set(null);
-    } catch (error: unknown) {
-      console.error('Failed to create first organization program.', error);
-
-      this.firstProgramSaveError.set(
-        this.getErrorMessage(error, 'Unable to create the first program.'),
-      );
-    } finally {
-      this.firstProgramSaving.set(false);
-    }
+    this.reviewError.set(null);
+    this.configurationSaveError.set(null);
+    this.reviewingStep.set(null);
+    await this.loadOrganizationConfiguration(organizationId);
+    this.isEditingSetup.set(true);
+    this.showReviewPage.set(false);
   }
-
-  protected async saveFirstCourse(): Promise<void> {
-    this.firstCourseSaveError.set(null);
-
-    if (this.firstCourseForm.invalid) {
-      this.firstCourseForm.markAllAsTouched();
-      return;
-    }
-
-    const organizationId = this.organizationId();
-
-    if (!organizationId) {
-      this.firstCourseSaveError.set('Organization ID is missing.');
-      return;
-    }
-
-    const firstProgramId = this.onboarding()?.firstProgramId?.trim();
-
-    if (!firstProgramId) {
-      this.firstCourseSaveError.set(
-        'The first program could not be identified. Please return to the previous step.',
-      );
-      return;
-    }
-
-    this.firstCourseSaving.set(true);
-
-    try {
-      const formValue = this.firstCourseForm.getRawValue();
-
-      const response =
-        await this.onboardingService.completeOrganizationFirstCourse(
-          organizationId,
-          {
-            name: formValue.name.trim(),
-            slug: formValue.slug.trim(),
-            description: formValue.description.trim(),
-            provider: formValue.provider.trim() || undefined,
-            type: formValue.type,
-            active: formValue.active,
-          },
-        );
-
-      if (!response.success) {
-        throw new Error('The first course could not be created.');
-      }
-
-      /*
-       * The Cloud Function owns the authoritative onboarding
-       * transition:
-       *
-       * first_course
-       *      ↓
-       * first_topic
-       */
-      const updatedOnboarding =
-        await this.onboardingService.getOnboarding(organizationId);
-
-      if (!updatedOnboarding) {
-        throw new Error(
-          'The first course was created, but the updated onboarding state could not be loaded.',
-        );
-      }
-
-      this.onboarding.set(updatedOnboarding);
-
-      if (updatedOnboarding.currentStep !== 'first_topic') {
-        throw new Error(
-          'The first course was created, but onboarding did not advance to the first-topic step.',
-        );
-      }
-
-      this.firstCourseSaveError.set(null);
-    } catch (error: unknown) {
-      console.error(
-        'Failed to create first organization course.',
-        error,
-      );
-
-      this.firstCourseSaveError.set(
-        this.getErrorMessage(
-          error,
-          'Unable to create the first course.',
-        ),
-      );
-    } finally {
-      this.firstCourseSaving.set(false);
-    }
-  }
-
-protected async saveFirstTopic(): Promise<void> {
-  this.firstTopicSaveError.set(null);
-
-  if (this.firstTopicForm.invalid) {
-    this.firstTopicForm.markAllAsTouched();
-    return;
-  }
-
-  const organizationId = this.organizationId();
-
-  if (!organizationId) {
-    this.firstTopicSaveError.set(
-      'Organization ID is missing.',
-    );
-    return;
-  }
-
-  const firstCourseId = this.onboarding()?.firstCourseId?.trim();
-
-  if (!firstCourseId) {
-    this.firstTopicSaveError.set(
-      'The first course could not be identified. Please return to the previous step.',
-    );
-    return;
-  }
-
-  this.firstTopicSaving.set(true);
-
-  try {
-    const formValue = this.firstTopicForm.getRawValue();
-
-    const response =
-      await this.onboardingService.completeOrganizationFirstTopic(
-        organizationId,
-        {
-          name: formValue.name.trim(),
-          slug: formValue.slug.trim(),
-          description: formValue.description.trim() || undefined,
-          active: formValue.active,
-        },
-      );
-
-    if (!response.success) {
-      throw new Error(
-        'The first topic could not be created.',
-      );
-    }
-
-    this.firstTopicName.set(
-      response.topic.name?.trim() || 'First topic',
-    );
-
-    /*
-     * The Cloud Function is the authoritative owner of:
-     *
-     *   first_topic
-     *       ↓
-     *   testTopics/{firstTopicId}
-     *       ↓
-     *   first_question
-     */
-    const updatedOnboarding =
-      await this.onboardingService.getOnboarding(
-        organizationId,
-      );
-
-    if (!updatedOnboarding) {
-      throw new Error(
-        'The first topic was created, but the onboarding record could not be reloaded.',
-      );
-    }
-
-    this.onboarding.set(updatedOnboarding);
-
-    if (
-      updatedOnboarding.currentStep !==
-      'first_question'
-    ) {
-      throw new Error(
-        'The first topic was created, but onboarding did not advance to the first-question step.',
-      );
-    }
-
-    this.firstTopicSaveError.set(null);
-  } catch (error: unknown) {
-    console.error(
-      'Failed to create first organization topic.',
-      error,
-    );
-
-    this.firstTopicSaveError.set(
-      this.getErrorMessage(
-        error,
-        'Unable to create the first topic.',
-      ),
-    );
-  } finally {
-    this.firstTopicSaving.set(false);
-  }
-}
-
-protected selectFirstQuestionCorrectAnswer(
-  answerId: string,
-): void {
-  this.firstQuestionForm.controls.correctAnswer.setValue(
-    answerId,
-  );
-
-  this.firstQuestionForm.controls.correctAnswer.markAsDirty();
-  this.firstQuestionForm.controls.correctAnswer.markAsTouched();
-}
-
-protected async saveFirstQuestion(): Promise<void> {
-  this.firstQuestionSaveError.set(null);
-
-  if (this.firstQuestionForm.invalid) {
-    this.firstQuestionForm.markAllAsTouched();
-    return;
-  }
-
-  const organizationId =
-    this.organizationId();
-
-  if (!organizationId) {
-    this.firstQuestionSaveError.set(
-      'Organization ID is missing.',
-    );
-    return;
-  }
-
- const onboarding = this.onboarding();
-
-if (!onboarding?.firstCourseId?.trim()) {
-  this.firstQuestionSaveError.set(
-    'The first course could not be identified. Please return to the previous step.',
-  );
-  return;
-}
-
-if (!onboarding.firstTopicId?.trim()) {
-  this.firstQuestionSaveError.set(
-    'The first topic could not be identified. Please return to the previous step.',
-  );
-  return;
-}
-
-  this.firstQuestionSaving.set(true);
-
-  try {
-    const formValue =
-      this.firstQuestionForm.getRawValue();
-
-    const response =
-      await this.onboardingService
-        .completeOrganizationFirstQuestion(
-          organizationId,
-          {
-            question:
-              formValue.question.trim(),
-
-            options:
-              formValue.options.map(
-                (option) => ({
-                  id:
-                    option.id.trim(),
-
-                  text:
-                    option.text.trim(),
-                }),
-              ),
-
-            correctAnswer:
-              formValue.correctAnswer.trim(),
-
-            difficulty:
-              formValue.difficulty,
-
-            explanation:
-              formValue.explanation.trim() ||
-              undefined,
-          },
-        );
-
-    if (!response.success) {
-      throw new Error(
-        'The first question could not be created.',
-      );
-    }
-
-    const updatedOnboarding =
-      await this.onboardingService.getOnboarding(
-        organizationId,
-      );
-
-    if (!updatedOnboarding) {
-      throw new Error(
-        'The first question was created, but the onboarding record could not be reloaded.',
-      );
-    }
-
-    this.onboarding.set(
-      updatedOnboarding,
-    );
-
-    if (
-      updatedOnboarding.status !==
-      'completed'
-    ) {
-      throw new Error(
-        'The first question was created, but onboarding was not completed.',
-      );
-    }
-
-    if (
-      updatedOnboarding.currentStep !==
-      'first_question'
-    ) {
-      throw new Error(
-        'The first question was created, but onboarding did not reach its completed state.',
-      );
-    }
-
-    this.firstQuestionSaveError.set(null);
-
-    // Step 8 is the final onboarding step. Once the backend has
-    // authoritatively marked onboarding as completed, take the user
-    // to the organization dashboard rather than leaving them on Step 8.
-    await this.router.navigate([
-      '/partner/org',
-      organizationId,
-      'dashboard',
-    ]);
-  } catch (error: unknown) {
-    console.error(
-      'Failed to create first organization question.',
-      error,
-    );
-
-    this.firstQuestionSaveError.set(
-      this.getErrorMessage(
-        error,
-        'Unable to create the first question.',
-      ),
-    );
-  } finally {
-    this.firstQuestionSaving.set(false);
-  }
-}
-
-  private generateTopicSlug(name: string): string {
-    return name
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-
-private generateCourseSlug(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-private generateProgramSlug(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-private createFirstQuestionOption(
-  id: string,
-) {
-  return this.formBuilder.nonNullable.group({
-    id: [id],
-    text: [
-      '',
-      [
-        Validators.required,
-        Validators.maxLength(1000),
-      ],
-    ],
-  });
-}
-
 }

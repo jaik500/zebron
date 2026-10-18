@@ -1,4 +1,7 @@
 import { Permission } from "./permission.model";
+import {
+  OrganizationOnboardingStep,
+} from './organization-onboarding.model';
 
 export type ApplicationCategory =
   | 'platform'
@@ -114,6 +117,10 @@ export interface ApplicationDefinition {
    */
   implementationKey?: string;
 
+  onboarding?: {
+  steps: readonly ApplicationOnboardingStepDefinition[];
+};
+
   /**
    * Current application definition version.
    */
@@ -123,4 +130,18 @@ export interface ApplicationDefinition {
    * Whether this definition is enabled.
    */
   enabled: boolean;
+}
+
+export interface ApplicationOnboardingStepDefinition {
+  key: OrganizationOnboardingStep;
+
+  label: string;
+
+  description: string;
+
+  icon: string;
+
+  order: number;
+
+  route?: string;
 }

@@ -11,7 +11,7 @@ import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 
-import { OrganizationStore } from '../../../organizations/stores/organization.store';
+import { OrganizationContextStore  } from '../../../organizations/stores/organization-context.store';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
 @Component({
@@ -239,7 +239,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
 export class PartnerPortalComponent implements OnInit {
 
  protected readonly organizationStore =
-  inject(OrganizationStore);
+  inject(OrganizationContextStore );
 
   private readonly pageTitleService =
     inject(PageTitleService);

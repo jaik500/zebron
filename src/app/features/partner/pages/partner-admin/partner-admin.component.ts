@@ -12,9 +12,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
-import { OrganizationStore } from '../../../organizations/stores/organization.store';
+import { OrganizationContextStore } from '../../../organizations/stores/organization-context.store';
 import { PartnerAccessService } from '../../../../core/services/partner-access.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
+import { ApplicationRegistryService } from '../../../../core/services/application-registry.service';
 
 import {
   PartnerAdminSearchResult,
@@ -100,15 +101,59 @@ interface DashboardCard {
                 <span>Profile</span>
               </a>
 
-              <a
-                mat-menu-item
-                routerLink="/test-center"
-              >
-                <mat-icon>school</mat-icon>
-                <span>Test Center</span>
-              </a>
+            @for (card of visibleDashboardCards(); track card.id) {
+  @if (card.enabled) {
+    <a
+      [routerLink]="card.route"
+      class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div
+          class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#007979]/10 transition-colors group-hover:bg-[#007979]"
+        >
+          <mat-icon class="text-white">{{ card.icon }}</mat-icon>
+        </div>
 
-              @if (access.canAccessAdministration()) {
+        <mat-icon
+          class="text-gray-300 transition-colors group-hover:text-[#007979]"
+        >
+          arrow_forward
+        </mat-icon>
+      </div>
+
+      <h3 class="mt-5 text-lg font-bold text-gray-900">
+        {{ card.title }}
+      </h3>
+
+      <p class="mt-2 text-sm leading-6 text-gray-500">
+        {{ card.description }}
+      </p>
+    </a>
+  } @else {
+    <div
+      class="rounded-xl border border-gray-200 bg-white p-6 opacity-60 shadow-sm"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <mat-icon>{{ card.icon }}</mat-icon>
+        <span
+          class="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-500"
+        >
+          Coming soon
+        </span>
+      </div>
+
+      <h3 class="mt-5 text-lg font-bold text-gray-900">
+        {{ card.title }}
+      </h3>
+
+      <p class="mt-2 text-sm leading-6 text-gray-500">
+        {{ card.description }}
+      </p>
+    </div>
+  }
+}
+
+              @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
                 <a
                   mat-menu-item
                   routerLink="/partner/admin"
@@ -223,7 +268,7 @@ interface DashboardCard {
               <div class="flex items-start gap-4">
 
                 <div
-                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#032D42]"
+                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#5DB996]"
                 >
                   <mat-icon class="!text-2xl text-white">
                     business
@@ -238,22 +283,30 @@ interface DashboardCard {
                     Organization
                   </p>
 
-                  <h2
-                    class="mt-1 text-xl font-bold text-gray-900"
-                  >
-                    {{ organizationName() }}
-                  </h2>
+                 <h2
+  class="mt-1 text-xl font-bold text-gray-900"
+>
+  {{ organizationName() }}
+</h2>
+
+@if (organizationStore.selectedOrganization()?.status === 'onboarding') {
+  <a
+    [routerLink]="[
+      '/partner/org',
+      organizationStore.selectedOrganizationId(),
+      'onboarding'
+    ]"
+    class="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/20"
+  >
+    <mat-icon class="!h-5 !w-5 !text-xl">checklist</mat-icon>
+    <span>Complete onboarding steps</span>
+    <mat-icon class="!h-4 !w-4 !text-base">arrow_forward</mat-icon>
+  </a>
+}
 
                   <div
                     class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500"
                   >
-
-                    <span>
-                      Role:
-                      <span class="font-medium text-gray-700">
-                        {{ roleLabel() }}
-                      </span>
-                    </span>
 
                     <span class="hidden sm:inline">
                       •
@@ -272,8 +325,8 @@ interface DashboardCard {
                 </div>
               </div>
 
-              <!-- Search -->
-
+              <!-- Operational search is available after onboarding only. -->
+              @if (canShowOperationalWorkspace()) {
               <div class="relative mt-5">
 
                 <mat-icon
@@ -461,136 +514,61 @@ interface DashboardCard {
                 </div>
 
               }
+              }
 
             </div>
 
        <!-- =========================================================
-     ACCESS / ONBOARDING
-     ========================================================= -->
+            PROFILE CARD
+            ========================================================= -->
 
-<div
-  class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:min-w-[250px]"
->
-
-  @if (isOrganizationOnboarding()) {
-
-    <!-- ONBOARDING ACTION -->
-
-    <a
-      [routerLink]="[
-        '/partner/org',
-        organizationStore.selectedOrganizationId(),
-        'onboarding'
-      ]"
-      class="group block h-full rounded-lg transition-colors"
-      aria-label="Continue organization onboarding"
-    >
-
-      <div class="flex items-start justify-between gap-4">
-
-        <div>
-
-          <p
-            class="text-xs font-semibold uppercase tracking-wider text-[#007979]"
-          >
-            Organization Setup
-          </p>
-
-          <div class="mt-3 flex items-center gap-3">
-
-            <div
-              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50"
+            <a
+              routerLink="/profile"
+              class="group block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md lg:min-w-[250px]"
+              aria-label="View and manage your profile"
             >
-              <mat-icon class="text-[#007979]">
-                checklist
-              </mat-icon>
-            </div>
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
+                    My Account
+                  </p>
 
-            <div>
+                  <div class="mt-3 flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50">
+                      <mat-icon class="text-[#007979]">person</mat-icon>
+                    </div>
 
-              <p
-                class="font-semibold text-gray-900 group-hover:text-[#007979]"
-              >
-                Continue Onboarding
-              </p>
+                    <div>
+                      <p class="font-semibold text-gray-900 group-hover:text-[#007979]">
+                        Profile
+                      </p>
+                      <p class="text-sm text-gray-500">
+                        View and manage your personal profile
+                      </p>
+                      
+                    </div>
+                  
+                  </div>
+                    <div  class="mt-3 mr-5 inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/20">
+                      Role:
+                        <span class="font-medium text-gray-700">
+                        {{ roleLabel() }}
+                        </span>                    
+                      </div>
+                </div>
 
-              <p class="text-sm text-gray-500">
-                Complete your organization setup
-              </p>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        <mat-icon
-          class="mt-1 text-gray-300 transition-colors group-hover:text-[#007979]"
-        >
-          arrow_forward
-        </mat-icon>
-
-      </div>
-
-      <div
-        class="mt-5 rounded-lg bg-teal-50 px-3 py-2"
-      >
-
-        <p class="text-xs font-medium text-[#007979]">
-          Setup in progress
-        </p>
-
-        <p class="mt-1 text-xs text-gray-600">
-          Complete the remaining onboarding steps to activate your organization.
-        </p>
-
-      </div>
-
-    </a>
-
-  } @else {
-
-    <!-- NORMAL ACCESS -->
-
-    <p
-      class="text-xs font-semibold uppercase tracking-wider text-gray-500"
-    >
-      Access
-    </p>
-
-    <div class="mt-3 flex items-center gap-3">
-
-      <div
-        class="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50"
-      >
-        <mat-icon class="text-[#007979]">
-          {{ accessIcon() }}
-        </mat-icon>
-      </div>
-
-      <div>
-
-        <p class="font-semibold text-gray-900">
-          {{ roleLabel() }}
-        </p>
-
-        <p class="text-sm text-gray-500">
-          {{ accessDescription() }}
-        </p>
-
-      </div>
-
-    </div>
-
-  }
-
-</div>
+                <mat-icon class="mt-1 text-gray-300 transition-colors group-hover:text-[#007979]">
+                  arrow_forward
+                </mat-icon>
+              </div>
+            </a>
           </section>
 
-          <!-- =====================================================
+                    <!-- =====================================================
                MEMBER FEATURES
                ===================================================== -->
 
+          @if (canShowOperationalWorkspace() && visibleDashboardCards().length > 0) {
           <section>
 
             <div class="mb-5">
@@ -621,19 +599,7 @@ interface DashboardCard {
 ) {
 
   <a
-    [routerLink]="
-      card.enabled
-        ? (
-            card.id === 'test-center'
-              ? [
-                  '/partner/org',
-                  organizationStore.selectedOrganizationId(),
-                  'test-center'
-                ]
-              : card.route
-          )
-        : null
-    "
+    [routerLink]="card.enabled ? card.route : null"
     [attr.aria-disabled]="!card.enabled"
     class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
     [class.pointer-events-none]="!card.enabled"
@@ -645,7 +611,7 @@ interface DashboardCard {
                   >
 
                     <div
-                      class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#032D42] transition-colors group-hover:bg-[#007979]"
+                      class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#007979]/10 transition-colors group-hover:bg-[#007979]"
                     >
                       <mat-icon class="text-white">
                         {{ card.icon }}
@@ -691,12 +657,13 @@ interface DashboardCard {
             </div>
 
           </section>
+          }
 
           <!-- =====================================================
                ADMINISTRATION
                ===================================================== -->
 
-          @if (access.canAccessAdministration()) {
+          @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
 
             <section class="mt-10">
 
@@ -729,14 +696,18 @@ interface DashboardCard {
               <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
 
                 <a
-                  routerLink="/partner/admin"
+                  [routerLink]="[
+    '/partner/org',
+    organizationStore.selectedOrganizationId(),
+    'settings'
+  ]"
                   class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
                 >
 
                   <div class="flex items-start justify-between">
 
                     <div
-                      class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#032D42] transition-colors group-hover:bg-[#007979]"
+                      class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#007979]/10 transition-colors group-hover:bg-[#007979]"
                     >
                       <mat-icon class="text-white">
                         admin_panel_settings
@@ -772,6 +743,7 @@ interface DashboardCard {
                QUICK ACCESS
                ===================================================== -->
 
+          @if (canShowOperationalWorkspace()) {
           <section
             class="mt-10 rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
           >
@@ -800,13 +772,15 @@ interface DashboardCard {
 
               <div class="flex flex-wrap gap-3">
 
-                <a
-                  mat-stroked-button
-                  routerLink="/test-center"
-                >
-                  <mat-icon>school</mat-icon>
-                  Test Center
-                </a>
+                @for (card of visibleDashboardCards(); track card.id) {
+                  <a
+                    mat-stroked-button
+                    [routerLink]="card.route"
+                  >
+                    <mat-icon>{{ card.icon }}</mat-icon>
+                    {{ card.title }}
+                  </a>
+                }
 
                 <a
                   mat-stroked-button
@@ -833,6 +807,7 @@ interface DashboardCard {
             </div>
 
           </section>
+          }
 
         }
 
@@ -842,7 +817,11 @@ interface DashboardCard {
   `,
 })
 export class PartnerAdminComponent implements OnInit {
-  protected readonly organizationStore = inject(OrganizationStore);
+  protected readonly organizationStore = inject(OrganizationContextStore);
+
+  private readonly applicationRegistry = inject(
+    ApplicationRegistryService,
+  );
 
   protected readonly access = inject(
     PartnerAccessService,
@@ -934,67 +913,91 @@ protected readonly roleLabel = computed(() => {
 
 protected readonly isOrganizationOnboarding = computed(() => {
   const organization = this.organizationStore.selectedOrganization();
-  const role = this.access.role();
+  const onboarding = this.organizationStore.onboarding();
 
+  // A completed onboarding record must take precedence over a stale
+  // organization lifecycle status in the dashboard's cached context.
+  if (onboarding?.status === 'completed') {
+    return false;
+  }
+
+  // Otherwise, keep showing the onboarding action while either source says
+  // that onboarding is still underway.
   return (
-    organization?.status === 'onboarding' &&
-    role === 'org_owner'
+    organization?.status === 'onboarding' ||
+    !!onboarding
   );
 });
 
-  /**
-   * Features available to normal Partner Portal members.
-   */
-  protected readonly dashboardCards: DashboardCard[] = [
-    {
-      id: 'test-center',
-      title: 'Test Center',
-      description:
-        'Take courses, practice assessments, and complete tests available to you.',
-      icon: 'school',
-      route: '',
+/** Operational application links must not appear until onboarding is complete. */
+protected readonly canShowOperationalWorkspace = computed(() => {
+  const organization = this.organizationStore.selectedOrganization();
+  const onboarding = this.organizationStore.onboarding();
+
+  if (
+    this.organizationStore.contextLoading() ||
+    this.organizationStore.applicationsLoading() ||
+    this.organizationStore.onboardingLoading() ||
+    !organization ||
+    this.isOrganizationOnboarding()
+  ) {
+    return false;
+  }
+
+  return onboarding?.status === 'completed';
+});
+
+/**
+ * Resolve workspace cards from the canonical application registry.
+ *
+ * The registry defines available platform applications and their metadata.
+ * Organization entitlements determine which applications this tenant may
+ * display. No application cards are duplicated in this component.
+ */
+protected readonly dashboardCards = computed<DashboardCard[]>(() => {
+  if (!this.canShowOperationalWorkspace()) {
+    return [];
+  }
+
+  const organizationId =
+    this.organizationStore.selectedOrganizationId();
+
+  if (!organizationId) {
+    return [];
+  }
+
+  return this.applicationRegistry
+    .getEnabledApplications()
+    .filter((application) => application.requiresOrganization)
+    .filter((application) =>
+      application.route.includes(':organizationId'),
+    )
+    .filter((application) =>
+      this.organizationStore.hasActiveApplication(application.id),
+    )
+    .map((application) => ({
+      id: application.id,
+      title: application.name,
+      description: application.description,
+      icon: application.icon ?? 'apps',
+      route: application.route.replace(
+        ':organizationId',
+        organizationId,
+      ),
       enabled: true,
-    },
+    }));
+});
 
-    {
-      id: 'courses',
-      title: 'Courses',
-      description:
-        'Browse training and courses available through your organization.',
-      icon: 'menu_book',
-      route: '/partner/courses',
-      enabled: false,
-    },
+/**
+ * Operational application links remain hidden until onboarding completes.
+ */
+protected readonly visibleDashboardCards = computed(() => {
+  if (!this.canShowOperationalWorkspace()) {
+    return [];
+  }
 
-    {
-      id: 'results',
-      title: 'My Results',
-      description:
-        'View your test history, scores, and completed assessments.',
-      icon: 'assessment',
-      route: '/partner/results',
-      enabled: false,
-    },
-
-    {
-      id: 'profile',
-      title: 'Profile',
-      description:
-        'View and manage your personal partner profile.',
-      icon: 'person',
-      route: '/profile',
-      enabled: true,
-    },
-  ];
-
-  /**
-   * Administration is deliberately NOT included here.
-   *
-   * It is rendered separately with @if so that regular
-   * members never see an administration section.
-   */
-  protected readonly visibleDashboardCards =
-    computed(() => this.dashboardCards);
+  return this.dashboardCards();
+});
 
   async ngOnInit(): Promise<void> {
     await this.initialize();

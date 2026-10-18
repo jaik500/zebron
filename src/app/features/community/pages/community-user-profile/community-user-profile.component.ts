@@ -861,113 +861,115 @@ export class CommunityUserProfileComponent implements OnInit {
   // =============================================================
 
   private async loadProfile(): Promise<void> {
-
     const userId =
-      this.route.snapshot.paramMap.get(
-        'userId',
-      );
+      this.route.snapshot.paramMap.get('userId')?.trim();
 
     if (!userId) {
-
       this.error.set(
         'The requested community profile could not be found.',
       );
-
       this.loading.set(false);
-
       return;
-
     }
 
-
     this.loading.set(true);
-
     this.error.set(null);
+    this.user.set(null);
+    this.isFollowing.set(false);
+    this.currentUserId = '';
 
+    let communityUser: CommunityUser | null;
 
+    // Load the public profile independently from social-graph data.
     try {
-
-      const communityUser =
-        await this.userService.getUserById(
-          userId,
-        );
-
-
-      if (!communityUser) {
-
-        this.error.set(
-          'This community member does not exist or is no longer available.',
-        );
-
-        return;
-
-      }
-
-
-      this.user.set(
-        communityUser,
-      );
-
-
-      /*
-       * Load the current user's follow relationship
-       * and the profile owner's follower/following
-       * information.
-       */
-      const authUserId =
-        await this.getCurrentUserId();
-
-      this.currentUserId =
-        authUserId;
-
-
-      await Promise.all([
-
-        this.communityFollowStore.loadFollowers(
-          communityUser.id,
-        ),
-
-        this.communityFollowStore.loadFollowing(
-          communityUser.id,
-        ),
-
-        authUserId &&
-        authUserId !== communityUser.id
-          ? this.loadFollowStatus(
-              authUserId,
-              communityUser.id,
-            )
-          : Promise.resolve(),
-
-      ]);
-
+      communityUser = await this.userService.getUserById(userId);
     } catch (error) {
-
       console.error(
-        '[CommunityUserProfile] Failed to load profile:',
+        '[CommunityUserProfile] Failed to load public profile:',
         error,
       );
 
       this.error.set(
-        'Unable to load this community profile. Please try again.',
+        'Unable to load this community profile. Check your connection and try again.',
       );
-
-    } finally {
-
       this.loading.set(false);
-
+      return;
     }
 
-  }
+    if (!communityUser) {
+      this.error.set(
+        'This community member does not exist or is no longer available.',
+      );
+      this.loading.set(false);
+      return;
+    }
 
+    // A successfully loaded profile should remain visible even if a
+    // follower/following query is denied by Firestore rules.
+    this.user.set(communityUser);
+
+    try {
+      this.currentUserId = await this.getCurrentUserId();
+    } catch (error) {
+      console.error(
+        '[CommunityUserProfile] Failed to resolve current user:',
+        error,
+      );
+    }
+
+    const followTasks: Array<{
+      name: string;
+      task: () => Promise<unknown>;
+    }> = [
+      {
+        name: 'followers',
+        task: () =>
+          this.communityFollowStore.loadFollowers(communityUser.id),
+      },
+      {
+        name: 'following',
+        task: () =>
+          this.communityFollowStore.loadFollowing(communityUser.id),
+      },
+    ];
+
+    if (
+      this.currentUserId &&
+      this.currentUserId !== communityUser.id
+    ) {
+      followTasks.push({
+        name: 'follow status',
+        task: () =>
+          this.loadFollowStatus(
+            this.currentUserId,
+            communityUser.id,
+          ),
+      });
+    }
+
+    const results = await Promise.allSettled(
+      followTasks.map(({ task }) => task()),
+    );
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(
+          `[CommunityUserProfile] Failed to load ${followTasks[index].name}:`,
+          result.reason,
+        );
+      }
+    });
+
+    this.loading.set(false);
+  }
 
   // =============================================================
   // Get authenticated user ID
   // =============================================================
 
- private getCurrentUserId(): string {
-  return this.authService.user()?.id ?? '';
-}
+  private getCurrentUserId(): string {
+    return this.authService.user()?.id ?? '';
+  }
 
 
   // =============================================================
@@ -1033,17 +1035,21 @@ export class CommunityUserProfileComponent implements OnInit {
        * Refresh the profile's follower/following
        * counts after the relationship changes.
        */
-      await Promise.all([
-
-        this.communityFollowStore.loadFollowers(
-          followingId,
-        ),
-
-        this.communityFollowStore.loadFollowing(
-          followingId,
-        ),
-
+      const refreshResults = await Promise.allSettled([
+        this.communityFollowStore.loadFollowers(followingId),
+        this.communityFollowStore.loadFollowing(followingId),
       ]);
+
+      refreshResults.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error(
+            `[CommunityUserProfile] Follow succeeded, but refreshing ${
+              index === 0 ? 'followers' : 'following'
+            } failed:`,
+            result.reason,
+          );
+        }
+      });
 
 
       if (following) {

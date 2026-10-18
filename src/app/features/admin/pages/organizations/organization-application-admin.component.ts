@@ -49,6 +49,14 @@ import { Timestamp } from 'firebase/firestore';
           </div>
         }
 
+        @if (recoveryMessage()) {
+          <div class="mb-6 rounded-xl border border-green-200 bg-green-50 p-5">
+            <p class="text-sm font-medium text-green-800">
+              {{ recoveryMessage() }}
+            </p>
+          </div>
+        }
+
         <!-- Filters -->
         <section class="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div class="flex flex-wrap gap-2">
@@ -227,23 +235,26 @@ import { Timestamp } from 'firebase/firestore';
         <!-- Detail panel -->
         @if (selectedApplication()) {
           <div
-            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-2 sm:p-3"
             (click)="closeApplication()"
           >
             <section
-              class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+              class="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
               (click)="$event.stopPropagation()"
             >
-              <!-- Detail header -->
-              <div class="flex items-start justify-between border-b border-slate-200 p-6">
-                <div>
-                  <p class="text-sm font-medium text-slate-500">Organization Application</p>
+              <!-- Fixed detail header -->
+              <header
+                class="sticky top-0 z-20 flex shrink-0 items-start justify-between gap-3 border-b border-teal-200 px-4 py-2 sm:px-5"
+                style="background-color: #007979;"
+              >
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-white/80">Organization Application</p>
 
-                  <h2 class="mt-1 text-2xl font-bold text-slate-900">
+                  <h2 class="mt-1 text-2xl font-bold text-slate-950">
                     {{ selectedApplication()!.organizationName }}
                   </h2>
 
-                  <p class="mt-1 font-mono text-xs text-slate-500">
+                  <p class="mt-1 break-all font-mono text-xs text-white/80">
                     {{ selectedApplication()!.id }}
                   </p>
                 </div>
@@ -251,14 +262,14 @@ import { Timestamp } from 'firebase/firestore';
                 <button
                   type="button"
                   (click)="closeApplication()"
-                  class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                  class="shrink-0 rounded-lg p-3 text-white transition hover:bg-black/10 hover:text-white cursor-pointer"
                   aria-label="Close application"
                 >
                   ✕
                 </button>
-              </div>
+              </header>
 
-              <div class="space-y-6 p-6">
+              <div class="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-5 sm:px-5">
                 <!-- Organization -->
                 <section>
                   <h3 class="text-lg font-semibold text-slate-900">Organization Information</h3>
@@ -594,7 +605,7 @@ import { Timestamp } from 'firebase/firestore';
 
               <!-- Actions -->
               <div
-                class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 p-6 sm:flex-row sm:justify-end"
+                class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-2 sm:flex-row sm:justify-end"
               >
                 @if (selectedApplication()!.status === 'submitted') {
                   <button
@@ -624,6 +635,34 @@ import { Timestamp } from 'firebase/firestore';
                     class="rounded-lg bg-green-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {{ processing() ? 'Processing...' : 'Approve Application' }}
+                  </button>
+                }
+
+                @if (
+                  selectedApplication()!.organizationId &&
+                  (selectedApplication()!.status === 'onboarding' ||
+                    selectedApplication()!.status === 'active')
+                ) {
+                  <button
+                    type="button"
+                    (click)="recoverProvisioning()"
+                    [disabled]="processing()"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg
+           border border-amber-300 bg-amber-50 px-4 py-2
+           text-sm font-semibold text-amber-900
+           transition hover:bg-amber-100
+           disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    @if (processing()) {
+                      <span
+                        class="h-4 w-4 animate-spin rounded-full border-2
+               border-amber-800 border-t-transparent"
+                      ></span>
+                      Recovering...
+                    } @else {
+                      <span aria-hidden="true">↻</span>
+                      Recover Provisioning
+                    }
                   </button>
                 }
 
@@ -663,6 +702,8 @@ export class OrganizationApplicationAdminComponent implements OnInit {
   readonly rejectionReason = signal('');
 
   readonly selectedFilter = signal<'all' | OrganizationApplicationRequestStatus>('all');
+
+  readonly recoveryMessage = signal<string | null>(null);
 
   readonly filters: Array<{
     status: 'all' | OrganizationApplicationRequestStatus;
@@ -864,31 +905,20 @@ export class OrganizationApplicationAdminComponent implements OnInit {
        *
        * This remains a normal application lifecycle update.
        */
-      await this.applicationService.approveRequest(
-  application.id,
-  firebaseUser.uid,
-);
+      await this.applicationService.approveRequest(application.id, firebaseUser.uid);
 
-const approvedApplication:
-  OrganizationApplicationRequest = {
-  ...application,
-  status: 'approved',
-  reviewedBy: firebaseUser.uid,
-  approvedAt: Timestamp.now(),
-};
+      const approvedApplication: OrganizationApplicationRequest = {
+        ...application,
+        status: 'approved',
+        reviewedBy: firebaseUser.uid,
+        approvedAt: Timestamp.now(),
+      };
 
-this.selectedApplication.set(
-  approvedApplication,
-);
+      this.selectedApplication.set(approvedApplication);
 
-this.applications.update(
-  (items) =>
-    items.map((item) =>
-      item.id === approvedApplication.id
-        ? approvedApplication
-        : item,
-    ),
-);
+      this.applications.update((items) =>
+        items.map((item) => (item.id === approvedApplication.id ? approvedApplication : item)),
+      );
 
       /*
        * ------------------------------------------------------------
@@ -910,31 +940,21 @@ this.applications.update(
         application.id,
       );
 
-      const provisionedApplication:
-  OrganizationApplicationRequest = {
-  ...approvedApplication,
+      const provisionedApplication: OrganizationApplicationRequest = {
+        ...approvedApplication,
 
-  status:
-    provisioningResult.status === 'active'
-      ? 'active'
-      : 'onboarding',
+        status: provisioningResult.status === 'active' ? 'active' : 'onboarding',
 
-  organizationId:
-    provisioningResult.organizationId,
-};
+        organizationId: provisioningResult.organizationId,
+      };
 
-this.selectedApplication.set(
-  provisionedApplication,
-);
+      this.selectedApplication.set(provisionedApplication);
 
-this.applications.update(
-  (items) =>
-    items.map((item) =>
-      item.id === provisionedApplication.id
-        ? provisionedApplication
-        : item,
-    ),
-);
+      this.applications.update((items) =>
+        items.map((item) =>
+          item.id === provisionedApplication.id ? provisionedApplication : item,
+        ),
+      );
 
       /*
        * ------------------------------------------------------------
@@ -1086,5 +1106,48 @@ this.applications.update(
       | OrganizationApplicationRequest['submittedAt'],
   ): Date | null {
     return timestamp?.toDate() ?? null;
+  }
+
+  async recoverProvisioning(): Promise<void> {
+    const application = this.selectedApplication();
+
+    if (
+      !application ||
+      !application.organizationId ||
+      !['onboarding', 'active'].includes(application.status)
+    ) {
+      this.errorMessage.set(
+        'Recovery requires an existing organization in onboarding or active status.',
+      );
+      return;
+    }
+
+    this.processing.set(true);
+    this.errorMessage.set(null);
+    this.recoveryMessage.set(null);
+
+    try {
+      const result = await this.provisioningService.provisionOrganization(application.id);
+
+      await this.loadApplications();
+
+      const refreshedApplication = this.applications().find((item) => item.id === application.id);
+
+      if (refreshedApplication) {
+        this.selectedApplication.set(refreshedApplication);
+      }
+
+      this.recoveryMessage.set(
+        result.alreadyProvisioned
+          ? 'Recovery completed. Existing organization records were checked and missing entitlement records were restored where necessary.'
+          : 'Organization provisioning completed successfully.',
+      );
+    } catch (error) {
+      console.error('Organization provisioning recovery failed:', error);
+
+      this.errorMessage.set('Recovery failed. Review the provisioning error and try again.');
+    } finally {
+      this.processing.set(false);
+    }
   }
 }

@@ -6,19 +6,19 @@
     "indexes": "firestore.indexes.json"
   },
   "functions": [
-  {
-    "source": "functions",
-    "codebase": "default",
-    "disallowLegacyRuntimeConfig": true,
-    "ignore": [
-      "node_modules",
-      ".git",
-      "firebase-debug.log",
-      "firebase-debug.*.log",
-      "*.local"
-    ]
-  }
-],
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ],
   "apphosting": {
     "backendId": "zebron-web",
     "rootDir": "/",
@@ -28,7 +28,8 @@
       "firebase-debug.log",
       "firebase-debug.*.log",
       "functions"
-    ]
+    ],
+    "alwaysDeployFromSource": true
   },
   "storage": {
     "rules": "storage.rules"

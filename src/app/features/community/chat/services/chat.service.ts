@@ -34,6 +34,7 @@ import {
 } from 'firebase/storage';
 
 import {
+  firebaseAuth,
   firestore,
 } from '../../../../core/services/firebase-config';
 
@@ -210,51 +211,53 @@ export class ChatService {
   // GET CONVERSATIONS FOR USER
   // ==============================================================
 
-  async getConversations(
-    userId: string,
-  ): Promise<ChatConversation[]> {
-    const id =
-      userId.trim();
+  /**
+ * Load conversations belonging to the authenticated user.
+ *
+ * The Firebase Authentication UID is authoritative.
+ * The caller-supplied user ID is retained for compatibility
+ * with existing ChatStore callers but is not trusted for access.
+ */
+async getConversations(
+  _userId: string,
+): Promise<ChatConversation[]> {
+  const authenticatedUid =
+    firebaseAuth.currentUser?.uid;
 
-    if (!id) {
-      throw new Error(
-        'User ID is required.',
-      );
-    }
-
-    const conversationsQuery =
-      query(
-        this.conversationsCollection(),
-
-        where(
-          'participantIds',
-          'array-contains',
-          id,
-        ),
-
-        orderBy(
-          'lastMessageAt',
-          'desc',
-        ),
-
-        limit(
-          this.conversationPageSize,
-        ),
-      );
-
-    const snapshot =
-      await getDocs(
-        conversationsQuery,
-      );
-
-    return snapshot.docs.map(
-      (document) =>
-        ({
-          id: document.id,
-          ...document.data(),
-        }) as ChatConversation,
+  if (!authenticatedUid) {
+    throw new Error(
+      'You must be signed in to view your conversations.',
     );
   }
+
+  const conversationsQuery = query(
+    this.conversationsCollection(),
+
+    where(
+      'participantIds',
+      'array-contains',
+      authenticatedUid,
+    ),
+
+    orderBy(
+      'lastMessageAt',
+      'desc',
+    ),
+
+    limit(
+      this.conversationPageSize,
+    ),
+  );
+
+  const snapshot = await getDocs(
+    conversationsQuery,
+  );
+
+  return snapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data(),
+  }) as ChatConversation);
+}
 
 
   // ==============================================================

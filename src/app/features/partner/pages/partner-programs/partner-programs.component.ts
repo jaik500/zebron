@@ -23,7 +23,7 @@ import { TestProgram } from '../../../../features/test-center/models/test-progra
 
 import { TestProgramService } from '../../../../features/test-center/services/test-program.service';
 
-import { OrganizationStore } from '../../../organizations/stores/organization.store';
+import { OrganizationContextStore  } from '../../../organizations/stores/organization-context.store';
 
 import { PartnerAccessService } from '../../../../core/services/partner-access.service';
 
@@ -446,7 +446,7 @@ export class PartnerProgramsComponent implements OnInit {
   // SERVICES
   // ============================================================
 
-  protected readonly organizationStore = inject(OrganizationStore);
+  protected readonly organizationStore = inject(OrganizationContextStore );
 
   protected readonly access = inject(PartnerAccessService);
 

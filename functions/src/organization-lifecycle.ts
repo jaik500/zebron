@@ -19,6 +19,14 @@ import {
   type OrganizationLifecycleState,
 } from "./organization-lifecycle-policy";
 
+import {
+  getApplicationProvisioningPolicy,
+} from "./application-provisioning-policy";
+
+import {
+  provisionOrganizationApplications,
+} from "./application-provisioning";
+
 import "./firebase-admin";
 
 /**
@@ -629,5 +637,270 @@ export const repairOrganizationApplicationRequestStatus = onCall(
     }
 
     return result;
+  },
+);
+
+/**
+ * Recover application provisioning for an organization whose core
+ * onboarding is already complete.
+ *
+ * This callable is intended for controlled administrative recovery.
+ *
+ * Safety constraints:
+ * - Requires platform-administrator authorization.
+ * - Requires the deterministic request-to-organization relationship.
+ * - Requires completed core onboarding.
+ * - Requires an active application request.
+ * - Requires Community to appear in the request's requestedApplications.
+ * - Creates the foundational core entitlement only if it is missing.
+ * - Uses the trusted backend provisioning policies.
+ * - Provisions only core and community.
+ * - Does not modify unrelated application entitlements.
+ *
+ * Callable name: repairOrganizationApplicationProvisioning
+ * Region: us-central1
+ */
+export const repairOrganizationApplicationProvisioning = onCall(
+  {
+    region: "us-central1",
+  },
+  async (request) => {
+    const actorUid = await requirePlatformAdmin(request);
+
+    const requestId = request.data?.requestId;
+
+    if (
+      typeof requestId !== "string" ||
+      requestId.trim().length === 0 ||
+      requestId !== requestId.trim()
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A valid application request ID is required.",
+      );
+    }
+
+    const organizationId = `org_${requestId}`;
+
+    const requestRef = db
+      .collection("organizationApplicationRequests")
+      .doc(requestId);
+
+    const organizationRef = db
+      .collection("organizations")
+      .doc(organizationId);
+
+    const onboardingRef = db
+      .collection("organizationOnboarding")
+      .doc(organizationId);
+
+    const applicationsRef = organizationRef
+      .collection("applications");
+
+    const coreRef = applicationsRef.doc("core");
+    const communityRef = applicationsRef.doc("community");
+
+    /*
+     * ------------------------------------------------------------
+     * Validate recovery eligibility and repair the missing core
+     * entitlement.
+     * ------------------------------------------------------------
+     *
+     * Existing core entitlements are never overwritten. The shared
+     * provisioning engine owns their lifecycle transitions.
+     */
+    await db.runTransaction(async (transaction) => {
+      const [
+        requestSnapshot,
+        organizationSnapshot,
+        onboardingSnapshot,
+        coreSnapshot,
+        communitySnapshot,
+      ] = await Promise.all([
+        transaction.get(requestRef),
+        transaction.get(organizationRef),
+        transaction.get(onboardingRef),
+        transaction.get(coreRef),
+        transaction.get(communityRef),
+      ]);
+
+      if (!requestSnapshot.exists) {
+        throw new HttpsError(
+          "not-found",
+          "The organization application request was not found.",
+        );
+      }
+
+      if (!organizationSnapshot.exists) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The associated organization does not exist.",
+        );
+      }
+
+      if (!onboardingSnapshot.exists) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The organization's onboarding record does not exist.",
+        );
+      }
+
+      const applicationRequest = requestSnapshot.data() ?? {};
+      const onboarding = onboardingSnapshot.data() ?? {};
+
+      if (applicationRequest["organizationId"] !== organizationId) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The application request does not match its organization.",
+        );
+      }
+
+      if (onboarding["status"] !== "completed") {
+        throw new HttpsError(
+          "failed-precondition",
+          "The organization's core onboarding is not completed.",
+        );
+      }
+
+      if (applicationRequest["status"] !== "active") {
+        throw new HttpsError(
+          "failed-precondition",
+          "The application request must be active before provisioning recovery.",
+        );
+      }
+
+      const requestedApplications =
+        applicationRequest["requestedApplications"];
+
+      if (
+        !Array.isArray(requestedApplications) ||
+        !requestedApplications.includes("community")
+      ) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The organization application request does not include Community.",
+        );
+      }
+
+      if (!communitySnapshot.exists) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The Community entitlement is missing. This recovery will not create optional application entitlements.",
+        );
+      }
+
+      const community = communitySnapshot.data() ?? {};
+
+      if (
+        community["organizationId"] !== organizationId ||
+        community["applicationId"] !== "community"
+      ) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The Community entitlement does not match the expected organization.",
+        );
+      }
+
+      const corePolicy = getApplicationProvisioningPolicy("core");
+
+      if (!corePolicy || !corePolicy.enabled) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The foundational core application is not enabled or configured.",
+        );
+      }
+
+      if (!coreSnapshot.exists) {
+        transaction.create(coreRef, {
+          applicationId: "core",
+          organizationId,
+          status: "selected",
+          version: 1,
+          provisioningStrategy: corePolicy.provisioningStrategy,
+          activatedAt: null,
+          activatedBy: null,
+          provisionedAt: null,
+          configuration: {},
+          provisioningError: null,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      } else {
+        const core = coreSnapshot.data() ?? {};
+
+        if (
+          core["organizationId"] !== organizationId ||
+          core["applicationId"] !== "core"
+        ) {
+          throw new HttpsError(
+            "failed-precondition",
+            "The core entitlement does not match the expected organization.",
+          );
+        }
+      }
+    });
+
+    /*
+     * ------------------------------------------------------------
+     * Provision foundational core first, then Community.
+     * ------------------------------------------------------------
+     *
+     * Dependency ordering is enforced by the shared provisioning
+     * engine. Test Center and all other applications are excluded.
+     */
+    const provisioningResults =
+      await provisionOrganizationApplications(
+        db,
+        organizationId,
+        actorUid,
+        {
+          mode: "requested",
+          applicationIds: ["core", "community"],
+        },
+      );
+
+    const coreResult = provisioningResults.find(
+      (result) => result.applicationId === "core",
+    );
+
+    const communityResult = provisioningResults.find(
+      (result) => result.applicationId === "community",
+    );
+
+    logger.info(
+      "Organization application provisioning recovery completed.",
+      {
+        actorUid,
+        requestId,
+        organizationId,
+        provisioningResults,
+      },
+    );
+
+    /*
+     * Do not report successful recovery unless both entitlements
+     * reached the active state.
+     */
+    if (
+      coreResult?.status !== "active" ||
+      communityResult?.status !== "active"
+    ) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Provisioning recovery did not activate both core and Community. Inspect the returned provisioning diagnostics and entitlement records.",
+        {
+          organizationId,
+          provisioningResults,
+        },
+      );
+    }
+
+    return {
+      success: true,
+      requestId,
+      organizationId,
+      activatedApplications: ["core", "community"],
+      provisioningResults,
+    };
   },
 );

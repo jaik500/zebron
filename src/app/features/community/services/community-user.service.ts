@@ -3,8 +3,8 @@ import { Injectable } from '@angular/core';
 import {
   collection,
   doc,
-  getDocs,
   getDoc,
+  getDocs,
   limit,
   query,
   Timestamp,
@@ -19,145 +19,161 @@ import { CommunityUser } from '../models/community-user.model';
 })
 export class CommunityUserService {
 
+  /**
+   * Public Community profiles are stored separately from private
+   * account documents.
+   *
+   * Document IDs must match the corresponding Firebase Auth UIDs.
+   */
+  private readonly profilesCollection = 'communityProfiles';
+
   // =============================================================
-  // Get user by ID
+  // GET USER BY ID
   // =============================================================
 
   /**
-   * Retrieve a user's public Community profile.
+   * Retrieve a member's public Community profile.
    *
-   * Community should only expose profile information that is
-   * appropriate for other community members to see.
+   * This method deliberately does not read from the private
+   * /users collection.
    */
   async getUserById(
     userId: string,
   ): Promise<CommunityUser | null> {
 
-    if (!userId) {
+    const id = userId.trim();
+
+    if (!id) {
       return null;
     }
 
-    const userRef =
-      doc(
-        firestore,
-        'users',
-        userId,
-      );
+    const profileRef = doc(
+      firestore,
+      this.profilesCollection,
+      id,
+    );
 
-    const snapshot =
-      await getDoc(userRef);
+    const snapshot = await getDoc(profileRef);
 
     if (!snapshot.exists()) {
       return null;
     }
 
-    const data =
-      snapshot.data();
-
     return this.mapUser(
       snapshot.id,
-      data,
+      snapshot.data(),
     );
   }
 
 
   // =============================================================
-  // Get multiple users
+  // GET MULTIPLE USERS BY ID
   // =============================================================
 
   /**
-   * Retrieve multiple Community users.
+   * Retrieve multiple public Community profiles.
    *
-   * Promise.all is used so the requests execute concurrently
-   * instead of sequentially.
-   *
-   * Duplicate IDs are removed before querying Firestore.
+   * Duplicate IDs are removed before requests are issued.
+   * Requests execute concurrently.
    */
   async getUsersByIds(
     userIds: string[],
   ): Promise<CommunityUser[]> {
 
-    const uniqueIds =
-      [
-        ...new Set(
-          userIds.filter(Boolean),
-        ),
-      ];
+    const uniqueIds = [
+      ...new Set(
+        userIds
+          .filter(
+            (userId): userId is string =>
+              typeof userId === 'string',
+          )
+          .map(
+            (userId) => userId.trim(),
+          )
+          .filter(Boolean),
+      ),
+    ];
 
     if (uniqueIds.length === 0) {
       return [];
     }
 
-    const users =
-      await Promise.all(
-        uniqueIds.map(
-          (userId) =>
-            this.getUserById(userId),
-        ),
-      );
+    const profiles = await Promise.all(
+      uniqueIds.map(
+        (userId) => this.getUserById(userId),
+      ),
+    );
 
-    return users.filter(
-      (
-        user,
-      ): user is CommunityUser =>
-        user !== null,
+    return profiles.filter(
+      (profile): profile is CommunityUser =>
+        profile !== null,
     );
   }
 
 
   // =============================================================
-  // Get Community users
+  // GET COMMUNITY USERS
   // =============================================================
 
   /**
-   * Retrieve users that can be displayed in the
-   * Community member discovery experience.
+   * Retrieve public profiles for Community member discovery.
    *
-   * This is intentionally limited to a reasonable number of
-   * users for the initial discovery experience.
+   * This method returns only documents from the dedicated public
+   * profile collection.
    *
-   * Search/filtering can then be performed client-side.
+   * Note:
+   * Firestore does not guarantee a particular order without an
+   * explicit ordering clause. This initial implementation uses
+   * a bounded query and does not implement pagination.
    */
   async getCommunityUsers(
     maxUsers: number = 50,
   ): Promise<CommunityUser[]> {
 
-    const usersRef =
-      collection(
-        firestore,
-        'users',
-      );
+    const normalizedLimit = Math.max(
+      1,
+      Math.min(
+        Math.floor(maxUsers),
+        100,
+      ),
+    );
 
-    const usersQuery =
-      query(
-        usersRef,
-        limit(maxUsers),
-      );
+    const profilesRef = collection(
+      firestore,
+      this.profilesCollection,
+    );
 
-    const snapshot =
-      await getDocs(usersQuery);
+    const profilesQuery = query(
+      profilesRef,
+      limit(normalizedLimit),
+    );
 
-    return snapshot.docs
-      .map(
-        (userDoc) =>
-          this.mapUser(
-            userDoc.id,
-            userDoc.data(),
-          ),
-      );
+    const snapshot = await getDocs(
+      profilesQuery,
+    );
+
+    return snapshot.docs.map(
+      (profileDoc) =>
+        this.mapUser(
+          profileDoc.id,
+          profileDoc.data(),
+        ),
+    );
   }
 
 
   // =============================================================
-  // Map Firestore user
+  // MAP PUBLIC COMMUNITY PROFILE
   // =============================================================
 
   /**
-   * Convert a Firestore user document into the public
+   * Convert a public Community profile document into the
    * CommunityUser model.
    *
-   * Keep this mapping centralized so all Community user
-   * retrieval methods expose the same public fields.
+   * Only explicitly approved public profile fields are mapped.
+   *
+   * In particular, this method never reads or exposes a user's
+   * platform authorization role.
    */
   private mapUser(
     id: string,
@@ -168,52 +184,109 @@ export class CommunityUserService {
       id,
 
       displayName:
-        (data['displayName'] as string) ||
+        this.readString(data, 'displayName') ||
         'Zebron User',
 
       firstName:
-        data['firstName'] as string | undefined,
+        this.readOptionalString(data, 'firstName'),
 
       lastName:
-        data['lastName'] as string | undefined,
+        this.readOptionalString(data, 'lastName'),
 
       preferredName:
-        data['preferredName'] as string | undefined,
+        this.readOptionalString(data, 'preferredName'),
 
       photoUrl:
-        data['photoUrl'] as string | undefined,
+        this.readOptionalString(data, 'photoUrl'),
 
       bio:
-        data['bio'] as string | undefined,
+        this.readOptionalString(data, 'bio'),
 
       website:
-        data['website'] as string | undefined,
+        this.readOptionalString(data, 'website'),
 
       countryOfOrigin:
-        data['countryOfOrigin'] as string | undefined,
-
-      role:
-        data['role'] as
-          | 'user'
-          | 'admin'
-          | undefined,
+        this.readOptionalString(data, 'countryOfOrigin'),
 
       currentCountry:
-        data['currentCountry'] as string | undefined,
+        this.readOptionalString(data, 'currentCountry'),
 
       city:
-        data['city'] as string | undefined,
+        this.readOptionalString(data, 'city'),
 
       state:
-        data['state'] as string | undefined,
+        this.readOptionalString(data, 'state'),
 
       createdAt:
-        (data['createdAt'] as Timestamp | null | undefined) ??
-        null,
+        this.readTimestamp(data, 'createdAt'),
 
       updatedAt:
-        (data['updatedAt'] as Timestamp | null | undefined) ??
-        null,
+        this.readTimestamp(data, 'updatedAt'),
     };
   }
+
+
+  // =============================================================
+  // READ STRING
+  // =============================================================
+
+  /**
+   * Read a string field with a safe fallback.
+   */
+  private readString(
+    data: Record<string, unknown>,
+    field: string,
+  ): string {
+
+    const value = data[field];
+
+    return typeof value === 'string'
+      ? value.trim()
+      : '';
+  }
+
+
+  // =============================================================
+  // READ OPTIONAL STRING
+  // =============================================================
+
+  /**
+   * Read an optional string field.
+   */
+  private readOptionalString(
+    data: Record<string, unknown>,
+    field: string,
+  ): string | undefined {
+
+    const value = data[field];
+
+    if (typeof value !== 'string') {
+      return undefined;
+    }
+
+    const normalized = value.trim();
+
+    return normalized || undefined;
+  }
+
+
+  // =============================================================
+  // READ TIMESTAMP
+  // =============================================================
+
+  /**
+   * Read a Firestore timestamp without assuming the field exists.
+   */
+  private readTimestamp(
+    data: Record<string, unknown>,
+    field: string,
+  ): Timestamp | null {
+
+    const value = data[field];
+
+    return value instanceof Timestamp
+      ? value
+      : null;
+  }
+
 }

@@ -329,15 +329,13 @@ export class CommunityCommentService {
      * on the parent post.
      */
     batch.update(
-      this.postDocument(postId),
-      {
-        commentCount:
-          increment(1),
-
-        updatedAt:
-          serverTimestamp(),
-      },
-    );
+  this.postDocument(postId),
+  {
+    commentCount: increment(1),
+    lastCommentId: commentReference.id,
+    updatedAt: serverTimestamp(),
+  },
+);
 
 
     await batch.commit();

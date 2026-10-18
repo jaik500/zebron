@@ -76,14 +76,17 @@ export class OrganizationApplicationRequestService {
     return this.repository.updateRequest(requestId, changes);
   }
 
-  /**
-   * Submit a draft application for platform review.
-   */
-  async submitRequest(requestId: string): Promise<void> {
-    await this.repository.updateRequest(requestId, {
-      status: 'submitted',
-    });
-  }
+ /**
+ * Submit a draft application for platform review.
+ */
+async submitRequest(requestId: string): Promise<void> {
+  const now = Timestamp.now();
+
+  await this.repository.updateRequest(requestId, {
+    status: 'submitted',
+    submittedAt: now,
+  });
+}
 
   /**
    * Move a submitted application into platform review.

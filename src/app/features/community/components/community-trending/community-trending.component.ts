@@ -42,7 +42,7 @@ import { AuthService } from '../../../../core/services/auth.service';
       >
 
         <div
-          class="flex items-center gap-2"
+          class="flex items-center gap-2 p-2 bg-[#E5F4F4]"
         >
 
           <mat-icon
@@ -118,11 +118,11 @@ import { AuthService } from '../../../../core/services/auth.service';
         >
 
           <div
-            class="flex items-center justify-between"
+            class="flex items-center justify-between p-2 bg-[#E5F4F4]"
           >
 
             <div
-              class="flex items-center gap-2"
+              class="flex items-center gap-2 "
             >
 
               <mat-icon
@@ -144,7 +144,7 @@ import { AuthService } from '../../../../core/services/auth.service';
               class="rounded-full
                      bg-[#E5F4F4]
                      px-2 py-0.5
-                     text-xs font-medium
+                     text-sm font-medium
                      text-[#007979]"
             >
               {{ suggestedMembers().length }}
@@ -153,7 +153,7 @@ import { AuthService } from '../../../../core/services/auth.service';
           </div>
 
 
-          <div class="mt-4 space-y-1">
+          <div class="mt-2 space-y-1">
 
             @for (
               member of suggestedMembers();
@@ -303,7 +303,7 @@ import { AuthService } from '../../../../core/services/auth.service';
           <div
             class="mt-3 border-t
                    border-[#E8F0F1]
-                   pt-3"
+                   pt-1"
           >
 
             <a
@@ -339,7 +339,7 @@ import { AuthService } from '../../../../core/services/auth.service';
       >
 
         <div
-          class="flex items-start gap-3"
+          class="flex items-start gap-3 p-2"
         >
 
           <div

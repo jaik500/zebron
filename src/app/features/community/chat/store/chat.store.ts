@@ -206,63 +206,66 @@ export const ChatStore = signalStore(
       // LOAD CONVERSATIONS
       // ============================================================
 
-      async loadConversations(): Promise<void> {
-        const user = authService.user();
+     async loadConversations(): Promise<void> {
+  const firebaseUid = authService.firebaseUser()?.uid;
 
-        if (!user) {
-          patchState(store, {
-            conversations: [],
-            loading: false,
-            error: 'You must be signed in to view your conversations.',
-          });
-          return;
-        }
+  if (!firebaseUid) {
+    patchState(store, {
+      conversations: [],
+      loading: false,
+      error: 'You must be signed in to view your conversations.',
+    });
 
-        patchState(store, {
-          loading: true,
-          error: null,
-        });
+    return;
+  }
 
-        try {
-          const conversations =
-            await chatService.getConversations(user.id);
+  patchState(store, {
+    loading: true,
+    error: null,
+  });
 
-          patchState(store, {
-            conversations,
-            loading: false,
-            error: null,
-          });
+  try {
+    // Use the Firebase Authentication UID because Firestore
+    // rules validate access using request.auth.uid.
+    const conversations =
+      await chatService.getConversations(firebaseUid);
 
-          logger.info(
-            'ChatStore',
-            'Community chat conversations loaded.',
-            {
-              userId: user.id,
-              conversationCount: conversations.length,
-            },
-          );
-        } catch (error) {
-          const message = getErrorMessage(
-            error,
-            'Unable to load conversations.',
-          );
+    patchState(store, {
+      conversations,
+      loading: false,
+      error: null,
+    });
 
-          logger.error(
-            'ChatStore',
-            'Failed to load community chat conversations.',
-            {
-              userId: user.id,
-              error: message,
-            },
-          );
-
-          patchState(store, {
-            conversations: [],
-            loading: false,
-            error: message,
-          });
-        }
+    logger.info(
+      'ChatStore',
+      'Community chat conversations loaded.',
+      {
+        userId: firebaseUid,
+        conversationCount: conversations.length,
       },
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Unable to load conversations.';
+
+    logger.error(
+      'ChatStore',
+      'Failed to load community chat conversations.',
+      {
+        userId: firebaseUid,
+        error: message,
+      },
+    );
+
+    patchState(store, {
+      conversations: [],
+      loading: false,
+      error: message,
+    });
+  }
+},
 
 
       // ============================================================
@@ -327,90 +330,76 @@ export const ChatStore = signalStore(
       // START DIRECT CONVERSATION
       // ============================================================
 
-      async startDirectConversation(
-        otherUser: ChatParticipant,
-      ): Promise<string | null> {
-        const user = authService.user();
+     async startDirectConversation(
+  otherUser: ChatParticipant,
+): Promise<string | null> {
+  const firebaseUid = authService.firebaseUser()?.uid;
+  const user = authService.user();
 
-        if (!user) {
-          patchState(store, {
-            error: 'You must be signed in to start a conversation.',
-          });
-          return null;
-        }
+  if (!firebaseUid || !user) {
+    patchState(store, {
+      error: 'You must be signed in to start a conversation.',
+    });
 
-        const otherUserId = otherUser.userId.trim();
+    return null;
+  }
 
-        if (!otherUserId) {
-          patchState(store, {
-            error: 'Other user ID is required.',
-          });
-          return null;
-        }
+  const otherUserId = otherUser.userId.trim();
 
-        if (otherUserId === user.id) {
-          patchState(store, {
-            error: 'You cannot start a conversation with yourself.',
-          });
-          return null;
-        }
+  if (!otherUserId) {
+    patchState(store, {
+      error: 'Other user ID is required.',
+    });
 
-        patchState(store, {
-          error: null,
-        });
+    return null;
+  }
 
-        try {
-          const currentUser: ChatParticipant = {
-            userId: user.id,
-            displayName:
-              user.displayName ||
-              'Zebron Community Member',
-            ...(user.photoUrl
-              ? { photoUrl: user.photoUrl }
-              : {}),
-          };
+  if (otherUserId === firebaseUid) {
+    patchState(store, {
+      error: 'You cannot start a conversation with yourself.',
+    });
 
-          const conversation =
-            await chatService.createDirectConversation({
-              currentUser,
-              otherUser,
-            });
+    return null;
+  }
 
-          replaceConversation(conversation);
-          await openConversationInternal(conversation.id);
+  patchState(store, {
+    error: null,
+  });
 
-          logger.info(
-            'ChatStore',
-            'Community direct conversation started.',
-            {
-              conversationId: conversation.id,
-              otherUserId,
-            },
-          );
+  try {
+    const currentUser: ChatParticipant = {
+      userId: firebaseUid,
+      displayName:
+        user.displayName || 'Zebron Community Member',
+      ...(user.photoUrl
+        ? { photoUrl: user.photoUrl }
+        : {}),
+    };
 
-          return conversation.id;
-        } catch (error) {
-          const message = getErrorMessage(
-            error,
-            'Unable to start conversation.',
-          );
+    const conversation =
+      await chatService.createDirectConversation({
+        currentUser,
+        otherUser,
+      });
 
-          logger.error(
-            'ChatStore',
-            'Failed to start community direct conversation.',
-            {
-              otherUserId,
-              error: message,
-            },
-          );
+    replaceConversation(conversation);
 
-          patchState(store, {
-            error: message,
-          });
+    await openConversationInternal(conversation.id);
 
-          return null;
-        }
-      },
+    return conversation.id;
+  } catch (error) {
+    const message = getErrorMessage(
+      error,
+      'Unable to start conversation.',
+    );
+
+    patchState(store, {
+      error: message,
+    });
+
+    return null;
+  }
+},
 
 
       // ============================================================
@@ -896,10 +885,19 @@ async function openConversationInternal(
       });
 
       // Opening a conversation means the notification has been seen.
-      await chatService.markConversationAsRead(
-        id,
-        authService.user()?.id ?? '',
-      );
+      const authenticatedUid =
+  authService.firebaseUser()?.uid;
+
+if (!authenticatedUid) {
+  throw new Error(
+    'You must be signed in to open this conversation.',
+  );
+}
+
+await chatService.markConversationAsRead(
+  id,
+  authenticatedUid,
+);
 
       const userId = authService.user()?.id;
 

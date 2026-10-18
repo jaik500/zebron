@@ -195,11 +195,85 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                   text-white
                 "
               >
+
+                <!-- Author -->
+
+              <div
+                class="
+                  flex
+                  items-center
+                  gap-2.5
+                "
+              >
+                <!-- Avatar -->
+
+                @if (post.author.photoUrl) {
+                  <img
+                    [src]="post.author.photoUrl"
+                    [alt]="post.author.displayName"
+                    class="
+                      h-9
+                      w-9
+                      shrink-0
+                      rounded-full
+                      object-cover
+                      ring-2
+                      ring-white/40
+                    "
+                  />
+                } @else {
+                  <div
+                    class="
+                      flex
+                      h-9
+                      w-9
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-white/20
+                      text-sm
+                      font-semibold
+                      text-white
+                      ring-2
+                      ring-white/30
+                    "
+                  >
+                    {{ getInitials(post.author.displayName) }}
+                  </div>
+                }
+
+                <!-- Author Information -->
+
+                <div class="min-w-0">
+                  <div
+                    class="
+                      truncate
+                      text-md
+                      font-semibold
+                      text-white
+                    "
+                  >
+                    {{ post.author.displayName }}
+                  </div>
+
+                  <div
+                    class="
+                      mt-0.5
+                      text-xs
+                      text-white/75
+                    "
+                  >
+                    {{ formatDate(post.createdAt) }}
+                  </div>
+                </div>
+              </div>
+
                 <!-- Back -->
 
                 <a
                   mat-button
-                  routerLink="/community"
+                  [routerLink]="communityHomeRoute"
                   class="
                     !min-w-0
                     !px-2
@@ -256,78 +330,7 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                 </mat-menu>
               </div>
 
-              <!-- Author -->
-
-              <div
-                class="
-                  flex
-                  items-center
-                  gap-2.5
-                "
-              >
-                <!-- Avatar -->
-
-                @if (post.author.photoUrl) {
-                  <img
-                    [src]="post.author.photoUrl"
-                    [alt]="post.author.displayName"
-                    class="
-                      h-9
-                      w-9
-                      shrink-0
-                      rounded-full
-                      object-cover
-                      ring-2
-                      ring-white/40
-                    "
-                  />
-                } @else {
-                  <div
-                    class="
-                      flex
-                      h-9
-                      w-9
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-white/20
-                      text-sm
-                      font-semibold
-                      text-white
-                      ring-2
-                      ring-white/30
-                    "
-                  >
-                    {{ getInitials(post.author.displayName) }}
-                  </div>
-                }
-
-                <!-- Author Information -->
-
-                <div class="min-w-0">
-                  <div
-                    class="
-                      truncate
-                      text-sm
-                      font-semibold
-                      text-white
-                    "
-                  >
-                    {{ post.author.displayName }}
-                  </div>
-
-                  <div
-                    class="
-                      mt-0.5
-                      text-xs
-                      text-white/75
-                    "
-                  >
-                    {{ formatDate(post.createdAt) }}
-                  </div>
-                </div>
-              </div>
+            
             </div>
 
             <!-- ====================================================
@@ -1436,4 +1439,27 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
       return '';
     }
   }
+
+  /**
+ * Return to the Community page within the current organization.
+ *
+ * Legacy, non-organization Community routes continue to work.
+ */
+get communityHomeRoute(): string[] {
+  const organizationId =
+    this.route.snapshot.paramMap
+      .get('organizationId')
+      ?.trim();
+
+  if (organizationId) {
+    return [
+      '/partner',
+      'org',
+      organizationId,
+      'community',
+    ];
+  }
+
+  return ['/community'];
+}
 }

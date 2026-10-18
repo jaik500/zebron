@@ -11,12 +11,12 @@ import {
   deleteApp,
   getApps,
   initializeApp,
-} from "../functions/node_modules/firebase-admin/lib/app";
+} from "../../functions/node_modules/firebase-admin/lib/app";
 
 import {
   getFirestore,
   Timestamp,
-} from "../functions/node_modules/firebase-admin/lib/firestore";
+} from "../../functions/node_modules/firebase-admin/lib/firestore";
 
 import {
   initializeTestEnvironment,
@@ -27,7 +27,7 @@ import fs from "node:fs";
 
 import {
   resendOrganizationInvitation,
-} from "../functions/src/organization-invitation-resend";
+} from "../../functions/src/organization-invitation-resend";
 
 const PROJECT_ID = "zebron-test";
 

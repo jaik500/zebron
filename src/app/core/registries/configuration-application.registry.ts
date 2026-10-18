@@ -236,4 +236,5 @@ export const CONFIGURATION_APPLICATIONS: ConfigurationApplication[] = [
       'control center',
     ],
   },
+  
 ];

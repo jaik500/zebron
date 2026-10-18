@@ -31,11 +31,34 @@ interface OrganizationLifecycleRequest {
 }
 
 /**
+ * Request payload for recovering organization application provisioning.
+ */
+export interface OrganizationApplicationProvisioningRepairRequest {
+  requestId: string;
+}
+
+/**
+ * Result returned by the provisioning recovery Cloud Function.
+ */
+export interface OrganizationApplicationProvisioningRepairResult {
+  success: boolean;
+  requestId: string;
+  organizationId: string;
+  activatedApplications: string[];
+  provisioningResults: Array<{
+    applicationId: string;
+    status: string;
+    reason?: string;
+  }>;
+}
+
+/**
  * Organization lifecycle service.
  *
- * Invokes the backend Cloud Functions responsible for organization
- * lifecycle transitions. Authorization and lifecycle validation
- * are enforced by the backend.
+ * Invokes backend Cloud Functions responsible for organization
+ * lifecycle transitions and application provisioning recovery.
+ *
+ * Authorization and lifecycle validation are enforced by the backend.
  */
 @Injectable({
   providedIn: 'root',
@@ -83,6 +106,34 @@ export class OrganizationLifecycleService {
     const result = await callable({
       organizationId,
       reason: reason.trim(),
+    });
+
+    return result.data;
+  }
+
+  /**
+   * Recover application provisioning for a completed organization request.
+   *
+   * The backend validates platform-administrator authorization,
+   * verifies the organization request and onboarding state, and
+   * provisions Core and Community without activating unrelated
+   * application entitlements.
+   *
+   * @param requestId The organization application request document ID.
+   */
+  async repairApplicationProvisioning(
+    requestId: string,
+  ): Promise<OrganizationApplicationProvisioningRepairResult> {
+    const callable = httpsCallable<
+      OrganizationApplicationProvisioningRepairRequest,
+      OrganizationApplicationProvisioningRepairResult
+    >(
+      this.functions,
+      'repairOrganizationApplicationProvisioning',
+    );
+
+    const result = await callable({
+      requestId: requestId.trim(),
     });
 
     return result.data;

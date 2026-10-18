@@ -1,9 +1,20 @@
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {
+  onCall,
+  HttpsError,
+} from "firebase-functions/v2/https";
+
 import {
   FieldValue,
   getFirestore,
 } from "firebase-admin/firestore";
 
+import {
+  advanceTestCenterSetup,
+  assertCurrentTestCenterSetupStep,
+  initializeTestCenterSetup,
+  TEST_CENTER_SETUP_STEPS,
+  type TestCenterSetupState,
+} from "./test-center-setup-transition";
 
 type FirstProgramInput = {
   organizationId: string;
@@ -13,7 +24,50 @@ type FirstProgramInput = {
 };
 
 /**
- * Validates a string input and enforces a trimmed length range.
+ * Test Center onboarding stored on:
+ *
+ * organizations/{organizationId}/applications/test-center
+ */
+type TestCenterEntitlementOnboarding = {
+  steps?: unknown;
+  currentStep?: unknown;
+  completedSteps?: unknown;
+  status?: unknown;
+
+  firstProgramId?: unknown;
+  firstCourseId?: unknown;
+  firstTopicId?: unknown;
+  firstQuestionId?: unknown;
+
+  startedAt?: unknown;
+  completedAt?: unknown;
+  updatedAt?: unknown;
+};
+
+/**
+ * Legacy organization onboarding data.
+ *
+ * This document is read only for migration compatibility.
+ * New Test Center progress is never written here.
+ */
+type LegacyOrganizationOnboarding = {
+  currentStep?: unknown;
+  completedSteps?: unknown;
+  requiredSteps?: unknown;
+  status?: unknown;
+
+  firstProgramId?: unknown;
+  firstCourseId?: unknown;
+  firstTopicId?: unknown;
+  firstQuestionId?: unknown;
+
+  startedAt?: unknown;
+  completedAt?: unknown;
+  updatedAt?: unknown;
+};
+
+/**
+ * Validates a string and enforces its trimmed length.
  */
 function isValidString(
   value: unknown,
@@ -28,8 +82,11 @@ function isValidString(
 }
 
 /**
- * Converts a user-provided program slug into a stable
- * Firestore-safe normalized slug.
+ * Normalizes a program slug.
+ *
+ * Examples:
+ * "Cyber Security" -> "cyber-security"
+ * " AWS Cloud "    -> "aws-cloud"
  */
 function normalizeSlug(value: string): string {
   return value
@@ -39,6 +96,157 @@ function normalizeSlug(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/**
+ * Returns a normalized resource ID or null.
+ */
+function normalizeResourceId(
+  value: unknown,
+): string | null {
+  if (
+    typeof value !== "string" ||
+    value.trim().length === 0
+  ) {
+    return null;
+  }
+
+  return value.trim();
+}
+
+/**
+ * Initializes Test Center setup using the application's entitlement.
+ *
+ * Legacy progress is used only when the entitlement has no recorded
+ * completed steps. The configured workflow always comes from the
+ * entitlement or the trusted server-side Test Center workflow.
+ *
+ * The four core organization onboarding steps are not used to define
+ * the Test Center workflow.
+ */
+function buildTestCenterSetupState(
+  entitlementOnboarding:
+    | TestCenterEntitlementOnboarding
+    | undefined,
+  legacyOnboarding:
+    | LegacyOrganizationOnboarding
+    | undefined,
+): TestCenterSetupState {
+  const entitlementState =
+    entitlementOnboarding ?? {};
+
+  const legacyState =
+    legacyOnboarding ?? {};
+
+  /*
+   * Use the workflow persisted on the entitlement.
+   *
+   * If this is an older entitlement without configured steps,
+   * fall back to the trusted Test Center workflow.
+   */
+  const configuredSteps =
+    Array.isArray(entitlementState.steps)
+      ? entitlementState.steps
+      : [...TEST_CENTER_SETUP_STEPS];
+
+  /*
+   * Prefer the entitlement's completed steps.
+   *
+   * Recover legacy progress only when the entitlement has no
+   * completed steps recorded.
+   */
+  const entitlementCompletedSteps =
+    Array.isArray(entitlementState.completedSteps)
+      ? entitlementState.completedSteps
+      : [];
+
+  const legacyCompletedSteps =
+    Array.isArray(legacyState.completedSteps)
+      ? legacyState.completedSteps
+      : [];
+
+  const completedSteps =
+    entitlementCompletedSteps.length > 0
+      ? entitlementCompletedSteps
+      : legacyCompletedSteps;
+
+  /*
+   * Prefer values already stored on the entitlement.
+   * Legacy resource IDs provide migration compatibility.
+   */
+  const existingState: Partial<TestCenterSetupState> = {
+    completedSteps,
+
+    firstProgramId:
+      normalizeResourceId(
+        entitlementState.firstProgramId,
+      ) ??
+      normalizeResourceId(
+        legacyState.firstProgramId,
+      ),
+
+    firstCourseId:
+      normalizeResourceId(
+        entitlementState.firstCourseId,
+      ) ??
+      normalizeResourceId(
+        legacyState.firstCourseId,
+      ),
+
+    firstTopicId:
+      normalizeResourceId(
+        entitlementState.firstTopicId,
+      ) ??
+      normalizeResourceId(
+        legacyState.firstTopicId,
+      ),
+
+    firstQuestionId:
+      normalizeResourceId(
+        entitlementState.firstQuestionId,
+      ) ??
+      normalizeResourceId(
+        legacyState.firstQuestionId,
+      ),
+
+    startedAt:
+      entitlementState.startedAt ??
+      legacyState.startedAt,
+
+    completedAt:
+      entitlementState.completedAt ??
+      legacyState.completedAt,
+
+    updatedAt:
+      entitlementState.updatedAt ??
+      legacyState.updatedAt,
+  };
+
+  /*
+   * Recalculate currentStep and status from the configured workflow
+   * and completed steps instead of trusting potentially stale state.
+   */
+  return initializeTestCenterSetup(
+    configuredSteps,
+    existingState,
+  );
+}
+
+/**
+ * Creates the first Test Center program for an organization.
+ *
+ * Authoritative Test Center setup state:
+ *
+ * organizations/{organizationId}/applications/test-center
+ *
+ * Core organization onboarding remains independent:
+ *
+ * organizationOnboarding/{organizationId}
+ *
+ * Only an active organization owner or administrator can execute
+ * this callable.
+ *
+ * The Test Center entitlement may be "selected" because application
+ * setup can happen before the application becomes active.
+ */
 export const completeOrganizationFirstProgram = onCall(
   {
     invoker: "public",
@@ -46,6 +254,7 @@ export const completeOrganizationFirstProgram = onCall(
   },
   async (request) => {
     const db = getFirestore();
+
     /*
      * ----------------------------------------------------------------------
      * AUTHENTICATION
@@ -67,42 +276,71 @@ export const completeOrganizationFirstProgram = onCall(
      * ----------------------------------------------------------------------
      */
 
-    const data = request.data as Partial<FirstProgramInput>;
+    const data =
+      request.data as Partial<FirstProgramInput>;
 
     const organizationId = data.organizationId;
     const name = data.name;
     const slug = data.slug;
     const description = data.description;
 
-    if (!isValidString(organizationId, 1, 128)) {
+    if (
+      !isValidString(
+        organizationId,
+        1,
+        128,
+      )
+    ) {
       throw new HttpsError(
         "invalid-argument",
         "organizationId is required.",
       );
     }
 
-    if (!isValidString(name, 2, 100)) {
+    if (
+      !isValidString(
+        name,
+        2,
+        100,
+      )
+    ) {
       throw new HttpsError(
         "invalid-argument",
         "Program name must be between 2 and 100 characters.",
       );
     }
 
-    if (!isValidString(slug, 2, 100)) {
+    if (
+      !isValidString(
+        slug,
+        2,
+        100,
+      )
+    ) {
       throw new HttpsError(
         "invalid-argument",
         "Program slug must be between 2 and 100 characters.",
       );
     }
 
-    if (!isValidString(description, 1, 1000)) {
+    if (
+      !isValidString(
+        description,
+        1,
+        1000,
+      )
+    ) {
       throw new HttpsError(
         "invalid-argument",
         "Program description must be between 1 and 1000 characters.",
       );
     }
 
-    const normalizedSlug = normalizeSlug(slug);
+    const normalizedOrganizationId =
+      organizationId.trim();
+
+    const normalizedSlug =
+      normalizeSlug(slug);
 
     if (!normalizedSlug) {
       throw new HttpsError(
@@ -120,18 +358,17 @@ export const completeOrganizationFirstProgram = onCall(
     const result = await db.runTransaction(
       async (transaction) => {
         /*
-         * --------------------------------------------------------------
+         * ------------------------------------------------------------------
          * ORGANIZATION
-         * --------------------------------------------------------------
+         * ------------------------------------------------------------------
          */
 
         const organizationRef = db
           .collection("organizations")
-          .doc(organizationId);
+          .doc(normalizedOrganizationId);
 
-        const organizationSnapshot = await transaction.get(
-          organizationRef,
-        );
+        const organizationSnapshot =
+          await transaction.get(organizationRef);
 
         if (!organizationSnapshot.exists) {
           throw new HttpsError(
@@ -141,18 +378,19 @@ export const completeOrganizationFirstProgram = onCall(
         }
 
         /*
-         * --------------------------------------------------------------
+         * ------------------------------------------------------------------
          * MEMBERSHIP
-         * --------------------------------------------------------------
+         * ------------------------------------------------------------------
          */
 
         const membershipRef = db
           .collection("organizationMemberships")
-          .doc(`${callerUid}_${organizationId}`);
+          .doc(
+            `${callerUid}_${normalizedOrganizationId}`,
+          );
 
-        const membershipSnapshot = await transaction.get(
-          membershipRef,
-        );
+        const membershipSnapshot =
+          await transaction.get(membershipRef);
 
         if (!membershipSnapshot.exists) {
           throw new HttpsError(
@@ -161,7 +399,8 @@ export const completeOrganizationFirstProgram = onCall(
           );
         }
 
-        const membership = membershipSnapshot.data();
+        const membership =
+          membershipSnapshot.data();
 
         if (membership?.active !== true) {
           throw new HttpsError(
@@ -179,61 +418,103 @@ export const completeOrganizationFirstProgram = onCall(
           throw new HttpsError(
             "permission-denied",
             "Only an organization owner or administrator " +
-            "can complete onboarding.",
+              "can complete Test Center setup.",
           );
         }
 
         /*
-         * --------------------------------------------------------------
-         * ONBOARDING STATE
-         * --------------------------------------------------------------
+         * ------------------------------------------------------------------
+         * TEST CENTER ENTITLEMENT
+         * ------------------------------------------------------------------
+         *
+         * Test Center must have been provisioned for this organization.
+         *
+         * Do not require status === "active": an organization may need
+         * to complete application setup before activation.
+         * ------------------------------------------------------------------
          */
 
-        const onboardingRef = db
+        const testCenterEntitlementRef =
+          organizationRef
+            .collection("applications")
+            .doc("test-center");
+
+        const testCenterEntitlementSnapshot =
+          await transaction.get(
+            testCenterEntitlementRef,
+          );
+
+        if (!testCenterEntitlementSnapshot.exists) {
+          throw new HttpsError(
+            "failed-precondition",
+            "Test Center has not been provisioned for this organization.",
+          );
+        }
+
+        const testCenterEntitlement =
+          testCenterEntitlementSnapshot.data();
+
+        /*
+         * ------------------------------------------------------------------
+         * LEGACY ONBOARDING STATE
+         * ------------------------------------------------------------------
+         *
+         * Read legacy data only for migration compatibility.
+         *
+         * This callable never writes Test Center progress to the
+         * organization onboarding document.
+         * ------------------------------------------------------------------
+         */
+
+        const legacyOnboardingRef = db
           .collection("organizationOnboarding")
-          .doc(organizationId);
+          .doc(normalizedOrganizationId);
 
-        const onboardingSnapshot = await transaction.get(
-          onboardingRef,
-        );
-
-        if (!onboardingSnapshot.exists) {
-          throw new HttpsError(
-            "failed-precondition",
-            "Organization onboarding has not been initialized.",
+        const legacyOnboardingSnapshot =
+          await transaction.get(
+            legacyOnboardingRef,
           );
-        }
 
-        const onboarding = onboardingSnapshot.data();
-
-        if (onboarding?.status !== "in_progress") {
-          throw new HttpsError(
-            "failed-precondition",
-            "Organization onboarding is not in progress.",
-          );
-        }
-
-        if (onboarding?.currentStep !== "first_program") {
-          throw new HttpsError(
-            "failed-precondition",
-            "The current onboarding step is " +
-            `"${onboarding?.currentStep ?? "unknown"}", ` +
-            "not \"first_program\".",
-          );
-        }
+        const legacyOnboarding =
+          legacyOnboardingSnapshot.exists
+            ? legacyOnboardingSnapshot.data() as
+                LegacyOrganizationOnboarding
+            : undefined;
 
         /*
-         * --------------------------------------------------------------
-         * PREVENT DUPLICATE FIRST PROGRAM
-         * --------------------------------------------------------------
+         * ------------------------------------------------------------------
+         * INITIALIZE TEST CENTER SETUP
+         * ------------------------------------------------------------------
          */
 
-        const existingProgramId = onboarding?.firstProgramId;
+        const entitlementOnboarding =
+          testCenterEntitlement?.onboarding as
+            | TestCenterEntitlementOnboarding
+            | undefined;
 
-        if (
-          typeof existingProgramId === "string" &&
-          existingProgramId.length > 0
-        ) {
+        const testCenterSetup =
+          buildTestCenterSetupState(
+            entitlementOnboarding,
+            legacyOnboarding,
+          );
+
+        /*
+         * ------------------------------------------------------------------
+         * PREVENT DUPLICATE FIRST PROGRAM
+         * ------------------------------------------------------------------
+         *
+         * Check the recorded resource ID before validating the current
+         * step. This ensures that existing setup is reported as a
+         * duplicate rather than as an invalid current step.
+         * ------------------------------------------------------------------
+         */
+
+        const existingProgramId =
+          normalizeResourceId(
+            testCenterSetup.firstProgramId,
+          );
+
+        if (existingProgramId) {
           throw new HttpsError(
             "already-exists",
             "The organization already has a first program configured.",
@@ -241,26 +522,39 @@ export const completeOrganizationFirstProgram = onCall(
         }
 
         /*
-         * --------------------------------------------------------------
-         * PROGRAM DOCUMENT
+         * ------------------------------------------------------------------
+         * VALIDATE CURRENT TEST CENTER STEP
+         * ------------------------------------------------------------------
          *
-         * Program slugs are the stable document IDs.
-         * This matches TestProgramService.
-         * --------------------------------------------------------------
+         * This validates the application's workflow independently of
+         * the four core organization onboarding steps.
+         * ------------------------------------------------------------------
+         */
+
+        assertCurrentTestCenterSetupStep(
+          testCenterSetup,
+          "first_program",
+        );
+
+        /*
+         * ------------------------------------------------------------------
+         * CHECK PROGRAM SLUG UNIQUENESS
+         * ------------------------------------------------------------------
+         *
+         * Program slugs are used as document IDs, matching the existing
+         * TestProgramService convention.
+         *
+         * Since the document ID is global, the slug must be globally
+         * unique across testPrograms.
+         * ------------------------------------------------------------------
          */
 
         const programRef = db
           .collection("testPrograms")
           .doc(normalizedSlug);
 
-        /*
-         * The slug must be globally unique for the testPrograms
-         * collection because it is being used as the document ID.
-         */
-
-        const existingProgramSnapshot = await transaction.get(
-          programRef,
-        );
+        const existingProgramSnapshot =
+          await transaction.get(programRef);
 
         if (existingProgramSnapshot.exists) {
           throw new HttpsError(
@@ -270,92 +564,203 @@ export const completeOrganizationFirstProgram = onCall(
         }
 
         /*
-         * --------------------------------------------------------------
+         * ------------------------------------------------------------------
          * CREATE PROGRAM
-         * --------------------------------------------------------------
+         * ------------------------------------------------------------------
          */
 
-        const now = FieldValue.serverTimestamp();
+        const now =
+          FieldValue.serverTimestamp();
 
         transaction.create(
           programRef,
           {
-            organizationId,
-            name: name.trim(),
-            slug: normalizedSlug,
-            description: description.trim(),
-            active: true,
-            courseCount: 0,
-            createdBy: callerUid,
-            createdAt: now,
-            updatedAt: now,
+            organizationId:
+              normalizedOrganizationId,
+
+            name:
+              name.trim(),
+
+            slug:
+              normalizedSlug,
+
+            description:
+              description.trim(),
+
+            active:
+              true,
+
+            courseCount:
+              0,
+
+            createdBy:
+              callerUid,
+
+            createdAt:
+              now,
+
+            updatedAt:
+              now,
           },
         );
 
         /*
-         * --------------------------------------------------------------
-         * ADVANCE ONBOARDING
-         * --------------------------------------------------------------
+         * ------------------------------------------------------------------
+         * ADVANCE TEST CENTER SETUP
+         * ------------------------------------------------------------------
+         *
+         * After first_program, the next configured Test Center step
+         * should normally be first_course.
+         *
+         * Only the Test Center entitlement's onboarding state advances.
+         * ------------------------------------------------------------------
          */
 
-        const existingCompletedSteps = Array.isArray(
-          onboarding?.completedSteps,
-        ) ?
-          onboarding.completedSteps.filter(
-            (step: unknown): step is string =>
-              typeof step === "string",
-          ) :
-          [];
-
-        const completedSteps = Array.from(
-          new Set([
-            ...existingCompletedSteps,
+        const transition =
+          advanceTestCenterSetup(
+            testCenterSetup,
             "first_program",
-          ]),
-        );
+          );
+
+        /*
+         * ------------------------------------------------------------------
+         * UPDATE TEST CENTER ENTITLEMENT
+         * ------------------------------------------------------------------
+         *
+         * Preserve other entitlement fields.
+         *
+         * Do not update organizationOnboarding here.
+         * ------------------------------------------------------------------
+         */
 
         transaction.update(
-          onboardingRef,
+          testCenterEntitlementRef,
           {
-            firstProgramId: programRef.id,
-            completedSteps,
-            currentStep: "first_course",
-            status: "in_progress",
-            completedAt: null,
-            updatedAt: now,
+            onboarding: {
+              ...testCenterSetup,
+
+              firstProgramId:
+                programRef.id,
+
+              completedSteps:
+                transition.completedSteps,
+
+              currentStep:
+                transition.currentStep,
+
+              status:
+                transition.status,
+
+              startedAt:
+                testCenterSetup.startedAt ?? now,
+
+              completedAt:
+                transition.isComplete
+                  ? now
+                  : null,
+
+              updatedAt:
+                now,
+            },
+
+            updatedAt:
+              now,
           },
         );
 
+        /*
+         * ------------------------------------------------------------------
+         * TRANSACTION RESULT
+         * ------------------------------------------------------------------
+         */
+
         return {
-          programId: programRef.id,
-          organizationId,
-          name: name.trim(),
-          slug: normalizedSlug,
-          description: description.trim(),
-          active: true,
-          courseCount: 0,
-          currentStep: "first_course",
-          completedSteps,
+          programId:
+            programRef.id,
+
+          organizationId:
+            normalizedOrganizationId,
+
+          name:
+            name.trim(),
+
+          slug:
+            normalizedSlug,
+
+          description:
+            description.trim(),
+
+          active:
+            true,
+
+          courseCount:
+            0,
+
+          firstProgramId:
+            programRef.id,
+
+          currentStep:
+            transition.currentStep,
+
+          completedSteps:
+            transition.completedSteps,
+
+          status:
+            transition.status,
+
+          isComplete:
+            transition.isComplete,
         };
       },
     );
 
+    /*
+     * ----------------------------------------------------------------------
+     * RESPONSE
+     * ----------------------------------------------------------------------
+     */
+
     return {
       success: true,
+
       program: {
-        id: result.programId,
-        organizationId: result.organizationId,
-        name: result.name,
-        slug: result.slug,
-        description: result.description,
-        active: result.active,
-        courseCount: result.courseCount,
+        id:
+          result.programId,
+
+        organizationId:
+          result.organizationId,
+
+        name:
+          result.name,
+
+        slug:
+          result.slug,
+
+        description:
+          result.description,
+
+        active:
+          result.active,
+
+        courseCount:
+          result.courseCount,
       },
+
       onboarding: {
-        firstProgramId: result.programId,
-        currentStep: result.currentStep,
-        completedSteps: result.completedSteps,
-        status: "in_progress",
+        firstProgramId:
+          result.firstProgramId,
+
+        currentStep:
+          result.currentStep,
+
+        completedSteps:
+          result.completedSteps,
+
+        status:
+          result.status,
+
+        isComplete:
+          result.isComplete,
       },
     };
   },

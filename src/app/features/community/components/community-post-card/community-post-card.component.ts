@@ -48,7 +48,7 @@ import { LoggerService } from '../../../../core/services/logger.service';
            POST HEADER
            ============================================================ -->
 
-      <div class="flex items-start gap-3 px-5 pt-5">
+      <div class="flex items-start gap-3 px-5 py-2 bg-[#E5F4F4]/80">
 
         <!-- ==========================================================
              AUTHOR AVATAR
@@ -85,7 +85,7 @@ import { LoggerService } from '../../../../core/services/logger.service';
 
           <a
             [routerLink]="['/community/users', post().author.id]"
-            class="block truncate text-sm font-semibold text-slate-900
+            class="block truncate text-md font-semibold text-slate-900
                    transition-colors hover:text-[#087F80] hover:underline"
             (click)="$event.stopPropagation()"
           >
@@ -114,13 +114,13 @@ import { LoggerService } from '../../../../core/services/logger.service';
               {{ formatDate(post().createdAt) }}
             </span>
           </div>
-
-          <!-- ========================================================
+        </div>
+            <!-- ========================================================
                FOLLOW BUTTON
                ======================================================== -->
 
           @if (canFollowAuthor()) {
-            <div class="mt-2">
+            <div class="">
               <button
                 mat-stroked-button
                 type="button"
@@ -164,7 +164,6 @@ import { LoggerService } from '../../../../core/services/logger.service';
               </button>
             </div>
           }
-        </div>
 
         <!-- ==========================================================
              POST ACTIONS

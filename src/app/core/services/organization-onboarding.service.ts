@@ -19,6 +19,12 @@ import {
   OrganizationOnboardingStep,
 } from '../models/organization-onboarding.model';
 
+import {
+  TestCenterSetupState,
+  TestCenterSetupStep,
+  TestCenterSetupStatus,
+} from '../../core/models/test-center-setup.model';
+
 export type OrganizationOnboardingFirstQuestionDifficulty =
   | 'easy'
   | 'medium'
@@ -78,7 +84,7 @@ interface CompleteOrganizationFirstQuestionRequest {
 @Injectable({
   providedIn: 'root',
 })
-export class OrganizationOnboardingService {
+export class OrganizationOnboardingStateService  {
   private readonly collectionName =
     'organizationOnboarding';
 

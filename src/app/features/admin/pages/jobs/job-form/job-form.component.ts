@@ -20,7 +20,7 @@ import { JobStore } from '../../../../jobs/stores/job.store';
 
 import { AuthService } from '../../../../../core/services/auth.service';
 
-import { OrganizationStore } from '../../../../organizations/stores/organization.store';
+import { OrganizationContextStore  } from '../../../../organizations/stores/organization-context.store';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
@@ -1546,7 +1546,7 @@ export class JobFormComponent implements OnInit {
   private readonly authService = inject(AuthService);
 
   private readonly organizationStore =
-  inject(OrganizationStore);
+  inject(OrganizationContextStore );
 
   private readonly toast = inject(HotToastService);
 

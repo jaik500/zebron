@@ -31,7 +31,7 @@ const require = createRequire(import.meta.url);
 
 const admin =
   require(
-    '../functions/node_modules/firebase-admin'
+    '../../functions/node_modules/firebase-admin',
   ) as typeof import('firebase-admin');
 
 const PROJECT_ID = 'zebron-test';
@@ -145,33 +145,105 @@ async function createOnboarding(
     .doc(ORGANIZATION_ID)
     .set({
       organizationId: ORGANIZATION_ID,
+
       status: 'in_progress',
-      currentStep: 'first_program',
-      completedSteps: [
+
+      currentStep: 'configuration',
+
+      /* The core organization workflow contains only these four steps. */
+      requiredSteps: [
         'organization_profile',
         'owner_profile',
         'invite_members',
         'configuration',
       ],
-      startedAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+
+      completedSteps: [
+        'organization_profile',
+        'owner_profile',
+        'invite_members',
+      ],
+
+      startedAt:
+        admin.firestore.FieldValue.serverTimestamp(),
+
+      updatedAt:
+        admin.firestore.FieldValue.serverTimestamp(),
+
       ...overrides,
+    });
+}
+
+async function createTestCenterEntitlement(
+  overrides: Record<string, unknown> = {},
+): Promise<void> {
+  const {
+    onboarding: onboardingOverrides,
+    ...entitlementOverrides
+  } = overrides;
+
+  await adminDb
+    .collection('organizations')
+    .doc(ORGANIZATION_ID)
+    .collection('applications')
+    .doc('test-center')
+    .set({
+      applicationId: 'test-center',
+      organizationId: ORGANIZATION_ID,
+      status: 'selected',
+
+      ...entitlementOverrides,
+
+      onboarding: {
+        steps: [
+          'first_program',
+          'first_course',
+          'first_topic',
+          'first_question',
+        ],
+        currentStep: 'first_program',
+        completedSteps: [],
+        status: 'not_started',
+
+        firstProgramId: null,
+        firstCourseId: null,
+        firstTopicId: null,
+        firstQuestionId: null,
+
+        startedAt: null,
+        completedAt: null,
+
+        ...(onboardingOverrides &&
+        typeof onboardingOverrides === 'object'
+          ? onboardingOverrides as Record<string, unknown>
+          : {}),
+      },
     });
 }
 
 async function createBaseState(): Promise<void> {
   await createOrganization();
+  await createOnboarding();
+  await createTestCenterEntitlement();
 
   await createMembership(OWNER_UID, 'org_owner');
   await createMembership(ADMIN_UID, 'org_admin');
   await createMembership(MANAGER_UID, 'org_manager');
   await createMembership(MEMBER_UID, 'org_member');
   await createMembership(INACTIVE_UID, 'org_owner', false);
-
-  await createOnboarding();
 }
 
 async function deleteTestData(): Promise<void> {
+  // Delete the nested entitlement explicitly; deleting an organization
+  // document does not delete its subcollections in Firestore.
+  await adminDb
+    .collection('organizations')
+    .doc(ORGANIZATION_ID)
+    .collection('applications')
+    .doc('test-center')
+    .delete()
+    .catch(() => undefined);
+
   const collections = [
     'organizations',
     'organizationMemberships',
@@ -213,13 +285,14 @@ beforeAll(async () => {
    */
   initializeAdmin();
 
-  testEnvironment = await initializeTestEnvironment({
-    projectId: PROJECT_ID,
-    firestore: {
-      host: '127.0.0.1',
-      port: 8080,
-    },
-  });
+  testEnvironment =
+    await initializeTestEnvironment({
+      projectId: PROJECT_ID,
+      firestore: {
+        host: '127.0.0.1',
+        port: 8080,
+      },
+    });
 
   /**
    * The production module executes:
@@ -233,7 +306,7 @@ beforeAll(async () => {
    * the default application successfully.
    */
   const module = await import(
-    '../functions/src/organization-onboarding-first-program'
+    '../../functions/src/organization-onboarding-first-program'
   );
 
   completeOrganizationFirstProgram =
@@ -311,18 +384,41 @@ describe('completeOrganizationFirstProgram', () => {
 
     expect(onboardingSnapshot.exists).toBe(true);
 
-    const onboarding = onboardingSnapshot.data();
+    const onboarding =
+      onboardingSnapshot.data();
 
     expect(onboarding).toMatchObject({
       organizationId: ORGANIZATION_ID,
       status: 'in_progress',
-      currentStep: 'first_course',
-      firstProgramId: 'cyber-security',
+      currentStep: 'configuration',
+      requiredSteps: [
+        'organization_profile',
+        'owner_profile',
+        'invite_members',
+        'configuration',
+      ],
+      completedSteps: [
+        'organization_profile',
+        'owner_profile',
+        'invite_members',
+      ],
     });
 
-    expect(onboarding?.completedSteps).toContain(
-      'first_program',
-    );
+    expect(onboarding).not.toHaveProperty('firstProgramId');
+
+    const entitlementSnapshot = await adminDb
+      .collection('organizations')
+      .doc(ORGANIZATION_ID)
+      .collection('applications')
+      .doc('test-center')
+      .get();
+
+    expect(entitlementSnapshot.data()?.onboarding).toMatchObject({
+      firstProgramId: 'cyber-security',
+      currentStep: 'first_course',
+      completedSteps: ['first_program'],
+      status: 'in_progress',
+    });
   });
 
   it('allows an org_admin to create the first program', async () => {
@@ -452,16 +548,18 @@ describe('completeOrganizationFirstProgram', () => {
     expect(programSnapshot.exists).toBe(false);
   });
 
-  it('rejects when organization onboarding does not exist', async () => {
+  it('rejects when the Test Center entitlement does not exist', async () => {
     await adminDb
-      .collection('organizationOnboarding')
+      .collection('organizations')
       .doc(ORGANIZATION_ID)
+      .collection('applications')
+      .doc('test-center')
       .delete();
 
     const input: FirstProgramInput = {
       organizationId: ORGANIZATION_ID,
-      name: 'Missing Onboarding',
-      slug: 'missing-onboarding',
+      name: 'Missing Test Center',
+      slug: 'missing-test-center',
       description: 'Should not be created',
     };
 
@@ -475,50 +573,63 @@ describe('completeOrganizationFirstProgram', () => {
 
     const programSnapshot = await adminDb
       .collection('testPrograms')
-      .doc('missing-onboarding')
+      .doc('missing-test-center')
       .get();
 
     expect(programSnapshot.exists).toBe(false);
   });
 
-  it('rejects when onboarding is not currently at first_program', async () => {
-    await adminDb
-      .collection('organizationOnboarding')
-      .doc(ORGANIZATION_ID)
-      .update({
-        currentStep: 'configuration',
-      });
-
-    const input: FirstProgramInput = {
-      organizationId: ORGANIZATION_ID,
-      name: 'Wrong Step',
-      slug: 'wrong-step',
-      description: 'Should not be created',
-    };
-
-    await expect(
-      completeOrganizationFirstProgram.run(
-        callableRequest(OWNER_UID, input),
-      ),
-    ).rejects.toMatchObject({
-      code: 'failed-precondition',
+it('rejects when onboarding is not currently at first_program', async () => {
+  // Simulate a Test Center workflow that has already completed
+  // first_program and is now on first_course.
+  await adminDb
+    .collection('organizations')
+    .doc(ORGANIZATION_ID)
+    .collection('applications')
+    .doc('test-center')
+    .update({
+      'onboarding.currentStep': 'first_course',
+      'onboarding.completedSteps': ['first_program'],
+      'onboarding.status': 'in_progress',
+      'onboarding.firstProgramId': 'existing-program',
     });
 
-    const programSnapshot = await adminDb
-      .collection('testPrograms')
-      .doc('wrong-step')
-      .get();
+  const input: FirstProgramInput = {
+    organizationId: ORGANIZATION_ID,
+    name: 'Wrong Step',
+    slug: 'wrong-step',
+    description: 'Should not be created',
+  };
 
-    expect(programSnapshot.exists).toBe(false);
+  await expect(
+    completeOrganizationFirstProgram.run(
+      callableRequest(OWNER_UID, input),
+    ),
+  ).rejects.toMatchObject({
+    code: 'already-exists',
   });
+
+  const programSnapshot = await adminDb
+    .collection('testPrograms')
+    .doc('wrong-step')
+    .get();
+
+  expect(programSnapshot.exists).toBe(false);
+});
 
   it('rejects when onboarding is not in progress', async () => {
-    await adminDb
-      .collection('organizationOnboarding')
-      .doc(ORGANIZATION_ID)
-      .update({
+    await createTestCenterEntitlement({
+      onboarding: {
+        currentStep: null,
+        completedSteps: [
+          'first_program',
+          'first_course',
+          'first_topic',
+          'first_question',
+        ],
         status: 'completed',
-      });
+      },
+    });
 
     const input: FirstProgramInput = {
       organizationId: ORGANIZATION_ID,
@@ -544,12 +655,11 @@ describe('completeOrganizationFirstProgram', () => {
   });
 
   it('rejects when a first program has already been recorded', async () => {
-    await adminDb
-      .collection('organizationOnboarding')
-      .doc(ORGANIZATION_ID)
-      .update({
+    await createTestCenterEntitlement({
+      onboarding: {
         firstProgramId: 'existing-program',
-      });
+      },
+    });
 
     const input: FirstProgramInput = {
       organizationId: ORGANIZATION_ID,
@@ -586,8 +696,10 @@ describe('completeOrganizationFirstProgram', () => {
         active: true,
         courseCount: 0,
         createdBy: OWNER_UID,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt:
+          admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt:
+          admin.firestore.FieldValue.serverTimestamp(),
       });
 
     const input: FirstProgramInput = {

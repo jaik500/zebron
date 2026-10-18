@@ -5,6 +5,7 @@ import { adminGuard } from './core/guards/admin.guard';
 import { featureGuard } from './core/guards/feature.guard';
 import { partnerAdminGuard } from './core/guards/partner-admin.guard';
 import { partnerOrganizationGuard } from './core/guards/partner-organization.guard';
+import { applicationAccessGuard } from './core/guards/application-access.guard';
 
 import { resourceResolver } from './features/resources/resolvers/resource.resolver';
 
@@ -381,6 +382,22 @@ export const routes: Routes = [
     ),
 },
 
+{
+  path: 'partner/org/:organizationId/settings',
+  canActivate: [
+    authGuard,
+    partnerOrganizationGuard,
+    partnerAdminGuard
+  ],
+  data: {
+    title: 'Partner | Organization Management',
+  },
+  loadComponent: () =>
+    import(
+      './features/partner/pages/organization-management/organization-management.component'
+    ).then((m) => m.OrganizationManagementComponent),
+},
+
 
   // =====================================================
   // COMMUNITY
@@ -439,6 +456,25 @@ export const routes: Routes = [
         (m) => m.CommunityPostDetailComponent,
       ),
   },
+
+  {
+  path: 'partner/org/:organizationId/community/post/:postId',
+  canActivate: [
+    authGuard,
+    partnerOrganizationGuard,
+    applicationAccessGuard,
+  ],
+  data: {
+    applicationId: 'community',
+    title: 'Partner | Community Post',
+  },
+  loadComponent: () =>
+    import(
+      './features/community/pages/community-post-detail/community-post-detail.component'
+    ).then(
+      (m) => m.CommunityPostDetailComponent,
+    ),
+},
 
   // -----------------------------------------------------
   // COMMUNITY MEMBERS
@@ -667,6 +703,28 @@ export const routes: Routes = [
 },
 
   // -----------------------------------------------------
+  // ORGANIZATION COMMUNITY
+  // -----------------------------------------------------
+  {
+    path: 'partner/org/:organizationId/community',
+    canActivate: [
+      authGuard,
+      partnerOrganizationGuard,
+      applicationAccessGuard,
+    ],
+    data: {
+      applicationId: 'community',
+      title: 'Partner | Community',
+    },
+    loadComponent: () =>
+      import(
+        './features/community/pages/community-home/community-home.component'
+      ).then(
+        (m) => m.CommunityHomeComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
   // ORGANIZATION TEST CENTER
   // -----------------------------------------------------
   {
@@ -674,9 +732,11 @@ export const routes: Routes = [
     canActivate: [
       authGuard,
       partnerOrganizationGuard,
+      applicationAccessGuard,
       featureGuard,
     ],
     data: {
+      applicationId: 'test-center',
       featureKey: 'test-center',
       title: 'Partner | Test Center',
     },
@@ -685,6 +745,50 @@ export const routes: Routes = [
         './features/partner/test-center/partner-test-center.component'
       ).then(
         (m) => m.PartnerTestCenterComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ORGANIZATION KNOWLEDGE
+  // -----------------------------------------------------
+  {
+    path: 'partner/org/:organizationId/knowledge',
+    canActivate: [
+      authGuard,
+      partnerOrganizationGuard,
+      applicationAccessGuard,
+    ],
+    data: {
+      applicationId: 'knowledge',
+      title: 'Partner | Knowledge Center',
+    },
+    loadComponent: () =>
+      import(
+        './features/admin/pages/knowledge/knowledge-center.component'
+      ).then(
+        (m) => m.KnowledgeCenterComponent,
+      ),
+  },
+
+  // -----------------------------------------------------
+  // ORGANIZATION BUSINESS OPERATIONS
+  // -----------------------------------------------------
+  {
+    path: 'partner/org/:organizationId/business-operations',
+    canActivate: [
+      authGuard,
+      partnerOrganizationGuard,
+      applicationAccessGuard,
+    ],
+    data: {
+      applicationId: 'business-operations',
+      title: 'Partner | Business Operations',
+    },
+    loadComponent: () =>
+      import(
+        './features/business/pages/business-dashboard/business-dashboard.component'
+      ).then(
+        (m) => m.BusinessDashboardComponent,
       ),
   },
 
@@ -749,9 +853,11 @@ export const routes: Routes = [
   canActivate: [
     authGuard,
     partnerOrganizationGuard,
+    applicationAccessGuard,
     featureGuard,
   ],
   data: {
+    applicationId: 'test-center',
     title: 'Partner | Test Center Questions',
     featureKey: 'test-center',
   },

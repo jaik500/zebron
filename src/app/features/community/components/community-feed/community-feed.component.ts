@@ -10,7 +10,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { CommunityPost } from '../../models/community-post.model';
 
@@ -313,31 +313,29 @@ export class CommunityFeedComponent {
   private readonly logger =
     inject(LoggerService);
 
-  private readonly router =
-    inject(Router);
+ private readonly route = inject(ActivatedRoute);
+ private readonly router = inject(Router);
 
   // ============================================================
   // POST NAVIGATION
   // ============================================================
 
-  openPost(post: CommunityPost): void {
-    const postId =
-      post.id?.trim();
+ openPost(post: CommunityPost): void {
+  const postId = post.id?.trim();
 
-    if (!postId) {
-      this.logger.warn(
-        'CommunityFeedComponent',
-        'Unable to open community post because the post ID is missing.',
-      );
+  if (!postId) {
+    this.logger.warn(
+      'CommunityFeedComponent',
+      'Unable to open community post because the post ID is missing.',
+    );
 
-      return;
-    }
-
-    void this.router.navigate([
-      '/community/post',
-      postId,
-    ]);
+    return;
   }
+
+  void this.router.navigate(
+    this.getPostDetailRoute(postId),
+  );
+}
 
   selectTopic(topicId: string): void {
     void this.store.selectTopic(
@@ -345,32 +343,25 @@ export class CommunityFeedComponent {
     );
   }
 
-  openComments(
-    post: CommunityPost,
-  ): void {
-    const postId =
-      post.id?.trim();
+  openComments(post: CommunityPost): void {
+  const postId = post.id?.trim();
 
-    if (!postId) {
-      this.logger.warn(
-        'CommunityFeedComponent',
-        'Unable to open comments because the post ID is missing.',
-      );
-
-      return;
-    }
-
-    void this.router.navigate(
-      [
-        '/community/post',
-        postId,
-      ],
-      {
-        fragment:
-          'community-comments',
-      },
+  if (!postId) {
+    this.logger.warn(
+      'CommunityFeedComponent',
+      'Unable to open comments because the post ID is missing.',
     );
+
+    return;
   }
+
+  void this.router.navigate(
+    this.getPostDetailRoute(postId),
+    {
+      fragment: 'community-comments',
+    },
+  );
+}
 
   // ============================================================
   // REACTIONS
@@ -519,5 +510,52 @@ export class CommunityFeedComponent {
   clearFilters(): void {
     void this.store.clearFilters();
   }
+
+  /**
+ * Resolves the organization ID from the current route
+ * or one of its parent routes.
+ */
+private getOrganizationId(): string | null {
+  let currentRoute: ActivatedRoute | null = this.route;
+
+  while (currentRoute) {
+    const organizationId =
+      currentRoute.snapshot.paramMap
+        .get('organizationId')
+        ?.trim();
+
+    if (organizationId) {
+      return organizationId;
+    }
+
+    currentRoute = currentRoute.parent;
+  }
+
+  return null;
+}
+
+/**
+ * Builds a post-detail URL that preserves organization scope.
+ */
+private getPostDetailRoute(postId: string): string[] {
+  const organizationId = this.getOrganizationId();
+
+  if (organizationId) {
+    return [
+      '/partner',
+      'org',
+      organizationId,
+      'community',
+      'post',
+      postId,
+    ];
+  }
+
+  return [
+    '/community',
+    'post',
+    postId,
+  ];
+}
 }
 

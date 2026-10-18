@@ -8,6 +8,12 @@ import {
   OrganizationInvitationRecord,
 } from "./organization-invitation.types";
 
+import {
+  advanceOnboarding,
+  assertCurrentOnboardingStep,
+  type OrganizationOnboardingTransitionState,
+} from "./organization-onboarding-transition";
+
 type OrganizationInvitationRole =
   | "org_admin"
   | "org_manager"
@@ -135,6 +141,7 @@ function getInvitationEmailText(
 async function requireOrganizationInvitationAdmin(
   organizationId: string,
   uid: string,
+  options: { requireInviteStep?: boolean } = {},
 ): Promise<{
   organization: FirebaseFirestore.DocumentData;
   onboarding: FirebaseFirestore.DocumentData;
@@ -211,31 +218,30 @@ async function requireOrganizationInvitationAdmin(
     );
   }
 
-  if (
-    organization.status !== "onboarding"
-  ) {
-    throw new HttpsError(
-      "failed-precondition",
-      "Organization onboarding is no longer active.",
-    );
-  }
+  // Reading invitations is also needed when reviewing a completed
+  // onboarding step. Only invitation creation should require the active
+  // Invite Team step.
+  if (options.requireInviteStep === true) {
+    if (organization.status !== "onboarding") {
+      throw new HttpsError(
+        "failed-precondition",
+        "Organization onboarding is no longer active.",
+      );
+    }
 
-  if (
-    onboarding.status !== "in_progress"
-  ) {
-    throw new HttpsError(
-      "failed-precondition",
-      "Organization onboarding is not in progress.",
-    );
-  }
+    if (onboarding.status !== "in_progress") {
+      throw new HttpsError(
+        "failed-precondition",
+        "Organization onboarding is not in progress.",
+      );
+    }
 
-  if (
-    onboarding.currentStep !== "invite_members"
-  ) {
-    throw new HttpsError(
-      "failed-precondition",
-      "The organization is not currently on the Invite Team step.",
-    );
+    if (onboarding.currentStep !== "invite_members") {
+      throw new HttpsError(
+        "failed-precondition",
+        "The organization is not currently on the Invite Team step.",
+      );
+    }
   }
 
   return {
@@ -290,6 +296,7 @@ export const createOrganizationInvitation =
         await requireOrganizationInvitationAdmin(
           organizationId,
           uid,
+          { requireInviteStep: true },
         );
 
       const db =
@@ -647,82 +654,75 @@ export const getOrganizationInvitations =
  * Invitations are optional, so an organization
  * may continue without inviting additional users.
  */
-export const completeOrganizationInviteMembersStep =
+
+
+ export const completeOrganizationInviteMembersStep =
   onCall(
     {
       region: "us-central1",
     },
     async (request) => {
-      if (!request.auth) {
+      if (!request.auth?.uid) {
         throw new HttpsError(
           "unauthenticated",
-          "You must be signed in.",
+          "Authentication is required.",
         );
       }
-
-      const data =
-        request.data as Record<string, unknown>;
 
       const organizationId =
-        typeof data.organizationId === "string" ?
-          data.organizationId.trim() :
-          "";
+        request.data?.organizationId;
 
-      if (!organizationId) {
+      if (
+        typeof organizationId !== "string" ||
+        !organizationId.trim()
+      ) {
         throw new HttpsError(
           "invalid-argument",
-          "Organization ID is required.",
+          "organizationId is required.",
         );
       }
 
-      const uid =
+      const normalizedOrganizationId =
+        organizationId.trim();
+
+      const callerUid =
         request.auth.uid;
 
       const db =
         getFirestore();
 
-      const organizationRef =
-        db
-          .collection("organizations")
-          .doc(organizationId);
+      const organizationRef = db
+        .collection("organizations")
+        .doc(normalizedOrganizationId);
 
-      const onboardingRef =
-        db
-          .collection(
-            "organizationOnboarding",
-          )
-          .doc(organizationId);
+      const membershipRef = db
+        .collection("organizationMemberships")
+        .doc(
+          `${callerUid}_${normalizedOrganizationId}`,
+        );
 
-      const membershipRef =
-        db
-          .collection(
-            "organizationMemberships",
-          )
-          .doc(
-            `${uid}_${organizationId}`,
-          );
+      const onboardingRef = db
+        .collection("organizationOnboarding")
+        .doc(normalizedOrganizationId);
 
       const result =
         await db.runTransaction(
           async (transaction) => {
             const [
               organizationSnapshot,
-              onboardingSnapshot,
               membershipSnapshot,
-            ] =
-              await Promise.all([
-                transaction.get(
-                  organizationRef,
-                ),
-
-                transaction.get(
-                  onboardingRef,
-                ),
-
-                transaction.get(
-                  membershipRef,
-                ),
-              ]);
+              onboardingSnapshot,
+            ] = await Promise.all([
+              transaction.get(
+                organizationRef,
+              ),
+              transaction.get(
+                membershipRef,
+              ),
+              transaction.get(
+                onboardingRef,
+              ),
+            ]);
 
             if (
               !organizationSnapshot.exists
@@ -733,12 +733,16 @@ export const completeOrganizationInviteMembersStep =
               );
             }
 
+            const organization =
+              organizationSnapshot.data();
+
             if (
-              !onboardingSnapshot.exists
+              organization?.status !==
+              "onboarding"
             ) {
               throw new HttpsError(
                 "failed-precondition",
-                "Organization onboarding was not found.",
+                "The organization is not currently onboarding.",
               );
             }
 
@@ -752,185 +756,104 @@ export const completeOrganizationInviteMembersStep =
             }
 
             const membership =
-              membershipSnapshot.data() ??
-              {};
+              membershipSnapshot.data();
 
             if (
-              membership.active !== true ||
-              (
-                membership.role !==
-                  "org_owner" &&
-                membership.role !==
-                  "org_admin"
-              )
+              membership?.active !== true
             ) {
               throw new HttpsError(
                 "permission-denied",
-                "Only organization owners and administrators can " +
-    "complete this step.",
+                "Your organization membership is not active.",
               );
             }
 
-            const organization =
-              organizationSnapshot.data() ??
-              {};
+            if (
+              membership.role !==
+                "org_owner" &&
+              membership.role !==
+                "org_admin"
+            ) {
+              throw new HttpsError(
+                "permission-denied",
+                "Only an organization owner or administrator can complete onboarding.",
+              );
+            }
+
+            if (
+              !onboardingSnapshot.exists
+            ) {
+              throw new HttpsError(
+                "failed-precondition",
+                "Organization onboarding has not been initialized.",
+              );
+            }
 
             const onboarding =
-              onboardingSnapshot.data() ??
-              {};
+              onboardingSnapshot.data() as
+                OrganizationOnboardingTransitionState;
 
-            if (
-              organization.status !==
-              "onboarding"
-            ) {
-              throw new HttpsError(
-                "failed-precondition",
-                "Organization onboarding is no longer active.",
-              );
-            }
+            assertCurrentOnboardingStep(
+              onboarding,
+              "invite_members",
+            );
 
-            if (
-              onboarding.status !==
-              "in_progress"
-            ) {
-              throw new HttpsError(
-                "failed-precondition",
-                "Organization onboarding is not in progress.",
-              );
-            }
+            const now =
+              FieldValue.serverTimestamp();
 
-            if (
-              onboarding.currentStep !==
-              "invite_members"
-            ) {
-              throw new HttpsError(
-                "failed-precondition",
-                "The organization is not currently on the Invite Team step.",
-              );
-            }
-
-            const completedSteps =
-              Array.isArray(
-                onboarding.completedSteps,
-              ) ?
-                onboarding.completedSteps :
-                [];
-
-            const nextCompletedSteps =
-              Array.from(
-                new Set([
-                  ...completedSteps,
-                  "invite_members",
-                ]),
+            const transition =
+              advanceOnboarding(
+                onboarding,
               );
 
             transaction.update(
               onboardingRef,
               {
                 completedSteps:
-                  nextCompletedSteps,
+                  transition.completedSteps,
 
                 currentStep:
-                  "configuration",
+                  transition.currentStep,
 
                 status:
-                  "in_progress",
+                  transition.status,
 
-                completedAt:
-                  null,
+                ...(transition.isComplete
+                  ? {
+                      completedAt:
+                        now,
+                    }
+                  : {
+                      completedAt:
+                        null,
+                    }),
 
                 updatedAt:
-                  FieldValue.serverTimestamp(),
-              },
-            );
-
-            const auditRef =
-              db
-                .collection("auditLogs")
-                .doc();
-
-            transaction.set(
-              auditRef,
-              {
-                action:
-                  "ORGANIZATION_ONBOARDING_STEP_COMPLETED",
-
-                entityType:
-                  "organizationOnboarding",
-
-                entityId:
-                  organizationId,
-
-                actorId:
-                  uid,
-
-                actorEmail:
-                  request.auth?.token
-                    ?.email ??
-                  null,
-
-                actorName:
-                  null,
-
-                actorType:
-                  "user",
-
-                outcome:
-                  "success",
-
-                source:
-                  "backend",
-
-                reason:
-                  null,
-
-                metadata: {
-                  organizationId,
-
-                  completedStep:
-                    "invite_members",
-
-                  nextStep:
-                    "configuration",
-                },
-
-                before:
-                  null,
-
-                after:
-                  {
-                    currentStep:
-                      "configuration",
-                  },
-
-                createdAt:
-                  FieldValue.serverTimestamp(),
+                  now,
               },
             );
 
             return {
-              completedSteps:
-                nextCompletedSteps,
+              organizationId:
+                normalizedOrganizationId,
 
               currentStep:
-                "configuration",
+                transition.currentStep,
+
+              completedSteps:
+                transition.completedSteps,
+
+              status:
+                transition.status,
+
+              isComplete:
+                transition.isComplete,
             };
           },
         );
 
       return {
         success: true,
-
-        organizationId,
-
-        onboardingId:
-          organizationId,
-
-        currentStep:
-          result.currentStep,
-
-        completedSteps:
-          result.completedSteps,
+        ...result,
       };
     },
   );

@@ -20,7 +20,7 @@ interface OrganizationState {
 @Injectable({
   providedIn: 'root',
 })
-export class OrganizationStore {
+export class OrganizationManagementStore {
   private readonly organizationService = inject(OrganizationService);
 
   // ---------------------------------------------------------------------------

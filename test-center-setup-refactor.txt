@@ -1,0 +1,3676 @@
+]633;E;{   echo "===== organization-onboarding-transition.ts ====="\x3b   cat functions/src/organization-onboarding-transition.ts\x3b    echo "===== organization-onboarding-first-program.ts ====="\x3b   cat functions/src/organization-onboarding-first-program.ts\x3b    echo "===== organization-onboarding-first-course.ts ====="\x3b   cat functions/src/organization-onboarding-first-course.ts\x3b    echo "===== organization-onboarding-first-topic.ts ====="\x3b   cat functions/src/organization-onboarding-first-topic.ts\x3b    echo "===== organization-onboarding-first-question.ts ====="\x3b   cat functions/src/organization-onboarding-first-question.ts\x3b    echo "===== organization-provisioning.ts ====="\x3b   cat functions/src/organization-provisioning.ts\x3b } > test-center-setup-refactor.txt;40faa80a-d971-4293-bb49-5c3e31dfbe93]633;C===== organization-onboarding-transition.ts =====
+import {HttpsError} from "firebase-functions/v2/https";
+
+/**
+ * These are intentionally limited to onboarding workflow keys.
+ *
+ * Application definitions themselves do NOT belong in Cloud Functions.
+ * The actual workflow is resolved when onboarding is initialized and
+ * persisted to organizationOnboarding.requiredSteps.
+ */
+export type OrganizationOnboardingStep =
+  | "organization_profile"
+  | "owner_profile"
+  | "invite_members"
+  | "configuration"
+  | "first_program"
+  | "first_course"
+  | "first_topic"
+  | "first_question";
+
+export type OrganizationOnboardingStatus =
+  | "not_started"
+  | "in_progress"
+  | "completed";
+
+export interface OrganizationOnboardingTransitionState {
+  requiredSteps?: unknown;
+  currentStep?: unknown;
+  completedSteps?: unknown;
+  status?: unknown;
+}
+
+export interface OnboardingTransitionResult {
+  currentStep: OrganizationOnboardingStep;
+  completedSteps: OrganizationOnboardingStep[];
+  status: OrganizationOnboardingStatus;
+  isComplete: boolean;
+}
+
+/**
+ * Base onboarding workflow.
+ *
+ * Application-specific steps are appended when the organization's
+ * onboarding workflow is initialized.
+ */
+export const BASE_ORGANIZATION_ONBOARDING_STEPS:
+  readonly OrganizationOnboardingStep[] = [
+    "organization_profile",
+    "owner_profile",
+    "invite_members",
+    "configuration",
+  ];
+
+/**
+ * Runtime validation for onboarding steps.
+ */
+export function isOrganizationOnboardingStep(
+  value: unknown,
+): value is OrganizationOnboardingStep {
+  return (
+    value === "organization_profile" ||
+    value === "owner_profile" ||
+    value === "invite_members" ||
+    value === "configuration" ||
+    value === "first_program" ||
+    value === "first_course" ||
+    value === "first_topic" ||
+    value === "first_question"
+  );
+}
+
+/**
+ * Runtime validation for onboarding status.
+ */
+export function isOrganizationOnboardingStatus(
+  value: unknown,
+): value is OrganizationOnboardingStatus {
+  return (
+    value === "not_started" ||
+    value === "in_progress" ||
+    value === "completed"
+  );
+}
+
+/**
+ * Normalize persisted requiredSteps.
+ *
+ * Existing onboarding documents created before requiredSteps existed
+ * are supported by falling back to the base workflow.
+ *
+ * Once an onboarding record has been initialized with requiredSteps,
+ * that persisted workflow is authoritative.
+ */
+export function normalizeRequiredSteps(
+  value: unknown,
+): OrganizationOnboardingStep[] {
+  if (!Array.isArray(value)) {
+    return [...BASE_ORGANIZATION_ONBOARDING_STEPS];
+  }
+
+  const steps = value.filter(
+    isOrganizationOnboardingStep,
+  );
+
+  if (steps.length === 0) {
+    return [...BASE_ORGANIZATION_ONBOARDING_STEPS];
+  }
+
+  return Array.from(new Set(steps));
+}
+
+/**
+ * Normalize completed steps.
+ */
+export function normalizeCompletedSteps(
+  value: unknown,
+): OrganizationOnboardingStep[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value.filter(
+        isOrganizationOnboardingStep,
+      ),
+    ),
+  );
+}
+
+/**
+ * Resolve the next onboarding step from the persisted workflow.
+ */
+export function getNextOnboardingStep(
+  onboarding: OrganizationOnboardingTransitionState,
+): OrganizationOnboardingStep | null {
+  const requiredSteps =
+    normalizeRequiredSteps(
+      onboarding.requiredSteps,
+    );
+
+  const currentStep =
+    onboarding.currentStep;
+
+  if (!isOrganizationOnboardingStep(currentStep)) {
+    return requiredSteps[0] ?? null;
+  }
+
+  const currentIndex =
+    requiredSteps.indexOf(currentStep);
+
+  if (currentIndex === -1) {
+    return requiredSteps[0] ?? null;
+  }
+
+  return (
+    requiredSteps[currentIndex + 1] ??
+    null
+  );
+}
+
+/**
+ * Complete the current onboarding step and calculate
+ * the next step from the persisted requiredSteps workflow.
+ */
+export function advanceOnboarding(
+  onboarding: OrganizationOnboardingTransitionState,
+): OnboardingTransitionResult {
+  if (onboarding.status !== "in_progress") {
+    throw new HttpsError(
+      "failed-precondition",
+      "Organization onboarding is not in progress.",
+    );
+  }
+
+  const requiredSteps =
+    normalizeRequiredSteps(
+      onboarding.requiredSteps,
+    );
+
+  const currentStep =
+    onboarding.currentStep;
+
+  if (!isOrganizationOnboardingStep(currentStep)) {
+    throw new HttpsError(
+      "failed-precondition",
+      "The organization onboarding current step is invalid.",
+    );
+  }
+
+  if (!requiredSteps.includes(currentStep)) {
+    throw new HttpsError(
+      "failed-precondition",
+      `The onboarding step "${currentStep}" is not part of the organization's required workflow.`,
+    );
+  }
+
+  const completedSteps =
+    normalizeCompletedSteps(
+      onboarding.completedSteps,
+    );
+
+  const nextCompletedSteps =
+    Array.from(
+      new Set([
+        ...completedSteps,
+        currentStep,
+      ]),
+    );
+
+  const currentIndex =
+    requiredSteps.indexOf(currentStep);
+
+  const nextStep =
+    requiredSteps[currentIndex + 1] ??
+    null;
+
+  if (!nextStep) {
+    return {
+      currentStep,
+      completedSteps:
+        nextCompletedSteps,
+      status: "completed",
+      isComplete: true,
+    };
+  }
+
+  return {
+    currentStep: nextStep,
+    completedSteps:
+      nextCompletedSteps,
+    status: "in_progress",
+    isComplete: false,
+  };
+}
+
+/**
+ * Validate that a callable is being invoked for
+ * the organization's current onboarding step.
+ */
+export function assertCurrentOnboardingStep(
+  onboarding: OrganizationOnboardingTransitionState,
+  expectedStep: OrganizationOnboardingStep,
+): void {
+  if (onboarding.status !== "in_progress") {
+    throw new HttpsError(
+      "failed-precondition",
+      "Organization onboarding is not in progress.",
+    );
+  }
+
+  if (onboarding.currentStep !== expectedStep) {
+    throw new HttpsError(
+      "failed-precondition",
+      `The current onboarding step is "${String(
+        onboarding.currentStep ?? "unknown",
+      )}", not "${expectedStep}".`,
+    );
+  }
+
+  const requiredSteps =
+    normalizeRequiredSteps(
+      onboarding.requiredSteps,
+    );
+
+  if (!requiredSteps.includes(expectedStep)) {
+    throw new HttpsError(
+      "failed-precondition",
+      `The onboarding step "${expectedStep}" is not required for this organization.`,
+    );
+  }
+}===== organization-onboarding-first-program.ts =====
+import {
+  onCall,
+  HttpsError,
+} from "firebase-functions/v2/https";
+
+import {
+  FieldValue,
+  getFirestore,
+} from "firebase-admin/firestore";
+
+import {
+  advanceOnboarding,
+  assertCurrentOnboardingStep,
+  type OrganizationOnboardingTransitionState,
+} from "./organization-onboarding-transition";
+
+
+type FirstProgramInput = {
+  organizationId: string;
+  name: string;
+  slug: string;
+  description: string;
+};
+
+
+/**
+ * Organization onboarding state required by
+ * the first-program workflow.
+ *
+ * The generic transition state intentionally does not
+ * contain application-specific IDs. Those fields belong
+ * to the domain-specific onboarding workflow.
+ */
+type OrganizationFirstProgramOnboarding =
+  OrganizationOnboardingTransitionState & {
+    firstProgramId?: unknown;
+  };
+
+
+/**
+ * Validates a string input and enforces a trimmed
+ * length range.
+ */
+function isValidString(
+  value: unknown,
+  minLength = 1,
+  maxLength = 200,
+): value is string {
+  return (
+    typeof value === "string" &&
+    value.trim().length >= minLength &&
+    value.trim().length <= maxLength
+  );
+}
+
+
+/**
+ * Converts a user-provided program slug into a
+ * stable Firestore-safe normalized slug.
+ */
+function normalizeSlug(
+  value: string,
+): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9]+/g,
+      "-",
+    )
+    .replace(
+      /^-+|-+$/g,
+      "");
+}
+
+
+export const completeOrganizationFirstProgram =
+  onCall(
+    {
+      invoker: "public",
+      cors: true,
+    },
+    async (request) => {
+      const db =
+        getFirestore();
+
+
+      /*
+       * ----------------------------------------------------------------------
+       * AUTHENTICATION
+       * ----------------------------------------------------------------------
+       */
+
+      if (!request.auth) {
+        throw new HttpsError(
+          "unauthenticated",
+          "Authentication is required.",
+        );
+      }
+
+      const callerUid =
+        request.auth.uid;
+
+
+      /*
+       * ----------------------------------------------------------------------
+       * INPUT VALIDATION
+       * ----------------------------------------------------------------------
+       */
+
+      const data =
+        request.data as
+          Partial<FirstProgramInput>;
+
+      const organizationId =
+        data.organizationId;
+
+      const name =
+        data.name;
+
+      const slug =
+        data.slug;
+
+      const description =
+        data.description;
+
+
+      if (
+        !isValidString(
+          organizationId,
+          1,
+          128,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "organizationId is required.",
+        );
+      }
+
+
+      if (
+        !isValidString(
+          name,
+          2,
+          100,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Program name must be between 2 and 100 characters.",
+        );
+      }
+
+
+      if (
+        !isValidString(
+          slug,
+          2,
+          100,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Program slug must be between 2 and 100 characters.",
+        );
+      }
+
+
+      if (
+        !isValidString(
+          description,
+          1,
+          1000,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Program description must be between 1 and 1000 characters.",
+        );
+      }
+
+
+      const normalizedOrganizationId =
+        organizationId.trim();
+
+      const normalizedSlug =
+        normalizeSlug(slug);
+
+
+      if (!normalizedSlug) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Program slug is invalid.",
+        );
+      }
+
+
+      /*
+       * ----------------------------------------------------------------------
+       * TRANSACTION
+       * ----------------------------------------------------------------------
+       */
+
+      const result =
+        await db.runTransaction(
+          async (transaction) => {
+            /*
+             * --------------------------------------------------------------
+             * ORGANIZATION
+             * --------------------------------------------------------------
+             */
+
+            const organizationRef =
+              db
+                .collection(
+                  "organizations",
+                )
+                .doc(
+                  normalizedOrganizationId,
+                );
+
+
+            const organizationSnapshot =
+              await transaction.get(
+                organizationRef,
+              );
+
+
+            if (
+              !organizationSnapshot.exists
+            ) {
+              throw new HttpsError(
+                "not-found",
+                "Organization was not found.",
+              );
+            }
+
+
+            /*
+             * --------------------------------------------------------------
+             * MEMBERSHIP
+             * --------------------------------------------------------------
+             */
+
+            const membershipRef =
+              db
+                .collection(
+                  "organizationMemberships",
+                )
+                .doc(
+                  `${callerUid}_${normalizedOrganizationId}`,
+                );
+
+
+            const membershipSnapshot =
+              await transaction.get(
+                membershipRef,
+              );
+
+
+            if (
+              !membershipSnapshot.exists
+            ) {
+              throw new HttpsError(
+                "permission-denied",
+                "You are not a member of this organization.",
+              );
+            }
+
+
+            const membership =
+              membershipSnapshot.data();
+
+
+            if (
+              membership?.active !== true
+            ) {
+              throw new HttpsError(
+                "permission-denied",
+                "Your organization membership is not active.",
+              );
+            }
+
+
+            const role =
+              membership.role;
+
+
+            if (
+              role !== "org_owner" &&
+              role !== "org_admin"
+            ) {
+              throw new HttpsError(
+                "permission-denied",
+                "Only an organization owner or administrator " +
+                "can complete onboarding.",
+              );
+            }
+
+
+            /*
+             * --------------------------------------------------------------
+             * ONBOARDING STATE
+             * --------------------------------------------------------------
+             */
+
+            const onboardingRef =
+              db
+                .collection(
+                  "organizationOnboarding",
+                )
+                .doc(
+                  normalizedOrganizationId,
+                );
+
+
+            const onboardingSnapshot =
+              await transaction.get(
+                onboardingRef,
+              );
+
+
+            if (
+              !onboardingSnapshot.exists
+            ) {
+              throw new HttpsError(
+                "failed-precondition",
+                "Organization onboarding has not been initialized.",
+              );
+            }
+
+
+            /**
+             * Firestore's data() method returns
+             * DocumentData | undefined.
+             *
+             * The exists check above guarantees that
+             * the document exists, so explicitly narrow
+             * it to the domain-specific onboarding state.
+             */
+            const onboarding =
+              onboardingSnapshot.data() as
+                OrganizationFirstProgramOnboarding;
+
+
+            /*
+             * --------------------------------------------------------------
+             * CURRENT ONBOARDING STEP
+             * --------------------------------------------------------------
+             *
+             * The shared transition helper validates:
+             *
+             * - onboarding is in progress
+             * - currentStep is first_program
+             * - first_program is included in requiredSteps
+             */
+
+            assertCurrentOnboardingStep(
+              onboarding,
+              "first_program",
+            );
+
+
+            /*
+             * --------------------------------------------------------------
+             * PREVENT DUPLICATE FIRST PROGRAM
+             * --------------------------------------------------------------
+             */
+
+            const existingProgramId =
+              onboarding.firstProgramId;
+
+
+            if (
+              typeof existingProgramId ===
+                "string" &&
+              existingProgramId.length > 0
+            ) {
+              throw new HttpsError(
+                "already-exists",
+                "The organization already has a first program configured.",
+              );
+            }
+
+
+            /*
+             * --------------------------------------------------------------
+             * PROGRAM DOCUMENT
+             *
+             * Program slugs are the stable document IDs.
+             * This matches TestProgramService.
+             * --------------------------------------------------------------
+             */
+
+            const programRef =
+              db
+                .collection(
+                  "testPrograms",
+                )
+                .doc(
+                  normalizedSlug,
+                );
+
+
+            /*
+             * The slug must be globally unique for the
+             * testPrograms collection because it is being
+             * used as the document ID.
+             */
+
+            const existingProgramSnapshot =
+              await transaction.get(
+                programRef,
+              );
+
+
+            if (
+              existingProgramSnapshot.exists
+            ) {
+              throw new HttpsError(
+                "already-exists",
+                `A test program with slug "${normalizedSlug}" already exists.`,
+              );
+            }
+
+
+            /*
+             * --------------------------------------------------------------
+             * CREATE PROGRAM
+             * --------------------------------------------------------------
+             */
+
+            const now =
+              FieldValue.serverTimestamp();
+
+
+            transaction.create(
+              programRef,
+              {
+                organizationId:
+                  normalizedOrganizationId,
+
+                name:
+                  name.trim(),
+
+                slug:
+                  normalizedSlug,
+
+                description:
+                  description.trim(),
+
+                active:
+                  true,
+
+                courseCount:
+                  0,
+
+                createdBy:
+                  callerUid,
+
+                createdAt:
+                  now,
+
+                updatedAt:
+                  now,
+              },
+            );
+
+
+            /*
+             * --------------------------------------------------------------
+             * ADVANCE ONBOARDING
+             * --------------------------------------------------------------
+             *
+             * IMPORTANT:
+             *
+             * Do not hard-code "first_course" here.
+             *
+             * The shared transition helper determines the
+             * actual next step from organizationOnboarding.requiredSteps.
+             */
+
+            const transition =
+              advanceOnboarding(
+                onboarding,
+              );
+
+
+            transaction.update(
+              onboardingRef,
+              {
+                firstProgramId:
+                  programRef.id,
+
+                completedSteps:
+                  transition.completedSteps,
+
+                currentStep:
+                  transition.currentStep,
+
+                status:
+                  transition.status,
+
+                ...(transition.isComplete
+                  ? {
+                      completedAt:
+                        now,
+                    }
+                  : {
+                      completedAt:
+                        null,
+                    }),
+
+                updatedAt:
+                  now,
+              },
+            );
+
+
+            /*
+             * --------------------------------------------------------------
+             * TRANSACTION RESULT
+             * --------------------------------------------------------------
+             */
+
+            return {
+              programId:
+                programRef.id,
+
+              organizationId:
+                normalizedOrganizationId,
+
+              name:
+                name.trim(),
+
+              slug:
+                normalizedSlug,
+
+              description:
+                description.trim(),
+
+              active:
+                true,
+
+              courseCount:
+                0,
+
+              currentStep:
+                transition.currentStep,
+
+              completedSteps:
+                transition.completedSteps,
+
+              status:
+                transition.status,
+
+              isComplete:
+                transition.isComplete,
+            };
+          },
+        );
+
+
+      /*
+       * ----------------------------------------------------------------------
+       * RESPONSE
+       * ----------------------------------------------------------------------
+       */
+
+      return {
+        success: true,
+
+        program: {
+          id:
+            result.programId,
+
+          organizationId:
+            result.organizationId,
+
+          name:
+            result.name,
+
+          slug:
+            result.slug,
+
+          description:
+            result.description,
+
+          active:
+            result.active,
+
+          courseCount:
+            result.courseCount,
+        },
+
+        onboarding: {
+          firstProgramId:
+            result.programId,
+
+          currentStep:
+            result.currentStep,
+
+          completedSteps:
+            result.completedSteps,
+
+          status:
+            result.status,
+
+          isComplete:
+            result.isComplete,
+        },
+      };
+    },
+  );===== organization-onboarding-first-course.ts =====
+import {
+  onCall,
+  HttpsError,
+} from "firebase-functions/v2/https";
+
+import {
+  FieldValue,
+  getFirestore,
+} from "firebase-admin/firestore";
+
+import {
+  advanceOnboarding,
+  assertCurrentOnboardingStep,
+  type OrganizationOnboardingTransitionState,
+} from "./organization-onboarding-transition";
+
+
+type FirstCourseInput = {
+  organizationId: string;
+  name: string;
+  slug: string;
+  description: string;
+  provider?: string;
+  type:
+    | "certification"
+    | "course"
+    | "subject"
+    | "skill";
+  certificationCode?: string;
+  imageUrl?: string;
+  active: boolean;
+};
+
+
+/**
+ * Organization onboarding state required by
+ * the first-course workflow.
+ *
+ * The generic transition state intentionally does not
+ * contain application-specific IDs. Those fields belong
+ * to the domain-specific onboarding workflow.
+ */
+type OrganizationFirstCourseOnboarding =
+  OrganizationOnboardingTransitionState & {
+    firstProgramId?: unknown;
+    firstCourseId?: unknown;
+  };
+
+
+/**
+ * Validates that a value is a string within the
+ * specified length range.
+ */
+function isValidString(
+  value: unknown,
+  minLength = 1,
+  maxLength = 200,
+): value is string {
+  return (
+    typeof value === "string" &&
+    value.trim().length >= minLength &&
+    value.trim().length <= maxLength
+  );
+}
+
+
+/**
+ * Normalizes a course slug for consistent storage
+ * and lookup.
+ */
+function normalizeSlug(
+  value: string,
+): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9]+/g,
+      "-",
+    )
+    .replace(
+      /^-+|-+$/g,
+      "");
+}
+
+
+export const completeOrganizationFirstCourse =
+  onCall(
+    {
+      invoker: "public",
+      cors: true,
+    },
+    async (request) => {
+      const db =
+        getFirestore();
+
+
+      /*
+       * ----------------------------------------------------------------------
+       * AUTHENTICATION
+       * ----------------------------------------------------------------------
+       */
+
+      if (!request.auth) {
+        throw new HttpsError(
+          "unauthenticated",
+          "Authentication is required.",
+        );
+      }
+
+      const callerUid =
+        request.auth.uid;
+
+
+      /*
+       * ----------------------------------------------------------------------
+       * INPUT VALIDATION
+       * ----------------------------------------------------------------------
+       */
+
+      const data =
+        request.data as
+          Partial<FirstCourseInput>;
+
+      const organizationId =
+        data.organizationId;
+
+      const name =
+        data.name;
+
+      const slug =
+        data.slug;
+
+      const description =
+        data.description;
+
+      const provider =
+        data.provider;
+
+      const type =
+        data.type;
+
+      const certificationCode =
+        data.certificationCode;
+
+      const imageUrl =
+        data.imageUrl;
+
+      const active =
+        data.active;
+
+
+      if (
+        !isValidString(
+          organizationId,
+          1,
+          128,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "organizationId is required.",
+        );
+      }
+
+
+      if (
+        !isValidString(
+          name,
+          2,
+          150,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Course name must be between 2 and 150 characters.",
+        );
+      }
+
+
+      if (
+        !isValidString(
+          slug,
+          2,
+          150,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Course slug must be between 2 and 150 characters.",
+        );
+      }
+
+
+      if (
+        !isValidString(
+          description,
+          1,
+          2000,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Course description must be between 1 and 2000 characters.",
+        );
+      }
+
+
+      if (
+        type !== "certification" &&
+        type !== "course" &&
+        type !== "subject" &&
+        type !== "skill"
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Course type is invalid.",
+        );
+      }
+
+
+      if (
+        typeof active !== "boolean"
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Course active status is required.",
+        );
+      }
+
+
+      if (
+        provider !== undefined &&
+        provider !== null &&
+        !isValidString(
+          provider,
+          1,
+          200,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Course provider must be between 1 and 200 characters.",
+        );
+      }
+
+
+      if (
+        certificationCode !==
+          undefined &&
+        certificationCode !== null &&
+        !isValidString(
+          certificationCode,
+          1,
+          150,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Certification code must be between 1 and 150 characters.",
+        );
+      }
+
+
+      if (
+        imageUrl !== undefined &&
+        imageUrl !== null &&
+        !isValidString(
+          imageUrl,
+          1,
+          1000,
+        )
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Course image URL is invalid.",
+        );
+      }
+
+
+      const normalizedOrganizationId =
+        organizationId.trim();
+
+      const normalizedSlug =
+        normalizeSlug(slug);
+
+
+      if (!normalizedSlug) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Course slug is invalid.",
+        );
+      }
+
+
+      /*
+       * ----------------------------------------------------------------------
+       * TRANSACTION
+       * ----------------------------------------------------------------------
+       */
+
+      const result =
+        await db.runTransaction(
+          async (transaction) => {
+            /*
+             * --------------------------------------------------------------
+             * ORGANIZATION
+             * --------------------------------------------------------------
+             */
+
+            const organizationRef =
+              db
+                .collection(
+                  "organizations",
+                )
+                .doc(
+                  normalizedOrganizationId,
+                );
+
+
+            const organizationSnapshot =
+              await transaction.get(
+                organizationRef,
+              );
+
+
+            if (
+              !organizationSnapshot.exists
+            ) {
+              throw new HttpsError(
+                "not-found",
+                "Organization was not found.",
+              );
+            }
+
+
+            /*
+             * --------------------------------------------------------------
+             * MEMBERSHIP
+             * --------------------------------------------------------------
+             */
+
+            const membershipRef =
+              db
+                .collection(
+                  "organizationMemberships",
+                )
+                .doc(
+                  `${callerUid}_${normalizedOrganizationId}`,
+                );
+
+
+            const membershipSnapshot =
+              await transaction.get(
+                membershipRef,
+              );
+
+
+            if (
+              !membershipSnapshot.exists
+            ) {
+              throw new HttpsError(
+                "permission-denied",
+                "You are not a member of this organization.",
+              );
+            }
+
+
+            const membership =
+              membershipSnapshot.data();
+
+
+            if (
+              membership?.active !== true
+            ) {
+              throw new HttpsError(
+                "permission-denied",
+                "Your organization membership is not active.",
+              );
+            }
+
+
+            const role =
+              membership.role;
+
+
+            if (
+              role !== "org_owner" &&
+              role !== "org_admin"
+            ) {
+              throw new HttpsError(
+                "permission-denied",
+                "Only an organization owner or administrator " +
+                "can complete onboarding.",
+              );
+            }
+
+
+            /*
+             * --------------------------------------------------------------
+             * ONBOARDING STATE
+             * --------------------------------------------------------------
+             */
+
+            const onboardingRef =
+              db
+                .collection(
+                  "organizationOnboarding",
+                )
+                .doc(
+                  normalizedOrganizationId,
+                );
+
+
+            const onboardingSnapshot =
+              await transaction.get(
+                onboardingRef,
+              );
+
+
+            if (
+              !onboardingSnapshot.exists
+            ) {
+              throw new HttpsError(
+                "failed-precondition",
+                "Organization onboarding has not been initialized.",
+              );
+            }
+
+
+            /**
+             * Firestore's data() method returns
+             * DocumentData | undefined.
+             *
+             * The exists check above guarantees that
+             * the document exists, so we explicitly narrow
+             * it to the domain-specific onboarding state.
+             */
+            const onboarding =
+              onboardingSnapshot.data() as
+                OrganizationFirstCourseOnboarding;
+
+
+            /*
+             * --------------------------------------------------------------
+             * CURRENT ONBOARDING STEP
+             * --------------------------------------------------------------
+             *
+             * The shared transition helper validates:
+             *
+             * - onboarding is in progress
+             * - currentStep is first_course
+             * - first_course is included in requiredSteps
+             */
+
+            assertCurrentOnboardingStep(
+              onboarding,
+              "first_course",
+            );
+
+
+            /*
+             * --------------------------------------------------------------
+             * FIRST PROGRAM
+             * --------------------------------------------------------------
+             */
+
+            const firstProgramId =
+              onboarding.firstProgramId;
+
+
+            if (
+              typeof firstProgramId !==
+                "string" ||
+              !firstProgramId.trim()
+            ) {
+              throw new HttpsError(
+                "failed-precondition",
+                "The first program has not been configured.",
+              );
+            }
+
+
+            const programRef =
+              db
+                .collection(
+                  "testPrograms",
+                )
+                .doc(
+                  firstProgramId,
+                );
+
+
+            const programSnapshot =
+              await transaction.get(
+                programRef,
+              );
+
+
+            if (
+              !programSnapshot.exists
+            ) {
+              throw new HttpsError(
+                "not-found",
+                "The first program could not be found.",
+              );
+            }
+
+
+            const program =
+              programSnapshot.data();
+
+
+            if (
+              program?.organizationId !==
+              normalizedOrganizationId
+            ) {
+              throw new HttpsError(
+                "permission-denied",
+                "The first program does not belong to this organization.",
+              );
+            }
+
+
+            /*
+             * --------------------------------------------------------------
+             * PREVENT DUPLICATE FIRST COURSE
+             * --------------------------------------------------------------
+             */
+
+            const existingCourseId =
+              onboarding.firstCourseId;
+
+
+            if (
+              typeof existingCourseId ===
+                "string" &&
+              existingCourseId.length > 0
+            ) {
+              throw new HttpsError(
+                "already-exists",
+                "The organization already has a first course configured.",
+              );
+            }
+
+
+            /*
+             * --------------------------------------------------------------
+             * COURSE DOCUMENT
+             * --------------------------------------------------------------
+             */
+
+            const courseRef =
+              db
+                .collection(
+                  "testCourses",
+                )
+                .doc();
+
+
+            /*
+             * The course slug must be unique within
+             * the organization.
+             */
+
+            const existingCourseQuery =
+              db
+                .collection(
+                  "testCourses",
+                )
+                .where(
+                  "organizationId",
+                  "==",
+                  normalizedOrganizationId,
+                )
+                .where(
+                  "slug",
+                  "==",
+                  normalizedSlug,
+                )
+                .limit(1);
+
+
+            const existingCourseSnapshot =
+              await transaction.get(
+                existingCourseQuery,
+              );
+
+
+            if (
+              !existingCourseSnapshot.empty
+            ) {
+              throw new HttpsError(
+                "already-exists",
+                `A course with the slug "${normalizedSlug}" ` +
+                "already exists in this organization.",
+              );
+            }
+
+
+            /*
+             * --------------------------------------------------------------
+             * CREATE COURSE
+             * --------------------------------------------------------------
+             */
+
+            const now =
+              FieldValue.serverTimestamp();
+
+
+            transaction.create(
+              courseRef,
+              {
+                organizationId:
+                  normalizedOrganizationId,
+
+                scope:
+                  "organization",
+
+                accessType:
+                  "organization-members",
+
+                programId:
+                  firstProgramId,
+
+                name:
+                  name.trim(),
+
+                slug:
+                  normalizedSlug,
+
+                description:
+                  description.trim(),
+
+                provider:
+                  typeof provider ===
+                    "string" &&
+                  provider.trim()
+                    ? provider.trim()
+                    : null,
+
+                type,
+
+                certificationCode:
+                  typeof certificationCode ===
+                    "string" &&
+                  certificationCode.trim()
+                    ? certificationCode.trim()
+                    : null,
+
+                imageUrl:
+                  typeof imageUrl ===
+                    "string" &&
+                  imageUrl.trim()
+                    ? imageUrl.trim()
+                    : null,
+
+                active,
+
+                questionCount:
+                  0,
+
+                createdBy:
+                  callerUid,
+
+                createdAt:
+                  now,
+
+                updatedAt:
+                  now,
+              },
+            );
+
+
+            /*
+             * --------------------------------------------------------------
+             * ADVANCE ONBOARDING
+             * --------------------------------------------------------------
+             *
+             * IMPORTANT:
+             *
+             * Do not hard-code "first_topic" here.
+             *
+             * The shared transition helper determines the
+             * next step from organizationOnboarding.requiredSteps.
+             */
+
+            const transition =
+              advanceOnboarding(
+                onboarding,
+              );
+
+
+            transaction.update(
+              onboardingRef,
+              {
+                firstCourseId:
+                  courseRef.id,
+
+                completedSteps:
+                  transition.completedSteps,
+
+                currentStep:
+                  transition.currentStep,
+
+                status:
+                  transition.status,
+
+                ...(transition.isComplete
+                  ? {
+                      completedAt:
+                        now,
+                    }
+                  : {
+                      completedAt:
+                        null,
+                    }),
+
+                updatedAt:
+                  now,
+              },
+            );
+
+
+            /*
+             * --------------------------------------------------------------
+             * TRANSACTION RESULT
+             * --------------------------------------------------------------
+             */
+
+            return {
+              courseId:
+                courseRef.id,
+
+              organizationId:
+                normalizedOrganizationId,
+
+              programId:
+                firstProgramId,
+
+              name:
+                name.trim(),
+
+              slug:
+                normalizedSlug,
+
+              description:
+                description.trim(),
+
+              provider:
+                typeof provider ===
+                  "string" &&
+                provider.trim()
+                  ? provider.trim()
+                  : null,
+
+              type,
+
+              active,
+
+              questionCount:
+                0,
+
+              currentStep:
+                transition.currentStep,
+
+              completedSteps:
+                transition.completedSteps,
+
+              status:
+                transition.status,
+
+              isComplete:
+                transition.isComplete,
+            };
+          },
+        );
+
+
+      /*
+       * ----------------------------------------------------------------------
+       * RESPONSE
+       * ----------------------------------------------------------------------
+       */
+
+      return {
+        success: true,
+
+        course: {
+          id:
+            result.courseId,
+
+          organizationId:
+            result.organizationId,
+
+          programId:
+            result.programId,
+
+          name:
+            result.name,
+
+          slug:
+            result.slug,
+
+          description:
+            result.description,
+
+          provider:
+            result.provider,
+
+          type:
+            result.type,
+
+          active:
+            result.active,
+
+          questionCount:
+            result.questionCount,
+        },
+
+        onboarding: {
+          firstCourseId:
+            result.courseId,
+
+          currentStep:
+            result.currentStep,
+
+          completedSteps:
+            result.completedSteps,
+
+          status:
+            result.status,
+
+          isComplete:
+            result.isComplete,
+        },
+      };
+    },
+  );===== organization-onboarding-first-topic.ts =====
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import {
+  FieldValue,
+  getFirestore,
+} from "firebase-admin/firestore";
+
+import {
+  advanceOnboarding,
+  assertCurrentOnboardingStep,
+  type OrganizationOnboardingTransitionState,
+} from "./organization-onboarding-transition";
+
+type FirstTopicInput = {
+  organizationId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  active: boolean;
+};
+
+type OrganizationFirstTopicOnboarding =
+  OrganizationOnboardingTransitionState & {
+    firstCourseId?: unknown;
+    firstTopicId?: unknown;
+  };
+
+/**
+ * Validates that a value is a string within the requested length range.
+ *
+ * @param value Value to validate.
+ * @param minLength Minimum allowed length.
+ * @param maxLength Maximum allowed length.
+ * @returns True when the value is a valid string in the requested range.
+ */
+function isValidString(
+  value: unknown,
+  minLength = 1,
+  maxLength = 200,
+): value is string {
+  return (
+    typeof value === "string" &&
+    value.trim().length >= minLength &&
+    value.trim().length <= maxLength
+  );
+}
+
+/**
+ * Normalizes a topic slug for consistent storage and comparison.
+ *
+ * @param value Slug value to normalize.
+ * @returns Normalized lowercase slug.
+ */
+function normalizeSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export const completeOrganizationFirstTopic = onCall(
+  {
+    invoker: "public",
+    cors: true,
+  },
+  async (request) => {
+    const db = getFirestore();
+
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "Authentication is required.",
+      );
+    }
+
+    const callerUid = request.auth.uid;
+    const data = request.data as Partial<FirstTopicInput>;
+
+    const organizationId = data.organizationId;
+    const name = data.name;
+    const slug = data.slug;
+    const description = data.description;
+    const active = data.active;
+
+    if (!isValidString(organizationId, 1, 128)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "organizationId is required.",
+      );
+    }
+
+    if (!isValidString(name, 2, 150)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Topic name must be between 2 and 150 characters.",
+      );
+    }
+
+    if (!isValidString(slug, 2, 150)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Topic slug must be between 2 and 150 characters.",
+      );
+    }
+
+    if (
+      description !== undefined &&
+      description !== null &&
+      !isValidString(description, 0, 2000)
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Topic description cannot exceed 2000 characters.",
+      );
+    }
+
+    if (typeof active !== "boolean") {
+      throw new HttpsError(
+        "invalid-argument",
+        "Topic active status is required.",
+      );
+    }
+
+    const normalizedSlug = normalizeSlug(slug);
+
+    if (!normalizedSlug) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Topic slug is invalid.",
+      );
+    }
+
+    const result = await db.runTransaction(
+      async (transaction) => {
+        const organizationRef = db
+          .collection("organizations")
+          .doc(organizationId);
+
+        const organizationSnapshot =
+          await transaction.get(organizationRef);
+
+        if (!organizationSnapshot.exists) {
+          throw new HttpsError(
+            "not-found",
+            "Organization was not found.",
+          );
+        }
+
+        const membershipRef = db
+          .collection("organizationMemberships")
+          .doc(`${callerUid}_${organizationId}`);
+
+        const membershipSnapshot =
+          await transaction.get(membershipRef);
+
+        if (!membershipSnapshot.exists) {
+          throw new HttpsError(
+            "permission-denied",
+            "You are not a member of this organization.",
+          );
+        }
+
+        const membership = membershipSnapshot.data();
+
+        if (membership?.active !== true) {
+          throw new HttpsError(
+            "permission-denied",
+            "Your organization membership is not active.",
+          );
+        }
+
+        const role = membership.role;
+
+        if (role !== "org_owner" && role !== "org_admin") {
+          throw new HttpsError(
+            "permission-denied",
+            "Only an organization owner or administrator can complete " +
+              "onboarding.",
+          );
+        }
+
+        const onboardingRef = db
+          .collection("organizationOnboarding")
+          .doc(organizationId);
+
+        const onboardingSnapshot =
+          await transaction.get(onboardingRef);
+
+        if (!onboardingSnapshot.exists) {
+          throw new HttpsError(
+            "failed-precondition",
+            "Organization onboarding has not been initialized.",
+          );
+        }
+
+        const onboarding =
+          onboardingSnapshot.data() as OrganizationFirstTopicOnboarding;
+
+        assertCurrentOnboardingStep(
+          onboarding,
+          "first_topic",
+        );
+
+        const firstCourseId = onboarding.firstCourseId;
+
+        if (
+          typeof firstCourseId !== "string" ||
+          !firstCourseId.trim()
+        ) {
+          throw new HttpsError(
+            "failed-precondition",
+            "The first course has not been configured.",
+          );
+        }
+
+        const courseRef = db
+          .collection("testCourses")
+          .doc(firstCourseId);
+
+        const courseSnapshot =
+          await transaction.get(courseRef);
+
+        if (!courseSnapshot.exists) {
+          throw new HttpsError(
+            "not-found",
+            "The first course could not be found.",
+          );
+        }
+
+        const course = courseSnapshot.data();
+
+        if (course?.organizationId !== organizationId) {
+          throw new HttpsError(
+            "permission-denied",
+            "The first course does not belong to this organization.",
+          );
+        }
+
+        const existingTopicId = onboarding.firstTopicId;
+
+        if (
+          typeof existingTopicId === "string" &&
+          existingTopicId.length > 0
+        ) {
+          throw new HttpsError(
+            "already-exists",
+            "The organization already has a first topic configured.",
+          );
+        }
+
+        const existingTopicQuery = db
+          .collection("testTopics")
+          .where("courseId", "==", firstCourseId)
+          .where("slug", "==", normalizedSlug)
+          .limit(1);
+
+        const existingTopicSnapshot =
+          await transaction.get(existingTopicQuery);
+
+        if (!existingTopicSnapshot.empty) {
+          const duplicateTopicMessage =
+            `A topic with the slug "${normalizedSlug}" already exists ` +
+            "in this course.";
+
+          throw new HttpsError(
+            "already-exists",
+            duplicateTopicMessage,
+          );
+        }
+
+        const existingTopicsQuery = db
+          .collection("testTopics")
+          .where("courseId", "==", firstCourseId);
+
+        const existingTopicsSnapshot =
+          await transaction.get(existingTopicsQuery);
+
+        let nextSortOrder = 0;
+
+        for (const topicDocument of existingTopicsSnapshot.docs) {
+          const topicSortOrder =
+            topicDocument.data().sortOrder;
+
+          if (
+            typeof topicSortOrder === "number" &&
+            Number.isFinite(topicSortOrder)
+          ) {
+            nextSortOrder = Math.max(
+              nextSortOrder,
+              topicSortOrder + 1,
+            );
+          }
+        }
+
+        const topicRef = db
+          .collection("testTopics")
+          .doc();
+
+        const now = FieldValue.serverTimestamp();
+
+        transaction.create(
+          topicRef,
+          {
+            organizationId,
+            courseId: firstCourseId,
+            name: name.trim(),
+            slug: normalizedSlug,
+            description:
+              typeof description === "string" &&
+              description.trim()
+                ? description.trim()
+                : null,
+            sortOrder: nextSortOrder,
+            questionCount: 0,
+            active,
+            createdBy: callerUid,
+            createdAt: now,
+            updatedAt: now,
+          },
+        );
+
+        /*
+         * The persisted requiredSteps array is the authoritative
+         * onboarding workflow. advanceOnboarding() determines the
+         * next step instead of hard-coding "first_question".
+         */
+        const transition = advanceOnboarding(onboarding);
+
+        transaction.update(
+          onboardingRef,
+          {
+            firstTopicId: topicRef.id,
+            completedSteps: transition.completedSteps,
+            currentStep: transition.currentStep,
+            status: transition.status,
+            ...(transition.isComplete
+              ? { completedAt: now }
+              : { completedAt: null }),
+            updatedAt: now,
+          },
+        );
+
+        return {
+          topicId: topicRef.id,
+          organizationId,
+          courseId: firstCourseId,
+          name: name.trim(),
+          slug: normalizedSlug,
+          description:
+            typeof description === "string" &&
+            description.trim()
+              ? description.trim()
+              : null,
+          sortOrder: nextSortOrder,
+          questionCount: 0,
+          active,
+          currentStep: transition.currentStep,
+          completedSteps: transition.completedSteps,
+          status: transition.status,
+          isComplete: transition.isComplete,
+        };
+      },
+    );
+
+    return {
+      success: true,
+      topic: {
+        id: result.topicId,
+        organizationId: result.organizationId,
+        courseId: result.courseId,
+        name: result.name,
+        slug: result.slug,
+        description: result.description,
+        sortOrder: result.sortOrder,
+        questionCount: result.questionCount,
+        active: result.active,
+      },
+      onboarding: {
+        firstTopicId: result.topicId,
+        currentStep: result.currentStep,
+        completedSteps: result.completedSteps,
+        status: result.status,
+        isComplete: result.isComplete,
+      },
+    };
+  },
+);===== organization-onboarding-first-question.ts =====
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import {
+  FieldValue,
+  getFirestore,
+} from "firebase-admin/firestore";
+
+import {
+  advanceOnboarding,
+  assertCurrentOnboardingStep,
+  type OrganizationOnboardingTransitionState,
+} from "./organization-onboarding-transition";
+
+type FirstQuestionInput = {
+  organizationId: string;
+  courseId?: string;
+  topicId?: string;
+  question: string;
+  explanation?: string;
+  options: Array<{
+    text: string;
+    isCorrect: boolean;
+  }>;
+  active: boolean;
+};
+
+type OrganizationFirstQuestionOnboarding =
+  OrganizationOnboardingTransitionState & {
+    firstCourseId?: unknown;
+    firstTopicId?: unknown;
+    firstQuestionId?: unknown;
+  };
+
+/**
+ * Validates that a value is a string within the requested length range.
+ */
+function isValidString(
+  value: unknown,
+  minLength = 1,
+  maxLength = 200,
+): value is string {
+  return (
+    typeof value === "string" &&
+    value.trim().length >= minLength &&
+    value.trim().length <= maxLength
+  );
+}
+
+export const completeOrganizationFirstQuestion = onCall(
+  {
+    invoker: "public",
+    cors: true,
+  },
+  async (request) => {
+    const db = getFirestore();
+
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "Authentication is required.",
+      );
+    }
+
+    const callerUid = request.auth.uid;
+    const data = request.data as Partial<FirstQuestionInput>;
+
+    const organizationId = data.organizationId;
+    const courseId = data.courseId;
+    const topicId = data.topicId;
+    const question = data.question;
+    const explanation = data.explanation;
+    const options = data.options;
+    const active = data.active;
+
+    if (!isValidString(organizationId, 1, 128)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "organizationId is required.",
+      );
+    }
+
+    if (
+      courseId !== undefined &&
+      !isValidString(courseId, 1, 128)
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "courseId must be a valid string.",
+      );
+    }
+
+    if (
+      topicId !== undefined &&
+      !isValidString(topicId, 1, 128)
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "topicId must be a valid string.",
+      );
+    }
+
+    if (!isValidString(question, 5, 5000)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Question must be between 5 and 5000 characters.",
+      );
+    }
+
+    if (
+      explanation !== undefined &&
+      explanation !== null &&
+      !isValidString(explanation, 0, 5000)
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Explanation cannot exceed 5000 characters.",
+      );
+    }
+
+    if (!Array.isArray(options) || options.length < 2) {
+      throw new HttpsError(
+        "invalid-argument",
+        "At least two answer options are required.",
+      );
+    }
+
+    if (options.length > 10) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A maximum of 10 answer options is allowed.",
+      );
+    }
+
+    if (typeof active !== "boolean") {
+      throw new HttpsError(
+        "invalid-argument",
+        "Question active status is required.",
+      );
+    }
+
+    let correctOptionCount = 0;
+
+    for (const option of options) {
+      if (
+        !option ||
+        typeof option !== "object" ||
+        !isValidString(option.text, 1, 1000) ||
+        typeof option.isCorrect !== "boolean"
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Every answer option must contain valid text and an isCorrect value.",
+        );
+      }
+
+      if (option.isCorrect) {
+        correctOptionCount++;
+      }
+    }
+
+    if (correctOptionCount === 0) {
+      throw new HttpsError(
+        "invalid-argument",
+        "At least one answer option must be correct.",
+      );
+    }
+
+    const result = await db.runTransaction(
+      async (transaction) => {
+        const organizationRef = db
+          .collection("organizations")
+          .doc(organizationId);
+
+        const organizationSnapshot =
+          await transaction.get(organizationRef);
+
+        if (!organizationSnapshot.exists) {
+          throw new HttpsError(
+            "not-found",
+            "Organization was not found.",
+          );
+        }
+
+        const membershipRef = db
+          .collection("organizationMemberships")
+          .doc(`${callerUid}_${organizationId}`);
+
+        const membershipSnapshot =
+          await transaction.get(membershipRef);
+
+        if (!membershipSnapshot.exists) {
+          throw new HttpsError(
+            "permission-denied",
+            "You are not a member of this organization.",
+          );
+        }
+
+        const membership = membershipSnapshot.data();
+
+        if (membership?.active !== true) {
+          throw new HttpsError(
+            "permission-denied",
+            "Your organization membership is not active.",
+          );
+        }
+
+        const role = membership.role;
+
+        if (
+          role !== "org_owner" &&
+          role !== "org_admin"
+        ) {
+          throw new HttpsError(
+            "permission-denied",
+            "Only an organization owner or administrator can complete " +
+              "onboarding.",
+          );
+        }
+
+        const onboardingRef = db
+          .collection("organizationOnboarding")
+          .doc(organizationId);
+
+        const onboardingSnapshot =
+          await transaction.get(onboardingRef);
+
+        if (!onboardingSnapshot.exists) {
+          throw new HttpsError(
+            "failed-precondition",
+            "Organization onboarding has not been initialized.",
+          );
+        }
+
+        const onboarding =
+          onboardingSnapshot.data() as OrganizationFirstQuestionOnboarding;
+
+        assertCurrentOnboardingStep(
+          onboarding,
+          "first_question",
+        );
+
+        const firstCourseId = onboarding.firstCourseId;
+
+        if (
+          typeof firstCourseId !== "string" ||
+          !firstCourseId.trim()
+        ) {
+          throw new HttpsError(
+            "failed-precondition",
+            "The first course has not been configured.",
+          );
+        }
+
+        const firstTopicId = onboarding.firstTopicId;
+
+        if (
+          typeof firstTopicId !== "string" ||
+          !firstTopicId.trim()
+        ) {
+          throw new HttpsError(
+            "failed-precondition",
+            "The first topic has not been configured.",
+          );
+        }
+
+        const existingQuestionId =
+          onboarding.firstQuestionId;
+
+        if (
+          typeof existingQuestionId === "string" &&
+          existingQuestionId.length > 0
+        ) {
+          throw new HttpsError(
+            "already-exists",
+            "The organization already has a first question configured.",
+          );
+        }
+
+        /*
+         * The onboarding workflow determines the course and topic
+         * for the first question. If the caller supplies IDs,
+         * they must match the persisted onboarding context.
+         */
+        if (
+          typeof courseId === "string" &&
+          courseId.trim() !== firstCourseId
+        ) {
+          throw new HttpsError(
+            "invalid-argument",
+            "The supplied courseId does not match the organization's first course.",
+          );
+        }
+
+        if (
+          typeof topicId === "string" &&
+          topicId.trim() !== firstTopicId
+        ) {
+          throw new HttpsError(
+            "invalid-argument",
+            "The supplied topicId does not match the organization's first topic.",
+          );
+        }
+
+        const courseRef = db
+          .collection("testCourses")
+          .doc(firstCourseId);
+
+        const topicRef = db
+          .collection("testTopics")
+          .doc(firstTopicId);
+
+        const courseSnapshot =
+          await transaction.get(courseRef);
+
+        if (!courseSnapshot.exists) {
+          throw new HttpsError(
+            "not-found",
+            "The first course could not be found.",
+          );
+        }
+
+        const course = courseSnapshot.data();
+
+        if (course?.organizationId !== organizationId) {
+          throw new HttpsError(
+            "permission-denied",
+            "The first course does not belong to this organization.",
+          );
+        }
+
+        const topicSnapshot =
+          await transaction.get(topicRef);
+
+        if (!topicSnapshot.exists) {
+          throw new HttpsError(
+            "not-found",
+            "The first topic could not be found.",
+          );
+        }
+
+        const topic = topicSnapshot.data();
+
+        if (topic?.organizationId !== organizationId) {
+          throw new HttpsError(
+            "permission-denied",
+            "The first topic does not belong to this organization.",
+          );
+        }
+
+        if (topic?.courseId !== firstCourseId) {
+          throw new HttpsError(
+            "failed-precondition",
+            "The first topic does not belong to the configured first course.",
+          );
+        }
+
+        /*
+         * Prevent accidental duplicate questions during onboarding.
+         *
+         * Because this is the organization's first question, the
+         * onboarding document itself is the primary duplicate guard.
+         */
+        const questionRef = db
+          .collection("testQuestions")
+          .doc();
+
+        const now = FieldValue.serverTimestamp();
+
+        const normalizedOptions = options.map(
+          (option) => ({
+            text: option.text.trim(),
+            isCorrect: option.isCorrect,
+          }),
+        );
+
+        transaction.create(
+          questionRef,
+          {
+            organizationId,
+            courseId: firstCourseId,
+            topicId: firstTopicId,
+            question: question.trim(),
+            explanation:
+              typeof explanation === "string" &&
+              explanation.trim()
+                ? explanation.trim()
+                : null,
+            options: normalizedOptions,
+            active,
+            createdBy: callerUid,
+            createdAt: now,
+            updatedAt: now,
+          },
+        );
+
+        /*
+         * The persisted requiredSteps array is the authoritative
+         * onboarding workflow. The transition helper determines
+         * whether there is another step or onboarding is complete.
+         */
+        const transition =
+          advanceOnboarding(onboarding);
+
+        transaction.update(
+          onboardingRef,
+          {
+            firstQuestionId: questionRef.id,
+            completedSteps: transition.completedSteps,
+            currentStep: transition.currentStep,
+            status: transition.status,
+            ...(transition.isComplete
+              ? { completedAt: now }
+              : { completedAt: null }),
+            updatedAt: now,
+          },
+        );
+
+        /*
+         * Keep the course and topic counters synchronized with
+         * the newly-created first question.
+         */
+        transaction.update(
+          courseRef,
+          {
+            questionCount:
+              FieldValue.increment(1),
+            updatedAt: now,
+          },
+        );
+
+        transaction.update(
+          topicRef,
+          {
+            questionCount:
+              FieldValue.increment(1),
+            updatedAt: now,
+          },
+        );
+
+        return {
+          questionId: questionRef.id,
+          organizationId,
+          courseId: firstCourseId,
+          topicId: firstTopicId,
+          question: question.trim(),
+          explanation:
+            typeof explanation === "string" &&
+            explanation.trim()
+              ? explanation.trim()
+              : null,
+          options: normalizedOptions,
+          active,
+          currentStep: transition.currentStep,
+          completedSteps:
+            transition.completedSteps,
+          status: transition.status,
+          isComplete: transition.isComplete,
+        };
+      },
+    );
+
+    return {
+      success: true,
+
+      question: {
+        id: result.questionId,
+        organizationId: result.organizationId,
+        courseId: result.courseId,
+        topicId: result.topicId,
+        question: result.question,
+        explanation: result.explanation,
+        options: result.options,
+        active: result.active,
+      },
+
+      onboarding: {
+        firstQuestionId:
+          result.questionId,
+        currentStep:
+          result.currentStep,
+        completedSteps:
+          result.completedSteps,
+        status:
+          result.status,
+        isComplete:
+          result.isComplete,
+      },
+    };
+  },
+);===== organization-provisioning.ts =====
+/* eslint-disable max-len */
+
+import {
+  HttpsError,
+  onCall,
+  CallableRequest,
+} from "firebase-functions/v2/https";
+
+import * as logger from "firebase-functions/logger";
+
+import {
+  FieldValue,
+  Firestore,
+  getFirestore,
+} from "firebase-admin/firestore";
+
+import {randomUUID} from "node:crypto";
+
+/*
+ * ================================================================
+ * TYPES
+ * ================================================================
+ */
+
+type OrganizationApplicationRequestStatus =
+  | "draft"
+  | "submitted"
+  | "under_review"
+  | "approved"
+  | "rejected"
+  | "provisioning"
+  | "onboarding"
+  | "active"
+  | "cancelled";
+
+type OrganizationStatus =
+  | "pending"
+  | "provisioning"
+  | "onboarding"
+  | "active"
+  | "suspended"
+  | "archived";
+
+type OrganizationApplicationStatus =
+  | "available"
+  | "selected"
+  | "provisioning"
+  | "active"
+  | "suspended"
+  | "deactivated"
+  | "failed";
+
+type OrganizationOnboardingStep =
+  | "organization_profile"
+  | "owner_profile"
+  | "invite_members"
+  | "configuration"
+  | "first_program"
+  | "first_course"
+  | "first_topic"
+  | "first_question";
+
+interface RequestedApplicationDefinition {
+  applicationId?: unknown;
+  onboardingSteps?: unknown;
+}
+
+type RequestedApplicationInput =
+  | string
+  | RequestedApplicationDefinition;
+
+interface OrganizationApplicationRequest {
+  id: string;
+  applicantUserId: string;
+  organizationName: string;
+  organizationSlug?: string;
+  organizationType?: string;
+  companyNumber?: string;
+  website?: string;
+  description?: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  requestedApplications: RequestedApplicationInput[];
+  status: OrganizationApplicationRequestStatus;
+  submittedAt?: unknown;
+  reviewedAt?: unknown;
+  reviewedBy?: string;
+  rejectionReason?: string;
+  approvedAt?: unknown;
+  organizationId?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+/*
+ * ================================================================
+ * ADMIN AUTHORIZATION
+ * ================================================================
+ */
+
+/**
+ * Require the caller to be a platform administrator.
+ *
+ * The frontend and Firestore security model recognize:
+ *
+ *   role: "admin"
+ *
+ * and:
+ *
+ *   platformRole: "platform-admin"
+ *
+ * Keep both supported here so the trusted backend remains
+ * consistent with the platform authorization model.
+ */
+async function requirePlatformAdmin(
+  request: CallableRequest<unknown>,
+  db: Firestore,
+): Promise<{
+  uid: string;
+  email?: string;
+}> {
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "You must be signed in as a platform administrator.",
+    );
+  }
+
+  const uid = request.auth.uid;
+
+  const profileSnapshot = await db
+    .collection("users")
+    .doc(uid)
+    .get();
+
+  if (!profileSnapshot.exists) {
+    throw new HttpsError(
+      "permission-denied",
+      "Administrator profile could not be found.",
+    );
+  }
+
+  const profile = profileSnapshot.data() ?? {};
+
+  const isPlatformAdmin =
+    profile["role"] === "admin" ||
+    profile["platformRole"] === "platform-admin";
+
+  if (!isPlatformAdmin) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only platform administrators may provision organizations.",
+    );
+  }
+
+  return {
+    uid,
+    email:
+      typeof profile["email"] === "string" ?
+        profile["email"] :
+        request.auth.token.email,
+  };
+}
+
+/*
+ * ================================================================
+ * VALIDATION HELPERS
+ * ================================================================
+ */
+
+/**
+ * Validates and returns a required non-empty string.
+ *
+ * @param value The value to validate.
+ * @param fieldName The field name used in the validation error.
+ * @returns The trimmed string value.
+ * @throws HttpsError When the value is missing or not a string.
+ */
+function requireNonEmptyString(
+  value: unknown,
+  fieldName: string,
+): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new HttpsError(
+      "invalid-argument",
+      `${fieldName} is required.`,
+    );
+  }
+
+  return value.trim();
+}
+
+/**
+ * Normalizes a value into a URL-safe organization slug.
+ *
+ * @param value The value to normalize.
+ * @returns The normalized slug.
+ */
+function normalizeSlug(
+  value: string,
+): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
+/**
+ * Creates the organization slug using the requested slug when provided,
+ * otherwise deriving it from the organization name.
+ *
+ * @param name The organization name.
+ * @param requestedSlug Optional requested organization slug.
+ * @returns The normalized organization slug.
+ */
+function createOrganizationSlug(
+  name: string,
+  requestedSlug?: string,
+): string {
+  const baseSlug = normalizeSlug(
+    requestedSlug || name,
+  );
+
+  if (baseSlug) {
+    return baseSlug;
+  }
+
+  return `organization-${randomUUID().slice(0, 8)}`;
+}
+
+/**
+ * Organization application IDs are controlled by the application
+ * catalog. Do not allow arbitrary objects to be injected into the
+ * organization entitlement collection.
+ */
+const BASE_ORGANIZATION_ONBOARDING_STEPS: OrganizationOnboardingStep[] = [
+  "organization_profile",
+  "owner_profile",
+  "invite_members",
+  "configuration",
+];
+
+/**
+ * Trusted application-specific setup requirements.
+ *
+ * These steps are stored on the corresponding organization application
+ * entitlement. They are NOT part of mandatory organization onboarding.
+ */
+const APPLICATION_ONBOARDING_STEPS_BY_ID:
+  Readonly<Record<string, readonly OrganizationOnboardingStep[]>> = {
+    community: [],
+    "test-center": [
+      "first_program",
+      "first_course",
+      "first_topic",
+      "first_question",
+    ],
+  };
+
+interface NormalizedRequestedApplication {
+  applicationId: string;
+  onboardingSteps: OrganizationOnboardingStep[];
+}
+
+/**
+ * Normalize requested applications using trusted backend configuration.
+ *
+ * Supports legacy requests such as ["test-center"] and the newer
+ * application-aware request shape. Client-provided onboardingSteps are
+ * deliberately ignored so clients cannot define their own setup workflow.
+ */
+function normalizeRequestedApplicationDefinitions(
+  value: unknown,
+): NormalizedRequestedApplication[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const applicationIds = new Set<string>();
+
+  for (const item of value as RequestedApplicationInput[]) {
+    let applicationId = "";
+
+    if (typeof item === "string") {
+      applicationId = item.trim().toLowerCase();
+    } else if (item && typeof item === "object") {
+      applicationId =
+        typeof item.applicationId === "string" ?
+          item.applicationId.trim().toLowerCase() :
+          "";
+    }
+
+    if (applicationId) {
+      applicationIds.add(applicationId);
+    }
+  }
+
+  return Array.from(applicationIds).map((applicationId) => {
+    const configuredSteps =
+      APPLICATION_ONBOARDING_STEPS_BY_ID[applicationId];
+
+    if (!configuredSteps) {
+      logger.warn(
+        "No onboarding configuration exists for requested application.",
+        {applicationId},
+      );
+    }
+
+    return {
+      applicationId,
+      onboardingSteps: [...(configuredSteps ?? [])],
+    };
+  });
+}
+
+/**
+ * Organization onboarding is always the four core organization steps.
+ *
+ * Application-specific setup is tracked on each application entitlement
+ * and must not extend the mandatory organization onboarding workflow.
+ * The parameter remains to preserve existing provisioning call sites.
+ */
+function buildRequiredOnboardingSteps(
+  _requestedApplications:
+    readonly NormalizedRequestedApplication[],
+): OrganizationOnboardingStep[] {
+  return [...BASE_ORGANIZATION_ONBOARDING_STEPS];
+}
+
+/*
+ * ================================================================
+ * AUDIT HELPERS
+ * ================================================================
+ */
+
+/**
+ * The existing Zebron AuditService writes to auditLogs.
+ *
+ * Cloud Functions cannot inject the Angular AuditService, so the
+ * trusted backend writes the same persistent audit shape directly.
+ */
+function createAuditRecord(
+  db: Firestore,
+  transaction: FirebaseFirestore.Transaction,
+  input: {
+    action: string;
+    entityType: string;
+    entityId: string;
+    actorId: string;
+    actorEmail?: string;
+    metadata?: Record<string, unknown>;
+    reason?: string;
+  },
+): void {
+  const auditRef = db
+    .collection("auditLogs")
+    .doc();
+
+  transaction.set(
+    auditRef,
+    {
+      action: input.action,
+      entityType: input.entityType,
+      entityId: input.entityId,
+      actorId: input.actorId,
+      actorName: null,
+      actorEmail: input.actorEmail ?? null,
+      actorType: "user",
+      outcome: "success",
+      source: "backend",
+      reason: input.reason ?? null,
+      metadata: input.metadata ?? {},
+      before: null,
+      after: null,
+      createdAt: FieldValue.serverTimestamp(),
+    },
+  );
+}
+
+/*
+ * ================================================================
+ * PROVISION ORGANIZATION
+ * ================================================================
+ */
+
+/**
+ * Provision an approved organization application.
+ *
+ * Lifecycle:
+ *
+ *   approved
+ *       |
+ *       v
+ *   provisioning
+ *       |
+ *       v
+ *   organization created
+ *       |
+ *       v
+ *   owner membership created
+ *       |
+ *       v
+ *   application entitlements created
+ *       |
+ *       v
+ *   onboarding created
+ *       |
+ *       v
+ *   application request -> onboarding
+ *
+ * The entire provisioning operation is transactional.
+ *
+ * The callable is intentionally platform-admin-only.
+ */
+export const provisionOrganization = onCall(
+  {
+    region: "us-central1",
+  },
+  async (request) => {
+    /*
+     * Firestore is intentionally initialized inside the callable.
+     *
+     * Do not move this to module scope. Firebase Admin must already
+     * be initialized by the functions entry point before this code
+     * executes.
+     */
+    const db = getFirestore();
+
+    const admin = await requirePlatformAdmin(
+      request,
+      db,
+    );
+
+    const data =
+      request.data as
+        | {
+            requestId?: unknown;
+          }
+        | undefined;
+
+    const requestId =
+      requireNonEmptyString(
+        data?.requestId,
+        "requestId",
+      );
+
+    const requestRef = db
+      .collection("organizationApplicationRequests")
+      .doc(requestId);
+
+    /*
+     * --------------------------------------------------------------
+     * TRANSACTION
+     * --------------------------------------------------------------
+     */
+
+    const result = await db.runTransaction(
+      async (transaction) => {
+        const requestSnapshot =
+          await transaction.get(requestRef);
+
+        if (!requestSnapshot.exists) {
+          throw new HttpsError(
+            "not-found",
+            "The organization application could not be found.",
+          );
+        }
+
+        const application =
+          requestSnapshot.data() as OrganizationApplicationRequest;
+
+        /*
+         * ------------------------------------------------------------
+         * IDEMPOTENCY
+         * ------------------------------------------------------------
+         *
+         * If this application was already provisioned, return the
+         * existing organization instead of creating another tenant.
+         */
+
+        if (
+          application.organizationId &&
+          (
+            application.status === "onboarding" ||
+            application.status === "active"
+          )
+        ) {
+          const existingOrganizationRef =
+            db
+              .collection("organizations")
+              .doc(application.organizationId);
+
+          const existingOrganization =
+            await transaction.get(
+              existingOrganizationRef,
+            );
+
+          if (existingOrganization.exists) {
+            return {
+              alreadyProvisioned: true,
+              organizationId:
+                application.organizationId,
+              status: application.status,
+            };
+          }
+        }
+
+        /*
+         * ------------------------------------------------------------
+         * STATUS VALIDATION
+         * ------------------------------------------------------------
+         */
+
+        if (application.status !== "approved") {
+          throw new HttpsError(
+            "failed-precondition",
+            `Only approved organization applications can be provisioned. Current status: ${application.status}.`,
+          );
+        }
+
+        const applicantUserId =
+          requireNonEmptyString(
+            application.applicantUserId,
+            "applicantUserId",
+          );
+
+        const organizationName =
+          requireNonEmptyString(
+            application.organizationName,
+            "organizationName",
+          );
+
+        /*
+         * Validate the application contact even though contactName
+         * is not currently stored on the Organization model.
+         */
+        requireNonEmptyString(
+          application.contactName,
+          "contactName",
+        );
+
+        const contactEmail =
+          requireNonEmptyString(
+            application.contactEmail,
+            "contactEmail",
+          );
+
+        /*
+         * ------------------------------------------------------------
+         * ORGANIZATION ID
+         * ------------------------------------------------------------
+         *
+         * Use a deterministic ID derived from the application ID.
+         *
+         * This makes retries safe and prevents duplicate organizations
+         * if the callable is invoked more than once.
+         */
+
+        const organizationId =
+          `org_${requestId}`;
+
+        const organizationRef =
+          db
+            .collection("organizations")
+            .doc(organizationId);
+
+        const membershipId =
+          `${applicantUserId}_${organizationId}`;
+
+        const membershipRef =
+          db
+            .collection("organizationMemberships")
+            .doc(membershipId);
+
+        const onboardingRef =
+          db
+            .collection("organizationOnboarding")
+            .doc(organizationId);
+
+        /*
+         * ------------------------------------------------------------
+         * CHECK FOR PARTIAL PREVIOUS PROVISIONING
+         * ------------------------------------------------------------
+         */
+
+        const existingOrganization =
+          await transaction.get(
+            organizationRef,
+          );
+
+        const existingMembership =
+          await transaction.get(
+            membershipRef,
+          );
+
+        const existingOnboarding =
+          await transaction.get(
+            onboardingRef,
+          );
+
+        /*
+         * If the organization already exists but the request still
+         * says approved, we do not silently overwrite it.
+         */
+
+        if (existingOrganization.exists) {
+          throw new HttpsError(
+            "already-exists",
+            "An organization already exists for this application.",
+          );
+        }
+
+        if (existingMembership.exists) {
+          throw new HttpsError(
+            "already-exists",
+            "An organization membership already exists for this application.",
+          );
+        }
+
+        if (existingOnboarding.exists) {
+          throw new HttpsError(
+            "already-exists",
+            "An onboarding record already exists for this organization.",
+          );
+        }
+
+        /*
+         * ------------------------------------------------------------
+         * ORGANIZATION
+         * ------------------------------------------------------------
+         */
+
+        const now = FieldValue.serverTimestamp();
+
+        const slug =
+          createOrganizationSlug(
+            organizationName,
+            application.organizationSlug,
+          );
+
+        transaction.set(
+          organizationRef,
+          {
+            id: organizationId,
+
+            name: organizationName,
+
+            companyNumber:
+              application.companyNumber ?? null,
+
+            normalizedName:
+              organizationName
+                .trim()
+                .toLowerCase(),
+
+            slug,
+
+            description:
+              application.description ?? null,
+
+            website:
+              application.website ?? null,
+
+            phone:
+              application.contactPhone ?? null,
+
+            email:
+              contactEmail,
+
+            logoUrl: null,
+
+            locationId: null,
+
+            status:
+              "onboarding" as OrganizationStatus,
+
+            ownerUserId:
+              applicantUserId,
+
+            approvedAt:
+              application.approvedAt ?? now,
+
+            activatedAt: null,
+
+            verified: true,
+
+            active: true,
+
+            createdAt: now,
+
+            updatedAt: now,
+          },
+        );
+
+        /*
+         * ------------------------------------------------------------
+         * OWNER MEMBERSHIP
+         * ------------------------------------------------------------
+         *
+         * The applicant becomes the initial organization owner.
+         *
+         * This is the only place in the onboarding flow where the
+         * initial org_owner membership is created.
+         */
+
+        transaction.set(
+          membershipRef,
+          {
+            id: membershipId,
+
+            userId:
+              applicantUserId,
+
+            organizationId,
+
+            role:
+              "org_owner",
+
+            active: true,
+
+            createdAt: now,
+
+            updatedAt: now,
+          },
+        );
+
+        /*
+         * ------------------------------------------------------------
+         * APPLICATION ENTITLEMENTS
+         * ------------------------------------------------------------
+         *
+         * The organization application request contains the
+         * applications requested during signup.
+         *
+         * Those become tenant-scoped application entitlement records.
+         *
+         * These are intentionally separate from the organization
+         * creation request.
+         */
+
+        const requestedApplicationDefinitions =
+          normalizeRequestedApplicationDefinitions(
+            application.requestedApplications,
+          );
+
+        const requestedApplications =
+          requestedApplicationDefinitions.map(
+            (item) => item.applicationId,
+          );
+
+        const requiredSteps =
+          buildRequiredOnboardingSteps(
+            requestedApplicationDefinitions,
+          );
+
+        for (
+          const requestedApplication
+          of requestedApplicationDefinitions
+        ) {
+          const applicationId =
+            requestedApplication.applicationId;
+
+          const applicationRef =
+            organizationRef
+              .collection("applications")
+              .doc(applicationId);
+
+          transaction.set(
+            applicationRef,
+            {
+              applicationId,
+
+              organizationId,
+
+              status:
+                "selected" as OrganizationApplicationStatus,
+
+              version: 1,
+
+              /*
+               * The application provisioning service will determine
+               * the actual provisioning implementation later.
+               */
+              provisioningStrategy:
+                "default",
+
+              /*
+               * Snapshot the onboarding metadata that was approved
+               * with this organization application.
+               *
+               * This is tenant-specific entitlement metadata, not a
+               * second application registry.
+               */
+              onboarding: {
+                steps:
+                  requestedApplication.onboardingSteps,
+              },
+
+              activatedAt: null,
+
+              activatedBy: null,
+
+              provisionedAt: null,
+
+              configuration: {},
+
+              provisioningError: null,
+
+              updatedAt: now,
+            },
+          );
+        }
+
+        /*
+         * ------------------------------------------------------------
+         * ONBOARDING
+         * ------------------------------------------------------------
+         */
+
+        transaction.set(
+          onboardingRef,
+          {
+            id: organizationId,
+
+            organizationId,
+
+            ownerUserId:
+              applicantUserId,
+
+            status:
+              "in_progress",
+
+            /*
+             * The onboarding workflow is resolved once during
+             * provisioning and persisted with the tenant onboarding
+             * record.
+             *
+             * This makes the backend workflow deterministic and avoids
+             * hard-coded transitions such as:
+             *
+             *   first_program -> first_course
+             *   first_course -> first_topic
+             *
+             * Backend onboarding handlers can advance by looking up
+             * the next item in this array.
+             */
+            requiredSteps,
+
+            currentStep:
+              requiredSteps[0] ??
+              "organization_profile",
+
+            completedSteps: [],
+
+            /*
+             * These IDs are populated as the corresponding onboarding
+             * resources are created.
+             */
+            firstProgramId: null,
+            firstCourseId: null,
+            firstTopicId: null,
+            firstQuestionId: null,
+
+            startedAt: now,
+
+            completedAt: null,
+
+            createdAt: now,
+
+            updatedAt: now,
+          },
+        );
+
+        /*
+         * ------------------------------------------------------------
+         * AUDIT
+         * ------------------------------------------------------------
+         */
+
+        createAuditRecord(
+          db,
+          transaction,
+          {
+            action:
+              "ORGANIZATION_PROVISIONING_STARTED",
+
+            entityType:
+              "organizationApplicationRequest",
+
+            entityId:
+              requestId,
+
+            actorId:
+              admin.uid,
+
+            actorEmail:
+              admin.email,
+
+            metadata: {
+              organizationId,
+
+              applicantUserId,
+            },
+          },
+        );
+
+        createAuditRecord(
+          db,
+          transaction,
+          {
+            action:
+              "ORGANIZATION_PROVISIONED",
+
+            entityType:
+              "organization",
+
+            entityId:
+              organizationId,
+
+            actorId:
+              admin.uid,
+
+            actorEmail:
+              admin.email,
+
+            metadata: {
+              organizationApplicationRequestId:
+                requestId,
+
+              organizationName,
+
+              organizationSlug:
+                slug,
+
+              requestedApplications,
+            },
+          },
+        );
+
+        createAuditRecord(
+          db,
+          transaction,
+          {
+            action:
+              "ORGANIZATION_OWNER_CREATED",
+
+            entityType:
+              "organizationMembership",
+
+            entityId:
+              membershipId,
+
+            actorId:
+              admin.uid,
+
+            actorEmail:
+              admin.email,
+
+            metadata: {
+              organizationId,
+
+              ownerUserId:
+                applicantUserId,
+
+              role:
+                "org_owner",
+            },
+          },
+        );
+
+        createAuditRecord(
+          db,
+          transaction,
+          {
+            action:
+              "ORGANIZATION_ONBOARDING_STARTED",
+
+            entityType:
+              "organizationOnboarding",
+
+            entityId:
+              organizationId,
+
+            actorId:
+              admin.uid,
+
+            actorEmail:
+              admin.email,
+
+            metadata: {
+              organizationId,
+
+              ownerUserId:
+                applicantUserId,
+
+              firstStep:
+                requiredSteps[0] ??
+                "organization_profile",
+
+              requiredSteps,
+            },
+          },
+        );
+
+        /*
+         * ------------------------------------------------------------
+         * APPLICATION REQUEST
+         * ------------------------------------------------------------
+         *
+         * The application request moves from approved to onboarding.
+         *
+         * Approval and activation remain separate concepts.
+         */
+
+        transaction.update(
+          requestRef,
+          {
+            status:
+              "onboarding" as OrganizationApplicationRequestStatus,
+
+            organizationId,
+
+            updatedAt: now,
+          },
+        );
+
+        return {
+          alreadyProvisioned: false,
+
+          organizationId,
+
+          organizationName,
+
+          ownerUserId:
+            applicantUserId,
+
+          requestedApplications,
+        };
+      },
+    );
+
+    logger.info(
+      "Organization provisioning completed.",
+      {
+        requestId,
+
+        organizationId:
+          result.organizationId,
+
+        alreadyProvisioned:
+          result.alreadyProvisioned,
+
+        actorId:
+          admin.uid,
+      },
+    );
+
+    return {
+      success: true,
+
+      requestId,
+
+      ...result,
+    };
+  },
+  //
+  
+);

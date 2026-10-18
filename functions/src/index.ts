@@ -29,6 +29,7 @@ import {
   archiveOrganization,
   restoreOrganization,
   repairOrganizationApplicationRequestStatus,
+  repairOrganizationApplicationProvisioning,
 } from "./organization-lifecycle";
 
 import {
@@ -3283,5 +3284,10 @@ export {
   archiveOrganization,
   restoreOrganization,
   repairOrganizationApplicationRequestStatus,
+  repairOrganizationApplicationProvisioning,
 };
+
+export {
+  recordCommunityPostView,
+} from "./community-post-view";
 

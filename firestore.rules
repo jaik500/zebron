@@ -7,6 +7,46 @@ service cloud.firestore {
     // COMMON HELPERS
     // ============================================================
 
+    // ============================================================
+// COMMUNITY PROFILE VALIDATION
+// ============================================================
+
+/**
+ * Validates the public profile fields that Community members
+ * are permitted to read.
+ *
+ * Private account information and authorization fields must
+ * never be stored in communityProfiles.
+ */
+function isValidCommunityProfile() {
+  return request.resource.data.keys().hasOnly([
+      "displayName",
+      "firstName",
+      "lastName",
+      "preferredName",
+      "photoUrl",
+      "bio",
+      "website",
+      "countryOfOrigin",
+      "currentCountry",
+      "city",
+      "state",
+      "createdAt",
+      "updatedAt"
+    ])
+    && request.resource.data.keys().hasAll([
+      "displayName",
+      "createdAt",
+      "updatedAt"
+    ])
+    && request.resource.data.displayName is string
+    && request.resource.data.displayName.size() > 0
+    && request.resource.data.displayName.size() <= 100
+    && request.resource.data.createdAt is timestamp
+    && request.resource.data.updatedAt is timestamp;
+}
+
+
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -120,6 +160,65 @@ service cloud.firestore {
           )
         ).data.get("active", false) == true;
     }
+
+/**
+/**
+ * Returns the lifecycle status of an organization.
+ *
+ * Legacy organizations without a status field remain compatible:
+ * - active == true or missing: treated as active
+ * - active == false: treated as suspended
+ *
+ * A missing organization is treated as restricted rather than active.
+ */
+function organizationStatus(organizationId) {
+  let organizationPath =
+    /databases/$(database)/documents/organizations/$(organizationId);
+
+  return exists(organizationPath)
+    ? get(organizationPath).data.get(
+        "status",
+        get(organizationPath).data.get("active", true) == true
+          ? "active"
+          : "suspended"
+      )
+    : "missing";
+}
+
+/**
+ * True when normal tenant operations are allowed.
+ *
+ * Onboarding remains separate from active operation so that
+ * onboarding-specific permissions can be evaluated independently.
+ */
+function isOrganizationOperational(organizationId) {
+  return organizationStatus(organizationId) == "active";
+}
+
+/**
+ * True when the organization can continue its onboarding workflow.
+ */
+function isOrganizationOnboarding(organizationId) {
+  return organizationStatus(organizationId) == "onboarding";
+}
+
+/** Organization configuration is allowed while active or onboarding. */
+function isOrganizationConfigurable(organizationId) {
+  return isOrganizationOperational(organizationId)
+    || isOrganizationOnboarding(organizationId);
+}
+
+/**
+ * True when an organization is suspended or archived.
+ */
+function isOrganizationRestricted(organizationId) {
+  return organizationStatus(organizationId) in [
+    "suspended",
+    "archived"
+  ];
+}
+
+
 
     function isOrganizationRole(
       organizationId,
@@ -299,19 +398,29 @@ service cloud.firestore {
     // ORGANIZATIONS
     // ============================================================
 
-    match /organizations/{organizationId} {
+   match /organizations/{organizationId} {
 
-      allow get: if isPlatformAdmin()
-        || isOrganizationMember(organizationId);
+  // Platform administrators must retain access to manage
+  // suspended and archived organizations.
+  allow get: if isPlatformAdmin()
+    || (
+      isOrganizationMember(organizationId)
+      && !isOrganizationRestricted(organizationId)
+    );
 
-      allow list: if isPlatformAdmin();
+  // Organization enumeration is reserved for platform admins.
+  allow list: if isPlatformAdmin();
 
-      allow create: if isPlatformAdmin();
+  // Organization creation remains a trusted administrative action.
+  allow create: if isPlatformAdmin();
 
-      allow update: if isPlatformAdmin();
+  // Lifecycle changes will be handled by trusted Cloud Functions.
+  allow update: if isPlatformAdmin();
 
-      allow delete: if isPlatformAdmin();
-    }
+  // Do not allow browser clients to permanently delete organizations.
+  // A separately designed deletion workflow will handle this later.
+  allow delete: if false;
+}
 
     // ============================================================
     // ORGANIZATION APPLICATIONS
@@ -320,22 +429,31 @@ service cloud.firestore {
     match /organizations/{organizationId}/applications/{applicationId} {
 
       allow get: if isPlatformAdmin()
-        || isOrganizationAdmin(organizationId)
         || (
-          isOrganizationMember(organizationId)
+          isOrganizationConfigurable(organizationId)
+          && isOrganizationAdmin(organizationId)
+        )
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationMember(organizationId)
           && resource.data.status == "active"
         );
 
       allow list: if isPlatformAdmin()
-        || isOrganizationAdmin(organizationId)
         || (
-          isOrganizationMember(organizationId)
+          isOrganizationConfigurable(organizationId)
+          && isOrganizationAdmin(organizationId)
+        )
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationMember(organizationId)
           && resource.data.status == "active"
         );
 
       allow create: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId)
+          && isOrganizationAdmin(organizationId)
           && request.resource.data.organizationId == organizationId
           && request.resource.data.applicationId == applicationId
           && request.resource.data.status in [
@@ -346,7 +464,8 @@ service cloud.firestore {
 
       allow update: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId)
+          && isOrganizationAdmin(organizationId)
           && resource.data.organizationId == organizationId
           && request.resource.data.organizationId == organizationId
           && request.resource.data.applicationId == applicationId
@@ -356,7 +475,10 @@ service cloud.firestore {
         );
 
       allow delete: if isPlatformAdmin()
-        || isOrganizationAdmin(organizationId);
+        || (
+          isOrganizationConfigurable(organizationId)
+          && isOrganizationAdmin(organizationId)
+        );
     }
 
     // ============================================================
@@ -400,7 +522,10 @@ service cloud.firestore {
        * update onboarding progress.
        */
       allow update: if isPlatformAdmin()
-        || isOrganizationAdmin(organizationId);
+  || (
+    isOrganizationAdmin(organizationId)
+    && isOrganizationOnboarding(organizationId)
+  );
 
       /*
        * Onboarding records are retained for audit/history.
@@ -430,6 +555,9 @@ match /organizationInvitations/{invitationId} {
     || (
       isAuthenticated()
       && resource.data.organizationId is string
+      && isOrganizationConfigurable(
+        resource.data.organizationId
+      )
       && isOrganizationMember(
         resource.data.organizationId
       )
@@ -462,8 +590,9 @@ match /organizationInvitations/{invitationId} {
           isAuthenticated()
           && resource.data.get("userId", "") == request.auth.uid
         )
-        || isOrganizationAdmin(
-          resource.data.get("organizationId", "")
+        || (
+          isOrganizationOperational(resource.data.get("organizationId", ""))
+          && isOrganizationAdmin(resource.data.get("organizationId", ""))
         );
 
       allow list: if isPlatformAdmin()
@@ -475,18 +604,16 @@ match /organizationInvitations/{invitationId} {
         || (
           isAuthenticated()
           && resource.data.keys().hasAll(["organizationId"])
-          && isOrganizationAdmin(
-            resource.data.get("organizationId", "")
-          )
+          && isOrganizationOperational(resource.data.get("organizationId", ""))
+          && isOrganizationAdmin(resource.data.get("organizationId", ""))
         );
 
       allow create: if isPlatformAdmin()
   || (
     request.resource.data.keys().hasAny(["organizationId"])
     && request.resource.data.get("organizationId", "") != ""
-    && isOrganizationAdmin(
-      request.resource.data.get("organizationId", "")
-    )
+    && isOrganizationOperational(request.resource.data.get("organizationId", ""))
+    && isOrganizationAdmin(request.resource.data.get("organizationId", ""))
     && request.resource.data.get("role", "") in [
       "org_admin",
       "org_manager",
@@ -497,9 +624,8 @@ match /organizationInvitations/{invitationId} {
 
     allow update: if isPlatformAdmin()
   || (
-    isOrganizationAdmin(
-      resource.data.get("organizationId", "")
-    )
+    isOrganizationOperational(resource.data.get("organizationId", ""))
+    && isOrganizationAdmin(resource.data.get("organizationId", ""))
     && request.resource.data.get("userId", "")
       == resource.data.get("userId", "")
     && request.resource.data.get("organizationId", "")
@@ -519,9 +645,8 @@ match /organizationInvitations/{invitationId} {
 
       allow delete: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(
-            resource.data.get("organizationId", "")
-          )
+          isOrganizationOperational(resource.data.get("organizationId", ""))
+          && isOrganizationAdmin(resource.data.get("organizationId", ""))
           && (
             request.auth.uid != resource.data.get("userId", "")
             || resource.data.get("role", "") != "org_owner"
@@ -777,37 +902,23 @@ match /organizationInvitations/{invitationId} {
       ).data.get("active", false) == true;
     }
 
-    function groupAssignmentReferencesSameGroup(
-      organizationId,
-      groupId,
-      groupMembershipId,
-      groupRoleId
-    ) {
-      return activeGroupMembershipExists(
-        organizationId,
-        groupId,
-        groupMembershipId
-      )
-      && activeGroupRoleExists(
-        organizationId,
-        groupId,
-        groupRoleId
-      )
-      && get(
-        groupMembershipPath(
-          organizationId,
-          groupId,
-          groupMembershipId
-        )
-      ).data.groupId == groupId
-      && get(
-        groupRolePath(
-          organizationId,
-          groupId,
-          groupRoleId
-        )
-      ).data.get("groupId", "") == groupId;
-    }
+  function groupAssignmentReferencesSameGroup(
+  organizationId,
+  groupId,
+  groupMembershipId,
+  groupRoleId
+) {
+  return activeGroupMembershipExists(
+    organizationId,
+    groupId,
+    groupMembershipId
+  )
+  && activeGroupRoleExists(
+    organizationId,
+    groupId,
+    groupRoleId
+  );
+}
 
     // ============================================================
     // ORGANIZATION GROUPS
@@ -816,22 +927,22 @@ match /organizationInvitations/{invitationId} {
     match /organizations/{organizationId}/groups/{groupId} {
 
       allow get: if isPlatformAdmin()
-        || isOrganizationAdmin(organizationId)
+        || (isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId))
         || (
-          isOrganizationMember(organizationId)
+          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
           && resource.data.active == true
         );
 
       allow list: if isPlatformAdmin()
-        || isOrganizationAdmin(organizationId)
+        || (isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId))
         || (
-          isOrganizationMember(organizationId)
+          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
           && resource.data.active == true
         );
 
       allow create: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && request.resource.data.systemManaged == false
           && request.resource.data.name is string
           && request.resource.data.slug is string
@@ -839,64 +950,54 @@ match /organizationInvitations/{invitationId} {
 
       allow update: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && resource.data.systemManaged == false
           && request.resource.data.systemManaged == false
         );
 
       allow delete: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && resource.data.systemManaged == false
         );
     }
 
-    // ============================================================
+// ============================================================
 // ORGANIZATION SETTINGS
 // ============================================================
 
-/*
+/**
  * Organization settings are tenant-scoped configuration.
  *
- * Organization owners and administrators may read and modify
- * settings for their organization.
+ * Platform administrators retain access regardless of lifecycle
+ * status. Organization administrators can manage settings while
+ * their organization is active or completing onboarding.
  *
- * Platform administrators retain full access.
- *
- * Ordinary organization members may not access administrative
- * organization settings.
+ * Permanent deletion remains platform-admin-only.
  */
 match /organizationSettings/{organizationId} {
 
-  // ----------------------------------------------------------
-  // READ
-  // ----------------------------------------------------------
+  function canManageOrganizationSettings() {
+    return isPlatformAdmin()
+      || (
+        isOrganizationAdmin(organizationId)
+        && isOrganizationConfigurable(organizationId)
+      );
+  }
 
-  allow get: if isPlatformAdmin()
-    || isOrganizationAdmin(organizationId);
+  // Read settings.
+  allow get: if canManageOrganizationSettings();
 
-  // Settings are a single document per organization.
-  // Unscoped collection queries are not allowed.
+  // Settings are accessed by organization ID.
   allow list: if false;
 
-  // ----------------------------------------------------------
-  // CREATE
-  // ----------------------------------------------------------
+  // Create settings.
+  allow create: if canManageOrganizationSettings();
 
-  allow create: if isPlatformAdmin()
-    || isOrganizationAdmin(organizationId);
+  // Update settings.
+  allow update: if canManageOrganizationSettings();
 
-  // ----------------------------------------------------------
-  // UPDATE
-  // ----------------------------------------------------------
-
-  allow update: if isPlatformAdmin()
-    || isOrganizationAdmin(organizationId);
-
-  // ----------------------------------------------------------
-  // DELETE
-  // ----------------------------------------------------------
-
+  // Permanent deletion is restricted to platform administrators.
   allow delete: if isPlatformAdmin();
 }
 
@@ -914,15 +1015,19 @@ match /organizationSettings/{organizationId} {
      */
     match /organizations/{organizationId}/settings/partner {
 
-      allow get: if isOrganizationAdmin(organizationId);
+      function canManagePartnerSettings() {
+        return isPlatformAdmin()
+          || (
+            isOrganizationConfigurable(organizationId)
+            && isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+          );
+      }
 
+      allow get: if canManagePartnerSettings();
       allow list: if false;
-
-      allow create: if isOrganizationAdmin(organizationId);
-
-      allow update: if isOrganizationAdmin(organizationId);
-
-      allow delete: if isOrganizationAdmin(organizationId);
+      allow create: if canManagePartnerSettings();
+      allow update: if canManagePartnerSettings();
+      allow delete: if isPlatformAdmin();
     }
 
     // ============================================================
@@ -933,14 +1038,14 @@ match /organizationSettings/{organizationId} {
 
       allow get: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
           )
         )
         || (
-          isOwnGroupMembership(
+          isOrganizationOperational(organizationId) && isOwnGroupMembership(
             organizationId,
             groupId,
             membershipId
@@ -953,14 +1058,14 @@ match /organizationSettings/{organizationId} {
 
       allow list: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
           )
         )
         || (
-          isOrganizationMember(organizationId)
+          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
           && isActiveGroup(
             organizationId,
             groupId
@@ -971,7 +1076,7 @@ match /organizationSettings/{organizationId} {
 
       allow create: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -984,7 +1089,7 @@ match /organizationSettings/{organizationId} {
 
       allow update: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -996,7 +1101,7 @@ match /organizationSettings/{organizationId} {
 
       allow delete: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1012,14 +1117,14 @@ match /organizationSettings/{organizationId} {
 
       allow get: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
           )
         )
         || (
-          isOrganizationMember(organizationId)
+          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
           && isActiveGroup(
             organizationId,
             groupId
@@ -1029,14 +1134,14 @@ match /organizationSettings/{organizationId} {
 
       allow list: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
           )
         )
         || (
-          isOrganizationMember(organizationId)
+          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
           && isActiveGroup(
             organizationId,
             groupId
@@ -1046,7 +1151,7 @@ match /organizationSettings/{organizationId} {
 
       allow create: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1059,7 +1164,7 @@ match /organizationSettings/{organizationId} {
 
       allow update: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1072,7 +1177,7 @@ match /organizationSettings/{organizationId} {
 
       allow delete: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1089,7 +1194,7 @@ match /organizationSettings/{organizationId} {
 
       allow get: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1103,7 +1208,7 @@ match /organizationSettings/{organizationId} {
           && resource.data.active == true
         )
         || (
-          isOrganizationMember(organizationId)
+          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
           && isActiveGroup(
             organizationId,
             groupId
@@ -1119,7 +1224,7 @@ match /organizationSettings/{organizationId} {
 
       allow list: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1132,7 +1237,7 @@ match /organizationSettings/{organizationId} {
           && resource.data.groupRoleId == roleId
         )
         || (
-          isOrganizationMember(organizationId)
+          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
           && isActiveGroup(
             organizationId,
             groupId
@@ -1148,7 +1253,7 @@ match /organizationSettings/{organizationId} {
 
       allow create: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1166,7 +1271,7 @@ match /organizationSettings/{organizationId} {
 
       allow update: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1184,7 +1289,7 @@ match /organizationSettings/{organizationId} {
 
       allow delete: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1205,7 +1310,7 @@ match /organizationSettings/{organizationId} {
 
       allow get: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1218,12 +1323,12 @@ match /organizationSettings/{organizationId} {
           )
         )
         || (
-          isOrganizationMember(organizationId)
+          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
           && isActiveGroup(
             organizationId,
             groupId
           )
-          && isOwnGroupMembership(
+          && isOrganizationOperational(organizationId) && isOwnGroupMembership(
             organizationId,
             groupId,
             resource.data.groupMembershipId
@@ -1237,20 +1342,20 @@ match /organizationSettings/{organizationId} {
 
       allow list: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
           )
         )
         || (
-          isOrganizationMember(organizationId)
+          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
           && isActiveGroup(
             organizationId,
             groupId
           )
           && resource.data.groupMembershipId is string
-          && isOwnGroupMembership(
+          && isOrganizationOperational(organizationId) && isOwnGroupMembership(
             organizationId,
             groupId,
             resource.data.groupMembershipId
@@ -1260,7 +1365,7 @@ match /organizationSettings/{organizationId} {
 
       allow create: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1276,7 +1381,7 @@ match /organizationSettings/{organizationId} {
 
       allow update: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1299,7 +1404,7 @@ match /organizationSettings/{organizationId} {
 
       allow delete: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(organizationId)
+          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
           && isActiveGroup(
             organizationId,
             groupId
@@ -1417,19 +1522,48 @@ match /organizationSettings/{organizationId} {
     // TEST CENTER HELPERS
     // ============================================================
 
-    function isTestCenterMember(organizationId) {
-      return isPlatformAdmin()
-        || isOrganizationMember(organizationId);
-    }
+ /**
+ * Test Center access requires an operational organization.
+ *
+ * Platform administrators retain access to support and
+ * recover suspended or archived organizations.
+ */
+function isTestCenterMember(organizationId) {
+  return isPlatformAdmin()
+    || (
+      isOrganizationOperational(organizationId)
+      && isOrganizationMember(organizationId)
+    );
+}
 
-    function isTestCenterAdmin(organizationId) {
-      return isPlatformAdmin()
-        || isOrganizationManagerOrAbove(organizationId);
-    }
+/**
+ * Test Center administration requires an operational organization
+ * and an appropriate organization role.
+ */
+function isTestCenterAdmin(organizationId) {
+  return isPlatformAdmin()
+    || (
+      isOrganizationOperational(organizationId)
+      && isOrganizationManagerOrAbove(organizationId)
+    );
+}
 
-    function canCreateTestCenterDocument(organizationId) {
-      return isTestCenterAdmin(organizationId);
-    }
+/** Preserve owner/admin-only access for attempt and result administration. */
+function isOperationalOrganizationAdmin(organizationId) {
+  return isPlatformAdmin()
+    || (
+      isOrganizationOperational(organizationId)
+      && isOrganizationAdmin(organizationId)
+    );
+}
+
+/**
+ * Test Center document creation follows the same authorization
+ * requirements as Test Center administration.
+ */
+function canCreateTestCenterDocument(organizationId) {
+  return isTestCenterAdmin(organizationId);
+}
 
     // ============================================================
     // TEST PROGRAM HELPERS
@@ -1553,7 +1687,7 @@ match /organizationSettings/{organizationId} {
       organizationId,
       courseId
     ) {
-      return isOrganizationMember(organizationId)
+      return isTestCenterMember(organizationId)
         && testCenterCourseBelongsToOrganization(
           courseId,
           organizationId
@@ -1566,7 +1700,7 @@ match /organizationSettings/{organizationId} {
       courseId,
       attemptId
     ) {
-      return isOrganizationMember(organizationId)
+      return isTestCenterMember(organizationId)
         && request.auth.uid == userId
         && testCenterCourseBelongsToOrganization(
           courseId,
@@ -1640,7 +1774,7 @@ match /organizationSettings/{organizationId} {
       allow get: if isPlatformAdmin()
         || (
           isAuthenticated()
-          && isOrganizationMember(
+          && isTestCenterMember(
             resource.data.organizationId
           )
         );
@@ -1648,7 +1782,7 @@ match /organizationSettings/{organizationId} {
       allow list: if isPlatformAdmin()
         || (
           isAuthenticated()
-          && isOrganizationMember(
+          && isTestCenterMember(
             resource.data.organizationId
           )
         );
@@ -1722,7 +1856,7 @@ match /organizationSettings/{organizationId} {
               resource.data.scope == 'organization'
               && resource.data.accessType == 'organization-members'
               && resource.data.organizationId != null
-              && isOrganizationMember(
+              && isTestCenterMember(
                 resource.data.organizationId
               )
               && resource.data.active == true
@@ -1798,7 +1932,7 @@ match /organizationSettings/{organizationId} {
         || (
           isAuthenticated()
           && resource.data.organizationId != null
-          && isOrganizationMember(resource.data.organizationId)
+          && isTestCenterMember(resource.data.organizationId)
           && resource.data.active == true
         );
 
@@ -1842,13 +1976,13 @@ match /organizationSettings/{organizationId} {
         || (
           isAuthenticated()
           && resource.data.organizationId != null
-          && isOrganizationMember(resource.data.organizationId)
+          && isTestCenterMember(resource.data.organizationId)
           && resource.data.status == "published"
         )
         || (
           isAuthenticated()
           && resource.data.organizationId != null
-          && isOrganizationAdmin(resource.data.organizationId)
+          && isTestCenterAdmin(resource.data.organizationId)
         );
 
       allow create: if
@@ -1883,30 +2017,30 @@ match /organizationSettings/{organizationId} {
       allow get: if isPlatformAdmin()
         || (
           resource.data.organizationId != null
-          && isOrganizationMember(resource.data.organizationId)
+          && isTestCenterMember(resource.data.organizationId)
           && resource.data.get("userId", "") == request.auth.uid
         )
         || (
           resource.data.organizationId != null
-          && isOrganizationAdmin(resource.data.organizationId)
+          && isOperationalOrganizationAdmin(resource.data.organizationId)
         );
 
       allow list: if isPlatformAdmin()
         || (
           isAuthenticated()
           && resource.data.organizationId != null
-          && isOrganizationMember(resource.data.organizationId)
+          && isTestCenterMember(resource.data.organizationId)
           && resource.data.get("userId", "") == request.auth.uid
         )
         || (
           isAuthenticated()
           && resource.data.organizationId != null
-          && isOrganizationAdmin(resource.data.organizationId)
+          && isOperationalOrganizationAdmin(resource.data.organizationId)
         );
 
       allow create: if isAuthenticated()
         && request.resource.data.organizationId is string
-        && isOrganizationMember(
+        && isTestCenterMember(
           request.resource.data.organizationId
         )
         && request.resource.data.get("userId", "")
@@ -1914,7 +2048,7 @@ match /organizationSettings/{organizationId} {
 
       allow update: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(resource.data.organizationId)
+          isOperationalOrganizationAdmin(resource.data.organizationId)
           && request.resource.data.organizationId
             == resource.data.organizationId
           && request.resource.data.userId
@@ -1923,7 +2057,7 @@ match /organizationSettings/{organizationId} {
 
       allow delete: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(resource.data.organizationId)
+          isOperationalOrganizationAdmin(resource.data.organizationId)
         );
     }
 
@@ -1936,30 +2070,30 @@ match /organizationSettings/{organizationId} {
       allow get: if isPlatformAdmin()
         || (
           resource.data.organizationId != null
-          && isOrganizationMember(resource.data.organizationId)
+          && isTestCenterMember(resource.data.organizationId)
           && resource.data.get("userId", "") == request.auth.uid
         )
         || (
           resource.data.organizationId != null
-          && isOrganizationAdmin(resource.data.organizationId)
+          && isOperationalOrganizationAdmin(resource.data.organizationId)
         );
 
       allow list: if isPlatformAdmin()
         || (
           isAuthenticated()
           && resource.data.organizationId != null
-          && isOrganizationMember(resource.data.organizationId)
+          && isTestCenterMember(resource.data.organizationId)
           && resource.data.get("userId", "") == request.auth.uid
         )
         || (
           isAuthenticated()
           && resource.data.organizationId != null
-          && isOrganizationAdmin(resource.data.organizationId)
+          && isOperationalOrganizationAdmin(resource.data.organizationId)
         );
 
       allow create: if isAuthenticated()
         && request.resource.data.organizationId is string
-        && isOrganizationMember(
+        && isTestCenterMember(
           request.resource.data.organizationId
         )
         && request.resource.data.get("userId", "")
@@ -1967,7 +2101,7 @@ match /organizationSettings/{organizationId} {
 
       allow update: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(resource.data.organizationId)
+          isOperationalOrganizationAdmin(resource.data.organizationId)
           && request.resource.data.organizationId
             == resource.data.organizationId
           && request.resource.data.userId
@@ -1978,43 +2112,885 @@ match /organizationSettings/{organizationId} {
 
       allow delete: if isPlatformAdmin()
         || (
-          isOrganizationAdmin(resource.data.organizationId)
+          isOperationalOrganizationAdmin(resource.data.organizationId)
         );
     }
 
     // ============================================================
-// ORGANIZATION SETTINGS
+    // COMMUNITY POSTS
+    // ============================================================
+
+    match /communityPosts/{postId} {
+
+      function isPublishedAndApprovedPost() {
+        return resource.data.get("status", "") == "published"
+          && resource.data.get("moderationStatus", "") == "approved";
+      }
+
+      function isValidReactionType(reactionType) {
+        return reactionType in [
+          "like",
+          "love",
+          "laugh",
+          "celebrate",
+          "support",
+          "helpful"
+        ];
+      }
+
+      function reactionCountsMatchTransition(
+        countsBefore,
+        countsAfter,
+        typeBefore,
+        typeAfter
+      ) {
+        return countsAfter.get("like", 0)
+            == countsBefore.get("like", 0)
+              + (typeAfter == "like" ? 1 : 0)
+              - (typeBefore == "like" ? 1 : 0)
+          && countsAfter.get("love", 0)
+            == countsBefore.get("love", 0)
+              + (typeAfter == "love" ? 1 : 0)
+              - (typeBefore == "love" ? 1 : 0)
+          && countsAfter.get("laugh", 0)
+            == countsBefore.get("laugh", 0)
+              + (typeAfter == "laugh" ? 1 : 0)
+              - (typeBefore == "laugh" ? 1 : 0)
+          && countsAfter.get("celebrate", 0)
+            == countsBefore.get("celebrate", 0)
+              + (typeAfter == "celebrate" ? 1 : 0)
+              - (typeBefore == "celebrate" ? 1 : 0)
+          && countsAfter.get("support", 0)
+            == countsBefore.get("support", 0)
+              + (typeAfter == "support" ? 1 : 0)
+              - (typeBefore == "support" ? 1 : 0)
+          && countsAfter.get("helpful", 0)
+            == countsBefore.get("helpful", 0)
+              + (typeAfter == "helpful" ? 1 : 0)
+              - (typeBefore == "helpful" ? 1 : 0);
+      }
+
+      /*
+       * A post reaction and the aggregate reactionCounts update must
+       * happen in the same atomic batch. This prevents users from
+       * changing aggregate counts without changing their own reaction.
+       */
+      function isValidPostReactionCountUpdate() {
+        let reactionPath = /databases/$(database)/documents/communityPosts/$(postId)/reactions/$(request.auth.uid);
+        let reactionExistsBefore = exists(reactionPath);
+        let reactionExistsAfter = existsAfter(reactionPath);
+        let typeBefore = reactionExistsBefore
+          ? get(reactionPath).data.get("type", "")
+          : "";
+        let typeAfter = reactionExistsAfter
+          ? getAfter(reactionPath).data.get("type", "")
+          : "";
+        let countsBefore = resource.data.get("reactionCounts", {});
+        let countsAfter = request.resource.data.get("reactionCounts", {});
+
+        return isAuthenticated()
+          && isPublishedAndApprovedPost()
+          && request.resource.data.diff(resource.data)
+            .affectedKeys().hasOnly(["reactionCounts", "updatedAt"])
+          && (reactionExistsBefore != reactionExistsAfter
+            || typeBefore != typeAfter)
+          && countsBefore is map
+          && countsAfter is map
+          && reactionCountsMatchTransition(
+            countsBefore,
+            countsAfter,
+            typeBefore,
+            typeAfter
+          );
+      }
+
+      /*
+       * Comment creation updates commentCount and records the new
+       * comment ID in lastCommentId in the same batch. The child write
+       * rule verifies the reciprocal parent update, so a caller cannot
+       * increase commentCount independently of creating a comment.
+       */
+      function isValidCommentCountUpdate() {
+        let newCommentId = request.resource.data.get("lastCommentId", "");
+
+        return isAuthenticated()
+          && isPublishedAndApprovedPost()
+          && newCommentId is string
+          && newCommentId.size() > 0
+          && request.resource.data.diff(resource.data)
+            .affectedKeys().hasOnly([
+              "commentCount",
+              "lastCommentId",
+              "updatedAt"
+            ])
+          && request.resource.data.get("commentCount", 0)
+            == resource.data.get("commentCount", 0) + 1
+          && !exists(
+            /databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+          )
+          && existsAfter(
+            /databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+          )
+          && getAfter(
+            /databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+          ).data.get("authorId", "") == request.auth.uid
+          && getAfter(
+            /databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+          ).data.get("postId", "") == postId
+          && getAfter(
+            /databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+          ).data.get("status", "") == "published"
+          && getAfter(
+            /databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+          ).data.get("content", "") is string
+          && getAfter(
+            /databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+          ).data.get("content", "").size() > 0;
+      }
+
+      // Public feed/detail reads are limited to published, approved posts.
+      // Authors and platform administrators may also read their posts.
+      allow read: if isAuthenticated()
+        && (
+          isPublishedAndApprovedPost()
+          || resource.data.get("authorId", "") == request.auth.uid
+          || isPlatformAdmin()
+        );
+
+      // Only validated batched engagement updates are allowed from clients.
+      // Post content, authorship, moderation status and lifecycle fields
+      // cannot be changed through these rules.
+      allow update: if isValidPostReactionCountUpdate()
+        || isValidCommentCountUpdate();
+
+      // Posts are created and moderated through the existing trusted path.
+      // Do not grant client create/delete as part of this engagement fix.
+      allow create, delete: if false;
+
+      // ============================================================
+      // POST REACTIONS
+      // ============================================================
+
+      match /reactions/{userId} {
+
+        function parentPostIsPublished() {
+          let postPath = /databases/$(database)/documents/communityPosts/$(postId);
+          return exists(postPath)
+            && get(postPath).data.get("status", "") == "published"
+            && get(postPath).data.get("moderationStatus", "") == "approved";
+        }
+
+        function postCounterMatchesReactionTransition() {
+          let postPath = /databases/$(database)/documents/communityPosts/$(postId);
+          let reactionPath = /databases/$(database)/documents/communityPosts/$(postId)/reactions/$(userId);
+          let postBefore = get(postPath).data;
+          let postAfter = getAfter(postPath).data;
+          let reactionExistsBefore = exists(reactionPath);
+          let reactionExistsAfter = existsAfter(reactionPath);
+          let typeBefore = reactionExistsBefore
+            ? get(reactionPath).data.get("type", "")
+            : "";
+          let typeAfter = reactionExistsAfter
+            ? getAfter(reactionPath).data.get("type", "")
+            : "";
+          let countsBefore = postBefore.get("reactionCounts", {});
+          let countsAfter = postAfter.get("reactionCounts", {});
+
+          return postAfter.diff(postBefore).affectedKeys()
+              .hasOnly(["reactionCounts", "updatedAt"])
+            && (reactionExistsBefore != reactionExistsAfter
+              || typeBefore != typeAfter)
+            && countsBefore is map
+            && countsAfter is map
+            && countsAfter.get("like", 0)
+              == countsBefore.get("like", 0)
+                + (typeAfter == "like" ? 1 : 0)
+                - (typeBefore == "like" ? 1 : 0)
+            && countsAfter.get("love", 0)
+              == countsBefore.get("love", 0)
+                + (typeAfter == "love" ? 1 : 0)
+                - (typeBefore == "love" ? 1 : 0)
+            && countsAfter.get("laugh", 0)
+              == countsBefore.get("laugh", 0)
+                + (typeAfter == "laugh" ? 1 : 0)
+                - (typeBefore == "laugh" ? 1 : 0)
+            && countsAfter.get("celebrate", 0)
+              == countsBefore.get("celebrate", 0)
+                + (typeAfter == "celebrate" ? 1 : 0)
+                - (typeBefore == "celebrate" ? 1 : 0)
+            && countsAfter.get("support", 0)
+              == countsBefore.get("support", 0)
+                + (typeAfter == "support" ? 1 : 0)
+                - (typeBefore == "support" ? 1 : 0)
+            && countsAfter.get("helpful", 0)
+              == countsBefore.get("helpful", 0)
+                + (typeAfter == "helpful" ? 1 : 0)
+                - (typeBefore == "helpful" ? 1 : 0);
+        }
+
+        allow get: if isAuthenticated()
+          && request.auth.uid == userId
+          && parentPostIsPublished();
+
+        // The feed reads each user's reaction by document ID.
+        allow list: if false;
+
+        allow create: if isAuthenticated()
+          && request.auth.uid == userId
+          && request.resource.data.get("type", "") in [
+            "like", "love", "laugh", "celebrate", "support", "helpful"
+          ]
+          && (
+            !request.resource.data.keys().hasAny(["userId"])
+            || request.resource.data.get("userId", "") == userId
+          )
+          && parentPostIsPublished()
+          && postCounterMatchesReactionTransition();
+
+        allow update: if isAuthenticated()
+          && request.auth.uid == userId
+          && request.resource.data.get("type", "") in [
+            "like", "love", "laugh", "celebrate", "support", "helpful"
+          ]
+          && (
+            !request.resource.data.keys().hasAny(["userId"])
+            || request.resource.data.get("userId", "") == userId
+          )
+          && parentPostIsPublished()
+          && postCounterMatchesReactionTransition();
+
+        allow delete: if isAuthenticated()
+          && request.auth.uid == userId
+          && parentPostIsPublished()
+          && postCounterMatchesReactionTransition();
+      }
+
+      // ============================================================
+      // COMMENTS
+      // ============================================================
+
+      match /comments/{commentId} {
+
+        function parentPostIsPublished() {
+          let postPath = /databases/$(database)/documents/communityPosts/$(postId);
+          return exists(postPath)
+            && get(postPath).data.get("status", "") == "published"
+            && get(postPath).data.get("moderationStatus", "") == "approved";
+        }
+
+        function isValidCommentReactionCountUpdate() {
+          let reactionPath = /databases/$(database)/documents/communityPosts/$(postId)/comments/$(commentId)/reactions/$(request.auth.uid);
+          let reactionExistsBefore = exists(reactionPath);
+          let reactionExistsAfter = existsAfter(reactionPath);
+          let typeBefore = reactionExistsBefore
+            ? get(reactionPath).data.get("type", "")
+            : "";
+          let typeAfter = reactionExistsAfter
+            ? getAfter(reactionPath).data.get("type", "")
+            : "";
+          let countsBefore = resource.data.get("reactionCounts", {});
+          let countsAfter = request.resource.data.get("reactionCounts", {});
+
+          return isAuthenticated()
+            && parentPostIsPublished()
+            && resource.data.get("status", "") == "published"
+            && request.resource.data.get("status", "") == "published"
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(["reactionCounts", "updatedAt"])
+            && (reactionExistsBefore != reactionExistsAfter
+              || typeBefore != typeAfter)
+            && countsBefore is map
+            && countsAfter is map
+            && countsAfter.get("like", 0)
+              == countsBefore.get("like", 0)
+                + (typeAfter == "like" ? 1 : 0)
+                - (typeBefore == "like" ? 1 : 0)
+            && countsAfter.get("love", 0)
+              == countsBefore.get("love", 0)
+                + (typeAfter == "love" ? 1 : 0)
+                - (typeBefore == "love" ? 1 : 0)
+            && countsAfter.get("laugh", 0)
+              == countsBefore.get("laugh", 0)
+                + (typeAfter == "laugh" ? 1 : 0)
+                - (typeBefore == "laugh" ? 1 : 0)
+            && countsAfter.get("celebrate", 0)
+              == countsBefore.get("celebrate", 0)
+                + (typeAfter == "celebrate" ? 1 : 0)
+                - (typeBefore == "celebrate" ? 1 : 0)
+            && countsAfter.get("support", 0)
+              == countsBefore.get("support", 0)
+                + (typeAfter == "support" ? 1 : 0)
+                - (typeBefore == "support" ? 1 : 0)
+            && countsAfter.get("helpful", 0)
+              == countsBefore.get("helpful", 0)
+                + (typeAfter == "helpful" ? 1 : 0)
+                - (typeBefore == "helpful" ? 1 : 0);
+        }
+
+        function isAuthorSoftDeletingComment() {
+          return isAuthenticated()
+            && (
+              resource.data.get("authorId", "") == request.auth.uid
+              || isPlatformAdmin()
+            )
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(["content", "status", "deletedAt", "updatedAt"])
+            && request.resource.data.get("postId", "")
+              == resource.data.get("postId", "")
+            && request.resource.data.get("authorId", "")
+              == resource.data.get("authorId", "")
+            && request.resource.data.get("status", "") == "deleted"
+            && request.resource.data.get("content", "") == "";
+        }
+
+        // The feed/detail page may read published and soft-deleted comments.
+        // Soft-deleted records remain available so their replies can render.
+        allow get, list: if isAuthenticated()
+          && parentPostIsPublished();
+
+        // Comments must be authored by the signed-in user, and their
+        // creation must atomically update the parent post's count.
+        allow create: if isAuthenticated()
+          && parentPostIsPublished()
+          && request.resource.data.keys().hasAll([
+            "postId",
+            "parentCommentId",
+            "authorId",
+            "author",
+            "content",
+            "reactionCounts",
+            "status",
+            "createdAt",
+            "updatedAt"
+          ])
+          && request.resource.data.get("postId", "") == postId
+          && request.resource.data.get("authorId", "") == request.auth.uid
+          && request.resource.data.get("author", {}) is map
+          && request.resource.data.get("author", {}).get("id", "")
+            == request.auth.uid
+          && request.resource.data.get("content", "") is string
+          && request.resource.data.get("content", "").size() > 0
+          && request.resource.data.get("content", "").size() <= 2000
+          && request.resource.data.get("status", "") == "published"
+          && request.resource.data.get("reactionCounts", {}) is map
+          && (
+            request.resource.data.get("parentCommentId", null) == null
+            || request.resource.data.get("parentCommentId", null) is string
+          )
+          && getAfter(
+            /databases/$(database)/documents/communityPosts/$(postId)
+          ).data.get("lastCommentId", "") == commentId
+          && getAfter(
+            /databases/$(database)/documents/communityPosts/$(postId)
+          ).data.get("commentCount", 0)
+            == get(
+              /databases/$(database)/documents/communityPosts/$(postId)
+            ).data.get("commentCount", 0) + 1;
+
+        // Aggregate reaction updates are allowed only when an associated
+        // reaction document changes in the same atomic batch.
+        allow update: if isValidCommentReactionCountUpdate()
+          || isAuthorSoftDeletingComment();
+
+        // The client uses soft deletion. Permanent deletion stays server-side.
+        allow delete: if false;
+
+        // ============================================================
+        // COMMENT REACTIONS
+        // ============================================================
+
+        match /reactions/{userId} {
+
+          function parentCommentIsAvailable() {
+            let postPath = /databases/$(database)/documents/communityPosts/$(postId);
+            let commentPath = /databases/$(database)/documents/communityPosts/$(postId)/comments/$(commentId);
+            return exists(postPath)
+              && get(postPath).data.get("status", "") == "published"
+              && get(postPath).data.get("moderationStatus", "") == "approved"
+              && exists(commentPath)
+              && get(commentPath).data.get("status", "") == "published";
+          }
+
+          function commentCounterMatchesReactionTransition() {
+            let commentPath = /databases/$(database)/documents/communityPosts/$(postId)/comments/$(commentId);
+            let reactionPath = /databases/$(database)/documents/communityPosts/$(postId)/comments/$(commentId)/reactions/$(userId);
+            let reactionExistsBefore = exists(reactionPath);
+            let reactionExistsAfter = existsAfter(reactionPath);
+            let typeBefore = reactionExistsBefore
+              ? get(reactionPath).data.get("type", "")
+              : "";
+            let typeAfter = reactionExistsAfter
+              ? getAfter(reactionPath).data.get("type", "")
+              : "";
+            let commentBefore = get(commentPath).data;
+            let commentAfter = getAfter(commentPath).data;
+            let countsBefore = commentBefore.get("reactionCounts", {});
+            let countsAfter = commentAfter.get("reactionCounts", {});
+
+            return commentAfter.diff(commentBefore).affectedKeys()
+                .hasOnly(["reactionCounts", "updatedAt"])
+              && (reactionExistsBefore != reactionExistsAfter
+                || typeBefore != typeAfter)
+              && countsBefore is map
+              && countsAfter is map
+              && countsAfter.get("like", 0)
+                == countsBefore.get("like", 0)
+                  + (typeAfter == "like" ? 1 : 0)
+                  - (typeBefore == "like" ? 1 : 0)
+              && countsAfter.get("love", 0)
+                == countsBefore.get("love", 0)
+                  + (typeAfter == "love" ? 1 : 0)
+                  - (typeBefore == "love" ? 1 : 0)
+              && countsAfter.get("laugh", 0)
+                == countsBefore.get("laugh", 0)
+                  + (typeAfter == "laugh" ? 1 : 0)
+                  - (typeBefore == "laugh" ? 1 : 0)
+              && countsAfter.get("celebrate", 0)
+                == countsBefore.get("celebrate", 0)
+                  + (typeAfter == "celebrate" ? 1 : 0)
+                  - (typeBefore == "celebrate" ? 1 : 0)
+              && countsAfter.get("support", 0)
+                == countsBefore.get("support", 0)
+                  + (typeAfter == "support" ? 1 : 0)
+                  - (typeBefore == "support" ? 1 : 0)
+              && countsAfter.get("helpful", 0)
+                == countsBefore.get("helpful", 0)
+                  + (typeAfter == "helpful" ? 1 : 0)
+                  - (typeBefore == "helpful" ? 1 : 0);
+          }
+
+          allow get: if isAuthenticated()
+            && request.auth.uid == userId
+            && parentCommentIsAvailable();
+
+          allow list: if false;
+
+          allow create: if isAuthenticated()
+            && request.auth.uid == userId
+            && request.resource.data.get("userId", "") == userId
+            && request.resource.data.get("type", "") in [
+              "like", "love", "laugh", "celebrate", "support", "helpful"
+            ]
+            && parentCommentIsAvailable()
+            && commentCounterMatchesReactionTransition();
+
+          allow update: if isAuthenticated()
+            && request.auth.uid == userId
+            && request.resource.data.get("userId", "") == userId
+            && request.resource.data.get("type", "") in [
+              "like", "love", "laugh", "celebrate", "support", "helpful"
+            ]
+            && parentCommentIsAvailable()
+            && commentCounterMatchesReactionTransition();
+
+          allow delete: if isAuthenticated()
+            && request.auth.uid == userId
+            && parentCommentIsAvailable()
+            && commentCounterMatchesReactionTransition();
+        }
+      }
+    }
+
+    // ============================================================
+    // COMMUNITY BOOKMARKS
+    // ============================================================
+
+    match /users/{userId}/communityBookmarks/{postId} {
+
+      allow read: if isAuthenticated()
+        && request.auth.uid == userId;
+
+      allow create: if isAuthenticated()
+        && request.auth.uid == userId
+        && request.resource.data.get("userId", "") == userId
+        && request.resource.data.get("postId", "") == postId
+        && exists(
+          /databases/$(database)/documents/communityPosts/$(postId)
+        )
+        && get(
+          /databases/$(database)/documents/communityPosts/$(postId)
+        ).data.get("status", "") == "published"
+        && get(
+          /databases/$(database)/documents/communityPosts/$(postId)
+        ).data.get("moderationStatus", "") == "approved";
+
+      allow update: if false;
+
+      allow delete: if isAuthenticated()
+        && request.auth.uid == userId;
+    }
+
+ // ============================================================
+// COMMUNITY FOLLOW RELATIONSHIPS
 // ============================================================
 
-match /organizationSettings/{organizationId} {
+match /userFollows/{followId} {
 
-  // Organization configuration is administrative data.
-  // Only platform administrators and organization owners/admins
-  // may read or manage it.
-  allow get: if isOrganizationAdmin(organizationId);
+  /**
+   * Follow relationships are visible to authenticated Community
+   * members because profiles display followers and following.
+   *
+   * A missing document can be checked to determine whether a
+   * relationship exists.
+   */
+  allow get: if isAuthenticated();
 
-  allow create: if isOrganizationAdmin(organizationId);
+  /**
+   * Followers and following lists are visible to authenticated
+   * Community members.
+   *
+   * NOTE:
+   * This makes the social graph queryable by authenticated users.
+   * Do not use this policy if follow relationships are intended
+   * to be private.
+   */
+  allow list: if isAuthenticated();
 
-  allow update: if isOrganizationAdmin(organizationId);
+  /**
+   * A user can create only their own follow relationship.
+   */
+  allow create: if isAuthenticated()
+    && request.resource.data.keys().hasAll([
+      "followerId",
+      "followingId",
+      "createdAt"
+    ])
+    && request.resource.data.get("followerId", "")
+      == request.auth.uid
+    && request.resource.data.get("followingId", "") is string
+    && request.resource.data.get("followingId", "") != ""
+    && request.resource.data.get("followingId", "")
+      != request.auth.uid
+    && request.resource.data.get("createdAt", null) is timestamp
+    && followId == request.auth.uid
+      + "_"
+      + request.resource.data.get("followingId", "");
 
-  allow delete: if isOrganizationAdmin(organizationId);
+  // Follow relationship fields cannot be modified in place.
+  allow update: if false;
+
+  /**
+   * A user can remove only their own follow relationship.
+   */
+  allow delete: if isAuthenticated()
+    && resource.data.get("followerId", "")
+      == request.auth.uid
+    && followId == request.auth.uid
+      + "_"
+      + resource.data.get("followingId", "");
 }
 
     // ============================================================
-    // DEFAULT DENY
+    // COMMUNITY TOPICS
     // ============================================================
 
-    /*
-     * There is intentionally NO:
-     *
-     * match /{document=**} {
-     *   allow read, write: if true;
-     * }
-     *
-     * Any collection without an explicit rule is denied.
-     *
-     * Feature-specific rules can be added explicitly as required.
-     */
+    match /communityTopics/{topicId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // COMMUNITY NOTIFICATIONS
+    // ============================================================
+
+    match /communityNotifications/{notificationId} {
+
+      allow get, list: if isAuthenticated()
+        && resource.data.get("recipientId", "") == request.auth.uid;
+
+      allow create: if isAuthenticated()
+        && request.resource.data.get("recipientId", "") is string
+        && request.resource.data.get("recipientId", "") != request.auth.uid
+        && (
+          request.resource.data.get("actorId", "") == request.auth.uid
+          || isPlatformAdmin()
+        );
+
+      allow update: if isAuthenticated()
+        && resource.data.get("recipientId", "") == request.auth.uid
+        && request.resource.data.get("recipientId", "")
+          == resource.data.get("recipientId", "")
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(["read", "readAt"]);
+
+      allow delete: if false;
+    }
+
+   // ============================================================
+// COMMUNITY CHAT CONVERSATIONS
+// ============================================================
+
+match /communityConversations/{conversationId} {
+
+  /**
+   * Only authenticated conversation participants can read
+   * a conversation.
+   *
+   * The participantIds array-contains query used by ChatService
+   * must satisfy this same condition.
+   */
+  allow get, list: if isAuthenticated()
+    && request.auth.uid in resource.data.participantIds;
+
+    // Allow a participant to mark their own conversation as read.
+// Protect all other conversation fields.
+allow update: if isAuthenticated()
+  && resource.data.participantIds is list
+  && request.auth.uid in resource.data.participantIds
+  && request.resource.data.diff(resource.data)
+    .affectedKeys()
+    .hasOnly(['unreadCounts', 'updatedAt'])
+  && request.resource.data.unreadCounts is map
+  && request.resource.data.unreadCounts
+    .get(request.auth.uid, -1) == 0
+  && (
+    (
+      !resource.data.keys().hasAny(['unreadCounts'])
+      && request.resource.data.unreadCounts.keys()
+        .hasOnly([request.auth.uid])
+    )
+    ||
+    (
+      resource.data.unreadCounts is map
+      && request.resource.data.unreadCounts
+        .diff(resource.data.unreadCounts)
+        .affectedKeys()
+        .hasOnly([request.auth.uid])
+    )
+  );
+
+  // ==========================================================
+  // COMMUNITY CHAT MESSAGES
+  // ==========================================================
+
+  match /messages/{messageId} {
+
+    function isConversationParticipant() {
+      let conversationPath =
+        /databases/$(database)/documents/communityConversations/$(conversationId);
+
+      return isAuthenticated()
+        && exists(conversationPath)
+        && request.auth.uid in
+          get(conversationPath).data.participantIds;
+    }
+
+    allow get, list: if isConversationParticipant();
+  }
+}
+
+ // ============================================================
+// COMMUNITY CHAT CALLS
+// ============================================================
+
+match /communityChatCalls/{callId} {
+
+  function isCallParticipant() {
+    return isAuthenticated()
+      && (
+        resource.data.get('callerId', '') == request.auth.uid
+        || resource.data.get('calleeId', '') == request.auth.uid
+      );
+  }
+
+  function conversationContainsBothParticipants(
+    conversationId,
+    callerId,
+    calleeId
+  ) {
+    let conversationPath =
+      /databases/$(database)/documents/communityConversations/$(conversationId);
+
+    return exists(conversationPath)
+      && get(conversationPath).data.get('participantIds', []) is list
+      && callerId in get(conversationPath).data.participantIds
+      && calleeId in get(conversationPath).data.participantIds;
+  }
+
+  // A caller or callee can read an individual call.
+  allow get: if isCallParticipant();
+
+  // Incoming-call listener:
+  // Only the intended recipient can list their ringing calls.
+  allow list: if isAuthenticated()
+    && resource.data.get('calleeId', '') == request.auth.uid
+    && resource.data.get('status', '') == 'ringing';
+
+  // Only a conversation participant can initiate a call,
+  // and the call must identify both participants correctly.
+  allow create: if isAuthenticated()
+    && request.resource.data.keys().hasAll([
+      'conversationId',
+      'callerId',
+      'calleeId',
+      'type',
+      'status',
+      'offer',
+      'answer',
+      'createdAt',
+      'updatedAt'
+    ])
+    && request.resource.data.get('callerId', '') == request.auth.uid
+    && request.resource.data.get('calleeId', '') is string
+    && request.resource.data.get('calleeId', '') != request.auth.uid
+    && request.resource.data.get('conversationId', '') is string
+    && request.resource.data.get('type', '') in ['voice', 'video']
+    && request.resource.data.get('status', '') == 'ringing'
+    && request.resource.data.get('offer', null) == null
+    && request.resource.data.get('answer', null) == null
+    && conversationContainsBothParticipants(
+      request.resource.data.conversationId,
+      request.resource.data.callerId,
+      request.resource.data.calleeId
+    );
+
+  // Allow only the defined call-signaling transitions.
+  // Call participants, conversation identity, and creation time
+  // cannot be changed after creation.
+  allow update: if isCallParticipant()
+    && request.resource.data.get('conversationId', '')
+      == resource.data.get('conversationId', '')
+    && request.resource.data.get('callerId', '')
+      == resource.data.get('callerId', '')
+    && request.resource.data.get('calleeId', '')
+      == resource.data.get('calleeId', '')
+    && request.resource.data.get('type', '')
+      == resource.data.get('type', '')
+    && request.resource.data.get('createdAt', null)
+      == resource.data.get('createdAt', null)
+    && (
+      // Caller publishes the WebRTC offer.
+      (
+        request.auth.uid == resource.data.get('callerId', '')
+        && resource.data.get('status', '') == 'ringing'
+        && request.resource.data.get('status', '') == 'ringing'
+        && request.resource.data.get('offer', null) is map
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['offer', 'updatedAt'])
+      )
+
+      ||
+
+      // Recipient accepts and supplies the answer.
+      (
+        request.auth.uid == resource.data.get('calleeId', '')
+        && resource.data.get('status', '') == 'ringing'
+        && request.resource.data.get('status', '') == 'accepted'
+        && request.resource.data.get('answer', null) is map
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['status', 'answer', 'updatedAt'])
+      )
+
+      ||
+
+      // Recipient declines a ringing call.
+      (
+        request.auth.uid == resource.data.get('calleeId', '')
+        && resource.data.get('status', '') == 'ringing'
+        && request.resource.data.get('status', '') == 'declined'
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['status', 'updatedAt'])
+      )
+
+      ||
+
+      // Either participant can end an active or ringing call.
+      // The caller can also mark a ringing call as missed.
+      (
+        resource.data.get('status', '') in ['ringing', 'accepted']
+        && request.resource.data.get('status', '') in ['ended', 'missed']
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['status', 'updatedAt'])
+      )
+    );
+
+  // ==========================================================
+  // WEBRTC ICE CANDIDATES
+  // ==========================================================
+
+  match /candidates/{candidateId} {
+
+    function isParentCallParticipant() {
+      let callPath =
+        /databases/$(database)/documents/communityChatCalls/$(callId);
+
+      return isAuthenticated()
+        && exists(callPath)
+        && (
+          get(callPath).data.get('callerId', '') == request.auth.uid
+          || get(callPath).data.get('calleeId', '') == request.auth.uid
+        );
+    }
+
+    // Only participants can receive signaling candidates.
+    allow get, list: if isParentCallParticipant();
+
+    // Each participant can publish only their own candidate.
+    allow create: if isParentCallParticipant()
+      && request.resource.data.get('senderId', '')
+        == request.auth.uid
+      && request.resource.data.get('candidate', null) is map;
+
+    allow update, delete: if false;
+  } // End match /candidates/{candidateId}
+
+} // End match /communityChatCalls/{callId}
+
+// ============================================================
+// PUBLIC COMMUNITY PROFILES
+// ============================================================
+
+match /communityProfiles/{userId} {
+
+  /**
+   * Authenticated users can read individual public profiles.
+   */
+  allow get: if isAuthenticated();
+
+  /**
+   * Authenticated users can query public profiles.
+   */
+  allow list: if isAuthenticated();
+
+  /**
+   * Users may create only their own public profile.
+   */
+  allow create: if isCurrentUser(userId)
+    && isValidCommunityProfile();
+
+  /**
+   * Users may update only their own public profile.
+   */
+  allow update: if isCurrentUser(userId)
+    && isValidCommunityProfile()
+    && request.resource.data.createdAt
+      == resource.data.createdAt;
+
+  /**
+   * Public profiles cannot be permanently deleted by clients.
+   */
+  allow delete: if false;
+}
+
+// ============================================================
+// DEFAULT DENY
+// ============================================================
+
+/*
+ * There is intentionally NO:
+ *
+ * match /{document=**} {
+ *   allow read, write: if true;
+ * }
+ *
+ * Any collection without an explicit rule is denied.
+ *
+ * Feature-specific rules can be added explicitly as required.
+ */
 
   }
 }

@@ -4,18 +4,41 @@ import {
   getFirestore,
 } from "firebase-admin/firestore";
 
+import {
+  advanceTestCenterSetup,
+  assertCurrentTestCenterSetupStep,
+  initializeTestCenterSetup,
+  TEST_CENTER_SETUP_STEPS,
+  type TestCenterSetupState,
+} from "./test-center-setup-transition";
+
 type FirstQuestionOption = {
-  id: string;
   text: string;
+  isCorrect: boolean;
 };
 
 type FirstQuestionInput = {
   organizationId: string;
+  courseId?: string;
+  topicId?: string;
   question: string;
-  options: FirstQuestionOption[];
-  correctAnswer: string;
-  difficulty: "easy" | "medium" | "hard";
   explanation?: string;
+  options: FirstQuestionOption[];
+  active: boolean;
+};
+
+type TestCenterEntitlementOnboarding = {
+  steps?: unknown;
+  currentStep?: unknown;
+  completedSteps?: unknown;
+  status?: unknown;
+  firstProgramId?: unknown;
+  firstCourseId?: unknown;
+  firstTopicId?: unknown;
+  firstQuestionId?: unknown;
+  startedAt?: unknown;
+  completedAt?: unknown;
+  updatedAt?: unknown;
 };
 
 function isValidString(
@@ -30,24 +53,63 @@ function isValidString(
   );
 }
 
+function normalizeResourceId(value: unknown): string | null {
+  return typeof value === "string" && value.trim()
+    ? value.trim()
+    : null;
+}
+
 function validateOptions(
   options: unknown,
 ): options is FirstQuestionOption[] {
-  if (!Array.isArray(options) || options.length !== 4) {
+  if (!Array.isArray(options) || options.length < 2 || options.length > 10) {
     return false;
   }
 
   return options.every(
     (option) =>
-      option &&
+      option !== null &&
       typeof option === "object" &&
-      typeof option.id === "string" &&
-      typeof option.text === "string" &&
-      option.id.trim().length > 0 &&
-      option.text.trim().length > 0,
+      isValidString(option.text, 1, 1000) &&
+      typeof option.isCorrect === "boolean",
   );
 }
 
+/**
+ * Builds Test Center setup state exclusively from the application's
+ * entitlement. Core organization onboarding is not read or modified.
+ */
+function buildTestCenterSetupState(
+  onboarding: TestCenterEntitlementOnboarding | undefined,
+): TestCenterSetupState {
+  const state = onboarding ?? {};
+  const steps = Array.isArray(state.steps)
+    ? state.steps
+    : [...TEST_CENTER_SETUP_STEPS];
+
+  return initializeTestCenterSetup(steps, {
+    completedSteps: Array.isArray(state.completedSteps)
+      ? state.completedSteps
+      : [],
+    firstProgramId: normalizeResourceId(state.firstProgramId),
+    firstCourseId: normalizeResourceId(state.firstCourseId),
+    firstTopicId: normalizeResourceId(state.firstTopicId),
+    firstQuestionId: normalizeResourceId(state.firstQuestionId),
+    ...(state.startedAt !== undefined ? { startedAt: state.startedAt } : {}),
+    ...(state.completedAt !== undefined ? { completedAt: state.completedAt } : {}),
+    ...(state.updatedAt !== undefined ? { updatedAt: state.updatedAt } : {}),
+  });
+}
+
+/**
+ * Creates the first question for an organization's selected Test Center
+ * application. Test Center setup progress is persisted only under:
+ *
+ * organizations/{organizationId}/applications/test-center
+ *
+ * organizationOnboarding/{organizationId} is intentionally not read or
+ * written by this callable.
+ */
 export const completeOrganizationFirstQuestion = onCall(
   {
     invoker: "public",
@@ -57,74 +119,66 @@ export const completeOrganizationFirstQuestion = onCall(
     const db = getFirestore();
 
     if (!request.auth) {
-      throw new HttpsError(
-        "unauthenticated",
-        "Authentication is required.",
-      );
+      throw new HttpsError("unauthenticated", "Authentication is required.");
     }
 
+    const callerUid = request.auth.uid;
     const data = request.data as Partial<FirstQuestionInput>;
-
     const organizationId = data.organizationId;
+    const courseId = data.courseId;
+    const topicId = data.topicId;
     const question = data.question;
-    const options = data.options;
-    const correctAnswer = data.correctAnswer;
-    const difficulty = data.difficulty;
     const explanation = data.explanation;
+    const options = data.options;
+    const active = data.active;
 
     if (!isValidString(organizationId, 1, 128)) {
-      throw new HttpsError(
-        "invalid-argument",
-        "organizationId is required.",
-      );
+      throw new HttpsError("invalid-argument", "organizationId is required.");
     }
 
-    if (!isValidString(question, 2, 5000)) {
+    if (courseId !== undefined && !isValidString(courseId, 1, 128)) {
+      throw new HttpsError("invalid-argument", "courseId must be a valid string.");
+    }
+
+    if (topicId !== undefined && !isValidString(topicId, 1, 128)) {
+      throw new HttpsError("invalid-argument", "topicId must be a valid string.");
+    }
+
+    if (!isValidString(question, 5, 5000)) {
       throw new HttpsError(
         "invalid-argument",
-        "Question text must be between 2 and 5000 characters.",
+        "Question must be between 5 and 5000 characters.",
       );
     }
 
     if (!validateOptions(options)) {
       throw new HttpsError(
         "invalid-argument",
-        "Exactly four answer options are required.",
+        "Between two and ten valid answer options are required.",
       );
     }
 
-    if (!isValidString(correctAnswer, 1, 50)) {
+    if (options.filter((option) => option.isCorrect).length !== 1) {
       throw new HttpsError(
         "invalid-argument",
-        "A correct answer is required.",
+        "Exactly one answer option must be marked correct.",
       );
     }
 
-    const validOptionIds = new Set(
-      options.map((option) => option.id.trim()),
-    );
-
-    if (!validOptionIds.has(correctAnswer.trim())) {
-      throw new HttpsError(
-        "invalid-argument",
-        "The selected correct answer is invalid.",
-      );
-    }
-
-    if (
-      difficulty !== "easy" &&
-      difficulty !== "medium" &&
-      difficulty !== "hard"
-    ) {
-      throw new HttpsError(
-        "invalid-argument",
-        "A valid question difficulty is required.",
-      );
+    if (typeof active !== "boolean") {
+      throw new HttpsError("invalid-argument", "Question active status is required.");
     }
 
     if (
       explanation !== undefined &&
-      !isValidString(explanation, 1, 5000)
+      explanation !== null &&
+      (
+        typeof explanation !== "string" ||
+        (
+          explanation.trim().length > 0 &&
+          !isValidString(explanation, 1, 5000)
+        )
+      )
     ) {
       throw new HttpsError(
         "invalid-argument",
@@ -132,26 +186,34 @@ export const completeOrganizationFirstQuestion = onCall(
       );
     }
 
-    const callerUid = request.auth.uid;
-
-    const onboardingRef = db
-      .collection("organizationOnboarding")
-      .doc(organizationId.trim());
-
-    const membershipRef = db
-      .collection("organizationMemberships")
-      .doc(`${callerUid}_${organizationId.trim()}`);
+    const normalizedOrganizationId = organizationId.trim();
+    const normalizedQuestion = question.trim();
+    const normalizedExplanation =
+      typeof explanation === "string" && explanation.trim()
+        ? explanation.trim()
+        : null;
+    const normalizedOptions = options.map((option) => ({
+      text: option.text.trim(),
+      isCorrect: option.isCorrect,
+    }));
 
     const result = await db.runTransaction(async (transaction) => {
-      /*
-       * --------------------------------------------------------------
-       * MEMBERSHIP
-       * --------------------------------------------------------------
-       */
+      const organizationRef = db
+        .collection("organizations")
+        .doc(normalizedOrganizationId);
+      const membershipRef = db
+        .collection("organizationMemberships")
+        .doc(`${callerUid}_${normalizedOrganizationId}`);
+      const entitlementRef = organizationRef
+        .collection("applications")
+        .doc("test-center");
 
-      const membershipSnapshot =
-        await transaction.get(membershipRef);
+      const organizationSnapshot = await transaction.get(organizationRef);
+      if (!organizationSnapshot.exists) {
+        throw new HttpsError("not-found", "Organization was not found.");
+      }
 
+      const membershipSnapshot = await transaction.get(membershipRef);
       if (!membershipSnapshot.exists) {
         throw new HttpsError(
           "permission-denied",
@@ -160,7 +222,6 @@ export const completeOrganizationFirstQuestion = onCall(
       }
 
       const membership = membershipSnapshot.data();
-
       if (membership?.active !== true) {
         throw new HttpsError(
           "permission-denied",
@@ -168,128 +229,112 @@ export const completeOrganizationFirstQuestion = onCall(
         );
       }
 
-      if (
-        membership.role !== "org_owner" &&
-        membership.role !== "org_admin"
-      ) {
+      if (membership.role !== "org_owner" && membership.role !== "org_admin") {
         throw new HttpsError(
           "permission-denied",
           "Only an organization owner or administrator can complete onboarding.",
         );
       }
 
-      /*
-       * --------------------------------------------------------------
-       * ONBOARDING
-       * --------------------------------------------------------------
-       */
-
-      const onboardingSnapshot =
-        await transaction.get(onboardingRef);
-
-      if (!onboardingSnapshot.exists) {
+      const entitlementSnapshot = await transaction.get(entitlementRef);
+      if (!entitlementSnapshot.exists) {
         throw new HttpsError(
           "failed-precondition",
-          "Organization onboarding has not been initialized.",
+          "The organization has not selected the Test Center application.",
         );
       }
 
-      const onboarding = onboardingSnapshot.data();
-
-      if (onboarding?.status !== "in_progress") {
-        throw new HttpsError(
-          "failed-precondition",
-          "Organization onboarding is not in progress.",
-        );
-      }
-
-      if (onboarding?.currentStep !== "first_question") {
-        throw new HttpsError(
-          "failed-precondition",
-          `The current onboarding step is "${onboarding?.currentStep ?? "unknown"}", not "first_question".`,
-        );
-      }
-
-      const firstCourseId = onboarding?.firstCourseId;
-      const firstTopicId = onboarding?.firstTopicId;
-
+      const entitlement = entitlementSnapshot.data() ?? {};
       if (
-        typeof firstCourseId !== "string" ||
-        !firstCourseId.trim()
+        entitlement.status === "suspended" ||
+        entitlement.status === "deactivated" ||
+        entitlement.status === "failed"
       ) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The Test Center application is not available for setup.",
+        );
+      }
+
+      const persistedOnboarding =
+        entitlement.onboarding as TestCenterEntitlementOnboarding | undefined;
+      if (!persistedOnboarding || typeof persistedOnboarding !== "object") {
+        throw new HttpsError(
+          "failed-precondition",
+          "Test Center setup has not been initialized.",
+        );
+      }
+
+      const setup = buildTestCenterSetupState(persistedOnboarding);
+      assertCurrentTestCenterSetupStep(setup, "first_question");
+
+      const firstCourseId = setup.firstCourseId;
+      const firstTopicId = setup.firstTopicId;
+
+      if (!firstCourseId) {
         throw new HttpsError(
           "failed-precondition",
           "The first course has not been configured.",
         );
       }
 
-      if (
-        typeof firstTopicId !== "string" ||
-        !firstTopicId.trim()
-      ) {
+      if (!firstTopicId) {
         throw new HttpsError(
           "failed-precondition",
           "The first topic has not been configured.",
         );
       }
 
-      if (onboarding?.firstQuestionId) {
+      if (setup.firstQuestionId) {
         throw new HttpsError(
           "already-exists",
           "The organization already has a first question configured.",
         );
       }
 
-      /*
-       * --------------------------------------------------------------
-       * COURSE
-       * --------------------------------------------------------------
-       */
-
-      const courseRef = db
-        .collection("testCourses")
-        .doc(firstCourseId);
-
-      const courseSnapshot =
-        await transaction.get(courseRef);
-
-      if (!courseSnapshot.exists) {
+      if (courseId !== undefined && courseId.trim() !== firstCourseId) {
         throw new HttpsError(
-          "not-found",
-          "The first course could not be found.",
+          "failed-precondition",
+          "The supplied courseId does not match the configured first course.",
         );
       }
 
-      const course = courseSnapshot.data();
+      if (topicId !== undefined && topicId.trim() !== firstTopicId) {
+        throw new HttpsError(
+          "failed-precondition",
+          "The supplied topicId does not match the configured first topic.",
+        );
+      }
 
-      if (course?.organizationId !== organizationId.trim()) {
+      const courseRef = db.collection("testCourses").doc(firstCourseId);
+      const topicRef = db.collection("testTopics").doc(firstTopicId);
+
+      const courseSnapshot = await transaction.get(courseRef);
+      if (!courseSnapshot.exists) {
+        throw new HttpsError("not-found", "The first course could not be found.");
+      }
+
+      const course = courseSnapshot.data();
+      if (course?.organizationId !== normalizedOrganizationId) {
         throw new HttpsError(
           "permission-denied",
           "The first course does not belong to this organization.",
         );
       }
 
-      /*
-       * --------------------------------------------------------------
-       * TOPIC
-       * --------------------------------------------------------------
-       */
-
-      const topicRef = db
-        .collection("testTopics")
-        .doc(firstTopicId);
-
-      const topicSnapshot =
-        await transaction.get(topicRef);
-
+      const topicSnapshot = await transaction.get(topicRef);
       if (!topicSnapshot.exists) {
-        throw new HttpsError(
-          "not-found",
-          "The first topic could not be found.",
-        );
+        throw new HttpsError("not-found", "The first topic could not be found.");
       }
 
       const topic = topicSnapshot.data();
+      if (topic?.organizationId !== undefined &&
+          topic.organizationId !== normalizedOrganizationId) {
+        throw new HttpsError(
+          "permission-denied",
+          "The first topic does not belong to this organization.",
+        );
+      }
 
       if (topic?.courseId !== firstCourseId) {
         throw new HttpsError(
@@ -298,61 +343,24 @@ export const completeOrganizationFirstQuestion = onCall(
         );
       }
 
-      /*
-       * --------------------------------------------------------------
-       * CREATE QUESTION
-       * --------------------------------------------------------------
-       */
-
-      const questionRef =
-        db.collection("testQuestions").doc();
-
+      const questionRef = db.collection("testQuestions").doc();
       const now = FieldValue.serverTimestamp();
 
-      const normalizedOptions = options.map((option) => ({
-        id: option.id.trim(),
-        text: option.text.trim(),
-      }));
-
-      transaction.create(
-        questionRef,
-        {
-          organizationId: organizationId.trim(),
-          courseId: firstCourseId,
-          topicId: firstTopicId,
-
-          question: question.trim(),
-
-          type: "multiple-choice",
-
-          options: normalizedOptions,
-
-          correctAnswer: correctAnswer.trim(),
-
-          explanation:
-            typeof explanation === "string" &&
-            explanation.trim()
-              ? explanation.trim()
-              : null,
-
-          difficulty,
-
-          tags: [],
-
-          sourceType: "original",
-
-          status: "published",
-
-          createdAt: now,
-          updatedAt: now,
-        },
-      );
-
-      /*
-       * --------------------------------------------------------------
-       * UPDATE COUNTS
-       * --------------------------------------------------------------
-       */
+      transaction.create(questionRef, {
+        organizationId: normalizedOrganizationId,
+        courseId: firstCourseId,
+        topicId: firstTopicId,
+        question: normalizedQuestion,
+        explanation: normalizedExplanation,
+        options: normalizedOptions,
+        type: "multiple-choice",
+        active,
+        tags: [],
+        sourceType: "original",
+        createdBy: callerUid,
+        createdAt: now,
+        updatedAt: now,
+      });
 
       transaction.update(courseRef, {
         questionCount: FieldValue.increment(1),
@@ -364,80 +372,57 @@ export const completeOrganizationFirstQuestion = onCall(
         updatedAt: now,
       });
 
-      /*
-       * --------------------------------------------------------------
-       * COMPLETE ONBOARDING
-       * --------------------------------------------------------------
-       */
+      const transition = advanceTestCenterSetup(setup, "first_question");
 
-      const existingCompletedSteps =
-        Array.isArray(onboarding?.completedSteps)
-          ? onboarding.completedSteps.filter(
-              (step: unknown): step is string =>
-                typeof step === "string",
-            )
-          : [];
-
-      const completedSteps = Array.from(
-        new Set([
-          ...existingCompletedSteps,
-          "first_question",
-        ]),
-      );
-
-      transaction.update(onboardingRef, {
-        firstQuestionId: questionRef.id,
-        completedSteps,
-        currentStep: "first_question",
-        status: "completed",
-        completedAt: now,
+      transaction.update(entitlementRef, {
+        onboarding: {
+          ...setup,
+          firstQuestionId: questionRef.id,
+          completedSteps: transition.completedSteps,
+          currentStep: transition.currentStep,
+          status: transition.status,
+          startedAt: setup.startedAt ?? now,
+          completedAt: transition.isComplete ? now : null,
+          updatedAt: now,
+        },
         updatedAt: now,
       });
 
       return {
         questionId: questionRef.id,
-        organizationId: organizationId.trim(),
+        organizationId: normalizedOrganizationId,
         courseId: firstCourseId,
         topicId: firstTopicId,
-        question: question.trim(),
+        question: normalizedQuestion,
+        explanation: normalizedExplanation,
         options: normalizedOptions,
-        correctAnswer: correctAnswer.trim(),
-        difficulty,
-        explanation:
-          typeof explanation === "string" &&
-          explanation.trim()
-            ? explanation.trim()
-            : null,
-        completedSteps,
+        active,
+        firstQuestionId: questionRef.id,
+        currentStep: transition.currentStep,
+        completedSteps: transition.completedSteps,
+        status: transition.status,
+        isComplete: transition.isComplete,
       };
     });
 
     return {
       success: true,
-
-      organizationId: result.organizationId,
-
       question: {
         id: result.questionId,
         organizationId: result.organizationId,
         courseId: result.courseId,
         topicId: result.topicId,
         question: result.question,
-        type: "multiple-choice",
-        options: result.options,
-        correctAnswer: result.correctAnswer,
-        difficulty: result.difficulty,
         explanation: result.explanation,
-        tags: [],
-        sourceType: "original",
-        status: "published",
+        options: result.options,
+        active: result.active,
       },
-
       onboarding: {
-        firstQuestionId: result.questionId,
-        currentStep: "first_question",
+        firstQuestionId: result.firstQuestionId,
+        currentStep: result.currentStep,
         completedSteps: result.completedSteps,
-        status: "completed",
+        status: result.status,
+        isComplete: result.isComplete,
       },
     };
   },

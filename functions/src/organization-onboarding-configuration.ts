@@ -9,19 +9,25 @@ import {
 } from "firebase-admin/firestore";
 
 import {
+  provisionOrganizationApplications,
+  type ApplicationProvisioningResult,
+} from "./application-provisioning";
+
+import {
   logger,
 } from "firebase-functions";
 
 const db = getFirestore();
 
+/** Canonical core onboarding workflow. Application setup is separate. */
+const CORE_ORGANIZATION_ONBOARDING_STEPS = [
+  "organization_profile",
+  "owner_profile",
+  "invite_members",
+  "configuration",
+] as const;
 
-/**
- * Supported organization course visibility values.
- */
-type OrganizationCourseVisibility =
-  | "all"
-  | "members"
-  | "admins";
+
 
 
 /**
@@ -40,20 +46,9 @@ type OrganizationDefaultMemberRole =
  * the incoming callable data has passed validation.
  */
 interface OrganizationConfigurationInput {
-  testCenterEnabled: boolean;
-  allowMemberTesting: boolean;
-
-  courseVisibility:
-    OrganizationCourseVisibility;
-
   allowSelfRegistration: boolean;
-
-  defaultMemberRole:
-    OrganizationDefaultMemberRole;
-
+  defaultMemberRole: OrganizationDefaultMemberRole;
   adminNotifications: boolean;
-  testResultNotifications: boolean;
-
   primaryColor: string;
   secondaryColor: string;
 }
@@ -95,26 +90,6 @@ function requireBoolean(
   }
 }
 
-
-/**
- * Validate course visibility.
- */
-function requireCourseVisibility(
-  value: unknown,
-): asserts value is OrganizationCourseVisibility {
-  if (
-    value !== "all" &&
-    value !== "members" &&
-    value !== "admins"
-  ) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Invalid course visibility.",
-    );
-  }
-}
-
-
 /**
  * Validate default organization member role.
  */
@@ -141,9 +116,8 @@ function requireDefaultMemberRole(
  *
  *   configuration
  *
- * Next step:
- *
- *   first_program
+ * Configuration is the final step of core organization onboarding.
+ * Application-specific setup is handled by application entitlements.
  *
  * The backend owns:
  *
@@ -245,20 +219,6 @@ export const completeOrganizationConfiguration =
 
       requireBoolean(
         rawConfiguration[
-          "testCenterEnabled"
-        ],
-        "testCenterEnabled",
-      );
-
-      requireBoolean(
-        rawConfiguration[
-          "allowMemberTesting"
-        ],
-        "allowMemberTesting",
-      );
-
-      requireBoolean(
-        rawConfiguration[
           "allowSelfRegistration"
         ],
         "allowSelfRegistration",
@@ -269,29 +229,6 @@ export const completeOrganizationConfiguration =
           "adminNotifications"
         ],
         "adminNotifications",
-      );
-
-      requireBoolean(
-        rawConfiguration[
-          "testResultNotifications"
-        ],
-        "testResultNotifications",
-      );
-
-
-      /**
-       * --------------------------------------------------
-       * Course visibility validation
-       * --------------------------------------------------
-       */
-
-      const courseVisibility =
-        rawConfiguration[
-          "courseVisibility"
-        ];
-
-      requireCourseVisibility(
-        courseVisibility,
       );
 
 
@@ -353,42 +290,18 @@ export const completeOrganizationConfiguration =
        * actually used.
        */
 
-      const configuration:
-        OrganizationConfigurationInput = {
-          testCenterEnabled:
-            rawConfiguration[
-              "testCenterEnabled"
-            ] as boolean,
+    const configuration: OrganizationConfigurationInput = {
+  allowSelfRegistration:
+    rawConfiguration["allowSelfRegistration"] as boolean,
 
-          allowMemberTesting:
-            rawConfiguration[
-              "allowMemberTesting"
-            ] as boolean,
+  defaultMemberRole,
 
-          courseVisibility,
+  adminNotifications:
+    rawConfiguration["adminNotifications"] as boolean,
 
-          allowSelfRegistration:
-            rawConfiguration[
-              "allowSelfRegistration"
-            ] as boolean,
-
-          defaultMemberRole,
-
-          adminNotifications:
-            rawConfiguration[
-              "adminNotifications"
-            ] as boolean,
-
-          testResultNotifications:
-            rawConfiguration[
-              "testResultNotifications"
-            ] as boolean,
-
-          primaryColor,
-
-          secondaryColor,
-        };
-
+  primaryColor,
+  secondaryColor,
+};
 
       /**
        * --------------------------------------------------
@@ -434,6 +347,22 @@ export const completeOrganizationConfiguration =
 
 
       /**
+       * Organization IDs created by organization-provisioning.ts use
+       * the deterministic format `org_${requestId}`. Keep this lookup
+       * optional for legacy organizations that don't follow that format.
+       */
+      const applicationRequestId = organizationId.startsWith("org_")
+        ? organizationId.slice("org_".length)
+        : null;
+
+      const applicationRequestRef = applicationRequestId
+        ? db
+            .collection("organizationApplicationRequests")
+            .doc(applicationRequestId)
+        : null;
+
+
+      /**
        * --------------------------------------------------
        * Transaction
        * --------------------------------------------------
@@ -450,18 +379,14 @@ export const completeOrganizationConfiguration =
               organizationSnapshot,
               membershipSnapshot,
               onboardingSnapshot,
+              applicationRequestSnapshot,
             ] = await Promise.all([
-              transaction.get(
-                organizationRef,
-              ),
-
-              transaction.get(
-                membershipRef,
-              ),
-
-              transaction.get(
-                onboardingRef,
-              ),
+              transaction.get(organizationRef),
+              transaction.get(membershipRef),
+              transaction.get(onboardingRef),
+              applicationRequestRef
+                ? transaction.get(applicationRequestRef)
+                : Promise.resolve(null),
             ]);
 
 
@@ -499,6 +424,13 @@ export const completeOrganizationConfiguration =
             const membership =
               membershipSnapshot.data() ?? {};
 
+            if (membership["active"] === false) {
+              throw new HttpsError(
+                "permission-denied",
+                "Your organization membership is inactive.",
+              );
+            }
+
             const role =
               membership["role"];
 
@@ -534,76 +466,70 @@ export const completeOrganizationConfiguration =
               );
             }
 
-            const onboarding =
-              onboardingSnapshot.data() ?? {};
-
 
             /**
              * --------------------------------------------
-             * Onboarding status
+             * Onboarding state
              * --------------------------------------------
+             *
+             * Core onboarding has exactly four steps.
+             * Configuration is always the final step; legacy application
+             * setup steps are deliberately ignored.
              */
 
-            if (
-              onboarding["status"] !==
-              "in_progress"
-            ) {
+            const onboarding = onboardingSnapshot.data() ?? {};
+            const onboardingStatus = onboarding["status"];
+            const isAlreadyCompleted = onboardingStatus === "completed";
+
+            const completedBefore = Array.isArray(onboarding["completedSteps"])
+              ? onboarding["completedSteps"] as string[]
+              : [];
+
+            const requiredStepsBefore = Array.isArray(onboarding["requiredSteps"])
+              ? onboarding["requiredSteps"] as string[]
+              : [...CORE_ORGANIZATION_ONBOARDING_STEPS];
+
+            /**
+             * Allow configuration edits after onboarding has completed.
+             * For an initial submission, onboarding must still be in progress.
+             */
+            if (!isAlreadyCompleted && onboardingStatus !== "in_progress") {
               throw new HttpsError(
                 "failed-precondition",
-                "The organization onboarding process is not active.",
+                "Organization onboarding is not in progress.",
               );
             }
 
-
             /**
-             * --------------------------------------------
-             * Current onboarding step
-             * --------------------------------------------
+             * Initial submission must reach Configuration.
+             * Completed onboarding can be edited without reopening the workflow.
              */
-
             if (
-              onboarding["currentStep"] !==
-              "configuration"
+              !isAlreadyCompleted &&
+              onboarding["currentStep"] !== "configuration" &&
+              !completedBefore.includes("configuration")
             ) {
               throw new HttpsError(
                 "failed-precondition",
-                "Configuration is not the current onboarding step.",
+                "Organization onboarding must reach Configuration before it can be completed.",
               );
             }
 
-
-            /**
-             * --------------------------------------------
-             * Completed steps
-             * --------------------------------------------
-             */
-
-            const completedSteps =
-              Array.isArray(
-                onboarding[
-                  "completedSteps"
-                ],
-              ) ?
-                onboarding[
-                  "completedSteps"
-                ].filter(
-                  (
-                    step,
-                  ): step is string =>
-                    typeof step ===
-                      "string",
-                ) :
-                [];
-
-
-            const nextCompletedSteps =
-              Array.from(
-                new Set([
-                  ...completedSteps,
-                  "configuration",
-                ]),
-              );
-
+            const transition = {
+              currentStep: isAlreadyCompleted
+                ? (typeof onboarding["currentStep"] === "string"
+                    ? onboarding["currentStep"]
+                    : "configuration")
+                : "configuration",
+              completedSteps: isAlreadyCompleted
+                ? completedBefore
+                : [...CORE_ORGANIZATION_ONBOARDING_STEPS],
+              requiredSteps: isAlreadyCompleted
+                ? requiredStepsBefore
+                : [...CORE_ORGANIZATION_ONBOARDING_STEPS],
+              status: "completed" as const,
+              isComplete: true,
+            };
 
             /**
              * One server timestamp is shared
@@ -632,18 +558,6 @@ export const completeOrganizationConfiguration =
               {
                 organizationId,
 
-                testCenterEnabled:
-                  configuration
-                    .testCenterEnabled,
-
-                allowMemberTesting:
-                  configuration
-                    .allowMemberTesting,
-
-                courseVisibility:
-                  configuration
-                    .courseVisibility,
-
                 allowSelfRegistration:
                   configuration
                     .allowSelfRegistration,
@@ -655,10 +569,6 @@ export const completeOrganizationConfiguration =
                 adminNotifications:
                   configuration
                     .adminNotifications,
-
-                testResultNotifications:
-                  configuration
-                    .testResultNotifications,
 
                 primaryColor:
                   configuration
@@ -680,28 +590,71 @@ export const completeOrganizationConfiguration =
              * --------------------------------------------
              * Advance onboarding
              * --------------------------------------------
+             *
+             * Persist the canonical four-step workflow and complete it.
+             * Application-specific setup is tracked separately.
              */
 
-            transaction.update(
-              onboardingRef,
-              {
-                completedSteps:
-                  nextCompletedSteps,
+          if (!isAlreadyCompleted) {
+  transaction.update(
+    onboardingRef,
+    {
+      requiredSteps: transition.requiredSteps,
+      completedSteps: transition.completedSteps,
+      currentStep: transition.currentStep,
+      status: transition.status,
+      completedAt: now,
+      updatedAt: now,
+    },
+  );
 
-                currentStep:
-                  "first_program",
+  /**
+   * Activate the organization when its initial core onboarding
+   * completes. Only transition organizations that are still in
+   * onboarding; never overwrite suspended, archived, or other states.
+   */
+  const organization =
+    organizationSnapshot.data() ?? {};
 
-                status:
-                  "in_progress",
+  if (organization["status"] === "onboarding") {
+    transaction.update(
+      organizationRef,
+      {
+        status: "active",
+        active: true,
+        updatedAt: now,
+      },
+    );
+  }
+}
 
-                completedAt:
-                  null,
+            /**
+             * Keep the organization application request lifecycle in sync
+             * with completion of core organization onboarding. This does not
+             * activate any individual application entitlement.
+             *
+             * Only transition an associated request that is still onboarding.
+             * Rejected/cancelled requests and other lifecycle states are left
+             * unchanged. Missing request documents are tolerated for legacy
+             * organizations and isolated callable tests.
+             */
+            if (
+              applicationRequestRef &&
+              applicationRequestSnapshot?.exists
+            ) {
+              const applicationRequest =
+                applicationRequestSnapshot.data() ?? {};
 
-                updatedAt:
-                  now,
-              },
-            );
-
+              if (
+                applicationRequest["organizationId"] === organizationId &&
+                applicationRequest["status"] === "onboarding"
+              ) {
+                transaction.update(applicationRequestRef, {
+                  status: "active",
+                  updatedAt: now,
+                });
+              }
+            }
 
             /**
              * --------------------------------------------
@@ -713,14 +666,68 @@ export const completeOrganizationConfiguration =
               organizationId,
 
               currentStep:
-                "first_program",
+                transition.currentStep,
 
               completedSteps:
-                nextCompletedSteps,
+                transition.completedSteps,
+
+              status:
+                transition.status,
+
+              isComplete:
+                transition.isComplete,
+
+              // Only the initial completion triggers automatic provisioning.
+              newlyCompleted: !isAlreadyCompleted,
             };
           },
         );
 
+
+      /**
+       * --------------------------------------------------
+       * Application provisioning
+       * --------------------------------------------------
+       *
+       * Run only after the initial core onboarding transaction commits.
+       * Configuration edits must not start another automatic provisioning
+       * run. Each application result is independent of core onboarding.
+       */
+      const {
+        newlyCompleted,
+        ...onboardingResult
+      } = result;
+
+      let provisioningResults: ApplicationProvisioningResult[] = [];
+      let provisioningError: string | null = null;
+
+      if (newlyCompleted) {
+        try {
+          provisioningResults =
+            await provisionOrganizationApplications(
+              db,
+              organizationId,
+              callerUid,
+              {
+                mode: "automatic",
+              },
+            );
+        } catch (error) {
+          provisioningError =
+            error instanceof Error
+              ? error.message
+              : "Application provisioning could not be started.";
+
+          logger.error(
+            "Organization onboarding completed, but automatic application provisioning could not be started.",
+            {
+              organizationId,
+              actorId: callerUid,
+              error: provisioningError,
+            },
+          );
+        }
+      }
 
       /**
        * --------------------------------------------------
@@ -729,25 +736,30 @@ export const completeOrganizationConfiguration =
        */
 
       logger.info(
-        "Organization configuration completed.",
+        "Organization configuration saved.",
         {
           organizationId,
           actorId: callerUid,
-          nextStep:
-            result.currentStep,
+          nextStep: onboardingResult.currentStep,
+          newlyCompleted,
+          provisioningResultCount: provisioningResults.length,
         },
       );
-
 
       /**
        * --------------------------------------------------
        * Response
        * --------------------------------------------------
+       *
+       * Core onboarding remains successful even if an individual
+       * application fails to provision. Provisioning outcomes are returned
+       * separately so the frontend can display their status.
        */
-
       return {
         success: true,
-        ...result,
+        ...onboardingResult,
+        provisioningResults,
+        provisioningError,
       };
     },
   );
