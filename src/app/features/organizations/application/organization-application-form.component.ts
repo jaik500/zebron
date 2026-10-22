@@ -38,8 +38,8 @@ import {
     RouterLink,
   ],
   template: `
-    <main class="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8 mt-10">
-      <div class="mx-auto max-w-4xl">
+    <main class="mt-6 min-h-screen bg-slate-50 px-3 py-5 sm:mt-10 sm:px-6 sm:py-8 lg:px-8">
+      <div class="mx-auto w-full max-w-4xl">
 
         <!-- Header -->
         <div class="mb-8">
@@ -104,19 +104,21 @@ import {
             >
 
               <!-- Organization Information -->
-              <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <section
+  class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+>
+  <!-- Full-width section header -->
+  <div class="bg-[#007979]/60 px-4 py-2 sm:px-6 sm:py-3 lg:px-8">
+    <h2 class="text-lg font-semibold text-[slate-900]">
+      Organization Information
+    </h2>
 
-                <div class="mb-6">
-                  <h2 class="text-xl font-semibold text-slate-900">
-                    Organization Information
-                  </h2>
+    <p class="mt-1 text-md text-white/90">
+      Provide the basic information about your organization.
+    </p>
+  </div>
 
-                  <p class="mt-1 text-sm text-slate-500">
-                    Provide the basic information about your organization.
-                  </p>
-                </div>
-
-                <div class="grid gap-5 sm:grid-cols-2">
+                 <div class="space-y-5 p-4 sm:p-6 lg:p-8">
 
                   <!-- Organization Name -->
                   <div class="sm:col-span-2">
@@ -131,7 +133,7 @@ import {
                       id="organizationName"
                       type="text"
                       formControlName="organizationName"
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
 
                     @if (
@@ -158,7 +160,7 @@ import {
                       type="text"
                       formControlName="organizationType"
                       placeholder="Nonprofit, Company, School..."
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
                   </div>
 
@@ -175,7 +177,7 @@ import {
                       id="companyNumber"
                       type="text"
                       formControlName="companyNumber"
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
                   </div>
 
@@ -193,7 +195,7 @@ import {
                       type="url"
                       formControlName="website"
                       placeholder="https://example.org"
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
                   </div>
 
@@ -210,8 +212,8 @@ import {
                       id="description"
                       rows="4"
                       formControlName="description"
+                      class="organization-form-control organization-form-textarea mt-2 block w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                       placeholder="Tell us briefly about your organization."
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                     ></textarea>
                   </div>
 
@@ -219,19 +221,22 @@ import {
               </section>
 
               <!-- Contact Information -->
-              <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-
-                <div class="mb-6">
-                  <h2 class="text-xl font-semibold text-slate-900">
+           <section
+  class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+>
+  <!-- Full-width section header -->
+  <div class="bg-[#007979]/60 px-4 py-2 sm:px-6 sm:py-3 lg:px-8">
+    <h2 class="text-lg font-semibold text-slate-900">
                     Primary Contact
                   </h2>
 
-                  <p class="mt-1 text-sm text-slate-500">
+                  <p class="mt-1 text-sm text-white/90">
                     Provide the primary contact information for your organization.
                   </p>
                 </div>
 
-                <div class="grid gap-5 sm:grid-cols-2">
+                 <!-- Section form fields -->
+  <div class="space-y-5 p-4 sm:p-6 lg:p-8">
 
                   <!-- Contact Name -->
                   <div>
@@ -246,7 +251,7 @@ import {
                       id="contactName"
                       type="text"
                       formControlName="contactName"
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
 
                     @if (
@@ -272,7 +277,7 @@ import {
                       id="contactEmail"
                       type="email"
                       formControlName="contactEmail"
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
 
                     @if (
@@ -298,7 +303,7 @@ import {
                       id="contactPhone"
                       type="tel"
                       formControlName="contactPhone"
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
                   </div>
 
@@ -315,7 +320,7 @@ import {
                       id="country"
                       type="text"
                       formControlName="country"
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
                   </div>
 
@@ -332,7 +337,7 @@ import {
                       id="state"
                       type="text"
                       formControlName="state"
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
                   </div>
 
@@ -349,7 +354,7 @@ import {
                       id="city"
                       type="text"
                       formControlName="city"
-                      class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm shadow-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
                   </div>
 
@@ -357,19 +362,21 @@ import {
               </section>
 
               <!-- Requested Applications -->
-              <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-
-                <div class="mb-6">
-                  <h2 class="text-xl font-semibold text-slate-900">
+             <section
+  class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+>
+  <!-- Full-width section header -->
+  <div class="bg-[#007979]/60 px-4 py-2 sm:px-6 sm:py-3 lg:px-8">
+    <h2 class="text-lg font-semibold text-slate-900">
                     Zebron Applications
                   </h2>
 
-                  <p class="mt-1 text-sm text-slate-500">
+                  <p class="mt-1 text-sm text-white/90">
                     Select the applications your organization would like to use.
                   </p>
                 </div>
 
-                <div class="grid gap-4 sm:grid-cols-3">
+                <div class="grid grid-cols-1 items-stretch gap-4 p-3 sm:grid-cols-3 sm:p-6 lg:p-8">
 
                   @for (application of availableApplications; track application.id) {
                     <button
@@ -432,46 +439,41 @@ import {
                 </div>
               }
 
-              <!-- Actions -->
-              <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+              
+<!-- Actions -->
+<div class="grid grid-cols-3 gap-2 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-3">
 
-                <a
-                  [routerLink]="
-                    requestId()
-                      ? ['/organizations/application', requestId()]
-                      : '/'
-                  "
-                  class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Cancel
-                </a>
+  <a
+    [routerLink]="
+      requestId()
+        ? ['/organizations/application', requestId()]
+        : '/'
+    "
+    class="inline-flex min-w-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-2 py-3 text-center text-xs font-medium text-slate-700 hover:bg-slate-50 sm:px-5 sm:py-2.5 sm:text-sm"
+  >
+    Cancel
+  </a>
 
-                <div class="flex flex-col gap-3 sm:flex-row">
+  <button
+    type="button"
+    (click)="save('draft')"
+    [disabled]="saving()"
+    class="min-w-0 rounded-lg border border-slate-300 bg-white px-2 py-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-2.5 sm:text-sm"
+  >
+    {{ saving() ? 'Saving...' : 'Save Draft' }}
+  </button>
 
-                  <button
-                    type="button"
-                    (click)="save('draft')"
-                    [disabled]="saving()"
-                    class="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {{ saving() ? 'Saving...' : 'Save Draft' }}
-                  </button>
+  <button
+    type="button"
+    (click)="save('submitted')"
+    [disabled]="saving()"
+    class="min-w-0 rounded-lg bg-slate-900 px-2 py-3 text-xs font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-2.5 sm:text-sm"
+  >
+    {{ saving() ? 'Submitting...' : 'Submit Application' }}
+  </button>
 
-                  <button
-                    type="button"
-                    (click)="save('submitted')"
-                    [disabled]="saving()"
-                    class="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {{
-                      saving()
-                        ? 'Submitting...'
-                        : 'Submit Application'
-                    }}
-                  </button>
+</div>
 
-                </div>
-              </div>
 
             </form>
           }
@@ -480,6 +482,51 @@ import {
       </div>
     </main>
   `,
+  styles: [`
+    /*
+     * Mobile-friendly controls: a generous tap target and 16px text prevent
+     * accidental taps and iOS input zoom. Focused fields expand so users can
+     * clearly see and edit the active field on narrow screens.
+     */
+    .organization-form-control {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 3.25rem;
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-appearance: none;
+      appearance: none;
+      scroll-margin-block: 7rem;
+      transition: min-height 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .organization-form-textarea {
+      min-height: 8rem;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 639px) {
+      .organization-form-control:focus {
+        min-height: 3.75rem;
+      }
+
+      .organization-form-textarea:focus {
+        min-height: 10rem;
+      }
+    }
+
+    @media (min-width: 640px) {
+      .organization-form-control {
+        font-size: 14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .organization-form-control {
+        transition: none;
+      }
+    }
+  `],
 })
 export class OrganizationApplicationFormComponent
   implements OnInit {
