@@ -7,46 +7,6 @@ service cloud.firestore {
     // COMMON HELPERS
     // ============================================================
 
-    // ============================================================
-// COMMUNITY PROFILE VALIDATION
-// ============================================================
-
-/**
- * Validates the public profile fields that Community members
- * are permitted to read.
- *
- * Private account information and authorization fields must
- * never be stored in communityProfiles.
- */
-function isValidCommunityProfile() {
-  return request.resource.data.keys().hasOnly([
-      "displayName",
-      "firstName",
-      "lastName",
-      "preferredName",
-      "photoUrl",
-      "bio",
-      "website",
-      "countryOfOrigin",
-      "currentCountry",
-      "city",
-      "state",
-      "createdAt",
-      "updatedAt"
-    ])
-    && request.resource.data.keys().hasAll([
-      "displayName",
-      "createdAt",
-      "updatedAt"
-    ])
-    && request.resource.data.displayName is string
-    && request.resource.data.displayName.size() > 0
-    && request.resource.data.displayName.size() <= 100
-    && request.resource.data.createdAt is timestamp
-    && request.resource.data.updatedAt is timestamp;
-}
-
-
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -1491,8 +1451,12 @@ match /organizationSettings/{organizationId} {
 
       allow list: if isPlatformAdmin();
 
-      allow create: if isCurrentUser(userId)
-        || isPlatformAdmin();
+        allow create: if isPlatformAdmin()
+    || (
+      isCurrentUser(userId)
+      && request.resource.data.get("role", "user") != "admin"
+      && request.resource.data.get("platformRole", "") != "platform-admin"
+    );
 
       allow update: if
         isPlatformAdmin()
@@ -1522,29 +1486,41 @@ match /organizationSettings/{organizationId} {
     // TEST CENTER HELPERS
     // ============================================================
 
- /**
- * Test Center access requires an operational organization.
+/**
+ * Test Center access requires:
+ * - An operational organization.
+ * - An active organization membership.
+ * - An active Test Center application entitlement.
  *
- * Platform administrators retain access to support and
- * recover suspended or archived organizations.
+ * Platform administrators retain access for support and recovery.
  */
+function hasActiveTestCenterEntitlement(organizationId) {
+  let entitlementPath =
+    /databases/$(database)/documents/organizations/$(organizationId)/applications/test-center;
+
+  return exists(entitlementPath)
+    && get(entitlementPath).data.get("status", "") == "active";
+}
+
 function isTestCenterMember(organizationId) {
   return isPlatformAdmin()
     || (
       isOrganizationOperational(organizationId)
       && isOrganizationMember(organizationId)
+      && hasActiveTestCenterEntitlement(organizationId)
     );
 }
 
 /**
- * Test Center administration requires an operational organization
- * and an appropriate organization role.
+ * Test Center administration requires an operational organization,
+ * an appropriate organization role, and an active entitlement.
  */
 function isTestCenterAdmin(organizationId) {
   return isPlatformAdmin()
     || (
       isOrganizationOperational(organizationId)
       && isOrganizationManagerOrAbove(organizationId)
+      && hasActiveTestCenterEntitlement(organizationId)
     );
 }
 
@@ -1639,21 +1615,25 @@ function canCreateTestCenterDocument(organizationId) {
       ).data.organizationId == organizationId;
     }
 
-    function testCenterTopicBelongsToOrganization(
-      topicId,
-      organizationId,
-      courseId
-    ) {
-      return exists(
-        /databases/$(database)/documents/testTopics/$(topicId)
-      )
-      && get(
-        /databases/$(database)/documents/testTopics/$(topicId)
-      ).data.organizationId == organizationId
-      && get(
-        /databases/$(database)/documents/testTopics/$(topicId)
-      ).data.courseId == courseId;
-    }
+    /**
+ * Verifies that a topic exists and belongs to the specified
+ * organization and course.
+ *
+ * Missing topics must fail authorization safely rather than
+ * causing an evaluation error when accessing topic.data.
+ */
+function testCenterTopicBelongsToOrganization(
+  topicId,
+  organizationId,
+  courseId
+) {
+  let topicPath =
+    /databases/$(database)/documents/testTopics/$(topicId);
+
+  return exists(topicPath)
+    && get(topicPath).data.organizationId == organizationId
+    && get(topicPath).data.courseId == courseId;
+}
 
     function canCreateTestCenterTopic(
       organizationId,
@@ -1718,7 +1698,91 @@ function canCreateTestCenterDocument(organizationId) {
     }
 
     // ============================================================
-    // KNOWLEDGE ARTICLES
+    // ORGANIZATION-SCOPED KNOWLEDGE ARTICLES
+    // ============================================================
+
+    /*
+     * Canonical tenant-scoped storage:
+     * organizations/{organizationId}/knowledgeArticles/{articleId}
+     *
+     * Platform administrators can inspect articles and versions across
+     * organizations, including while an organization is restricted.
+     * Active organization members can read published articles only.
+     * Organization managers and above can read drafts and archived
+     * articles while the organization is operational/configurable.
+     *
+     * Writes are restricted to platform administrators and organization
+     * managers/administrators. Version documents are immutable after
+     * creation to preserve the article audit history.
+     */
+    match /organizations/{organizationId}/knowledgeArticles/{articleId} {
+
+      allow get, list: if isPlatformAdmin();
+
+      allow get, list: if isAuthenticated()
+        && isOrganizationOperational(organizationId)
+        && isOrganizationMember(organizationId)
+        && resource.data.get("status", "") == "published";
+
+      allow get, list: if isOrganizationOperational(organizationId)
+        && isOrganizationManagerOrAbove(organizationId);
+
+      allow create: if (
+          isPlatformAdmin()
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationManagerOrAbove(organizationId)
+          )
+        )
+        && isValidKnowledgeArticle()
+        && request.resource.data.id == articleId;
+
+      allow update: if (
+          isPlatformAdmin()
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationManagerOrAbove(organizationId)
+          )
+        )
+        && isValidKnowledgeArticle()
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.id == articleId;
+
+      allow delete: if isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+        );
+    }
+
+    // ============================================================
+    // ORGANIZATION-SCOPED KNOWLEDGE ARTICLE VERSIONS
+    // ============================================================
+
+    match /organizations/{organizationId}/knowledgeArticles/{articleId}/versions/{versionId} {
+
+      allow get, list: if isPlatformAdmin();
+
+      allow get, list: if isOrganizationOperational(organizationId)
+        && isOrganizationManagerOrAbove(organizationId);
+
+      allow create: if (
+          isPlatformAdmin()
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationManagerOrAbove(organizationId)
+          )
+        )
+        && isValidKnowledgeArticleVersion()
+        && request.resource.data.id == versionId
+        && request.resource.data.articleId == articleId;
+
+      // Article versions are immutable audit records.
+      allow update, delete: if false;
+    }
+
+    // ============================================================
+    // LEGACY GLOBAL KNOWLEDGE ARTICLES (BACKWARD COMPATIBILITY)
     // ============================================================
 
     match /knowledgeArticles/{articleId} {
@@ -2620,65 +2684,46 @@ function canCreateTestCenterDocument(organizationId) {
         && request.auth.uid == userId;
     }
 
- // ============================================================
-// COMMUNITY FOLLOW RELATIONSHIPS
-// ============================================================
+    // ============================================================
+    // COMMUNITY FOLLOW RELATIONSHIPS
+    // ============================================================
 
-match /userFollows/{followId} {
+    match /userFollows/{followId} {
 
-  /**
-   * Follow relationships are visible to authenticated Community
-   * members because profiles display followers and following.
-   *
-   * A missing document can be checked to determine whether a
-   * relationship exists.
-   */
-  allow get: if isAuthenticated();
+      allow get: if isAuthenticated()
+        && (
+          !exists(
+            /databases/$(database)/documents/userFollows/$(followId)
+          )
+          || resource.data.get("followerId", "") == request.auth.uid
+          || resource.data.get("followingId", "") == request.auth.uid
+        );
 
-  /**
-   * Followers and following lists are visible to authenticated
-   * Community members.
-   *
-   * NOTE:
-   * This makes the social graph queryable by authenticated users.
-   * Do not use this policy if follow relationships are intended
-   * to be private.
-   */
-  allow list: if isAuthenticated();
+      allow list: if isAuthenticated()
+        && (
+          resource.data.get("followerId", "") == request.auth.uid
+          || resource.data.get("followingId", "") == request.auth.uid
+        );
 
-  /**
-   * A user can create only their own follow relationship.
-   */
-  allow create: if isAuthenticated()
-    && request.resource.data.keys().hasAll([
-      "followerId",
-      "followingId",
-      "createdAt"
-    ])
-    && request.resource.data.get("followerId", "")
-      == request.auth.uid
-    && request.resource.data.get("followingId", "") is string
-    && request.resource.data.get("followingId", "") != ""
-    && request.resource.data.get("followingId", "")
-      != request.auth.uid
-    && request.resource.data.get("createdAt", null) is timestamp
-    && followId == request.auth.uid
-      + "_"
-      + request.resource.data.get("followingId", "");
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasAll([
+          "followerId", "followingId", "createdAt"
+        ])
+        && request.resource.data.get("followerId", "") == request.auth.uid
+        && request.resource.data.get("followingId", "") is string
+        && request.resource.data.get("followingId", "") != request.auth.uid
+        && followId == request.auth.uid
+          + "_"
+          + request.resource.data.get("followingId", "");
 
-  // Follow relationship fields cannot be modified in place.
-  allow update: if false;
+      allow update: if false;
 
-  /**
-   * A user can remove only their own follow relationship.
-   */
-  allow delete: if isAuthenticated()
-    && resource.data.get("followerId", "")
-      == request.auth.uid
-    && followId == request.auth.uid
-      + "_"
-      + resource.data.get("followingId", "");
-}
+      allow delete: if isAuthenticated()
+        && resource.data.get("followerId", "") == request.auth.uid
+        && followId == request.auth.uid
+          + "_"
+          + resource.data.get("followingId", "");
+    }
 
     // ============================================================
     // COMMUNITY TOPICS
@@ -2722,42 +2767,48 @@ match /userFollows/{followId} {
 
 match /communityConversations/{conversationId} {
 
-  /**
-   * Only authenticated conversation participants can read
-   * a conversation.
-   *
-   * The participantIds array-contains query used by ChatService
-   * must satisfy this same condition.
-   */
-  allow get, list: if isAuthenticated()
-    && request.auth.uid in resource.data.participantIds;
+  function isConversationParticipant() {
+    return isAuthenticated()
+      && resource.data.participantIds is list
+      && request.auth.uid in resource.data.participantIds;
+  }
 
-    // Allow a participant to mark their own conversation as read.
-// Protect all other conversation fields.
-allow update: if isAuthenticated()
-  && resource.data.participantIds is list
-  && request.auth.uid in resource.data.participantIds
-  && request.resource.data.diff(resource.data)
-    .affectedKeys()
-    .hasOnly(['unreadCounts', 'updatedAt'])
-  && request.resource.data.unreadCounts is map
-  && request.resource.data.unreadCounts
-    .get(request.auth.uid, -1) == 0
-  && (
-    (
-      !resource.data.keys().hasAny(['unreadCounts'])
-      && request.resource.data.unreadCounts.keys()
-        .hasOnly([request.auth.uid])
-    )
-    ||
-    (
-      resource.data.unreadCounts is map
-      && request.resource.data.unreadCounts
-        .diff(resource.data.unreadCounts)
-        .affectedKeys()
-        .hasOnly([request.auth.uid])
-    )
-  );
+  // Only conversation participants can read the conversation.
+  allow get, list: if isConversationParticipant();
+
+  // Allow a participant to mark their own conversation as read.
+  //
+  // The update may change only:
+  // - unreadCounts
+  // - updatedAt
+  //
+  // The participant can change only their own unread-count entry.
+  allow update: if isConversationParticipant()
+    && request.resource.data.diff(resource.data)
+      .affectedKeys()
+      .hasOnly(['unreadCounts', 'updatedAt'])
+    && request.resource.data.unreadCounts is map
+    && request.resource.data.unreadCounts
+      .get(request.auth.uid, -1) == 0
+    && (
+      // Support older conversations with no unreadCounts map.
+      (
+        !resource.data.keys().hasAny(['unreadCounts'])
+        && request.resource.data.unreadCounts.keys()
+          .hasOnly([request.auth.uid])
+      )
+
+      ||
+
+      // Otherwise, only this participant's entry may change.
+      (
+        resource.data.unreadCounts is map
+        && request.resource.data.unreadCounts
+          .diff(resource.data.unreadCounts)
+          .affectedKeys()
+          .hasOnly([request.auth.uid])
+      )
+    );
 
   // ==========================================================
   // COMMUNITY CHAT MESSAGES
@@ -2765,7 +2816,7 @@ allow update: if isAuthenticated()
 
   match /messages/{messageId} {
 
-    function isConversationParticipant() {
+    function isParentConversationParticipant() {
       let conversationPath =
         /databases/$(database)/documents/communityConversations/$(conversationId);
 
@@ -2775,7 +2826,8 @@ allow update: if isAuthenticated()
           get(conversationPath).data.participantIds;
     }
 
-    allow get, list: if isConversationParticipant();
+    // Only participants can read messages.
+    allow get, list: if isParentConversationParticipant();
   }
 }
 
@@ -2936,61 +2988,24 @@ match /communityChatCalls/{callId} {
       && request.resource.data.get('candidate', null) is map;
 
     allow update, delete: if false;
-  } // End match /candidates/{candidateId}
-
-} // End match /communityChatCalls/{callId}
-
-// ============================================================
-// PUBLIC COMMUNITY PROFILES
-// ============================================================
-
-match /communityProfiles/{userId} {
-
-  /**
-   * Authenticated users can read individual public profiles.
-   */
-  allow get: if isAuthenticated();
-
-  /**
-   * Authenticated users can query public profiles.
-   */
-  allow list: if isAuthenticated();
-
-  /**
-   * Users may create only their own public profile.
-   */
-  allow create: if isCurrentUser(userId)
-    && isValidCommunityProfile();
-
-  /**
-   * Users may update only their own public profile.
-   */
-  allow update: if isCurrentUser(userId)
-    && isValidCommunityProfile()
-    && request.resource.data.createdAt
-      == resource.data.createdAt;
-
-  /**
-   * Public profiles cannot be permanently deleted by clients.
-   */
-  allow delete: if false;
+  }
 }
 
-// ============================================================
-// DEFAULT DENY
-// ============================================================
+    // ============================================================
+    // DEFAULT DENY
+    // ============================================================
 
-/*
- * There is intentionally NO:
- *
- * match /{document=**} {
- *   allow read, write: if true;
- * }
- *
- * Any collection without an explicit rule is denied.
- *
- * Feature-specific rules can be added explicitly as required.
- */
+    /*
+     * There is intentionally NO:
+     *
+     * match /{document=**} {
+     *   allow read, write: if true;
+     * }
+     *
+     * Any collection without an explicit rule is denied.
+     *
+     * Feature-specific rules can be added explicitly as required.
+     */
 
   }
 }
