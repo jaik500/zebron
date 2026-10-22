@@ -922,15 +922,13 @@ export class TestCourseDetailComponent implements OnInit {
       // Load course
       // -----------------------------------------------
 
-      const organizationId = this.organizationContext.organizationId();
+      const organizationId =
+  this.organizationContext.organizationId();
 
-      if (!organizationId) {
-        this.error.set('Select an organization before accessing Test Center.');
-
-        return;
-      }
-
-      const course = await this.courseService.getCourseBySlug(organizationId, slug);
+const course = await this.courseService.getCourseBySlug(
+  organizationId,
+  slug,
+);
 
       if (!course) {
         this.error.set('The course you requested could not be found.');

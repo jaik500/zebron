@@ -1,4 +1,13 @@
+
 import { Timestamp } from 'firebase/firestore';
+
+/**
+ * Ownership scope for Test Center topics.
+ *
+ * Platform topics belong to platform courses.
+ * Organization topics belong to organization courses.
+ */
+export type TestTopicScope = 'platform' | 'organization';
 
 /**
  * Represents a topic within a Test Center course.
@@ -7,11 +16,19 @@ export interface TestTopic {
   id: string;
 
   /**
-   * Organization that owns the topic.
+   * Content ownership scope.
    *
-   * This is the tenant boundary for Partner Test Center.
+   * Optional for backward compatibility with existing
+   * organization topics that do not yet contain scope.
    */
-  organizationId: string;
+  scope?: TestTopicScope;
+
+  /**
+   * Owning organization.
+   *
+   * null for platform-owned topics.
+   */
+  organizationId: string | null;
 
   /**
    * Parent Test Center course.
@@ -40,3 +57,4 @@ export interface TestTopic {
 
   updatedAt: Timestamp;
 }
+

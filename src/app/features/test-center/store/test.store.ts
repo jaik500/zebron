@@ -232,46 +232,52 @@ readonly testCompleted = computed(
   // TOPICS
   // =====================================================
 
-  /**
-   * Load active topics for a course.
-   *
-   * The component does not access TestTopicService
-   * directly. TestStore handles the data retrieval
-   * and owns the resulting state.
-   */
-  async loadTopics(courseId: string): Promise<void> {
-    try {
-      this.loading.set(true);
+/**
+ * Load active topics for the selected course.
+ *
+ * Platform courses can be loaded without an organization.
+ * Organization courses require an organization context.
+ */
+async loadTopics(courseId: string): Promise<void> {
+  try {
+    this.loading.set(true);
+    this.error.set('');
 
-      this.error.set('');
+    const course = this.course();
 
-      const organizationId = this.organizationId();
-
-      if (!organizationId) {
-        this.error.set(
-          'Please select an organization before loading Test Center topics.',
-        );
-        this.topics.set([]);
-        return;
-      }
-
-      const topics =
-        await this.topicService.getActiveTopics(
-          organizationId,
-          courseId,
-        );
-
-      this.topics.set(topics);
-    } catch (error) {
-      console.error('Failed to load Test Center topics:', error);
-
-      this.error.set('We could not load the topics for this course.');
-
+    if (!course || course.id !== courseId) {
       this.topics.set([]);
-    } finally {
-      this.loading.set(false);
+      this.error.set('Select a valid Test Center course.');
+      return;
     }
+
+    const organizationId = this.organizationId();
+
+    if (course.scope === 'organization' && !organizationId) {
+      this.topics.set([]);
+      this.error.set(
+        'Please select an organization before loading Test Center topics.',
+      );
+      return;
+    }
+
+    const topics = await this.topicService.getActiveTopics(
+      course.scope === 'platform' ? null : organizationId,
+      courseId,
+    );
+
+    this.topics.set(topics);
+  } catch (error) {
+    console.error('Failed to load Test Center topics:', error);
+
+    this.error.set('We could not load the topics for this course.');
+    this.topics.set([]);
+  } finally {
+    this.loading.set(false);
   }
+}
+
+
 
   /**
    * Replace the selected topic IDs.

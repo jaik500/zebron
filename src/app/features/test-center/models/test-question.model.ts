@@ -1,4 +1,10 @@
+
 import { Timestamp } from 'firebase/firestore';
+
+/**
+ * Ownership scope for Test Center questions.
+ */
+export type TestQuestionScope = 'platform' | 'organization';
 
 export type TestQuestionDifficulty =
   | 'easy'
@@ -26,7 +32,20 @@ export interface TestQuestionOption {
 export interface TestQuestion {
   id: string;
 
-  organizationId: string;
+  /**
+   * Content ownership scope.
+   *
+   * Optional for backward compatibility with existing
+   * organization questions.
+   */
+  scope?: TestQuestionScope;
+
+  /**
+   * Owning organization.
+   *
+   * null for platform-owned questions.
+   */
+  organizationId: string | null;
 
   courseId: string;
 
@@ -60,3 +79,4 @@ export interface TestQuestion {
 
   updatedAt: Timestamp;
 }
+

@@ -298,57 +298,79 @@ export class TestCourseService {
   // GET COURSE BY SLUG
   // ============================================================
 
-  /**
-   * Gets an active course by slug within an organization.
-   */
-  async getCourseBySlug(
-    organizationId: string,
-    slug: string,
-  ): Promise<TestCourse | null> {
-    this.requireOrganizationId(organizationId);
+ /**
+ * Gets an active Test Center course by slug.
+ *
+ * Platform courses can be retrieved without an organization.
+ * Organization courses require a valid organization ID.
+ *
+ * Firestore rules remain responsible for enforcing access.
+ */
+async getCourseBySlug(
+  organizationId: string | null | undefined,
+  slug: string,
+): Promise<TestCourse | null> {
+  const normalizedSlug = this.normalizeSlug(slug);
 
-    const normalizedSlug =
-      this.normalizeSlug(slug);
+  if (!normalizedSlug) {
+    return null;
+  }
 
-    if (!normalizedSlug) {
-      return null;
-    }
+  const constraints = [
+    where('slug', '==', normalizedSlug),
+    where('active', '==', true),
+  ];
 
-    const q = query(
+  if (organizationId?.trim()) {
+    // Search the selected organization's courses first.
+    const organizationQuery = query(
       this.coursesCollection,
-
-      where(
-        'organizationId',
-        '==',
-        organizationId,
-      ),
-
-      where(
-        'slug',
-        '==',
-        normalizedSlug,
-      ),
-
-      where(
-        'active',
-        '==',
-        true,
-      ),
+      where('organizationId', '==', organizationId),
+      where('slug', '==', normalizedSlug),
+      where('active', '==', true),
     );
 
-    const snapshot = await getDocs(q);
+    const organizationSnapshot = await getDocs(
+      organizationQuery,
+    );
 
-    const document = snapshot.docs[0];
+    const organizationDocument =
+      organizationSnapshot.docs[0];
 
-    if (!document) {
-      return null;
+    if (organizationDocument) {
+      return {
+        id: organizationDocument.id,
+        ...organizationDocument.data(),
+      } as TestCourse;
     }
-
-    return {
-      id: document.id,
-      ...document.data(),
-    } as TestCourse;
   }
+
+  // Platform courses have no owning organization.
+  // This query also allows public platform courses to be
+  // resolved when the user has not selected an organization.
+  const platformQuery = query(
+    this.coursesCollection,
+    ...constraints,
+    where('scope', '==', 'platform'),
+    where('organizationId', '==', null),
+    where('accessType', '==', 'public'),
+  );
+
+  const platformSnapshot = await getDocs(
+    platformQuery,
+  );
+
+  const platformDocument = platformSnapshot.docs[0];
+
+  if (!platformDocument) {
+    return null;
+  }
+
+  return {
+    id: platformDocument.id,
+    ...platformDocument.data(),
+  } as TestCourse;
+}
 
   // ============================================================
   // CREATE ORGANIZATION COURSE

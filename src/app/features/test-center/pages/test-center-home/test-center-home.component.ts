@@ -17,196 +17,84 @@ import { OrganizationContextService } from '../../../../core/services/organizati
   imports: [RouterLink, MatIconModule],
 
   template: `
-    <main class="min-h-screen bg-gray-50">
+    <main class="min-h-screen bg-gray-50 mt-16">
       <!-- ===================================================
-           HEADER
+           SITE HEADER
            =================================================== -->
 
-      <header
-        class="border-b
-               border-white/10
-               bg-[#032D42]"
-      >
-        <div
-          class="mx-auto
-                 flex
-                 max-w-7xl
-                 items-center
-                 justify-between
-                 gap-4
-                 px-5
-                 py-2
-                 sm:px-6
-                 lg:px-8"
-        >
-          <!-- Logo -->
-
+      <header class="border-b border-white/10 bg-gradient-to-br from-teal-800 via-teal-700 to-teal-600">
+        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:px-3 lg:px-8">
           <a
             routerLink="/"
             aria-label="Zebron home"
-            class="flex
-                   items-center
-                   gap-2
-                   text-white"
+            class="inline-flex min-h-10 items-center gap-2 rounded-lg text-white transition focus:outline-none focus:ring-2 focus:ring-teal-300"
           >
-            <img src="/zebron-favicon.svg" alt="" class="h-7 w-7" />
-
-            <span
-              class="text-lg
-                     font-bold
-                     tracking-tight"
-            >
-              Zebron
-            </span>
+            <div class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 sm:flex" aria-hidden="true">
+                <mat-icon class="!h-8 !w-8 !text-3xl">school</mat-icon>
+              </div>
+            <span class="text-lg font-bold tracking-tight sm:text-xl">Learning and assessment</span>
           </a>
 
-          <!-- Navigation -->
-
-          <nav
-            class="hidden
-                   items-center
-                   gap-6
-                   md:flex"
-            aria-label="Primary navigation"
-          >
-            <a
-              routerLink="/resources"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              Resources
-            </a>
-
-            <a
-              routerLink="/find"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              Find Jobs
-            </a>
-
-            <a
-              routerLink="/test-center"
-              class="text-sm
-                     font-semibold
-                     text-[#12BFC3]"
-              aria-current="page"
-            >
-              Test Center
-            </a>
-
-            <a
-              routerLink="/about"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              About
-            </a>
-
-            <a
-              routerLink="/contact"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              Contact
-            </a>
+          <nav class="hidden items-center gap-5 md:flex lg:gap-6" aria-label="Primary navigation">
+            <a routerLink="/resources" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">Resources</a>
+            <a routerLink="/find" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">Find Jobs</a>
+            <a routerLink="/test-center" aria-current="page" class="min-h-11 inline-flex items-center border-b-2 border-teal-300 text-sm font-semibold text-teal-200">Test Center</a>
+            <a routerLink="/about" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">About</a>
+            <a routerLink="/contact" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">Contact</a>
           </nav>
+
+          <a routerLink="/test-center" class="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 text-sm font-semibold text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-teal-300 md:hidden">
+            <mat-icon aria-hidden="true" class="!h-5 !w-5 !text-xl">school</mat-icon>
+            <span>Test Center</span>
+          </a>
         </div>
       </header>
 
       <!-- ===================================================
-           HERO
+           TEST CENTER HERO — aligned with the Organization
+           Application header visual language
            =================================================== -->
 
-      <section
-        class="bg-[#032D42]
-               px-5
-               pb-8
-               pt-7
-               text-white
-               sm:px-6
-               lg:px-8"
-      >
-        <div
-          class="mx-auto
-                 max-w-7xl"
-        >
-          <div class="max-w-3xl">
-            <p
-              class="text-xs
-                     font-bold
-                     uppercase
-                     tracking-[0.18em]
-                     text-[#7DD3D3]"
-            >
-              Zebron Test Center
-            </p>
+      <section class="px-3 pt-4 sm:px-6 sm:pt-2 lg:px-8">
+        <div class="mx-auto max-w-7xl overflow-hidden rounded-2xl bg-[#e5f4f4] shadow-lg">
+          <div class="px-5 py-2 sm:px-8 sm:py-4 lg:px-10 lg:py-4">
+            <div class="flex items-start gap-4">
+              <div class="min-w-0 flex-1">
+                <p class="mt-1 max-w-2xl text-sm leading-6">
+                  Prepare for certifications, courses, professional exams, and new skills with focused practice questions.
+                </p>
 
-            <h1
-              class="mt-1.5
-                     text-3xl
-                     font-bold
-                     tracking-tight
-                     sm:text-4xl"
-            >
-              Practice. Learn. Get Ready.
-            </h1>
+                <!-- New form field styling: touch-friendly, responsive search -->
+                <div class="mt-4 max-w-3xl">
 
-            <p
-              class="mt-2
-                     max-w-2xl
-                     text-sm
-                     leading-5
-                     text-blue-100
-                     sm:text-base
-                     sm:leading-6"
-            >
-              Prepare for certifications, courses, professional exams, and new skills with focused
-              practice questions.
-            </p>
+                  <div class="group flex min-h-[52px] w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-md transition-all duration-200 focus-within:border-teal-300 focus-within:ring-4 focus-within:ring-white/25 sm:min-h-14 sm:px-5">
+                    <mat-icon aria-hidden="true" class="!h-6 !w-6 shrink-0 !text-2xl !text-teal-700">search</mat-icon>
 
-            <!-- Search -->
+                    <input
+                      id="test-center-search"
+                      type="search"
+                      autocomplete="off"
+                      [value]="searchTerm()"
+                      (input)="searchTerm.set($any($event.target).value)"
+                      placeholder="Search courses, certifications, topics..."
+                      aria-label="Search Test Center"
+                      class="min-h-5 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:outline-none focus:ring-0 sm:text-sm"
+                    />
 
-            <div
-              class="mt-5
-                     flex
-                     max-w-2xl
-                     items-center
-                     gap-2
-                     rounded-xl
-                     bg-white
-                     px-3
-                     py-2.5
-                     shadow-lg"
-            >
-              <mat-icon aria-hidden="true" class="!text-gray-400"> search </mat-icon>
-
-              <input
-                type="search"
-                [value]="searchTerm()"
-                (input)="searchTerm.set($any($event.target).value)"
-                placeholder="Search courses, certifications, topics..."
-                aria-label="Search Test Center"
-                class="w-full
-                       border-0
-                       bg-transparent
-                       text-sm
-                       text-gray-900
-                       outline-none
-                       placeholder:text-gray-400"
-              />
+                    @if (searchTerm()) {
+                      <button
+                        type="button"
+                        aria-label="Clear search"
+                        (click)="searchTerm.set('')"
+                        class="inline-flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-teal-50 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600"
+                      >
+                        <mat-icon aria-hidden="true">close</mat-icon>
+                      </button>
+                    }
+                  </div>
+                  <p class="mt-2 text-xs leading-5 text-gray">Search by course name, certification, provider, or topic.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -247,12 +135,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             </p>
           </div>
 
-          <div
-            class="grid
-                   gap-3
-                   sm:grid-cols-2
-                   lg:grid-cols-4"
-          >
+          <div class="grid grid-cols-4 gap-2 sm:gap-3">
             <!-- Certifications -->
 
             <a
@@ -261,9 +144,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      rounded-xl
                      border
                      border-gray-200
-                     bg-white
-                     p-4
-                     shadow-sm
+                     bg-white p-2 sm:p-4 shadow-sm
                      transition-all
                      duration-200
                      hover:-translate-y-1
@@ -273,8 +154,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             >
               <div
                 class="flex
-                       h-9
-                       w-9
+                       h-8 w-8 sm:h-9 sm:w-9
                        items-center
                        justify-center
                        rounded-lg
@@ -285,16 +165,14 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               </div>
 
               <h3
-                class="mt-3
-                       text-sm
-                       font-bold
+                class="mt-2 text-[13px] text-center leading-tight sm:mt-3 sm:text-sm font-bold
                        text-[#032D42]"
               >
                 Certifications
               </h3>
 
               <p
-                class="mt-1
+                class="hidden sm:block mt-1
                        text-xs
                        leading-5
                        text-gray-600"
@@ -311,9 +189,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      rounded-xl
                      border
                      border-gray-200
-                     bg-white
-                     p-4
-                     shadow-sm
+                     bg-white p-2 sm:p-4 shadow-sm
                      transition-all
                      duration-200
                      hover:-translate-y-1
@@ -323,8 +199,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             >
               <div
                 class="flex
-                       h-9
-                       w-9
+                       h-8 w-8 sm:h-9 sm:w-9
                        items-center
                        justify-center
                        rounded-lg
@@ -335,16 +210,14 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               </div>
 
               <h3
-                class="mt-3
-                       text-sm
-                       font-bold
+                class="mt-2 text-[13px] text-center leading-tight sm:mt-3 sm:text-sm font-bold
                        text-[#032D42]"
               >
                 Courses
               </h3>
 
               <p
-                class="mt-1
+                class="hidden sm:block mt-1
                        text-xs
                        leading-5
                        text-gray-600"
@@ -361,9 +234,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      rounded-xl
                      border
                      border-gray-200
-                     bg-white
-                     p-4
-                     shadow-sm
+                     bg-white p-2 sm:p-4 shadow-sm
                      transition-all
                      duration-200
                      hover:-translate-y-1
@@ -373,28 +244,26 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             >
               <div
                 class="flex
-                       h-9
-                       w-9
+                       h-8 w-8 sm:h-9 sm:w-9
                        items-center
                        justify-center
                        rounded-lg
                        bg-[#E5F4F4]
-                       text-[#007979]"
+                       text-[#007979]
+                       text-center"
               >
-                <mat-icon aria-hidden="true"> school </mat-icon>
+                <mat-icon aria-hidden="true" > school </mat-icon>
               </div>
 
               <h3
-                class="mt-3
-                       text-sm
-                       font-bold
+                class="mt-2 text-[13px] leading-tight sm:mt-3 text-center font-bold
                        text-[#032D42]"
               >
                 Subjects
               </h3>
 
               <p
-                class="mt-1
+                class="hidden sm:block mt-1
                        text-xs
                        leading-5
                        text-gray-600"
@@ -411,9 +280,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                      rounded-xl
                      border
                      border-gray-200
-                     bg-white
-                     p-4
-                     shadow-sm
+                     bg-white p-2 sm:p-4 shadow-sm
                      transition-all
                      duration-200
                      hover:-translate-y-1
@@ -435,16 +302,14 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               </div>
 
               <h3
-                class="mt-3
-                       text-sm
-                       font-bold
+                class="mt-2 text-[13px] text-center leading-tight sm:mt-3 sm:text-sm font-bold
                        text-[#032D42]"
               >
                 Skills
               </h3>
 
               <p
-                class="mt-1
+                class="hidden sm:block mt-1
                        text-xs
                        leading-5
                        text-gray-600"

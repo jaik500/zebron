@@ -53,30 +53,28 @@ export class TestTopicService {
   // GET ACTIVE TOPICS
   // ============================================================
 
-  async getActiveTopics(
-    organizationId: string,
-    courseId: string,
-  ): Promise<TestTopic[]> {
-    this.requireOrganizationId(organizationId);
-    this.requireCourseId(courseId);
 
-    const topicsQuery = query(
+/**
+ * Gets active topics for a course.
+ *
+ * Platform courses use organizationId = null.
+ * Organization courses require an organization ID.
+ */
+async getActiveTopics(
+  organizationId: string | null,
+  courseId: string,
+): Promise<TestTopic[]> {
+  this.requireCourseId(courseId);
+
+  if (organizationId === null) {
+    const platformQuery = query(
       this.topicsCollection,
-      where(
-        'organizationId',
-        '==',
-        organizationId,
-      ),
-      where(
-        'courseId',
-        '==',
-        courseId,
-      ),
+      where('scope', '==', 'platform'),
+      where('organizationId', '==', null),
+      where('courseId', '==', courseId),
     );
 
-    const snapshot = await getDocs(
-      topicsQuery,
-    );
+    const snapshot = await getDocs(platformQuery);
 
     return snapshot.docs
       .map(
@@ -86,15 +84,33 @@ export class TestTopicService {
             ...document.data(),
           }) as TestTopic,
       )
-      .filter(
-        (topic) =>
-          topic.active === true,
-      )
-      .sort(
-        (a, b) =>
-          a.sortOrder - b.sortOrder,
-      );
+      .filter((topic) => topic.active === true)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
   }
+
+  this.requireOrganizationId(organizationId);
+
+  const organizationQuery = query(
+    this.topicsCollection,
+    where('organizationId', '==', organizationId),
+    where('courseId', '==', courseId),
+  );
+
+  const snapshot = await getDocs(organizationQuery);
+
+  return snapshot.docs
+    .map(
+      (document) =>
+        ({
+          id: document.id,
+          ...document.data(),
+        }) as TestTopic,
+    )
+    .filter((topic) => topic.active === true)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+
 
   // ============================================================
   // GET ALL TOPICS
