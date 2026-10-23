@@ -186,14 +186,28 @@ app.get('/sitemap.xml', async (_req, res) => {
     res
       .type('application/xml')
       .send(sitemap);
-  } catch (error) {
-    console.error('Failed to generate sitemap:', error);
+ } catch (error: unknown) {
+  console.error('Failed to generate sitemap:', {
+    projectId,
+    errorName:
+      error instanceof Error ? error.name : 'UnknownError',
+    errorMessage:
+      error instanceof Error ? error.message : String(error),
+    errorCode:
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error
+        ? String(error.code)
+        : undefined,
+    stack:
+      error instanceof Error ? error.stack : undefined,
+  });
 
-    res
-      .status(500)
-      .type('text/plain')
-      .send('Unable to generate sitemap.');
-  }
+  res
+    .status(500)
+    .type('text/plain')
+    .send('Unable to generate sitemap.');
+}
 });
 
 /**
