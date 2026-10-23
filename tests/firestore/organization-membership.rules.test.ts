@@ -1,11 +1,4 @@
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import {
   assertFails,
@@ -14,337 +7,237 @@ import {
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
 
-import {
-  deleteDoc,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-} from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 import fs from 'node:fs';
 
-describe(
-  'Zebron Firestore Security Rules - Organization Memberships',
-  () => {
-    let testEnv: RulesTestEnvironment;
+describe('Zebron Firestore Security Rules - Organization Memberships', () => {
+  let testEnv: RulesTestEnvironment;
 
-    const ORGANIZATION_ID = 'org-security-test';
+  const ORGANIZATION_ID = 'org-security-test';
 
-    const OWNER_UID = 'owner-uid';
-    const ADMIN_UID = 'admin-uid';
-    const MEMBER_UID = 'member-uid';
-    const PLATFORM_ADMIN_UID = 'platform-admin-uid';
+  const OWNER_UID = 'owner-uid';
+  const ADMIN_UID = 'admin-uid';
+  const MEMBER_UID = 'member-uid';
+  const PLATFORM_ADMIN_UID = 'platform-admin-uid';
 
-    const ownerMembershipId =
-      `${OWNER_UID}_${ORGANIZATION_ID}`;
+  const ownerMembershipId = `${OWNER_UID}_${ORGANIZATION_ID}`;
 
-    const adminMembershipId =
-      `${ADMIN_UID}_${ORGANIZATION_ID}`;
+  const adminMembershipId = `${ADMIN_UID}_${ORGANIZATION_ID}`;
 
-    const memberMembershipId =
-      `${MEMBER_UID}_${ORGANIZATION_ID}`;
+  const memberMembershipId = `${MEMBER_UID}_${ORGANIZATION_ID}`;
 
-    beforeAll(async () => {
-      testEnv = await initializeTestEnvironment({
-        projectId: 'zebron-rules-test',
+  beforeAll(async () => {
+    testEnv = await initializeTestEnvironment({
+      projectId: 'zebron-rules-test',
 
-        firestore: {
-          host: '127.0.0.1',
-          port: 8080,
-          rules: fs.readFileSync(
-            'firestore.rules',
-            'utf8',
-          ),
-        },
+      firestore: {
+        host: '127.0.0.1',
+        port: 8080,
+        rules: fs.readFileSync('firestore.rules', 'utf8'),
+      },
+    });
+  });
+
+  afterEach(async () => {
+    await testEnv.clearFirestore();
+  });
+
+  afterAll(async () => {
+    await testEnv.cleanup();
+  });
+
+  // ==========================================================
+  // HELPERS
+  // ==========================================================
+
+  async function seedBaseOrganization(): Promise<void> {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+
+      await setDoc(doc(db, `organizations/${ORGANIZATION_ID}`), {
+        name: 'Security Test Organization',
+        slug: 'security-test-organization',
+        status: 'active',
+        lifecycleStatus: 'active',
+      });
+
+      await setDoc(doc(db, `organizationMemberships/${ownerMembershipId}`), {
+        userId: OWNER_UID,
+        organizationId: ORGANIZATION_ID,
+        role: 'org_owner',
+        active: true,
+      });
+
+      await setDoc(doc(db, `organizationMemberships/${adminMembershipId}`), {
+        userId: ADMIN_UID,
+        organizationId: ORGANIZATION_ID,
+        role: 'org_admin',
+        active: true,
+      });
+
+      await setDoc(doc(db, `organizationMemberships/${memberMembershipId}`), {
+        userId: MEMBER_UID,
+        organizationId: ORGANIZATION_ID,
+        role: 'org_member',
+        active: true,
       });
     });
+  }
 
-    afterEach(async () => {
-      await testEnv.clearFirestore();
+  function authenticatedDb(uid: string) {
+    return testEnv.authenticatedContext(uid).firestore();
+  }
+
+  async function seedPlatformAdmin(): Promise<void> {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `users/${PLATFORM_ADMIN_UID}`), {
+        id: PLATFORM_ADMIN_UID,
+        email: 'platform-admin@example.com',
+        displayName: 'Platform Admin',
+        platformRole: 'platform-admin',
+      });
     });
+  }
 
-    afterAll(async () => {
-      await testEnv.cleanup();
-    });
+  // ==========================================================
+  // CREATE
+  // ==========================================================
 
-    // ==========================================================
-    // HELPERS
-    // ==========================================================
+  it('denies an organization admin from creating an org_owner membership', async () => {
+    await seedBaseOrganization();
 
-    async function seedBaseOrganization(): Promise<void> {
-      await testEnv.withSecurityRulesDisabled(
-        async (context) => {
-          const db = context.firestore();
+    const db = authenticatedDb(ADMIN_UID);
 
-          await setDoc(
-            doc(
-              db,
-              `organizations/${ORGANIZATION_ID}`,
-            ),
-            {
-              name: 'Security Test Organization',
-              slug: 'security-test-organization',
-              status: 'active',
-              lifecycleStatus: 'active',
-            },
-          );
+    const newOwnerUid = 'new-owner-uid';
 
-          await setDoc(
-            doc(
-              db,
-              `organizationMemberships/${ownerMembershipId}`,
-            ),
-            {
-              userId: OWNER_UID,
-              organizationId: ORGANIZATION_ID,
-              role: 'org_owner',
-              active: true,
-            },
-          );
+    const newMembershipId = `${newOwnerUid}_${ORGANIZATION_ID}`;
 
-          await setDoc(
-            doc(
-              db,
-              `organizationMemberships/${adminMembershipId}`,
-            ),
-            {
-              userId: ADMIN_UID,
-              organizationId: ORGANIZATION_ID,
-              role: 'org_admin',
-              active: true,
-            },
-          );
+    await assertFails(
+      setDoc(doc(db, `organizationMemberships/${newMembershipId}`), {
+        userId: newOwnerUid,
+        organizationId: ORGANIZATION_ID,
+        role: 'org_owner',
+        active: true,
+      }),
+    );
+  });
 
-          await setDoc(
-            doc(
-              db,
-              `organizationMemberships/${memberMembershipId}`,
-            ),
-            {
-              userId: MEMBER_UID,
-              organizationId: ORGANIZATION_ID,
-              role: 'org_member',
-              active: true,
-            },
-          );
-        },
-      );
-    }
+  it('allows an organization admin to create a non-owner membership', async () => {
+    await seedBaseOrganization();
 
-    function authenticatedDb(uid: string) {
-      return testEnv
-        .authenticatedContext(uid)
-        .firestore();
-    }
+    const db = authenticatedDb(ADMIN_UID);
 
-    async function seedPlatformAdmin(): Promise<void> {
-      await testEnv.withSecurityRulesDisabled(
-        async (context) => {
-          await setDoc(
-            doc(
-              context.firestore(),
-              `users/${PLATFORM_ADMIN_UID}`,
-            ),
-            {
-              id: PLATFORM_ADMIN_UID,
-              email: 'platform-admin@example.com',
-              displayName: 'Platform Admin',
-              platformRole: 'platform-admin',
-            },
-          );
-        },
-      );
-    }
+    const newUserUid = 'new-member-uid';
 
-    // ==========================================================
-    // CREATE
-    // ==========================================================
+    const newMembershipId = `${newUserUid}_${ORGANIZATION_ID}`;
 
-    it(
-      'denies an organization admin from creating an org_owner membership',
-      async () => {
-        await seedBaseOrganization();
+    await assertSucceeds(
+      setDoc(doc(db, `organizationMemberships/${newMembershipId}`), {
+        userId: newUserUid,
+        organizationId: ORGANIZATION_ID,
+        role: 'org_member',
+        active: true,
+      }),
+    );
+  });
 
-        const db = authenticatedDb(ADMIN_UID);
+  it('allows a platform admin to create an org_owner membership', async () => {
+    await seedBaseOrganization();
+    await seedPlatformAdmin();
 
-        const newOwnerUid = 'new-owner-uid';
+    const db = authenticatedDb(PLATFORM_ADMIN_UID);
 
-        const newMembershipId =
-          `${newOwnerUid}_${ORGANIZATION_ID}`;
+    const newOwnerUid = 'platform-created-owner';
 
-        await assertFails(
-          setDoc(
-            doc(
-              db,
-              `organizationMemberships/${newMembershipId}`,
-            ),
-            {
-              userId: newOwnerUid,
-              organizationId: ORGANIZATION_ID,
-              role: 'org_owner',
-              active: true,
-            },
-          ),
-        );
-      },
+    const newMembershipId = `${newOwnerUid}_${ORGANIZATION_ID}`;
+
+    await assertSucceeds(
+      setDoc(doc(db, `organizationMemberships/${newMembershipId}`), {
+        userId: newOwnerUid,
+        organizationId: ORGANIZATION_ID,
+        role: 'org_owner',
+        active: true,
+      }),
     );
 
-    it(
-      'allows an organization admin to create a non-owner membership',
-      async () => {
-        await seedBaseOrganization();
+    await assertSucceeds(getDoc(doc(db, `organizationMemberships/${newMembershipId}`)));
+  });
 
-        const db = authenticatedDb(ADMIN_UID);
+  // ==========================================================
+  // UPDATE
+  // ==========================================================
 
-        const newUserUid = 'new-member-uid';
+  it('denies an organization admin from promoting a member to org_owner', async () => {
+    await seedBaseOrganization();
 
-        const newMembershipId =
-          `${newUserUid}_${ORGANIZATION_ID}`;
+    const db = authenticatedDb(ADMIN_UID);
 
-        await assertSucceeds(
-          setDoc(
-            doc(
-              db,
-              `organizationMemberships/${newMembershipId}`,
-            ),
-            {
-              userId: newUserUid,
-              organizationId: ORGANIZATION_ID,
-              role: 'org_member',
-              active: true,
-            },
-          ),
-        );
-      },
+    await assertFails(
+      updateDoc(doc(db, `organizationMemberships/${memberMembershipId}`), {
+        role: 'org_owner',
+      }),
     );
+  });
 
-    it(
-      'allows a platform admin to create an org_owner membership',
-      async () => {
-        await seedBaseOrganization();
-        await seedPlatformAdmin();
+  it('allows an organization admin to change a member to another non-owner role', async () => {
+    await seedBaseOrganization();
 
-        const db = authenticatedDb(
-          PLATFORM_ADMIN_UID,
-        );
+    const db = authenticatedDb(ADMIN_UID);
 
-        const newOwnerUid =
-          'platform-created-owner';
-
-        const newMembershipId =
-          `${newOwnerUid}_${ORGANIZATION_ID}`;
-
-        await assertSucceeds(
-          setDoc(
-            doc(
-              db,
-              `organizationMemberships/${newMembershipId}`,
-            ),
-            {
-              userId: newOwnerUid,
-              organizationId: ORGANIZATION_ID,
-              role: 'org_owner',
-              active: true,
-            },
-          ),
-        );
-
-        await assertSucceeds(
-          getDoc(
-            doc(
-              db,
-              `organizationMemberships/${newMembershipId}`,
-            ),
-          ),
-        );
-      },
+    await assertSucceeds(
+      updateDoc(doc(db, `organizationMemberships/${memberMembershipId}`), {
+        role: 'org_manager',
+      }),
     );
+  });
 
-    // ==========================================================
-    // UPDATE
-    // ==========================================================
-
-    it(
-      'denies an organization admin from promoting a member to org_owner',
-      async () => {
-        await seedBaseOrganization();
-
-        const db = authenticatedDb(ADMIN_UID);
-
-        await assertFails(
-          updateDoc(
-            doc(
-              db,
-              `organizationMemberships/${memberMembershipId}`,
-            ),
-            {
-              role: 'org_owner',
-            },
-          ),
-        );
-      },
+  it('denies an organization admin from changing a membership userId', async () => {
+    await seedBaseOrganization();
+    const db = authenticatedDb(ADMIN_UID);
+    await assertFails(
+      updateDoc(doc(db, `organizationMemberships/${memberMembershipId}`), {
+        userId: 'different-user-uid',
+      }),
     );
+  });
 
-    it(
-      'allows an organization admin to change a member to another non-owner role',
-      async () => {
-        await seedBaseOrganization();
-
-        const db = authenticatedDb(ADMIN_UID);
-
-        await assertSucceeds(
-          updateDoc(
-            doc(
-              db,
-              `organizationMemberships/${memberMembershipId}`,
-            ),
-            {
-              role: 'org_manager',
-            },
-          ),
-        );
-      },
+  it('denies an organization admin from changing a membership organizationId', async () => {
+    await seedBaseOrganization();
+    const db = authenticatedDb(ADMIN_UID);
+    await assertFails(
+      updateDoc(doc(db, `organizationMemberships/${memberMembershipId}`), {
+        organizationId: 'another-organization',
+      }),
     );
+  });
 
-    // ==========================================================
-    // DELETE
-    // ==========================================================
-
-    it(
-      'denies an organization owner from deleting their own membership',
-      async () => {
-        await seedBaseOrganization();
-
-        const db = authenticatedDb(OWNER_UID);
-
-        await assertFails(
-          deleteDoc(
-            doc(
-              db,
-              `organizationMemberships/${ownerMembershipId}`,
-            ),
-          ),
-        );
-      },
+  it('denies an organization admin from changing their own role', async () => {
+    await seedBaseOrganization();
+    const db = authenticatedDb(ADMIN_UID);
+    const adminMembershipId = `${ADMIN_UID}_${ORGANIZATION_ID}`;
+    await assertFails(
+      updateDoc(doc(db, `organizationMemberships/${adminMembershipId}`), { role: 'org_manager' }),
     );
+  });
 
-    it(
-      'allows an organization admin to delete a non-owner membership',
-      async () => {
-        await seedBaseOrganization();
+  // ==========================================================
+  // DELETE
+  // ==========================================================
 
-        const db = authenticatedDb(ADMIN_UID);
+  it('denies an organization owner from deleting their own membership', async () => {
+    await seedBaseOrganization();
 
-        await assertSucceeds(
-          deleteDoc(
-            doc(
-              db,
-              `organizationMemberships/${memberMembershipId}`,
-            ),
-          ),
-        );
-      },
-    );
-  },
-);
+    const db = authenticatedDb(OWNER_UID);
+
+    await assertFails(deleteDoc(doc(db, `organizationMemberships/${ownerMembershipId}`)));
+  });
+
+  it('allows an organization admin to delete a non-owner membership', async () => {
+    await seedBaseOrganization();
+
+    const db = authenticatedDb(ADMIN_UID);
+
+    await assertSucceeds(deleteDoc(doc(db, `organizationMemberships/${memberMembershipId}`)));
+  });
+});

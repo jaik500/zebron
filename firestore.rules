@@ -422,7 +422,7 @@ function isOrganizationRestricted(organizationId) {
           ]
         );
 
-      allow update: if isPlatformAdmin()
+           allow update: if isPlatformAdmin()
         || (
           isOrganizationConfigurable(organizationId)
           && isOrganizationAdmin(organizationId)
@@ -432,6 +432,18 @@ function isOrganizationRestricted(organizationId) {
           && request.resource.data.applicationId
             == resource.data.applicationId
           && request.resource.data.status != "active"
+
+          // Prevent organization admins from changing fields
+          // controlled by trusted provisioning operations.
+          && !request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasAny([
+              "provisioningStrategy",
+              "provisionedAt",
+              "provisioningError",
+              "activatedBy",
+              "activatedAt"
+            ])
         );
 
       allow delete: if isPlatformAdmin()
@@ -582,26 +594,48 @@ match /organizationInvitations/{invitationId} {
     ]
   );
 
-    allow update: if isPlatformAdmin()
-  || (
-    isOrganizationOperational(resource.data.get("organizationId", ""))
-    && isOrganizationAdmin(resource.data.get("organizationId", ""))
+   allow update: if isPlatformAdmin()
+    || ( isOrganizationOperational(
+       resource.data.get("organizationId", "")
+        ) && isOrganizationAdmin(
+           resource.data.get("organizationId", "")
+            )
+
+    // Preserve membership identity.
     && request.resource.data.get("userId", "")
-      == resource.data.get("userId", "")
-    && request.resource.data.get("organizationId", "")
+     == resource.data.get("userId", "")
+     && request.resource.data.get("organizationId", "")
       == resource.data.get("organizationId", "")
+
+    // Organization admins cannot assign the owner role.
     && request.resource.data.get("role", "") in [
-      "org_admin",
-      "org_manager",
-      "org_staff",
-      "org_member"
-    ]
+       "org_admin",
+       "org_manager",
+       "org_staff",
+       "org_member"
+       ]
+
+    // Prevent an administrator from changing their own role.
     && (
       request.auth.uid != resource.data.get("userId", "")
       || request.resource.data.get("role", "")
-        == resource.data.get("role", "")
-    )
-  );
+      == resource.data.get("role", "")
+      )
+
+    // Restrict updates to explicitly approved fields.
+
+    && request.resource.data.diff(resource.data)
+    .affectedKeys()
+    .hasOnly([
+      "role",
+      "active",
+      "displayName",
+      "email",
+      "title",
+      "phoneNumber",
+      "updatedAt"
+      ])
+    );
 
       allow delete: if isPlatformAdmin()
         || (
