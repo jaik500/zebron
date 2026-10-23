@@ -18,10 +18,6 @@ import {
   getApplicationProvisioningPolicy,
 } from "./application-provisioning-policy";
 
-import {
-  provisionOrganizationApplications,
-} from "./application-provisioning";
-
 import {randomUUID} from "node:crypto";
 
 /*
@@ -1183,63 +1179,6 @@ return {
   provisioningResults: [],
 };
 
-/*
- * Do not automatically provision every existing entitlement here.
- *
- * Organization recovery must not change unrelated application
- * statuses or attempt custom provisioning for applications that
- * have no registered provisioning handler.
- *
- * Entitlement creation and application provisioning are separate
- * lifecycle operations.
- */
-/*
- * --------------------------------------------------------------
- * APPLICATION PROVISIONING
- * --------------------------------------------------------------
- *
- * Always process the foundational Core entitlement and the
- * applications explicitly requested by this organization.
- *
- * Do not automatically provision unrelated entitlements.
- * Organization onboarding remains a separate lifecycle.
- */
-
-const requestedApplicationIds = [
-  ...new Set([
-    "core",
-    ...(result.requestedApplications ?? []),
-  ]),
-];
-
-const provisioningResults =
-  await provisionOrganizationApplications(
-    db,
-    organizationId,
-    admin.uid,
-    {
-      mode: "requested",
-      applicationIds: requestedApplicationIds,
-    },
-  );
-
-logger.info(
-  "Organization provisioning completed.",
-  {
-    requestId,
-    organizationId,
-    alreadyProvisioned: result.alreadyProvisioned,
-    actorId: admin.uid,
-    provisioningResults,
-  },
-);
-
-return {
-  success: true,
-  requestId,
-  ...result,
-  provisioningResults,
-};
   },
   //
   

@@ -1616,24 +1616,24 @@ function canCreateTestCenterDocument(organizationId) {
     }
 
     /**
- * Verifies that a topic exists and belongs to the specified
- * organization and course.
- *
- * Missing topics must fail authorization safely rather than
- * causing an evaluation error when accessing topic.data.
- */
-function testCenterTopicBelongsToOrganization(
-  topicId,
-  organizationId,
-  courseId
-) {
-  let topicPath =
-    /databases/$(database)/documents/testTopics/$(topicId);
+     * Verifies that a topic exists and belongs to the specified
+     * organization and course.
+     *
+     * Missing topics must fail authorization safely rather than
+     * causing an evaluation error when accessing topic.data.
+     */
+    function testCenterTopicBelongsToOrganization(
+      topicId,
+      organizationId,
+      courseId
+    ) {
+      let topicPath =
+        /databases/$(database)/documents/testTopics/$(topicId);
 
-  return exists(topicPath)
-    && get(topicPath).data.organizationId == organizationId
-    && get(topicPath).data.courseId == courseId;
-}
+      return exists(topicPath)
+        && get(topicPath).data.organizationId == organizationId
+        && get(topicPath).data.courseId == courseId;
+    }
 
     function canCreateTestCenterTopic(
       organizationId,

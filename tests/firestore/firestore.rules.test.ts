@@ -96,6 +96,26 @@ describe('Zebron Firestore Security Rules', () => {
   });
 }
 
+
+async function seedTestCenterEntitlement(
+  organizationId: string,
+  status: 'active' | 'selected' | 'suspended' = 'active',
+): Promise<void> {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(
+      doc(
+        context.firestore(),
+        `organizations/${organizationId}/applications/test-center`,
+      ),
+      {
+        status,
+      },
+    );
+  });
+}
+
+
+
   async function seedGroup(
     groupId: string,
     organizationId: string,
@@ -948,6 +968,7 @@ describe('organizations', () => {
     it('allows an organization member to read a program in their organization', async () => {
       await seedOrganization('org-1');
       await seedOrganizationMembership('member-1', 'org-1', 'org_member');
+      await seedTestCenterEntitlement('org-1');
 
       await testEnv.withSecurityRulesDisabled(async (context) => {
         await setDoc(doc(context.firestore(), 'testPrograms/program-1'), {
@@ -989,6 +1010,7 @@ describe('organizations', () => {
     it('allows an organization manager to create a program', async () => {
       await seedOrganization('org-1');
       await seedOrganizationMembership('manager-1', 'org-1', 'org_manager');
+      await seedTestCenterEntitlement('org-1');
 
       const db = testEnv.authenticatedContext('manager-1').firestore();
 
@@ -1007,6 +1029,7 @@ describe('organizations', () => {
     it('allows an organization admin to create a program', async () => {
       await seedOrganization('org-1');
       await seedOrganizationMembership('admin-1', 'org-1', 'org_admin');
+      await seedTestCenterEntitlement('org-1');
 
       const db = testEnv.authenticatedContext('admin-1').firestore();
 
@@ -1061,6 +1084,7 @@ describe('organizations', () => {
     it('allows an organization manager to update a program in their organization', async () => {
       await seedOrganization('org-1');
       await seedOrganizationMembership('manager-1', 'org-1', 'org_manager');
+      await seedTestCenterEntitlement('org-1');
 
       await testEnv.withSecurityRulesDisabled(async (context) => {
         await setDoc(doc(context.firestore(), 'testPrograms/program-1'), {

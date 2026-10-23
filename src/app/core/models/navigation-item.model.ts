@@ -1,37 +1,38 @@
 import { FeatureAvailability } from './feature-config.model';
 
-export interface NavigationItem {
+/**
+
+* Defines an item that can appear in application navigation.
+*
+* `applicationId` is optional. When provided, the item is visible only
+* when the selected organization has that application activated.
+*
+* This is a UI visibility rule, not a security boundary. Routes and backend
+* operations must independently enforce application access.
+  */
+  export interface NavigationItem {
   key: string;
   label: string;
   route: string;
   icon: string;
 
-  /**
-   * Optional feature configuration key.
-   *
-   * When present, navigation visibility and availability
-   * are controlled by FeatureConfigService.
-   */
-  featureKey?: string;
+/** Global feature configuration key. */
+featureKey?: string;
 
-  /**
-   * Whether authentication is required.
-   */
-  requiresAuth?: boolean;
+/** Organization application entitlement required to show this item. */
+applicationId?: string;
 
-  /**
-   * Whether administrator privileges are required.
-   */
-  requiresAdmin?: boolean;
+requiresAuth?: boolean;
+requiresAdmin?: boolean;
 
-  /**
-   * Optional children for grouped navigation.
-   */
-  children?: NavigationItem[];
+children?: NavigationItem[];
 }
 
-export interface NavigationItemState
-  extends NavigationItem {
+/**
+
+* Navigation item with its resolved runtime visibility and availability.
+  */
+  export interface NavigationItemState extends NavigationItem {
   availability?: FeatureAvailability;
   visible: boolean;
-}
+  }

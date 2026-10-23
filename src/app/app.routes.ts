@@ -10,6 +10,7 @@ import { applicationAccessGuard } from './core/guards/application-access.guard';
 import { resourceResolver } from './features/resources/resolvers/resource.resolver';
 
 import { AboutComponent } from './features/about/pages/about/about.component';
+import { testCenterOrganizationGuard } from './core/guards/test-center-organization.guard';
 
 export const routes: Routes = [
 
@@ -539,7 +540,7 @@ export const routes: Routes = [
   // -----------------------------------------------------
   {
     path: 'test-center',
-    canActivate: [featureGuard],
+    canActivate: [testCenterOrganizationGuard],
     data: {
       featureKey: 'test-center',
       title: 'Test Center',
