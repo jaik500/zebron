@@ -9,14 +9,9 @@ import express from 'express';
 
 import { join } from 'node:path';
 
-import {
-  getApps,
-  initializeApp,
-} from 'firebase-admin/app';
+import { getApps, initializeApp } from 'firebase-admin/app';
 
-import {
-  getFirestore,
-} from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 
 /**
  * Initialize Firebase Admin for server-side operations.
@@ -30,12 +25,9 @@ import {
  * service account in Google Cloud.
  */
 const projectId =
-  process.env['GOOGLE_CLOUD_PROJECT'] ??
-  process.env['GCLOUD_PROJECT'] ??
-  'zebron-2b49f';
+  process.env['GOOGLE_CLOUD_PROJECT'] ?? process.env['GCLOUD_PROJECT'] ?? 'zebron-2b49f';
 
-const useFirestoreEmulator =
-  process.env['ZEBRON_USE_FIRESTORE_EMULATOR'] === 'true';
+const useFirestoreEmulator = process.env['ZEBRON_USE_FIRESTORE_EMULATOR'] === 'true';
 
 if (useFirestoreEmulator) {
   const emulatorHost = process.env['FIRESTORE_EMULATOR_HOST'];
@@ -43,7 +35,7 @@ if (useFirestoreEmulator) {
   if (!emulatorHost) {
     throw new Error(
       'ZEBRON_USE_FIRESTORE_EMULATOR=true requires FIRESTORE_EMULATOR_HOST, ' +
-      'for example 127.0.0.1:8080.',
+        'for example 127.0.0.1:8080.',
     );
   }
 
@@ -51,18 +43,12 @@ if (useFirestoreEmulator) {
   // initialized. Set/check it before calling getFirestore below.
   process.env['FIRESTORE_EMULATOR_HOST'] = emulatorHost;
 
-  console.info(
-    `[Firestore] Using emulator at ${emulatorHost} (project ${projectId}).`,
-  );
+  console.info(`[Firestore] Using emulator at ${emulatorHost} (project ${projectId}).`);
 } else {
-  console.info(
-    `[Firestore] Using Google Cloud credentials (project ${projectId}).`,
-  );
+  console.info(`[Firestore] Using Google Cloud credentials (project ${projectId}).`);
 }
 
-const adminApp =
-  getApps()[0] ??
-  initializeApp({ projectId });
+const adminApp = getApps()[0] ?? initializeApp({ projectId });
 
 /**
  * Server-side Firestore instance.
@@ -83,9 +69,7 @@ const app = express();
  */
 function toIsoString(value: unknown): string | undefined {
   if (value instanceof Date) {
-    return Number.isNaN(value.getTime())
-      ? undefined
-      : value.toISOString();
+    return Number.isNaN(value.getTime()) ? undefined : value.toISOString();
   }
 
   if (!value || typeof value !== 'object') {
@@ -103,10 +87,7 @@ function toIsoString(value: unknown): string | undefined {
   try {
     const date = timestamp.toDate();
 
-    if (
-      !(date instanceof Date) ||
-      Number.isNaN(date.getTime())
-    ) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
       return undefined;
     }
 
@@ -139,9 +120,7 @@ app.get('/sitemap.xml', async (_req, res) => {
           return '';
         }
 
-        const lastModified =
-          toIsoString(data['updatedAt']) ??
-          toIsoString(data['createdAt']);
+        const lastModified = toIsoString(data['updatedAt']) ?? toIsoString(data['createdAt']);
 
         const encodedSlug = encodeURIComponent(slug);
 
@@ -183,31 +162,20 @@ app.get('/sitemap.xml', async (_req, res) => {
   xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${staticUrls}${resourceUrls}
 </urlset>`;
 
-    res
-      .type('application/xml')
-      .send(sitemap);
- } catch (error: unknown) {
-  console.error('Failed to generate sitemap:', {
-    projectId,
-    errorName:
-      error instanceof Error ? error.name : 'UnknownError',
-    errorMessage:
-      error instanceof Error ? error.message : String(error),
-    errorCode:
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error
-        ? String(error.code)
-        : undefined,
-    stack:
-      error instanceof Error ? error.stack : undefined,
-  });
-
-  res
-    .status(500)
-    .type('text/plain')
-    .send('Unable to generate sitemap.');
-}
+    res.type('application/xml').send(sitemap);
+  } catch (error: unknown) {
+    console.error('Failed to generate sitemap:', {
+      projectId,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorCode:
+        typeof error === 'object' && error !== null && 'code' in error
+          ? String(error.code)
+          : undefined,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    res.status(500).type('text/plain').send('Unable to generate sitemap.');
+  }
 });
 
 /**
@@ -241,11 +209,7 @@ app.use(
 app.use((req, res, next) => {
   angularApp
     .handle(req)
-    .then((response) =>
-      response
-        ? writeResponseToNodeResponse(response, res)
-        : next(),
-    )
+    .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
     .catch(next);
 });
 
@@ -253,10 +217,7 @@ app.use((req, res, next) => {
  * Start the server when this module is the main entry point,
  * or when it is run through PM2.
  */
-if (
-  isMainModule(import.meta.url) ||
-  process.env['pm_id']
-) {
+if (isMainModule(import.meta.url) || process.env['pm_id']) {
   const port = process.env['PORT'] || 4000;
 
   app.listen(port, (error) => {
@@ -264,9 +225,7 @@ if (
       throw error;
     }
 
-    console.log(
-      `Node Express server listening on http://localhost:${port}`,
-    );
+    console.log(`Node Express server listening on http://localhost:${port}`);
   });
 }
 
