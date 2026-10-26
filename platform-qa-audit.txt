@@ -1,0 +1,114 @@
+src/app/core/models/role.model.ts:10:  | 'platform-support'
+src/app/core/models/role.model.ts:52:  'platform-support': [
+src/app/core/models/user.model.ts:14:  platformRole?: PlatformRole;
+src/app/core/services/auth.service.ts:68:   * - platformRole
+src/app/core/services/auth.service.ts:171:          platformRole: user.platformRole,
+src/app/core/services/auth.service.ts:342:   *   platformRole === 'platform-admin'
+src/app/core/services/auth.service.ts:359:      user.platformRole === 'platform-admin' ||
+src/app/core/services/auth.service.ts:367:   * This intentionally checks only platformRole.
+src/app/core/services/auth.service.ts:374:      this.currentUser()?.platformRole ===
+src/app/core/services/auth.service.ts:382:  get platformRole() {
+src/app/core/services/auth.service.ts:383:    return this.currentUser()?.platformRole;
+src/app/core/services/auth.service.ts:698:    // No role or platformRole fields are accepted from this
+src/app/core/services/auth.service.ts:757:    // role, or platformRole into communityProfiles/{uid}.
+src/app/core/services/auth.service.ts:830:   * platformRole of "user".
+src/app/core/services/auth.service.ts:901:        platformRole: 'user',
+src/app/core/services/auth.service.ts:982:          platformRole:
+src/app/core/services/authorization.service.ts:100:    return user?.platformRole;
+src/app/core/services/authorization.service.ts:538:    platformRole?: PlatformRole,
+src/app/core/services/authorization.service.ts:547:    if (platformRole) {
+src/app/core/services/authorization.service.ts:550:          platformRole
+src/app/core/services/authorization.service.ts:601:    const platformRole =
+src/app/core/services/authorization.service.ts:609:      platformRole,
+src/app/core/services/authorization.service.ts:621:    platformRole?: PlatformRole,
+src/app/core/services/authorization.service.ts:627:        platformRole,
+src/app/core/services/qa.service.ts:239:    'qaTesters',
+src/app/core/services/qa.service.ts:328:    'qaTesters',
+src/app/core/services/qa.service.ts:360: * The client never writes directly to qaTesters.
+src/app/core/services/qa.service.ts:382:    'setQaTesterStatus',
+src/app/core/services/user-admin.service.ts:31: * platformRole is the canonical platform authorization field.
+src/app/core/services/user-admin.service.ts:40:  platformRole?: PlatformRole;
+src/app/core/services/user-admin.service.ts:48:  platformRole: PlatformRole;
+src/app/core/services/user-admin.service.ts:223:   * Platform authorization is supplied through platformRole.
+src/app/core/services/user-admin.service.ts:312:      platformRole:
+src/app/core/services/user-admin.service.ts:381:   * - validating platformRole changes
+src/app/core/services/user-admin.service.ts:436:   * The client never writes platformRole directly to Firestore.
+src/app/core/services/user-admin.service.ts:440:    platformRole: PlatformRole,
+src/app/core/services/user-admin.service.ts:454:        platformRole,
+src/app/features/admin/pages/users/user-admin.component.ts:557:                        [class.bg-[#007979]/10]="user.platformRole === 'platform-admin'"
+src/app/features/admin/pages/users/user-admin.component.ts:558:                        [class.text-[#007979]]="user.platformRole === 'platform-admin'"
+src/app/features/admin/pages/users/user-admin.component.ts:559:                        [class.bg-gray-100]="user.platformRole !== 'platform-admin'"
+src/app/features/admin/pages/users/user-admin.component.ts:560:                        [class.text-gray-700]="user.platformRole !== 'platform-admin'"
+src/app/features/admin/pages/users/user-admin.component.ts:562:                        {{ user.platformRole || 'User' }}
+src/app/features/admin/pages/users/user-admin.component.ts:568:                      @if (qaTestersLoading()) {
+src/app/features/admin/pages/users/user-admin.component.ts:584:                            [disabled]="isUpdatingQaTester(user.id) || qaTestersLoading()"
+src/app/features/admin/pages/users/user-admin.component.ts:765:                    [class.bg-[#007979]/10]="user.platformRole === 'platform-admin'"
+src/app/features/admin/pages/users/user-admin.component.ts:766:                    [class.text-[#007979]]="user.platformRole === 'platform-admin'"
+src/app/features/admin/pages/users/user-admin.component.ts:767:                    [class.bg-gray-100]="user.platformRole !== 'platform-admin'"
+src/app/features/admin/pages/users/user-admin.component.ts:768:                    [class.text-gray-700]="user.platformRole !== 'platform-admin'"
+src/app/features/admin/pages/users/user-admin.component.ts:770:                    {{ user.platformRole || 'User' }}
+src/app/features/admin/pages/users/user-admin.component.ts:786:                      @if (qaTestersLoading()) {
+src/app/features/admin/pages/users/user-admin.component.ts:803:                      [disabled]="isUpdatingQaTester(user.id) || qaTestersLoading()"
+src/app/features/admin/pages/users/user-admin.component.ts:1171:                    [(ngModel)]="form.platformRole"
+src/app/features/admin/pages/users/user-admin.component.ts:1185:                    <option value="platform-support">Platform Support</option>
+src/app/features/admin/pages/users/user-admin.component.ts:1768:  readonly qaTesters = signal<QaTester[]>([]);
+src/app/features/admin/pages/users/user-admin.component.ts:1770:  readonly qaTestersLoading = signal(false);
+src/app/features/admin/pages/users/user-admin.component.ts:1837:        user.platformRole,
+src/app/features/admin/pages/users/user-admin.component.ts:1877:    this.qaTestersLoading.set(true);
+src/app/features/admin/pages/users/user-admin.component.ts:1880:      this.qaTesters.set(await this.qaService.getAllTesters());
+src/app/features/admin/pages/users/user-admin.component.ts:1885:      this.qaTestersLoading.set(false);
+src/app/features/admin/pages/users/user-admin.component.ts:1890:    return this.qaTesters().some((tester) => tester.id === userId && tester.active);
+src/app/features/admin/pages/users/user-admin.component.ts:1899:    if (this.isUpdatingQaTester(user.id) || this.qaTestersLoading()) {
+src/app/features/admin/pages/users/user-admin.component.ts:1909:      this.qaTesters.update((testers) => {
+src/app/features/admin/pages/users/user-admin.component.ts:1994:      platformRole: user.platformRole,
+src/app/features/admin/pages/users/user-admin.component.ts:2125:          platformRole: this.form.platformRole,
+src/app/features/admin/pages/users/user-admin.component.ts:2171:        platformRole: this.form.platformRole,
+src/app/features/admin/pages/users/user-admin.component.ts:2421:      platformRole: undefined,
+src/app/features/admin/pages/users/user-admin.component.ts:2454:  platformRole?: PlatformRole;
+functions/src/index.ts:74:  | "platform-support"
+functions/src/index.ts:80:  "platform-support",
+functions/src/index.ts:115: *   platformRole == "platform-admin"
+functions/src/index.ts:120: * The legacy role is only honored when platformRole
+functions/src/index.ts:150: * Canonical authorization uses platformRole.
+functions/src/index.ts:153: * existing users whose platformRole has not yet been
+functions/src/index.ts:157:  profileData?.["platformRole"] === "platform-admin" ||
+functions/src/index.ts:159:    profileData?.["platformRole"] === undefined &&
+functions/src/index.ts:199:export const setQaTesterStatus = onCall(
+functions/src/index.ts:236:      .collection("qaTesters")
+functions/src/index.ts:336: * working during the platformRole migration.
+functions/src/index.ts:338:    const callerPlatformRole = adminData?.["platformRole"];
+functions/src/index.ts:362:  platformRole?: unknown;
+functions/src/index.ts:379:      clean(data.platformRole);
+functions/src/index.ts:384:     * New callers should provide platformRole.
+functions/src/index.ts:391:    let platformRole: PlatformRole | null = null;
+functions/src/index.ts:405:      platformRole =
+functions/src/index.ts:410:      platformRole =
+functions/src/index.ts:461:        platformRole,
+functions/src/index.ts:504:      platformRole,
+functions/src/index.ts:514:      platformRole,
+functions/src/index.ts:2649:        user["platformRole"] === "platform-admin" ||
+functions/src/index.ts:2651:          user["platformRole"] === undefined &&
+functions/src/index.ts:3194:            user["platformRole"] ===
+functions/src/index.ts:3197:              user["platformRole"] === undefined &&
+functions/src/organization-lifecycle.ts:65: * - platformRole === "platform-admin"
+functions/src/organization-lifecycle.ts:66: * - Legacy role === "admin", when platformRole is absent.
+functions/src/organization-lifecycle.ts:99:      "platformRole",
+functions/src/organization-lifecycle.ts:103:    profile["platformRole"] === "platform-admin" ||
+functions/src/organization-provisioning.ts:113: *   platformRole: "platform-admin"
+functions/src/organization-provisioning.ts:150:    profile["platformRole"] === "platform-admin";
+firestore.rules:25:     *   platformRole == "platform-admin"
+firestore.rules:31:     * is only honored when platformRole does not yet exist.
+firestore.rules:42:            ).data.keys().hasAny(["platformRole"])
+firestore.rules:45:            ).data.get("platformRole", "") == "platform-admin"
+firestore.rules:51:            ).data.keys().hasAny(["platformRole"])
+firestore.rules:1492:      && request.resource.data.get("platformRole", "") != "platform-admin"
+firestore.rules:1503:              !resource.data.keys().hasAny(["platformRole"])
+firestore.rules:1504:              && !request.resource.data.keys().hasAny(["platformRole"])
+firestore.rules:1508:              resource.data.keys().hasAny(["platformRole"])
+firestore.rules:1509:              && request.resource.data.keys().hasAny(["platformRole"])
+firestore.rules:1510:              && request.resource.data.platformRole
+firestore.rules:1511:                == resource.data.platformRole
+firestore.rules:3034:     * qaTesters/{userId} document with active == true.
+firestore.rules:3041:          /databases/$(database)/documents/qaTesters/$(request.auth.uid)
+firestore.rules:3044:          /databases/$(database)/documents/qaTesters/$(request.auth.uid)
+firestore.rules:3066:    match /qaTesters/{userId} {

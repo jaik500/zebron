@@ -1,0 +1,224 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90mC:/Lessons/withDNS/zebron[39m
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mcourses[2m > [22m[2mdenies an organization admin from creating a course for another organization
+[22m[39m[2026-10-25T16:02:58.027Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fd0c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L2043:9 for 'create' @ L2043, false for 'create' @ L2058, evaluation error at L2063:24 for 'update' @ L2063, false for 'create' @ L2043, false for 'create' @ L2058
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mcourses[2m > [22m[2mdenies an organization admin from creating a course without a program
+[22m[39m[2026-10-25T16:02:58.664Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fd18 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L2043, false for 'create' @ L2058, evaluation error at L2063:24 for 'update' @ L2063, false for 'create' @ L2043, false for 'create' @ L2058
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mcourses[2m > [22m[2mdenies an organization admin from creating a course using another organization program
+[22m[39m[2026-10-25T16:02:59.378Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fd28 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L2043:9 for 'create' @ L2043, false for 'create' @ L2058, evaluation error at L2063:24 for 'update' @ L2063, false for 'create' @ L2043, false for 'create' @ L2058
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mcourses[2m > [22m[2mprevents an organization admin from moving a course to another organization
+[22m[39m[2026-10-25T16:02:59.867Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fd35 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L2063:24 for 'update' @ L2063, false for 'update' @ L2063
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mcourses[2m > [22m[2mdenies a regular member from deleting a course
+[22m[39m[2026-10-25T16:03:00.377Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fd42 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L2083:24 for 'delete' @ L2083, false for 'delete' @ L2083
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mcourses[2m > [22m[2mdenies an organization admin from creating a platform course
+[22m[39m[2026-10-25T16:03:03.812Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fd95 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L2043, evaluation error at L2058:9 for 'create' @ L2058, evaluation error at L2063:24 for 'update' @ L2063, false for 'create' @ L2043, false for 'create' @ L2058
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mallows a member to read an active topic in their organization
+[22m[39m[seedTopic] Writing: testTopics/topic-a
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mallows a member to read an active topic in their organization
+[22m[39m[seedTopic] Verification: {
+  path: [32m'testTopics/topic-a'[39m,
+  exists: [33mtrue[39m,
+  data: {
+    organizationId: [32m'organization-a'[39m,
+    courseId: [32m'course-a'[39m,
+    name: [32m'Topic topic-a'[39m,
+    slug: [32m'topic-a'[39m,
+    description: [32m'Topic topic-a'[39m,
+    sortOrder: [33m1[39m,
+    questionCount: [33m0[39m,
+    active: [33mtrue[39m,
+    createdAt: [32m'2026-09-22T00:00:00.000Z'[39m,
+    updatedAt: [32m'2026-09-22T00:00:00.000Z'[39m
+  }
+}
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mdenies a member from reading a topic in another organization
+[22m[39m[seedTopic] Writing: testTopics/topic-b
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mdenies a member from reading a topic in another organization
+[22m[39m[seedTopic] Verification: {
+  path: [32m'testTopics/topic-b'[39m,
+  exists: [33mtrue[39m,
+  data: {
+    organizationId: [32m'organization-b'[39m,
+    courseId: [32m'course-b'[39m,
+    name: [32m'Topic topic-b'[39m,
+    slug: [32m'topic-b'[39m,
+    description: [32m'Topic topic-b'[39m,
+    sortOrder: [33m1[39m,
+    questionCount: [33m0[39m,
+    active: [33mtrue[39m,
+    createdAt: [32m'2026-09-22T00:00:00.000Z'[39m,
+    updatedAt: [32m'2026-09-22T00:00:00.000Z'[39m
+  }
+}
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mdenies an organization admin from creating a topic under another organization course
+[22m[39m[2026-10-25T16:03:07.043Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fddd error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L2115:9 for 'create' @ L2115, evaluation error at L2123:9 for 'update' @ L2123, false for 'create' @ L2115
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mprevents moving a topic between organizations
+[22m[39m[seedTopic] Writing: testTopics/topic-a
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mprevents moving a topic between organizations
+[22m[39m[seedTopic] Verification: {
+  path: [32m'testTopics/topic-a'[39m,
+  exists: [33mtrue[39m,
+  data: {
+    organizationId: [32m'organization-a'[39m,
+    courseId: [32m'course-a'[39m,
+    name: [32m'Topic topic-a'[39m,
+    slug: [32m'topic-a'[39m,
+    description: [32m'Topic topic-a'[39m,
+    sortOrder: [33m1[39m,
+    questionCount: [33m0[39m,
+    active: [33mtrue[39m,
+    createdAt: [32m'2026-09-22T00:00:00.000Z'[39m,
+    updatedAt: [32m'2026-09-22T00:00:00.000Z'[39m
+  }
+}
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mprevents moving a topic between organizations
+[22m[39m[2026-10-25T16:03:07.650Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fdec error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L2123:9 for 'update' @ L2123, false for 'update' @ L2123
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mprevents moving a topic to another course
+[22m[39m[seedTopic] Writing: testTopics/topic-a
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mprevents moving a topic to another course
+[22m[39m[seedTopic] Verification: {
+  path: [32m'testTopics/topic-a'[39m,
+  exists: [33mtrue[39m,
+  data: {
+    organizationId: [32m'organization-a'[39m,
+    courseId: [32m'course-a'[39m,
+    name: [32m'Topic topic-a'[39m,
+    slug: [32m'topic-a'[39m,
+    description: [32m'Topic topic-a'[39m,
+    sortOrder: [33m1[39m,
+    questionCount: [33m0[39m,
+    active: [33mtrue[39m,
+    createdAt: [32m'2026-09-22T00:00:00.000Z'[39m,
+    updatedAt: [32m'2026-09-22T00:00:00.000Z'[39m
+  }
+}
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mtopics[2m > [22m[2mprevents moving a topic to another course
+[22m[39m[2026-10-25T16:03:08.420Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fdfc error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L2123:9 for 'update' @ L2123, false for 'update' @ L2123
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mquestions[2m > [22m[2mallows an organization admin to create a question in their organization
+[22m[39mTOPIC DIAGNOSTIC: { topicId: [32m'topic-a'[39m, exists: [33mfalse[39m, data: [90mundefined[39m }
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mquestions[2m > [22m[2mdenies a regular member from creating a question
+[22m[39m[2026-10-25T16:03:12.360Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fe4d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L2164:9 for 'create' @ L2164, evaluation error at L2174:9 for 'update' @ L2174, false for 'create' @ L2164
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mquestions[2m > [22m[2mdenies an organization admin from creating a question under another organization course
+[22m[39m[seedTopic] Writing: testTopics/topic-b
+
+[90mstdout[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mquestions[2m > [22m[2mdenies an organization admin from creating a question under another organization course
+[22m[39m[seedTopic] Verification: {
+  path: [32m'testTopics/topic-b'[39m,
+  exists: [33mtrue[39m,
+  data: {
+    organizationId: [32m'organization-b'[39m,
+    courseId: [32m'course-b'[39m,
+    name: [32m'Topic topic-b'[39m,
+    slug: [32m'topic-b'[39m,
+    description: [32m'Topic topic-b'[39m,
+    sortOrder: [33m1[39m,
+    questionCount: [33m0[39m,
+    active: [33mtrue[39m,
+    createdAt: [32m'2026-09-22T00:00:00.000Z'[39m,
+    updatedAt: [32m'2026-09-22T00:00:00.000Z'[39m
+  }
+}
+
+[90mstderr[2m | tests/firestore/test-center.rules.test.ts[2m > [22m[2mZebron Firestore Security Rules - Test Center[2m > [22m[2mquestions[2m > [22m[2mdenies an organization admin from creating a question under another organization course
+[22m[39m[2026-10-25T16:03:13.263Z]  @firebase/firestore: Firestore (12.17.0): GrpcConnection RPC 'Write' stream 0x6948fe60 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L2164:9 for 'create' @ L2164, evaluation error at L2174:9 for 'update' @ L2174, false for 'create' @ L2164
+
+ [31m❯[39m tests/firestore/test-center.rules.test.ts [2m([22m[2m38 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 24860[2mms[22m[39m
+       [33m[2m✓[22m[39m allows an organization member to read an active course in their organization [33m 862[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an organization member from reading a course in another organization [33m 833[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an authenticated user without organization membership from reading an organization course [33m 422[2mms[22m[39m
+       [33m[2m✓[22m[39m allows an organization admin to create a course in their organization [33m 498[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an organization admin from creating a course for another organization [33m 715[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an organization admin from creating a course without a program [33m 630[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an organization admin from creating a course using another organization program [33m 714[2mms[22m[39m
+       [33m[2m✓[22m[39m prevents an organization admin from moving a course to another organization [33m 491[2mms[22m[39m
+       [33m[2m✓[22m[39m denies a regular member from deleting a course [33m 508[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an unscoped course query that could cross organizations [33m 800[2mms[22m[39m
+       [33m[2m✓[22m[39m allows an authenticated user without an organization to read an active platform course [33m 455[2mms[22m[39m
+       [33m[2m✓[22m[39m allows an authenticated organization member to read an active platform course [33m 500[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an unauthenticated user from reading a platform course [33m 403[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an authenticated user from reading an inactive platform course [33m 431[2mms[22m[39m
+       [33m[2m✓[22m[39m allows a constrained platform course query without organization membership [33m 342[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an organization admin from creating a platform course [33m 501[2mms[22m[39m
+       [33m[2m✓[22m[39m allows a platform administrator to create a platform course [33m 343[2mms[22m[39m
+       [33m[2m✓[22m[39m allows a member to read an active topic in their organization [33m 699[2mms[22m[39m
+       [33m[2m✓[22m[39m denies a member from reading a topic in another organization [33m 928[2mms[22m[39m
+       [33m[2m✓[22m[39m allows an organization admin to create a topic in their organization [33m 569[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an organization admin from creating a topic under another organization course [33m 693[2mms[22m[39m
+       [33m[2m✓[22m[39m prevents moving a topic between organizations [33m 605[2mms[22m[39m
+       [33m[2m✓[22m[39m prevents moving a topic to another course [33m 771[2mms[22m[39m
+       [33m[2m✓[22m[39m allows a member to read a published question in their organization [33m 635[2mms[22m[39m
+       [33m[2m✓[22m[39m denies a member from reading a question in another organization [33m 857[2mms[22m[39m
+       [33m[2m✓[22m[39m denies a regular member from reading a draft question [33m 713[2mms[22m[39m
+       [33m[2m✓[22m[39m allows an organization admin to read a draft question [33m 687[2mms[22m[39m
+[31m       [31m×[31m allows an organization admin to create a question in their organization[39m[33m 529[2mms[22m[39m
+       [33m[2m✓[22m[39m denies a regular member from creating a question [33m 516[2mms[22m[39m
+       [33m[2m✓[22m[39m denies an organization admin from creating a question under another organization course [33m 911[2mms[22m[39m
+       [33m[2m✓[22m[39m allows a member to read their own attempt [33m 589[2mms[22m[39m
+       [33m[2m✓[22m[39m denies a member from reading another users attempt [33m 516[2mms[22m[39m
+       [33m[2m✓[22m[39m allows an organization admin to read an attempt in their organization [33m 499[2mms[22m[39m
+       [33m[2m✓[22m[39m denies a member from reading an attempt in another organization [33m 648[2mms[22m[39m
+       [33m[2m✓[22m[39m allows a member to read their own result [33m 531[2mms[22m[39m
+       [33m[2m✓[22m[39m denies a member from reading another users result [33m 628[2mms[22m[39m
+       [33m[2m✓[22m[39m allows an organization admin to read a result in their organization [33m 554[2mms[22m[39m
+       [33m[2m✓[22m[39m denies a member from reading a result in another organization [33m 625[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/firestore/test-center.rules.test.ts[2m > [22mZebron Firestore Security Rules - Test Center[2m > [22mquestions[2m > [22mallows an organization admin to create a question in their organization
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/firestore/test-center.rules.test.ts:[2m1622:34[22m[39m
+    [90m1620|[39m   })[33m;[39m
+    [90m1621|[39m
+    [90m1622|[39m   [34mexpect[39m(topicSnapshot[33m.[39m[34mexists[39m())[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   |[39m                                  [31m^[39m
+    [90m1623|[39m   [34mexpect[39m(topicSnapshot[33m.[39m[34mdata[39m()[33m?.[39morganizationId)[33m.[39m[34mtoBe[39m([33mORG_A[39m)[33m;[39m
+    [90m1624|[39m   [34mexpect[39m(topicSnapshot[33m.[39m[34mdata[39m()[33m?.[39mcourseId)[33m.[39m[34mtoBe[39m([33mCOURSE_A[39m)[33m;[39m
+[90m [2m❯[22m RulesTestEnvironmentImpl.withSecurityRulesDisabled node_modules/@firebase/rules-unit-testing/src/impl/test_environment.ts:[2m76:6[22m[39m
+[90m [2m❯[22m tests/firestore/test-center.rules.test.ts:[2m1609:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m37 passed[39m[22m[90m (38)[39m
+[2m   Start at [22m 12:02:51
+[2m   Duration [22m 26.05s[2m (transform 187ms, setup 0ms, import 687ms, tests 24.86s, environment 0ms)[22m
+
