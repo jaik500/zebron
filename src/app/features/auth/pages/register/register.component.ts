@@ -211,7 +211,7 @@ export class RegisterComponent {
       );
 
       // New users are regular users, not administrators.
-      await this.router.navigate(['/resources']);
+      await this.router.navigate(['/']);
     } catch (error) {
       console.error('Registration failed:', error);
 
