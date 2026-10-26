@@ -278,6 +278,8 @@ async function seedPlatformCourse(
   );
 }
 
+
+
 async function seedTopic(
   topicId: string,
   organizationId: string,
@@ -286,31 +288,43 @@ async function seedTopic(
 ): Promise<void> {
   await testEnv.withSecurityRulesDisabled(
     async (context) => {
-      await setDoc(
-        doc(
-          context.firestore(),
-          `testTopics/${topicId}`,
-        ),
-        {
-          organizationId,
-          courseId,
+      const db = context.firestore();
+      const topicRef = doc(db, `testTopics/${topicId}`);
 
-          name: `Topic ${topicId}`,
-          slug: topicId,
-          description: `Topic ${topicId}`,
+      const topicData = {
+        organizationId,
+        courseId,
+        name: `Topic ${topicId}`,
+        slug: topicId,
+        description: `Topic ${topicId}`,
+        sortOrder: 1,
+        questionCount: 0,
+        active,
+        createdAt: TEST_DATE,
+        updatedAt: TEST_DATE,
+      };
 
-          sortOrder: 1,
-          questionCount: 0,
+      console.log('[seedTopic] Writing:', topicRef.path);
 
-          active,
+      await setDoc(topicRef, topicData);
 
-          createdAt: TEST_DATE,
-          updatedAt: TEST_DATE,
-        },
-      );
+      const snapshot = await getDoc(topicRef);
+
+      console.log('[seedTopic] Verification:', {
+        path: topicRef.path,
+        exists: snapshot.exists(),
+        data: snapshot.data(),
+      });
+
+      if (!snapshot.exists()) {
+        throw new Error(
+          `[seedTopic] Topic document was not found after writing: ${topicRef.path}`,
+        );
+      }
     },
   );
 }
+
 
 async function seedQuestion(
   questionId: string,
@@ -1582,80 +1596,63 @@ describe(
           },
         );
 
-        it.skip(
-          'allows an organization admin to create a question in their organization',
-          async () => {
-            await seedOrganizationAUsers();
+it(
+  'allows an organization admin to create a question in their organization',
+  async () => {
+    await seedOrganizationAUsers();
 
-            await seedCourse(
-              COURSE_A,
-              ORG_A,
-            );
+    await seedCourse(COURSE_A, ORG_A);
 
-         await seedTopic(
-  TOPIC_A,
-  ORG_A,
-  COURSE_A,
+    await seedTopic(TOPIC_A, ORG_A, COURSE_A);
+
+    // Verify the topic fixture before testing question authorization.
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+
+      const topicSnapshot = await getDoc(
+        doc(db, `testTopics/${TOPIC_A}`),
+      );
+
+      console.log('[question-create-test] Topic verification:', {
+        topicId: TOPIC_A,
+        exists: topicSnapshot.exists(),
+        data: topicSnapshot.data(),
+      });
+
+      expect(topicSnapshot.exists()).toBe(true);
+      expect(topicSnapshot.data()?.organizationId).toBe(ORG_A);
+      expect(topicSnapshot.data()?.courseId).toBe(COURSE_A);
+    });
+
+    const db = testEnv
+      .authenticatedContext(ADMIN_A)
+      .firestore();
+
+    await assertSucceeds(
+      setDoc(
+        doc(db, 'testQuestions/question-new'),
+        {
+          organizationId: ORG_A,
+          courseId: COURSE_A,
+          topicId: TOPIC_A,
+          question: 'New question',
+          type: 'multiple-choice',
+          options: [
+            { id: 'a', text: 'A' },
+            { id: 'b', text: 'B' },
+          ],
+          correctAnswer: 'a',
+          difficulty: 'medium',
+          tags: [],
+          sourceType: 'original',
+          status: 'draft',
+          createdAt: TEST_DATE,
+          updatedAt: TEST_DATE,
+        },
+      ),
+    );
+  },
 );
-
-
-
-// Keep the existing question-creation test below this point.
-
-            const db =
-              testEnv
-                .authenticatedContext(
-                  ADMIN_A,
-                )
-                .firestore();
-
-            await assertSucceeds(
-              setDoc(
-                doc(
-                  db,
-                  'testQuestions/question-new',
-                ),
-                {
-                  organizationId: ORG_A,
-
-                  courseId: COURSE_A,
-
-                  topicId: TOPIC_A,
-
-                  question:
-                    'New question',
-
-                  type:
-                    'multiple-choice',
-
-                  options: [
-                    {
-                      id: 'a',
-                      text: 'A',
-                    },
-                    {
-                      id: 'b',
-                      text: 'B',
-                    },
-                  ],
-
-                  correctAnswer: 'a',
-
-                  difficulty: 'medium',
-
-                  tags: [],
-
-                  sourceType: 'original',
-
-                  status: 'draft',
-
-                  createdAt: TEST_DATE,
-                  updatedAt: TEST_DATE,
-                },
-              ),
-            );
-          },
-        );
 
         it(
           'denies a regular member from creating a question',
@@ -2046,6 +2043,122 @@ describe(
             );
           },
         );
+
+        it(
+  'diagnoses course and topic reads for question creation',
+  async () => {
+    await seedOrganizationAUsers();
+    await seedCourse(COURSE_A, ORG_A);
+    await seedTopic(TOPIC_A, ORG_A, COURSE_A);
+
+    const db = testEnv
+      .authenticatedContext(ADMIN_A)
+      .firestore();
+
+    const courseSnapshot = await getDoc(
+      doc(db, `testCourses/${COURSE_A}`),
+    );
+
+    const topicSnapshot = await getDoc(
+      doc(db, `testTopics/${TOPIC_A}`),
+    );
+
+    console.log('[question diagnostic]', {
+      courseExists: courseSnapshot.exists(),
+      courseData: courseSnapshot.data(),
+      topicExists: topicSnapshot.exists(),
+      topicData: topicSnapshot.data(),
+    });
+
+    expect(courseSnapshot.exists()).toBe(true);
+    expect(topicSnapshot.exists()).toBe(true);
+  },
+);
+
+it(
+  'diagnoses topic ownership validation for question creation',
+  async () => {
+    await seedOrganizationAUsers();
+    await seedCourse(COURSE_A, ORG_A);
+    await seedTopic(TOPIC_A, ORG_A, COURSE_A);
+
+    const db = testEnv
+      .authenticatedContext(ADMIN_A)
+      .firestore();
+
+    await assertSucceeds(
+      setDoc(
+        doc(db, 'testQuestions/question-topic-diagnostic'),
+        {
+          organizationId: ORG_A,
+          courseId: COURSE_A,
+          topicId: TOPIC_A,
+          question: 'Topic ownership diagnostic',
+          type: 'multiple-choice',
+          options: [
+            { id: 'a', text: 'A' },
+            { id: 'b', text: 'B' },
+          ],
+          correctAnswer: 'a',
+          difficulty: 'medium',
+          tags: [],
+          sourceType: 'original',
+          status: 'draft',
+          createdAt: TEST_DATE,
+          updatedAt: TEST_DATE,
+        },
+      ),
+    );
+  },
+);
+
+it(
+  'diagnoses direct topic ownership lookup',
+  async () => {
+    await seedOrganizationAUsers();
+    await seedCourse(COURSE_A, ORG_A);
+    await seedTopic(TOPIC_A, ORG_A, COURSE_A);
+
+    const db = testEnv
+      .authenticatedContext(ADMIN_A)
+      .firestore();
+
+    // Verify the topic exists and is readable.
+    const topicSnapshot = await getDoc(
+      doc(db, `testTopics/${TOPIC_A}`),
+    );
+
+    expect(topicSnapshot.exists()).toBe(true);
+    expect(topicSnapshot.data()?.organizationId).toBe(ORG_A);
+    expect(topicSnapshot.data()?.courseId).toBe(COURSE_A);
+
+    // Test the same topic reference in a question write.
+    await assertSucceeds(
+      setDoc(
+        doc(db, 'testQuestions/question-direct-topic-check'),
+        {
+          organizationId: ORG_A,
+          courseId: COURSE_A,
+          topicId: TOPIC_A,
+          question: 'Direct topic lookup diagnostic',
+          type: 'multiple-choice',
+          options: [
+            { id: 'a', text: 'A' },
+            { id: 'b', text: 'B' },
+          ],
+          correctAnswer: 'a',
+          difficulty: 'medium',
+          tags: [],
+          sourceType: 'original',
+          status: 'draft',
+          createdAt: TEST_DATE,
+          updatedAt: TEST_DATE,
+        },
+      ),
+    );
+  },
+);
+
       },
     );
   },
