@@ -879,9 +879,11 @@ interface TopicForm {
                 <h2 class="text-xl font-bold text-gray-900">Topics</h2>
 
                 <p class="mt-1 text-sm text-gray-500">
-                  {{ topics().length }}
-                  topic{{ topics().length === 1 ? '' : 's' }}
-                  across your organization's courses.
+                  {{ filteredTopics().length }}
+                  topic{{ filteredTopics().length === 1 ? '' : 's' }}
+                  {{ selectedProgramId() === 'all'
+                    ? "across your organization's courses."
+                    : 'in ' + selectedProgramName() + '.' }}
                 </p>
               </div>
 
@@ -890,7 +892,7 @@ interface TopicForm {
               }
             </div>
 
-            @if (!loadingTopics() && topics().length === 0) {
+            @if (!loadingTopics() && filteredTopics().length === 0) {
               <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center">
                 <mat-icon class="!h-10 !w-10 !text-4xl text-gray-400"> topic </mat-icon>
 
@@ -914,7 +916,7 @@ interface TopicForm {
             } @else if (!loadingTopics()) {
               <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
                 <div class="divide-y divide-gray-100">
-                  @for (topic of topics(); track topic.id) {
+                  @for (topic of filteredTopics(); track topic.id) {
                     <div
                       class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
                     >
@@ -1058,6 +1060,29 @@ export class PartnerTestCenterComponent implements OnInit {
     }
 
     return this.courses().filter((course) => course.programId === selectedProgramId);
+  });
+
+  /**
+   * Filter the topic directory by the selected program.
+   *
+   * Topics belong to courses, and each course belongs to a program.
+   * Resolve the selected program through the parent course so the
+   * directory stays consistent with the course cards above.
+   */
+  protected readonly filteredTopics = computed(() => {
+    const selectedProgramId = this.selectedProgramId();
+
+    if (selectedProgramId === 'all') {
+      return this.topics();
+    }
+
+    const matchingCourseIds = new Set(
+      this.courses()
+        .filter((course) => course.programId === selectedProgramId)
+        .map((course) => course.id),
+    );
+
+    return this.topics().filter((topic) => matchingCourseIds.has(topic.courseId));
   });
 
   protected readonly selectedProgramName = computed(() => {
@@ -1413,31 +1438,48 @@ export class PartnerTestCenterComponent implements OnInit {
   // ============================================================
 
   protected editTopic(topic: TestTopic): void {
+    // Guard the action even though the button is hidden for unauthorized users.
     if (!this.context.canManageCourses()) {
-      this.toast.error('You do not have permission to edit Test Center topics.');
-
+      this.toast.error(
+        'You do not have permission to edit Test Center topics.',
+      );
       return;
     }
 
+    if (!topic?.id) {
+      this.toast.error('The selected topic could not be identified.');
+      return;
+    }
+
+    // Populate the existing form before opening it so the form is ready to edit.
     this.topicForm = {
-      courseId: topic.courseId,
-
+      courseId: topic.courseId ?? '',
       name: topic.name ?? '',
-
       slug: topic.slug ?? '',
-
       description: topic.description ?? '',
-
       sortOrder: Number.isFinite(topic.sortOrder) ? topic.sortOrder : 0,
-
       questionCount: topic.questionCount ?? 0,
-
       active: topic.active === true,
     };
 
     this.editingTopicId.set(topic.id);
-
     this.showTopicForm.set(true);
+
+    // Wait for Angular to render the conditional form, then bring it into view.
+    setTimeout(() => {
+      const formElement = document.getElementById('topic-form');
+      if (!formElement) {
+        console.warn(
+          '[Test Center] Topic form was opened, but #topic-form was not rendered.',
+        );
+        return;
+      }
+
+      formElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 100);
   }
 
   // ============================================================

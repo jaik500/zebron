@@ -1762,12 +1762,19 @@ function testCenterTopicBelongsToOrganization(
         );
     }
 
+/**
+ * Authorizes question creation by Test Center administrators
+ * and active members of the owning organization.
+ *
+ * Organization members may create questions for review.
+ * Administrative permissions for editing and deletion remain separate.
+ */
 function canCreateTestCenterQuestion(
   organizationId,
   courseId,
   topicId
 ) {
-  return isTestCenterAdmin(organizationId)
+  return isTestCenterMember(organizationId)
     && testCenterTopicBelongsToOrganization(
       topicId,
       organizationId,
