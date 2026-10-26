@@ -1,5 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
@@ -7,7 +9,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule],
   template: `
     <main class="min-h-screen bg-gray-50 px-4 py-10 sm:px-6">
       <div class="mx-auto max-w-md">
@@ -47,15 +49,9 @@ import { AuthService } from '../../../../core/services/auth.service';
           <div class="p-6 sm:p-8">
             <form class="space-y-5" (ngSubmit)="register()">
               <!-- Display name -->
-              <div>
-                <label
-                  for="displayName"
-                  class="block text-sm font-semibold text-gray-800"
-                >
-                  Full name
-                </label>
-
-                <input
+              <mat-form-field appearance="outline" class="auth-field">
+  <mat-label>Full name</mat-label>
+  <input
                   id="displayName"
                   name="displayName"
                   type="text"
@@ -63,27 +59,13 @@ import { AuthService } from '../../../../core/services/auth.service';
                   required
                   autocomplete="name"
                   placeholder="Your name"
-                  class="mt-2 block w-full rounded-xl border
-                         border-gray-200 bg-gray-50 px-4 py-3
-                         text-gray-900 shadow-sm transition
-                         placeholder:text-gray-400
-                         hover:border-gray-300 hover:bg-white
-                         focus:border-[#007979] focus:bg-white
-                         focus:outline-none focus:ring-4
-                         focus:ring-[#007979]/10"
                 />
-              </div>
+</mat-form-field>
 
               <!-- Email -->
-              <div>
-                <label
-                  for="email"
-                  class="block text-sm font-semibold text-gray-800"
-                >
-                  Email
-                </label>
-
-                <input
+              <mat-form-field appearance="outline" class="auth-field">
+  <mat-label>Email</mat-label>
+  <input
                   id="email"
                   name="email"
                   type="email"
@@ -91,27 +73,13 @@ import { AuthService } from '../../../../core/services/auth.service';
                   required
                   autocomplete="email"
                   placeholder="you@example.com"
-                  class="mt-2 block w-full rounded-xl border
-                         border-gray-200 bg-gray-50 px-4 py-3
-                         text-gray-900 shadow-sm transition
-                         placeholder:text-gray-400
-                         hover:border-gray-300 hover:bg-white
-                         focus:border-[#007979] focus:bg-white
-                         focus:outline-none focus:ring-4
-                         focus:ring-[#007979]/10"
                 />
-              </div>
+</mat-form-field>
 
               <!-- Password -->
-              <div>
-                <label
-                  for="password"
-                  class="block text-sm font-semibold text-gray-800"
-                >
-                  Password
-                </label>
-
-                <input
+              <mat-form-field appearance="outline" class="auth-field">
+  <mat-label>Password</mat-label>
+  <input
                   id="password"
                   name="password"
                   type="password"
@@ -120,27 +88,13 @@ import { AuthService } from '../../../../core/services/auth.service';
                   minlength="6"
                   autocomplete="new-password"
                   placeholder="At least 6 characters"
-                  class="mt-2 block w-full rounded-xl border
-                         border-gray-200 bg-gray-50 px-4 py-3
-                         text-gray-900 shadow-sm transition
-                         placeholder:text-gray-400
-                         hover:border-gray-300 hover:bg-white
-                         focus:border-[#007979] focus:bg-white
-                         focus:outline-none focus:ring-4
-                         focus:ring-[#007979]/10"
                 />
-              </div>
+</mat-form-field>
 
               <!-- Confirm password -->
-              <div>
-                <label
-                  for="confirmPassword"
-                  class="block text-sm font-semibold text-gray-800"
-                >
-                  Confirm password
-                </label>
-
-                <input
+              <mat-form-field appearance="outline" class="auth-field">
+  <mat-label>Confirm password</mat-label>
+  <input
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
@@ -148,16 +102,8 @@ import { AuthService } from '../../../../core/services/auth.service';
                   required
                   autocomplete="new-password"
                   placeholder="Enter your password again"
-                  class="mt-2 block w-full rounded-xl border
-                         border-gray-200 bg-gray-50 px-4 py-3
-                         text-gray-900 shadow-sm transition
-                         placeholder:text-gray-400
-                         hover:border-gray-300 hover:bg-white
-                         focus:border-[#007979] focus:bg-white
-                         focus:outline-none focus:ring-4
-                         focus:ring-[#007979]/10"
                 />
-              </div>
+</mat-form-field>
 
               @if (error()) {
                 <div
@@ -205,6 +151,12 @@ import { AuthService } from '../../../../core/services/auth.service';
       </div>
     </main>
   `,
+  styles: [`
+    :host { display: block; }
+    .auth-field { display: block; width: 100%; min-width: 0; margin-bottom: 8px; }
+    mat-form-field { box-sizing: border-box; }
+    @media (max-width: 640px) { .auth-field { font-size: 16px; } }
+  `],
 })
 export class RegisterComponent {
   private readonly authService = inject(AuthService);
@@ -231,6 +183,11 @@ export class RegisterComponent {
 
     if (!email) {
       this.error.set('Please enter your email address.');
+      return;
+    }
+
+    if (this.password.length < 6) {
+      this.error.set('Password must be at least 6 characters.');
       return;
     }
 

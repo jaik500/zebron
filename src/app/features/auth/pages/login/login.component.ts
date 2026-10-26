@@ -1,5 +1,7 @@
 import { Component, inject, signal, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
@@ -8,7 +10,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule],
   template: `
     <main class="min-h-[calc(100vh-4rem)] bg-gray-50 px-4 py-4 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-md">
@@ -61,12 +63,9 @@ import { HotToastService } from '@ngxpert/hot-toast';
           <div class="p-6 sm:px-8 sm:py-4">
             <form class="space-y-4" (ngSubmit)="login()">
               <!-- Email -->
-              <div>
-                <label for="email" class="block text-sm font-semibold text-gray-700">
-                  Email address
-                </label>
-
-                <input
+              <mat-form-field appearance="outline" class="auth-field">
+  <mat-label>Email address</mat-label>
+  <input
                   id="email"
                   name="email"
                   type="email"
@@ -74,27 +73,13 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   required
                   autocomplete="email"
                   placeholder="you@example.com"
-                  class="mt-2 block w-full rounded-xl border
-                         border-gray-200 bg-gray-50/70 px-4 py-3.5
-                         text-sm text-gray-900 shadow-sm
-                         transition-all duration-200
-                         placeholder:text-gray-400
-                         hover:border-gray-300 hover:bg-white
-                         focus:border-[#007979] focus:bg-white
-                         focus:outline-none focus:ring-4
-                         focus:ring-[#007979]/10"
                 />
-              </div>
+</mat-form-field>
 
               <!-- Password -->
               <div>
-                <div class="flex items-center justify-between">
-                  <label for="password" class="block text-sm font-semibold text-gray-700">
-                    Password
-                  </label>
-                </div>
-
-                <div class="relative mt-2">
+                <mat-form-field appearance="outline" class="auth-field">
+                  <mat-label>Password</mat-label>
                   <input
                     id="password"
                     name="password"
@@ -103,23 +88,13 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     required
                     autocomplete="current-password"
                     placeholder="Enter your password"
-                    class="block w-full rounded-xl border
-                           border-gray-200 bg-gray-50/70 px-4 py-3.5 pr-12
-                           text-sm text-gray-900 shadow-sm
-                           transition-all duration-200
-                           placeholder:text-gray-400
-                           hover:border-gray-300 hover:bg-white
-                           focus:border-[#007979] focus:bg-white
-                           focus:outline-none focus:ring-4
-                           focus:ring-[#007979]/10"
                   />
 
                   <button
                     type="button"
                     (click)="showPassword.update(value => !value)"
-                    class="absolute inset-y-0 right-0 flex items-center
-                           px-4 text-gray-500 transition
-                           hover:text-[#032D42]"
+                    matSuffix
+                    class="!mr-1 !rounded-md !px-3 !py-2 !text-gray-500 hover:!text-[#032D42]"
                     [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
                   >
                     @if (showPassword()) {
@@ -184,7 +159,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                       </svg>
                     }
                   </button>
-                </div>
+                </mat-form-field>
               </div>
 
               <!-- Error -->
@@ -324,6 +299,12 @@ import { HotToastService } from '@ngxpert/hot-toast';
       </ng-template>
     </main>
   `,
+  styles: [`
+    :host { display: block; }
+    .auth-field { display: block; width: 100%; min-width: 0; margin-bottom: 8px; }
+    mat-form-field { box-sizing: border-box; }
+    @media (max-width: 640px) { .auth-field { font-size: 16px; } }
+  `],
 })
 export class LoginComponent {
   private readonly authService = inject(AuthService);
