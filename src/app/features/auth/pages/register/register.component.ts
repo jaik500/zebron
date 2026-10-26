@@ -1,4 +1,3 @@
-
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -12,12 +11,11 @@ import { AuthService } from '../../../../core/services/auth.service';
   template: `
     <main class="min-h-screen bg-gray-50 px-4 py-10 sm:px-6">
       <div class="mx-auto max-w-md">
-
         <!-- Back to resources -->
         <a
           routerLink="/resources"
-          class="text-sm font-medium text-gray-600
-                 transition hover:text-[#032D42]"
+          class="inline-flex items-center text-sm font-medium
+                 text-gray-600 transition hover:text-[#032D42]"
         >
           ← Back to resources
         </a>
@@ -27,7 +25,6 @@ import { AuthService } from '../../../../core/services/auth.service';
           class="mt-8 overflow-hidden rounded-2xl
                  border border-gray-200 bg-white shadow-sm"
         >
-
           <!-- Header -->
           <div class="bg-[#032D42] px-6 py-7 text-white sm:px-8">
             <p
@@ -48,16 +45,12 @@ import { AuthService } from '../../../../core/services/auth.service';
 
           <!-- Form -->
           <div class="p-6 sm:p-8">
-            <form
-              class="space-y-5"
-              (ngSubmit)="register()"
-            >
-
+            <form class="space-y-5" (ngSubmit)="register()">
               <!-- Display name -->
               <div>
                 <label
                   for="displayName"
-                  class="block text-sm font-medium text-gray-700"
+                  class="block text-sm font-semibold text-gray-800"
                 >
                   Full name
                 </label>
@@ -70,15 +63,14 @@ import { AuthService } from '../../../../core/services/auth.service';
                   required
                   autocomplete="name"
                   placeholder="Your name"
-                  class="mt-1 block w-full rounded-lg
-                         border border-gray-300 bg-white
-                         px-4 py-2.5 text-gray-800 shadow-sm
-                         transition
-                         hover:border-gray-400
-                         focus:border-[#032D42]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#032D42]/20"
+                  class="mt-2 block w-full rounded-xl border
+                         border-gray-200 bg-gray-50 px-4 py-3
+                         text-gray-900 shadow-sm transition
+                         placeholder:text-gray-400
+                         hover:border-gray-300 hover:bg-white
+                         focus:border-[#007979] focus:bg-white
+                         focus:outline-none focus:ring-4
+                         focus:ring-[#007979]/10"
                 />
               </div>
 
@@ -86,7 +78,7 @@ import { AuthService } from '../../../../core/services/auth.service';
               <div>
                 <label
                   for="email"
-                  class="block text-sm font-medium text-gray-700"
+                  class="block text-sm font-semibold text-gray-800"
                 >
                   Email
                 </label>
@@ -99,15 +91,14 @@ import { AuthService } from '../../../../core/services/auth.service';
                   required
                   autocomplete="email"
                   placeholder="you@example.com"
-                  class="mt-1 block w-full rounded-lg
-                         border border-gray-300 bg-white
-                         px-4 py-2.5 text-gray-800 shadow-sm
-                         transition
-                         hover:border-gray-400
-                         focus:border-[#032D42]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#032D42]/20"
+                  class="mt-2 block w-full rounded-xl border
+                         border-gray-200 bg-gray-50 px-4 py-3
+                         text-gray-900 shadow-sm transition
+                         placeholder:text-gray-400
+                         hover:border-gray-300 hover:bg-white
+                         focus:border-[#007979] focus:bg-white
+                         focus:outline-none focus:ring-4
+                         focus:ring-[#007979]/10"
                 />
               </div>
 
@@ -115,7 +106,7 @@ import { AuthService } from '../../../../core/services/auth.service';
               <div>
                 <label
                   for="password"
-                  class="block text-sm font-medium text-gray-700"
+                  class="block text-sm font-semibold text-gray-800"
                 >
                   Password
                 </label>
@@ -129,15 +120,14 @@ import { AuthService } from '../../../../core/services/auth.service';
                   minlength="6"
                   autocomplete="new-password"
                   placeholder="At least 6 characters"
-                  class="mt-1 block w-full rounded-lg
-                         border border-gray-300 bg-white
-                         px-4 py-2.5 text-gray-800 shadow-sm
-                         transition
-                         hover:border-gray-400
-                         focus:border-[#032D42]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#032D42]/20"
+                  class="mt-2 block w-full rounded-xl border
+                         border-gray-200 bg-gray-50 px-4 py-3
+                         text-gray-900 shadow-sm transition
+                         placeholder:text-gray-400
+                         hover:border-gray-300 hover:bg-white
+                         focus:border-[#007979] focus:bg-white
+                         focus:outline-none focus:ring-4
+                         focus:ring-[#007979]/10"
                 />
               </div>
 
@@ -145,7 +135,7 @@ import { AuthService } from '../../../../core/services/auth.service';
               <div>
                 <label
                   for="confirmPassword"
-                  class="block text-sm font-medium text-gray-700"
+                  class="block text-sm font-semibold text-gray-800"
                 >
                   Confirm password
                 </label>
@@ -158,21 +148,21 @@ import { AuthService } from '../../../../core/services/auth.service';
                   required
                   autocomplete="new-password"
                   placeholder="Enter your password again"
-                  class="mt-1 block w-full rounded-lg
-                         border border-gray-300 bg-white
-                         px-4 py-2.5 text-gray-800 shadow-sm
-                         transition
-                         hover:border-gray-400
-                         focus:border-[#032D42]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#032D42]/20"
+                  class="mt-2 block w-full rounded-xl border
+                         border-gray-200 bg-gray-50 px-4 py-3
+                         text-gray-900 shadow-sm transition
+                         placeholder:text-gray-400
+                         hover:border-gray-300 hover:bg-white
+                         focus:border-[#007979] focus:bg-white
+                         focus:outline-none focus:ring-4
+                         focus:ring-[#007979]/10"
                 />
               </div>
 
               @if (error()) {
                 <div
-                  class="rounded-lg border border-red-200
+                  role="alert"
+                  class="rounded-xl border border-red-200
                          bg-red-50 p-4 text-sm text-red-700"
                 >
                   {{ error() }}
@@ -183,10 +173,12 @@ import { AuthService } from '../../../../core/services/auth.service';
               <button
                 type="submit"
                 [disabled]="loading()"
-                class="w-full rounded-lg bg-[#007979]
-                       px-5 py-3 font-medium text-white
+                class="w-full rounded-xl bg-[#007979]
+                       px-5 py-3 font-semibold text-white
                        shadow-sm transition
-                       hover:bg-[#02405A]
+                       hover:bg-[#006666]
+                       focus:outline-none focus:ring-2
+                       focus:ring-[#007979]/30
                        disabled:cursor-not-allowed
                        disabled:opacity-50"
               >
@@ -203,8 +195,7 @@ import { AuthService } from '../../../../core/services/auth.service';
               Already have an account?
               <a
                 routerLink="/login"
-                class="font-semibold text-[#032D42]
-                       hover:underline"
+                class="font-semibold text-[#032D42] hover:underline"
               >
                 Sign in
               </a>
@@ -244,9 +235,7 @@ export class RegisterComponent {
     }
 
     if (this.password.length < 6) {
-      this.error.set(
-        'Password must be at least 6 characters.'
-      );
+      this.error.set('Password must be at least 6 characters.');
       return;
     }
 
@@ -277,4 +266,3 @@ export class RegisterComponent {
     }
   }
 }
-

@@ -62,7 +62,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
             <form class="space-y-4" (ngSubmit)="login()">
               <!-- Email -->
               <div>
-                <label for="email" class="block text-sm font-semibold text-gray-800">
+                <label for="email" class="block text-sm font-semibold text-gray-700">
                   Email address
                 </label>
 
@@ -74,22 +74,22 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   required
                   autocomplete="email"
                   placeholder="you@example.com"
-                  class="mt-2 block w-full rounded-lg border
-                         border-gray-300 bg-white px-4 py-3
-                         text-gray-900 shadow-sm
-                         transition placeholder:text-gray-400
-                         hover:border-gray-400
-                         focus:border-[#032D42]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#032D42]/20"
+                  class="mt-2 block w-full rounded-xl border
+                         border-gray-200 bg-gray-50/70 px-4 py-3.5
+                         text-sm text-gray-900 shadow-sm
+                         transition-all duration-200
+                         placeholder:text-gray-400
+                         hover:border-gray-300 hover:bg-white
+                         focus:border-[#007979] focus:bg-white
+                         focus:outline-none focus:ring-4
+                         focus:ring-[#007979]/10"
                 />
               </div>
 
               <!-- Password -->
               <div>
                 <div class="flex items-center justify-between">
-                  <label for="password" class="block text-sm font-semibold text-gray-800">
+                  <label for="password" class="block text-sm font-semibold text-gray-700">
                     Password
                   </label>
                 </div>
@@ -103,15 +103,15 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     required
                     autocomplete="current-password"
                     placeholder="Enter your password"
-                    class="block w-full rounded-lg border
-                           border-gray-300 bg-white px-4 py-3 pr-12
-                           text-gray-900 shadow-sm
-                           transition placeholder:text-gray-400
-                           hover:border-gray-400
-                           focus:border-[#032D42]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#032D42]/20"
+                    class="block w-full rounded-xl border
+                           border-gray-200 bg-gray-50/70 px-4 py-3.5 pr-12
+                           text-sm text-gray-900 shadow-sm
+                           transition-all duration-200
+                           placeholder:text-gray-400
+                           hover:border-gray-300 hover:bg-white
+                           focus:border-[#007979] focus:bg-white
+                           focus:outline-none focus:ring-4
+                           focus:ring-[#007979]/10"
                   />
 
                   <button
