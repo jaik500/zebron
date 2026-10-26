@@ -246,17 +246,53 @@ export class TestQuestionService {
       question.courseId,
     );
 
-    const reference = await addDoc(
-      this.questionsCollection,
-      {
-        ...question,
-        organizationId,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      },
-    );
+    // Log the exact identifiers and status being submitted so a Firestore
+    // permission failure can be traced to the write rather than the ownership
+    // checks above. Do not log question text, answer options, or other content.
+    console.log('[TestQuestionService] Creating question', {
+      organizationId,
+      courseId: question.courseId,
+      topicId: question.topicId,
+      status: question.status,
+      type: question.type,
+    });
 
-    return reference.id;
+    try {
+      const reference = await addDoc(
+        this.questionsCollection,
+        {
+          ...question,
+          organizationId,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+      );
+
+      console.log('[TestQuestionService] Question created successfully', {
+        questionId: reference.id,
+        organizationId,
+        courseId: question.courseId,
+        topicId: question.topicId,
+        status: question.status,
+      });
+
+      return reference.id;
+    } catch (error) {
+      console.error(
+        '[TestQuestionService] Question creation failed',
+        {
+          organizationId,
+          courseId: question.courseId,
+          topicId: question.topicId,
+          status: question.status,
+          error,
+        },
+      );
+
+      // Preserve the Firebase error so the calling component can display it
+      // and the browser console retains the original failure details.
+      throw error;
+    }
   }
 
   async updateQuestion(
@@ -425,48 +461,115 @@ export class TestQuestionService {
     );
   }
 
-  private async verifyCourseOwnership(
-    organizationId: string,
-    courseId: string,
-  ): Promise<void> {
-    const snapshot = await getDoc(
+
+private async verifyCourseOwnership(
+  organizationId: string,
+  courseId: string,
+): Promise<void> {
+  console.log('[TestQuestionService] Verifying course ownership', {
+    organizationId,
+    courseId,
+  });
+
+  let snapshot;
+
+  try {
+    snapshot = await getDoc(
       doc(firestore, 'testCourses', courseId),
     );
-
-    if (
-      !snapshot.exists() ||
-      snapshot.data()['organizationId'] !== organizationId
-    ) {
-      throw new Error(
-        'The selected course does not belong to the current organization.',
-      );
-    }
-  }
-
-  private async verifyTopicOwnership(
-    organizationId: string,
-    topicId: string,
-    courseId: string,
-  ): Promise<void> {
-    const snapshot = await getDoc(
-      doc(firestore, 'testTopics', topicId),
+  } catch (error) {
+    console.error(
+      '[TestQuestionService] Course ownership read failed',
+      {
+        organizationId,
+        courseId,
+        error,
+      },
     );
 
-    if (!snapshot.exists()) {
-      throw new Error('The selected topic could not be found.');
-    }
-
-    const data = snapshot.data();
-
-    if (
-      data['organizationId'] !== organizationId ||
-      data['courseId'] !== courseId
-    ) {
-      throw new Error(
-        'The selected topic does not belong to the current organization and course.',
-      );
-    }
+    throw error;
   }
+
+  if (!snapshot.exists()) {
+    throw new Error(
+      'The selected course does not exist or is not accessible.',
+    );
+  }
+
+  const data = snapshot.data();
+
+  console.log('[TestQuestionService] Course ownership result', {
+    documentId: snapshot.id,
+    organizationId: data['organizationId'],
+    scope: data['scope'],
+    accessType: data['accessType'],
+    active: data['active'],
+  });
+
+  if (data['organizationId'] !== organizationId) {
+    throw new Error(
+      'The selected course does not belong to the current organization.',
+    );
+  }
+}
+
+private async verifyTopicOwnership(
+  organizationId: string,
+  topicId: string,
+  courseId: string,
+): Promise<void> {
+  console.log('[TestQuestionService] Verifying topic ownership', {
+    organizationId,
+    topicId,
+    courseId,
+  });
+
+  let snapshot;
+
+  try {
+    snapshot = await getDoc(
+      doc(firestore, 'testTopics', topicId),
+    );
+  } catch (error) {
+    console.error(
+      '[TestQuestionService] Topic ownership read failed',
+      {
+        organizationId,
+        topicId,
+        courseId,
+        error,
+      },
+    );
+
+    throw error;
+  }
+
+  if (!snapshot.exists()) {
+    throw new Error(
+      'The selected topic does not exist or is not accessible.',
+    );
+  }
+
+  const data = snapshot.data();
+
+  console.log('[TestQuestionService] Topic ownership result', {
+    documentId: snapshot.id,
+    organizationId: data['organizationId'],
+    courseId: data['courseId'],
+    active: data['active'],
+  });
+
+  if (
+    data['organizationId'] !== organizationId ||
+    data['courseId'] !== courseId
+  ) {
+    throw new Error(
+      'The selected topic does not belong to the current organization and course.',
+    );
+  }
+}
+
+
 
   private requireOrganizationId(organizationId: string): void {
     if (!organizationId?.trim()) {

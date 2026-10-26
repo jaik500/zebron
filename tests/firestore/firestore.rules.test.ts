@@ -1516,4 +1516,57 @@ it('denies client creation of organization invitations', async () => {
   );
 });
     });
+
+    describe('testCourses', () => {
+  it('allows an active organization owner to create a course in their own program', async () => {
+    const userId = 'owner-1';
+    const organizationId = 'org-1';
+    const programId = 'program-1';
+
+    await seedUser(userId);
+    await seedOrganization(organizationId);
+    await seedOrganizationMembership(
+      userId,
+      organizationId,
+      'org_owner',
+    );
+    await seedTestCenterEntitlement(organizationId);
+
+    // Seed the program independently of the security rules.
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), `testPrograms/${programId}`),
+        {
+          organizationId,
+          name: 'Test Program',
+          slug: 'test-program',
+          description: 'Test program',
+          active: true,
+          courseCount: 0,
+        },
+      );
+    });
+
+    const db = testEnv.authenticatedContext(userId).firestore();
+
+    await assertSucceeds(
+      setDoc(doc(db, 'testCourses/course-1'), {
+        organizationId,
+        scope: 'organization',
+        accessType: 'organization-members',
+        programId,
+        name: 'Test Course',
+        slug: 'test-course',
+        description: '',
+        provider: null,
+        type: 'practice',
+        certificationCode: null,
+        imageUrl: null,
+        active: true,
+        questionCount: 0,
+      }),
+    );
+  });
+});
+
 });

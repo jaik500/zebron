@@ -123,19 +123,12 @@ async getActiveTopics(
     this.requireOrganizationId(organizationId);
     this.requireCourseId(courseId);
 
-    const topicsQuery = query(
-      this.topicsCollection,
-      where(
-        'organizationId',
-        '==',
-        organizationId,
-      ),
-      where(
-        'courseId',
-        '==',
-        courseId,
-      ),
-    );
+   const topicsQuery = query(
+  this.topicsCollection,
+  where('organizationId', '==', organizationId),
+  where('courseId', '==', courseId),
+  where('active', '==', true),
+);
 
     const snapshot = await getDocs(
       topicsQuery,

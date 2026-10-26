@@ -24,10 +24,7 @@ export class TestCourseService {
   // FIRESTORE COLLECTION
   // ============================================================
 
-  private readonly coursesCollection = collection(
-    firestore,
-    'testCourses',
-  );
+  private readonly coursesCollection = collection(firestore, 'testCourses');
 
   // ============================================================
   // GET ALL COURSES
@@ -38,33 +35,19 @@ export class TestCourseService {
    *
    * Organization scope is mandatory.
    */
-  async getAllCourses(
-    organizationId: string,
-  ): Promise<TestCourse[]> {
+  async getAllCourses(organizationId: string): Promise<TestCourse[]> {
     this.requireOrganizationId(organizationId);
-
     const q = query(
       this.coursesCollection,
-      where(
-        'organizationId',
-        '==',
-        organizationId,
-      ),
+      where('organizationId', '==', organizationId),
+      where('scope', '==', 'organization'),
+      where('accessType', '==', 'organization-members'),
+      where('active', '==', true),
     );
-
     const snapshot = await getDocs(q);
-
     return snapshot.docs
-      .map(
-        (document) =>
-          ({
-            id: document.id,
-            ...document.data(),
-          }) as TestCourse,
-      )
-      .sort((a, b) =>
-        a.name.localeCompare(b.name),
-      );
+      .map((document) => ({ id: document.id, ...document.data() }) as TestCourse)
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   // ============================================================
@@ -78,25 +61,15 @@ export class TestCourseService {
    * Name sorting is done in memory to avoid an additional
    * composite index.
    */
-  async getActiveCourses(
-    organizationId: string,
-  ): Promise<TestCourse[]> {
+  async getActiveCourses(organizationId: string): Promise<TestCourse[]> {
     this.requireOrganizationId(organizationId);
 
     const q = query(
       this.coursesCollection,
 
-      where(
-        'organizationId',
-        '==',
-        organizationId,
-      ),
+      where('organizationId', '==', organizationId),
 
-      where(
-        'active',
-        '==',
-        true,
-      ),
+      where('active', '==', true),
     );
 
     const snapshot = await getDocs(q);
@@ -109,9 +82,7 @@ export class TestCourseService {
             ...document.data(),
           }) as TestCourse,
       )
-      .sort((a, b) =>
-        a.name.localeCompare(b.name),
-      );
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   // ============================================================
@@ -127,44 +98,27 @@ export class TestCourseService {
    * Organization is optional because platform courses do not require
    * organization membership.
    */
-  async getAvailableCourses(
-    organizationId?: string | null,
-  ): Promise<TestCourse[]> {
+  async getAvailableCourses(organizationId?: string | null): Promise<TestCourse[]> {
     // ----------------------------------------------------------
     // Platform courses
     // ----------------------------------------------------------
 
     const platformQuery = query(
       this.coursesCollection,
-      where(
-        'scope',
-        '==',
-        'platform',
-      ),
-      where(
-        'accessType',
-        '==',
-        'public',
-      ),
-      where(
-        'active',
-        '==',
-        true,
-      ),
+      where('scope', '==', 'platform'),
+      where('accessType', '==', 'public'),
+      where('active', '==', true),
     );
 
-    const platformSnapshot = await getDocs(
-      platformQuery,
-    );
+    const platformSnapshot = await getDocs(platformQuery);
 
-    const platformCourses =
-      platformSnapshot.docs.map(
-        (document) =>
-          ({
-            id: document.id,
-            ...document.data(),
-          }) as TestCourse,
-      );
+    const platformCourses = platformSnapshot.docs.map(
+      (document) =>
+        ({
+          id: document.id,
+          ...document.data(),
+        }) as TestCourse,
+    );
 
     // ----------------------------------------------------------
     // Organization courses
@@ -176,48 +130,27 @@ export class TestCourseService {
       const organizationQuery = query(
         this.coursesCollection,
 
-        where(
-          'scope',
-          '==',
-          'organization',
-        ),
+        where('scope', '==', 'organization'),
 
-        where(
-          'organizationId',
-          '==',
-          organizationId,
-        ),
+        where('organizationId', '==', organizationId),
 
-        where(
-          'accessType',
-          '==',
-          'organization-members',
-        ),
+        where('accessType', '==', 'organization-members'),
 
-        where(
-          'active',
-          '==',
-          true,
-        ),
+        where('active', '==', true),
       );
 
-      const organizationSnapshot =
-        await getDocs(organizationQuery);
+      const organizationSnapshot = await getDocs(organizationQuery);
 
-      organizationCourses =
-        organizationSnapshot.docs.map(
-          (document) =>
-            ({
-              id: document.id,
-              ...document.data(),
-            }) as TestCourse,
-        );
+      organizationCourses = organizationSnapshot.docs.map(
+        (document) =>
+          ({
+            id: document.id,
+            ...document.data(),
+          }) as TestCourse,
+      );
     }
 
-    return [
-      ...platformCourses,
-      ...organizationCourses,
-    ].sort((a, b) =>
+    return [...platformCourses, ...organizationCourses].sort((a, b) =>
       a.name.localeCompare(b.name),
     );
   }
@@ -242,11 +175,7 @@ export class TestCourseService {
       return null;
     }
 
-    const reference = doc(
-      firestore,
-      'testCourses',
-      courseId,
-    );
+    const reference = doc(firestore, 'testCourses', courseId);
 
     const snapshot = await getDoc(reference);
 
@@ -254,10 +183,7 @@ export class TestCourseService {
       return null;
     }
 
-    const data = snapshot.data() as Record<
-      string,
-      unknown
-    >;
+    const data = snapshot.data() as Record<string, unknown>;
 
     const scope = data['scope'];
 
@@ -265,11 +191,7 @@ export class TestCourseService {
     // Zebron/platform course
     // ----------------------------------------------------------
 
-    if (
-      scope === 'platform' &&
-      data['accessType'] === 'public' &&
-      data['active'] === true
-    ) {
+    if (scope === 'platform' && data['accessType'] === 'public' && data['active'] === true) {
       return {
         id: snapshot.id,
         ...data,
@@ -280,11 +202,7 @@ export class TestCourseService {
     // Organization course
     // ----------------------------------------------------------
 
-    if (
-      scope === 'organization' &&
-      organizationId &&
-      data['organizationId'] === organizationId
-    ) {
+    if (scope === 'organization' && organizationId && data['organizationId'] === organizationId) {
       return {
         id: snapshot.id,
         ...data,
@@ -298,79 +216,71 @@ export class TestCourseService {
   // GET COURSE BY SLUG
   // ============================================================
 
- /**
- * Gets an active Test Center course by slug.
- *
- * Platform courses can be retrieved without an organization.
- * Organization courses require a valid organization ID.
- *
- * Firestore rules remain responsible for enforcing access.
- */
-async getCourseBySlug(
-  organizationId: string | null | undefined,
-  slug: string,
-): Promise<TestCourse | null> {
-  const normalizedSlug = this.normalizeSlug(slug);
+  /**
+   * Gets an active Test Center course by slug.
+   *
+   * Platform courses can be retrieved without an organization.
+   * Organization courses require a valid organization ID.
+   *
+   * Firestore rules remain responsible for enforcing access.
+   */
+  async getCourseBySlug(
+    organizationId: string | null | undefined,
+    slug: string,
+  ): Promise<TestCourse | null> {
+    const normalizedSlug = this.normalizeSlug(slug);
 
-  if (!normalizedSlug) {
-    return null;
-  }
-
-  const constraints = [
-    where('slug', '==', normalizedSlug),
-    where('active', '==', true),
-  ];
-
-  if (organizationId?.trim()) {
-    // Search the selected organization's courses first.
-    const organizationQuery = query(
-      this.coursesCollection,
-      where('organizationId', '==', organizationId),
-      where('slug', '==', normalizedSlug),
-      where('active', '==', true),
-    );
-
-    const organizationSnapshot = await getDocs(
-      organizationQuery,
-    );
-
-    const organizationDocument =
-      organizationSnapshot.docs[0];
-
-    if (organizationDocument) {
-      return {
-        id: organizationDocument.id,
-        ...organizationDocument.data(),
-      } as TestCourse;
+    if (!normalizedSlug) {
+      return null;
     }
+
+    const constraints = [where('slug', '==', normalizedSlug), where('active', '==', true)];
+
+    if (organizationId?.trim()) {
+      // Search the selected organization's courses first.
+      const organizationQuery = query(
+        this.coursesCollection,
+        where('organizationId', '==', organizationId),
+        where('slug', '==', normalizedSlug),
+        where('active', '==', true),
+      );
+
+      const organizationSnapshot = await getDocs(organizationQuery);
+
+      const organizationDocument = organizationSnapshot.docs[0];
+
+      if (organizationDocument) {
+        return {
+          id: organizationDocument.id,
+          ...organizationDocument.data(),
+        } as TestCourse;
+      }
+    }
+
+    // Platform courses have no owning organization.
+    // This query also allows public platform courses to be
+    // resolved when the user has not selected an organization.
+    const platformQuery = query(
+      this.coursesCollection,
+      ...constraints,
+      where('scope', '==', 'platform'),
+      where('organizationId', '==', null),
+      where('accessType', '==', 'public'),
+    );
+
+    const platformSnapshot = await getDocs(platformQuery);
+
+    const platformDocument = platformSnapshot.docs[0];
+
+    if (!platformDocument) {
+      return null;
+    }
+
+    return {
+      id: platformDocument.id,
+      ...platformDocument.data(),
+    } as TestCourse;
   }
-
-  // Platform courses have no owning organization.
-  // This query also allows public platform courses to be
-  // resolved when the user has not selected an organization.
-  const platformQuery = query(
-    this.coursesCollection,
-    ...constraints,
-    where('scope', '==', 'platform'),
-    where('organizationId', '==', null),
-    where('accessType', '==', 'public'),
-  );
-
-  const platformSnapshot = await getDocs(
-    platformQuery,
-  );
-
-  const platformDocument = platformSnapshot.docs[0];
-
-  if (!platformDocument) {
-    return null;
-  }
-
-  return {
-    id: platformDocument.id,
-    ...platformDocument.data(),
-  } as TestCourse;
-}
 
   // ============================================================
   // CREATE ORGANIZATION COURSE
@@ -406,109 +316,106 @@ async getCourseBySlug(
 
     const name = course.name?.trim() ?? '';
 
-    const slug = this.normalizeSlug(
-      course.slug,
-    );
+    const slug = this.normalizeSlug(course.slug);
 
-    const programId =
-      course.programId?.trim() ?? '';
+    const programId = course.programId?.trim() ?? '';
 
     // ----------------------------------------------------------
     // Validation
     // ----------------------------------------------------------
 
     if (!name) {
-      throw new Error(
-        'Course name is required.',
-      );
+      throw new Error('Course name is required.');
     }
 
     if (!slug) {
-      throw new Error(
-        'Course slug is required.',
-      );
+      throw new Error('Course slug is required.');
     }
 
     if (!programId) {
-      throw new Error(
-        'A program is required for organization courses.',
-      );
+      throw new Error('A program is required for organization courses.');
     }
 
     // ----------------------------------------------------------
     // Prevent duplicate slugs inside the same organization
     // ----------------------------------------------------------
 
+    console.log('[TestCourseService] Starting duplicate-slug check', {
+      organizationId,
+      slug,
+    });
+
     const existingQuery = query(
       this.coursesCollection,
-
-      where(
-        'organizationId',
-        '==',
-        organizationId,
-      ),
-
-      where(
-        'slug',
-        '==',
-        slug,
-      ),
+      where('organizationId', '==', organizationId),
+      where('scope', '==', 'organization'),
+      where('accessType', '==', 'organization-members'),
+      where('active', '==', true),
+      where('slug', '==', slug),
     );
 
-    const existingSnapshot =
-      await getDocs(existingQuery);
+    let existingSnapshot;
+
+    try {
+      existingSnapshot = await getDocs(existingQuery);
+
+      console.log('[TestCourseService] Duplicate-slug check succeeded', {
+        matchCount: existingSnapshot.size,
+      });
+    } catch (error) {
+      console.error('[TestCourseService] Duplicate-slug query failed', error);
+
+      throw error;
+    }
 
     if (!existingSnapshot.empty) {
-      throw new Error(
-        `A course with the slug "${slug}" already exists in this organization.`,
-      );
+      throw new Error(`A course with the slug "${slug}" already exists in this organization.`);
     }
 
     // ----------------------------------------------------------
     // Create
     // ----------------------------------------------------------
 
-    const reference = await addDoc(
-      this.coursesCollection,
-      {
-        organizationId,
+    console.log('[TestCourseService] Course creation request', {
+      organizationId,
+      scope: 'organization',
+      accessType: 'organization-members',
+      programId,
+      name,
+      slug,
+    });
 
-        scope: 'organization',
+    const reference = await addDoc(this.coursesCollection, {
+      organizationId,
 
-        accessType: 'organization-members',
+      scope: 'organization',
 
-        programId,
+      accessType: 'organization-members',
 
-        name,
+      programId,
 
-        slug,
+      name,
 
-        description:
-          course.description?.trim() ?? '',
+      slug,
 
-        provider:
-          course.provider?.trim() || null,
+      description: course.description?.trim() ?? '',
 
-        type: course.type,
+      provider: course.provider?.trim() || null,
 
-        certificationCode:
-          course.certificationCode?.trim() || null,
+      type: course.type,
 
-        imageUrl:
-          course.imageUrl?.trim() || null,
+      certificationCode: course.certificationCode?.trim() || null,
 
-        active:
-          course.active === true,
+      imageUrl: course.imageUrl?.trim() || null,
 
-        questionCount: 0,
+      active: course.active === true,
 
-        createdAt:
-          serverTimestamp(),
+      questionCount: 0,
 
-        updatedAt:
-          serverTimestamp(),
-      },
-    );
+      createdAt: serverTimestamp(),
+
+      updatedAt: serverTimestamp(),
+    });
 
     return reference.id;
   }
@@ -530,38 +437,30 @@ async getCourseBySlug(
    * Firestore security rules enforce the platform-admin
    * authorization boundary.
    */
-  async createPlatformCourse(
-    course: {
-      name: string;
-      slug: string;
-      description: string;
-      provider?: string;
-      type: TestCourse['type'];
-      certificationCode?: string;
-      imageUrl?: string;
-      active: boolean;
-    },
-  ): Promise<string> {
+  async createPlatformCourse(course: {
+    name: string;
+    slug: string;
+    description: string;
+    provider?: string;
+    type: TestCourse['type'];
+    certificationCode?: string;
+    imageUrl?: string;
+    active: boolean;
+  }): Promise<string> {
     const name = course.name?.trim() ?? '';
 
-    const slug = this.normalizeSlug(
-      course.slug,
-    );
+    const slug = this.normalizeSlug(course.slug);
 
     // ----------------------------------------------------------
     // Validation
     // ----------------------------------------------------------
 
     if (!name) {
-      throw new Error(
-        'Course name is required.',
-      );
+      throw new Error('Course name is required.');
     }
 
     if (!slug) {
-      throw new Error(
-        'Course slug is required.',
-      );
+      throw new Error('Course slug is required.');
     }
 
     // ----------------------------------------------------------
@@ -571,73 +470,52 @@ async getCourseBySlug(
     const existingQuery = query(
       this.coursesCollection,
 
-      where(
-        'scope',
-        '==',
-        'platform',
-      ),
+      where('scope', '==', 'platform'),
 
-      where(
-        'slug',
-        '==',
-        slug,
-      ),
+      where('slug', '==', slug),
     );
 
-    const existingSnapshot =
-      await getDocs(existingQuery);
+    const existingSnapshot = await getDocs(existingQuery);
 
     if (!existingSnapshot.empty) {
-      throw new Error(
-        `A platform course with the slug "${slug}" already exists.`,
-      );
+      throw new Error(`A platform course with the slug "${slug}" already exists.`);
     }
 
     // ----------------------------------------------------------
     // Create platform course
     // ----------------------------------------------------------
 
-    const reference = await addDoc(
-      this.coursesCollection,
-      {
-        organizationId: null,
+    const reference = await addDoc(this.coursesCollection, {
+      organizationId: null,
 
-        scope: 'platform',
+      scope: 'platform',
 
-        accessType: 'public',
+      accessType: 'public',
 
-        programId: null,
+      programId: null,
 
-        name,
+      name,
 
-        slug,
+      slug,
 
-        description:
-          course.description?.trim() ?? '',
+      description: course.description?.trim() ?? '',
 
-        provider:
-          course.provider?.trim() || null,
+      provider: course.provider?.trim() || null,
 
-        type: course.type,
+      type: course.type,
 
-        certificationCode:
-          course.certificationCode?.trim() || null,
+      certificationCode: course.certificationCode?.trim() || null,
 
-        imageUrl:
-          course.imageUrl?.trim() || null,
+      imageUrl: course.imageUrl?.trim() || null,
 
-        active:
-          course.active === true,
+      active: course.active === true,
 
-        questionCount: 0,
+      questionCount: 0,
 
-        createdAt:
-          serverTimestamp(),
+      createdAt: serverTimestamp(),
 
-        updatedAt:
-          serverTimestamp(),
-      },
-    );
+      updatedAt: serverTimestamp(),
+    });
 
     return reference.id;
   }
@@ -657,137 +535,90 @@ async getCourseBySlug(
    * Firestore rules should validate that the new program
    * belongs to the same organization.
    */
- async updateCourse(
-  organizationId: string,
-  courseId: string,
-  changes: Partial<
-    Omit<
-      TestCourse,
-      | 'id'
-      | 'organizationId'
-      | 'createdAt'
-      | 'updatedAt'
-      | 'slug'
-    >
-  >,
-): Promise<void> {
-  this.requireOrganizationId(
-    organizationId,
-  );
+  async updateCourse(
+    organizationId: string,
+    courseId: string,
+    changes: Partial<
+      Omit<TestCourse, 'id' | 'organizationId' | 'createdAt' | 'updatedAt' | 'slug'>
+    >,
+  ): Promise<void> {
+    this.requireOrganizationId(organizationId);
 
-  const existing =
-    await this.getCourseById(
-      organizationId,
-      courseId,
-    );
+    const existing = await this.getCourseById(organizationId, courseId);
 
-  if (!existing) {
-    throw new Error(
-      'Test Center course was not found in the current organization.',
-    );
+    if (!existing) {
+      throw new Error('Test Center course was not found in the current organization.');
+    }
+
+    // ----------------------------------------------------------
+    // Validate programId when supplied.
+    //
+    // Organization courses must always have a program.
+    // ----------------------------------------------------------
+
+    if (
+      changes.programId !== undefined &&
+      (typeof changes.programId !== 'string' || !changes.programId.trim())
+    ) {
+      throw new Error('A program is required for organization courses.');
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      ...changes,
+      updatedAt: serverTimestamp(),
+    };
+
+    // ----------------------------------------------------------
+    // Never allow the service caller to move the record
+    // between organizations.
+    // ----------------------------------------------------------
+
+    delete updatePayload['organizationId'];
+
+    // ----------------------------------------------------------
+    // Slug is immutable after creation.
+    // ----------------------------------------------------------
+
+    delete updatePayload['slug'];
+
+    // ----------------------------------------------------------
+    // ID is not a Firestore field, but remove it defensively.
+    // ----------------------------------------------------------
+
+    delete updatePayload['id'];
+
+    // ----------------------------------------------------------
+    // Normalize programId if supplied.
+    // ----------------------------------------------------------
+
+    if (typeof changes.programId === 'string') {
+      updatePayload['programId'] = changes.programId.trim();
+    }
+
+    // ----------------------------------------------------------
+    // Update
+    // ----------------------------------------------------------
+
+    await updateDoc(doc(firestore, 'testCourses', courseId), updatePayload);
   }
-
-  // ----------------------------------------------------------
-  // Validate programId when supplied.
-  //
-  // Organization courses must always have a program.
-  // ----------------------------------------------------------
-
-  if (
-    changes.programId !== undefined &&
-    (
-      typeof changes.programId !== 'string' ||
-      !changes.programId.trim()
-    )
-  ) {
-    throw new Error(
-      'A program is required for organization courses.',
-    );
-  }
-
-  const updatePayload: Record<
-    string,
-    unknown
-  > = {
-    ...changes,
-    updatedAt: serverTimestamp(),
-  };
-
-  // ----------------------------------------------------------
-  // Never allow the service caller to move the record
-  // between organizations.
-  // ----------------------------------------------------------
-
-  delete updatePayload[
-    'organizationId'
-  ];
-
-  // ----------------------------------------------------------
-  // Slug is immutable after creation.
-  // ----------------------------------------------------------
-
-  delete updatePayload['slug'];
-
-  // ----------------------------------------------------------
-  // ID is not a Firestore field, but remove it defensively.
-  // ----------------------------------------------------------
-
-  delete updatePayload['id'];
-
-  // ----------------------------------------------------------
-  // Normalize programId if supplied.
-  // ----------------------------------------------------------
-
-  if (typeof changes.programId === 'string') {
-    updatePayload['programId'] =
-      changes.programId.trim();
-  }
-
-  // ----------------------------------------------------------
-  // Update
-  // ----------------------------------------------------------
-
-  await updateDoc(
-    doc(
-      firestore,
-      'testCourses',
-      courseId,
-    ),
-    updatePayload,
-  );
-}
 
   // ============================================================
   // HELPERS
   // ============================================================
 
-  private requireOrganizationId(
-    organizationId: string,
-  ): void {
+  private requireOrganizationId(organizationId: string): void {
     if (!organizationId?.trim()) {
-      throw new Error(
-        'An organization is required for Test Center operations.',
-      );
+      throw new Error('An organization is required for Test Center operations.');
     }
   }
 
-  private normalizeSlug(
-    value: string,
-  ): string {
+  private normalizeSlug(value: string): string {
     return (value ?? '')
       .trim()
       .toLowerCase()
-      .replace(
-        /[^a-z0-9]+/g,
-        '-',
-      )
-      .replace(
-        /-+/g,
-        '-',
-      )
-      .replace(
-        /^-|-$/g,
-        '');
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
   // ============================================================
@@ -806,12 +637,8 @@ async getCourseBySlug(
    * only authorized platform administrators can execute the
    * unscoped collection query.
    */
-  async getAllCoursesForAdmin(): Promise<
-    TestCourse[]
-  > {
-    const snapshot = await getDocs(
-      this.coursesCollection,
-    );
+  async getAllCoursesForAdmin(): Promise<TestCourse[]> {
+    const snapshot = await getDocs(this.coursesCollection);
 
     return snapshot.docs
       .map(
@@ -821,8 +648,6 @@ async getCourseBySlug(
             ...document.data(),
           }) as TestCourse,
       )
-      .sort((a, b) =>
-        a.name.localeCompare(b.name),
-      );
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 }
