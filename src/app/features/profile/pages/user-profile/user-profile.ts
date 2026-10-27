@@ -4,6 +4,8 @@ import { Router, RouterLink } from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
@@ -16,7 +18,24 @@ import { CommunityUser } from '../../../community/models/community-user.model';
 
   standalone: true,
 
-  imports: [FormsModule, RouterLink, MatIconModule],
+  imports: [
+    FormsModule,
+    RouterLink,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
+
+  styles: [`
+    :host .tax-field {
+      display: block;
+      width: 100%;
+    }
+
+    :host .tax-field .mat-mdc-form-field-subscript-wrapper {
+      min-height: 0;
+    }
+  `],
 
   template: `
     <main class="mx-auto max-w-7xl p-6 sm:p-8 mt-9">
@@ -336,15 +355,9 @@ Mobile: Save icon only
                    Display name
                    ================================================= -->
                   <div>
-                    <label
-                      for="displayName"
-                      class="block text-sm
-                         font-medium text-gray-700"
-                    >
-                      Display name
-                    </label>
-
-                    <input
+                    <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>Display name</mat-label>
+                      <input matInput
                       id="displayName"
                       name="displayName"
                       type="text"
@@ -352,17 +365,9 @@ Mobile: Save icon only
                       required
                       autocomplete="name"
                       placeholder="Your name"
-                      class="mt-1.5 block w-full
-                         rounded-lg border
-                         border-gray-300
-                         bg-white px-4 py-2.5
-                         text-sm text-gray-900
-                         placeholder:text-gray-400
-                         focus:border-[#007979]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
+                      class="block w-full"
                     />
+                    </mat-form-field>
 
                     <p
                       class="mt-1.5 text-xs
@@ -380,61 +385,33 @@ Mobile: Save icon only
                        sm:grid-cols-2"
                   >
                     <div>
-                      <label
-                        for="firstName"
-                        class="block text-sm
-                           font-medium text-gray-700"
-                      >
-                        First name
-                      </label>
-
-                      <input
+                      <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>First name</mat-label>
+                      <input matInput
                         id="firstName"
                         name="firstName"
                         type="text"
                         [(ngModel)]="firstName"
                         autocomplete="given-name"
                         placeholder="First name"
-                        class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+                        class="block w-full"
                       />
+                    </mat-form-field>
                     </div>
 
                     <div>
-                      <label
-                        for="lastName"
-                        class="block text-sm
-                           font-medium text-gray-700"
-                      >
-                        Last name
-                      </label>
-
-                      <input
+                      <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>Last name</mat-label>
+                      <input matInput
                         id="lastName"
                         name="lastName"
                         type="text"
                         [(ngModel)]="lastName"
                         autocomplete="family-name"
                         placeholder="Last name"
-                        class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+                        class="block w-full"
                       />
+                    </mat-form-field>
                     </div>
                   </div>
 
@@ -446,62 +423,32 @@ Mobile: Save icon only
                        sm:grid-cols-2"
                   >
                     <div>
-                      <label
-                        for="preferredName"
-                        class="block text-sm
-                           font-medium text-gray-700"
-                      >
-                        Preferred name
-                        <span class="font-normal text-gray-400"> (optional) </span>
-                      </label>
-
-                      <input
+                      <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>Preferred name (optional)</mat-label>
+                      <input matInput
                         id="preferredName"
                         name="preferredName"
                         type="text"
                         [(ngModel)]="preferredName"
                         placeholder="What should we call you?"
-                        class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+                        class="block w-full"
                       />
+                    </mat-form-field>
                     </div>
 
                     <div>
-                      <label
-                        for="phone"
-                        class="block text-sm
-                           font-medium text-gray-700"
-                      >
-                        Phone number
-                        <span class="font-normal text-gray-400"> (optional) </span>
-                      </label>
-
-                      <input
+                      <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>Phone number (optional)</mat-label>
+                      <input matInput
                         id="phone"
                         name="phone"
                         type="tel"
                         [(ngModel)]="phone"
                         autocomplete="tel"
                         placeholder="(555) 555-5555"
-                        class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+                        class="block w-full"
                       />
+                    </mat-form-field>
                     </div>
                   </div>
 
@@ -509,26 +456,17 @@ Mobile: Save icon only
                    Email
                    ================================================= -->
                   <div>
-                    <label
-                      for="email"
-                      class="block text-sm
-                         font-medium text-gray-700"
-                    >
-                      Email address
-                    </label>
-
-                    <input
+                    <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>Email address</mat-label>
+                      <input matInput
                       id="email"
                       name="email"
                       type="email"
                       [value]="user.email"
                       disabled
-                      class="mt-1.5 block w-full
-                         rounded-lg border
-                         border-gray-300
-                         bg-gray-50 px-4 py-2.5
-                         text-sm text-gray-500"
+                      class="block w-full"
                     />
+                    </mat-form-field>
 
                     <p
                       class="mt-1.5 text-xs
@@ -563,59 +501,31 @@ Mobile: Save icon only
                        sm:grid-cols-2"
                   >
                     <div>
-                      <label
-                        for="countryOfOrigin"
-                        class="block text-sm
-                           font-medium text-gray-700"
-                      >
-                        Country of origin
-                      </label>
-
-                      <input
+                      <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>Country of origin</mat-label>
+                      <input matInput
                         id="countryOfOrigin"
                         name="countryOfOrigin"
                         type="text"
                         [(ngModel)]="countryOfOrigin"
                         placeholder="Country of origin"
-                        class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+                        class="block w-full"
                       />
+                    </mat-form-field>
                     </div>
 
                     <div>
-                      <label
-                        for="currentCountry"
-                        class="block text-sm
-                           font-medium text-gray-700"
-                      >
-                        Current country
-                      </label>
-
-                      <input
+                      <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>Current country</mat-label>
+                      <input matInput
                         id="currentCountry"
                         name="currentCountry"
                         type="text"
                         [(ngModel)]="currentCountry"
                         placeholder="Current country"
-                        class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+                        class="block w-full"
                       />
+                    </mat-form-field>
                     </div>
                   </div>
 
@@ -627,61 +537,33 @@ Mobile: Save icon only
                        sm:grid-cols-2"
                   >
                     <div>
-                      <label
-                        for="city"
-                        class="block text-sm
-                           font-medium text-gray-700"
-                      >
-                        City
-                      </label>
-
-                      <input
+                      <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>City</mat-label>
+                      <input matInput
                         id="city"
                         name="city"
                         type="text"
                         [(ngModel)]="city"
                         autocomplete="address-level2"
                         placeholder="City"
-                        class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+                        class="block w-full"
                       />
+                    </mat-form-field>
                     </div>
 
                     <div>
-                      <label
-                        for="state"
-                        class="block text-sm
-                           font-medium text-gray-700"
-                      >
-                        State / Province
-                      </label>
-
-                      <input
+                      <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>State / Province</mat-label>
+                      <input matInput
                         id="state"
                         name="state"
                         type="text"
                         [(ngModel)]="state"
                         autocomplete="address-level1"
                         placeholder="State or province"
-                        class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+                        class="block w-full"
                       />
+                    </mat-form-field>
                     </div>
                   </div>
 
@@ -693,60 +575,32 @@ Mobile: Save icon only
                        sm:grid-cols-2"
                   >
                     <div>
-                      <label
-                        for="postalCode"
-                        class="block text-sm
-                           font-medium text-gray-700"
-                      >
-                        ZIP / Postal code
-                      </label>
-
-                      <input
+                      <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>ZIP / Postal code</mat-label>
+                      <input matInput
                         id="postalCode"
                         name="postalCode"
                         type="text"
                         [(ngModel)]="postalCode"
                         autocomplete="postal-code"
                         placeholder="ZIP or postal code"
-                        class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+                        class="block w-full"
                       />
+                    </mat-form-field>
                     </div>
 
                     <div>
-                      <label
-                        for="preferredLanguage"
-                        class="block text-sm
-                           font-medium text-gray-700"
-                      >
-                        Preferred language
-                      </label>
-
-                      <input
+                      <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>Preferred language</mat-label>
+                      <input matInput
                         id="preferredLanguage"
                         name="preferredLanguage"
                         type="text"
                         [(ngModel)]="preferredLanguage"
                         placeholder="English, French, etc."
-                        class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
+                        class="block w-full"
                       />
+                    </mat-form-field>
                     </div>
                   </div>
 
@@ -757,33 +611,18 @@ Mobile: Save icon only
                     class="border-t border-gray-200
                        pt-7"
                   >
-                    <label
-                      for="bio"
-                      class="block text-sm
-                         font-medium text-gray-700"
-                    >
-                      About me
-                      <span class="font-normal text-gray-400"> (optional) </span>
-                    </label>
-
-                    <textarea
+                    <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>About me (optional)</mat-label>
+                      <textarea matInput
                       id="bio"
                       name="bio"
                       rows="4"
                       [(ngModel)]="bio"
                       maxlength="500"
                       placeholder="Tell us a little about yourself..."
-                      class="mt-1.5 block w-full
-                         rounded-lg border
-                         border-gray-300
-                         bg-white px-4 py-2.5
-                         text-sm text-gray-900
-                         placeholder:text-gray-400
-                         focus:border-[#007979]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
+                      class="block w-full"
                     ></textarea>
+                    </mat-form-field>
 
                     <p
                       class="mt-1.5 text-xs
@@ -797,33 +636,18 @@ Mobile: Save icon only
                    Website
                    ================================================= -->
                   <div>
-                    <label
-                      for="website"
-                      class="block text-sm
-                         font-medium text-gray-700"
-                    >
-                      Website / LinkedIn
-                      <span class="font-normal text-gray-400"> (optional) </span>
-                    </label>
-
-                    <input
+                    <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>Website / LinkedIn (optional)</mat-label>
+                      <input matInput
                       id="website"
                       name="website"
                       type="url"
                       [(ngModel)]="website"
                       autocomplete="url"
                       placeholder="https://example.com"
-                      class="mt-1.5 block w-full
-                         rounded-lg border
-                         border-gray-300
-                         bg-white px-4 py-2.5
-                         text-sm text-gray-900
-                         placeholder:text-gray-400
-                         focus:border-[#007979]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
+                      class="block w-full"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- =================================================
@@ -833,27 +657,17 @@ Mobile: Save icon only
                     class="border-t border-gray-200
      pt-7"
                   >
-                    <label
-                      for="platformRole"
-                      class="block text-sm
-       font-medium text-gray-700"
-                    >
-                      Platform role
-                    </label>
-
-                    <input
+                    <mat-form-field appearance="outline" class="tax-field w-full">
+                      <mat-label>Platform role</mat-label>
+                      <input matInput
                       id="platformRole"
                       name="platformRole"
                       type="text"
                       [value]="user.platformRole || 'Standard User'"
                       disabled
-                      class="mt-1.5 block w-full
-       rounded-lg border
-       border-gray-300
-       bg-gray-50 px-4 py-2.5
-       text-sm
-       text-gray-500"
+                      class="block w-full"
                     />
+                    </mat-form-field>
 
                     <p
                       class="mt-1.5 text-xs

@@ -1,65 +1,83 @@
 import {getFirestore} from "firebase-admin/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
-
+ 
 const RESEND_API_URL = "https://api.resend.com/emails";
 const ZEBRON_FROM_EMAIL = "Zebron <noreply@zebron.org>";
-
+ 
 const OUTBOX_COLLECTION = "organizationEmailOutbox";
-
+ 
 const MAX_ATTEMPTS = 5;
 const BATCH_SIZE = 25;
-
+ 
 const RETRY_DELAYS_MS = [
   60 * 1000, // 1 minute
   5 * 60 * 1000, // 5 minutes
   15 * 60 * 1000, // 15 minutes
   60 * 60 * 1000, // 1 hour
 ];
-
+ 
+/**
+ * Production site used for links in emails. Override with the
+ * APP_BASE_URL environment variable (for example on a staging site).
+ */
+const DEFAULT_APP_BASE_URL = "https://zebron.org";
+ 
+const ACCEPT_INVITATION_PATH = "/organization/invitations/accept";
+ 
+const EMAIL_TIME_ZONE = "America/New_York";
+ 
+const ROLE_LABELS: Record<string, string> = {
+  org_owner: "Organization Owner",
+  org_admin: "Organization Admin",
+  org_manager: "Organization Manager",
+  org_staff: "Organization Staff",
+  org_member: "Organization Member",
+};
+ 
 interface OrganizationEmailOutbox {
   id: string;
-
+ 
   type?: string;
-
+ 
   status?: string;
-
+ 
   invitationId?: string;
-
+ 
   organizationId?: string;
-
+ 
   organizationName?: string;
-
+ 
   recipientEmail?: string;
-
+ 
   role?: string;
-
+ 
   subject?: string;
-
+ 
   text?: string;
-
+ 
   html?: string;
-
+ 
   attemptCount?: number;
-
+ 
   nextAttemptAt?: unknown;
-
+ 
   sentAt?: unknown;
-
+ 
   lastAttemptAt?: unknown;
-
+ 
   lastError?: string;
-
+ 
   resendEmailId?: string;
-
+ 
   createdAt?: unknown;
-
+ 
   updatedAt?: unknown;
 }
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Retry                                                                      */
 /* -------------------------------------------------------------------------- */
-
+ 
 /**
  * Calculates the retry delay for a failed email attempt.
  *
@@ -71,10 +89,10 @@ function getRetryDelayMs(attemptCount: number): number {
     Math.max(attemptCount - 1, 0),
     RETRY_DELAYS_MS.length - 1,
   );
-
+ 
   return RETRY_DELAYS_MS[index];
 }
-
+ 
 /**
  * Builds the organization invitation acceptance URL.
  *
@@ -82,19 +100,72 @@ function getRetryDelayMs(attemptCount: number): number {
  * @return The invitation acceptance URL.
  */
 function buildAcceptanceUrl(invitationId: string): string {
+  const configuredBaseUrl =
+    process.env["APP_BASE_URL"]?.trim();
+ 
+  const baseUrl =
+    (configuredBaseUrl || DEFAULT_APP_BASE_URL)
+      .replace(/\/+$/, "");
+ 
   return (
-    "https://zebron.org/organization/invitations/accept" +
+    `${baseUrl}${ACCEPT_INVITATION_PATH}` +
     `?invitationId=${encodeURIComponent(invitationId)}`
   );
 }
-
+ 
+/**
+ * Converts a stored role code into a readable label.
+ *
+ * Values that are already labels are returned unchanged.
+ *
+ * @param role Organization role code or label.
+ * @return Readable role label.
+ */
+function getRoleDisplayName(role: string): string {
+  return ROLE_LABELS[role] ?? role;
+}
+ 
+/**
+ * Formats the invitation expiration with an explicit time zone so the
+ * recipient is not shown a bare server (UTC) time.
+ *
+ * @param expiresAt Invitation expiration date.
+ * @return Readable expiration text.
+ */
+function formatExpiration(expiresAt: Date): string {
+  return expiresAt.toLocaleString("en-US", {
+    timeZone: EMAIL_TIME_ZONE,
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+ 
+/**
+ * Escapes text for safe use inside HTML content or attributes.
+ *
+ * @param value Untrusted text.
+ * @return HTML-escaped text.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+ 
 /**
  * Builds the plain-text organization invitation email body.
  *
- * @param invitationId Organization invitation identifier.
- * @param organizationName Organization name displayed in the email.
- * @param role Organization role being granted.
- * @param expiresAt Invitation expiration date.
+ * @param params.organizationName Organization name shown in the email.
+ * @param params.role Organization role being granted.
+ * @param params.expiresAt Invitation expiration date.
+ * @param params.acceptanceUrl Link the recipient uses to accept.
  * @return Plain-text invitation email content.
  */
 function buildInvitationText({
@@ -108,15 +179,12 @@ function buildInvitationText({
   expiresAt: Date;
   acceptanceUrl: string;
 }): string {
-  const expirationText =
-    expiresAt.toLocaleString("en-US");
-
   return [
     "You have been invited to join an organization on Zebron.",
     "",
     `Organization: ${organizationName}`,
     `Role: ${role}`,
-    `Invitation expires: ${expirationText}`,
+    `Invitation expires: ${formatExpiration(expiresAt)}`,
     "",
     "Accept your invitation:",
     acceptanceUrl,
@@ -126,14 +194,17 @@ function buildInvitationText({
     "Zebron",
   ].join("\n");
 }
-
+ 
 /**
  * Builds the HTML organization invitation email body.
  *
- * @param invitationId Organization invitation identifier.
- * @param organizationName Organization name displayed in the email.
- * @param role Organization role being granted.
- * @param expiresAt Invitation expiration date.
+ * The visible link text repeats the URL so the link is still available
+ * to recipients whose email client hides or strips link styling.
+ *
+ * @param params.organizationName Organization name shown in the email.
+ * @param params.role Organization role being granted.
+ * @param params.expiresAt Invitation expiration date.
+ * @param params.acceptanceUrl Link the recipient uses to accept.
  * @return HTML invitation email content.
  */
 function buildInvitationHtml({
@@ -147,24 +218,27 @@ function buildInvitationHtml({
   expiresAt: Date;
   acceptanceUrl: string;
 }): string {
-  const expirationText =
-    expiresAt.toLocaleString("en-US");
-
+  const safeUrl = escapeHtml(acceptanceUrl);
+ 
   return [
     "<p>You have been invited to join an organization on Zebron.</p>",
-    `<p><strong>Organization:</strong> ${organizationName}</p>`,
-    `<p><strong>Role:</strong> ${role}</p>`,
-    `<p><strong>Invitation expires:</strong> ${expirationText}</p>`,
-    `<p><a href="${acceptanceUrl}">Accept your invitation</a></p>`,
-    "<p>If you didn't expect this invitation, safely ignore this email.</p>",
+    `<p><strong>Organization:</strong> ${escapeHtml(organizationName)}</p>`,
+    `<p><strong>Role:</strong> ${escapeHtml(role)}</p>`,
+    "<p><strong>Invitation expires:</strong> " +
+      `${escapeHtml(formatExpiration(expiresAt))}</p>`,
+    `<p><a href="${safeUrl}">Accept your invitation</a></p>`,
+    "<p>If the button or link does not work, copy and paste this address " +
+      `into your browser:<br>${safeUrl}</p>`,
+    "<p>If you did not expect this invitation, you can safely ignore " +
+      "this email.</p>",
     "<p>Zebron</p>",
   ].join("");
 }
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Outbox document creation                                                   */
 /* -------------------------------------------------------------------------- */
-
+ 
 /**
  * Creates the Firestore data for an organization invitation email.
  *
@@ -192,66 +266,69 @@ export function createOrganizationInvitationOutboxData({
 }) {
   const acceptanceUrl =
     buildAcceptanceUrl(invitationId);
-
+ 
+  const roleLabel =
+    getRoleDisplayName(role);
+ 
   const subject =
     `You're invited to join ${organizationName} on Zebron`;
-
+ 
   const text =
     buildInvitationText({
       organizationName,
-      role,
+      role: roleLabel,
       expiresAt,
       acceptanceUrl,
     });
-
+ 
   const html =
     buildInvitationHtml({
       organizationName,
-      role,
+      role: roleLabel,
       expiresAt,
       acceptanceUrl,
     });
-
+ 
   return {
     type: "organization_invitation",
-
+ 
     invitationId,
     organizationId,
-
+ 
     organizationName,
-
+ 
     recipientEmail,
-
-    role,
-
+ 
+    role: roleLabel,
+ 
     subject,
-
+ 
     text,
-
+ 
     html,
-
+ 
     status: "pending",
-
+ 
     attemptCount: 0,
-
+ 
     createdAt: now,
-
+ 
     updatedAt: now,
-
+ 
     sentAt: null,
-
+ 
     lastAttemptAt: null,
-
+ 
     nextAttemptAt: now,
-
+ 
     lastError: null,
   };
 }
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Resend delivery                                                            */
 /* -------------------------------------------------------------------------- */
-
+ 
 /**
  * Sends one organization email through Resend.
  *
@@ -264,58 +341,58 @@ export async function sendOrganizationEmailOutbox(
 ): Promise<void> {
   const apiKey =
     process.env["RESEND_API_KEY"];
-
+ 
   if (!apiKey) {
     throw new Error(
       "RESEND_API_KEY is not configured.",
     );
   }
-
+ 
   if (!outbox.recipientEmail) {
     throw new Error(
       "Outbox item is missing recipientEmail.",
     );
   }
-
+ 
   if (!outbox.subject) {
     throw new Error(
       "Outbox item is missing subject.",
     );
   }
-
+ 
   if (!outbox.text) {
     throw new Error(
       "Outbox item is missing text.",
     );
   }
-
+ 
   const response =
     await fetch(
       RESEND_API_URL,
       {
         method: "POST",
-
+ 
         headers: {
           "Authorization":
             `Bearer ${apiKey}`,
-
+ 
           "Content-Type":
             "application/json",
         },
-
+ 
         body: JSON.stringify({
           from: ZEBRON_FROM_EMAIL,
-
+ 
           to: [
             outbox.recipientEmail,
           ],
-
+ 
           subject:
             outbox.subject,
-
+ 
           text:
             outbox.text,
-
+ 
           ...(outbox.html ?
             {
               html:
@@ -325,43 +402,43 @@ export async function sendOrganizationEmailOutbox(
         }),
       },
     );
-
+ 
   const result =
     await response
       .json()
       .catch(() => ({}));
-
+ 
   if (!response.ok) {
     throw new Error(
       `Resend returned HTTP ${response.status}: ` +
       `${JSON.stringify(result)}`,
     );
   }
-
+ 
   const resendEmailId =
     typeof result?.id === "string" ?
       result.id :
       undefined;
-
+ 
   const db =
     getFirestore();
-
+ 
   const outboxRef =
     db
       .collection(
         OUTBOX_COLLECTION,
       )
       .doc(outbox.id);
-
+ 
   await outboxRef.update({
     status: "sent",
-
+ 
     sentAt: now,
-
+ 
     lastAttemptAt: now,
-
+ 
     updatedAt: now,
-
+ 
     ...(resendEmailId ?
       {
         resendEmailId,
@@ -369,11 +446,11 @@ export async function sendOrganizationEmailOutbox(
       {}),
   });
 }
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Outbox worker                                                              */
 /* -------------------------------------------------------------------------- */
-
+ 
 /**
  * Processes pending organization email outbox records.
  *
@@ -393,7 +470,7 @@ export async function processOrganizationEmailOutbox(
 }> {
   const db =
     getFirestore();
-
+ 
   const snapshot =
     await db
       .collection(
@@ -411,16 +488,16 @@ export async function processOrganizationEmailOutbox(
       )
       .limit(BATCH_SIZE)
       .get();
-
+ 
   let processed = 0;
-
+ 
   for (
     const document of snapshot.docs
   ) {
     const outbox =
       document.data() as
         OrganizationEmailOutbox;
-
+ 
     const attemptCount =
       typeof outbox.attemptCount === "number" &&
       Number.isFinite(
@@ -428,66 +505,66 @@ export async function processOrganizationEmailOutbox(
       ) ?
         outbox.attemptCount :
         0;
-
+ 
     /* ---------------------------------------------------------------- */
     /* Maximum attempts                                                       */
     /* ---------------------------------------------------------------------- */
-
+ 
     if (
       attemptCount >=
       MAX_ATTEMPTS
     ) {
       await document.ref.update({
         status: "failed",
-
+ 
         lastAttemptAt: now,
-
+ 
         updatedAt: now,
-
+ 
         lastError:
           outbox.lastError ??
           "Maximum email delivery attempts exceeded.",
       });
-
+ 
       processed += 1;
-
+ 
       continue;
     }
-
+ 
     /* ---------------------------------------------------------------------- */
     /* Record attempt                                                         */
     /* ---------------------------------------------------------------------- */
-
+ 
     const nextAttemptNumber =
       attemptCount + 1;
-
+ 
     await document.ref.update({
       attemptCount:
         nextAttemptNumber,
-
+ 
       lastAttemptAt:
         now,
-
+ 
       updatedAt:
         now,
     });
-
+ 
     /* ---------------------------------------------------------------------- */
     /* Send                                                                   */
     /* ---------------------------------------------------------------------- */
-
+ 
     try {
       await sendOrganizationEmailOutbox(
         {
           ...outbox,
-
+ 
           id:
             document.id,
-
+ 
           attemptCount:
             nextAttemptNumber,
         },
-
+ 
         now,
       );
     } catch (
@@ -497,21 +574,21 @@ export async function processOrganizationEmailOutbox(
         error instanceof Error ?
           error.message :
           String(error);
-
+ 
       /* -------------------------------------------------------------- */
       /* Permanent failure                                                   */
       /* --------------------------------------------------------------------*/
-
+ 
       if (
         nextAttemptNumber >=
         MAX_ATTEMPTS
       ) {
         await document.ref.update({
           status: "failed",
-
+ 
           lastError:
             message,
-
+ 
           updatedAt:
             now,
         });
@@ -519,7 +596,7 @@ export async function processOrganizationEmailOutbox(
         /* ------------------------------------------------------------ */
         /* Retry                                                              */
         /* ------------------------------------------------------------------ */
-
+ 
         const retryAt =
           new Date(
             now.getTime() +
@@ -527,34 +604,34 @@ export async function processOrganizationEmailOutbox(
               nextAttemptNumber,
             ),
           );
-
+ 
         await document.ref.update({
           status: "pending",
-
+ 
           nextAttemptAt:
             retryAt,
-
+ 
           lastError:
             message,
-
+ 
           updatedAt:
             now,
         });
       }
     }
-
+ 
     processed += 1;
   }
-
+ 
   return {
     processed,
   };
 }
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Scheduled worker                                                           */
 /* -------------------------------------------------------------------------- */
-
+ 
 /**
  * Organization invitation email delivery worker.
  *
@@ -567,22 +644,22 @@ export const processOrganizationInvitationEmails =
   onSchedule(
     {
       schedule: "every 1 minutes",
-
+ 
       timeZone:
         "America/New_York",
-
+ 
       region:
         "us-central1",
-
+ 
       secrets: [
         "RESEND_API_KEY",
       ],
     },
-
+ 
     async () => {
       const result =
         await processOrganizationEmailOutbox();
-
+ 
       console.log(
         "Organization invitation email worker completed.",
         {
@@ -592,3 +669,4 @@ export const processOrganizationInvitationEmails =
       );
     },
   );
+ 

@@ -204,10 +204,24 @@ export class PartnerOrganizationContextService {
       /*
        * Regular users must have active organization memberships.
        */
-      const memberships =
-        await this.membershipRepository.getMembershipsForUser(
-          user.uid,
-        );
+      console.info(
+  '[Partner Organization Context] Loading memberships.',
+  { userId: user.uid },
+);
+
+const memberships =
+  await this.membershipRepository.getMembershipsForUser(
+    user.uid,
+  );
+
+console.info(
+  '[Partner Organization Context] Memberships loaded.',
+  memberships.map((membership) => ({
+    organizationId: membership.organizationId,
+    role: membership.role,
+    active: membership.active,
+  })),
+);
 
       const activeMemberships = memberships.filter(
         (membership) => membership.active === true,
@@ -215,13 +229,43 @@ export class PartnerOrganizationContextService {
 
       this.membershipsState.set(activeMemberships);
 
-      const organizationResults = await Promise.all(
-        activeMemberships.map((membership) =>
-          this.organizationRepository.getOrganization(
-            membership.organizationId,
-          ),
-        ),
+     const organizationResults = await Promise.all(
+  activeMemberships.map(async (membership) => {
+    console.info(
+      '[Partner Organization Context] Loading organization.',
+      { organizationId: membership.organizationId },
+    );
+
+    try {
+      const organization =
+        await this.organizationRepository.getOrganization(
+          membership.organizationId,
+        );
+
+      console.info(
+        '[Partner Organization Context] Organization loaded.',
+        {
+          organizationId: membership.organizationId,
+          found: !!organization,
+          active: organization?.active,
+          status: organization?.status,
+        },
       );
+
+      return organization;
+    } catch (error) {
+      console.error(
+        '[Partner Organization Context] Organization read failed.',
+        {
+          organizationId: membership.organizationId,
+          error,
+        },
+      );
+
+      throw error;
+    }
+  }),
+);
 
       const organizations = organizationResults.filter(
         (

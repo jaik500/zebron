@@ -159,6 +159,49 @@ const initialState: OrganizationState = {
 };
 
 // ============================================================
+// OPTIONAL READ HELPER
+// ============================================================
+
+function isPermissionDenied(error: unknown): boolean {
+  const code = (error as { code?: string } | null)?.code;
+  const message = error instanceof Error ? error.message : '';
+
+  return (
+    code === 'permission-denied' ||
+    code === 'firestore/permission-denied' ||
+    message.includes('Missing or insufficient permissions')
+  );
+}
+
+/**
+ * Run a read that some roles are not allowed to perform.
+ *
+ * When `strict` is true (owners, admins, platform admins) every failure is
+ * rethrown, because those roles are expected to be able to read the data.
+ * For everyone else a permission-denied result means "not visible to this
+ * role" and the fallback is returned, so one restricted document does not
+ * take down the whole organization context.
+ */
+async function loadOptional<T>(
+  operation: string,
+  loader: () => Promise<T>,
+  fallback: T,
+  strict: boolean,
+): Promise<T> {
+  try {
+    return await loader();
+  } catch (error) {
+    if (!strict && isPermissionDenied(error)) {
+      console.info(`[Organization Context] ${operation}: not visible to this role.`);
+      return fallback;
+    }
+
+    console.error(`[Organization Context] ${operation}: failed.`, error);
+    throw error;
+  }
+}
+
+// ============================================================
 // ORGANIZATION STORE
 // ============================================================
 
@@ -1313,12 +1356,35 @@ export const OrganizationContextStore = signalStore(
             onboardingError: null,
           });
 
+          const canReadAdministrativeSettings =
+            contextService.isPlatformAdmin() ||
+            organizationRole === 'org_owner' ||
+            organizationRole === 'org_admin';
+
           const [applications, settings, onboarding] = await Promise.all([
-            organizationApplicationRepository.getApplications(normalizedId),
+            loadOptional(
+              'Application entitlements',
+              () => organizationApplicationRepository.getApplications(normalizedId),
+              [] as OrganizationApplication[],
+              canReadAdministrativeSettings,
+            ),
 
-            settingsService.getSettings(normalizedId),
+            // Settings are owner/admin-only in Firestore rules.
+            canReadAdministrativeSettings
+              ? loadOptional(
+                  'Organization settings',
+                  () => settingsService.getSettings(normalizedId),
+                  null as PartnerOrganizationSettings | null,
+                  true,
+                )
+              : Promise.resolve(null),
 
-            onboardingService.getOnboarding(normalizedId),
+            loadOptional(
+              'Organization onboarding',
+              () => onboardingService.getOnboarding(normalizedId),
+              null as OrganizationOnboarding | null,
+              canReadAdministrativeSettings,
+            ),
           ]);
 
           // ==================================================
@@ -1447,12 +1513,36 @@ export const OrganizationContextStore = signalStore(
             onboardingLoading: true,
           });
 
+    //const organizationRole = contextService.organizationRole();
+
+          const canReadAdministrativeSettings =
+            contextService.isPlatformAdmin() ||
+            organizationRole === 'org_owner' ||
+            organizationRole === 'org_admin';
+
           const [applications, settings, onboarding] = await Promise.all([
-            organizationApplicationRepository.getApplications(normalizedId),
+            loadOptional(
+              'Application entitlements',
+              () => organizationApplicationRepository.getApplications(normalizedId),
+              [] as OrganizationApplication[],
+              canReadAdministrativeSettings,
+            ),
 
-            settingsService.getSettings(normalizedId),
+            canReadAdministrativeSettings
+              ? loadOptional(
+                  'Organization settings',
+                  () => settingsService.getSettings(normalizedId),
+                  null as PartnerOrganizationSettings | null,
+                  true,
+                )
+              : Promise.resolve(null),
 
-            onboardingService.getOnboarding(normalizedId),
+            loadOptional(
+              'Organization onboarding',
+              () => onboardingService.getOnboarding(normalizedId),
+              null as OrganizationOnboarding | null,
+              canReadAdministrativeSettings,
+            ),
           ]);
 
           // ==================================================

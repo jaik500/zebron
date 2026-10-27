@@ -407,7 +407,7 @@ interface RoleGroup {
                     <mat-icon>groups</mat-icon>
                   </div>
 
-                  <p class="mt-4 text-sm text-gray-500">Total memberships</p>
+                  <p class="mt-2 text-sm text-gray-500">Total memberships</p>
 
                   <p class="mt-1 text-3xl font-bold text-gray-900">
                     {{ members().length }}
@@ -421,7 +421,7 @@ interface RoleGroup {
                     <mat-icon>check_circle</mat-icon>
                   </div>
 
-                  <p class="mt-4 text-sm text-gray-500">Active members</p>
+                  <p class="mt-2 text-sm text-gray-500">Active members</p>
 
                   <p class="mt-1 text-3xl font-bold text-gray-900">
                     {{ activeMemberCount() }}
@@ -435,7 +435,7 @@ interface RoleGroup {
                     <mat-icon>admin_panel_settings</mat-icon>
                   </div>
 
-                  <p class="mt-4 text-sm text-gray-500">Administrators</p>
+                  <p class="mt-2 text-sm text-gray-500">Administrators</p>
 
                   <p class="mt-1 text-3xl font-bold text-gray-900">
                     {{ administratorCount() }}
@@ -449,7 +449,7 @@ interface RoleGroup {
                     <mat-icon>supervisor_account</mat-icon>
                   </div>
 
-                  <p class="mt-4 text-sm text-gray-500">Managers</p>
+                  <p class="mt-2 text-sm text-gray-500">Managers</p>
 
                   <p class="mt-1 text-3xl font-bold text-gray-900">
                     {{ managerCount() }}

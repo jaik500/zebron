@@ -1,70 +1,43 @@
-import {
-  HttpsError,
-  onCall,
-} from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
-import {getFirestore, FieldValue} from "firebase-admin/firestore";
-import {
-  OrganizationInvitationRecord,
-} from "./organization-invitation.types";
+import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import * as logger from 'firebase-functions/logger';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { OrganizationInvitationRecord } from './organization-invitation.types';
 
 import {
   advanceOnboarding,
   assertCurrentOnboardingStep,
   type OrganizationOnboardingTransitionState,
-} from "./organization-onboarding-transition";
+} from './organization-onboarding-transition';
 
-type OrganizationInvitationRole =
-  | "org_admin"
-  | "org_manager"
-  | "org_staff"
-  | "org_member";
+import {
+  createOrganizationInvitationOutboxData,
+} from './organization-email-outbox';
 
-type OrganizationInvitationStatus =
-  | "pending"
-  | "accepted"
-  | "cancelled"
-  | "expired";
+type OrganizationInvitationRole = 'org_admin' | 'org_manager' | 'org_staff' | 'org_member';
+
+type OrganizationInvitationStatus = 'pending' | 'accepted' | 'cancelled' | 'expired';
 
 const ALLOWED_ROLES: OrganizationInvitationRole[] = [
-  "org_admin",
-  "org_manager",
-  "org_staff",
-  "org_member",
+  'org_admin',
+  'org_manager',
+  'org_staff',
+  'org_member',
 ];
 
-const RESEND_API_URL =
-  "https://api.resend.com/emails";
 
-const ZEBRON_FROM_EMAIL =
-  "Zebron <noreply@zebron.org>";
 
 /**
  * Creates an organization invitation for a team member.
  */
-function normalizeEmail(
-  value: unknown,
-): string {
-  if (typeof value !== "string") {
-    throw new HttpsError(
-      "invalid-argument",
-      "Email address is required.",
-    );
+function normalizeEmail(value: unknown): string {
+  if (typeof value !== 'string') {
+    throw new HttpsError('invalid-argument', 'Email address is required.');
   }
 
-  const email = value
-    .trim()
-    .toLowerCase();
+  const email = value.trim().toLowerCase();
 
-  if (
-    !email ||
-    email.length > 254 ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  ) {
-    throw new HttpsError(
-      "invalid-argument",
-      "A valid email address is required.",
-    );
+  if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new HttpsError('invalid-argument', 'A valid email address is required.');
   }
 
   return email;
@@ -73,19 +46,9 @@ function normalizeEmail(
 /**
  * Normalizes an organization invitation email address.
  */
-function normalizeRole(
-  value: unknown,
-): OrganizationInvitationRole {
-  if (
-    typeof value !== "string" ||
-    !ALLOWED_ROLES.includes(
-      value as OrganizationInvitationRole,
-    )
-  ) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Invalid organization role.",
-    );
+function normalizeRole(value: unknown): OrganizationInvitationRole {
+  if (typeof value !== 'string' || !ALLOWED_ROLES.includes(value as OrganizationInvitationRole)) {
+    throw new HttpsError('invalid-argument', 'Invalid organization role.');
   }
 
   return value as OrganizationInvitationRole;
@@ -94,44 +57,23 @@ function normalizeRole(
 /**
  * Completes the invite-members onboarding step.
  */
-function getRoleLabel(
-  role: OrganizationInvitationRole,
-): string {
+function getRoleLabel(role: OrganizationInvitationRole): string {
   switch (role) {
-  case "org_admin":
-    return "Organization Admin";
+    case 'org_admin':
+      return 'Organization Admin';
 
-  case "org_manager":
-    return "Organization Manager";
+    case 'org_manager':
+      return 'Organization Manager';
 
-  case "org_staff":
-    return "Organization Staff";
+    case 'org_staff':
+      return 'Organization Staff';
 
-  case "org_member":
-    return "Organization Member";
+    case 'org_member':
+      return 'Organization Member';
 
-  default:
-    return role;
+    default:
+      return role;
   }
-}
-
-/**
- * Completes the invite-members onboarding step.
- */
-function getInvitationEmailText(
-  organizationName: string,
-  role: OrganizationInvitationRole,
-): string {
-  return [
-    `You have been invited to join ${organizationName} on Zebron.`,
-    "",
-    `Your organization role: ${getRoleLabel(role)}`,
-    "",
-    "Sign in to Zebron to review and accept your invitation.",
-    "",
-    "Zebron",
-    "https://zebron.org",
-  ].join("\n");
 }
 
 /**
@@ -148,73 +90,48 @@ async function requireOrganizationInvitationAdmin(
 }> {
   const db = getFirestore();
 
-  const organizationRef = db
-    .collection("organizations")
-    .doc(organizationId);
+  const organizationRef = db.collection('organizations').doc(organizationId);
 
-  const onboardingRef = db
-    .collection("organizationOnboarding")
-    .doc(organizationId);
+  const onboardingRef = db.collection('organizationOnboarding').doc(organizationId);
 
-  const membershipRef = db
-    .collection("organizationMemberships")
-    .doc(
-      `${uid}_${organizationId}`,
-    );
+  const membershipRef = db.collection('organizationMemberships').doc(`${uid}_${organizationId}`);
 
-  const [
-    organizationSnapshot,
-    onboardingSnapshot,
-    membershipSnapshot,
-  ] = await Promise.all([
+  const [organizationSnapshot, onboardingSnapshot, membershipSnapshot] = await Promise.all([
     organizationRef.get(),
     onboardingRef.get(),
     membershipRef.get(),
   ]);
 
   if (!organizationSnapshot.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Organization not found.",
-    );
+    throw new HttpsError('not-found', 'Organization not found.');
   }
 
   if (!onboardingSnapshot.exists) {
     throw new HttpsError(
-      "failed-precondition",
-      "Organization onboarding has not been initialized.",
+      'failed-precondition',
+      'Organization onboarding has not been initialized.',
     );
   }
 
-  const organization =
-    organizationSnapshot.data() ?? {};
+  const organization = organizationSnapshot.data() ?? {};
 
-  const onboarding =
-    onboardingSnapshot.data() ?? {};
-
+  const onboarding = onboardingSnapshot.data() ?? {};
 
   if (!membershipSnapshot.exists) {
     throw new HttpsError(
-      "permission-denied",
-      "You do not have permission to manage organization invitations.",
+      'permission-denied',
+      'You do not have permission to manage organization invitations.',
     );
   }
 
-  const membership =
-    membershipSnapshot.data() ?? {};
+  const membership = membershipSnapshot.data() ?? {};
 
   const role = membership.role;
 
-  if (
-    membership.active !== true ||
-    (
-      role !== "org_owner" &&
-      role !== "org_admin"
-    )
-  ) {
+  if (membership.active !== true || (role !== 'org_owner' && role !== 'org_admin')) {
     throw new HttpsError(
-      "permission-denied",
-      "Only organization owners and administrators can manage invitations.",
+      'permission-denied',
+      'Only organization owners and administrators can manage invitations.',
     );
   }
 
@@ -222,24 +139,18 @@ async function requireOrganizationInvitationAdmin(
   // onboarding step. Only invitation creation should require the active
   // Invite Team step.
   if (options.requireInviteStep === true) {
-    if (organization.status !== "onboarding") {
-      throw new HttpsError(
-        "failed-precondition",
-        "Organization onboarding is no longer active.",
-      );
+    if (organization.status !== 'onboarding') {
+      throw new HttpsError('failed-precondition', 'Organization onboarding is no longer active.');
     }
 
-    if (onboarding.status !== "in_progress") {
-      throw new HttpsError(
-        "failed-precondition",
-        "Organization onboarding is not in progress.",
-      );
+    if (onboarding.status !== 'in_progress') {
+      throw new HttpsError('failed-precondition', 'Organization onboarding is not in progress.');
     }
 
-    if (onboarding.currentStep !== "invite_members") {
+    if (onboarding.currentStep !== 'invite_members') {
       throw new HttpsError(
-        "failed-precondition",
-        "The organization is not currently on the Invite Team step.",
+        'failed-precondition',
+        'The organization is not currently on the Invite Team step.',
       );
     }
   }
@@ -253,400 +164,266 @@ async function requireOrganizationInvitationAdmin(
 /**
  * Create an organization invitation.
  */
-export const createOrganizationInvitation =
-  onCall(
-    {
-      region: "us-central1",
-    },
-    async (request) => {
-      if (!request.auth) {
-        throw new HttpsError(
-          "unauthenticated",
-          "You must be signed in.",
-        );
-      }
+export const createOrganizationInvitation = onCall(
+  {
+    region: 'us-central1',
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'You must be signed in.');
+    }
 
-      const data =
-        request.data as Record<string, unknown>;
+    const data = request.data as Record<string, unknown>;
 
-      const organizationId =
-        typeof data.organizationId === "string" ?
-          data.organizationId.trim() :
-          "";
+    const organizationId =
+      typeof data.organizationId === 'string' ? data.organizationId.trim() : '';
 
-      if (!organizationId) {
-        throw new HttpsError(
-          "invalid-argument",
-          "Organization ID is required.",
-        );
-      }
+    if (!organizationId) {
+      throw new HttpsError('invalid-argument', 'Organization ID is required.');
+    }
 
-      const email =
-        normalizeEmail(data.email);
+    const email = normalizeEmail(data.email);
 
-      const role =
-        normalizeRole(data.role);
+    const role = normalizeRole(data.role);
 
-      const uid =
-        request.auth.uid;
+    const uid = request.auth.uid;
 
-      const {
-        organization,
-      } =
-        await requireOrganizationInvitationAdmin(
-          organizationId,
-          uid,
-          { requireInviteStep: true },
-        );
+    const { organization, onboarding } = await requireOrganizationInvitationAdmin(
+      organizationId,
+      uid,
+    );
 
-      const db =
-        getFirestore();
+    // Permit invitations during the Invite Team onboarding step
+    // and after onboarding has been completed.
+    const organizationStatus = organization.status;
+    const onboardingStatus = onboarding.status;
+    const currentStep = onboarding.currentStep;
 
-      const invitationCollection =
-        db.collection(
-          "organizationInvitations",
-        );
+    const isActiveOnboardingInviteStep =
+      organizationStatus === 'onboarding' &&
+      onboardingStatus === 'in_progress' &&
+      currentStep === 'invite_members';
 
-      /*
-       * Prevent duplicate pending invitations
-       * for the same organization/email.
-       *
-       * Firestore supports compound equality
-       * queries without requiring a manual
-       * composite index.
-       */
-      const existingSnapshot =
-        await invitationCollection
-          .where(
-            "organizationId",
-            "==",
-            organizationId,
-          )
-          .where(
-            "normalizedEmail",
-            "==",
-            email,
-          )
-          .where(
-            "status",
-            "==",
-            "pending",
-          )
-          .limit(1)
-          .get();
+    const isCompletedOnboarding =
+      organizationStatus === 'active' || onboardingStatus === 'completed';
 
-      if (!existingSnapshot.empty) {
-        throw new HttpsError(
-          "already-exists",
-          "A pending invitation already exists for this email address.",
-        );
-      }
+    if (!isActiveOnboardingInviteStep && !isCompletedOnboarding) {
+      throw new HttpsError(
+        'failed-precondition',
+        'Invitations are only available during the Invite Team onboarding step or after onboarding is complete.',
+      );
+    }
 
-      const invitationRef =
-        invitationCollection.doc();
+    const db = getFirestore();
 
-      const now =
-        FieldValue.serverTimestamp();
+    const invitationCollection = db.collection('organizationInvitations');
 
-      const expiresAt =
-        new Date(
-          Date.now() +
-            7 * 24 * 60 * 60 * 1000,
-        );
+    /*
+     * Prevent duplicate pending invitations
+     * for the same organization/email.
+     *
+     * Firestore supports compound equality
+     * queries without requiring a manual
+     * composite index.
+     */
+    const existingSnapshot = await invitationCollection
+      .where('organizationId', '==', organizationId)
+      .where('normalizedEmail', '==', email)
+      .where('status', '==', 'pending')
+      .limit(1)
+      .get();
 
-      const organizationName =
-        typeof organization.name === "string" ?
-          organization.name :
-          "your organization";
+    if (!existingSnapshot.empty) {
+      throw new HttpsError(
+        'already-exists',
+        'A pending invitation already exists for this email address.',
+      );
+    }
 
-      const invitation = {
-        id: invitationRef.id,
+    const invitationRef = invitationCollection.doc();
 
+    const now = FieldValue.serverTimestamp();
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const organizationName =
+      typeof organization.name === 'string' ? organization.name : 'your organization';
+
+    const invitation = {
+      id: invitationRef.id,
+
+      organizationId,
+
+      email,
+
+      normalizedEmail: email,
+
+      role,
+
+      invitedByUserId: uid,
+
+      status: 'pending' as OrganizationInvitationStatus,
+
+      expiresAt,
+
+      acceptedAt: null,
+
+      acceptedByUserId: null,
+
+      createdAt: now,
+
+      updatedAt: now,
+    };
+
+    /*
+     * Create the invitation and its email outbox record atomically.
+     *
+     * The outbox worker sends the invitation email through Resend.
+     * Its text and HTML bodies both include the acceptance URL.
+     */
+    const outboxRef = db.collection('organizationEmailOutbox').doc();
+
+    const outboxData = createOrganizationInvitationOutboxData({
+      invitationId: invitationRef.id,
+      organizationId,
+      organizationName,
+      recipientEmail: email,
+      role: getRoleLabel(role),
+      expiresAt,
+    });
+
+    const emailStatus = 'queued' as const;
+
+    // Store the queued status with the invitation so the invitation and
+    // email outbox record are committed together.
+    const invitationWithEmailStatus = {
+      ...invitation,
+      emailStatus,
+    };
+
+    await db.runTransaction(async (transaction) => {
+      transaction.create(invitationRef, invitationWithEmailStatus);
+      transaction.create(outboxRef, outboxData);
+    });
+
+    await db.collection('auditLogs').add({
+      action: 'ORGANIZATION_INVITATION_CREATED',
+
+      entityType: 'organizationInvitation',
+
+      entityId: invitationRef.id,
+
+      actorId: uid,
+
+      actorEmail: request.auth.token.email ?? null,
+
+      actorName: null,
+
+      actorType: 'user',
+
+      outcome: 'success',
+
+      source: 'backend',
+
+      reason: null,
+
+      metadata: {
         organizationId,
-
         email,
+        role,
+        expiresAt,
+        emailStatus,
+      },
 
-        normalizedEmail: email,
+      before: null,
+
+      after: {
+        status: 'pending',
 
         role,
 
-        invitedByUserId: uid,
+        email,
+      },
 
-        status:
-          "pending" as OrganizationInvitationStatus,
+      createdAt: FieldValue.serverTimestamp(),
+    });
 
-        expiresAt,
+    logger.info('Organization invitation created.', {
+      organizationId,
 
-        acceptedAt: null,
+      invitationId: invitationRef.id,
 
-        acceptedByUserId: null,
+      actorId: uid,
+    });
 
-        createdAt: now,
+    return {
+      success: true,
 
-        updatedAt: now,
-      };
+      invitationId: invitationRef.id,
 
-      await invitationRef.set(
-        invitation,
-      );
+      emailStatus,
 
-      /*
-       * Send the invitation email.
-       *
-       * The invitation record is created first so
-       * the organization retains an auditable record
-       * even if email delivery is temporarily unavailable.
-       */
-      const apiKey =
-        process.env["RESEND_API_KEY"];
+      invitation: {
+        ...invitationWithEmailStatus,
 
-      if (!apiKey) {
-        logger.error(
-          "RESEND_API_KEY is not configured.",
-          {
-            organizationId,
-            invitationId:
-              invitationRef.id,
-          },
-        );
-      } else {
-        try {
-          const response =
-            await fetch(
-              RESEND_API_URL,
-              {
-                method: "POST",
-
-                headers: {
-                  "Authorization":
-                    `Bearer ${apiKey}`,
-
-                  "Content-Type":
-                    "application/json",
-                },
-
-                body:
-                  JSON.stringify({
-                    from:
-                      ZEBRON_FROM_EMAIL,
-
-                    to: [email],
-
-                    subject:
-                      `Invitation to join ${organizationName} on Zebron`,
-
-                    text:
-                      getInvitationEmailText(
-                        organizationName,
-                        role,
-                      ),
-                  }),
-              },
-            );
-
-          const result =
-            await response
-              .json()
-              .catch(
-                () => ({}),
-              );
-
-          if (!response.ok) {
-            logger.error(
-              "Failed to send organization invitation email.",
-              {
-                status:
-                  response.status,
-
-                result,
-
-                organizationId,
-
-                invitationId:
-                  invitationRef.id,
-
-                email,
-              },
-            );
-          }
-        } catch (error: unknown) {
-          logger.error(
-            "Invitation email request failed.",
-            {
-              error,
-
-              organizationId,
-
-              invitationId:
-                invitationRef.id,
-
-              email,
-            },
-          );
-        }
-      }
-
-      await db
-        .collection("auditLogs")
-        .add({
-          action:
-            "ORGANIZATION_INVITATION_CREATED",
-
-          entityType:
-            "organizationInvitation",
-
-          entityId:
-            invitationRef.id,
-
-          actorId:
-            uid,
-
-          actorEmail:
-            request.auth.token.email ??
-            null,
-
-          actorName:
-            null,
-
-          actorType:
-            "user",
-
-          outcome:
-            "success",
-
-          source:
-            "backend",
-
-          reason:
-            null,
-
-          metadata: {
-            organizationId,
-
-            email,
-
-            role,
-
-            expiresAt,
-          },
-
-          before:
-            null,
-
-          after:
-            {
-              status:
-                "pending",
-
-              role,
-
-              email,
-            },
-
-          createdAt:
-            FieldValue.serverTimestamp(),
-        });
-
-      logger.info(
-        "Organization invitation created.",
-        {
-          organizationId,
-
-          invitationId:
-            invitationRef.id,
-
-          actorId:
-            uid,
-        },
-      );
-
-      return {
-        success: true,
-
-        invitation: {
-          ...invitation,
-
-          expiresAt:
-            expiresAt.toISOString(),
-        },
-      };
-    },
-  );
+        expiresAt: expiresAt.toISOString(),
+      },
+    };
+  },
+);
 
 /**
  * Retrieve invitations for the current organization.
  */
-export const getOrganizationInvitations =
-  onCall(
-    {
-      region: "us-central1",
-    },
-    async (request) => {
-      if (!request.auth) {
-        throw new HttpsError(
-          "unauthenticated",
-          "You must be signed in.",
-        );
-      }
+export const getOrganizationInvitations = onCall(
+  {
+    region: 'us-central1',
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'You must be signed in.');
+    }
 
-      const data =
-        request.data as Record<string, unknown>;
+    const data = request.data as Record<string, unknown>;
 
-      const organizationId =
-        typeof data.organizationId === "string" ?
-          data.organizationId.trim() :
-          "";
+    const organizationId =
+      typeof data.organizationId === 'string' ? data.organizationId.trim() : '';
 
-      if (!organizationId) {
-        throw new HttpsError(
-          "invalid-argument",
-          "Organization ID is required.",
-        );
-      }
+    if (!organizationId) {
+      throw new HttpsError('invalid-argument', 'Organization ID is required.');
+    }
 
-      const uid =
-        request.auth.uid;
+    const uid = request.auth.uid;
 
-      await requireOrganizationInvitationAdmin(
-        organizationId,
-        uid,
-      );
+    await requireOrganizationInvitationAdmin(organizationId, uid);
 
-      const db =
-        getFirestore();
+    const db = getFirestore();
 
-      const snapshot =
-        await db
-          .collection(
-            "organizationInvitations",
-          )
-          .where(
-            "organizationId",
-            "==",
-            organizationId,
-          )
-          .get();
+    const snapshot = await db
+      .collection('organizationInvitations')
+      .where('organizationId', '==', organizationId)
+      .get();
 
-      const invitations = snapshot.docs.map((snapshot) => {
-        const data = snapshot.data() as OrganizationInvitationRecord;
-
-        return {
-          id: snapshot.id,
-          ...data,
-        };
-      });
-      invitations.sort((a, b) => {
-        const aTime = a.createdAt?.toMillis?.() ?? 0;
-        const bTime = b.createdAt?.toMillis?.() ?? 0;
-
-        return bTime - aTime;
-      });
+    const invitations = snapshot.docs.map((snapshot) => {
+      const data = snapshot.data() as OrganizationInvitationRecord;
 
       return {
-        invitations,
+        id: snapshot.id,
+        ...data,
       };
-    },
-  );
+    });
+    invitations.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() ?? 0;
+      const bTime = b.createdAt?.toMillis?.() ?? 0;
+
+      return bTime - aTime;
+    });
+
+    return {
+      invitations,
+    };
+  },
+);
 
 /**
  * Complete the Invite Team onboarding step.
@@ -655,205 +432,121 @@ export const getOrganizationInvitations =
  * may continue without inviting additional users.
  */
 
+export const completeOrganizationInviteMembersStep = onCall(
+  {
+    region: 'us-central1',
+  },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'Authentication is required.');
+    }
 
- export const completeOrganizationInviteMembersStep =
-  onCall(
-    {
-      region: "us-central1",
-    },
-    async (request) => {
-      if (!request.auth?.uid) {
+    const organizationId = request.data?.organizationId;
+
+    if (typeof organizationId !== 'string' || !organizationId.trim()) {
+      throw new HttpsError('invalid-argument', 'organizationId is required.');
+    }
+
+    const normalizedOrganizationId = organizationId.trim();
+
+    const callerUid = request.auth.uid;
+
+    const db = getFirestore();
+
+    const organizationRef = db.collection('organizations').doc(normalizedOrganizationId);
+
+    const membershipRef = db
+      .collection('organizationMemberships')
+      .doc(`${callerUid}_${normalizedOrganizationId}`);
+
+    const onboardingRef = db.collection('organizationOnboarding').doc(normalizedOrganizationId);
+
+    const result = await db.runTransaction(async (transaction) => {
+      const [organizationSnapshot, membershipSnapshot, onboardingSnapshot] = await Promise.all([
+        transaction.get(organizationRef),
+        transaction.get(membershipRef),
+        transaction.get(onboardingRef),
+      ]);
+
+      if (!organizationSnapshot.exists) {
+        throw new HttpsError('not-found', 'Organization not found.');
+      }
+
+      const organization = organizationSnapshot.data();
+
+      if (organization?.status !== 'onboarding') {
         throw new HttpsError(
-          "unauthenticated",
-          "Authentication is required.",
+          'failed-precondition',
+          'The organization is not currently onboarding.',
         );
       }
 
-      const organizationId =
-        request.data?.organizationId;
+      if (!membershipSnapshot.exists) {
+        throw new HttpsError('permission-denied', 'You are not a member of this organization.');
+      }
 
-      if (
-        typeof organizationId !== "string" ||
-        !organizationId.trim()
-      ) {
+      const membership = membershipSnapshot.data();
+
+      if (membership?.active !== true) {
+        throw new HttpsError('permission-denied', 'Your organization membership is not active.');
+      }
+
+      if (membership.role !== 'org_owner' && membership.role !== 'org_admin') {
         throw new HttpsError(
-          "invalid-argument",
-          "organizationId is required.",
+          'permission-denied',
+          'Only an organization owner or administrator can complete onboarding.',
         );
       }
 
-      const normalizedOrganizationId =
-        organizationId.trim();
-
-      const callerUid =
-        request.auth.uid;
-
-      const db =
-        getFirestore();
-
-      const organizationRef = db
-        .collection("organizations")
-        .doc(normalizedOrganizationId);
-
-      const membershipRef = db
-        .collection("organizationMemberships")
-        .doc(
-          `${callerUid}_${normalizedOrganizationId}`,
+      if (!onboardingSnapshot.exists) {
+        throw new HttpsError(
+          'failed-precondition',
+          'Organization onboarding has not been initialized.',
         );
+      }
 
-      const onboardingRef = db
-        .collection("organizationOnboarding")
-        .doc(normalizedOrganizationId);
+      const onboarding = onboardingSnapshot.data() as OrganizationOnboardingTransitionState;
 
-      const result =
-        await db.runTransaction(
-          async (transaction) => {
-            const [
-              organizationSnapshot,
-              membershipSnapshot,
-              onboardingSnapshot,
-            ] = await Promise.all([
-              transaction.get(
-                organizationRef,
-              ),
-              transaction.get(
-                membershipRef,
-              ),
-              transaction.get(
-                onboardingRef,
-              ),
-            ]);
+      assertCurrentOnboardingStep(onboarding, 'invite_members');
 
-            if (
-              !organizationSnapshot.exists
-            ) {
-              throw new HttpsError(
-                "not-found",
-                "Organization not found.",
-              );
+      const now = FieldValue.serverTimestamp();
+
+      const transition = advanceOnboarding(onboarding);
+
+      transaction.update(onboardingRef, {
+        completedSteps: transition.completedSteps,
+
+        currentStep: transition.currentStep,
+
+        status: transition.status,
+
+        ...(transition.isComplete
+          ? {
+              completedAt: now,
             }
+          : {
+              completedAt: null,
+            }),
 
-            const organization =
-              organizationSnapshot.data();
-
-            if (
-              organization?.status !==
-              "onboarding"
-            ) {
-              throw new HttpsError(
-                "failed-precondition",
-                "The organization is not currently onboarding.",
-              );
-            }
-
-            if (
-              !membershipSnapshot.exists
-            ) {
-              throw new HttpsError(
-                "permission-denied",
-                "You are not a member of this organization.",
-              );
-            }
-
-            const membership =
-              membershipSnapshot.data();
-
-            if (
-              membership?.active !== true
-            ) {
-              throw new HttpsError(
-                "permission-denied",
-                "Your organization membership is not active.",
-              );
-            }
-
-            if (
-              membership.role !==
-                "org_owner" &&
-              membership.role !==
-                "org_admin"
-            ) {
-              throw new HttpsError(
-                "permission-denied",
-                "Only an organization owner or administrator can complete onboarding.",
-              );
-            }
-
-            if (
-              !onboardingSnapshot.exists
-            ) {
-              throw new HttpsError(
-                "failed-precondition",
-                "Organization onboarding has not been initialized.",
-              );
-            }
-
-            const onboarding =
-              onboardingSnapshot.data() as
-                OrganizationOnboardingTransitionState;
-
-            assertCurrentOnboardingStep(
-              onboarding,
-              "invite_members",
-            );
-
-            const now =
-              FieldValue.serverTimestamp();
-
-            const transition =
-              advanceOnboarding(
-                onboarding,
-              );
-
-            transaction.update(
-              onboardingRef,
-              {
-                completedSteps:
-                  transition.completedSteps,
-
-                currentStep:
-                  transition.currentStep,
-
-                status:
-                  transition.status,
-
-                ...(transition.isComplete
-                  ? {
-                      completedAt:
-                        now,
-                    }
-                  : {
-                      completedAt:
-                        null,
-                    }),
-
-                updatedAt:
-                  now,
-              },
-            );
-
-            return {
-              organizationId:
-                normalizedOrganizationId,
-
-              currentStep:
-                transition.currentStep,
-
-              completedSteps:
-                transition.completedSteps,
-
-              status:
-                transition.status,
-
-              isComplete:
-                transition.isComplete,
-            };
-          },
-        );
+        updatedAt: now,
+      });
 
       return {
-        success: true,
-        ...result,
+        organizationId: normalizedOrganizationId,
+
+        currentStep: transition.currentStep,
+
+        completedSteps: transition.completedSteps,
+
+        status: transition.status,
+
+        isComplete: transition.isComplete,
       };
-    },
-  );
+    });
+
+    return {
+      success: true,
+      ...result,
+    };
+  },
+);

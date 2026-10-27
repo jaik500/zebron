@@ -12,6 +12,10 @@ import {
   createOrganizationInvitationOutboxData,
 } from "./organization-email-outbox";
 
+import {
+  isPlatformAdministrator,
+} from "./platform-admin-authorization";
+
 const INVITATION_EXPIRATION_DAYS = 7;
 
 const INVITABLE_ROLES = [
@@ -176,7 +180,7 @@ export const createOrganizationInvitation = onCall(
           membershipData?.active === true;
 
         const isPlatformAdmin =
-          request.auth?.token?.platformAdmin === true;
+  await isPlatformAdministrator(request);
 
         const isAuthorizedOrganizationInviter =
           membershipActive &&
