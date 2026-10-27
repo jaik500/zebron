@@ -1,3 +1,4 @@
+
 import {
   Injectable,
   computed,
@@ -7,9 +8,7 @@ import {
 
 import { Organization } from '../models/organization.model';
 import { OrganizationMembership } from '../models/organization-membership.model';
-import {
-  ORGANIZATION_REPOSITORY,
-} from '../repositories/organization.repository';
+import { ORGANIZATION_REPOSITORY } from '../repositories/organization.repository';
 import { OrganizationMembershipRepository } from '../repositories/firestore/organization-membership.repository';
 import { AuthService } from './auth.service';
 
@@ -23,11 +22,11 @@ export type PartnerOrganizationRole =
 /**
  * Tenant context used by partner-facing features.
  *
- * Platform administrators are allowed to access the Partner Portal without
- * belonging to an organization.
+ * Platform administrators can access organizations without having
+ * organization memberships.
  *
- * Organization-scoped users can only select organizations for which they
- * have an active membership.
+ * Organization-scoped users can access only organizations for which
+ * they have an active membership.
  */
 @Injectable({ providedIn: 'root' })
 export class PartnerOrganizationContextService {
@@ -48,8 +47,14 @@ export class PartnerOrganizationContextService {
   private readonly selectedOrganizationState =
     signal<Organization | null>(null);
 
-    private initializePromise: Promise<void> | null = null;
-private initializeOrganizationId: string | null = null;
+  /**
+   * Track concurrent initialization by organization ID.
+   *
+   * This prevents a request for one organization from accidentally
+   * reusing a pending request for another organization.
+   */
+  private readonly initializationPromises =
+    new Map<string, Promise<void>>();
 
   readonly memberships = computed(
     () => this.membershipsState(),
@@ -68,21 +73,16 @@ private initializeOrganizationId: string | null = null;
   );
 
   /**
-   * True when the authenticated user is a platform administrator.
-   *
-   * Platform administration is intentionally separate from organization
-   * membership and organization roles.
+   * Platform-level authorization is independent of organization roles.
    */
   readonly isPlatformAdmin = computed(
     () => this.authService.isAdmin,
   );
 
   /**
-   * Current organization role.
+   * Returns the current user's role in the selected organization.
    *
-   * Platform administrators may have no organization selected, in which
-   * case this returns null. Their platform-level permissions are handled
-   * separately by PartnerAccessService.
+   * Platform administrators do not need an organization role.
    */
   readonly organizationRole =
     computed<PartnerOrganizationRole | null>(() => {
@@ -102,10 +102,8 @@ private initializeOrganizationId: string | null = null;
     });
 
   /**
-   * Managers and administrators can manage organization-level
-   * Test Center administration.
-   *
-   * Platform administrators are unrestricted.
+   * Platform administrators and organization owners, administrators,
+   * and managers can manage courses.
    */
   readonly canManageCourses = computed(() => {
     if (this.isPlatformAdmin()) {
@@ -126,184 +124,297 @@ private initializeOrganizationId: string | null = null;
   readonly error = signal<string | null>(null);
 
   /**
-   * Initialize the partner organization context.
+   * Initialize the organization context.
    *
-   * Platform administrators are allowed to initialize successfully even
-   * when they have zero organization memberships.
+   * If an organization ID is provided, initialize that specific
+   * organization. This is important when refreshing a deep URL such as:
+   *
+   * /partner/org/ORGANIZATION_ID/dashboard
+   *
+   * Platform administrators are handled separately from organization
+   * members so their access does not depend on membership records.
    */
-async initialize(
-  preferredOrganizationId?: string | null,
-): Promise<void> {
-  const preferredId =
-    preferredOrganizationId?.trim() || null;
+  async initialize(
+    preferredOrganizationId?: string | null,
+  ): Promise<void> {
+    const preferredId =
+      preferredOrganizationId?.trim() || null;
 
-  /*
-   * If this exact organization is already being initialized,
-   * wait for that initialization to finish instead of returning
-   * before the context has been populated.
-   */
-  if (
-    this.initializePromise &&
-    this.initializeOrganizationId === preferredId
-  ) {
-    return this.initializePromise;
-  }
+    const promiseKey = preferredId ?? '__default__';
 
-  this.initializeOrganizationId = preferredId;
+    const existingPromise =
+      this.initializationPromises.get(promiseKey);
 
-  this.initializePromise = this.initializeInternal(
-    preferredId,
-  );
-
-  try {
-    await this.initializePromise;
-  } finally {
-    if (
-      this.initializeOrganizationId === preferredId
-    ) {
-      this.initializePromise = null;
-      this.initializeOrganizationId = null;
-    }
-  }
-}
-
-private async initializeInternal(
-  preferredOrganizationId: string | null,
-): Promise<void> {
-  this.loading.set(true);
-  this.error.set(null);
-
-  try {
-    const user = this.authService.firebaseUser();
-
-    if (!user?.uid) {
-      throw new Error(
-        'You must be signed in to access the Partner Portal.',
-      );
+    if (existingPromise) {
+      return existingPromise;
     }
 
-    const memberships =
-      await this.membershipRepository.getMembershipsForUser(
-        user.uid,
-      );
+    const initializationPromise =
+      this.initializeInternal(preferredId);
 
-    const activeMemberships =
-      memberships.filter(
-        (membership) =>
-          membership.active === true,
-      );
-
-    this.membershipsState.set(
-      activeMemberships,
+    this.initializationPromises.set(
+      promiseKey,
+      initializationPromise,
     );
 
-    const organizationResults =
-      await Promise.all(
-        activeMemberships.map(
-          (membership) =>
-            this.organizationRepository.getOrganization(
-              membership.organizationId,
-            ),
+    try {
+      await initializationPromise;
+    } finally {
+      if (
+        this.initializationPromises.get(promiseKey) ===
+        initializationPromise
+      ) {
+        this.initializationPromises.delete(promiseKey);
+      }
+    }
+  }
+
+  /**
+   * Perform initialization for the requested organization.
+   */
+  private async initializeInternal(
+    preferredOrganizationId: string | null,
+  ): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+
+    try {
+      const user = this.authService.firebaseUser();
+
+      if (!user?.uid) {
+        throw new Error(
+          'You must be signed in to access the Partner Portal.',
+        );
+      }
+
+      /*
+       * Platform administrators do not need organization memberships.
+       *
+       * Load their requested organization directly before running the
+       * organization-membership initialization used for regular users.
+       */
+      if (this.isPlatformAdmin()) {
+        await this.initializePlatformAdminContext(
+          preferredOrganizationId,
+        );
+
+        return;
+      }
+
+      /*
+       * Regular users must have active organization memberships.
+       */
+      const memberships =
+        await this.membershipRepository.getMembershipsForUser(
+          user.uid,
+        );
+
+      const activeMemberships = memberships.filter(
+        (membership) => membership.active === true,
+      );
+
+      this.membershipsState.set(activeMemberships);
+
+      const organizationResults = await Promise.all(
+        activeMemberships.map((membership) =>
+          this.organizationRepository.getOrganization(
+            membership.organizationId,
+          ),
         ),
       );
 
-    const organizations =
-      organizationResults.filter(
+      const organizations = organizationResults.filter(
         (
           organization,
         ): organization is Organization =>
           organization?.active === true,
       );
 
-    this.organizationsState.set(
-      organizations,
-    );
+      this.organizationsState.set(organizations);
 
-    const currentId =
-      this.selectedOrganizationState()?.id ??
-      null;
+      const currentOrganizationId =
+        this.selectedOrganizationState()?.id ?? null;
 
-    const selected =
-      (
-        preferredOrganizationId
-          ? organizations.find(
-              (organization) =>
-                organization.id ===
-                preferredOrganizationId,
-            )
-          : null
-      ) ??
-      organizations.find(
-        (organization) =>
-          organization.id === currentId,
-      ) ??
-      organizations[0] ??
-      null;
+      const selectedOrganization =
+        (
+          preferredOrganizationId
+            ? organizations.find(
+                (organization) =>
+                  organization.id === preferredOrganizationId,
+              )
+            : null
+        ) ??
+        organizations.find(
+          (organization) =>
+            organization.id === currentOrganizationId,
+        ) ??
+        organizations[0] ??
+        null;
 
-    if (
-      preferredOrganizationId &&
-      !organizations.some(
-        (organization) =>
-          organization.id ===
-          preferredOrganizationId,
-      )
-    ) {
-      throw new Error(
-        'You do not have access to the selected organization.',
+      /*
+       * Never silently fall back to a different organization when the
+       * URL explicitly requests an organization the user cannot access.
+       */
+      if (
+        preferredOrganizationId &&
+        !organizations.some(
+          (organization) =>
+            organization.id === preferredOrganizationId,
+        )
+      ) {
+        throw new Error(
+          'You do not have access to the selected organization.',
+        );
+      }
+
+      this.selectedOrganizationState.set(
+        selectedOrganization,
       );
+
+      if (!selectedOrganization) {
+        throw new Error(
+          'Your account is not associated with an active partner organization.',
+        );
+      }
+    } catch (error) {
+      /*
+       * Preserve the selected context for platform administrators.
+       * Regular users should not retain a potentially unauthorized
+       * organization selection after a failed initialization.
+       */
+      if (!this.isPlatformAdmin()) {
+        this.organizationsState.set([]);
+        this.selectedOrganizationState.set(null);
+      }
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to load your partner organization.';
+
+      this.error.set(message);
+
+      throw error;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /**
+   * Initialize context for a platform administrator.
+   *
+   * When the URL specifies an organization, load that organization
+   * directly from the repository. Do not require an organization
+   * membership.
+   */
+  private async initializePlatformAdminContext(
+    preferredOrganizationId: string | null,
+  ): Promise<void> {
+    /*
+     * Load memberships when available for role/context display, but
+     * do not make successful platform-admin access depend on them.
+     */
+    const user = this.authService.firebaseUser();
+
+    if (user?.uid) {
+      try {
+        const memberships =
+          await this.membershipRepository.getMembershipsForUser(
+            user.uid,
+          );
+
+        this.membershipsState.set(
+          memberships.filter(
+            (membership) => membership.active === true,
+          ),
+        );
+      } catch {
+        /*
+         * Membership data is optional for platform administrators.
+         * Platform-level authorization is handled independently.
+         */
+        this.membershipsState.set([]);
+      }
     }
 
-    this.selectedOrganizationState.set(
-      selected,
-    );
+    if (preferredOrganizationId) {
+      const existingOrganization =
+        this.organizationsState().find(
+          (organization) =>
+            organization.id === preferredOrganizationId,
+        );
 
-    /*
-     * Platform administrators do not require
-     * an organization membership.
-     */
-    if (this.isPlatformAdmin()) {
+      const organization =
+        existingOrganization ??
+        await this.organizationRepository.getOrganization(
+          preferredOrganizationId,
+        );
+
+      if (!organization) {
+        throw new Error(
+          'The requested organization could not be found.',
+        );
+      }
+
+      /*
+       * Do not silently switch to another organization.
+       * Preserve the requested organization as the active context.
+       */
+      this.organizationsState.update((organizations) => {
+        const alreadyLoaded = organizations.some(
+          (item) => item.id === organization.id,
+        );
+
+        if (alreadyLoaded) {
+          return organizations.map((item) =>
+            item.id === organization.id
+              ? organization
+              : item,
+          );
+        }
+
+        return [...organizations, organization];
+      });
+
+      this.selectedOrganizationState.set(organization);
+
       return;
     }
 
     /*
-     * Organization-scoped partner users must belong
-     * to at least one active organization.
+     * When no organization is specified, retain an existing selection
+     * if possible. Otherwise load the organization's directory.
      */
-    if (!selected) {
-      throw new Error(
-        'Your account is not associated with an active partner organization.',
-      );
-    }
-  } catch (error) {
-    /*
-     * Do not wipe the context for a platform administrator
-     * simply because they have no organization memberships.
-     */
-    if (!this.isPlatformAdmin()) {
-      this.organizationsState.set([]);
-      this.selectedOrganizationState.set(null);
+    let organizations = this.organizationsState();
+
+    if (organizations.length === 0) {
+      organizations =
+        await this.organizationRepository.getOrganizations();
+
+      this.organizationsState.set(organizations);
     }
 
-    this.error.set(
-      error instanceof Error
-        ? error.message
-        : 'Unable to load your partner organization.',
+    const currentOrganizationId =
+      this.selectedOrganizationState()?.id ?? null;
+
+    const selectedOrganization =
+      organizations.find(
+        (organization) =>
+          organization.id === currentOrganizationId,
+      ) ??
+      organizations[0] ??
+      null;
+
+    this.selectedOrganizationState.set(
+      selectedOrganization,
     );
-
-    throw error;
-  } finally {
-    this.loading.set(false);
   }
-}
 
   /**
-   * Select an organization.
+   * Select an organization that is already available in the context.
    *
-   * Platform administrators can select any organization that has been
-   * loaded into the current context.
-   *
-   * Organization-scoped users can only select an organization for which
-   * they have an active membership.
+   * Platform administrators may load organizations directly.
+   * Regular users must have an active membership.
    */
   async selectOrganization(
     organizationId: string,
@@ -316,27 +427,50 @@ private async initializeInternal(
       );
     }
 
-    const organization =
+    let organization =
       this.organizations().find(
         (item) => item.id === normalizedId,
       ) ?? null;
+
+    if (this.isPlatformAdmin()) {
+      if (!organization) {
+        organization =
+          await this.organizationRepository.getOrganization(
+            normalizedId,
+          );
+      }
+
+      if (!organization) {
+        throw new Error(
+          'The selected organization could not be found.',
+        );
+      }
+
+      this.organizationsState.update((organizations) => {
+        const alreadyLoaded = organizations.some(
+          (item) => item.id === organization!.id,
+        );
+
+        if (alreadyLoaded) {
+          return organizations.map((item) =>
+            item.id === organization!.id
+              ? organization!
+              : item,
+          );
+        }
+
+        return [...organizations, organization!];
+      });
+
+      this.selectedOrganizationState.set(organization);
+
+      return;
+    }
 
     if (!organization) {
       throw new Error(
         'The selected organization is unavailable.',
       );
-    }
-
-    /**
-     * Platform administrators are not constrained by organization
-     * membership.
-     */
-    if (this.isPlatformAdmin()) {
-      this.selectedOrganizationState.set(
-        organization,
-      );
-
-      return;
     }
 
     const membership = this.memberships().find(
@@ -351,17 +485,20 @@ private async initializeInternal(
       );
     }
 
-    this.selectedOrganizationState.set(
-      organization,
-    );
+    if (organization.active !== true) {
+      throw new Error(
+        'The selected organization is not active.',
+      );
+    }
+
+    this.selectedOrganizationState.set(organization);
   }
 
   /**
-   * Require an organization for an organization-scoped operation.
+   * Require an organization ID for organization-scoped operations.
    *
-   * This intentionally remains strict. Being a platform administrator
-   * does not magically turn an organization-scoped record into a
-   * platform-scoped record.
+   * Platform-admin access does not turn organization-scoped operations
+   * into platform-scoped operations.
    */
   requireOrganizationId(): string {
     const organizationId = this.organizationId();
@@ -376,16 +513,16 @@ private async initializeInternal(
   }
 
   /**
-   * Convert legacy membership role values into the new namespaced
-   * organization role model.
+   * Normalize legacy organization role names.
    *
-   * This allows existing data to continue being read while the
-   * organization membership records are migrated.
-   *
-   * New data should use the namespaced values.
+   * New membership records should use namespaced role values.
    */
   private normalizeRole(
-    role: OrganizationMembership['role'] | string | null | undefined,
+    role:
+      | OrganizationMembership['role']
+      | string
+      | null
+      | undefined,
   ): PartnerOrganizationRole | null {
     switch (role) {
       case 'org_owner':
@@ -395,12 +532,6 @@ private async initializeInternal(
       case 'org_member':
         return role;
 
-      /**
-       * Temporary compatibility with existing membership records.
-       *
-       * Remove these cases after the Firestore organization membership
-       * data has been migrated completely to the namespaced roles.
-       */
       case 'owner':
         return 'org_owner';
 
@@ -418,3 +549,4 @@ private async initializeInternal(
     }
   }
 }
+

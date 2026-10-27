@@ -39,7 +39,7 @@ interface SettingsSection {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-slate-50">
+    <div class="min-h-screen bg-slate-50 mt-10">
 
       <!-- =========================================================
            HEADER

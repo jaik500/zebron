@@ -8,235 +8,92 @@ import {
 import { AuthService } from '../services/auth.service';
 import { PartnerOrganizationContextService } from '../services/partner-organization-context.service';
 
+/**
+ * Protects organization-scoped Partner routes.
+ *
+ * Initializes and validates the requested organization's context
+ * before granting access.
+ */
 export const partnerOrganizationGuard: CanActivateFn = async (
   route: ActivatedRouteSnapshot,
 ) => {
   const authService = inject(AuthService);
-
-  const context = inject(
-    PartnerOrganizationContextService,
-  );
-
+  const context = inject(PartnerOrganizationContextService);
   const router = inject(Router);
 
-  /*
-   * The organization ID must come from the organization-scoped
-   * route. Never allow the context to silently select a different
-   * organization for an organization-scoped route.
-   */
-  const organizationId =
-    route.paramMap.get('organizationId')?.trim();
-
-  /*
-   * Firebase Auth may still be restoring the persisted
-   * authentication session during a hard browser refresh.
-   */
+  // Wait for Firebase authentication initialization.
   while (authService.isLoading()) {
-    await new Promise((resolve) =>
-      setTimeout(resolve, 50),
-    );
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
   }
 
-  console.log(
-    '========== PARTNER ORGANIZATION GUARD ==========',
-  );
+  // Require an authenticated Firebase user.
+  if (!authService.firebaseUser()) {
+    return router.createUrlTree(['/login']);
+  }
 
-  console.log(
-    'Requested organization:',
-    organizationId,
-  );
+  const organizationId = route.paramMap.get('organizationId')?.trim();
+
+  console.log('========== PARTNER ORGANIZATION GUARD ==========');
+  console.log('Requested organization:', organizationId);
 
   if (!organizationId) {
-    console.error(
-      'PARTNER ORGANIZATION GUARD: NO ORGANIZATION ID',
-    );
-
+    console.error('PARTNER ORGANIZATION GUARD: MISSING ORGANIZATION ID');
     return router.createUrlTree(['/partner']);
   }
 
   try {
-    /*
-     * Establish the requested organization context before
-     * performing any organization-level authorization.
-     */
-    await context.initialize(
-      organizationId,
-    );
+    // Initialize context for the requested organization.
+    await context.initialize(organizationId);
 
-    console.log(
-      'PARTNER ORGANIZATION GUARD: CONTEXT INITIALIZED',
-      {
-        requestedOrganizationId:
-          organizationId,
+    const actualOrganizationId = context.organizationId();
+    const role = context.organizationRole();
 
-        contextOrganizationId:
-          context.organizationId(),
+    console.log('Organization context initialized:', {
+      requestedOrganizationId: organizationId,
+      actualOrganizationId,
+      role,
+      isPlatformAdmin: context.isPlatformAdmin(),
+    });
 
-        organizationRole:
-          context.organizationRole(),
-
-        isPlatformAdmin:
-          context.isPlatformAdmin(),
-
-        memberships:
-          context.memberships(),
-
-        organizations:
-          context.organizations(),
-
-        contextError:
-          context.error(),
-      },
-    );
-
-    /*
-     * The requested organization must be the organization
-     * actually established in the context.
-     */
-    if (
-      context.organizationId() !==
-      organizationId
-    ) {
-      console.error(
-        'PARTNER ORGANIZATION GUARD: CONTEXT MISMATCH',
-        {
-          requestedOrganizationId:
-            organizationId,
-
-          actualContextOrganizationId:
-            context.organizationId(),
-        },
-      );
-
-      return router.createUrlTree([
-        '/partner',
-      ]);
+    // Prevent access if the context belongs to another organization.
+    if (actualOrganizationId !== organizationId) {
+      console.error('PARTNER ORGANIZATION GUARD: CONTEXT MISMATCH');
+      return router.createUrlTree(['/partner']);
     }
 
-    /*
-     * Platform administrators have unrestricted
-     * organization-scoped access.
-     */
-    if (authService.isAdmin) {
-      console.log(
-        'PARTNER ORGANIZATION GUARD: PLATFORM ADMIN ACCESS GRANTED',
-      );
-
+    // Platform administrators may access organization-scoped routes.
+    if (context.isPlatformAdmin()) {
+      console.log('PARTNER ORGANIZATION GUARD: PLATFORM ADMIN ACCESS GRANTED');
       return true;
     }
 
-    /*
-     * Some organization-scoped routes require an
-     * organization owner/admin.
-     *
-     * This check is intentionally performed here,
-     * AFTER the organization context has been initialized.
-     */
-    const organizationAdminOnly =
-      route.data?.['organizationAdminOnly'] === true;
-
-    if (organizationAdminOnly) {
-      const role =
-        context.organizationRole();
-
-      if (
-        role !== 'org_owner' &&
-        role !== 'org_admin'
-      ) {
-        console.error(
-          'PARTNER ORGANIZATION GUARD: ORGANIZATION ADMIN ACCESS DENIED',
-          {
-            organizationId,
-            role,
-          },
-        );
-
-        return router.createUrlTree([
-          '/partner',
-        ]);
-      }
-
-      console.log(
-        'PARTNER ORGANIZATION GUARD: ORGANIZATION ADMIN ACCESS GRANTED',
-        {
+    // Enforce organization-admin access only when requested by route data.
+    if (route.data?.['organizationAdminOnly'] === true) {
+      if (role !== 'org_owner' && role !== 'org_admin') {
+        console.error('PARTNER ORGANIZATION GUARD: ADMIN ACCESS DENIED', {
           organizationId,
           role,
-        },
-      );
+        });
+
+        return router.createUrlTree(['/partner']);
+      }
     }
 
-    console.log(
-      'PARTNER ORGANIZATION GUARD: ORGANIZATION ACCESS GRANTED',
-      {
-        organizationId,
-        role:
-          context.organizationRole(),
-      },
-    );
+    console.log('PARTNER ORGANIZATION GUARD: ACCESS GRANTED', {
+      organizationId,
+      role,
+    });
 
     return true;
   } catch (error) {
-    console.error(
-      '========== PARTNER ORGANIZATION GUARD FAILED ==========',
-    );
-
-    console.error(
-      'Error:',
-      error,
-    );
-
-    console.error(
-      'Organization ID:',
+    console.error('PARTNER ORGANIZATION GUARD: INITIALIZATION FAILED', {
       organizationId,
-    );
+      error,
+      contextOrganizationId: context.organizationId(),
+      contextRole: context.organizationRole(),
+      contextError: context.error(),
+    });
 
-    console.error(
-      'Context organization ID:',
-      context.organizationId(),
-    );
-
-    console.error(
-      'Context role:',
-      context.organizationRole(),
-    );
-
-    console.error(
-      'Context error:',
-      context.error(),
-    );
-
-    console.error(
-      'Is platform admin:',
-      context.isPlatformAdmin(),
-    );
-
-    console.error(
-      'Memberships:',
-      context.memberships(),
-    );
-
-    console.error(
-      'Organizations:',
-      context.organizations(),
-    );
-
-    console.error(
-      'Firebase user:',
-      authService.firebaseUser(),
-    );
-
-    console.error(
-      'Auth profile:',
-      authService.user(),
-    );
-
-    console.error(
-      'Auth loading:',
-      authService.isLoading(),
-    );
-
-    return router.createUrlTree([
-      '/partner',
-    ]);
+    return router.createUrlTree(['/partner']);
   }
 };

@@ -80,10 +80,11 @@ interface QuestionForm {
                 <span>/</span>
 
                 <a
+                  mat-stroked-button
                   [routerLink]="['/partner/org', context.organizationId(), 'test-center']"
-                  class="hover:text-white"
+                  class="hidden sm:inline-flex !border-white/10 !text-white"
                 >
-                  Test Center
+                  <mat-icon>arrow_back</mat-icon> Test Center
                 </a>
 
                 <span>/</span>
@@ -150,61 +151,61 @@ interface QuestionForm {
           <!-- COURSE / TOPIC SELECTORS -->
           <!-- ================================================== -->
 
-<section class="mb-6 rounded-xl border border-gray-200 bg-white p-5">
-  <div class="grid gap-4 md:grid-cols-[1fr_1fr_0.5fr]">
-    <!-- COURSE -->
-    <label class="block min-w-0">
-      <span class="text-sm font-medium text-gray-700">Course</span>
+          <section class="mb-6 rounded-xl border border-gray-200 bg-white p-5">
+            <div class="grid gap-4 md:grid-cols-[1fr_1fr_0.5fr]">
+              <!-- COURSE -->
+              <label class="block min-w-0">
+                <span class="text-sm font-medium text-gray-700">Course</span>
 
-      <select
-        [ngModel]="selectedCourseId()"
-        (ngModelChange)="onCourseChange($event)"
-        class="mt-2 min-h-[52px] w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 shadow-sm transition duration-200 placeholder:text-gray-400 focus:border-[#007979] focus:outline-none focus:ring-4 focus:ring-[#007979]/15 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
-      >
-        <option value="">Select a course</option>
+                <select
+                  [ngModel]="selectedCourseId()"
+                  (ngModelChange)="onCourseChange($event)"
+                  class="mt-2 min-h-[52px] w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 shadow-sm transition duration-200 placeholder:text-gray-400 focus:border-[#007979] focus:outline-none focus:ring-4 focus:ring-[#007979]/15 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+                >
+                  <option value="">Select a course</option>
 
-        @for (course of courses(); track course.id) {
-          <option [value]="course.id">
-            {{ course.name }}
-          </option>
-        }
-      </select>
-    </label>
+                  @for (course of courses(); track course.id) {
+                    <option [value]="course.id">
+                      {{ course.name }}
+                    </option>
+                  }
+                </select>
+              </label>
 
-    <!-- TOPIC -->
-    <label class="block min-w-0">
-      <span class="text-sm font-medium text-gray-700">Topic</span>
+              <!-- TOPIC -->
+              <label class="block min-w-0">
+                <span class="text-sm font-medium text-gray-700">Topic</span>
 
-      <select
-        [ngModel]="selectedTopicId()"
-        (ngModelChange)="onTopicChange($event)"
-        [disabled]="!selectedCourseId() || loadingTopics()"
-        class="mt-2 min-h-[52px] w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 shadow-sm transition duration-200 placeholder:text-gray-400 focus:border-[#007979] focus:outline-none focus:ring-4 focus:ring-[#007979]/15 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
-      >
-        <option value="">Select a topic</option>
+                <select
+                  [ngModel]="selectedTopicId()"
+                  (ngModelChange)="onTopicChange($event)"
+                  [disabled]="!selectedCourseId() || loadingTopics()"
+                  class="mt-2 min-h-[52px] w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 shadow-sm transition duration-200 placeholder:text-gray-400 focus:border-[#007979] focus:outline-none focus:ring-4 focus:ring-[#007979]/15 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+                >
+                  <option value="">Select a topic</option>
 
-        @for (topic of topics(); track topic.id) {
-          <option [value]="topic.id">
-            {{ topic.name }}
-          </option>
-        }
-      </select>
-    </label>
+                  @for (topic of topics(); track topic.id) {
+                    <option [value]="topic.id">
+                      {{ topic.name }}
+                    </option>
+                  }
+                </select>
+              </label>
 
-    <!-- NEW QUESTION -->
-    <div class="flex items-end">
-      <button
-        type="button"
-        (click)="startNewQuestion()"
-        [disabled]="!selectedTopicId() || !access.canManageQuestions()"
-        class="mb-0 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#007979] px-5 py-3 text-base font-semibold text-white shadow-sm transition duration-200 hover:bg-[#006666] focus:outline-none focus:ring-4 focus:ring-[#007979]/20 disabled:cursor-not-allowed disabled:opacity-50 md:w-60"
-      >
-        <mat-icon>add</mat-icon>
-        <span>New Question</span>
-      </button>
-    </div>
-  </div>
-</section>
+              <!-- NEW QUESTION -->
+              <div class="flex items-end">
+                <button
+                  type="button"
+                  (click)="startNewQuestion()"
+                  [disabled]="!selectedTopicId() || !access.canManageQuestions()"
+                  class="mb-0 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#007979] px-5 py-3 text-base font-semibold text-white shadow-sm transition duration-200 hover:bg-[#006666] focus:outline-none focus:ring-4 focus:ring-[#007979]/20 disabled:cursor-not-allowed disabled:opacity-50 md:w-60"
+                >
+                  <mat-icon>add</mat-icon>
+                  <span>New Question</span>
+                </button>
+              </div>
+            </div>
+          </section>
 
           <!-- ================================================== -->
           <!-- SELECTED COURSE / TOPIC -->
@@ -243,12 +244,11 @@ interface QuestionForm {
                         class="rounded-full px-1.5 py-0.5 text-[14px]"
                         [class.bg-white/20]="statusFilter() === filter.value"
                         [class.bg-gray-100]="statusFilter() !== filter.value"
-                      >{{ statusCount(filter.value) }}</span>
+                        >{{ statusCount(filter.value) }}</span
+                      >
                     </button>
                   }
                 </div>
-
-                
               </div>
             </section>
           }
@@ -540,197 +540,203 @@ interface QuestionForm {
               </div>
             } @else {
               @if (filteredQuestions().length === 0) {
-                <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center">
+                <div
+                  class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center"
+                >
                   <p class="font-semibold text-gray-900">No questions in this status</p>
-                  <p class="mt-1 text-sm text-gray-500">Choose another status filter to see more questions.</p>
+                  <p class="mt-1 text-sm text-gray-500">
+                    Choose another status filter to see more questions.
+                  </p>
                   <button
                     type="button"
                     (click)="setStatusFilter('all')"
                     class="mt-3 rounded-md bg-[#007979] px-3 py-2 text-sm font-semibold text-white"
-                  >Show all questions</button>
+                  >
+                    Show all questions
+                  </button>
                 </div>
               } @else {
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                @for (question of filteredQuestions(); track question.id) {
-                  <article
-                    class="flex min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-4 sm:p-5"
-                  >
-                    <!-- QUESTION HEADER -->
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  @for (question of filteredQuestions(); track question.id) {
+                    <article
+                      class="flex min-w-0 flex-col rounded-lg border border-gray-200 bg-white p-4 sm:p-5"
+                    >
+                      <!-- QUESTION HEADER -->
 
-                    <div class="flex items-start justify-between gap-4">
-                      <div class="min-w-0 flex-1">
-                        <div class="flex flex-wrap items-center gap-2">
-                          <span
-                            class="rounded-full bg-gray-100 px-2 py-1 text-sm font-semibold uppercase tracking-wide text-gray-600"
-                          >
-                            {{ statusLabel(question.status) }}
-                          </span>
-
-                          <span
-                            class="rounded-full bg-teal-50 px-2 py-1 text-sm font-semibold text-[#007979]"
-                          >
-                            {{ question.difficulty }}
-                          </span>
-
-                          <span class="text-mdtext-gray-500">
-                            {{
-                              question.type === 'multiple-choice'
-                                ? 'Multiple Choice'
-                                : 'True / False'
-                            }}
-                          </span>
-                        </div>
-
-                        <!-- QUESTION TEXT -->
-                        <p class="mt-3 break-words text-md font-semibold leading-5 text-gray-900">
-                          {{ question.question }}
-                        </p>
-
-                        <!-- ANSWER OPTIONS -->
-                        <div class="mt-3 space-y-2">
-                          @for (option of question.options; track option.id) {
-                            <div
-                              class="flex min-w-0 items-start gap-2 rounded-md border px-2.5 py-2"
-                              [class.border-green-200]="option.id === question.correctAnswer"
-                              [class.bg-green-50]="option.id === question.correctAnswer"
-                              [class.border-gray-200]="option.id !== question.correctAnswer"
-                              [class.bg-gray-50]="option.id !== question.correctAnswer"
+                      <div class="flex items-start justify-between gap-4">
+                        <div class="min-w-0 flex-1">
+                          <div class="flex flex-wrap items-center gap-2">
+                            <span
+                              class="rounded-full bg-gray-100 px-2 py-1 text-sm font-semibold uppercase tracking-wide text-gray-600"
                             >
-                              <!-- OPTION INDICATOR -->
-                              <span
-                                class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-                                [class.bg-green-600]="option.id === question.correctAnswer"
-                                [class.text-white]="option.id === question.correctAnswer"
-                                [class.bg-gray-200]="option.id !== question.correctAnswer"
-                                [class.text-gray-700]="option.id !== question.correctAnswer"
-                              >
-                                {{ $index + 1 }}
-                              </span>
+                              {{ statusLabel(question.status) }}
+                            </span>
 
-                              <!-- OPTION TEXT -->
-                              <span
-                                class="min-w-0 flex-1 break-words text-sm leading-5"
-                                [class.font-semibold]="option.id === question.correctAnswer"
-                                [class.text-green-800]="option.id === question.correctAnswer"
-                                [class.text-gray-700]="option.id !== question.correctAnswer"
-                              >
-                                {{ option.text }}
-                              </span>
+                            <span
+                              class="rounded-full bg-teal-50 px-2 py-1 text-sm font-semibold text-[#007979]"
+                            >
+                              {{ question.difficulty }}
+                            </span>
 
-                              <!-- CORRECT ANSWER INDICATOR -->
-                              @if (option.id === question.correctAnswer) {
-                                <mat-icon
-                                  class="!h-4 !w-4 !text-base text-green-600"
-                                  aria-label="Correct answer"
+                            <span class="text-mdtext-gray-500">
+                              {{
+                                question.type === 'multiple-choice'
+                                  ? 'Multiple Choice'
+                                  : 'True / False'
+                              }}
+                            </span>
+                          </div>
+
+                          <!-- QUESTION TEXT -->
+                          <p class="mt-3 break-words text-md font-semibold leading-5 text-gray-900">
+                            {{ question.question }}
+                          </p>
+
+                          <!-- ANSWER OPTIONS -->
+                          <div class="mt-3 space-y-2">
+                            @for (option of question.options; track option.id) {
+                              <div
+                                class="flex min-w-0 items-start gap-2 rounded-md border px-2.5 py-2"
+                                [class.border-green-200]="option.id === question.correctAnswer"
+                                [class.bg-green-50]="option.id === question.correctAnswer"
+                                [class.border-gray-200]="option.id !== question.correctAnswer"
+                                [class.bg-gray-50]="option.id !== question.correctAnswer"
+                              >
+                                <!-- OPTION INDICATOR -->
+                                <span
+                                  class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+                                  [class.bg-green-600]="option.id === question.correctAnswer"
+                                  [class.text-white]="option.id === question.correctAnswer"
+                                  [class.bg-gray-200]="option.id !== question.correctAnswer"
+                                  [class.text-gray-700]="option.id !== question.correctAnswer"
                                 >
-                                  check_circle
-                                </mat-icon>
-                              }
+                                  {{ $index + 1 }}
+                                </span>
+
+                                <!-- OPTION TEXT -->
+                                <span
+                                  class="min-w-0 flex-1 break-words text-sm leading-5"
+                                  [class.font-semibold]="option.id === question.correctAnswer"
+                                  [class.text-green-800]="option.id === question.correctAnswer"
+                                  [class.text-gray-700]="option.id !== question.correctAnswer"
+                                >
+                                  {{ option.text }}
+                                </span>
+
+                                <!-- CORRECT ANSWER INDICATOR -->
+                                @if (option.id === question.correctAnswer) {
+                                  <mat-icon
+                                    class="!h-4 !w-4 !text-base text-green-600"
+                                    aria-label="Correct answer"
+                                  >
+                                    check_circle
+                                  </mat-icon>
+                                }
+                              </div>
+                            }
+                          </div>
+
+                          <!-- EXPLANATION, WHEN AVAILABLE -->
+                          @if (question.explanation) {
+                            <div
+                              class="mt-3 rounded-md border-l-2 border-teal-500 bg-teal-50 px-3 py-2"
+                            >
+                              <p class="text-xs font-semibold text-teal-800">Explanation</p>
+
+                              <p class="mt-1 break-words text-xs leading-5 text-gray-700">
+                                {{ question.explanation }}
+                              </p>
                             </div>
                           }
                         </div>
+                      </div>
 
-                        <!-- EXPLANATION, WHEN AVAILABLE -->
-                        @if (question.explanation) {
-                          <div
-                            class="mt-3 rounded-md border-l-2 border-teal-500 bg-teal-50 px-3 py-2"
+                      <!-- QUESTION ACTIONS -->
+
+                      <div class="mt-auto flex flex-wrap gap-2 border-t border-gray-100 pt-4">
+                        @if (canEditQuestion(question)) {
+                          <button
+                            type="button"
+                            (click)="editQuestion(question)"
+                            class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700"
                           >
-                            <p class="text-xs font-semibold text-teal-800">Explanation</p>
+                            Edit
+                          </button>
+                        }
 
-                            <p class="mt-1 break-words text-xs leading-5 text-gray-700">
-                              {{ question.explanation }}
-                            </p>
-                          </div>
+                        @if (canSubmit(question)) {
+                          <button
+                            type="button"
+                            (click)="submitForReview(question)"
+                            class="rounded-lg bg-[#032D42] px-3 py-2 text-sm font-semibold text-white"
+                          >
+                            Submit for Review
+                          </button>
+                        }
+
+                        @if (canStartReview(question)) {
+                          <button
+                            type="button"
+                            (click)="startReview(question)"
+                            class="rounded-lg bg-[#007979] px-3 py-2 text-sm font-semibold text-white"
+                          >
+                            Start Review
+                          </button>
+                        }
+
+                        @if (canReturn(question)) {
+                          <button
+                            type="button"
+                            (click)="returnQuestion(question)"
+                            class="rounded-lg border border-amber-400 px-3 py-2 text-sm font-semibold text-amber-700"
+                          >
+                            Return
+                          </button>
+                        }
+
+                        @if (canApprove(question)) {
+                          <button
+                            type="button"
+                            (click)="approveQuestion(question)"
+                            class="rounded-lg bg-[#007979] px-3 py-2 text-xs font-semibold text-white"
+                          >
+                            Approve
+                          </button>
+                        }
+
+                        @if (canPublish(question)) {
+                          <button
+                            type="button"
+                            (click)="publishQuestion(question)"
+                            class="rounded-lg bg-green-700 px-3 py-2 text-xs font-semibold text-white"
+                          >
+                            Publish
+                          </button>
+                        }
+
+                        @if (canRetireQuestion(question)) {
+                          <button
+                            type="button"
+                            (click)="retireQuestion(question)"
+                            class="rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50"
+                          >
+                            Retire
+                          </button>
+                        }
+
+                        @if (canDeleteQuestion(question)) {
+                          <button
+                            type="button"
+                            (click)="deleteQuestion(question)"
+                            class="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600"
+                          >
+                            Delete
+                          </button>
                         }
                       </div>
-                    </div>
-
-                    <!-- QUESTION ACTIONS -->
-
-                    <div class="mt-auto flex flex-wrap gap-2 border-t border-gray-100 pt-4">
-                      @if (canEditQuestion(question)) {
-                        <button
-                          type="button"
-                          (click)="editQuestion(question)"
-                          class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700"
-                        >
-                          Edit
-                        </button>
-                      }
-
-                      @if (canSubmit(question)) {
-                        <button
-                          type="button"
-                          (click)="submitForReview(question)"
-                          class="rounded-lg bg-[#032D42] px-3 py-2 text-sm font-semibold text-white"
-                        >
-                          Submit for Review
-                        </button>
-                      }
-
-                      @if (canStartReview(question)) {
-                        <button
-                          type="button"
-                          (click)="startReview(question)"
-                          class="rounded-lg bg-[#007979] px-3 py-2 text-sm font-semibold text-white"
-                        >
-                          Start Review
-                        </button>
-                      }
-
-                      @if (canReturn(question)) {
-                        <button
-                          type="button"
-                          (click)="returnQuestion(question)"
-                          class="rounded-lg border border-amber-400 px-3 py-2 text-sm font-semibold text-amber-700"
-                        >
-                          Return
-                        </button>
-                      }
-
-                      @if (canApprove(question)) {
-                        <button
-                          type="button"
-                          (click)="approveQuestion(question)"
-                          class="rounded-lg bg-[#007979] px-3 py-2 text-xs font-semibold text-white"
-                        >
-                          Approve
-                        </button>
-                      }
-
-                      @if (canPublish(question)) {
-                        <button
-                          type="button"
-                          (click)="publishQuestion(question)"
-                          class="rounded-lg bg-green-700 px-3 py-2 text-xs font-semibold text-white"
-                        >
-                          Publish
-                        </button>
-                      }
-
-                      @if (canRetireQuestion(question)) {
-                        <button
-                          type="button"
-                          (click)="retireQuestion(question)"
-                          class="rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50"
-                        >
-                          Retire
-                        </button>
-                      }
-
-                      @if (canDeleteQuestion(question)) {
-                        <button
-                          type="button"
-                          (click)="deleteQuestion(question)"
-                          class="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600"
-                        >
-                          Delete
-                        </button>
-                      }
-                    </div>
-                  </article>
-                }
-              </div>
+                    </article>
+                  }
+                </div>
               }
             }
           </section>
@@ -805,7 +811,9 @@ export class PartnerTestQuestionsComponent implements OnInit {
   protected readonly filteredQuestions = computed(() => {
     const filter = this.statusFilter();
     const questions = this.questions();
-    return filter === 'all' ? questions : questions.filter((question) => question.status === filter);
+    return filter === 'all'
+      ? questions
+      : questions.filter((question) => question.status === filter);
   });
 
   // ============================================================
