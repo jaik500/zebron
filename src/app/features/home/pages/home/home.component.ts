@@ -1,29 +1,29 @@
 import { Component, DOCUMENT, inject } from '@angular/core';
-
+ 
 import { Meta, Title } from '@angular/platform-browser';
-
+ 
 import { RouterLink } from '@angular/router';
-
+ 
 import { MatIconModule } from '@angular/material/icon';
-
+ 
 @Component({
   selector: 'app-home',
   standalone: true,
-
+ 
   imports: [RouterLink, MatIconModule],
-
+ 
   template: `
     <!-- =========================================================
          HERO
          ========================================================= -->
-
+ 
     <main>
       <section
         class="relative overflow-hidden
                bg-[#032D42]"
       >
         <!-- Decorative background -->
-
+ 
         <div
           aria-hidden="true"
           class="absolute -right-24 -top-24
@@ -31,7 +31,7 @@ import { MatIconModule } from '@angular/material/icon';
                  border-[40px]
                  border-[#007979]/20"
         ></div>
-
+ 
         <div
           aria-hidden="true"
           class="absolute -bottom-32 -left-24
@@ -39,7 +39,7 @@ import { MatIconModule } from '@angular/material/icon';
                  border-[50px]
                  border-[#007979]/10"
         ></div>
-
+ 
         <div
           class="relative mx-auto max-w-7xl
                  px-5 py-20
@@ -50,11 +50,11 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="max-w-5xl">
               <!-- =================================================
              ZEBRON WORDMARK
-
+ 
              The mirrored lowercase "e" is the visual brand
              treatment. aria-label preserves accessibility.
              ================================================= -->
-
+ 
               <div
                 aria-label="Zebron"
                 class="flex items-center
@@ -66,7 +66,7 @@ import { MatIconModule } from '@angular/material/icon';
                  lg:text-[10rem]"
               >
                 <span>Z</span>
-
+ 
                 <span
                   aria-hidden="true"
                   class="mx-[-0.01em] inline-block
@@ -75,14 +75,14 @@ import { MatIconModule } from '@angular/material/icon';
                 >
                   e
                 </span>
-
+ 
                 <span>bron</span>
               </div>
-
+ 
               <!-- =================================================
              HERO HEADLINE
              ================================================= -->
-
+ 
               <h1
                 class="mt-5
                  max-w-4xl
@@ -96,11 +96,11 @@ import { MatIconModule } from '@angular/material/icon';
               >
                 Everything you need to discover, explore, and move forward.
               </h1>
-
+ 
               <!-- =================================================
              HERO DESCRIPTION
              ================================================= -->
-
+ 
               <p
                 class="mt-6
                  max-w-3xl
@@ -112,14 +112,14 @@ import { MatIconModule } from '@angular/material/icon';
                 Connect with resources, organizations, services, opportunities, information, and
                 more—all in one place.
               </p>
-
+ 
               <!-- =================================================
              HERO ACTIONS
              ================================================= -->
             </div>
-
+ 
             <!-- Primary actions -->
-
+ 
             <div
               class="mt-9 flex flex-col gap-3
          sm:flex-row"
@@ -138,12 +138,12 @@ import { MatIconModule } from '@angular/material/icon';
            hover:bg-[#008989]"
               >
                 Explore Resources
-
+ 
                 <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">
                   arrow_forward
                 </mat-icon>
               </a>
-
+ 
               <a
                 routerLink="/find"
                 class="inline-flex items-center
@@ -159,7 +159,7 @@ import { MatIconModule } from '@angular/material/icon';
               >
                 Find Opportunities
               </a>
-
+ 
               <a
                 routerLink="/donate"
                 class="inline-flex items-center
@@ -179,11 +179,11 @@ import { MatIconModule } from '@angular/material/icon';
           </div>
         </div>
       </section>
-
+ 
       <!-- =======================================================
            EXPLORE ZEBRON
            ======================================================= -->
-
+ 
       <section class="bg-white">
         <div
           class="mx-auto max-w-7xl
@@ -199,7 +199,7 @@ import { MatIconModule } from '@angular/material/icon';
             >
               Explore Zebron
             </p>
-
+ 
             <h2
               class="mt-2 text-3xl font-bold
                      tracking-tight
@@ -207,7 +207,7 @@ import { MatIconModule } from '@angular/material/icon';
             >
               One platform, multiple ways to move forward.
             </h2>
-
+ 
             <p
               class="mt-4 text-sm leading-6
                      text-gray-600
@@ -216,13 +216,13 @@ import { MatIconModule } from '@angular/material/icon';
               Start with what you need and explore the opportunities that connect to it.
             </p>
           </div>
-
+ 
           <div
             class="mt-10 grid gap-5
                    md:grid-cols-3"
           >
             <!-- Resources -->
-
+ 
             <a
               routerLink="/resources"
               class="group rounded-2xl
@@ -234,30 +234,32 @@ import { MatIconModule } from '@angular/material/icon';
                      hover:border-[#007979]/40
                      hover:shadow-md"
             >
-              <div
-                class="flex h-12 w-12
-                       items-center justify-center
-                       rounded-xl
-                       bg-[#E5F4F4]"
-              >
-                <mat-icon aria-hidden="true" class="!text-[#007979]"> explore </mat-icon>
+              <div class="flex items-center gap-4">
+                <div
+                  class="flex h-12 w-12 shrink-0
+                         items-center justify-center
+                         rounded-xl
+                         bg-white"
+                >
+                  <mat-icon aria-hidden="true" class="!text-[#007979]"> explore </mat-icon>
+                </div>
+ 
+                <h3
+                  class="min-w-0 text-xl font-bold
+                         text-[#032D42]"
+                >
+                  Resources
+                </h3>
               </div>
-
-              <h3
-                class="mt-6 text-xl font-bold
-                       text-[#032D42]"
-              >
-                Resources
-              </h3>
-
+ 
               <p
-                class="mt-2 text-sm leading-6
+                class="mt-4 text-sm leading-6
                        text-gray-600"
               >
                 Discover services, programs, organizations, and resources that can help you reach
                 your next goal.
               </p>
-
+ 
               <span
                 class="mt-5 inline-flex
                        items-center gap-1
@@ -265,7 +267,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-[#007979]"
               >
                 Explore Resources
-
+ 
                 <mat-icon
                   aria-hidden="true"
                   class="!m-0 !h-5 !w-5
@@ -277,11 +279,11 @@ import { MatIconModule } from '@angular/material/icon';
                 </mat-icon>
               </span>
             </a>
-
+ 
             <!-- Jobs -->
-
+ 
             <a
-              routerLink="/find"
+              routerLink="/find/job"
               class="group rounded-2xl
                      border border-gray-200
                      bg-[#E5F4F4] p-6
@@ -291,30 +293,32 @@ import { MatIconModule } from '@angular/material/icon';
                      hover:border-[#007979]/40
                      hover:shadow-md"
             >
-              <div
-                class="flex h-12 w-12
-                       items-center justify-center
-                       rounded-xl
-                       bg-[#E5F4F4]"
-              >
-                <mat-icon aria-hidden="true" class="!text-[#007979]"> work_outline </mat-icon>
+              <div class="flex items-center gap-4">
+                <div
+                  class="flex h-12 w-12 shrink-0
+                         items-center justify-center
+                         rounded-xl
+                         bg-white"
+                >
+                  <mat-icon aria-hidden="true" class="!text-[#007979]"> work_outline </mat-icon>
+                </div>
+ 
+                <h3
+                  class="min-w-0 text-xl font-bold
+                         text-[#032D42]"
+                >
+                  Jobs
+                </h3>
               </div>
-
-              <h3
-                class="mt-6 text-xl font-bold
-                       text-[#032D42]"
-              >
-                Jobs
-              </h3>
-
+ 
               <p
-                class="mt-2 text-sm leading-6
+                class="mt-4 text-sm leading-6
                        text-gray-600"
               >
                 Find employment opportunities and discover organizations looking for people with
                 your skills.
               </p>
-
+ 
               <span
                 class="mt-5 inline-flex
                        items-center gap-1
@@ -322,7 +326,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-[#007979]"
               >
                 Find Jobs
-
+ 
                 <mat-icon
                   aria-hidden="true"
                   class="!m-0 !h-5 !w-5
@@ -334,11 +338,11 @@ import { MatIconModule } from '@angular/material/icon';
                 </mat-icon>
               </span>
             </a>
-
+ 
             <!-- Training -->
-
+ 
             <a
-              routerLink="/find"
+              routerLink="/find/training"
               class="group rounded-2xl
                      border border-gray-200
                      bg-[#E5F4F4] p-6
@@ -348,32 +352,34 @@ import { MatIconModule } from '@angular/material/icon';
                      hover:border-[#007979]/40
                      hover:shadow-md"
             >
-              <div
-                class="flex h-12 w-12
-                       items-center justify-center
-                       rounded-xl
-                       bg-[#E5F4F4]"
-              >
-                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]">
+              <div class="flex items-center gap-4">
+                <div
+                  class="flex h-12 w-12 shrink-0
+                         items-center justify-center
+                         rounded-xl
+                         bg-white"
+                >
+                  <mat-icon aria-hidden="true" class="!text-[#007979]">
                   school
-                </mat-icon>
+                  </mat-icon>
+                </div>
+ 
+                <h3
+                  class="min-w-0 text-xl font-bold
+                         text-[#032D42]"
+                >
+                  Training
+                </h3>
               </div>
-
-              <h3
-                class="mt-6 text-xl font-bold
-                       text-[#032D42]"
-              >
-                Training
-              </h3>
-
+ 
               <p
-                class="mt-2 text-sm leading-6
+                class="mt-4 text-sm leading-6
                        text-gray-600"
               >
                 Explore bootcamps, courses, educational programs, and other opportunities to build
                 your skills.
               </p>
-
+ 
               <span
                 class="mt-5 inline-flex
                        items-center gap-1
@@ -381,7 +387,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-[#007979]"
               >
                 Explore Training
-
+ 
                 <mat-icon
                   aria-hidden="true"
                   class="!m-0 !h-5 !w-5
@@ -393,9 +399,9 @@ import { MatIconModule } from '@angular/material/icon';
                 </mat-icon>
               </span>
             </a>
-
+ 
             <!-- Test Center -->
-
+ 
             <a
               routerLink="/test-center"
               class="group rounded-2xl
@@ -407,38 +413,40 @@ import { MatIconModule } from '@angular/material/icon';
                      hover:border-[#007979]/40
                      hover:shadow-md"
             >
-              <div
-                class="flex h-12 w-12
-                       items-center justify-center
-                       rounded-xl
-                       bg-[#E5F4F4]"
-              >
-                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]"> quiz </mat-icon>
+              <div class="flex items-center gap-4">
+                <div
+                  class="flex h-12 w-12 shrink-0
+                         items-center justify-center
+                         rounded-xl
+                         bg-white"
+                >
+                  <mat-icon aria-hidden="true" class="!text-[#007979]"> quiz </mat-icon>
+                </div>
+ 
+                <h3
+                  class="min-w-0 text-xl font-bold
+                         text-[#032D42]"
+                >
+                  Test Center
+                </h3>
               </div>
-
-              <h3
-                class="mt-6 text-xl font-bold
-                       text-[#032D42]"
-              >
-                Test Center
-              </h3>
-
+ 
               <p
-                class="mt-2 text-sm leading-6
+                class="mt-4 text-sm leading-6
                        text-gray-600"
               >
                 Challenge yourself today, and build the competitive edge you need to stand out
                 tomorrow.
               </p>
-
+ 
               <span
                 class="mt-5 inline-flex
                        items-center gap-1
                        text-sm font-bold
                        text-[#007979]"
               >
-                Explore Training
-
+                Explore Test Center
+ 
                 <mat-icon
                   aria-hidden="true"
                   class="!m-0 !h-5 !w-5
@@ -450,9 +458,9 @@ import { MatIconModule } from '@angular/material/icon';
                 </mat-icon>
               </span>
             </a>
-
+ 
             <!-- Community -->
-
+ 
             <a
               routerLink="/community"
               class="group rounded-2xl
@@ -464,32 +472,34 @@ import { MatIconModule } from '@angular/material/icon';
                      hover:border-[#007979]/40
                      hover:shadow-md"
             >
-              <div
-                class="flex h-12 w-12
-                       items-center justify-center
-                       rounded-xl
-                       bg-[#E5F4F4]"
-              >
-                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]">
+              <div class="flex items-center gap-4">
+                <div
+                  class="flex h-12 w-12 shrink-0
+                         items-center justify-center
+                         rounded-xl
+                         bg-white"
+                >
+                  <mat-icon aria-hidden="true" class="!text-[#007979]">
                   diversity_3
-                </mat-icon>
+                  </mat-icon>
+                </div>
+ 
+                <h3
+                  class="min-w-0 text-xl font-bold
+                         text-[#032D42]"
+                >
+                  Community
+                </h3>
               </div>
-
-              <h3
-                class="mt-6 text-xl font-bold
-                       text-[#032D42]"
-              >
-                Community
-              </h3>
-
+ 
               <p
-                class="mt-2 text-sm leading-6
+                class="mt-4 text-sm leading-6
                        text-gray-600"
               >
                 Connect with people, exchange experiences, ask questions and discover helpful
                 resources.
               </p>
-
+ 
               <span
                 class="mt-5 inline-flex
                        items-center gap-1
@@ -497,7 +507,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-[#007979]"
               >
                 Explore Community
-
+ 
                 <mat-icon
                   aria-hidden="true"
                   class="!m-0 !h-5 !w-5
@@ -509,9 +519,9 @@ import { MatIconModule } from '@angular/material/icon';
                 </mat-icon>
               </span>
             </a>
-
-            <!-- Tav & Pay Calculator -->
-
+ 
+            <!-- Tax & Pay Calculator -->
+ 
             <a
               routerLink="/tax-calculator"
               class="group rounded-2xl
@@ -523,32 +533,34 @@ import { MatIconModule } from '@angular/material/icon';
                      hover:border-[#007979]/40
                      hover:shadow-md"
             >
-              <div
-                class="flex h-12 w-12
-                       items-center justify-center
-                       rounded-xl
-                       bg-[#E5F4F4]"
-              >
-                <mat-icon aria-hidden="true" class="!text-[#007979] bg-[#E5F4F4]">
+              <div class="flex items-center gap-4">
+                <div
+                  class="flex h-12 w-12 shrink-0
+                         items-center justify-center
+                         rounded-xl
+                         bg-white"
+                >
+                  <mat-icon aria-hidden="true" class="!text-[#007979]">
                   calculate
-                </mat-icon>
+                  </mat-icon>
+                </div>
+ 
+                <h3
+                  class="min-w-0 text-xl font-bold
+                         text-[#032D42]"
+                >
+                  Tax & Pay Calculator
+                </h3>
               </div>
-
-              <h3
-                class="mt-6 text-xl font-bold
-                       text-[#032D42]"
-              >
-                Tax & Pay Calculator
-              </h3>
-
+ 
               <p
-                class="mt-2 text-sm leading-6
+                class="mt-4 text-sm leading-6
                        text-gray-600"
               >
                 Crunch your numbers, clear your doubts, and keep more of your hard-earned money with
                 a smarter tax calculator
               </p>
-
+ 
               <span
                 class="mt-5 inline-flex
                        items-center gap-1
@@ -556,7 +568,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-[#007979]"
               >
                 Try Tax Calculator
-
+ 
                 <mat-icon
                   aria-hidden="true"
                   class="!m-0 !h-5 !w-5
@@ -568,7 +580,7 @@ import { MatIconModule } from '@angular/material/icon';
                 </mat-icon>
               </span>
             </a>
-
+ 
             <!-- Organization Application -->
             <a
               routerLink="/organizations/apply"
@@ -581,30 +593,32 @@ import { MatIconModule } from '@angular/material/icon';
          hover:border-[#007979]/40
          hover:shadow-md"
             >
-              <div
-                class="flex h-12 w-12
-           items-center justify-center
-           rounded-xl
-           bg-[#E5F4F4]"
-              >
-                <mat-icon aria-hidden="true" class="!text-[#007979]"> business </mat-icon>
+              <div class="flex items-center gap-4">
+                <div
+                  class="flex h-12 w-12 shrink-0
+                         items-center justify-center
+                         rounded-xl
+                         bg-white"
+                >
+                  <mat-icon aria-hidden="true" class="!text-[#007979]"> business </mat-icon>
+                </div>
+ 
+                <h3
+                  class="min-w-0 text-xl font-bold
+                         text-[#032D42]"
+                >
+                  Organization Application
+                </h3>
               </div>
-
-              <h3
-                class="mt-6 text-xl font-bold
-           text-[#032D42]"
-              >
-                Organization Application
-              </h3>
-
+ 
               <p
-                class="mt-2 text-sm leading-6
+                class="mt-4 text-sm leading-6
            text-gray-600"
               >
                 Apply to bring your organization onto Zebron and request access to the applications
                 and tools your organization needs.
               </p>
-
+ 
               <span
                 class="mt-5 inline-flex
            items-center gap-1
@@ -612,7 +626,7 @@ import { MatIconModule } from '@angular/material/icon';
            text-[#007979]"
               >
                 Apply for an Organization
-
+ 
                 <mat-icon
                   aria-hidden="true"
                   class="!m-0 !h-5 !w-5
@@ -627,16 +641,16 @@ import { MatIconModule } from '@angular/material/icon';
           </div>
         </div>
       </section>
-
+ 
       <!-- =======================================================
            HOW IT WORKS
            ======================================================= -->
-
+ 
       <section class="bg-gray-50">
         <div
           class="mx-auto max-w-7xl
                  px-5 py-16
-                 sm:px-6 sm:py-20
+                 sm:px-6 sm:py-10
                  lg:px-8"
         >
           <div class="text-center">
@@ -647,7 +661,7 @@ import { MatIconModule } from '@angular/material/icon';
             >
               How Zebron works
             </p>
-
+ 
             <h2
               class="mt-2 text-3xl font-bold
                      tracking-tight
@@ -656,13 +670,13 @@ import { MatIconModule } from '@angular/material/icon';
               From discovery to opportunity.
             </h2>
           </div>
-
+ 
           <div
             class="mt-12 grid gap-8
                    md:grid-cols-3"
           >
             <!-- Step 1 -->
-
+ 
             <div class="text-center">
               <div
                 class="mx-auto flex h-12 w-12
@@ -674,14 +688,14 @@ import { MatIconModule } from '@angular/material/icon';
               >
                 1
               </div>
-
+ 
               <h3
                 class="mt-5 text-lg font-bold
                        text-[#032D42]"
               >
                 Discover
               </h3>
-
+ 
               <p
                 class="mx-auto mt-2 max-w-xs
                        text-sm leading-6
@@ -690,9 +704,9 @@ import { MatIconModule } from '@angular/material/icon';
                 Search for resources, organizations, jobs, and training that match your needs.
               </p>
             </div>
-
+ 
             <!-- Step 2 -->
-
+ 
             <div class="text-center">
               <div
                 class="mx-auto flex h-12 w-12
@@ -704,14 +718,14 @@ import { MatIconModule } from '@angular/material/icon';
               >
                 2
               </div>
-
+ 
               <h3
                 class="mt-5 text-lg font-bold
                        text-[#032D42]"
               >
                 Explore
               </h3>
-
+ 
               <p
                 class="mx-auto mt-2 max-w-xs
                        text-sm leading-6
@@ -721,9 +735,9 @@ import { MatIconModule } from '@angular/material/icon';
                 discover.
               </p>
             </div>
-
+ 
             <!-- Step 3 -->
-
+ 
             <div class="text-center">
               <div
                 class="mx-auto flex h-12 w-12
@@ -735,14 +749,14 @@ import { MatIconModule } from '@angular/material/icon';
               >
                 3
               </div>
-
+ 
               <h3
                 class="mt-5 text-lg font-bold
                        text-[#032D42]"
               >
                 Connect
               </h3>
-
+ 
               <p
                 class="mx-auto mt-2 max-w-xs
                        text-sm leading-6
@@ -754,16 +768,16 @@ import { MatIconModule } from '@angular/material/icon';
           </div>
         </div>
       </section>
-
+ 
       <!-- =======================================================
            FEATURED / VALUE SECTION
            ======================================================= -->
-
+ 
       <section class="bg-white">
         <div
           class="mx-auto max-w-7xl
                  px-5 py-16
-                 sm:px-6 sm:py-20
+                 sm:px-6 sm:py-10
                  lg:px-8"
         >
           <div
@@ -778,7 +792,7 @@ import { MatIconModule } from '@angular/material/icon';
               >
                 Built for discovery
               </p>
-
+ 
               <h2
                 class="mt-2 text-3xl font-bold
                        tracking-tight
@@ -787,7 +801,7 @@ import { MatIconModule } from '@angular/material/icon';
               >
                 Spend less time searching. Spend more time moving forward.
               </h2>
-
+ 
               <p
                 class="mt-5 text-sm leading-7
                        text-gray-600
@@ -796,7 +810,7 @@ import { MatIconModule } from '@angular/material/icon';
                 Zebron brings useful information together so you can spend less time searching
                 across disconnected websites and more time exploring options that fit your goals.
               </p>
-
+ 
               <div class="mt-7">
                 <a
                   routerLink="/resources"
@@ -806,7 +820,7 @@ import { MatIconModule } from '@angular/material/icon';
                          hover:underline"
                 >
                   Start exploring
-
+ 
                   <mat-icon
                     aria-hidden="true"
                     class="!m-0 !h-5 !w-5
@@ -817,9 +831,9 @@ import { MatIconModule } from '@angular/material/icon';
                 </a>
               </div>
             </div>
-
+ 
             <!-- Visual -->
-
+ 
             <div
               class="relative min-h-[280px]
                      overflow-hidden rounded-2xl
@@ -832,7 +846,7 @@ import { MatIconModule } from '@angular/material/icon';
                        border-[28px]
                        border-[#007979]/30"
               ></div>
-
+ 
               <div class="relative grid gap-3">
                 <div
                   class="rounded-xl
@@ -849,7 +863,7 @@ import { MatIconModule } from '@angular/material/icon';
                     >
                       <mat-icon aria-hidden="true" class="!text-white"> explore </mat-icon>
                     </div>
-
+ 
                     <div>
                       <p
                         class="text-xs
@@ -857,7 +871,7 @@ import { MatIconModule } from '@angular/material/icon';
                       >
                         Discover
                       </p>
-
+ 
                       <p
                         class="text-sm font-semibold
                                text-white"
@@ -867,7 +881,7 @@ import { MatIconModule } from '@angular/material/icon';
                     </div>
                   </div>
                 </div>
-
+ 
                 <div
                   class="ml-8 rounded-xl
                          border border-white/10
@@ -883,7 +897,7 @@ import { MatIconModule } from '@angular/material/icon';
                     >
                       <mat-icon aria-hidden="true" class="!text-white"> school </mat-icon>
                     </div>
-
+ 
                     <div>
                       <p
                         class="text-xs
@@ -891,7 +905,7 @@ import { MatIconModule } from '@angular/material/icon';
                       >
                         Explore
                       </p>
-
+ 
                       <p
                         class="text-sm font-semibold
                                text-white"
@@ -901,7 +915,7 @@ import { MatIconModule } from '@angular/material/icon';
                     </div>
                   </div>
                 </div>
-
+ 
                 <div
                   class="ml-16 rounded-xl
                          border border-white/10
@@ -917,7 +931,7 @@ import { MatIconModule } from '@angular/material/icon';
                     >
                       <mat-icon aria-hidden="true" class="!text-white"> work_outline </mat-icon>
                     </div>
-
+ 
                     <div>
                       <p
                         class="text-xs
@@ -925,7 +939,7 @@ import { MatIconModule } from '@angular/material/icon';
                       >
                         Connect
                       </p>
-
+ 
                       <p
                         class="text-sm font-semibold
                                text-white"
@@ -940,15 +954,15 @@ import { MatIconModule } from '@angular/material/icon';
           </div>
         </div>
       </section>
-
+ 
       <!-- =======================================================
            ORGANIZATION CTA
            ======================================================= -->
-
-      <section class="bg-[#E5F4F4]">
+ 
+       <section class="bg-[#E5F4F4]">
         <div
           class="mx-auto max-w-7xl
-                 px-5 py-14
+                 px-5 py-10
                  sm:px-6
                  lg:px-8"
         >
@@ -1016,7 +1030,7 @@ import { MatIconModule } from '@angular/material/icon';
               <div
                 class="mx-auto max-w-7xl
            px-5 py-14
-           sm:px-6 sm:py-16
+           sm:px-6 sm:py-10
            lg:px-8"
               >
                 <div
@@ -1082,111 +1096,114 @@ import { MatIconModule } from '@angular/material/icon';
           </div>
         </div>
       </section>
+ 
+ 
     </main>
   `,
-
+ 
   styles: [],
 })
 export class HomeComponent {
   // =========================================================
   // SEO SERVICES
   // =========================================================
-
+ 
   private readonly title = inject(Title);
-
+ 
   private readonly meta = inject(Meta);
-
+ 
   private readonly document = inject(DOCUMENT);
-
+ 
   constructor() {
     this.updateSeoMetadata();
   }
-
+ 
   // =========================================================
   // SEO METADATA
   // =========================================================
-
+ 
   private updateSeoMetadata(): void {
     const pageTitle = 'Zebron | Discover Resources, Jobs & Opportunities';
-
+ 
     const description =
       'Zebron helps you discover resources, organizations, jobs, training, and opportunities in one place. Explore what is available and find your next opportunity.';
-
+ 
     const canonicalUrl = 'https://zebron.org/';
-
+ 
     this.title.setTitle(pageTitle);
-
+ 
     this.meta.updateTag({
       name: 'description',
       content: description,
     });
-
+ 
     // Open Graph
-
+ 
     this.meta.updateTag({
       property: 'og:site_name',
       content: 'Zebron',
     });
-
+ 
     this.meta.updateTag({
       property: 'og:type',
       content: 'website',
     });
-
+ 
     this.meta.updateTag({
       property: 'og:title',
       content: pageTitle,
     });
-
+ 
     this.meta.updateTag({
       property: 'og:description',
       content: description,
     });
-
+ 
     this.meta.updateTag({
       property: 'og:url',
       content: canonicalUrl,
     });
-
+ 
     // Twitter
-
+ 
     this.meta.updateTag({
       name: 'twitter:card',
       content: 'summary',
     });
-
+ 
     this.meta.updateTag({
       name: 'twitter:title',
       content: pageTitle,
     });
-
+ 
     this.meta.updateTag({
       name: 'twitter:description',
       content: description,
     });
-
+ 
     this.setCanonical(canonicalUrl);
   }
-
+ 
   // =========================================================
   // CANONICAL URL
   // =========================================================
-
+ 
   private setCanonical(url: string): void {
     const existing = this.document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-
+ 
     if (existing) {
       existing.setAttribute('href', url);
-
+ 
       return;
     }
-
+ 
     const link = this.document.createElement('link');
-
+ 
     link.setAttribute('rel', 'canonical');
-
+ 
     link.setAttribute('href', url);
-
+ 
     this.document.head.appendChild(link);
   }
 }
+ 
