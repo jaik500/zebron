@@ -18,7 +18,7 @@ const ADMIN_TOAST_ID = 'admin-login-prompt';
       <div class="mx-auto max-w-md">
         <!-- Back navigation -->
         <a
-          routerLink="/resources"
+          routerLink="/"
           class="inline-flex items-center text-sm font-medium
                  text-gray-600 transition hover:text-[#032D42]"
         >
@@ -345,7 +345,7 @@ export class LoginComponent implements OnDestroy {
       }
 
       // Regular users go directly to the public resource directory.
-      await this.router.navigate(['/resources']);
+      await this.router.navigate(['/']);
     } catch (error) {
       console.error('Login failed:', error);
       this.error.set('Unable to sign in. Please check your email and password.');
