@@ -63,13 +63,14 @@
               "entry": "src/server.ts"
             },
 
-            "externalDependencies": [
-              "firebase-admin",
-              "@google-cloud/firestore",
-              "google-gax",
-              "@grpc/*",
-              "web-streams-polyfill"
-            ]
+             "externalDependencies": [
+     "firebase-admin",
+     "@google-cloud/firestore",
+     "google-gax",
+     "@grpc/grpc-js",
+     "@grpc/proto-loader",
+     "web-streams-polyfill"
+   ]
           },
           "configurations": {
             "production": {
