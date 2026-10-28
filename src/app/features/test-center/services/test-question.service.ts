@@ -174,55 +174,94 @@ export class TestQuestionService {
     return questions;
   }
 
-  async getQuestionsForTest(
-    organizationId: string,
-    courseId: string,
-    topicIds: string[],
-    difficulty: TestQuestionDifficulty | 'mixed',
-  ): Promise<TestQuestion[]> {
-    this.requireOrganizationId(organizationId);
-    this.requireCourseId(courseId);
 
-    const snapshot = await getDocs(
-      query(
-        this.questionsCollection,
-        where('organizationId', '==', organizationId),
-        where('courseId', '==', courseId),
-      ),
-    );
+/**
+ * Load published questions for a test.
+ *
+ * Platform courses use platform-owned questions with
+ * organizationId === null.
+ *
+ * Organization courses use questions owned by the active
+ * organization. The Firestore rules remain responsible for
+ * enforcing access to both types of content.
+ */
+async getQuestionsForTest(
+  organizationId: string | null,
+  courseId: string,
+  topicIds: string[],
+  difficulty: TestQuestionDifficulty | 'mixed',
+  scope: 'platform' | 'organization' = 'organization',
+): Promise<TestQuestion[]> {
+  this.requireCourseId(courseId);
 
-    const selectedTopics = new Set(topicIds);
-
-    return snapshot.docs
-      .map((document) => ({
-        id: document.id,
-        ...document.data(),
-      }) as TestQuestion)
-      .filter((question) => question.status === 'published')
-      .filter(
-        (question) =>
-          topicIds.length === 0 || selectedTopics.has(question.topicId),
-      )
-      .filter(
-        (question) =>
-          difficulty === 'mixed' || question.difficulty === difficulty,
-      )
-      .sort((a, b) => this.toMillis(a.createdAt) - this.toMillis(b.createdAt));
+  if (scope === 'organization') {
+    this.requireOrganizationId(organizationId ?? '');
   }
+
+  if (scope === 'platform' && organizationId !== null) {
+    throw new Error(
+      'Platform-owned questions must be queried without an organization owner ID.',
+    );
+  }
+
+  const ownershipConstraints: QueryConstraint[] =
+    scope === 'platform'
+      ? [
+          where('scope', '==', 'platform'),
+          where('organizationId', '==', null),
+        ]
+      : [
+          where('organizationId', '==', organizationId),
+        ];
+
+  const snapshot = await getDocs(
+    query(
+      this.questionsCollection,
+      ...ownershipConstraints,
+      where('courseId', '==', courseId),
+    ),
+  );
+
+  const selectedTopics = new Set(topicIds);
+
+  return snapshot.docs
+    .map((document) => ({
+      id: document.id,
+      ...document.data(),
+    }) as TestQuestion)
+    .filter((question) => question.status === 'published')
+    .filter(
+      (question) =>
+        topicIds.length === 0 || selectedTopics.has(question.topicId),
+    )
+    .filter(
+      (question) =>
+        difficulty === 'mixed' || question.difficulty === difficulty,
+    )
+    .sort(
+      (a, b) =>
+        this.toMillis(a.createdAt) - this.toMillis(b.createdAt),
+    );
+}
+
+
 
   async getPublishedQuestionCount(
-    organizationId: string,
-    courseId: string,
-    topicIds: string[] = [],
-  ): Promise<number> {
-    return (
-      await this.getPublishedQuestions(
-        organizationId,
-        courseId,
-        topicIds,
-      )
-    ).length;
-  }
+  organizationId: string | null,
+  courseId: string,
+  topicIds: string[] = [],
+  scope: 'platform' | 'organization' = 'organization',
+): Promise<number> {
+  return (
+    await this.getQuestionsForTest(
+      organizationId,
+      courseId,
+      topicIds,
+      'mixed',
+      scope,
+    )
+  ).length;
+}
 
   async createQuestion(
     organizationId: string,

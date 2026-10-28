@@ -36,171 +36,93 @@ interface DashboardCard {
 @Component({
   selector: 'app-partner-admin',
   standalone: true,
-  imports: [
-    RouterLink,
-    MatButtonModule,
-    MatIconModule,
-    MatMenuModule,
-  ],
+  imports: [RouterLink, MatButtonModule, MatIconModule, MatMenuModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-gray-50 pt-16">
-
+    <div class="min-h-screen bg-gray-50 pt-15">
       <!-- =========================================================
            HEADER
            ========================================================= -->
 
-      <header class="border-b border-white/10 bg-[#2a835f]">
-        <div class="mx-auto max-w-7xl px-4 py-1 sm:px-6 lg:px-8">
 
-          <div class="flex items-start justify-between gap-4">
+<header class="border-b border-white/10 bg-[#2a835f]">
+  <div class="mx-auto max-w-7xl px-4 py-0 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between gap-4">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2 text-md text-white/70">
+          <a routerLink="/profile" class="transition-colors hover:text-white">
+            Partner Portal
+          </a>
 
-            <div class="min-w-0">
+          <span>/</span>
 
-              <div
-                class="flex flex-wrap items-center gap-2 text-sm text-white/70"
-              >
-                <a
-                  routerLink="/profile"
-                  class="transition-colors hover:text-white"
-                >
-                  Partner Portal
-                </a>
+          <span class="text-white">Dashboard</span>
+        </div>
+      </div>
 
-                <span>/</span>
+      <!-- Mobile / overflow menu -->
+      <button
+        type="button"
+        mat-icon-button
+        [matMenuTriggerFor]="dashboardMenu"
+        aria-label="Partner dashboard menu"
+        class="!text-white shrink-0"
+      >
+        <mat-icon>more_vert</mat-icon>
+      </button>
 
-                <span class="text-white">
-                  Dashboard
-                </span>
-              </div>
+      <mat-menu #dashboardMenu="matMenu">
+        <a mat-menu-item routerLink="/profile">
+          <mat-icon>person</mat-icon>
+          <span>Profile</span>
+        </a>
 
-              <p class=" hidden text-lg text-white/70 sm:block">
-                Your partner organization dashboard.
-              </p>
-            </div>
-
-            <!-- Mobile / overflow menu -->
-
-            <button
-              type="button"
-              mat-icon-button
-              [matMenuTriggerFor]="dashboardMenu"
-              aria-label="Partner dashboard menu"
-              class="!text-white"
-            >
-              <mat-icon>more_vert</mat-icon>
+        @for (card of visibleDashboardCards(); track card.id) {
+          @if (card.enabled) {
+            <a mat-menu-item [routerLink]="dashboardCardRoute(card)">
+              <mat-icon>{{ card.icon }}</mat-icon>
+              <span>{{ card.title }}</span>
+            </a>
+          } @else {
+            <button mat-menu-item disabled>
+              <mat-icon>{{ card.icon }}</mat-icon>
+              <span>{{ card.title }} — Coming soon</span>
             </button>
+          }
+        }
 
-            <mat-menu #dashboardMenu="matMenu">
-
-              <a
-                mat-menu-item
-                routerLink="/profile"
-              >
-                <mat-icon>person</mat-icon>
-                <span>Profile</span>
-              </a>
-
-            @for (card of visibleDashboardCards(); track card.id) {
-  @if (card.enabled) {
-    <a
-      [routerLink]="card.route"
-      class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
-    >
-      <div class="flex items-start justify-between gap-4">
-        <div
-          class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#007979]/10 transition-colors group-hover:bg-[#007979]"
-        >
-          <mat-icon class="text-white">{{ card.icon }}</mat-icon>
-        </div>
-
-        <mat-icon
-          class="text-gray-300 transition-colors group-hover:text-[#007979]"
-        >
-          arrow_forward
-        </mat-icon>
-      </div>
-
-      <h3 class="mt-5 text-lg font-bold text-gray-900">
-        {{ card.title }}
-      </h3>
-
-      <p class="mt-2 text-sm leading-6 text-gray-500">
-        {{ card.description }}
-      </p>
-    </a>
-  } @else {
-    <div
-      class="rounded-xl border border-gray-200 bg-white p-6 opacity-60 shadow-sm"
-    >
-      <div class="flex items-start justify-between gap-4">
-        <mat-icon>{{ card.icon }}</mat-icon>
-        <span
-          class="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-500"
-        >
-          Coming soon
-        </span>
-      </div>
-
-      <h3 class="mt-5 text-lg font-bold text-gray-900">
-        {{ card.title }}
-      </h3>
-
-      <p class="mt-2 text-sm leading-6 text-gray-500">
-        {{ card.description }}
-      </p>
+        @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
+          <a mat-menu-item routerLink="/partner/admin">
+            <mat-icon>admin_panel_settings</mat-icon>
+            <span>Administration</span>
+          </a>
+        }
+      </mat-menu>
     </div>
-  }
-}
+  </div>
+</header>
 
-              @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
-                <a
-                  mat-menu-item
-                  routerLink="/partner/admin"
-                >
-                  <mat-icon>admin_panel_settings</mat-icon>
-                  <span>Administration</span>
-                </a>
-              }
 
-            </mat-menu>
-
-          </div>
-        </div>
-      </header>
 
       <!-- =========================================================
            MAIN
            ========================================================= -->
 
-      <main
-        class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
-      >
-
+      <main class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <!-- =======================================================
              LOADING
              ======================================================= -->
 
         @if (organizationStore.contextLoading()) {
-
-          <section
-            class="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm"
-          >
-            <mat-icon
-              class="!h-9 !w-9 !text-4xl text-[#007979]"
-            >
-              sync
-            </mat-icon>
+          <section class="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+            <mat-icon class="!h-9 !w-9 !text-4xl text-[#007979]"> sync </mat-icon>
 
             <p class="mt-4 text-sm font-medium text-gray-700">
               Loading your partner organization...
             </p>
 
-            <p class="mt-1 text-sm text-gray-500">
-              Please wait while we load your dashboard.
-            </p>
+            <p class="mt-1 text-sm text-gray-500">Please wait while we load your dashboard.</p>
           </section>
-
         }
 
         <!-- =======================================================
@@ -208,25 +130,16 @@ interface DashboardCard {
              ======================================================= -->
 
         @else if (organizationStore.contextError()) {
-
-          <section
-            class="rounded-xl border border-red-200 bg-red-50 p-6"
-          >
+          <section class="rounded-xl border border-red-200 bg-red-50 p-6">
             <div class="flex gap-4">
-
               <div
                 class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100"
               >
-                <mat-icon class="text-red-600">
-                  error_outline
-                </mat-icon>
+                <mat-icon class="text-red-600"> error_outline </mat-icon>
               </div>
 
               <div class="min-w-0">
-
-                <h2 class="font-semibold text-red-900">
-                  Partner access unavailable
-                </h2>
+                <h2 class="font-semibold text-red-900">Partner access unavailable</h2>
 
                 <p class="mt-1 text-sm text-red-700">
                   {{ organizationStore.contextError() }}
@@ -240,11 +153,9 @@ interface DashboardCard {
                   <mat-icon>refresh</mat-icon>
                   Try again
                 </button>
-
               </div>
             </div>
           </section>
-
         }
 
         <!-- =======================================================
@@ -252,273 +163,195 @@ interface DashboardCard {
              ======================================================= -->
 
         @else {
-
           <!-- =====================================================
                ORGANIZATION SUMMARY
                ===================================================== -->
 
-          <section
-            class="mb-8 grid gap-5 lg:grid-cols-[1fr_auto]"
-          >
-
-            <div
-              class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
-            >
-
+          <section class="mb-8 grid gap-5 lg:grid-cols-[1fr_auto]">
+            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <div class="flex items-start gap-4">
-
                 <div
                   class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#5DB996]"
                 >
-                  <mat-icon class="!text-2xl text-white">
-                    business
-                  </mat-icon>
+                  <mat-icon class="!text-2xl text-white"> business </mat-icon>
                 </div>
 
                 <div class="min-w-0">
-
-                  <p
-                    class="text-xs font-semibold uppercase tracking-wider text-gray-500"
-                  >
+                  <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Organization
                   </p>
 
-                 <h2
-  class="mt-1 text-xl font-bold text-gray-900"
->
-  {{ organizationName() }}
-</h2>
-
-@if (organizationStore.selectedOrganization()?.status === 'onboarding') {
-  <a
-    [routerLink]="[
-      '/partner/org',
-      organizationStore.selectedOrganizationId(),
-      'onboarding'
-    ]"
-    class="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/20"
-  >
-    <mat-icon class="!h-5 !w-5 !text-xl">checklist</mat-icon>
-    <span>Complete onboarding steps</span>
-    <mat-icon class="!h-4 !w-4 !text-base">arrow_forward</mat-icon>
-  </a>
-}
+                  <h2 class="mt-1 text-xl font-bold text-gray-900">
+                    {{ organizationName() }}
+                  </h2>
+                  @if (organizationStore.selectedOrganization()?.status === 'onboarding') {
+                    <a
+                      [routerLink]="[
+                        '/partner/org',
+                        organizationStore.selectedOrganizationId(),
+                        'onboarding',
+                      ]"
+                      class="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/20"
+                    >
+                      <mat-icon class="!h-5 !w-5 !text-xl">checklist</mat-icon>
+                      <span>Complete onboarding steps</span>
+                      <mat-icon class="!h-4 !w-4 !text-base">arrow_forward</mat-icon>
+                    </a>
+                  }
 
                   <div
                     class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500"
                   >
 
-                    <span class="hidden sm:inline">
-                      •
-                    </span>
 
-                   @if (access.isPlatformAdmin()) {
-  <span>
-    {{ organizationStore.organizations().length }}
-    organization{{ organizationStore.organizations().length === 1 ? '' : 's' }}
-    available
-  </span>
-}
-
+                    @if (access.isPlatformAdmin()) {
+                      <span class="hidden sm:inline"> • </span>
+                      <span>
+                        {{ organizationStore.organizations().length }}
+                        organization{{ organizationStore.organizations().length === 1 ? '' : 's' }}
+                        available
+                      </span>
+                    }
                   </div>
-
                 </div>
               </div>
 
               <!-- Operational search is available after onboarding only. -->
               @if (canShowOperationalWorkspace()) {
-              <div class="relative mt-5">
-
-                <mat-icon
-                  class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                >
-                  search
-                </mat-icon>
-
-                <input
-                  id="partner-search"
-                  type="search"
-                  [value]="searchQuery()"
-                  (input)="onSearch($event)"
-                  placeholder="Search your partner resources..."
-                  autocomplete="off"
-                  class="w-full rounded-lg border border-gray-300 bg-white py-3 pl-11 pr-11 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/20"
-                />
-
-                @if (searching()) {
-
+                <div class="relative mt-5">
                   <mat-icon
-                    class="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[#007979]"
+                    class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   >
-                    sync
+                    search
                   </mat-icon>
 
-                } @else if (searchQuery()) {
-
-                  <button
-                    type="button"
-                    (click)="clearSearch()"
-                    aria-label="Clear search"
-                    class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                  >
-                    <mat-icon class="!text-lg">
-                      close
-                    </mat-icon>
-                  </button>
-
-                }
-
-              </div>
-
-              @if (searchQuery().trim()) {
-
-                <div class="mt-4">
+                  <input
+                    id="partner-search"
+                    type="search"
+                    [value]="searchQuery()"
+                    (input)="onSearch($event)"
+                    placeholder="Search your partner resources..."
+                    autocomplete="off"
+                    class="w-full rounded-lg border border-gray-300 bg-white py-3 pl-11 pr-11 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/20"
+                  />
 
                   @if (searching()) {
-
-                    <div
-                      class="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-5 py-4"
+                    <mat-icon
+                      class="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[#007979]"
                     >
-                      <mat-icon class="animate-spin text-[#007979]">
-                        sync
-                      </mat-icon>
-
-                      <span class="text-sm text-gray-600">
-                        Searching your organization...
-                      </span>
-                    </div>
-
-                  } @else if (searchResults().length > 0) {
-
-                    <div
-                      class="overflow-hidden rounded-xl border border-gray-200 bg-white"
+                      sync
+                    </mat-icon>
+                  } @else if (searchQuery()) {
+                    <button
+                      type="button"
+                      (click)="clearSearch()"
+                      aria-label="Clear search"
+                      class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                     >
-
-                      <div
-                        class="border-b border-gray-100 bg-gray-50 px-4 py-3"
-                      >
-                        <p
-                          class="text-xs font-semibold uppercase tracking-wider text-gray-500"
-                        >
-                          Search Results
-                        </p>
-
-                        <p class="mt-1 text-xs text-gray-400">
-                          {{ searchResults().length }}
-                          result{{ searchResults().length === 1 ? '' : 's' }}
-                        </p>
-                      </div>
-
-                      <div class="divide-y divide-gray-100">
-
-                        @for (
-                          result of searchResults();
-                          track result.category + ':' + result.id
-                        ) {
-
-                          <a
-                            [routerLink]="result.enabled ? result.route : null"
-                            [class.pointer-events-none]="!result.enabled"
-                            [class.opacity-60]="!result.enabled"
-                            class="flex items-center gap-4 px-4 py-4 transition-colors"
-                            [class.hover:bg-gray-50]="result.enabled"
-                          >
-
-                            <div
-                              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#032D42]"
-                            >
-                              <mat-icon class="text-white">
-                                {{ result.icon }}
-                              </mat-icon>
-                            </div>
-
-                            <div class="min-w-0 flex-1">
-
-                              <div class="flex items-center gap-2">
-
-                                <h3
-                                  class="truncate font-semibold text-gray-900"
-                                >
-                                  {{ result.title }}
-                                </h3>
-
-                                <span
-                                  class="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500"
-                                >
-                                  {{ result.category }}
-                                </span>
-
-                              </div>
-
-                              <p
-                                class="mt-1 truncate text-xs text-gray-500"
-                              >
-                                {{ result.description }}
-                              </p>
-
-                              @if (result.metadata) {
-                                <p
-                                  class="mt-1 text-[11px] font-medium text-[#007979]"
-                                >
-                                  {{ result.metadata }}
-                                </p>
-                              }
-
-                            </div>
-
-                            @if (result.enabled) {
-
-                              <mat-icon
-                                class="shrink-0 text-gray-300"
-                              >
-                                arrow_forward
-                              </mat-icon>
-
-                            } @else {
-
-                              <span
-                                class="shrink-0 rounded-full bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-400"
-                              >
-                                Coming soon
-                              </span>
-
-                            }
-
-                          </a>
-
-                        }
-
-                      </div>
-                    </div>
-
-                  } @else {
-
-                    <div
-                      class="rounded-xl border border-gray-200 bg-gray-50 px-5 py-6 text-center"
-                    >
-                      <mat-icon class="text-gray-400">
-                        search_off
-                      </mat-icon>
-
-                      <p class="mt-2 text-sm font-medium text-gray-700">
-                        No results found
-                      </p>
-
-                      <p class="mt-1 text-xs text-gray-500">
-                        Try searching for a course, resource, or partner feature.
-                      </p>
-                    </div>
-
+                      <mat-icon class="!text-lg"> close </mat-icon>
+                    </button>
                   }
-
                 </div>
 
-              }
-              }
+                @if (searchQuery().trim()) {
+                  <div class="mt-4">
+                    @if (searching()) {
+                      <div
+                        class="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-5 py-4"
+                      >
+                        <mat-icon class="animate-spin text-[#007979]"> sync </mat-icon>
 
+                        <span class="text-sm text-gray-600"> Searching your organization... </span>
+                      </div>
+                    } @else if (searchResults().length > 0) {
+                      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                        <div class="border-b border-gray-100 bg-gray-50 px-4 py-3">
+                          <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            Search Results
+                          </p>
+
+                          <p class="mt-1 text-xs text-gray-400">
+                            {{ searchResults().length }}
+                            result{{ searchResults().length === 1 ? '' : 's' }}
+                          </p>
+                        </div>
+
+                        <div class="divide-y divide-gray-100">
+                          @for (
+                            result of searchResults();
+                            track result.category + ':' + result.id
+                          ) {
+                            <a
+                              [routerLink]="result.enabled ? result.route : null"
+                              [class.pointer-events-none]="!result.enabled"
+                              [class.opacity-60]="!result.enabled"
+                              class="flex items-center gap-4 px-4 py-4 transition-colors"
+                              [class.hover:bg-gray-50]="result.enabled"
+                            >
+                              <div
+                                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#032D42]"
+                              >
+                                <mat-icon class="text-white">
+                                  {{ result.icon }}
+                                </mat-icon>
+                              </div>
+
+                              <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                  <h3 class="truncate font-semibold text-gray-900">
+                                    {{ result.title }}
+                                  </h3>
+
+                                  <span
+                                    class="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500"
+                                  >
+                                    {{ result.category }}
+                                  </span>
+                                </div>
+
+                                <p class="mt-1 truncate text-xs text-gray-500">
+                                  {{ result.description }}
+                                </p>
+
+                                @if (result.metadata) {
+                                  <p class="mt-1 text-[11px] font-medium text-[#007979]">
+                                    {{ result.metadata }}
+                                  </p>
+                                }
+                              </div>
+
+                              @if (result.enabled) {
+                                <mat-icon class="shrink-0 text-gray-300"> arrow_forward </mat-icon>
+                              } @else {
+                                <span
+                                  class="shrink-0 rounded-full bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-400"
+                                >
+                                  Coming soon
+                                </span>
+                              }
+                            </a>
+                          }
+                        </div>
+                      </div>
+                    } @else {
+                      <div
+                        class="rounded-xl border border-gray-200 bg-gray-50 px-5 py-6 text-center"
+                      >
+                        <mat-icon class="text-gray-400"> search_off </mat-icon>
+
+                        <p class="mt-2 text-sm font-medium text-gray-700">No results found</p>
+
+                        <p class="mt-1 text-xs text-gray-500">
+                          Try searching for a course, resource, or partner feature.
+                        </p>
+                      </div>
+                    }
+                  </div>
+                }
+              }
             </div>
 
-       <!-- =========================================================
+            <!-- =========================================================
             PROFILE CARD
             ========================================================= -->
 
@@ -534,27 +367,25 @@ interface DashboardCard {
                   </p>
 
                   <div class="mt-3 flex items-center gap-3">
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50">
+                    <div
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50"
+                    >
                       <mat-icon class="text-[#007979]">person</mat-icon>
                     </div>
 
                     <div>
-                      <p class="font-semibold text-gray-900 group-hover:text-[#007979]">
-                        Profile
-                      </p>
-                      <p class="text-sm text-gray-500">
-                        View and manage your personal profile
-                      </p>
-                      
+                      <p class="font-semibold text-gray-900 group-hover:text-[#007979]">Profile</p>
+                      <p class="text-sm text-gray-500">View and manage your personal profile</p>
                     </div>
-                  
                   </div>
-                    <div  class="mt-3 mr-5 inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/20">
-                      Role:
-                        <span class="font-medium text-gray-700">
-                        {{ roleLabel() }}
-                        </span>                    
-                      </div>
+                  <div
+                    class="mt-3 mr-5 inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/20"
+                  >
+                    Role:
+                    <span class="font-medium text-gray-700">
+                      {{ roleLabel() }}
+                    </span>
+                  </div>
                 </div>
 
                 <mat-icon class="mt-1 text-gray-300 transition-colors group-hover:text-[#007979]">
@@ -564,99 +395,77 @@ interface DashboardCard {
             </a>
           </section>
 
-                    <!-- =====================================================
+          <!-- =====================================================
                MEMBER FEATURES
                ===================================================== -->
 
           @if (canShowOperationalWorkspace() && visibleDashboardCards().length > 0) {
-          <section>
+            <section>
+              <div class="mb-5">
+                <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
+                  Partner Portal
+                </p>
 
-            <div class="mb-5">
+                <h2 class="mt-1 text-2xl font-bold text-gray-900">Your Workspace</h2>
 
-              <p
-                class="text-xs font-semibold uppercase tracking-wider text-[#007979]"
-              >
-                Partner Portal
-              </p>
+                <p class="mt-1 text-sm text-gray-500">
+                  Access the resources and services available to you.
+                </p>
+              </div>
 
-              <h2 class="mt-1 text-2xl font-bold text-gray-900">
-                Your Workspace
-              </h2>
-
-              <p class="mt-1 text-sm text-gray-500">
-                Access the resources and services available to you.
-              </p>
-
-            </div>
-
-            <div
-              class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
-            >
-
-             @for (
-  card of visibleDashboardCards();
-  track card.id
-) {
-
-  <a
-    [routerLink]="card.enabled ? card.route : null"
-    [attr.aria-disabled]="!card.enabled"
-    class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
-    [class.pointer-events-none]="!card.enabled"
-    [class.opacity-60]="!card.enabled"
-  >
-
+              <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                @for (card of visibleDashboardCards(); track card.id) {
                   <div
-                    class="flex items-start justify-between gap-4"
+                    class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
+                    [class.opacity-60]="!card.enabled"
                   >
+                    <div class="flex items-start justify-between gap-3">
+                      <a
+                        [routerLink]="card.enabled ? dashboardCardRoute(card) : null"
+                        [attr.aria-disabled]="!card.enabled"
+                        class="flex min-w-0 flex-1 items-start gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007979]"
+                        [class.pointer-events-none]="!card.enabled"
+                      >
+                        <div
+                          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 transition-colors group-hover:bg-[#007979]"
+                        >
+                          <mat-icon class="text-white">{{ card.icon }}</mat-icon>
+                        </div>
 
-                    <div
-                      class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#007979]/10 transition-colors group-hover:bg-[#007979]"
-                    >
-                      <mat-icon class="text-white">
-                        {{ card.icon }}
-                      </mat-icon>
+                        <div class="min-w-0 flex-1">
+                          <h3 class="text-lg font-bold text-gray-900">
+                            {{ card.title }}
+                          </h3>
+                          <p class="mt-2 text-sm leading-6 text-gray-500">
+                            {{ card.description }}
+                          </p>
+                        </div>
+                      </a>
+
+                      @if (card.id === 'test-center' && canManageTestCenter()) {
+                        <button
+                          type="button"
+                          [routerLink]="card.route"
+                          aria-label="Manage Test Center"
+                          title="Manage Test Center"
+                          class="shrink-0 rounded-lg p-2 text-gray-600 transition-colors hover:bg-teal-50 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-[#007979]"
+                        >
+                          <mat-icon>settings</mat-icon>
+                        </button>
+                      } @else if (card.enabled && card.id !== 'test-center') {
+                        <mat-icon class="shrink-0 text-gray-300 transition-colors group-hover:text-[#007979]">
+                          arrow_forward
+                        </mat-icon>
+                      } @else if (!card.enabled) {
+                        <span class="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-500">
+                          Coming soon
+                        </span>
+                      }
                     </div>
-
-                    @if (!card.enabled) {
-
-                      <span
-                        class="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-500"
-                      >
-                        Coming soon
-                      </span>
-
-                    } @else {
-
-                      <mat-icon
-                        class="text-gray-300 transition-colors group-hover:text-[#007979]"
-                      >
-                        arrow_forward
-                      </mat-icon>
-
-                    }
-
                   </div>
-
-                  <h3
-                    class="mt-5 text-lg font-bold text-gray-900"
-                  >
-                    {{ card.title }}
-                  </h3>
-
-                  <p
-                    class="mt-2 text-sm leading-6 text-gray-500"
-                  >
-                    {{ card.description }}
-                  </p>
-
-                </a>
-
-              }
-
-            </div>
-
-          </section>
+                }
+              </div>
+            </section>
           }
 
           <!-- =====================================================
@@ -664,79 +473,53 @@ interface DashboardCard {
                ===================================================== -->
 
           @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
-
             <section class="mt-10">
-
               <div class="mb-5">
-
                 <div class="flex items-center gap-2">
+                  <mat-icon class="text-[#007979]"> admin_panel_settings </mat-icon>
 
-                  <mat-icon class="text-[#007979]">
-                    admin_panel_settings
-                  </mat-icon>
-
-                  <p
-                    class="text-xs font-semibold uppercase tracking-wider text-[#007979]"
-                  >
+                  <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
                     Administration
                   </p>
-
                 </div>
 
-                <h2 class="mt-1 text-2xl font-bold text-gray-900">
-                  Organization Management
-                </h2>
+                <h2 class="mt-1 text-2xl font-bold text-gray-900">Organization Management</h2>
 
                 <p class="mt-1 text-sm text-gray-500">
                   Manage your organization's configuration, members, and resources.
                 </p>
-
               </div>
 
               <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-
                 <a
                   [routerLink]="[
-    '/partner/org',
-    organizationStore.selectedOrganizationId(),
-    'settings'
-  ]"
+                    '/partner/org',
+                    organizationStore.selectedOrganizationId(),
+                    'settings',
+                  ]"
                   class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
                 >
-
                   <div class="flex items-start justify-between">
-
                     <div
                       class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#007979]/10 transition-colors group-hover:bg-[#007979]"
                     >
-                      <mat-icon class="text-white">
-                        admin_panel_settings
-                      </mat-icon>
+                      <mat-icon class="text-white"> admin_panel_settings </mat-icon>
                     </div>
 
-                    <mat-icon
-                      class="text-gray-300 transition-colors group-hover:text-[#007979]"
-                    >
+                    <mat-icon class="text-gray-300 transition-colors group-hover:text-[#007979]">
                       arrow_forward
                     </mat-icon>
-
                   </div>
 
-                  <h3 class="mt-5 text-lg font-bold text-gray-900">
-                    Administration
-                  </h3>
+                  <h3 class="mt-3 text-lg font-bold text-gray-900">Administration</h3>
 
                   <p class="mt-2 text-sm leading-6 text-gray-500">
-                    Manage organization courses, members, programs, settings,
-                    notifications, and administrative operations.
+                    Manage organization courses, members, programs, settings, notifications, and
+                    administrative operations.
                   </p>
-
                 </a>
-
               </div>
-
             </section>
-
           }
 
           <!-- =====================================================
@@ -744,260 +527,228 @@ interface DashboardCard {
                ===================================================== -->
 
           @if (canShowOperationalWorkspace()) {
-          <section
-            class="mt-10 rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
-          >
+            <section class="mt-10 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
+                    Quick Access
+                  </p>
 
-            <div
-              class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-            >
+                  <h2 class="mt-1 text-lg font-bold text-gray-900">Partner Portal</h2>
 
-              <div>
+                  <p class="mt-1 text-sm text-gray-500">
+                    Return to the areas you use most frequently.
+                  </p>
+                </div>
 
-                <p
-                  class="text-xs font-semibold uppercase tracking-wider text-[#007979]"
-                >
-                  Quick Access
-                </p>
+                <div class="flex flex-wrap gap-3">
+                  @for (card of visibleDashboardCards(); track card.id) {
+                    <a mat-stroked-button [routerLink]="dashboardCardRoute(card)">
+                      <mat-icon>{{ card.icon }}</mat-icon>
+                      {{ card.title }}
+                    </a>
+                  }
 
-                <h2 class="mt-1 text-lg font-bold text-gray-900">
-                  Partner Portal
-                </h2>
-
-                <p class="mt-1 text-sm text-gray-500">
-                  Return to the areas you use most frequently.
-                </p>
-
-              </div>
-
-              <div class="flex flex-wrap gap-3">
-
-                @for (card of visibleDashboardCards(); track card.id) {
-                  <a
-                    mat-stroked-button
-                    [routerLink]="card.route"
-                  >
-                    <mat-icon>{{ card.icon }}</mat-icon>
-                    {{ card.title }}
-                  </a>
-                }
-
-                <a
-                  mat-stroked-button
-                  routerLink="/profile"
-                >
-                  <mat-icon>person</mat-icon>
-                  Profile
-                </a>
-
-                @if (access.canAccessAdministration()) {
-
-                  <a
-                    mat-stroked-button
-                    routerLink="/partner/admin"
-                  >
-                    <mat-icon>admin_panel_settings</mat-icon>
-                    Administration
+                  <a mat-stroked-button routerLink="/profile">
+                    <mat-icon>person</mat-icon>
+                    Profile
                   </a>
 
-                }
-
+                  @if (access.canAccessAdministration()) {
+                    <a mat-stroked-button routerLink="/partner/admin">
+                      <mat-icon>admin_panel_settings</mat-icon>
+                      Administration
+                    </a>
+                  }
+                </div>
               </div>
-
-            </div>
-
-          </section>
+            </section>
           }
-
         }
-
       </main>
-
     </div>
   `,
 })
 export class PartnerAdminComponent implements OnInit {
   protected readonly organizationStore = inject(OrganizationContextStore);
 
-  private readonly applicationRegistry = inject(
-    ApplicationRegistryService,
-  );
+  private readonly applicationRegistry = inject(ApplicationRegistryService);
 
-  protected readonly access = inject(
-    PartnerAccessService,
-  );
+  protected readonly access = inject(PartnerAccessService);
 
-  private readonly searchService = inject(
-    PartnerAdminSearchService,
-  );
+  private readonly searchService = inject(PartnerAdminSearchService);
 
-  private readonly pageTitleService = inject(
-    PageTitleService,
-  );
+  private readonly pageTitleService = inject(PageTitleService);
 
-  private readonly route =
-  inject(ActivatedRoute);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly searchQuery = signal('');
 
-  protected readonly searchResults =
-    signal<PartnerAdminSearchResult[]>([]);
+  protected readonly searchResults = signal<PartnerAdminSearchResult[]>([]);
 
   protected readonly searching = signal(false);
 
   protected readonly organizationName = computed(
-    () =>
-      this.organizationStore.selectedOrganization()?.name ??
-      'Partner',
+    () => this.organizationStore.selectedOrganization()?.name ?? 'Partner',
   );
 
-protected readonly roleLabel = computed(() => {
-  switch (this.access.role()) {
-    case 'org_owner':
-      return 'Owner';
+  protected readonly roleLabel = computed(() => {
+    switch (this.access.role()) {
+      case 'org_owner':
+        return 'Owner';
 
-    case 'org_admin':
-      return 'Administrator';
+      case 'org_admin':
+        return 'Administrator';
 
-    case 'org_manager':
-      return 'Manager';
+      case 'org_manager':
+        return 'Manager';
 
-    case 'org_staff':
-      return 'Staff';
+      case 'org_staff':
+        return 'Staff';
 
-    case 'org_member':
-      return 'Member';
+      case 'org_member':
+        return 'Member';
 
-    default:
-      return 'Member';
+      default:
+        return 'Member';
+    }
+  });
+
+  protected readonly accessIcon = computed(() => {
+    switch (this.access.role()) {
+      case 'org_owner':
+      case 'org_admin':
+        return 'admin_panel_settings';
+
+      case 'org_manager':
+        return 'manage_accounts';
+
+      case 'org_staff':
+        return 'badge';
+
+      case 'org_member':
+      default:
+        return 'person';
+    }
+  });
+
+  protected readonly accessDescription = computed(() => {
+    switch (this.access.role()) {
+      case 'org_owner':
+        return 'Organization owner';
+
+      case 'org_admin':
+        return 'Organization administrator';
+
+      case 'org_manager':
+        return 'Organization manager';
+
+      case 'org_staff':
+        return 'Organization staff member';
+
+      case 'org_member':
+      default:
+        return 'Organization member';
+    }
+  });
+
+  protected readonly isOrganizationOnboarding = computed(() => {
+    const organization = this.organizationStore.selectedOrganization();
+    const onboarding = this.organizationStore.onboarding();
+
+    // A completed onboarding record must take precedence over a stale
+    // organization lifecycle status in the dashboard's cached context.
+    if (onboarding?.status === 'completed') {
+      return false;
+    }
+
+    // Otherwise, keep showing the onboarding action while either source says
+    // that onboarding is still underway.
+    return organization?.status === 'onboarding' || !!onboarding;
+  });
+
+  /** Operational application links must not appear until onboarding is complete. */
+  protected readonly canShowOperationalWorkspace = computed(() => {
+    const organization = this.organizationStore.selectedOrganization();
+    const onboarding = this.organizationStore.onboarding();
+
+    if (
+      this.organizationStore.contextLoading() ||
+      this.organizationStore.applicationsLoading() ||
+      this.organizationStore.onboardingLoading() ||
+      !organization ||
+      this.isOrganizationOnboarding()
+    ) {
+      return false;
+    }
+
+    return onboarding?.status === 'completed';
+  });
+
+  /**
+   * Resolve workspace cards from the canonical application registry.
+   *
+   * The registry defines available platform applications and their metadata.
+   * Organization entitlements determine which applications this tenant may
+   * display. No application cards are duplicated in this component.
+   */
+  protected readonly dashboardCards = computed<DashboardCard[]>(() => {
+    if (!this.canShowOperationalWorkspace()) {
+      return [];
+    }
+
+    const organizationId = this.organizationStore.selectedOrganizationId();
+
+    if (!organizationId) {
+      return [];
+    }
+
+    return this.applicationRegistry
+      .getEnabledApplications()
+      .filter((application) => application.requiresOrganization)
+      .filter((application) => application.route.includes(':organizationId'))
+      .filter((application) => this.organizationStore.hasActiveApplication(application.id))
+      .map((application) => ({
+        id: application.id,
+        title: application.name,
+        description: application.description,
+        icon: application.icon ?? 'apps',
+        route: application.route.replace(':organizationId', organizationId),
+        enabled: true,
+      }));
+  });
+
+  /**
+   * Operational application links remain hidden until onboarding completes.
+   */
+  protected readonly visibleDashboardCards = computed(() => {
+    if (!this.canShowOperationalWorkspace()) {
+      return [];
+    }
+
+    return this.dashboardCards();
+  });
+
+  /**
+   * The Test Center card opens the learner experience by default.
+   * Its separate settings button continues to use the registry's management route.
+   */
+  protected dashboardCardRoute(card: DashboardCard): string | (string | null)[] {
+    if (card.id === 'test-center') {
+      const organizationId = this.organizationStore.selectedOrganizationId();
+
+      if (organizationId) {
+        return ['/partner/org', organizationId, 'learn', 'test-center'];
+      }
+    }
+
+    return card.route;
   }
-});
 
- protected readonly accessIcon = computed(() => {
-  switch (this.access.role()) {
-    case 'org_owner':
-    case 'org_admin':
-      return 'admin_panel_settings';
-
-    case 'org_manager':
-      return 'manage_accounts';
-
-    case 'org_staff':
-      return 'badge';
-
-    case 'org_member':
-    default:
-      return 'person';
+  /** Only organization roles permitted to manage courses see Test Center settings. */
+  protected canManageTestCenter(): boolean {
+    return this.access.canManageCourses();
   }
-});
-
- protected readonly accessDescription = computed(() => {
-  switch (this.access.role()) {
-    case 'org_owner':
-      return 'Organization owner';
-
-    case 'org_admin':
-      return 'Organization administrator';
-
-    case 'org_manager':
-      return 'Organization manager';
-
-    case 'org_staff':
-      return 'Organization staff member';
-
-    case 'org_member':
-    default:
-      return 'Organization member';
-  }
-});
-
-protected readonly isOrganizationOnboarding = computed(() => {
-  const organization = this.organizationStore.selectedOrganization();
-  const onboarding = this.organizationStore.onboarding();
-
-  // A completed onboarding record must take precedence over a stale
-  // organization lifecycle status in the dashboard's cached context.
-  if (onboarding?.status === 'completed') {
-    return false;
-  }
-
-  // Otherwise, keep showing the onboarding action while either source says
-  // that onboarding is still underway.
-  return (
-    organization?.status === 'onboarding' ||
-    !!onboarding
-  );
-});
-
-/** Operational application links must not appear until onboarding is complete. */
-protected readonly canShowOperationalWorkspace = computed(() => {
-  const organization = this.organizationStore.selectedOrganization();
-  const onboarding = this.organizationStore.onboarding();
-
-  if (
-    this.organizationStore.contextLoading() ||
-    this.organizationStore.applicationsLoading() ||
-    this.organizationStore.onboardingLoading() ||
-    !organization ||
-    this.isOrganizationOnboarding()
-  ) {
-    return false;
-  }
-
-  return onboarding?.status === 'completed';
-});
-
-/**
- * Resolve workspace cards from the canonical application registry.
- *
- * The registry defines available platform applications and their metadata.
- * Organization entitlements determine which applications this tenant may
- * display. No application cards are duplicated in this component.
- */
-protected readonly dashboardCards = computed<DashboardCard[]>(() => {
-  if (!this.canShowOperationalWorkspace()) {
-    return [];
-  }
-
-  const organizationId =
-    this.organizationStore.selectedOrganizationId();
-
-  if (!organizationId) {
-    return [];
-  }
-
-  return this.applicationRegistry
-    .getEnabledApplications()
-    .filter((application) => application.requiresOrganization)
-    .filter((application) =>
-      application.route.includes(':organizationId'),
-    )
-    .filter((application) =>
-      this.organizationStore.hasActiveApplication(application.id),
-    )
-    .map((application) => ({
-      id: application.id,
-      title: application.name,
-      description: application.description,
-      icon: application.icon ?? 'apps',
-      route: application.route.replace(
-        ':organizationId',
-        organizationId,
-      ),
-      enabled: true,
-    }));
-});
-
-/**
- * Operational application links remain hidden until onboarding completes.
- */
-protected readonly visibleDashboardCards = computed(() => {
-  if (!this.canShowOperationalWorkspace()) {
-    return [];
-  }
-
-  return this.dashboardCards();
-});
 
   async ngOnInit(): Promise<void> {
     await this.initialize();
@@ -1005,20 +756,15 @@ protected readonly visibleDashboardCards = computed(() => {
 
   protected async initialize(): Promise<void> {
     try {
-      const organizationId =
-        this.route.snapshot.paramMap.get('organizationId');
+      const organizationId = this.route.snapshot.paramMap.get('organizationId');
 
       if (!organizationId) {
         throw new Error('Organization ID is missing from the URL.');
       }
 
-      await this.organizationStore.loadOrganizationContext(
-        organizationId,
-      );
+      await this.organizationStore.loadOrganizationContext(organizationId);
 
-      this.pageTitleService.setTitle(
-        `${this.organizationName()} Dashboard`,
-      );
+      this.pageTitleService.setTitle(`${this.organizationName()} Dashboard`);
     } catch {
       /*
        * OrganizationStore exposes
@@ -1027,11 +773,8 @@ protected readonly visibleDashboardCards = computed(() => {
     }
   }
 
-  protected async onSearch(
-    event: Event,
-  ): Promise<void> {
-    const input =
-      event.target as HTMLInputElement | null;
+  protected async onSearch(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement | null;
 
     const value = input?.value ?? '';
 
@@ -1044,8 +787,7 @@ protected readonly visibleDashboardCards = computed(() => {
       return;
     }
 
-    const organizationId =
-      this.organizationStore.selectedOrganizationId();
+    const organizationId = this.organizationStore.selectedOrganizationId();
 
     if (!organizationId) {
       this.searchResults.set([]);
@@ -1055,19 +797,13 @@ protected readonly visibleDashboardCards = computed(() => {
     try {
       this.searching.set(true);
 
-      const results =
-        await this.searchService.search(
-          organizationId,
-          query,
-        );
+      const results = await this.searchService.search(organizationId, query);
 
       /*
        * Ignore stale results if the user has already
        * changed the search text while Firestore was loading.
        */
-      if (
-        this.searchQuery().trim() !== query
-      ) {
+      if (this.searchQuery().trim() !== query) {
         return;
       }
 

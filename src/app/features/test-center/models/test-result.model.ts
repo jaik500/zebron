@@ -35,7 +35,7 @@ export interface TestTopicPerformance {
 export interface TestResult {
   id: string;
 
-  organizationId: string;
+  organizationId: string | null;
 
   userId: string;
 

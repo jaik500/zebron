@@ -614,15 +614,32 @@ export class TestPracticeComponent {
   // FINISH
   // =====================================================
 
-  private finishTest(): void {
-  const result = this.testStore.completeTest();
-
-  if (!result) {
-    console.error('Unable to complete Test Center session.');
+private async finishTest(): Promise<void> {
+  if (this.testStore.loading()) {
     return;
   }
 
-  void this.router.navigate(['/test-center/results']);
+  const result = this.testStore.completeTest();
+
+  if (!result) {
+    console.error(
+      'Unable to complete Test Center session.',
+      this.testStore.error(),
+    );
+    return;
+  }
+
+  try {
+    await this.testStore.saveCompletedTest(result);
+
+    await this.router.navigate(['/test-center/results']);
+  } catch (error) {
+    console.error('Failed to save Test Center result:', error);
+
+    this.testStore.setError(
+      'Your result could not be saved. Please try again before leaving this page.',
+    );
+  }
 }
 
   // =====================================================

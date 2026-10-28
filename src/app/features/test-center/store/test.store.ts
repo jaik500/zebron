@@ -10,6 +10,8 @@ import { TestQuestionService } from '../services/test-question.service';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { OrganizationContextService } from '../../../core/services/organization-context.service';
+import { TestResultService } from '../services/test-result.service';
+
 
 // =====================================================
 // TEST MODE
@@ -39,6 +41,8 @@ export class TestStore {
 
   private readonly organizationContext =
     inject(OrganizationContextService);
+
+  private readonly testResultService = inject(TestResultService);
 
   // =====================================================
   // COURSE
@@ -465,250 +469,167 @@ setQuestions(questions: TestQuestion[]): void {
     this.error.set('');
   }
 
-  /**
- * Calculates the final result for the current test session.
+
+/**
+ * Calculate the result for the active test session.
  *
- * The result is calculated entirely from the questions loaded
- * into the current TestStore session and the answers selected
- * by the user.
+ * This method only calculates and prepares the result.
+ * Persistence is handled by saveCompletedTest().
  */
 completeTest(): TestResult | null {
   const course = this.course();
-
   const questions = this.questions();
-
   const answers = this.selectedAnswers();
 
   if (!course || questions.length === 0) {
-    return null;
-  }
-
-
-  /*
-   * ----------------------------------------------------------
-   * QUESTION RESULTS
-   * ----------------------------------------------------------
-   */
-
-  const questionResults = questions.map(
-    (question): TestQuestionResult => {
-      const selectedAnswerId =
-        answers[question.id] ?? null;
-
-      const isCorrect =
-        selectedAnswerId !== null &&
-        selectedAnswerId === question.correctAnswer;
-
-      return {
-        questionId: question.id,
-
-        question: question.question,
-
-        topicId: question.topicId,
-
-        selectedAnswerId,
-
-        correctAnswerId: question.correctAnswer,
-
-        isCorrect,
-
-        explanation: question.explanation,
-      };
-    },
-  );
-
-
-  /*
-   * ----------------------------------------------------------
-   * OVERALL SCORE
-   * ----------------------------------------------------------
-   */
-
-  const totalQuestions =
-    questionResults.length;
-
-  const answeredQuestions =
-    questionResults.filter(
-      result => result.selectedAnswerId !== null,
-    ).length;
-
-  const correctAnswers =
-    questionResults.filter(
-      result => result.isCorrect,
-    ).length;
-
-  const incorrectAnswers =
-    questionResults.filter(
-      result =>
-        result.selectedAnswerId !== null &&
-        !result.isCorrect,
-    ).length;
-
-  const unansweredQuestions =
-    totalQuestions - answeredQuestions;
-
-
-  const scorePercentage =
-    totalQuestions > 0
-      ? Math.round(
-          (correctAnswers / totalQuestions) * 100,
-        )
-      : 0;
-
-
-  /*
-   * ----------------------------------------------------------
-   * TOPIC PERFORMANCE
-   * ----------------------------------------------------------
-   */
-
-  const topicPerformance: TestTopicPerformance[] =
-    this.topics()
-      .map(topic => {
-        const topicResults =
-          questionResults.filter(
-            result =>
-              result.topicId === topic.id,
-          );
-
-
-        if (topicResults.length === 0) {
-          return null;
-        }
-
-
-        const topicAnswered =
-          topicResults.filter(
-            result =>
-              result.selectedAnswerId !== null,
-          ).length;
-
-
-        const topicCorrect =
-          topicResults.filter(
-            result =>
-              result.isCorrect,
-          ).length;
-
-
-        const topicIncorrect =
-          topicResults.filter(
-            result =>
-              result.selectedAnswerId !== null &&
-              !result.isCorrect,
-          ).length;
-
-
-        const topicPercentage =
-          topicResults.length > 0
-            ? Math.round(
-                (topicCorrect / topicResults.length) *
-                  100,
-              )
-            : 0;
-
-
-        return {
-          topicId: topic.id,
-
-          topicName: topic.name,
-
-          totalQuestions:
-            topicResults.length,
-
-          answeredQuestions:
-            topicAnswered,
-
-          correctAnswers:
-            topicCorrect,
-
-          incorrectAnswers:
-            topicIncorrect,
-
-          percentage:
-            topicPercentage,
-        };
-      })
-      .filter(
-        (
-          topic,
-        ): topic is TestTopicPerformance =>
-          topic !== null,
-      );
-
-
-  /*
-   * ----------------------------------------------------------
-   * FINAL RESULT
-   * ----------------------------------------------------------
-   */
-
-  const organizationId = this.organizationId();
-
-  if (!organizationId) {
-    this.error.set(
-      'No organization is selected for this Test Center session.',
-    );
+    this.error.set('There is no active test to complete.');
     return null;
   }
 
   const currentUser = this.authService.user();
 
   if (!currentUser?.id) {
+    this.error.set('You must be signed in to complete this test.');
+    return null;
+  }
+
+  const organizationId = this.organizationId();
+
+  if (
+    course.scope === 'organization' &&
+    !organizationId
+  ) {
     this.error.set(
-      'You must be signed in to complete this Test Center session.',
+      'Select the organization that owns this course before completing the test.',
     );
     return null;
   }
+
+  const questionResults: TestQuestionResult[] = questions.map(
+    (question) => {
+      const selectedAnswerId = answers[question.id] ?? null;
+
+      return {
+        questionId: question.id,
+        question: question.question,
+        topicId: question.topicId,
+        selectedAnswerId,
+        correctAnswerId: question.correctAnswer,
+        isCorrect:
+          selectedAnswerId !== null &&
+          selectedAnswerId === question.correctAnswer,
+        explanation: question.explanation,
+      };
+    },
+  );
+
+  const totalQuestions = questionResults.length;
+
+  const answeredQuestions = questionResults.filter(
+    (result) => result.selectedAnswerId !== null,
+  ).length;
+
+  const correctAnswers = questionResults.filter(
+    (result) => result.isCorrect,
+  ).length;
+
+  const incorrectAnswers = questionResults.filter(
+    (result) =>
+      result.selectedAnswerId !== null && !result.isCorrect,
+  ).length;
+
+  const unansweredQuestions = totalQuestions - answeredQuestions;
+
+  const scorePercentage =
+    totalQuestions > 0
+      ? Math.round((correctAnswers / totalQuestions) * 100)
+      : 0;
+
+  const topicPerformance: TestTopicPerformance[] = this.topics()
+    .map((topic) => {
+      const topicResults = questionResults.filter(
+        (result) => result.topicId === topic.id,
+      );
+
+      if (topicResults.length === 0) {
+        return null;
+      }
+
+      const topicAnswered = topicResults.filter(
+        (result) => result.selectedAnswerId !== null,
+      ).length;
+
+      const topicCorrect = topicResults.filter(
+        (result) => result.isCorrect,
+      ).length;
+
+      const topicIncorrect = topicResults.filter(
+        (result) =>
+          result.selectedAnswerId !== null && !result.isCorrect,
+      ).length;
+
+      return {
+        topicId: topic.id,
+        topicName: topic.name,
+        totalQuestions: topicResults.length,
+        answeredQuestions: topicAnswered,
+        correctAnswers: topicCorrect,
+        incorrectAnswers: topicIncorrect,
+        percentage: Math.round(
+          (topicCorrect / topicResults.length) * 100,
+        ),
+      };
+    })
+    .filter(
+      (topic): topic is TestTopicPerformance => topic !== null,
+    );
 
   const attemptId = crypto.randomUUID();
 
   const result: TestResult = {
     id: crypto.randomUUID(),
-
-    organizationId,
-
+    organizationId:
+      course.scope === 'platform' ? null : organizationId,
     userId: currentUser.id,
-
     attemptId,
-
     courseId: course.id,
-
     courseName: course.name,
-
     totalQuestions,
-
     answeredQuestions,
-
     correctAnswers,
-
     incorrectAnswers,
-
     unansweredQuestions,
-
     scorePercentage,
-
     mode: this.mode(),
-
     difficulty: this.difficulty(),
-
     topicPerformance,
-
     questionResults,
-
     completedAt: new Date(),
   };
 
-
-  /*
-   * Store the completed result so the Results page
-   * can display it after route navigation.
-   */
   this.completedResult.set(result);
-
+  this.error.set('');
 
   return result;
 }
+
+/**
+ * Save the completed test before navigating to results.
+ */
+async saveCompletedTest(result: TestResult): Promise<void> {
+  const course = this.course();
+
+  if (!course) {
+    throw new Error('The completed test course is no longer available.');
+  }
+
+  await this.testResultService.saveCompletedTest({
+    result,
+    scope: course.scope,
+    topicIds: this.selectedTopicIds(),
+  });
+}
+
 
  /**
  * Load published questions for the current test configuration.
@@ -757,23 +678,30 @@ async loadQuestions(): Promise<boolean> {
     this.loading.set(true);
     this.error.set('');
 
-    const organizationId = this.organizationId();
 
-    if (!organizationId) {
-      this.questions.set([]);
-      this.error.set(
-        'Please select an organization before starting the test.',
-      );
-      return false;
-    }
+const organizationId = this.organizationId();
 
-    const loadedQuestions =
-      await this.questionService.getQuestionsForTest(
-        organizationId,
-        currentCourse.id,
-        this.selectedTopicIds(),
-        this.difficulty(),
-      );
+if (
+  currentCourse.scope === 'organization' &&
+  !organizationId
+) {
+  this.questions.set([]);
+  this.error.set(
+    'Please select an organization before starting the test.',
+  );
+  return false;
+}
+
+const loadedQuestions =
+  await this.questionService.getQuestionsForTest(
+    currentCourse.scope === 'platform' ? null : organizationId,
+    currentCourse.id,
+    this.selectedTopicIds(),
+    this.difficulty(),
+    currentCourse.scope,
+  );
+
+
 
     if (loadedQuestions.length === 0) {
       this.questions.set([]);
@@ -875,21 +803,28 @@ async loadQuestions(): Promise<boolean> {
     }
 
     try {
-      const organizationId = this.organizationId();
 
-      if (!organizationId) {
-        this.availableQuestionCount.set(0);
-        return;
-      }
+const organizationId = this.organizationId();
 
-      const count =
-        await this.questionService.getPublishedQuestionCount(
-          organizationId,
-          course.id,
-          topicIds,
-        );
+if (
+  course.scope === 'organization' &&
+  !organizationId
+) {
+  this.availableQuestionCount.set(0);
+  return;
+}
 
-      this.availableQuestionCount.set(count);
+const count =
+  await this.questionService.getPublishedQuestionCount(
+    course.scope === 'platform' ? null : organizationId,
+    course.id,
+    topicIds,
+    course.scope,
+  );
+
+this.availableQuestionCount.set(count);
+
+
     } catch (error) {
       console.error('Failed to load available Test Center question count:', error);
 

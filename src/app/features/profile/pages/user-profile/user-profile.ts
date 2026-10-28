@@ -1,8 +1,19 @@
+import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+
+import { firestore } from '../../../../core/services/firebase-config';
+import { Organization } from '../../../../core/models/organization.model';
+import { OrganizationMembership } from '../../../../core/models/organization-membership.model';
+import { OrganizationMembershipRepository } from '../../../../core/repositories/firestore/organization-membership.repository';
+import {
+  ORGANIZATION_REPOSITORY,
+  OrganizationRepository,
+} from '../../../../core/repositories/organization.repository';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -19,6 +30,7 @@ import { CommunityUser } from '../../../community/models/community-user.model';
   standalone: true,
 
   imports: [
+    CommonModule,
     FormsModule,
     RouterLink,
     MatIconModule,
@@ -26,16 +38,18 @@ import { CommunityUser } from '../../../community/models/community-user.model';
     MatInputModule,
   ],
 
-  styles: [`
-    :host .tax-field {
-      display: block;
-      width: 100%;
-    }
+  styles: [
+    `
+      :host .tax-field {
+        display: block;
+        width: 100%;
+      }
 
-    :host .tax-field .mat-mdc-form-field-subscript-wrapper {
-      min-height: 0;
-    }
-  `],
+      :host .tax-field .mat-mdc-form-field-subscript-wrapper {
+        min-height: 0;
+      }
+    `,
+  ],
 
   template: `
     <main class="mx-auto max-w-7xl p-6 sm:p-8 mt-9">
@@ -235,63 +249,80 @@ Mobile: Save icon only
                 Personal Info
               </button>
 
-              <button
-                type="button"
-                (click)="setActiveTab('learning')"
-                [attr.aria-selected]="activeTab() === 'learning'"
-                [class.border-[#007979]]="activeTab() === 'learning'"
-                [class.text-[#032D42]]="activeTab() === 'learning'"
-                [class.border-transparent]="activeTab() !== 'learning'"
-                [class.text-gray-500]="activeTab() !== 'learning'"
-                class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
-              >
-                Learning Dashboard
-              </button>
+              @if (showLearningAndOrganizations()) {
+                <button
+                  type="button"
+                  (click)="setActiveTab('learning')"
+                  [attr.aria-selected]="activeTab() === 'learning'"
+                  [class.border-[#007979]]="activeTab() === 'learning'"
+                  [class.text-[#032D42]]="activeTab() === 'learning'"
+                  [class.border-transparent]="activeTab() !== 'learning'"
+                  [class.text-gray-500]="activeTab() !== 'learning'"
+                  class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
+                >
+                  Learning Dashboard
+                </button>
+              }
 
-              <button
-                type="button"
-                (click)="setActiveTab('followers')"
-                [attr.aria-selected]="activeTab() === 'followers'"
-                [class.border-[#007979]]="activeTab() === 'followers'"
-                [class.text-[#032D42]]="activeTab() === 'followers'"
-                [class.border-transparent]="activeTab() !== 'followers'"
-                [class.text-gray-500]="activeTab() !== 'followers'"
-                class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
-              >
-                Followers
-                <span class="ml-1 text-xs font-bold">{{
-                  communityFollowStore.followersCount()
-                }}</span>
-              </button>
+              @if (
+                !communityFollowStore.loadingFollowers() &&
+                communityFollowStore.followersCount() > 0
+              ) {
+                <button
+                  type="button"
+                  role="tab"
+                  (click)="setActiveTab('followers')"
+                  [attr.aria-selected]="activeTab() === 'followers'"
+                  [class.border-[#007979]]="activeTab() === 'followers'"
+                  [class.text-[#032D42]]="activeTab() === 'followers'"
+                  [class.border-transparent]="activeTab() !== 'followers'"
+                  [class.text-gray-500]="activeTab() !== 'followers'"
+                  class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
+                >
+                  Followers
+                  <span class="ml-1 text-xs font-bold">
+                    {{ communityFollowStore.followersCount() }}
+                  </span>
+                </button>
+              }
 
-              <button
-                type="button"
-                (click)="setActiveTab('following')"
-                [attr.aria-selected]="activeTab() === 'following'"
-                [class.border-[#007979]]="activeTab() === 'following'"
-                [class.text-[#032D42]]="activeTab() === 'following'"
-                [class.border-transparent]="activeTab() !== 'following'"
-                [class.text-gray-500]="activeTab() !== 'following'"
-                class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
-              >
-                Following
-                <span class="ml-1 text-xs font-bold">{{
-                  communityFollowStore.followingCount()
-                }}</span>
-              </button>
+              @if (
+                !communityFollowStore.loadingFollowing() &&
+                communityFollowStore.followingCount() > 0
+              ) {
+                <button
+                  type="button"
+                  role="tab"
+                  (click)="setActiveTab('following')"
+                  [attr.aria-selected]="activeTab() === 'following'"
+                  [class.border-[#007979]]="activeTab() === 'following'"
+                  [class.text-[#032D42]]="activeTab() === 'following'"
+                  [class.border-transparent]="activeTab() !== 'following'"
+                  [class.text-gray-500]="activeTab() !== 'following'"
+                  class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
+                >
+                  Following
+                  <span class="ml-1 text-xs font-bold">
+                    {{ communityFollowStore.followingCount() }}
+                  </span>
+                </button>
+              }
 
-              <button
-                type="button"
-                (click)="setActiveTab('plans')"
-                [attr.aria-selected]="activeTab() === 'plans'"
-                [class.border-[#007979]]="activeTab() === 'plans'"
-                [class.text-[#032D42]]="activeTab() === 'plans'"
-                [class.border-transparent]="activeTab() !== 'plans'"
-                [class.text-gray-500]="activeTab() !== 'plans'"
-                class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
-              >
-                My Plans
-              </button>
+              @if (showLearningAndOrganizations()) {
+                <button
+                  type="button"
+                  (click)="setActiveTab('organizations')"
+                  [attr.aria-selected]="activeTab() === 'organizations'"
+                  [class.border-[#007979]]="activeTab() === 'organizations'"
+                  [class.text-[#032D42]]="activeTab() === 'organizations'"
+                  [class.border-transparent]="activeTab() !== 'organizations'"
+                  [class.text-gray-500]="activeTab() !== 'organizations'"
+                  class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
+                >
+                  My Organizations
+                  <span class="ml-1 text-xs font-bold">{{ organizations().length }}</span>
+                </button>
+              }
 
               <button
                 type="button"
@@ -357,16 +388,17 @@ Mobile: Save icon only
                   <div>
                     <mat-form-field appearance="outline" class="tax-field w-full">
                       <mat-label>Display name</mat-label>
-                      <input matInput
-                      id="displayName"
-                      name="displayName"
-                      type="text"
-                      [(ngModel)]="displayName"
-                      required
-                      autocomplete="name"
-                      placeholder="Your name"
-                      class="block w-full"
-                    />
+                      <input
+                        matInput
+                        id="displayName"
+                        name="displayName"
+                        type="text"
+                        [(ngModel)]="displayName"
+                        required
+                        autocomplete="name"
+                        placeholder="Your name"
+                        class="block w-full"
+                      />
                     </mat-form-field>
 
                     <p
@@ -386,32 +418,34 @@ Mobile: Save icon only
                   >
                     <div>
                       <mat-form-field appearance="outline" class="tax-field w-full">
-                      <mat-label>First name</mat-label>
-                      <input matInput
-                        id="firstName"
-                        name="firstName"
-                        type="text"
-                        [(ngModel)]="firstName"
-                        autocomplete="given-name"
-                        placeholder="First name"
-                        class="block w-full"
-                      />
-                    </mat-form-field>
+                        <mat-label>First name</mat-label>
+                        <input
+                          matInput
+                          id="firstName"
+                          name="firstName"
+                          type="text"
+                          [(ngModel)]="firstName"
+                          autocomplete="given-name"
+                          placeholder="First name"
+                          class="block w-full"
+                        />
+                      </mat-form-field>
                     </div>
 
                     <div>
                       <mat-form-field appearance="outline" class="tax-field w-full">
-                      <mat-label>Last name</mat-label>
-                      <input matInput
-                        id="lastName"
-                        name="lastName"
-                        type="text"
-                        [(ngModel)]="lastName"
-                        autocomplete="family-name"
-                        placeholder="Last name"
-                        class="block w-full"
-                      />
-                    </mat-form-field>
+                        <mat-label>Last name</mat-label>
+                        <input
+                          matInput
+                          id="lastName"
+                          name="lastName"
+                          type="text"
+                          [(ngModel)]="lastName"
+                          autocomplete="family-name"
+                          placeholder="Last name"
+                          class="block w-full"
+                        />
+                      </mat-form-field>
                     </div>
                   </div>
 
@@ -424,31 +458,33 @@ Mobile: Save icon only
                   >
                     <div>
                       <mat-form-field appearance="outline" class="tax-field w-full">
-                      <mat-label>Preferred name (optional)</mat-label>
-                      <input matInput
-                        id="preferredName"
-                        name="preferredName"
-                        type="text"
-                        [(ngModel)]="preferredName"
-                        placeholder="What should we call you?"
-                        class="block w-full"
-                      />
-                    </mat-form-field>
+                        <mat-label>Preferred name (optional)</mat-label>
+                        <input
+                          matInput
+                          id="preferredName"
+                          name="preferredName"
+                          type="text"
+                          [(ngModel)]="preferredName"
+                          placeholder="What should we call you?"
+                          class="block w-full"
+                        />
+                      </mat-form-field>
                     </div>
 
                     <div>
                       <mat-form-field appearance="outline" class="tax-field w-full">
-                      <mat-label>Phone number (optional)</mat-label>
-                      <input matInput
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        [(ngModel)]="phone"
-                        autocomplete="tel"
-                        placeholder="(555) 555-5555"
-                        class="block w-full"
-                      />
-                    </mat-form-field>
+                        <mat-label>Phone number (optional)</mat-label>
+                        <input
+                          matInput
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          [(ngModel)]="phone"
+                          autocomplete="tel"
+                          placeholder="(555) 555-5555"
+                          class="block w-full"
+                        />
+                      </mat-form-field>
                     </div>
                   </div>
 
@@ -458,14 +494,15 @@ Mobile: Save icon only
                   <div>
                     <mat-form-field appearance="outline" class="tax-field w-full">
                       <mat-label>Email address</mat-label>
-                      <input matInput
-                      id="email"
-                      name="email"
-                      type="email"
-                      [value]="user.email"
-                      disabled
-                      class="block w-full"
-                    />
+                      <input
+                        matInput
+                        id="email"
+                        name="email"
+                        type="email"
+                        [value]="user.email"
+                        disabled
+                        class="block w-full"
+                      />
                     </mat-form-field>
 
                     <p
@@ -502,30 +539,32 @@ Mobile: Save icon only
                   >
                     <div>
                       <mat-form-field appearance="outline" class="tax-field w-full">
-                      <mat-label>Country of origin</mat-label>
-                      <input matInput
-                        id="countryOfOrigin"
-                        name="countryOfOrigin"
-                        type="text"
-                        [(ngModel)]="countryOfOrigin"
-                        placeholder="Country of origin"
-                        class="block w-full"
-                      />
-                    </mat-form-field>
+                        <mat-label>Country of origin</mat-label>
+                        <input
+                          matInput
+                          id="countryOfOrigin"
+                          name="countryOfOrigin"
+                          type="text"
+                          [(ngModel)]="countryOfOrigin"
+                          placeholder="Country of origin"
+                          class="block w-full"
+                        />
+                      </mat-form-field>
                     </div>
 
                     <div>
                       <mat-form-field appearance="outline" class="tax-field w-full">
-                      <mat-label>Current country</mat-label>
-                      <input matInput
-                        id="currentCountry"
-                        name="currentCountry"
-                        type="text"
-                        [(ngModel)]="currentCountry"
-                        placeholder="Current country"
-                        class="block w-full"
-                      />
-                    </mat-form-field>
+                        <mat-label>Current country</mat-label>
+                        <input
+                          matInput
+                          id="currentCountry"
+                          name="currentCountry"
+                          type="text"
+                          [(ngModel)]="currentCountry"
+                          placeholder="Current country"
+                          class="block w-full"
+                        />
+                      </mat-form-field>
                     </div>
                   </div>
 
@@ -538,32 +577,34 @@ Mobile: Save icon only
                   >
                     <div>
                       <mat-form-field appearance="outline" class="tax-field w-full">
-                      <mat-label>City</mat-label>
-                      <input matInput
-                        id="city"
-                        name="city"
-                        type="text"
-                        [(ngModel)]="city"
-                        autocomplete="address-level2"
-                        placeholder="City"
-                        class="block w-full"
-                      />
-                    </mat-form-field>
+                        <mat-label>City</mat-label>
+                        <input
+                          matInput
+                          id="city"
+                          name="city"
+                          type="text"
+                          [(ngModel)]="city"
+                          autocomplete="address-level2"
+                          placeholder="City"
+                          class="block w-full"
+                        />
+                      </mat-form-field>
                     </div>
 
                     <div>
                       <mat-form-field appearance="outline" class="tax-field w-full">
-                      <mat-label>State / Province</mat-label>
-                      <input matInput
-                        id="state"
-                        name="state"
-                        type="text"
-                        [(ngModel)]="state"
-                        autocomplete="address-level1"
-                        placeholder="State or province"
-                        class="block w-full"
-                      />
-                    </mat-form-field>
+                        <mat-label>State / Province</mat-label>
+                        <input
+                          matInput
+                          id="state"
+                          name="state"
+                          type="text"
+                          [(ngModel)]="state"
+                          autocomplete="address-level1"
+                          placeholder="State or province"
+                          class="block w-full"
+                        />
+                      </mat-form-field>
                     </div>
                   </div>
 
@@ -576,31 +617,33 @@ Mobile: Save icon only
                   >
                     <div>
                       <mat-form-field appearance="outline" class="tax-field w-full">
-                      <mat-label>ZIP / Postal code</mat-label>
-                      <input matInput
-                        id="postalCode"
-                        name="postalCode"
-                        type="text"
-                        [(ngModel)]="postalCode"
-                        autocomplete="postal-code"
-                        placeholder="ZIP or postal code"
-                        class="block w-full"
-                      />
-                    </mat-form-field>
+                        <mat-label>ZIP / Postal code</mat-label>
+                        <input
+                          matInput
+                          id="postalCode"
+                          name="postalCode"
+                          type="text"
+                          [(ngModel)]="postalCode"
+                          autocomplete="postal-code"
+                          placeholder="ZIP or postal code"
+                          class="block w-full"
+                        />
+                      </mat-form-field>
                     </div>
 
                     <div>
                       <mat-form-field appearance="outline" class="tax-field w-full">
-                      <mat-label>Preferred language</mat-label>
-                      <input matInput
-                        id="preferredLanguage"
-                        name="preferredLanguage"
-                        type="text"
-                        [(ngModel)]="preferredLanguage"
-                        placeholder="English, French, etc."
-                        class="block w-full"
-                      />
-                    </mat-form-field>
+                        <mat-label>Preferred language</mat-label>
+                        <input
+                          matInput
+                          id="preferredLanguage"
+                          name="preferredLanguage"
+                          type="text"
+                          [(ngModel)]="preferredLanguage"
+                          placeholder="English, French, etc."
+                          class="block w-full"
+                        />
+                      </mat-form-field>
                     </div>
                   </div>
 
@@ -613,15 +656,16 @@ Mobile: Save icon only
                   >
                     <mat-form-field appearance="outline" class="tax-field w-full">
                       <mat-label>About me (optional)</mat-label>
-                      <textarea matInput
-                      id="bio"
-                      name="bio"
-                      rows="4"
-                      [(ngModel)]="bio"
-                      maxlength="500"
-                      placeholder="Tell us a little about yourself..."
-                      class="block w-full"
-                    ></textarea>
+                      <textarea
+                        matInput
+                        id="bio"
+                        name="bio"
+                        rows="4"
+                        [(ngModel)]="bio"
+                        maxlength="500"
+                        placeholder="Tell us a little about yourself..."
+                        class="block w-full"
+                      ></textarea>
                     </mat-form-field>
 
                     <p
@@ -638,15 +682,16 @@ Mobile: Save icon only
                   <div>
                     <mat-form-field appearance="outline" class="tax-field w-full">
                       <mat-label>Website / LinkedIn (optional)</mat-label>
-                      <input matInput
-                      id="website"
-                      name="website"
-                      type="url"
-                      [(ngModel)]="website"
-                      autocomplete="url"
-                      placeholder="https://example.com"
-                      class="block w-full"
-                    />
+                      <input
+                        matInput
+                        id="website"
+                        name="website"
+                        type="url"
+                        [(ngModel)]="website"
+                        autocomplete="url"
+                        placeholder="https://example.com"
+                        class="block w-full"
+                      />
                     </mat-form-field>
                   </div>
 
@@ -659,14 +704,15 @@ Mobile: Save icon only
                   >
                     <mat-form-field appearance="outline" class="tax-field w-full">
                       <mat-label>Platform role</mat-label>
-                      <input matInput
-                      id="platformRole"
-                      name="platformRole"
-                      type="text"
-                      [value]="user.platformRole || 'Standard User'"
-                      disabled
-                      class="block w-full"
-                    />
+                      <input
+                        matInput
+                        id="platformRole"
+                        name="platformRole"
+                        type="text"
+                        [value]="user.platformRole || 'Standard User'"
+                        disabled
+                        class="block w-full"
+                      />
                     </mat-form-field>
 
                     <p
@@ -733,7 +779,7 @@ Mobile: Save icon only
           <!-- =======================================================
                Learning Dashboard
                ======================================================= -->
-          @if (activeTab() === 'learning') {
+          @if (activeTab() === 'learning' && showLearningAndOrganizations()) {
             <div class="p-6 sm:p-8">
               <div class="max-w-3xl">
                 <p class="text-xs font-semibold uppercase tracking-wide text-[#007979]">
@@ -841,6 +887,7 @@ Mobile: Save icon only
           <!-- =======================================================
                Followers
                ======================================================= -->
+
           @if (activeTab() === 'followers') {
             <div class="p-6 sm:p-8">
               <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -1018,88 +1065,135 @@ Mobile: Save icon only
           }
 
           <!-- =======================================================
-               My Plans
-               ======================================================= -->
-          @if (activeTab() === 'plans') {
+                My Organizations
+                ======================================================= -->
+          @if (activeTab() === 'organizations' && showLearningAndOrganizations()) {
             <div class="p-6 sm:p-8">
-              <div class="max-w-3xl">
-                <p class="text-xs font-semibold uppercase tracking-wide text-[#007979]">My plans</p>
-                <h2 class="mt-1 text-2xl font-semibold tracking-tight text-[#032D42]">
-                  Your goals and learning plans
-                </h2>
-                <p class="mt-2 text-sm leading-6 text-gray-500">
-                  Organize the courses, resources, assessments, and goals you want to work on next.
-                </p>
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-[#007979]">
+                    Organizations
+                  </p>
+                  <h2 class="mt-1 text-2xl font-semibold tracking-tight text-[#032D42]">
+                    My Organizations
+                  </h2>
+                  <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
+                    View the organizations you belong to, your role in each organization, and
+                    membership status.
+                  </p>
+                </div>
+                <span
+                  class="inline-flex w-fit rounded-full bg-[#007979]/10 px-3 py-1 text-xs font-semibold text-[#007979]"
+                >
+                  {{ organizations().length }}
+                  {{ organizations().length === 1 ? 'organization' : 'organizations' }}
+                </span>
               </div>
 
-              <div class="mt-8 grid gap-6 lg:grid-cols-3">
-                <section class="rounded-2xl border border-gray-200 bg-white p-6">
+              @if (loadingOrganizations()) {
+                <div
+                  class="mt-6 flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-5"
+                >
                   <div
-                    class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#007979]/10 text-xl"
-                    aria-hidden="true"
-                  >
-                    🎯
-                  </div>
-                  <h3 class="mt-4 text-base font-semibold text-[#032D42]">Learning goals</h3>
-                  <p class="mt-2 text-sm leading-6 text-gray-500">
-                    Set goals and track the milestones that matter to you.
-                  </p>
+                    class="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-[#007979]"
+                  ></div>
+                  <p class="text-sm text-gray-500">Loading your organizations...</p>
+                </div>
+              } @else if (organizationError()) {
+                <div
+                  class="mt-6 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700"
+                  role="alert"
+                >
+                  {{ organizationError() }}
                   <button
                     type="button"
-                    class="mt-5 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
-                    (click)="toast.info('Learning goals will be available soon.')"
+                    (click)="loadOrganizationData()"
+                    class="ml-2 font-semibold underline"
                   >
-                    Add a goal
+                    Try again
                   </button>
-                </section>
-
-                <section class="rounded-2xl border border-gray-200 bg-white p-6">
-                  <div
-                    class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#007979]/10 text-xl"
-                    aria-hidden="true"
-                  >
-                    📚
-                  </div>
-                  <h3 class="mt-4 text-base font-semibold text-[#032D42]">Planned learning</h3>
-                  <p class="mt-2 text-sm leading-6 text-gray-500">
-                    Courses and learning activities you plan to complete will appear here.
+                </div>
+              } @else if (organizations().length === 0) {
+                <div
+                  class="mt-6 rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center"
+                >
+                  <div class="text-3xl" aria-hidden="true">🏢</div>
+                  <h3 class="mt-3 text-base font-semibold text-[#032D42]">
+                    No organizations found
+                  </h3>
+                  <p class="mx-auto mt-2 max-w-lg text-sm leading-6 text-gray-500">
+                    When you join an organization, its name, your assigned role, and your membership
+                    status will appear here.
                   </p>
-                  <a
-                    routerLink="/test-center/courses"
-                    class="mt-5 inline-flex rounded-lg bg-[#032D42] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#032D42]/90 focus:outline-none focus:ring-2 focus:ring-[#032D42]/20"
-                  >
-                    Browse courses
-                  </a>
-                </section>
+                </div>
+              } @else {
+                <div class="mt-6 grid gap-4 lg:grid-cols-2">
+                  @for (entry of organizations(); track entry.membership.id) {
+                    <article
+                      class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-[#007979]/40"
+                    >
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <h3 class="break-words text-base font-semibold text-[#032D42]">
+                            {{
+                              organizationName(entry.organization, entry.membership.organizationId)
+                            }}
+                          </h3>
+                          <p class="mt-1 break-all text-xs text-gray-500">
+                            ID: {{ entry.membership.organizationId }}
+                          </p>
+                        </div>
+                        <span
+                          class="inline-flex shrink-0 rounded-full px-3 py-1 text-xs font-semibold"
+                          [ngClass]="
+                            entry.membership.active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-700'
+                          "
+                        >
+                          {{
+                            entry.membership.active ? 'Active membership' : 'Inactive membership'
+                          }}
+                        </span>
+                      </div>
 
-                <section class="rounded-2xl border border-gray-200 bg-white p-6">
-                  <div
-                    class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#007979]/10 text-xl"
-                    aria-hidden="true"
-                  >
-                    📝
-                  </div>
-                  <h3 class="mt-4 text-base font-semibold text-[#032D42]">Upcoming assessments</h3>
-                  <p class="mt-2 text-sm leading-6 text-gray-500">
-                    Scheduled or planned assessments will be shown here.
-                  </p>
-                  <a
-                    routerLink="/test-center"
-                    class="mt-5 inline-flex rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
-                  >
-                    Open Test Center
-                  </a>
-                </section>
-              </div>
+                      <dl class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="rounded-xl bg-gray-50 p-3">
+                          <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Your role
+                          </dt>
+                          <dd class="mt-1 text-sm font-semibold text-gray-800">
+                            {{ organizationRoleLabel(entry.membership.role) }}
+                          </dd>
+                        </div>
+                        <div class="rounded-xl bg-gray-50 p-3">
+                          <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Organization status
+                          </dt>
+                          <dd class="mt-1 text-sm font-semibold text-gray-800">
+                            {{ organizationStatus(entry.organization) }}
+                          </dd>
+                        </div>
+                      </dl>
 
-              <section class="mt-6 rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6">
-                <h3 class="text-base font-semibold text-[#032D42]">Your plan is ready to build</h3>
-                <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
-                  As you explore Zebron, save courses and resources, create goals, and build a
-                  personalized roadmap. This area will become the central place for managing those
-                  plans.
-                </p>
-              </section>
+                      @if (entry.membership.active && entry.organization) {
+                        <div class="mt-5">
+                          <a
+                            [routerLink]="[
+                              '/partner/org',
+                              entry.membership.organizationId,
+                              'dashboard',
+                            ]"
+                            class="inline-flex items-center gap-2 rounded-lg bg-[#032D42] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#06445f]"
+                          >
+                            Open organization workspace <span aria-hidden="true">→</span>
+                          </a>
+                        </div>
+                      }
+                    </article>
+                  }
+                </div>
+              }
             </div>
           }
 
@@ -1318,6 +1412,9 @@ export class UserProfileComponent implements OnInit {
 
   protected readonly communityFollowStore = inject(CommunityFollowStore);
 
+  private readonly membershipRepository = inject(OrganizationMembershipRepository);
+  private readonly organizationRepository: OrganizationRepository = inject(ORGANIZATION_REPOSITORY);
+
   private readonly router = inject(Router);
 
   protected readonly toast = inject(HotToastService);
@@ -1371,12 +1468,23 @@ export class UserProfileComponent implements OnInit {
   protected readonly signingOut = signal(false);
 
   protected readonly error = signal<string | null>(null);
+
+  protected readonly loadingOrganizations = signal(false);
+  protected readonly organizationError = signal<string | null>(null);
+  protected readonly organizations = signal<
+    Array<{ membership: OrganizationMembership; organization: Organization | null }>
+  >([]);
+  protected readonly hasCourseEnrollment = signal(false);
+  protected readonly hasOrganizationMembership = signal(false);
+  protected readonly showLearningAndOrganizations = () =>
+    this.hasCourseEnrollment() || this.hasOrganizationMembership();
+
   // Controls the additional navigation menu.
   protected readonly showMoreMenu = signal(false);
 
   // Controls the active profile tab. Personal Info is the default view.
   protected readonly activeTab = signal<
-    'personal' | 'learning' | 'followers' | 'following' | 'plans' | 'settings'
+    'personal' | 'learning' | 'followers' | 'following' | 'organizations' | 'settings'
   >('personal');
 
   constructor() {
@@ -1426,6 +1534,7 @@ export class UserProfileComponent implements OnInit {
     this.website = user.website ?? '';
 
     void this.loadFollowData(user.id);
+    void this.loadOrganizationData();
   }
 
   // =============================================================
@@ -1441,6 +1550,140 @@ export class UserProfileComponent implements OnInit {
       this.communityFollowStore.loadFollowers(userId),
       this.communityFollowStore.loadFollowing(userId),
     ]);
+  }
+
+  // =============================================================
+  // Organization memberships and course-enrollment visibility
+  // =============================================================
+
+  protected async loadOrganizationData(): Promise<void> {
+    const user = this.authService.user();
+    if (!user?.id) {
+      this.organizations.set([]);
+      this.hasOrganizationMembership.set(false);
+      this.hasCourseEnrollment.set(false);
+      return;
+    }
+
+    this.loadingOrganizations.set(true);
+    this.organizationError.set(null);
+
+    try {
+      const [memberships, enrolled] = await Promise.all([
+        this.membershipRepository.getMembershipsForUser(user.id),
+        this.checkCourseEnrollment(user.id),
+      ]);
+
+      const activeMemberships = memberships.filter((membership) => membership.active);
+      const entries = await Promise.all(
+        activeMemberships.map(async (membership) => {
+          try {
+            const organization = await this.organizationRepository.getOrganization(
+              membership.organizationId,
+            );
+            return { membership, organization };
+          } catch {
+            return { membership, organization: null };
+          }
+        }),
+      );
+
+      entries.sort((a, b) =>
+        this.organizationName(a.organization, a.membership.organizationId).localeCompare(
+          this.organizationName(b.organization, b.membership.organizationId),
+        ),
+      );
+
+      this.organizations.set(entries);
+      this.hasOrganizationMembership.set(activeMemberships.length > 0);
+      this.hasCourseEnrollment.set(enrolled);
+
+      if (
+        !this.showLearningAndOrganizations() &&
+        (this.activeTab() === 'learning' || this.activeTab() === 'organizations')
+      ) {
+        this.activeTab.set('personal');
+      }
+    } catch (error: unknown) {
+      this.organizations.set([]);
+      this.hasOrganizationMembership.set(false);
+      this.organizationError.set(
+        error instanceof Error ? error.message : 'Unable to load your organization memberships.',
+      );
+    } finally {
+      this.loadingOrganizations.set(false);
+    }
+  }
+
+  /**
+   * Looks up enrollment records scoped to the signed-in user.
+   * Expected collection: `courseEnrollments`, with a `userId` field.
+   */
+  private async checkCourseEnrollment(userId: string): Promise<boolean> {
+    try {
+      const enrollmentQuery = query(
+        collection(firestore, 'courseEnrollments'),
+        where('userId', '==', userId),
+      );
+      const snapshot = await getDocs(enrollmentQuery);
+      return snapshot.docs.some((enrollment) => {
+        const data = enrollment.data() as Record<string, unknown>;
+        return (
+          data['status'] !== 'cancelled' &&
+          data['status'] !== 'withdrawn' &&
+          data['active'] !== false
+        );
+      });
+    } catch (error) {
+      console.warn('Unable to check course enrollment for profile tabs.', error);
+      return false;
+    }
+  }
+
+  protected organizationName(organization: Organization | null, fallbackId: string): string {
+    if (!organization) {
+      return 'Organization details unavailable';
+    }
+
+    const value = organization as Organization & {
+      name?: unknown;
+      organizationName?: unknown;
+    };
+
+    if (typeof value.name === 'string' && value.name.trim()) {
+      return value.name.trim();
+    }
+    if (typeof value.organizationName === 'string' && value.organizationName.trim()) {
+      return value.organizationName.trim();
+    }
+    return fallbackId;
+  }
+
+  protected organizationRoleLabel(role: string | undefined): string {
+    const labels: Record<string, string> = {
+      org_owner: 'Organization Owner',
+      org_admin: 'Organization Admin',
+      org_manager: 'Organization Manager',
+      org_staff: 'Organization Staff',
+      org_member: 'Organization Member',
+      owner: 'Organization Owner',
+      admin: 'Organization Admin',
+      manager: 'Organization Manager',
+      staff: 'Organization Staff',
+      member: 'Organization Member',
+    };
+    return role ? (labels[role] ?? role) : 'Not assigned';
+  }
+
+  protected organizationStatus(organization: Organization | null): string {
+    if (!organization) {
+      return 'Unavailable';
+    }
+    const status = (organization as Organization & { status?: string }).status;
+    if (!status) {
+      return 'Unknown';
+    }
+    return status.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
   // =============================================================
@@ -1615,7 +1858,7 @@ export class UserProfileComponent implements OnInit {
    * Switch between the four profile workspace tabs.
    */
   protected setActiveTab(
-    tab: 'personal' | 'learning' | 'followers' | 'following' | 'plans' | 'settings',
+    tab: 'personal' | 'learning' | 'followers' | 'following' | 'organizations' | 'settings',
   ): void {
     this.activeTab.set(tab);
   }

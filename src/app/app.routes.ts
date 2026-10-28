@@ -535,6 +535,8 @@ export const routes: Routes = [
   // TEST CENTER
   // =====================================================
 
+
+
   // -----------------------------------------------------
   // TEST CENTER HOME
   // -----------------------------------------------------
@@ -726,28 +728,88 @@ export const routes: Routes = [
   },
 
   // -----------------------------------------------------
+// ORGANIZATION TEST CENTER — LEARNER EXPERIENCE
+// -----------------------------------------------------
+{
+  path: 'partner/org/:organizationId/learn/test-center',
+  canActivate: [
+    authGuard,
+    partnerOrganizationGuard,
+    applicationAccessGuard,
+    featureGuard,
+  ],
+  data: {
+    applicationId: 'test-center',
+    featureKey: 'test-center',
+    title: 'Learning | Test Center',
+  },
+  children: [
+    {
+      path: '',
+      pathMatch: 'full',
+      loadComponent: () =>
+        import(
+          './features/test-center/pages/test-center-home/test-center-home.component'
+        ).then((m) => m.TestCenterHomeComponent),
+    },
+    {
+      path: 'courses',
+      loadComponent: () =>
+        import(
+          './features/test-center/pages/course-list/course-list.component'
+        ).then((m) => m.CourseListComponent),
+    },
+    {
+      path: 'courses/:slug',
+      loadComponent: () =>
+        import(
+          './features/test-center/pages/course-detail/course-detail.component'
+        ).then((m) => m.TestCourseDetailComponent),
+    },
+  ],
+},
+
+  // -----------------------------------------------------
   // ORGANIZATION TEST CENTER
   // -----------------------------------------------------
-  {
-    path: 'partner/org/:organizationId/test-center',
-    canActivate: [
-      authGuard,
-      partnerOrganizationGuard,
-      applicationAccessGuard,
-      featureGuard,
-    ],
-    data: {
-      applicationId: 'test-center',
-      featureKey: 'test-center',
-      title: 'Partner | Test Center',
-    },
-    loadComponent: () =>
-      import(
-        './features/partner/test-center/partner-test-center.component'
-      ).then(
-        (m) => m.PartnerTestCenterComponent,
-      ),
+ {
+  path: 'partner/org/:organizationId/test-center',
+  canActivate: [
+    authGuard,
+    partnerOrganizationGuard,
+    applicationAccessGuard,
+    featureGuard,
+  ],
+  data: {
+    applicationId: 'test-center',
+    featureKey: 'test-center',
+    title: 'Partner | Test Center',
   },
+  children: [
+    {
+      path: '',
+      pathMatch: 'full',
+      loadComponent: () =>
+        import(
+          './features/partner/test-center/partner-test-center.component'
+        ).then((m) => m.PartnerTestCenterComponent),
+    },
+    {
+      path: 'learners',
+      loadComponent: () =>
+        import(
+          './features/test-center/pages/learners/test-center-learners.component'
+        ).then((m) => m.TestCenterLearnersComponent),
+    },
+    {
+      path: 'learners/:userId',
+      loadComponent: () =>
+        import(
+          './features/test-center/pages/learner-dashboard/test-center-learner-dashboard.component'
+        ).then((m) => m.TestCenterLearnerDashboardComponent),
+    },
+  ],
+},
 
   // -----------------------------------------------------
   // ORGANIZATION KNOWLEDGE

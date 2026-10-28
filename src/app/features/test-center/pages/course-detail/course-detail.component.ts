@@ -92,7 +92,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             </a>
 
             <a
-              routerLink="/test-center"
+              [routerLink]="learnerBaseRoute()"
               class="text-sm
                      font-semibold
                      text-[#12BFC3]"
@@ -898,6 +898,22 @@ export class TestCourseDetailComponent implements OnInit {
     return topics.length > 0 && topics.every((topic) => selected.includes(topic.id));
   });
 
+  readonly organizationId = computed(
+  () => this.route.snapshot.paramMap.get('organizationId'),
+);
+
+readonly learnerBaseRoute = computed(() => {
+  const organizationId = this.organizationId();
+
+  return organizationId
+    ? `/partner/org/${organizationId}/learn/test-center`
+    : '/test-center';
+});
+
+backToCourses(): void {
+  void this.router.navigate([this.learnerBaseRoute()]);
+}
+
   // =====================================================
   // INITIALIZATION
   // =====================================================
@@ -1004,6 +1020,9 @@ const course = await this.courseService.getCourseBySlug(
 
     this.testStore.setTopics(topics);
 
-    this.router.navigate(['/test-center/setup']);
+    this.router.navigate([
+  this.learnerBaseRoute(),
+  'setup',
+]);
   }
 }

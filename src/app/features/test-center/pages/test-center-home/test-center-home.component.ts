@@ -1,6 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
@@ -38,7 +38,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
           <nav class="hidden items-center gap-5 md:flex lg:gap-6" aria-label="Primary navigation">
             <a routerLink="/resources" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">Resources</a>
             <a routerLink="/find" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">Find Jobs</a>
-            <a routerLink="/test-center" aria-current="page" class="min-h-11 inline-flex items-center border-b-2 border-teal-300 text-sm font-semibold text-teal-200">Test Center</a>
+            <a [routerLink]="learnerBaseRoute()" aria-current="page" class="min-h-11 inline-flex items-center border-b-2 border-teal-300 text-sm font-semibold text-teal-200">Test Center</a>
             <a routerLink="/about" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">About</a>
             <a routerLink="/contact" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">Contact</a>
           </nav>
@@ -453,7 +453,11 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               >
                 @for (course of filteredCourses(); track course.id) {
                   <a
-                    [routerLink]="['/test-center/courses', course.slug]"
+  [routerLink]="[
+    learnerBaseRoute(),
+    'courses',
+    course.slug
+  ]"
                     class="group
                            rounded-xl
                            border
@@ -620,6 +624,9 @@ export class TestCenterHomeComponent implements OnInit {
 
   private readonly organizationContext = inject(OrganizationContextService);
 
+  private readonly route = inject(ActivatedRoute);
+private readonly router = inject(Router);
+
   /**
    * TestStore is injected now so the Test Center
    * follows the same state-management pattern as
@@ -655,6 +662,26 @@ export class TestCenterHomeComponent implements OnInit {
       );
     });
   });
+
+  readonly organizationId = computed(
+  () => this.route.snapshot.paramMap.get('organizationId'),
+);
+
+readonly learnerBaseRoute = computed(() => {
+  const organizationId = this.organizationId();
+
+  return organizationId
+    ? `/partner/org/${organizationId}/learn/test-center`
+    : '/test-center';
+});
+
+openCourse(slug: string): void {
+  void this.router.navigate([
+    this.learnerBaseRoute(),
+    'courses',
+    slug,
+  ]);
+}
 
   async ngOnInit(): Promise<void> {
     try {

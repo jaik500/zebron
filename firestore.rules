@@ -1594,6 +1594,47 @@ match /organizationSettings/{organizationId} {
     }
 
     // ============================================================
+// PLATFORM TEST CENTER HELPERS
+// ============================================================
+
+function isActivePublicPlatformCourse(courseId) {
+  let coursePath =
+    /databases/$(database)/documents/testCourses/$(courseId);
+
+  return exists(coursePath)
+    && get(coursePath).data.get("scope", "") == "platform"
+    && get(coursePath).data.get("accessType", "") == "public"
+    && get(coursePath).data.get("organizationId", null) == null
+    && get(coursePath).data.get("active", false) == true;
+}
+
+function isActivePlatformTopic(topicId, courseId) {
+  let topicPath =
+    /databases/$(database)/documents/testTopics/$(topicId);
+
+  return exists(topicPath)
+    && get(topicPath).data.get("scope", "") == "platform"
+    && get(topicPath).data.get("organizationId", null) == null
+    && get(topicPath).data.get("courseId", "") == courseId
+    && get(topicPath).data.get("active", false) == true
+    && isActivePublicPlatformCourse(courseId);
+}
+
+function isPublishedPlatformQuestion(questionId) {
+  let questionPath =
+    /databases/$(database)/documents/testQuestions/$(questionId);
+
+  return exists(questionPath)
+    && get(questionPath).data.get("scope", "") == "platform"
+    && get(questionPath).data.get("organizationId", null) == null
+    && get(questionPath).data.get("status", "") == "published"
+    && isActivePlatformTopic(
+      get(questionPath).data.get("topicId", ""),
+      get(questionPath).data.get("courseId", "")
+    );
+}
+
+    // ============================================================
     // TEST CENTER HELPERS
     // ============================================================
 
@@ -1815,6 +1856,40 @@ function canCreateTestCenterQuestion(
           /databases/$(database)/documents/testAttempts/$(attemptId)
         ).data.userId == userId;
     }
+
+    // ============================================================
+// TEST ATTEMPT AND RESULT VALIDATION
+// ============================================================
+
+function canCreatePlatformTestAttempt() {
+  return isAuthenticated()
+    && request.resource.data.get("organizationId", "missing") == null
+    && request.resource.data.get("userId", "") == request.auth.uid
+    && request.resource.data.get("courseId", "") is string
+    && isActivePublicPlatformCourse(
+      request.resource.data.courseId
+    );
+}
+
+function canCreatePlatformTestResult() {
+  let attemptId = request.resource.data.get("attemptId", "");
+  let courseId = request.resource.data.get("courseId", "");
+
+  let attemptPath =
+    /databases/$(database)/documents/testAttempts/$(attemptId);
+
+  return isAuthenticated()
+    && request.resource.data.get("organizationId", "missing") == null
+    && request.resource.data.get("userId", "") == request.auth.uid
+    && courseId is string
+    && isActivePublicPlatformCourse(courseId)
+    && attemptId is string
+    && attemptId != ""
+    && existsAfter(attemptPath)
+    && getAfter(attemptPath).data.get("organizationId", "missing") == null
+    && getAfter(attemptPath).data.get("userId", "") == request.auth.uid
+    && getAfter(attemptPath).data.get("courseId", "") == courseId;
+}
 
     // ============================================================
     // ORGANIZATION-SCOPED KNOWLEDGE ARTICLES
@@ -2104,20 +2179,42 @@ function canCreateTestCenterQuestion(
 
     match /testTopics/{topicId} {
 
-      allow get: if isPlatformAdmin()
-        || (
-          resource.data.organizationId != null
-          && isTestCenterMember(resource.data.organizationId)
-          && resource.data.active == true
-        );
+     allow get: if isPlatformAdmin()
+  || (
+    isAuthenticated()
+    && resource.data.get("scope", "") == "platform"
+    && resource.data.get("organizationId", null) == null
+    && resource.data.get("active", false) == true
+    && isActivePlatformTopic(
+      topicId,
+      resource.data.get("courseId", "")
+    )
+  )
+  || (
+    resource.data.get("scope", "organization") == "organization"
+    && resource.data.get("organizationId", null) != null
+    && isTestCenterMember(resource.data.organizationId)
+    && resource.data.get("active", false) == true
+  );
 
-      allow list: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && resource.data.organizationId != null
-          && isTestCenterMember(resource.data.organizationId)
-          && resource.data.active == true
-        );
+allow list: if isPlatformAdmin()
+  || (
+    isAuthenticated()
+    && resource.data.get("scope", "") == "platform"
+    && resource.data.get("organizationId", null) == null
+    && resource.data.get("active", false) == true
+    && isActivePlatformTopic(
+      resource.data.get("id", ""),
+      resource.data.get("courseId", "")
+    )
+  )
+  || (
+    isAuthenticated()
+    && resource.data.get("scope", "organization") == "organization"
+    && resource.data.get("organizationId", null) != null
+    && isTestCenterMember(resource.data.organizationId)
+    && resource.data.get("active", false) == true
+  );
 
       allow create: if
         request.resource.data.organizationId is string
@@ -2145,28 +2242,42 @@ function canCreateTestCenterQuestion(
     match /testQuestions/{questionId} {
 
       allow get: if isPlatformAdmin()
-        || (
-          resource.data.organizationId != null
-          && isTestCenterMember(resource.data.organizationId)
-          && resource.data.status == "published"
-        )
-        || (
-          resource.data.organizationId != null
-          && isTestCenterAdmin(resource.data.organizationId)
-        );
+  || (
+    isAuthenticated()
+    && resource.data.get("scope", "") == "platform"
+    && resource.data.get("organizationId", null) == null
+    && isPublishedPlatformQuestion(questionId)
+  )
+  || (
+    resource.data.get("organizationId", null) != null
+    && isTestCenterMember(resource.data.organizationId)
+    && resource.data.get("status", "") == "published"
+  )
+  || (
+    resource.data.get("organizationId", null) != null
+    && isTestCenterAdmin(resource.data.organizationId)
+  );
 
-      allow list: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && resource.data.organizationId != null
-          && isTestCenterMember(resource.data.organizationId)
-          && resource.data.status == "published"
-        )
-        || (
-          isAuthenticated()
-          && resource.data.organizationId != null
-          && isTestCenterAdmin(resource.data.organizationId)
-        );
+allow list: if isPlatformAdmin()
+  || (
+    isAuthenticated()
+    && resource.data.get("scope", "") == "platform"
+    && resource.data.get("organizationId", null) == null
+    && isPublishedPlatformQuestion(
+      resource.data.get("id", "")
+    )
+  )
+  || (
+    isAuthenticated()
+    && resource.data.get("organizationId", null) != null
+    && isTestCenterMember(resource.data.organizationId)
+    && resource.data.get("status", "") == "published"
+  )
+  || (
+    isAuthenticated()
+    && resource.data.get("organizationId", null) != null
+    && isTestCenterAdmin(resource.data.organizationId)
+  );
 
       allow create: if
         request.resource.data.organizationId is string
@@ -2222,12 +2333,16 @@ function canCreateTestCenterQuestion(
         );
 
       allow create: if isAuthenticated()
-        && request.resource.data.organizationId is string
-        && isTestCenterMember(
-          request.resource.data.organizationId
-        )
-        && request.resource.data.get("userId", "")
-          == request.auth.uid;
+  && (
+    (
+      request.resource.data.get("organizationId", null) is string
+      && isTestCenterMember(
+        request.resource.data.organizationId
+      )
+      && request.resource.data.get("userId", "") == request.auth.uid
+    )
+    || canCreatePlatformTestAttempt()
+  );
 
       allow update: if isPlatformAdmin()
         || (
@@ -2275,12 +2390,16 @@ function canCreateTestCenterQuestion(
         );
 
       allow create: if isAuthenticated()
-        && request.resource.data.organizationId is string
-        && isTestCenterMember(
-          request.resource.data.organizationId
-        )
-        && request.resource.data.get("userId", "")
-          == request.auth.uid;
+  && (
+    (
+      request.resource.data.get("organizationId", null) is string
+      && isTestCenterMember(
+        request.resource.data.organizationId
+      )
+      && request.resource.data.get("userId", "") == request.auth.uid
+    )
+    || canCreatePlatformTestResult()
+  );
 
       allow update: if isPlatformAdmin()
         || (
