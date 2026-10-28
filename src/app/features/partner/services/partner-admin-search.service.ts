@@ -3,6 +3,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 
 import { firestore } from '../../../core/services/firebase-config';
 import { ApplicationRegistryService } from '../../../core/services/application-registry.service';
+import { OrganizationContextStore } from '../../organizations/stores/organization-context.store';
 import { TestCourse } from '../../test-center/models/test-course.model';
 import { PartnerMemberService } from './partner-member.service';
 
@@ -31,84 +32,90 @@ export interface PartnerAdminSearchResult {
 export class PartnerAdminSearchService {
   private readonly memberService = inject(PartnerMemberService);
   private readonly applicationRegistry = inject(ApplicationRegistryService);
-
-
-/**
- * Search resources available to the current organization.
- *
- * Each category fails independently. A Firestore error in course
- * or member search must not suppress matching application results.
- */
-async search(
-  organizationId: string,
-  searchTerm: string,
-): Promise<PartnerAdminSearchResult[]> {
-  const normalizedOrganizationId = organizationId.trim();
-  const normalizedTerm = searchTerm.trim().toLowerCase();
-
-  if (!normalizedOrganizationId || !normalizedTerm) {
-    return [];
-  }
-
-  const [applicationsResult, coursesResult, membersResult] =
-    await Promise.allSettled([
-      Promise.resolve(
-        this.searchApplications(normalizedOrganizationId, normalizedTerm),
-      ),
-      this.searchCourses(normalizedOrganizationId, normalizedTerm),
-      this.searchMembers(normalizedOrganizationId, normalizedTerm),
-    ]);
-
-  const results: PartnerAdminSearchResult[] = [];
-
-  if (applicationsResult.status === 'fulfilled') {
-    results.push(...applicationsResult.value);
-  } else {
-    console.error(
-      '[Partner Search] Application search failed:',
-      applicationsResult.reason,
-    );
-  }
-
-  if (coursesResult.status === 'fulfilled') {
-    results.push(...coursesResult.value);
-  } else {
-    console.error(
-      '[Partner Search] Course search failed:',
-      coursesResult.reason,
-    );
-  }
-
-  if (membersResult.status === 'fulfilled') {
-    results.push(...membersResult.value);
-  } else {
-    console.error(
-      '[Partner Search] Member search failed:',
-      membersResult.reason,
-    );
-  }
-
-  const uniqueResults = new Map<string, PartnerAdminSearchResult>();
-
-  for (const result of results) {
-    const key = `${result.category}:${result.id}`;
-
-    if (!uniqueResults.has(key)) {
-      uniqueResults.set(key, result);
-    }
-  }
-
-  return [...uniqueResults.values()].sort((a, b) =>
-    a.title.localeCompare(b.title),
-  );
-}
-
-
+  private readonly organizationStore = inject(OrganizationContextStore);
 
   /**
-   * Search enabled applications from the application registry.
-   * Test Center search results open the learner-facing experience.
+   * Search resources available to the current organization.
+   *
+   * Each category fails independently. A Firestore error in course
+   * or member search must not suppress matching application results.
    */
+  async search(
+    organizationId: string,
+    searchTerm: string,
+  ): Promise<PartnerAdminSearchResult[]> {
+    const normalizedOrganizationId = organizationId.trim();
+    const normalizedTerm = searchTerm.trim().toLowerCase();
+
+    if (!normalizedOrganizationId || !normalizedTerm) {
+      return [];
+    }
+
+    // Only search resources for the organization currently selected.
+    if (
+      this.organizationStore.selectedOrganizationId() !==
+      normalizedOrganizationId
+    ) {
+      return [];
+    }
+
+    const [applicationsResult, coursesResult, membersResult] =
+      await Promise.allSettled([
+        Promise.resolve(
+          this.searchApplications(
+            normalizedOrganizationId,
+            normalizedTerm,
+          ),
+        ),
+        this.searchCourses(normalizedOrganizationId, normalizedTerm),
+        this.searchMembers(normalizedOrganizationId, normalizedTerm),
+      ]);
+
+    const results: PartnerAdminSearchResult[] = [];
+
+    if (applicationsResult.status === 'fulfilled') {
+      results.push(...applicationsResult.value);
+    } else {
+      console.error(
+        '[Partner Search] Application search failed:',
+        applicationsResult.reason,
+      );
+    }
+
+    if (coursesResult.status === 'fulfilled') {
+      results.push(...coursesResult.value);
+    } else {
+      console.error(
+        '[Partner Search] Course search failed:',
+        coursesResult.reason,
+      );
+    }
+
+    if (membersResult.status === 'fulfilled') {
+      results.push(...membersResult.value);
+    } else {
+      console.error(
+        '[Partner Search] Member search failed:',
+        membersResult.reason,
+      );
+    }
+
+    const uniqueResults = new Map<string, PartnerAdminSearchResult>();
+
+    for (const result of results) {
+      const key = `${result.category}:${result.id}`;
+
+      if (!uniqueResults.has(key)) {
+        uniqueResults.set(key, result);
+      }
+    }
+
+    return [...uniqueResults.values()].sort((a, b) =>
+      a.title.localeCompare(b.title),
+    );
+  }
+
+  /** Search only applications actively provisioned for this organization. */
   private searchApplications(
     organizationId: string,
     searchTerm: string,
@@ -116,6 +123,9 @@ async search(
     const applications = this.applicationRegistry.getEnabledApplications();
 
     return applications
+      .filter((application) =>
+        this.organizationStore.hasActiveApplication(application.id),
+      )
       .filter((application) => {
         const searchableText = [
           application.id,
@@ -132,35 +142,42 @@ async search(
         return searchableText.includes(searchTerm);
       })
       .map((application) => {
-        const isTestCenter = application.id === 'test-center';
-        const route = isTestCenter
-          ? `/partner/org/${encodeURIComponent(organizationId)}/learn/test-center`
-          : application.route.replace(':organizationId', organizationId);
+        const route =
+          application.id === 'test-center'
+            ? `/partner/org/${encodeURIComponent(organizationId)}/learn/test-center`
+            : application.route.replace(
+                ':organizationId',
+                encodeURIComponent(organizationId),
+              );
 
-       return {
-  id: application.id,
-  title: application.name,
-  description: application.description,
-  category: 'application' as const,
-  icon: application.icon ?? 'apps',
-  route,
-  enabled: true,
-  keywords: [
-    application.id,
-    application.name,
-    application.description,
-    application.route,
-  ],
-  metadata: 'Application',
-};
+        return {
+          id: application.id,
+          title: application.name,
+          description: application.description,
+          category: 'application' as const,
+          icon: application.icon ?? 'apps',
+          route,
+          enabled: true,
+          keywords: [
+            application.id,
+            application.name,
+            application.description,
+            application.route,
+          ],
+          metadata: 'Application',
+        };
       });
   }
 
-  /** Search courses belonging to the current organization. */
+  /** Search courses only when Test Center is active for this organization. */
   private async searchCourses(
     organizationId: string,
     searchTerm: string,
   ): Promise<PartnerAdminSearchResult[]> {
+    if (!this.organizationStore.hasActiveApplication('test-center')) {
+      return [];
+    }
+
     const courses = await this.getOrganizationCourses(organizationId);
 
     return courses
@@ -168,7 +185,8 @@ async search(
       .map((course) => ({
         id: course.id,
         title: course.name,
-        description: course.description || 'Organization Test Center course.',
+        description:
+          course.description || 'Organization Test Center course.',
         category: 'course' as const,
         icon: 'school',
         route: `/partner/org/${encodeURIComponent(organizationId)}/learn/test-center`,
@@ -184,36 +202,40 @@ async search(
       }));
   }
 
-  /** Search active members of the current organization. */
+  /** Search active members belonging to the current organization. */
   private async searchMembers(
     organizationId: string,
     searchTerm: string,
   ): Promise<PartnerAdminSearchResult[]> {
-    const members = await this.memberService.getActiveMembers(organizationId);
+    const members =
+      await this.memberService.getActiveMembers(organizationId);
 
-    return this.memberService.searchMembers(members, searchTerm).map((member) => ({
-      id: member.id,
-      title: this.memberService.displayName(member),
-      description:
-        member.email || `Organization ${this.memberService.roleLabel(member.role)}`,
-      category: 'member' as const,
-      icon: 'person',
-      route: '/partner/admin/members',
-      enabled: false,
-      keywords: [
-        member.displayName ?? '',
-        member.email ?? '',
-        member.userId,
-        member.role,
-        member.title ?? '',
-      ],
-      metadata: this.memberService.roleLabel(member.role),
-    }));
+    return this.memberService
+      .searchMembers(members, searchTerm)
+      .map((member) => ({
+        id: member.id,
+        title: this.memberService.displayName(member),
+        description:
+          member.email ||
+          `Organization ${this.memberService.roleLabel(member.role)}`,
+        category: 'member' as const,
+        icon: 'person',
+        route: '/partner/admin/members',
+        enabled: false,
+        keywords: [
+          member.displayName ?? '',
+          member.email ?? '',
+          member.userId,
+          member.role,
+          member.title ?? '',
+        ],
+        metadata: this.memberService.roleLabel(member.role),
+      }));
   }
 
   /**
-   * Load courses belonging to one organization. The organizationId
-   * constraint is intentional; do not replace with an unscoped query.
+   * Load courses belonging to one organization. Keep the organizationId
+   * constraint so courses from other organizations are never searched.
    */
   private async getOrganizationCourses(
     organizationId: string,
@@ -236,7 +258,10 @@ async search(
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  private matchesCourse(course: TestCourse, searchTerm: string): boolean {
+  private matchesCourse(
+    course: TestCourse,
+    searchTerm: string,
+  ): boolean {
     return this.courseKeywords(course)
       .join(' ')
       .toLowerCase()

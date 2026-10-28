@@ -938,13 +938,20 @@ backToCourses(): void {
       // Load course
       // -----------------------------------------------
 
-      const organizationId =
+     // Resolve the organization from the current route first.
+// The organization ID may be on a parent route.
+const organizationId =
+  this.route.snapshot.paramMap.get('organizationId') ??
+  this.route.parent?.snapshot.paramMap.get('organizationId') ??
   this.organizationContext.organizationId();
 
+// Load the course using the resolved organization context.
 const course = await this.courseService.getCourseBySlug(
   organizationId,
   slug,
 );
+
+
 
       if (!course) {
         this.error.set('The course you requested could not be found.');

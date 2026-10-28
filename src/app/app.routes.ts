@@ -766,6 +766,13 @@ export const routes: Routes = [
           './features/test-center/pages/course-detail/course-detail.component'
         ).then((m) => m.TestCourseDetailComponent),
     },
+    {
+  path: 'quizzes',
+  loadComponent: () =>
+    import(
+      './features/test-center/pages/quiz/quiz-list.component'
+    ).then((m) => m.QuizListComponent),
+},
   ],
 },
 

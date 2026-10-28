@@ -45,44 +45,50 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             </a>
 
             <span class="text-base font-bold tracking-tight sm:text-xl">
-              Learning and assessment
+              Learning & assessment
             </span>
           </div>
 
           <!-- Right: Search bar -->
-          <div class="min-w-0 flex-1 md:ml-8">
-            <div class="ml-auto max-w-2xl">
-              <div
-                class="group flex min-h-11 w-full items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-md transition-all duration-200 focus-within:border-teal-300 focus-within:ring-4 focus-within:ring-white/20 sm:min-h-12 sm:px-4"
-              >
-                <mat-icon aria-hidden="true" class="!h-5 !w-5 shrink-0 !text-xl !text-teal-700">
-                  search
-                </mat-icon>
+       
+<div class="min-w-0 flex-1 md:ml-8">
+  <div class="ml-auto max-w-2xl">
+    <div
+      class="group flex min-h-11 w-full items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 shadow-sm transition-colors duration-200 hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/15 sm:min-h-12 sm:px-4"
+    >
+      <mat-icon
+        aria-hidden="true"
+        class="!h-5 !w-5 shrink-0 !text-xl !text-[#007979]"
+      >
+        search
+      </mat-icon>
 
-                <input
-                  id="test-center-search"
-                  type="search"
-                  autocomplete="off"
-                  [value]="searchTerm()"
-                  (input)="searchTerm.set($any($event.target).value)"
-                  placeholder="Search courses, certifications, quizzes..."
-                  aria-label="Search Test Center"
-                  class="min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:outline-none focus:ring-0 sm:text-base"
-                />
+      <input
+        id="test-center-search"
+        type="search"
+        autocomplete="off"
+        [value]="searchTerm()"
+        (input)="searchTerm.set($any($event.target).value)"
+        placeholder="Search courses, certifications, quizzes..."
+        aria-label="Search Test Center"
+        class="min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-0 focus:outline-none focus:ring-0 sm:text-base"
+      />
 
-                @if (searchTerm()) {
-                  <button
-                    type="button"
-                    aria-label="Clear search"
-                    (click)="searchTerm.set('')"
-                    class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-teal-50 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600"
-                  >
-                    <mat-icon aria-hidden="true">close</mat-icon>
-                  </button>
-                }
-              </div>
-            </div>
-          </div>
+      @if (searchTerm()) {
+        <button
+          type="button"
+          aria-label="Clear search"
+          (click)="searchTerm.set('')"
+          class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]"
+        >
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      }
+    </div>
+  </div>
+</div>
+
+
         </div>
       </header>
 

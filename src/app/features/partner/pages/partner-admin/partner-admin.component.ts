@@ -213,40 +213,50 @@ interface DashboardCard {
 
               <!-- Operational search is available after onboarding only. -->
               @if (canShowOperationalWorkspace()) {
-                <div class="relative mt-5">
-                  <mat-icon
-                    class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  >
-                    search
-                  </mat-icon>
+              
+<div class="relative mt-4">
+  <div
+    class="group flex min-h-11 w-full items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 shadow-sm transition-colors duration-200 hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/15 sm:min-h-12 sm:px-4"
+  >
+    <mat-icon
+      aria-hidden="true"
+      class="!h-5 !w-5 shrink-0 !text-xl !text-[#007979]"
+    >
+      search
+    </mat-icon>
 
-                  <input
-                    id="partner-search"
-                    type="search"
-                    [value]="searchQuery()"
-                    (input)="onSearch($event)"
-                    placeholder="Search your partner resources..."
-                    autocomplete="off"
-                    class="w-full rounded-lg border border-gray-300 bg-white py-3 pl-11 pr-11 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/20"
-                  />
+    <input
+      id="partner-search"
+      type="search"
+      autocomplete="off"
+      [value]="searchQuery()"
+      (input)="onSearch($event)"
+      placeholder="Search your partner resources..."
+      aria-label="Search partner resources"
+      class="min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-0 focus:outline-none focus:ring-0 sm:text-base"
+    />
 
-                  @if (searching()) {
-                    <mat-icon
-                      class="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[#007979]"
-                    >
-                      sync
-                    </mat-icon>
-                  } @else if (searchQuery()) {
-                    <button
-                      type="button"
-                      (click)="clearSearch()"
-                      aria-label="Clear search"
-                      class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                    >
-                      <mat-icon class="!text-lg"> close </mat-icon>
-                    </button>
-                  }
-                </div>
+    @if (searching()) {
+      <mat-icon
+        aria-label="Searching"
+        class="!h-5 !w-5 shrink-0 animate-spin !text-xl !text-[#007979]"
+      >
+        sync
+      </mat-icon>
+    } @else if (searchQuery()) {
+      <button
+        type="button"
+        (click)="clearSearch()"
+        aria-label="Clear search"
+        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]"
+      >
+        <mat-icon aria-hidden="true">close</mat-icon>
+      </button>
+    }
+  </div>
+</div>
+
+
 
                 @if (searchQuery().trim()) {
                   <div class="mt-4">
@@ -783,6 +793,8 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
   protected canManageTestCenter(): boolean {
     return this.access.canManageCourses();
   }
+
+  
 
   async ngOnInit(): Promise<void> {
     await this.initialize();

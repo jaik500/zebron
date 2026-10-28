@@ -211,63 +211,98 @@ async getAvailableCourses(
    *
    * Firestore rules remain responsible for enforcing access.
    */
-  async getCourseBySlug(
-    organizationId: string | null | undefined,
-    slug: string,
-  ): Promise<TestCourse | null> {
-    const normalizedSlug = this.normalizeSlug(slug);
 
-    if (!normalizedSlug) {
-      return null;
-    }
+async getCourseBySlug(
+  organizationId: string | null | undefined,
+  slug: string,
+): Promise<TestCourse | null> {
+  const normalizedSlug = this.normalizeSlug(slug);
 
-    const constraints = [where('slug', '==', normalizedSlug), where('active', '==', true)];
+  if (!normalizedSlug) {
+    return null;
+  }
 
-    if (organizationId?.trim()) {
-      // Search the selected organization's courses first.
-      const organizationQuery = query(
-        this.coursesCollection,
-        where('organizationId', '==', organizationId),
-        where('slug', '==', normalizedSlug),
-        where('active', '==', true),
+  const constraints = [
+    where('slug', '==', normalizedSlug),
+    where('active', '==', true),
+  ];
+
+  // Search organization courses first.
+  if (organizationId?.trim()) {
+    const organizationQuery = query(
+  this.coursesCollection,
+  where('organizationId', '==', organizationId),
+  where('scope', '==', 'organization'),
+  where('accessType', '==', 'organization-members'),
+  where('slug', '==', normalizedSlug),
+  where('active', '==', true),
+);
+
+    let organizationSnapshot;
+
+    try {
+      organizationSnapshot = await getDocs(organizationQuery);
+    } catch (error) {
+      console.error(
+        '[TestCourseService] Organization course query failed',
+        {
+          organizationId,
+          slug: normalizedSlug,
+          error,
+        },
       );
 
-      const organizationSnapshot = await getDocs(organizationQuery);
-
-      const organizationDocument = organizationSnapshot.docs[0];
-
-      if (organizationDocument) {
-        return {
-          id: organizationDocument.id,
-          ...organizationDocument.data(),
-        } as TestCourse;
-      }
+      throw error;
     }
 
-    // Platform courses have no owning organization.
-    // This query also allows public platform courses to be
-    // resolved when the user has not selected an organization.
-    const platformQuery = query(
-      this.coursesCollection,
-      ...constraints,
-      where('scope', '==', 'platform'),
-      where('organizationId', '==', null),
-      where('accessType', '==', 'public'),
+    const organizationDocument = organizationSnapshot.docs[0];
+
+    if (organizationDocument) {
+      return {
+        id: organizationDocument.id,
+        ...organizationDocument.data(),
+      } as TestCourse;
+    }
+  }
+
+  // Fall back to public platform courses.
+  const platformQuery = query(
+    this.coursesCollection,
+    ...constraints,
+    where('scope', '==', 'platform'),
+    where('organizationId', '==', null),
+    where('accessType', '==', 'public'),
+  );
+
+  let platformSnapshot;
+
+  try {
+    platformSnapshot = await getDocs(platformQuery);
+  } catch (error) {
+    console.error(
+      '[TestCourseService] Public platform course query failed',
+      {
+        slug: normalizedSlug,
+        error,
+      },
     );
 
-    const platformSnapshot = await getDocs(platformQuery);
-
-    const platformDocument = platformSnapshot.docs[0];
-
-    if (!platformDocument) {
-      return null;
-    }
-
-    return {
-      id: platformDocument.id,
-      ...platformDocument.data(),
-    } as TestCourse;
+    throw error;
   }
+
+  const platformDocument = platformSnapshot.docs[0];
+
+  if (!platformDocument) {
+    return null;
+  }
+
+  return {
+    id: platformDocument.id,
+    ...platformDocument.data(),
+  } as TestCourse;
+}
+
+
 
   // ============================================================
   // CREATE ORGANIZATION COURSE
