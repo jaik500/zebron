@@ -44,65 +44,62 @@ interface DashboardCard {
            HEADER
            ========================================================= -->
 
+      <header class="border-b border-white/10 bg-[#2a835f]">
+        <div class="mx-auto max-w-7xl px-4 py-0 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between gap-4">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2 text-md text-white/70">
+                <a routerLink="/profile" class="transition-colors hover:text-white">
+                  Partner Portal
+                </a>
 
-<header class="border-b border-white/10 bg-[#2a835f]">
-  <div class="mx-auto max-w-7xl px-4 py-0 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between gap-4">
-      <div class="min-w-0">
-        <div class="flex flex-wrap items-center gap-2 text-md text-white/70">
-          <a routerLink="/profile" class="transition-colors hover:text-white">
-            Partner Portal
-          </a>
+                <span>/</span>
 
-          <span>/</span>
+                <span class="text-white">Dashboard</span>
+              </div>
+            </div>
 
-          <span class="text-white">Dashboard</span>
-        </div>
-      </div>
-
-      <!-- Mobile / overflow menu -->
-      <button
-        type="button"
-        mat-icon-button
-        [matMenuTriggerFor]="dashboardMenu"
-        aria-label="Partner dashboard menu"
-        class="!text-white shrink-0"
-      >
-        <mat-icon>more_vert</mat-icon>
-      </button>
-
-      <mat-menu #dashboardMenu="matMenu">
-        <a mat-menu-item routerLink="/profile">
-          <mat-icon>person</mat-icon>
-          <span>Profile</span>
-        </a>
-
-        @for (card of visibleDashboardCards(); track card.id) {
-          @if (card.enabled) {
-            <a mat-menu-item [routerLink]="dashboardCardRoute(card)">
-              <mat-icon>{{ card.icon }}</mat-icon>
-              <span>{{ card.title }}</span>
-            </a>
-          } @else {
-            <button mat-menu-item disabled>
-              <mat-icon>{{ card.icon }}</mat-icon>
-              <span>{{ card.title }} — Coming soon</span>
+            <!-- Mobile / overflow menu -->
+            <button
+              type="button"
+              mat-icon-button
+              [matMenuTriggerFor]="dashboardMenu"
+              aria-label="Partner dashboard menu"
+              class="!text-white shrink-0"
+            >
+              <mat-icon>more_vert</mat-icon>
             </button>
-          }
-        }
 
-        @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
-          <a mat-menu-item routerLink="/partner/admin">
-            <mat-icon>admin_panel_settings</mat-icon>
-            <span>Administration</span>
-          </a>
-        }
-      </mat-menu>
-    </div>
-  </div>
-</header>
+            <mat-menu #dashboardMenu="matMenu">
+              <a mat-menu-item routerLink="/profile">
+                <mat-icon>person</mat-icon>
+                <span>Profile</span>
+              </a>
 
+              @for (card of visibleDashboardCards(); track card.id) {
+                @if (card.enabled) {
+                  <a mat-menu-item [routerLink]="dashboardCardRoute(card)">
+                    <mat-icon>{{ card.icon }}</mat-icon>
+                    <span>{{ card.title }}</span>
+                  </a>
+                } @else {
+                  <button mat-menu-item disabled>
+                    <mat-icon>{{ card.icon }}</mat-icon>
+                    <span>{{ card.title }} — Coming soon</span>
+                  </button>
+                }
+              }
 
+              @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
+                <a mat-menu-item routerLink="/partner/admin">
+                  <mat-icon>admin_panel_settings</mat-icon>
+                  <span>Administration</span>
+                </a>
+              }
+            </mat-menu>
+          </div>
+        </div>
+      </header>
 
       <!-- =========================================================
            MAIN
@@ -202,8 +199,6 @@ interface DashboardCard {
                   <div
                     class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500"
                   >
-
-
                     @if (access.isPlatformAdmin()) {
                       <span class="hidden sm:inline"> • </span>
                       <span>
@@ -416,14 +411,19 @@ interface DashboardCard {
               <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 @for (card of visibleDashboardCards(); track card.id) {
                   <div
-                    class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
+                    class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm
+         transition-all hover:-translate-y-0.5 hover:border-[#007979]/40
+         hover:shadow-md
+         focus-within:ring-2 focus-within:ring-[#007979]
+         focus-within:ring-offset-2"
                     [class.opacity-60]="!card.enabled"
                   >
                     <div class="flex items-start justify-between gap-3">
                       <a
                         [routerLink]="card.enabled ? dashboardCardRoute(card) : null"
                         [attr.aria-disabled]="!card.enabled"
-                        class="flex min-w-0 flex-1 items-start gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007979]"
+                        class="flex min-w-0 flex-1 items-start gap-3 rounded-lg
+         focus:outline-none"
                         [class.pointer-events-none]="!card.enabled"
                       >
                         <div
@@ -453,11 +453,15 @@ interface DashboardCard {
                           <mat-icon>settings</mat-icon>
                         </button>
                       } @else if (card.enabled && card.id !== 'test-center') {
-                        <mat-icon class="shrink-0 text-gray-300 transition-colors group-hover:text-[#007979]">
+                        <mat-icon
+                          class="shrink-0 text-gray-300 transition-colors group-hover:text-[#007979]"
+                        >
                           arrow_forward
                         </mat-icon>
                       } @else if (!card.enabled) {
-                        <span class="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-500">
+                        <span
+                          class="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-500"
+                        >
                           Coming soon
                         </span>
                       }
@@ -685,38 +689,68 @@ export class PartnerAdminComponent implements OnInit {
     return onboarding?.status === 'completed';
   });
 
-  /**
-   * Resolve workspace cards from the canonical application registry.
-   *
-   * The registry defines available platform applications and their metadata.
-   * Organization entitlements determine which applications this tenant may
-   * display. No application cards are duplicated in this component.
-   */
-  protected readonly dashboardCards = computed<DashboardCard[]>(() => {
-    if (!this.canShowOperationalWorkspace()) {
-      return [];
-    }
+ 
+/**
+ * Resolve application cards from the canonical application registry.
+ *
+ * All organization members can access provisioned learner applications.
+ * Administrative applications are only displayed to users who have
+ * administration access.
+ *
+ * Organization entitlements determine which applications are available
+ * to the current organization.
+ */
+protected readonly dashboardCards = computed<DashboardCard[]>(() => {
+  if (!this.canShowOperationalWorkspace()) {
+    return [];
+  }
 
-    const organizationId = this.organizationStore.selectedOrganizationId();
+  const organizationId =
+    this.organizationStore.selectedOrganizationId();
 
-    if (!organizationId) {
-      return [];
-    }
+  if (!organizationId) {
+    return [];
+  }
 
-    return this.applicationRegistry
-      .getEnabledApplications()
-      .filter((application) => application.requiresOrganization)
-      .filter((application) => application.route.includes(':organizationId'))
-      .filter((application) => this.organizationStore.hasActiveApplication(application.id))
-      .map((application) => ({
-        id: application.id,
-        title: application.name,
-        description: application.description,
-        icon: application.icon ?? 'apps',
-        route: application.route.replace(':organizationId', organizationId),
-        enabled: true,
-      }));
-  });
+  const canAccessAdministration =
+    this.access.canAccessAdministration();
+
+  return this.applicationRegistry
+    .getEnabledApplications()
+    .filter((application) => application.requiresOrganization)
+    .filter((application) =>
+      application.route.includes(':organizationId'),
+    )
+    .filter((application) =>
+      this.organizationStore.hasActiveApplication(application.id),
+    )
+    .filter((application) => {
+      // Hide administrative applications from regular members.
+      const adminOnly =
+        (application as typeof application & {
+          adminOnly?: boolean;
+        }).adminOnly === true;
+
+      return !adminOnly || canAccessAdministration;
+    })
+    .map((application) => ({
+      id: application.id,
+      title: application.name,
+      description: application.description,
+      icon: application.icon ?? 'apps',
+      route: application.route.replace(
+        ':organizationId',
+        organizationId,
+      ),
+      enabled: true,
+      adminOnly:
+        (application as typeof application & {
+          adminOnly?: boolean;
+        }).adminOnly === true,
+    }));
+});
+
+
 
   /**
    * Operational application links remain hidden until onboarding completes.

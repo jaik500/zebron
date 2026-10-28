@@ -22,83 +22,69 @@ import { OrganizationContextService } from '../../../../core/services/organizati
            SITE HEADER
            =================================================== -->
 
-      <header class="border-b border-white/10 bg-gradient-to-br from-teal-800 via-teal-700 to-teal-600">
-        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:px-3 lg:px-8">
-          <a
-            routerLink="/"
-            aria-label="Zebron home"
-            class="inline-flex min-h-10 items-center gap-2 rounded-lg text-white transition focus:outline-none focus:ring-2 focus:ring-teal-300"
-          >
-            <div class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 sm:flex" aria-hidden="true">
-                <mat-icon class="!h-8 !w-8 !text-3xl">school</mat-icon>
+      <header
+        class="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-br from-teal-800 via-teal-700 to-teal-600 shadow-md"
+      >
+        <div
+          class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-2 sm:px-6 lg:px-8"
+        >
+          <!-- Left: Test Center branding -->
+          <div class="flex min-w-0 shrink-0 items-center gap-3 text-white">
+            <a
+              [routerLink]="['/partner/org', organizationId(), 'dashboard']"
+              class="flex min-w-0 shrink-0 items-center gap-3 rounded-lg text-white transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              aria-label="Back to organization dashboard"
+              title="Back to organization dashboard"
+            >
+              <div
+                class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 sm:flex"
+                aria-hidden="true"
+              >
+                <mat-icon class="!h-8 !w-8 !text-3xl">arrow_back</mat-icon>
               </div>
-            <span class="text-lg font-bold tracking-tight sm:text-xl">Learning and assessment</span>
-          </a>
+            </a>
 
-          <nav class="hidden items-center gap-5 md:flex lg:gap-6" aria-label="Primary navigation">
-            <a routerLink="/resources" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">Resources</a>
-            <a routerLink="/find" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">Find Jobs</a>
-            <a [routerLink]="learnerBaseRoute()" aria-current="page" class="min-h-11 inline-flex items-center border-b-2 border-teal-300 text-sm font-semibold text-teal-200">Test Center</a>
-            <a routerLink="/about" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">About</a>
-            <a routerLink="/contact" class="min-h-11 inline-flex items-center text-sm font-medium text-white/90 transition hover:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-300">Contact</a>
-          </nav>
+            <span class="text-base font-bold tracking-tight sm:text-xl">
+              Learning and assessment
+            </span>
+          </div>
 
-          <a routerLink="/test-center" class="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 text-sm font-semibold text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-teal-300 md:hidden">
-            <mat-icon aria-hidden="true" class="!h-5 !w-5 !text-xl">school</mat-icon>
-            <span>Test Center</span>
-          </a>
-        </div>
-      </header>
+          <!-- Right: Search bar -->
+          <div class="min-w-0 flex-1 md:ml-8">
+            <div class="ml-auto max-w-2xl">
+              <div
+                class="group flex min-h-11 w-full items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-md transition-all duration-200 focus-within:border-teal-300 focus-within:ring-4 focus-within:ring-white/20 sm:min-h-12 sm:px-4"
+              >
+                <mat-icon aria-hidden="true" class="!h-5 !w-5 shrink-0 !text-xl !text-teal-700">
+                  search
+                </mat-icon>
 
-      <!-- ===================================================
-           TEST CENTER HERO — aligned with the Organization
-           Application header visual language
-           =================================================== -->
+                <input
+                  id="test-center-search"
+                  type="search"
+                  autocomplete="off"
+                  [value]="searchTerm()"
+                  (input)="searchTerm.set($any($event.target).value)"
+                  placeholder="Search courses, certifications, quizzes..."
+                  aria-label="Search Test Center"
+                  class="min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:outline-none focus:ring-0 sm:text-base"
+                />
 
-      <section class="px-3 pt-4 sm:px-6 sm:pt-2 lg:px-8">
-        <div class="mx-auto max-w-7xl overflow-hidden rounded-2xl bg-[#e5f4f4] shadow-lg">
-          <div class="px-5 py-2 sm:px-8 sm:py-4 lg:px-10 lg:py-4">
-            <div class="flex items-start gap-4">
-              <div class="min-w-0 flex-1">
-                <p class="mt-1 max-w-2xl text-sm leading-6">
-                  Prepare for certifications, courses, professional exams, and new skills with focused practice questions.
-                </p>
-
-                <!-- New form field styling: touch-friendly, responsive search -->
-                <div class="mt-4 max-w-3xl">
-
-                  <div class="group flex min-h-[52px] w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-md transition-all duration-200 focus-within:border-teal-300 focus-within:ring-4 focus-within:ring-white/25 sm:min-h-14 sm:px-5">
-                    <mat-icon aria-hidden="true" class="!h-6 !w-6 shrink-0 !text-2xl !text-teal-700">search</mat-icon>
-
-                    <input
-                      id="test-center-search"
-                      type="search"
-                      autocomplete="off"
-                      [value]="searchTerm()"
-                      (input)="searchTerm.set($any($event.target).value)"
-                      placeholder="Search courses, certifications, topics..."
-                      aria-label="Search Test Center"
-                      class="min-h-5 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:outline-none focus:ring-0 sm:text-sm"
-                    />
-
-                    @if (searchTerm()) {
-                      <button
-                        type="button"
-                        aria-label="Clear search"
-                        (click)="searchTerm.set('')"
-                        class="inline-flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-teal-50 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600"
-                      >
-                        <mat-icon aria-hidden="true">close</mat-icon>
-                      </button>
-                    }
-                  </div>
-                  <p class="mt-2 text-xs leading-5 text-gray">Search by course name, certification, provider, or topic.</p>
-                </div>
+                @if (searchTerm()) {
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    (click)="searchTerm.set('')"
+                    class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-teal-50 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600"
+                  >
+                    <mat-icon aria-hidden="true">close</mat-icon>
+                  </button>
+                }
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </header>
 
       <!-- ===================================================
            MAIN CONTENT
@@ -165,7 +151,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               </div>
 
               <h3
-                class="mt-2 text-[13px] text-center leading-tight sm:mt-3 sm:text-sm font-bold
+                class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold
                        text-[#032D42]"
               >
                 Certifications
@@ -184,7 +170,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             <!-- Courses -->
 
             <a
-              routerLink="/test-center/courses"
+              [routerLink]="[learnerBaseRoute(), 'courses']"
               class="group
                      rounded-xl
                      border
@@ -210,7 +196,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               </div>
 
               <h3
-                class="mt-2 text-[13px] text-center leading-tight sm:mt-3 sm:text-sm font-bold
+                class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold
                        text-[#032D42]"
               >
                 Courses
@@ -226,49 +212,47 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               </p>
             </a>
 
-            <!-- Subjects -->
+            <!-- Quizzes -->
 
             <a
-              routerLink="/test-center/subjects"
+              [routerLink]="[learnerBaseRoute(), 'quizzes']"
               class="group
-                     rounded-xl
-                     border
-                     border-gray-200
-                     bg-white p-2 sm:p-4 shadow-sm
-                     transition-all
-                     duration-200
-                     hover:-translate-y-1
-                     hover:border-[#12BFC3]
-                     hover:bg-[#E5F4F4]
-                     hover:shadow-md"
+         rounded-xl
+         border
+         border-gray-200
+         bg-white p-2 sm:p-4 shadow-sm
+         transition-all
+         duration-200
+         hover:-translate-y-1
+         hover:border-[#12BFC3]
+         hover:bg-[#E5F4F4]
+         hover:shadow-md"
             >
               <div
                 class="flex
-                       h-8 w-8 sm:h-9 sm:w-9
-                       items-center
-                       justify-center
-                       rounded-lg
-                       bg-[#E5F4F4]
-                       text-[#007979]
-                       text-center"
+           h-8 w-8 sm:h-9 sm:w-9
+           items-center
+           justify-center
+           rounded-lg
+           bg-[#E5F4F4]
+           text-[#007979]"
               >
-                <mat-icon aria-hidden="true" > school </mat-icon>
+                <mat-icon aria-hidden="true">quiz</mat-icon>
               </div>
 
               <h3
-                class="mt-2 text-[13px] leading-tight sm:mt-3 text-center font-bold
-                       text-[#032D42]"
+                class="mt-1 text-[16px] text-center leading-tight
+           sm:mt-2 sm:text-md font-bold
+           text-[#032D42]"
               >
-                Subjects
+                Quizzes
               </h3>
 
               <p
                 class="hidden sm:block mt-1
-                       text-xs
-                       leading-5
-                       text-gray-600"
+           text-xs leading-5 text-gray-600"
               >
-                Test your knowledge across academic subjects.
+                Explore quizzes across your programs and courses.
               </p>
             </a>
 
@@ -302,7 +286,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               </div>
 
               <h3
-                class="mt-2 text-[13px] text-center leading-tight sm:mt-3 sm:text-sm font-bold
+                class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold
                        text-[#032D42]"
               >
                 Skills
@@ -453,11 +437,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               >
                 @for (course of filteredCourses(); track course.id) {
                   <a
-  [routerLink]="[
-    learnerBaseRoute(),
-    'courses',
-    course.slug
-  ]"
+                    [routerLink]="[learnerBaseRoute(), 'courses', course.slug]"
                     class="group
                            rounded-xl
                            border
@@ -622,10 +602,10 @@ import { OrganizationContextService } from '../../../../core/services/organizati
 export class TestCenterHomeComponent implements OnInit {
   private readonly courseService = inject(TestCourseService);
 
-  private readonly organizationContext = inject(OrganizationContextService);
+  
 
   private readonly route = inject(ActivatedRoute);
-private readonly router = inject(Router);
+  private readonly router = inject(Router);
 
   /**
    * TestStore is injected now so the Test Center
@@ -663,25 +643,17 @@ private readonly router = inject(Router);
     });
   });
 
-  readonly organizationId = computed(
-  () => this.route.snapshot.paramMap.get('organizationId'),
-);
+  readonly organizationId = computed(() => this.route.snapshot.paramMap.get('organizationId'));
 
-readonly learnerBaseRoute = computed(() => {
-  const organizationId = this.organizationId();
+  readonly learnerBaseRoute = computed(() => {
+    const organizationId = this.organizationId();
 
-  return organizationId
-    ? `/partner/org/${organizationId}/learn/test-center`
-    : '/test-center';
-});
+    return organizationId ? `/partner/org/${organizationId}/learn/test-center` : '/test-center';
+  });
 
-openCourse(slug: string): void {
-  void this.router.navigate([
-    this.learnerBaseRoute(),
-    'courses',
-    slug,
-  ]);
-}
+  openCourse(slug: string): void {
+    void this.router.navigate([this.learnerBaseRoute(), 'courses', slug]);
+  }
 
   async ngOnInit(): Promise<void> {
     try {
@@ -689,7 +661,7 @@ openCourse(slug: string): void {
 
       this.error.set('');
 
-      const organizationId = this.organizationContext.organizationId();
+      const organizationId = this.organizationId();
 
       const courses = await this.courseService.getAvailableCourses(organizationId);
 

@@ -89,71 +89,58 @@ export class TestCourseService {
   // GET AVAILABLE COURSES
   // ============================================================
 
-  /**
-   * Returns every course available to the current user:
-   *
-   * 1. Public Zebron/platform courses.
-   * 2. Active courses belonging to the supplied organization.
-   *
-   * Organization is optional because platform courses do not require
-   * organization membership.
-   */
-  async getAvailableCourses(organizationId?: string | null): Promise<TestCourse[]> {
-    // ----------------------------------------------------------
-    // Platform courses
-    // ----------------------------------------------------------
 
-    const platformQuery = query(
+  /**
+   * Returns courses available in the current context.
+   *
+   * Organization context:
+   *   Returns only active courses owned by that organization.
+   *
+   * Platform context:
+   *   Returns active public platform courses.
+   *
+   * Platform courses are deliberately excluded from organization
+   * learner dashboards.
+   */
+async getAvailableCourses(
+  organizationId?: string | null,
+): Promise<TestCourse[]> {
+  const normalizedOrganizationId = organizationId?.trim();
+
+  if (normalizedOrganizationId) {
+    // Organization context: return only that organization's courses.
+    const organizationQuery = query(
       this.coursesCollection,
-      where('scope', '==', 'platform'),
-      where('accessType', '==', 'public'),
+      where('scope', '==', 'organization'),
+      where('organizationId', '==', normalizedOrganizationId),
+      where('accessType', '==', 'organization-members'),
       where('active', '==', true),
     );
 
-    const platformSnapshot = await getDocs(platformQuery);
+    const snapshot = await getDocs(organizationQuery);
 
-    const platformCourses = platformSnapshot.docs.map(
-      (document) =>
-        ({
-          id: document.id,
-          ...document.data(),
-        }) as TestCourse,
-    );
-
-    // ----------------------------------------------------------
-    // Organization courses
-    // ----------------------------------------------------------
-
-    let organizationCourses: TestCourse[] = [];
-
-    if (organizationId?.trim()) {
-      const organizationQuery = query(
-        this.coursesCollection,
-
-        where('scope', '==', 'organization'),
-
-        where('organizationId', '==', organizationId),
-
-        where('accessType', '==', 'organization-members'),
-
-        where('active', '==', true),
-      );
-
-      const organizationSnapshot = await getDocs(organizationQuery);
-
-      organizationCourses = organizationSnapshot.docs.map(
-        (document) =>
-          ({
-            id: document.id,
-            ...document.data(),
-          }) as TestCourse,
-      );
-    }
-
-    return [...platformCourses, ...organizationCourses].sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
+    return snapshot.docs.map(document => ({
+      ...document.data(),
+      id: document.id,
+    }) as TestCourse);
   }
+
+  // Platform context: return only public platform courses.
+  const platformQuery = query(
+    this.coursesCollection,
+    where('scope', '==', 'platform'),
+    where('accessType', '==', 'public'),
+    where('active', '==', true),
+  );
+
+  const snapshot = await getDocs(platformQuery);
+
+  return snapshot.docs.map(document => ({
+    ...document.data(),
+    id: document.id,
+  }) as TestCourse);
+}
+
 
   // ============================================================
   // GET COURSE BY ID

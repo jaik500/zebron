@@ -32,22 +32,26 @@ export class PartnerAdminSearchService {
   private readonly memberService = inject(PartnerMemberService);
   private readonly applicationRegistry = inject(ApplicationRegistryService);
 
-  /**
-   * Search resources available to the current organization.
-   * Course and member searches remain scoped to that organization.
-   */
-  async search(
-    organizationId: string,
-    searchTerm: string,
-  ): Promise<PartnerAdminSearchResult[]> {
-    const normalizedOrganizationId = organizationId.trim();
-    const normalizedTerm = searchTerm.trim().toLowerCase();
 
-    if (!normalizedOrganizationId || !normalizedTerm) {
-      return [];
-    }
+/**
+ * Search resources available to the current organization.
+ *
+ * Each category fails independently. A Firestore error in course
+ * or member search must not suppress matching application results.
+ */
+async search(
+  organizationId: string,
+  searchTerm: string,
+): Promise<PartnerAdminSearchResult[]> {
+  const normalizedOrganizationId = organizationId.trim();
+  const normalizedTerm = searchTerm.trim().toLowerCase();
 
-    const [applications, courses, members] = await Promise.all([
+  if (!normalizedOrganizationId || !normalizedTerm) {
+    return [];
+  }
+
+  const [applicationsResult, coursesResult, membersResult] =
+    await Promise.allSettled([
       Promise.resolve(
         this.searchApplications(normalizedOrganizationId, normalizedTerm),
       ),
@@ -55,19 +59,51 @@ export class PartnerAdminSearchService {
       this.searchMembers(normalizedOrganizationId, normalizedTerm),
     ]);
 
-    const uniqueResults = new Map<string, PartnerAdminSearchResult>();
+  const results: PartnerAdminSearchResult[] = [];
 
-    for (const result of [...applications, ...courses, ...members]) {
-      const key = `${result.category}:${result.id}`;
-      if (!uniqueResults.has(key)) {
-        uniqueResults.set(key, result);
-      }
-    }
-
-    return [...uniqueResults.values()].sort((a, b) =>
-      a.title.localeCompare(b.title),
+  if (applicationsResult.status === 'fulfilled') {
+    results.push(...applicationsResult.value);
+  } else {
+    console.error(
+      '[Partner Search] Application search failed:',
+      applicationsResult.reason,
     );
   }
+
+  if (coursesResult.status === 'fulfilled') {
+    results.push(...coursesResult.value);
+  } else {
+    console.error(
+      '[Partner Search] Course search failed:',
+      coursesResult.reason,
+    );
+  }
+
+  if (membersResult.status === 'fulfilled') {
+    results.push(...membersResult.value);
+  } else {
+    console.error(
+      '[Partner Search] Member search failed:',
+      membersResult.reason,
+    );
+  }
+
+  const uniqueResults = new Map<string, PartnerAdminSearchResult>();
+
+  for (const result of results) {
+    const key = `${result.category}:${result.id}`;
+
+    if (!uniqueResults.has(key)) {
+      uniqueResults.set(key, result);
+    }
+  }
+
+  return [...uniqueResults.values()].sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
+}
+
+
 
   /**
    * Search enabled applications from the application registry.
