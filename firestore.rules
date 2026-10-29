@@ -3476,6 +3476,43 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // ORGANIZATION INBOUND MESSAGES
+    // ============================================================
+ 
+    /*
+     * Email sent to org+<slug>@zebron.org is stored here by the
+     * receiveInboundEmail Cloud Function (Admin SDK, bypasses rules).
+     *
+     * - Organization owners/admins can read their organization's mail
+     *   and mark it read/archived.
+     * - Platform administrators retain access for support.
+     * - Clients can never create messages or change their content.
+     * - Only platform administrators can permanently delete.
+     */
+    match /organizations/{organizationId}/inboundMessages/{messageId} {
+ 
+      allow get, list: if isPlatformAdmin()
+        || (
+          isOrganizationConfigurable(organizationId)
+          && isOrganizationAdmin(organizationId)
+        );
+ 
+      allow create: if false;
+ 
+      allow update: if isPlatformAdmin()
+        || (
+          isOrganizationConfigurable(organizationId)
+          && isOrganizationAdmin(organizationId)
+          && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly(["status", "read", "archived", "updatedAt"])
+          && request.resource.data.get("status", "") in ["new", "read", "archived"]
+        );
+ 
+      allow delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
     // DEFAULT DENY
     // ============================================================
 

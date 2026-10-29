@@ -287,15 +287,55 @@ interface OrganizationEmailRecipient {
 
 @if (showQuizEmailForm()) {
   <div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
-    <div class="mb-4">
-      <h3 class="text-lg font-bold text-gray-900">
-        Send Quiz Link
-      </h3>
+    <!-- Header: description on the left, member lookup on the right -->
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <h3 class="text-lg font-bold text-gray-900">
+          Send Quiz Link
+        </h3>
 
-      <p class="mt-1 text-sm text-gray-600">
-        Enter the recipient's email address and send them the practice quiz link.
-      </p>
+        <p class="mt-1 text-sm text-gray-600">
+          Enter the recipient's email address and send them the practice quiz link.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        (click)="lookupOrganizationMembers()"
+        [disabled]="lookingUpMembers()"
+        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979] transition hover:bg-teal-50 disabled:opacity-50"
+      >
+        <mat-icon>person_search</mat-icon>
+
+        {{ lookingUpMembers() ? 'Loading Members...' : 'Look Up Members' }}
+      </button>
     </div>
+
+<!-- Subject (pre-filled by the server, editable before sending) -->
+<div class="mb-2">
+  <mat-form-field appearance="outline" class="w-full">
+    <mat-label>Subject</mat-label>
+
+    <input
+      matInput
+      type="text"
+      maxlength="200"
+      name="quizEmailSubject"
+      [ngModel]="quizEmailSubject()"
+      (ngModelChange)="quizEmailSubject.set($event)"
+      [disabled]="loadingQuizDefaults()"
+      [placeholder]="loadingQuizDefaults() ? 'Loading default subject...' : 'Email subject'"
+    />
+
+    <mat-hint align="end">{{ quizEmailSubject().length }} / 200</mat-hint>
+  </mat-form-field>
+
+  @if (quizEmailSignature()) {
+    <p class="mt-1 text-xs text-gray-500">
+      The email will be signed "{{ quizEmailSignature() }}".
+    </p>
+  }
+</div>
 
 <!-- Multiple recipients -->
 <div class="mb-4">
@@ -314,17 +354,6 @@ interface OrganizationEmailRecipient {
   <p class="mt-1 text-xs text-gray-500">
     Enter multiple addresses separated by commas, semicolons, or new lines.
   </p>
-
-  <button
-    type="button"
-    (click)="lookupOrganizationMembers()"
-    [disabled]="lookingUpMembers()"
-    class="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979] transition hover:bg-teal-50 disabled:opacity-50"
-  >
-    <mat-icon>person_search</mat-icon>
-
-    {{ lookingUpMembers() ? 'Loading Members...' : 'Look Up Members' }}
-  </button>
 </div>
 
 <!-- Organization member lookup -->
@@ -433,7 +462,7 @@ interface OrganizationEmailRecipient {
       <button
         type="button"
         (click)="sendQuizEmail()"
-        [disabled]="sendingQuizEmail() || !quizRecipientEmail.trim() || !quizShareLink()"
+        [disabled]="sendingQuizEmail() || loadingQuizDefaults() || !quizEmailSubject().trim() || !quizRecipientEmail.trim() || !quizShareLink()"
         class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#007979] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50"
       >
         <mat-icon>{{ sendingQuizEmail() ? 'hourglass_top' : 'send' }}</mat-icon>
@@ -1000,6 +1029,14 @@ protected readonly organizationMembers =
 
 protected readonly selectedMemberEmails =
   signal<string[]>([]);
+
+/** Editable subject, pre-filled from getCommunicationDefaults. */
+protected readonly quizEmailSubject = signal('');
+
+/** Sign-off the server will add, shown as a hint. */
+protected readonly quizEmailSignature = signal('');
+
+protected readonly loadingQuizDefaults = signal(false);
 
 protected memberSearchTerm = '';
 
@@ -1872,6 +1909,8 @@ protected async copyQuizLink(): Promise<void> {
   const topic = this.selectedTopic();
   const organizationId = this.context.organizationId();
 
+
+
   if (!course) {
     this.toast.error('Select a course before generating a test link.');
     return;
@@ -1968,9 +2007,61 @@ protected async prepareQuizEmail(): Promise<void> {
 
     this.quizShareLink.set(link);
     this.showQuizEmailForm.set(true);
+
+    // Pre-fill the subject with the organization's default.
+    await this.loadQuizEmailDefaults(organizationId, course.name, topic.name);
   } catch (error) {
     console.error('Unable to prepare quiz link:', error);
     this.toast.error('Unable to prepare the quiz link.');
+  }
+}
+
+/**
+ * Ask the server for the default subject and signature.
+ *
+ * The server prefixes the subject with the organization name,
+ * e.g. "[Acme Academy] Practice quiz invitation: Biology 101".
+ * Management can edit the subject before sending.
+ */
+private async loadQuizEmailDefaults(
+  organizationId: string,
+  courseName: string,
+  topicName: string,
+): Promise<void> {
+  const fallbackSubject = `Practice quiz invitation: ${courseName}`;
+
+  this.loadingQuizDefaults.set(true);
+  this.quizEmailSubject.set('');
+  this.quizEmailSignature.set('');
+
+  try {
+    await firebaseAuth.authStateReady();
+
+    const getDefaults = httpsCallable<
+      {
+        organizationId: string;
+        type: 'quiz_invitation';
+        metadata: { courseName: string; quizTitle: string };
+      },
+      { subject: string; senderName: string; signature: string }
+    >(firebaseFunctions, 'getCommunicationDefaults');
+
+    const response = await getDefaults({
+      organizationId,
+      type: 'quiz_invitation',
+      metadata: {
+        courseName,
+        quizTitle: topicName,
+      },
+    });
+
+    this.quizEmailSubject.set(response.data.subject?.trim() || fallbackSubject);
+    this.quizEmailSignature.set(response.data.signature?.trim() ?? '');
+  } catch (error) {
+    console.error('[Quiz Email] Unable to load default subject:', error);
+    this.quizEmailSubject.set(fallbackSubject);
+  } finally {
+    this.loadingQuizDefaults.set(false);
   }
 }
 
@@ -1995,6 +2086,8 @@ protected closeQuizEmailForm(): void {
   this.showQuizEmailForm.set(false);
   this.quizRecipientEmail = '';
   this.quizShareLink.set('');
+  this.quizEmailSubject.set('');
+  this.quizEmailSignature.set('');
 }
 
 protected async sendQuizEmail(): Promise<void> {
@@ -2012,6 +2105,18 @@ protected async sendQuizEmail(): Promise<void> {
 
   if (!link) {
     this.toast.error('Generate the quiz link first.');
+    return;
+  }
+
+  const subject = this.quizEmailSubject().replace(/\s+/g, ' ').trim();
+
+  if (!subject) {
+    this.toast.error('Enter a subject for the email.');
+    return;
+  }
+
+  if (subject.length > 200) {
+    this.toast.error('The subject must be 200 characters or fewer.');
     return;
   }
 
@@ -2153,7 +2258,8 @@ protected async sendQuizEmail(): Promise<void> {
     const result = await sendCommunication({
       organizationId,
       type: 'quiz_invitation',
-      subject: `Practice quiz invitation: ${course.name}`,
+      // The subject the manager reviewed (and possibly edited).
+      subject,
       message: [
         `You have been invited to take a practice quiz.`,
         '',
@@ -2164,7 +2270,6 @@ protected async sendQuizEmail(): Promise<void> {
         link,
         '',
         'Good luck!',
-        'The Zebron Team',
       ].join('\n'),
       recipientIds,
       metadata: {

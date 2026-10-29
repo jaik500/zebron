@@ -1,18 +1,18 @@
 import { randomUUID } from "node:crypto";
-
+ 
 import { getAuth } from "firebase-admin/auth";
 import {
   FieldValue,
   getFirestore,
 } from "firebase-admin/firestore";
-
+ 
 import {
   HttpsError,
   onCall,
 } from "firebase-functions/v2/https";
-
+ 
 import * as logger from "firebase-functions/logger";
-
+ 
 /**
  * Zebron Organization Communications
  *
@@ -28,18 +28,30 @@ import * as logger from "firebase-functions/logger";
  * - In-app notifications.
  * - Assignment and quiz invitations.
  */
-
+ 
 const REGION = "us-central1";
-
+ 
 const RESEND_API_URL = "https://api.resend.com/emails";
-
-const FROM_EMAIL = "Zebron <noreply@zebron.org>";
-
+ 
+/**
+ * Verified sending address. The display name in front of it is
+ * dynamic (see buildFromHeader), but the address never changes,
+ * so deliverability and domain verification are unaffected.
+ */
+const FROM_ADDRESS = "noreply@zebron.org";
+ 
+/**
+ * Name used when a communication is not sent on behalf of an
+ * organization, or when the organization name cannot be resolved.
+ */
+const PLATFORM_SENDER_NAME = "Zebron";
+ 
 const MAX_LOOKUP_RESULTS = 100;
 const MAX_RECIPIENTS_PER_SEND = 50;
 const MAX_SUBJECT_LENGTH = 200;
 const MAX_MESSAGE_LENGTH = 10_000;
-
+const MAX_SENDER_NAME_LENGTH = 80;
+ 
 const ORGANIZATION_ROLES = [
   "org_owner",
   "org_admin",
@@ -47,17 +59,17 @@ const ORGANIZATION_ROLES = [
   "org_staff",
   "org_member",
 ] as const;
-
+ 
 type OrganizationRole = (typeof ORGANIZATION_ROLES)[number];
-
+ 
 type CommunicationType =
   | "direct"
   | "announcement"
   | "quiz_invitation"
   | "assignment_notification";
-
+ 
 type CommunicationChannel = "email";
-
+ 
 interface OrganizationMember {
   userId: string;
   organizationId: string;
@@ -65,8 +77,8 @@ interface OrganizationMember {
   email: string | null;
   displayName: string;
 }
-
-
+ 
+ 
 interface CommunicationRequest {
   organizationId?: unknown;
   type?: unknown;
@@ -76,27 +88,57 @@ interface CommunicationRequest {
   recipientEmails?: unknown;
   metadata?: unknown;
 }
-
+ 
 interface AuthorizedOrganizationUser {
   uid: string;
   role: OrganizationRole;
   organizationId: string;
+ 
+  /**
+   * Display name of the organization, used to sign and label
+   * outgoing communications. Null when the organization document
+   * has no usable name.
+   */
+  organizationName: string | null;
+ 
+  /**
+   * URL slug of the organization. Used to build the organization's
+   * inbound address (org+<slug>@zebron.org) for Reply-To.
+   */
+  organizationSlug: string | null;
 }
-
+ 
+/**
+ * Inbound addressing. Must match functions/src/inbound-email.ts.
+ */
+const INBOUND_DOMAIN = "zebron.org";
+ 
+/**
+ * Build the Reply-To address for an organization, or null when the
+ * organization has no valid slug (replies then go nowhere special).
+ */
+function organizationReplyTo(slug: string | null): string | null {
+  if (!slug || !/^[a-z0-9][a-z0-9-]{0,99}$/.test(slug)) {
+    return null;
+  }
+ 
+  return `org+${slug}@${INBOUND_DOMAIN}`;
+}
+ 
 /**
  * Obtain the Admin SDK Firestore instance.
  */
 function getDb() {
   return getFirestore();
 }
-
+ 
 /**
  * Normalize and validate a string.
  */
 function cleanString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
-
+ 
 /**
  * Validate an email address.
  *
@@ -108,7 +150,7 @@ function isValidEmail(email: string): boolean {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   );
 }
-
+ 
 /**
  * Confirm that the supplied value is a supported organization role.
  */
@@ -120,7 +162,7 @@ function isOrganizationRole(
     ORGANIZATION_ROLES.includes(value as OrganizationRole)
   );
 }
-
+ 
 /**
  * Require a signed-in Firebase user.
  */
@@ -133,10 +175,170 @@ function requireAuthenticatedUser(
       "You must be signed in to use organization communications.",
     );
   }
-
+ 
   return uid;
 }
-
+ 
+// ============================================================
+// SENDER IDENTITY
+// ============================================================
+ 
+/**
+ * Extract a usable organization name from an organization document.
+ *
+ * Supports the field names used across Zebron's organization
+ * records. Returns null when none is present.
+ */
+function extractOrganizationName(
+  organization: Record<string, unknown> | undefined,
+): string | null {
+  const name =
+    cleanString(organization?.name) ||
+    cleanString(organization?.organizationName) ||
+    cleanString(organization?.displayName);
+ 
+  return name || null;
+}
+ 
+/**
+ * Make a name safe for use as an email display name.
+ *
+ * Removes characters that could break or inject into the
+ * RFC 5322 From header: quotes, angle brackets, commas,
+ * semicolons, backslashes and line breaks.
+ */
+function sanitizeDisplayName(name: string): string {
+  return name
+    .replace(/[\r\n"<>,;\\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_SENDER_NAME_LENGTH);
+}
+ 
+/**
+ * Resolve the name used to sign and label a communication.
+ *
+ * - Sent from within an organization → the organization's name.
+ * - Sent from the platform, or name unavailable → "Zebron".
+ */
+function resolveSenderName(
+  organizationName: string | null | undefined,
+): string {
+  const safeName = sanitizeDisplayName(organizationName ?? "");
+ 
+  return safeName || PLATFORM_SENDER_NAME;
+}
+ 
+/**
+ * Build the From header.
+ *
+ * - Platform:      Zebron <noreply@zebron.org>
+ * - Organization:  "Acme Academy via Zebron" <noreply@zebron.org>
+ */
+function buildFromHeader(senderName: string): string {
+  if (senderName === PLATFORM_SENDER_NAME) {
+    return `${PLATFORM_SENDER_NAME} <${FROM_ADDRESS}>`;
+  }
+ 
+  return `"${senderName} via ${PLATFORM_SENDER_NAME}" <${FROM_ADDRESS}>`;
+}
+ 
+/**
+ * Append the standard sign-off to a message.
+ */
+function withSignature(
+  message: string,
+  senderName: string,
+): string {
+  return `${message.trimEnd()}\n\nThe ${senderName} Team`;
+}
+ 
+/**
+ * Make a subject line safe for an email header.
+ *
+ * Line breaks are not allowed in a Subject header, so they are
+ * collapsed into spaces.
+ */
+function cleanSubject(value: unknown): string {
+  return cleanString(value)
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+ 
+/**
+ * Build the default subject line for a communication.
+ *
+ * - Organization:  [Acme Academy] Practice quiz invitation: Biology 101
+ * - Platform:      Practice quiz invitation: Biology 101
+ *
+ * This is only a suggestion. The sender may edit it before sending,
+ * and the server sends whatever subject the sender submits.
+ */
+function buildDefaultSubject(
+  type: CommunicationType,
+  senderName: string,
+  metadata: Record<string, string | number | boolean>,
+): string {
+  const courseName = cleanSubject(metadata.courseName);
+  const quizTitle = cleanSubject(metadata.quizTitle);
+  const assignmentTitle = cleanSubject(metadata.assignmentTitle);
+ 
+  let base: string;
+ 
+  switch (type) {
+    case "quiz_invitation":
+      base = courseName
+        ? `Practice quiz invitation: ${courseName}`
+        : quizTitle
+          ? `Practice quiz invitation: ${quizTitle}`
+          : "Practice quiz invitation";
+      break;
+ 
+    case "assignment_notification":
+      base = assignmentTitle
+        ? `New assignment: ${assignmentTitle}`
+        : "New assignment";
+      break;
+ 
+    case "announcement":
+      base = "Announcement";
+      break;
+ 
+    case "direct":
+    default:
+      base = "Message";
+      break;
+  }
+ 
+  const subject =
+    senderName === PLATFORM_SENDER_NAME
+      ? base
+      : `[${senderName}] ${base}`;
+ 
+  return subject.slice(0, MAX_SUBJECT_LENGTH);
+}
+ 
+const SUPPORTED_COMMUNICATION_TYPES: CommunicationType[] = [
+  "direct",
+  "announcement",
+  "quiz_invitation",
+  "assignment_notification",
+];
+ 
+function isCommunicationType(
+  value: unknown,
+): value is CommunicationType {
+  return (
+    typeof value === "string" &&
+    SUPPORTED_COMMUNICATION_TYPES.includes(value as CommunicationType)
+  );
+}
+ 
+// ============================================================
+// AUTHORIZATION
+// ============================================================
+ 
 /**
  * Resolve the caller's active membership in an organization.
  *
@@ -150,33 +352,33 @@ async function authorizeOrganizationUser(
   organizationId: string,
 ): Promise<AuthorizedOrganizationUser> {
   const db = getDb();
-
+ 
   const membershipRef = db
     .collection("organizationMemberships")
     .doc(`${uid}_${organizationId}`);
-
+ 
   const [membershipSnapshot, organizationSnapshot] =
     await Promise.all([
       membershipRef.get(),
       db.collection("organizations").doc(organizationId).get(),
     ]);
-
+ 
   if (!organizationSnapshot.exists) {
     throw new HttpsError(
       "not-found",
       "The organization could not be found.",
     );
   }
-
+ 
   if (!membershipSnapshot.exists) {
     throw new HttpsError(
       "permission-denied",
       "You are not a member of this organization.",
     );
   }
-
+ 
   const membership = membershipSnapshot.data();
-
+ 
   if (
     membership?.userId !== uid ||
     membership?.organizationId !== organizationId ||
@@ -188,9 +390,9 @@ async function authorizeOrganizationUser(
       "You do not have an active organization membership.",
     );
   }
-
+ 
   const organization = organizationSnapshot.data();
-
+ 
   /**
    * Only active organizations may send communications.
    *
@@ -201,21 +403,23 @@ async function authorizeOrganizationUser(
   const organizationStatus =
     cleanString(organization?.status) ||
     cleanString(organization?.lifecycleStatus);
-
+ 
   if (organizationStatus !== "active") {
     throw new HttpsError(
       "failed-precondition",
       "The organization must be active to send communications.",
     );
   }
-
+ 
   return {
     uid,
     role: membership.role,
     organizationId,
+    organizationName: extractOrganizationName(organization),
+    organizationSlug: cleanString(organization?.slug).toLowerCase() || null,
   };
 }
-
+ 
 /**
  * Organization-wide recipient lookup is restricted to
  * administrative and staff roles.
@@ -239,7 +443,7 @@ function requireMemberDirectoryPermission(
     );
   }
 }
-
+ 
 /**
  * Only authorized organization staff may send group messages.
  *
@@ -262,7 +466,11 @@ function requireGroupCommunicationPermission(
     );
   }
 }
-
+ 
+// ============================================================
+// MEMBERS
+// ============================================================
+ 
 /**
  * Resolve an email address from the organization membership,
  * Zebron user profile, or Firebase Authentication.
@@ -275,18 +483,18 @@ async function resolveMember(
   organizationId: string,
 ): Promise<OrganizationMember | null> {
   const db = getDb();
-
+ 
   const membershipSnapshot = await db
     .collection("organizationMemberships")
     .doc(`${userId}_${organizationId}`)
     .get();
-
+ 
   if (!membershipSnapshot.exists) {
     return null;
   }
-
+ 
   const membership = membershipSnapshot.data();
-
+ 
   if (
     membership?.userId !== userId ||
     membership?.organizationId !== organizationId ||
@@ -295,23 +503,23 @@ async function resolveMember(
   ) {
     return null;
   }
-
+ 
   const userSnapshot = await db
     .collection("users")
     .doc(userId)
     .get();
-
+ 
   const userProfile = userSnapshot.data();
-
+ 
   let email =
     cleanString(membership.email) ||
     cleanString(userProfile?.email);
-
+ 
   let displayName =
     cleanString(membership.displayName) ||
     cleanString(userProfile?.displayName) ||
     cleanString(userProfile?.name);
-
+ 
   /**
    * Use Firebase Authentication as a fallback if the profile
    * and membership documents do not contain an email address.
@@ -319,9 +527,9 @@ async function resolveMember(
   if (!email) {
     try {
       const authUser = await getAuth().getUser(userId);
-
+ 
       email = cleanString(authUser.email);
-
+ 
       if (!displayName) {
         displayName =
           cleanString(authUser.displayName) || userId;
@@ -334,7 +542,7 @@ async function resolveMember(
       });
     }
   }
-
+ 
   return {
     userId,
     organizationId,
@@ -343,7 +551,7 @@ async function resolveMember(
     displayName: displayName || userId,
   };
 }
-
+ 
 /**
  * Return the active members of an organization.
  *
@@ -355,19 +563,19 @@ async function listOrganizationMembers(
   searchTerm = "",
 ): Promise<OrganizationMember[]> {
   const db = getDb();
-
+ 
   const snapshot = await db
     .collection("organizationMemberships")
     .where("organizationId", "==", organizationId)
     .where("active", "==", true)
     .limit(limit)
     .get();
-
+ 
   const members: OrganizationMember[] = [];
-
+ 
   for (const document of snapshot.docs) {
     const data = document.data();
-
+ 
     if (
       typeof data.userId !== "string" ||
       data.organizationId !== organizationId ||
@@ -375,18 +583,18 @@ async function listOrganizationMembers(
     ) {
       continue;
     }
-
+ 
     const member = await resolveMember(
       data.userId,
       organizationId,
     );
-
+ 
     if (!member) {
       continue;
     }
-
+ 
     const normalizedSearch = searchTerm.toLowerCase();
-
+ 
     if (
       normalizedSearch &&
       !member.displayName.toLowerCase().includes(normalizedSearch) &&
@@ -394,13 +602,13 @@ async function listOrganizationMembers(
     ) {
       continue;
     }
-
+ 
     members.push(member);
   }
-
+ 
   return members;
 }
-
+ 
 /**
  * Look up organization members for recipient selection.
  *
@@ -420,35 +628,35 @@ export const lookupCommunicationRecipients = onCall(
   },
   async (request) => {
     const uid = requireAuthenticatedUser(request.auth?.uid);
-
+ 
     const organizationId = cleanString(
       request.data?.organizationId,
     );
-
+ 
     const searchTerm = cleanString(
       request.data?.searchTerm,
     ).slice(0, 100);
-
+ 
     if (!organizationId) {
       throw new HttpsError(
         "invalid-argument",
         "Organization ID is required.",
       );
     }
-
+ 
     const caller = await authorizeOrganizationUser(
       uid,
       organizationId,
     );
-
+ 
     requireMemberDirectoryPermission(caller.role);
-
+ 
     const members = await listOrganizationMembers(
       organizationId,
       MAX_LOOKUP_RESULTS,
       searchTerm,
     );
-
+ 
     return {
       organizationId,
       members: members.map((member) => ({
@@ -460,7 +668,11 @@ export const lookupCommunicationRecipients = onCall(
     };
   },
 );
-
+ 
+// ============================================================
+// EMAIL
+// ============================================================
+ 
 /**
  * Escape HTML characters before including user-generated content
  * in the email's HTML representation.
@@ -473,14 +685,14 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
-
+ 
 /**
  * Convert plain text into readable HTML.
  */
 function toEmailHtml(message: string): string {
   return escapeHtml(message).replace(/\r?\n/g, "<br>");
 }
-
+ 
 /**
  * Normalize an optional metadata object.
  *
@@ -496,9 +708,9 @@ function sanitizeMetadata(
   ) {
     return {};
   }
-
+ 
   const source = value as Record<string, unknown>;
-
+ 
   const allowedKeys = [
     "courseId",
     "courseName",
@@ -508,12 +720,12 @@ function sanitizeMetadata(
     "assignmentTitle",
     "resourceId",
   ];
-
+ 
   const result: Record<string, string | number | boolean> = {};
-
+ 
   for (const key of allowedKeys) {
     const item = source[key];
-
+ 
     if (
       typeof item === "string" &&
       item.trim().length <= 200
@@ -528,10 +740,10 @@ function sanitizeMetadata(
       result[key] = item;
     }
   }
-
+ 
   return result;
 }
-
+ 
 /**
  * Send one email through Resend.
  *
@@ -540,9 +752,11 @@ function sanitizeMetadata(
  */
 async function sendEmail(
   apiKey: string,
+  from: string,
   to: string,
   subject: string,
   message: string,
+  replyTo: string | null = null,
 ): Promise<string | null> {
   const response = await fetch(RESEND_API_URL, {
     method: "POST",
@@ -552,19 +766,21 @@ async function sendEmail(
       "Idempotency-Key": `zebron-communication-${randomUUID()}`,
     },
     body: JSON.stringify({
-      from: FROM_EMAIL,
+      from,
       to: [to],
+      // Replies go to the organization's inbound mailbox.
+      ...(replyTo ? {reply_to: replyTo} : {}),
       subject,
       text: message,
       html: `<div style="font-family:Arial,sans-serif;line-height:1.6">${toEmailHtml(message)}</div>`,
     }),
   });
-
+ 
   const result = await response.json().catch(() => ({})) as {
     id?: unknown;
     message?: unknown;
   };
-
+ 
   if (!response.ok) {
     logger.error("Resend failed to send organization communication.", {
       status: response.status,
@@ -573,15 +789,15 @@ async function sendEmail(
           ? result.message
           : undefined,
     });
-
+ 
     throw new Error(
       `Email provider returned HTTP ${response.status}.`,
     );
   }
-
+ 
   return typeof result.id === "string" ? result.id : null;
 }
-
+ 
 /**
  * Send organization communications.
  *
@@ -601,6 +817,10 @@ async function sendEmail(
  * The server resolves every recipient against an active membership.
  * Client-supplied email addresses are not accepted as proof of
  * membership or authorization.
+ *
+ * The sign-off ("The <Organization> Team") and the sender display
+ * name are added by the server. Clients should not include their
+ * own signature in the message.
  */
 export const sendOrganizationCommunication = onCall(
   {
@@ -610,53 +830,49 @@ export const sendOrganizationCommunication = onCall(
   },
   async (request) => {
     const uid = requireAuthenticatedUser(request.auth?.uid);
-
+ 
     const data = request.data as CommunicationRequest;
-
+ 
     const organizationId = cleanString(data?.organizationId);
-    const subject = cleanString(data?.subject);
+ 
+    /**
+     * The subject is sent exactly as the sender submitted it.
+     * The default (with the organization prefix) is suggested by
+     * getCommunicationDefaults and may be edited before sending.
+     */
+    const subject = cleanSubject(data?.subject);
     const message = cleanString(data?.message);
-
-    const supportedTypes: CommunicationType[] = [
-      "direct",
-      "announcement",
-      "quiz_invitation",
-      "assignment_notification",
-    ];
-
+ 
     const type = data?.type;
-
+ 
     if (!organizationId) {
       throw new HttpsError(
         "invalid-argument",
         "Organization ID is required.",
       );
     }
-
-    if (
-      typeof type !== "string" ||
-      !supportedTypes.includes(type as CommunicationType)
-    ) {
+ 
+    if (!isCommunicationType(type)) {
       throw new HttpsError(
         "invalid-argument",
         "A supported communication type is required.",
       );
     }
-
+ 
     if (!subject || subject.length > MAX_SUBJECT_LENGTH) {
       throw new HttpsError(
         "invalid-argument",
         `Subject must contain between 1 and ${MAX_SUBJECT_LENGTH} characters.`,
       );
     }
-
+ 
     if (!message || message.length > MAX_MESSAGE_LENGTH) {
       throw new HttpsError(
         "invalid-argument",
         `Message must contain between 1 and ${MAX_MESSAGE_LENGTH} characters.`,
       );
     }
-
+ 
     if (
       !Array.isArray(data?.recipientIds) ||
       data.recipientIds.length === 0
@@ -666,14 +882,14 @@ export const sendOrganizationCommunication = onCall(
         "Select at least one organization member.",
       );
     }
-
+ 
     if (data.recipientIds.length > MAX_RECIPIENTS_PER_SEND) {
       throw new HttpsError(
         "invalid-argument",
         `You can send to a maximum of ${MAX_RECIPIENTS_PER_SEND} recipients per request.`,
       );
     }
-
+ 
     const recipientIds = [
       ...new Set(
         data.recipientIds.map((value) =>
@@ -681,7 +897,7 @@ export const sendOrganizationCommunication = onCall(
         ),
       ),
     ];
-
+ 
     if (
       recipientIds.some(
         (recipientId) =>
@@ -695,69 +911,83 @@ export const sendOrganizationCommunication = onCall(
         "One or more recipient IDs are invalid.",
       );
     }
-
+ 
     const caller = await authorizeOrganizationUser(
       uid,
       organizationId,
     );
-
+ 
     requireGroupCommunicationPermission(caller.role);
-
+ 
     const db = getDb();
-
+ 
     const apiKey = process.env.RESEND_API_KEY;
-
+ 
     if (!apiKey) {
       logger.error("RESEND_API_KEY is not configured.");
-
+ 
       throw new HttpsError(
         "failed-precondition",
         "Email delivery is not configured.",
       );
     }
-
+ 
+    /**
+     * Sender identity.
+     *
+     * Resolved from the organization document already loaded during
+     * authorization, so no extra Firestore read is needed.
+     */
+    const senderName = resolveSenderName(caller.organizationName);
+    const fromHeader = buildFromHeader(senderName);
+    const signedMessage = withSignature(message, senderName);
+    const replyTo = organizationReplyTo(caller.organizationSlug);
+ 
     /**
      * Resolve recipients from active organization memberships.
      *
      * No arbitrary email addresses are accepted from the client.
      */
     const resolvedMembers: OrganizationMember[] = [];
-
+ 
     for (const recipientId of recipientIds) {
       const member = await resolveMember(
         recipientId,
         organizationId,
       );
-
+ 
       if (!member) {
         throw new HttpsError(
           "invalid-argument",
           "A selected recipient is not an active member of this organization.",
         );
       }
-
+ 
       if (!member.email) {
         throw new HttpsError(
           "failed-precondition",
           "One or more selected members do not have a valid email address.",
         );
       }
-
+ 
       resolvedMembers.push(member);
     }
-
+ 
     const communicationRef = db
       .collection("organizations")
       .doc(organizationId)
       .collection("communications")
       .doc();
-
+ 
     const communicationId = communicationRef.id;
-
+ 
     const metadata = sanitizeMetadata(data.metadata);
-
+ 
     /**
      * Persist the communication before attempting delivery.
+     *
+     * `message` is stored exactly as the sender wrote it.
+     * The signature and sender name are recorded separately.
      */
     await communicationRef.set({
       id: communicationId,
@@ -766,6 +996,8 @@ export const sendOrganizationCommunication = onCall(
       channel: "email" as CommunicationChannel,
       subject,
       message,
+      senderName,
+      replyTo,
       metadata,
       recipientCount: resolvedMembers.length,
       recipientIds: resolvedMembers.map((member) => member.userId),
@@ -775,10 +1007,10 @@ export const sendOrganizationCommunication = onCall(
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
-
+ 
     let sentCount = 0;
     let failedCount = 0;
-
+ 
     /**
      * Record each recipient's delivery result separately.
      *
@@ -790,7 +1022,7 @@ export const sendOrganizationCommunication = onCall(
       const deliveryRef = communicationRef
         .collection("deliveries")
         .doc(member.userId);
-
+ 
       const deliveryBase = {
         userId: member.userId,
         email: member.email,
@@ -800,21 +1032,23 @@ export const sendOrganizationCommunication = onCall(
         channel: "email" as CommunicationChannel,
         updatedAt: FieldValue.serverTimestamp(),
       };
-
+ 
       try {
         await deliveryRef.set({
           ...deliveryBase,
           status: "sending",
           createdAt: FieldValue.serverTimestamp(),
         });
-
+ 
         const providerMessageId = await sendEmail(
           apiKey,
+          fromHeader,
           member.email!,
           subject,
-          message,
+          signedMessage,
+          replyTo,
         );
-
+ 
         await deliveryRef.set(
           {
             ...deliveryBase,
@@ -825,7 +1059,7 @@ export const sendOrganizationCommunication = onCall(
           },
           { merge: true },
         );
-
+ 
         sentCount += 1;
       } catch (error: unknown) {
         logger.error("Organization communication delivery failed.", {
@@ -834,7 +1068,7 @@ export const sendOrganizationCommunication = onCall(
           recipientUserId: member.userId,
           error,
         });
-
+ 
         await deliveryRef.set(
           {
             ...deliveryBase,
@@ -844,13 +1078,13 @@ export const sendOrganizationCommunication = onCall(
           },
           { merge: true },
         );
-
+ 
         failedCount += 1;
       }
     }
-
+ 
     let status: "sent" | "partial" | "failed";
-
+ 
     if (sentCount === resolvedMembers.length) {
       status = "sent";
     } else if (sentCount > 0) {
@@ -858,7 +1092,7 @@ export const sendOrganizationCommunication = onCall(
     } else {
       status = "failed";
     }
-
+ 
     await communicationRef.set(
       {
         status,
@@ -869,25 +1103,97 @@ export const sendOrganizationCommunication = onCall(
       },
       { merge: true },
     );
-
+ 
     logger.info("Organization communication completed.", {
       organizationId,
       communicationId,
       createdBy: uid,
       type,
+      senderName,
       recipientCount: resolvedMembers.length,
       sentCount,
       failedCount,
       status,
     });
-
+ 
     return {
       success: failedCount === 0,
       communicationId,
       status,
+      senderName,
       recipientCount: resolvedMembers.length,
       sentCount,
       failedCount,
     };
   },
 );
+ 
+/**
+ * Return the defaults used to pre-fill the compose form.
+ *
+ * Callable name:
+ * getCommunicationDefaults
+ *
+ * Request:
+ * {
+ *   organizationId: string,
+ *   type: "direct" | "announcement" |
+ *         "quiz_invitation" | "assignment_notification",
+ *   metadata?: { courseName?, quizTitle?, assignmentTitle?, ... }
+ * }
+ *
+ * Response:
+ * {
+ *   senderName: string,   // "Acme Academy" or "Zebron"
+ *   subject: string,      // "[Acme Academy] Practice quiz invitation: Biology 101"
+ *   signature: string     // "The Acme Academy Team" (added automatically on send)
+ * }
+ *
+ * Only users who may send communications can request defaults.
+ */
+export const getCommunicationDefaults = onCall(
+  {
+    region: REGION,
+    enforceAppCheck: false,
+  },
+  async (request) => {
+    const uid = requireAuthenticatedUser(request.auth?.uid);
+ 
+    const organizationId = cleanString(request.data?.organizationId);
+    const type = request.data?.type;
+ 
+    if (!organizationId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Organization ID is required.",
+      );
+    }
+ 
+    if (!isCommunicationType(type)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A supported communication type is required.",
+      );
+    }
+ 
+    const caller = await authorizeOrganizationUser(
+      uid,
+      organizationId,
+    );
+ 
+    requireGroupCommunicationPermission(caller.role);
+ 
+    const senderName = resolveSenderName(caller.organizationName);
+    const metadata = sanitizeMetadata(request.data?.metadata);
+ 
+    return {
+      organizationId,
+      type,
+      senderName,
+      subject: buildDefaultSubject(type, senderName, metadata),
+      signature: `The ${senderName} Team`,
+      // Where member replies will be delivered.
+      replyTo: organizationReplyTo(caller.organizationSlug),
+    };
+  },
+)
