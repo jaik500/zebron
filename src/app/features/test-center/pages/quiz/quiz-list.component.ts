@@ -28,251 +28,260 @@ interface QuizListItem {
     <main class="mt-12 min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-7xl">
         <!-- Page heading -->
+    
+      
+        <!-- Search and filters -->
+        <section class="mb-5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+          <div
+            class="grid grid-cols-1 items-center gap-3 sm:grid-cols-[minmax(0,1fr)_160px_160px_auto]"
+          >
+            <!-- Search -->
+            <label class="block w-full min-w-0">
+              <span class="sr-only">Search quizzes</span>
+
+              <div
+                class="group box-border flex min-h-12 w-full min-w-0 items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 shadow-sm transition-colors duration-200 hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/15 sm:px-4"
+              >
+                <svg
+                  class="h-5 w-5 shrink-0 text-[#007979]"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <path d="m16 16 4 4"></path>
+                </svg>
+
+                <input
+                  type="search"
+                  autocomplete="off"
+                  [value]="searchTerm()"
+                  (input)="setSearchTerm($any($event.target).value)"
+                  placeholder="Search quizzes..."
+                  class="box-border min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-0 focus:outline-none focus:ring-0"
+                />
+              </div>
+            </label>
+
+            <!-- Difficulty filter -->
+            <label class="block min-w-0">
+              <span class="sr-only">Filter by difficulty</span>
+
+              <select
+                [value]="difficultyFilter()"
+                (change)="setDifficultyFilter($any($event.target).value)"
+                class="box-border h-12 w-full min-w-0 rounded-xl border border-gray-300 bg-white px-3 text-base text-gray-700 shadow-sm outline-none transition-colors hover:border-gray-400 focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/15"
+              >
+                <option value="All">All difficulties</option>
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+              </select>
+            </label>
+
          
-       <!-- Quiz search and filters — New Input Fields (Tailwind CSS only)
-     Uses native input/select controls styled to match the LoginComponent's outlined fields.
-     No Angular Material imports are required. -->
+<!-- Status filter: hidden on mobile -->
+<label class="hidden min-w-0 sm:block">
+  <span class="sr-only">Filter by status</span>
 
-<section class="mb-5 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
-  <div class="grid grid-cols-1 items-start gap-3 sm:grid-cols-[minmax(0,1fr)_160px_160px_auto]">
+  <select
+    [value]="statusFilter()"
+    (change)="setStatusFilter($any($event.target).value)"
+    class="box-border h-12 w-full min-w-0 rounded-xl border border-gray-300 bg-white px-3 text-base text-gray-700 shadow-sm outline-none transition-colors hover:border-gray-400 focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/15"
+  >
+    <option value="All">All statuses</option>
+    <option value="Available">Available</option>
+    <option value="In progress">In progress</option>
+    <option value="Completed">Completed</option>
+  </select>
+</label>
 
-    <!-- Search input -->
-    <label class="block w-full min-w-0">
-      <span class="mb-1.5 block text-sm font-medium text-gray-700">Search quizzes</span>
 
-      <div
-        class="flex min-h-14 w-full items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 shadow-sm transition-colors duration-200 hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/20"
-      >
-        <svg
-          class="h-5 w-5 shrink-0 text-[#007979]"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          aria-hidden="true"
-        >
-          <circle cx="11" cy="11" r="7"></circle>
-          <path d="m16 16 4 4"></path>
-        </svg>
 
-        <input
-          type="search"
-          autocomplete="off"
-          [value]="searchTerm()"
-          (input)="setSearchTerm($any($event.target).value)"
-          placeholder="Search quizzes..."
-          aria-label="Search quizzes"
-          class="h-12 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-0 focus:outline-none focus:ring-0 sm:text-base"
-        />
-      </div>
-    </label>
+            <!-- Clear filters -->
+            <button
+              type="button"
+              (click)="clearFilters()"
+              class="h-11 rounded-xl border border-gray-300 px-4 text-sm font-semibold text-gray-700 transition-colors hover:border-[#007979] hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
+            >
+              Clear
+            </button>
+          </div>
 
-    <!-- Difficulty filter -->
-    <label class="block w-full min-w-0">
-      <span class="mb-1.5 block text-sm font-medium text-gray-700">Difficulty</span>
+          <!-- Results count and category filters -->
+          <div
+            class="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p class="text-xs text-slate-500">
+              Showing
+              <span class="font-semibold text-slate-800">
+                {{ filteredQuizzes().length }}
+              </span>
+              {{ filteredQuizzes().length === 1 ? 'quiz' : 'quizzes' }}
+            </p>
 
-      <div
-        class="flex min-h-14 items-center rounded-lg border border-gray-300 bg-white px-3 shadow-sm transition-colors duration-200 hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/20"
-      >
-        <select
-          [value]="difficultyFilter()"
-          (change)="setDifficultyFilter($any($event.target).value)"
-          aria-label="Filter by difficulty"
-          class="h-12 w-full min-w-0 appearance-none border-0 bg-transparent pr-7 text-sm text-gray-700 outline-none focus:border-0 focus:outline-none focus:ring-0"
-        >
-          <option value="All">All difficulties</option>
-          <option value="Beginner">Beginner</option>
-          <option value="Intermediate">Intermediate</option>
-          <option value="Advanced">Advanced</option>
-        </select>
+            <div class="flex flex-wrap gap-2">
+              @for (category of categories(); track category) {
+                <button
+                  type="button"
+                  (click)="setCategoryFilter(category)"
+                  class="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#007979]/30"
+                  [class.bg-[#007979]]="categoryFilter() === category"
+                  [class.text-white]="categoryFilter() === category"
+                  [class.bg-slate-100]="categoryFilter() !== category"
+                  [class.text-slate-600]="categoryFilter() !== category"
+                  [class.hover:bg-teal-50]="categoryFilter() !== category"
+                  [class.hover:text-[#007979]]="categoryFilter() !== category"
+                  [attr.aria-pressed]="categoryFilter() === category"
+                >
+                  {{ category }}
+                </button>
+              }
+            </div>
+          </div>
+        </section>
 
-        <svg
-          class="-ml-5 h-4 w-4 shrink-0 pointer-events-none text-gray-500"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          aria-hidden="true"
-        >
-          <path fill-rule="evenodd" d="M5.22 7.22a.75.75 0 0 1 1.06 0L10 10.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"></path>
-        </svg>
-      </div>
-    </label>
-
-    <!-- Status filter -->
-    <label class="block w-full min-w-0">
-      <span class="mb-1.5 block text-sm font-medium text-gray-700">Status</span>
-
-      <div
-        class="flex min-h-14 items-center rounded-lg border border-gray-300 bg-white px-3 shadow-sm transition-colors duration-200 hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/20"
-      >
-        <select
-          [value]="statusFilter()"
-          (change)="setStatusFilter($any($event.target).value)"
-          aria-label="Filter by status"
-          class="h-12 w-full min-w-0 appearance-none border-0 bg-transparent pr-7 text-sm text-gray-700 outline-none focus:border-0 focus:outline-none focus:ring-0"
-        >
-          <option value="All">All statuses</option>
-          <option value="Available">Available</option>
-          <option value="In progress">In progress</option>
-          <option value="Completed">Completed</option>
-        </select>
-
-        <svg
-          class="-ml-5 h-4 w-4 shrink-0 pointer-events-none text-gray-500"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          aria-hidden="true"
-        >
-          <path fill-rule="evenodd" d="M5.22 7.22a.75.75 0 0 1 1.06 0L10 10.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"></path>
-        </svg>
-      </div>
-    </label>
-
-    <!-- Clear filters -->
-    <div class="flex flex-col">
-      <span class="mb-1.5 block text-sm font-medium text-transparent" aria-hidden="true">Actions</span>
-      <button
-        type="button"
-        (click)="clearFilters()"
-        class="inline-flex min-h-14 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 shadow-sm transition-colors duration-200 hover:border-[#007979] hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/30"
-      >
-        Clear filters
-      </button>
-    </div>
-  </div>
-
-  <!-- Results count and category filters -->
-  <div class="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
-    <p class="text-xs text-gray-500">
-      Showing
-      <span class="font-semibold text-gray-900">{{ filteredQuizzes().length }}</span>
-      {{ filteredQuizzes().length === 1 ? 'quiz' : 'quizzes' }}
-    </p>
-
-    <div class="flex flex-wrap gap-2">
-      @for (category of categories(); track category) {
-        <button
-          type="button"
-          (click)="setCategoryFilter(category)"
-          class="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#007979]/30"
-          [class.bg-[#007979]]="categoryFilter() === category"
-          [class.text-white]="categoryFilter() === category"
-          [class.bg-gray-100]="categoryFilter() !== category"
-          [class.text-gray-600]="categoryFilter() !== category"
-          [class.hover:bg-teal-50]="categoryFilter() !== category"
-          [class.hover:text-[#007979]]="categoryFilter() !== category"
-          [attr.aria-pressed]="categoryFilter() === category"
-        >
-          {{ category }}
-        </button>
-      }
-    </div>
-  </div>
-</section>
-
-        <!-- Clickable summary cards -->
-        <section
-  class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+<!-- Quiz Summary Cards -->
+<section
+  class="mb-5 grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-4"
   aria-label="Filter quizzes by status"
 >
   <!-- Available -->
-  <button
-    type="button"
-    (click)="selectStatus('Available')"
-    [attr.aria-pressed]="statusFilter() === 'Available'"
-    [attr.aria-label]="'Filter available quizzes: ' + availableCount()"
-    class="rounded-xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-    [class.border-blue-500]="statusFilter() === 'Available'"
-    [class.ring-2]="statusFilter() === 'Available'"
-    [class.ring-blue-100]="statusFilter() === 'Available'"
-    [class.border-slate-200]="statusFilter() !== 'Available'"
-  >
-    <div class="flex items-center justify-between gap-2">
-      <p class="text-sm font-medium text-slate-500">Available quizzes</p>
+ <button
+  type="button"
+  (click)="selectStatus('Available')"
+  [attr.aria-pressed]="statusFilter() === 'Available'"
+  [attr.aria-label]="'Filter available quizzes: ' + availableCount()"
+  class="min-w-0 rounded-xl border bg-white p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:p-4"
+  [ngClass]="
+    statusFilter() === 'Available'
+      ? 'border-blue-500 ring-2 ring-blue-100'
+      : 'border-slate-200 ring-0'
+  "
+>
+    <div class="flex min-w-0 items-center justify-between gap-1">
+      <p class="min-w-0 text-md font-medium leading-tight text-slate-500 sm:text-sm">
+        Available
+        <span class="sm:hidden">quizzes</span>
+      </p>
+
+      <!-- Icon: hidden on mobile -->
       <span
-        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-lg text-blue-700"
+        class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-lg text-blue-700 sm:flex"
         aria-hidden="true"
       >
         ▤
       </span>
     </div>
 
-    <p class="mt-2 text-2xl font-bold text-slate-900">
-      {{ availableCount() }}
+    <p class="mt-2 text-center text-xl font-bold leading-tight text-slate-900 sm:text-left sm:text-2xl">
+  {{ availableCount() }}
+</p>
+
+    <!-- Description: hidden on mobile -->
+    <p class="mt-1 hidden text-md text-slate-500 sm:inline-flex">
+      Ready for you to start
     </p>
-    <p class="mt-1 text-xs text-slate-500">Ready for you to start</p>
   </button>
 
-  <!-- In progress -->
-  <button
-    type="button"
-    (click)="selectStatus('In progress')"
-    [attr.aria-pressed]="statusFilter() === 'In progress'"
-    [attr.aria-label]="'Filter quizzes in progress: ' + inProgressCount()"
-    class="rounded-xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
-    [class.border-amber-500]="statusFilter() === 'In progress'"
-    [class.ring-2]="statusFilter() === 'In progress'"
-    [class.ring-amber-100]="statusFilter() === 'In progress'"
-    [class.border-slate-200]="statusFilter() !== 'In progress'"
-  >
-    <div class="flex items-center justify-between gap-2">
-      <p class="text-sm font-medium text-slate-500">In progress</p>
+  <!-- In Progress -->
+
+
+<button
+  type="button"
+  (click)="selectStatus('In progress')"
+  [attr.aria-pressed]="statusFilter() === 'In progress'"
+  [attr.aria-label]="'Filter quizzes in progress: ' + inProgressCount()"
+  class="box-border min-w-0 rounded-xl border bg-white p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 sm:p-4"
+  [class.border-amber-500]="statusFilter() === 'In progress'"
+  [class.border-slate-200]="statusFilter() !== 'In progress'"
+  [class.ring-2]="statusFilter() === 'In progress'"
+  [class.ring-amber-100]="statusFilter() === 'In progress'"
+  [class.ring-0]="statusFilter() !== 'In progress'"
+>
+
+    <div class="flex min-w-0 items-center justify-between gap-1">
+      <p class="min-w-0 text-md font-medium leading-tight text-slate-500 sm:text-sm">
+        In progress
+      </p>
+
+      <!-- Icon: hidden on mobile -->
       <span
-        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-lg text-amber-700"
+        class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-lg text-amber-700 sm:flex"
         aria-hidden="true"
       >
         ◷
       </span>
     </div>
 
-    <p class="mt-2 text-2xl font-bold text-slate-900">
-      {{ inProgressCount() }}
+   <p class="mt-2 text-center text-xl font-bold leading-tight text-slate-900 sm:text-left sm:text-2xl">
+  {{ inProgressCount() }}
+</p>
+
+    <!-- Description: hidden on mobile -->
+    <p class="mt-1 hidden text-md text-slate-500 sm:inline-flex">
+      Pick up where you left off
     </p>
-    <p class="mt-1 text-xs text-slate-500">Pick up where you left off</p>
   </button>
 
   <!-- Completed -->
-  <button
-    type="button"
-    (click)="selectStatus('Completed')"
-    [attr.aria-pressed]="statusFilter() === 'Completed'"
-    [attr.aria-label]="'Filter completed quizzes: ' + completedCount()"
-    class="rounded-xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-    [class.border-emerald-500]="statusFilter() === 'Completed'"
-    [class.ring-2]="statusFilter() === 'Completed'"
-    [class.ring-emerald-100]="statusFilter() === 'Completed'"
-    [class.border-slate-200]="statusFilter() !== 'Completed'"
-  >
-    <div class="flex items-center justify-between gap-2">
-      <p class="text-sm font-medium text-slate-500">Completed</p>
+
+<button
+  type="button"
+  (click)="selectStatus('Completed')"
+  [attr.aria-pressed]="statusFilter() === 'Completed'"
+  [attr.aria-label]="'Filter completed quizzes: ' + completedCount()"
+  class="box-border min-w-0 rounded-xl border bg-white p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:p-4"
+  [class.border-emerald-500]="statusFilter() === 'Completed'"
+  [class.border-slate-200]="statusFilter() !== 'Completed'"
+  [class.ring-2]="statusFilter() === 'Completed'"
+  [class.ring-emerald-100]="statusFilter() === 'Completed'"
+  [class.ring-0]="statusFilter() !== 'Completed'"
+>
+
+
+    <div class="flex min-w-0 items-center justify-between gap-1">
+      <p class="min-w-0 text-md font-medium leading-tight text-slate-500 sm:text-sm">
+        Completed
+      </p>
+
+      <!-- Icon: hidden on mobile -->
       <span
-        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-lg text-emerald-700"
+        class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-lg text-emerald-700 sm:flex"
         aria-hidden="true"
       >
         ✓
       </span>
     </div>
 
-    <p class="mt-2 text-2xl font-bold text-slate-900">
-      {{ completedCount() }}
+    <p class="mt-2 text-center text-xl font-bold leading-tight text-slate-900 sm:text-left sm:text-2xl">
+  {{ completedCount() }}
+</p>
+
+    <!-- Description: hidden on mobile -->
+    <p class="mt-1 hidden text-xs text-slate-500 sm:inline-flex">
+      Review previous attempts
     </p>
-    <p class="mt-1 text-xs text-slate-500">Review previous attempts</p>
   </button>
 
-  <!-- Overall quiz progress -->
+  <!-- Overall Quiz Progress: hidden on mobile -->
   <div
-    class="flex min-w-0 flex-col justify-between rounded-xl border border-blue-100 bg-blue-50 p-4 shadow-sm"
+    class="hidden min-w-0 flex-col justify-between rounded-xl border border-blue-100 bg-blue-50 p-4 shadow-sm sm:flex"
     aria-label="Overall quiz progress"
   >
     <div>
-      <p class="text-sm font-medium text-blue-700">Your quiz progress</p>
+      <p class="text-sm font-medium text-blue-700">
+        Your quiz progress
+      </p>
 
       <div class="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span class="text-2xl font-bold leading-tight text-blue-900">
           {{ completedCount() }}
         </span>
+
         <span class="text-xs text-blue-700">
           of {{ quizzes().length }} completed
         </span>
