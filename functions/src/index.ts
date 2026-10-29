@@ -3300,3 +3300,9 @@ export {
   lookupCommunicationRecipients,
   sendOrganizationCommunication,
 } from "./organization-communications";
+
+export { completeOrganizationFirstCourse } from "./organization-onboarding-first-course";
+export { completeOrganizationFirstProgram } from "./organization-onboarding-first-program";
+export { completeOrganizationFirstTopic } from "./organization-onboarding-first-topic";
+export { getOrganizationInvitationPreview } from "./organization-invitation-preview";
+export { processOrganizationInvitationEmails } from "./organization-email-outbox";
