@@ -255,6 +255,19 @@ export const routes: Routes = [
         },
         loadComponent: () => import('./features/partner/pages/organization-management/organization-management.component').then((m) => m.OrganizationManagementComponent),
     },
+    {
+        path: 'partner/org/:organizationId/members/:userId',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            partnerRoleGuard,
+        ],
+        data: {
+            title: 'Partner | Member Profile',
+            minimumOrganizationRole: 'org_manager',
+        },
+        loadComponent: () => import('./features/partner/pages/member-profile/member-profile.component').then((m) => m.MemberProfileComponent),
+    },
     // =====================================================
     // COMMUNITY
     // =====================================================

@@ -603,16 +603,22 @@ interface RoleGroup {
                               class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                             >
                               <div class="flex min-w-0 items-center gap-3">
-                                <div
-                                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-100 font-semibold text-gray-600"
+                                <a
+                                  [routerLink]="memberProfileRoute(member)"
+                                  [attr.aria-label]="'View profile of ' + memberName(member)"
+                                  title="View profile"
+                                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-100 font-semibold text-gray-600 transition hover:bg-teal-50 hover:text-[#007979] hover:ring-2 hover:ring-[#007979]/30 focus:outline-none focus:ring-2 focus:ring-[#007979]"
                                 >
                                   {{ initials(member) }}
-                                </div>
+                                </a>
 
                                 <div class="min-w-0">
-                                  <p class="break-words text-sm font-semibold text-gray-900">
+                                  <a
+                                    [routerLink]="memberProfileRoute(member)"
+                                    class="block break-words text-sm font-semibold text-gray-900 hover:text-[#007979] hover:underline"
+                                  >
                                     {{ memberName(member) }}
-                                  </p>
+                                  </a>
 
                                   @if (memberEmail(member); as email) {
                                     <p class="mt-1 break-all text-xs text-gray-500">{{ email }}</p>
@@ -756,9 +762,17 @@ interface RoleGroup {
                     @for (member of filteredRegularMembers(); track member.id) {
                       <article class="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex min-w-0 items-center gap-3">
-                          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 font-semibold text-[#007979]">{{ initials(member) }}</div>
+                          <a
+                            [routerLink]="memberProfileRoute(member)"
+                            [attr.aria-label]="'View profile of ' + memberName(member)"
+                            title="View profile"
+                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 font-semibold text-[#007979] transition hover:ring-2 hover:ring-[#007979]/30 focus:outline-none focus:ring-2 focus:ring-[#007979]"
+                          >{{ initials(member) }}</a>
                           <div class="min-w-0">
-                            <p class="break-words text-sm font-semibold text-gray-900">{{ memberName(member) }}</p>
+                            <a
+                              [routerLink]="memberProfileRoute(member)"
+                              class="block break-words text-sm font-semibold text-gray-900 hover:text-[#007979] hover:underline"
+                            >{{ memberName(member) }}</a>
                             @if (memberEmail(member); as email) {
                               <p class="mt-1 break-all text-xs text-gray-500">{{ email }}</p>
                             }
@@ -1059,6 +1073,10 @@ export class OrganizationManagementComponent implements OnInit {
     };
 
     return labels[role] ?? role;
+  }
+
+  protected memberProfileRoute(member: OrganizationMembership): string[] {
+    return ['/partner/org', member.organizationId, 'members', member.userId];
   }
 
   /** Name, then email, then a neutral label. Never the raw user ID. */

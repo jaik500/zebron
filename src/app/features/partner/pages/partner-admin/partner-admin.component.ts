@@ -15,6 +15,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { OrganizationContextStore } from '../../../organizations/stores/organization-context.store';
 import { PartnerAccessService } from '../../../../core/services/partner-access.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import { ApplicationRegistryService } from '../../../../core/services/application-registry.service';
 
 import {
@@ -108,6 +109,33 @@ interface DashboardCard {
            ========================================================= -->
 
       <main class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <!-- =======================================================
+             PROFILE REMINDER: stays until first and last name are set
+             ======================================================= -->
+
+        @if (profileNameMissing()) {
+          <section
+            class="mb-4 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+            role="status"
+          >
+            <div class="flex items-start gap-3">
+              <mat-icon class="shrink-0 text-amber-700">badge</mat-icon>
+
+              <div>
+                <p class="text-sm font-semibold text-amber-900">Complete your profile</p>
+                <p class="mt-0.5 text-sm text-amber-800">
+                  Add your first and last name so your organization knows who you are.
+                </p>
+              </div>
+            </div>
+
+            <a mat-flat-button routerLink="/profile" class="shrink-0 !bg-amber-600 !text-white">
+              <mat-icon>edit</mat-icon>
+              Complete profile
+            </a>
+          </section>
+        }
+
         <!-- =======================================================
              LOADING
              ======================================================= -->
@@ -571,6 +599,19 @@ export class PartnerAdminComponent implements OnInit {
   private readonly pageTitleService = inject(PageTitleService);
 
   private readonly route = inject(ActivatedRoute);
+
+  private readonly authService = inject(AuthService);
+
+  /** Shown until the signed-in user's profile has a first and last name. */
+  protected readonly profileNameMissing = computed(() => {
+    const user = this.authService.user();
+
+    if (!user) {
+      return false;
+    }
+
+    return !user.firstName?.trim() || !user.lastName?.trim();
+  });
 
   protected readonly searchQuery = signal('');
 
