@@ -33,6 +33,7 @@ import { LoggerService } from '../../../../core/services/logger.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import { RouterLink } from '@angular/router';
 
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 @Component({
   selector: 'app-tax-pay-admin',
 
@@ -50,8 +51,7 @@ import { RouterLink } from '@angular/router';
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
-    MatTabsModule,
-  ],
+    MatTabsModule, MatSlideToggleModule],
 
   changeDetection: ChangeDetectionStrategy.OnPush,
 
@@ -750,7 +750,7 @@ import { RouterLink } from '@angular/router';
                          gap-5
                          md:grid-cols-3"
                 >
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Standard Deduction — Single </mat-label>
 
                     <input
@@ -760,7 +760,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Standard Deduction — Married Jointly </mat-label>
 
                     <input
@@ -770,7 +770,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Standard Deduction — Head of Household </mat-label>
 
                     <input
@@ -787,7 +787,7 @@ import { RouterLink } from '@angular/router';
                          gap-5
                          md:grid-cols-2"
                 >
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Child Tax Credit </mat-label>
 
                     <input
@@ -797,7 +797,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Additional Child Tax Credit </mat-label>
 
                     <input
@@ -862,19 +862,19 @@ import { RouterLink } from '@angular/router';
                          gap-5
                          md:grid-cols-3"
                 >
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> State Code </mat-label>
 
                     <input matInput maxlength="2" [(ngModel)]="configuration.state.stateCode" />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> State Name </mat-label>
 
                     <input matInput [(ngModel)]="configuration.state.stateName" />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Personal Exemption </mat-label>
 
                     <input
@@ -911,11 +911,7 @@ import { RouterLink } from '@angular/router';
                     </p>
                   </div>
 
-                  <input
-                    type="checkbox"
-                    class="h-5 w-5"
-                    [(ngModel)]="configuration.state.localTaxSupported"
-                  />
+                  <mat-slide-toggle [(ngModel)]="configuration.state.localTaxSupported" aria-label="Local tax supported"></mat-slide-toggle>
                 </div>
 
                 <div
@@ -968,7 +964,7 @@ import { RouterLink } from '@angular/router';
                          gap-5
                          md:grid-cols-2"
                 >
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Social Security Rate </mat-label>
 
                     <input
@@ -979,7 +975,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Social Security Wage Base </mat-label>
 
                     <input
@@ -989,7 +985,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Medicare Rate </mat-label>
 
                     <input
@@ -1000,7 +996,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Additional Medicare Rate </mat-label>
 
                     <input
@@ -1011,7 +1007,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Additional Medicare Threshold — Single </mat-label>
 
                     <input
@@ -1021,7 +1017,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Additional Medicare Threshold — Married </mat-label>
 
                     <input
@@ -1082,7 +1078,7 @@ import { RouterLink } from '@angular/router';
                          gap-5
                          md:grid-cols-3"
                 >
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Self-Employment Tax Rate </mat-label>
 
                     <input
@@ -1093,7 +1089,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Social Security Wage Base </mat-label>
 
                     <input
@@ -1103,7 +1099,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> SE Tax Deduction Rate </mat-label>
 
                     <input
@@ -1167,13 +1163,13 @@ import { RouterLink } from '@angular/router';
                          sm:grid-cols-2
                          lg:grid-cols-3"
                 >
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Weekly </mat-label>
 
                     <input matInput type="number" [(ngModel)]="configuration.payFrequency.weekly" />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Biweekly </mat-label>
 
                     <input
@@ -1183,7 +1179,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Semimonthly </mat-label>
 
                     <input
@@ -1193,7 +1189,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Monthly </mat-label>
 
                     <input
@@ -1203,7 +1199,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Quarterly </mat-label>
 
                     <input
@@ -1213,7 +1209,7 @@ import { RouterLink } from '@angular/router';
                     />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="zb-field">
                     <mat-label> Annually </mat-label>
 
                     <input
@@ -1382,9 +1378,6 @@ import { RouterLink } from '@angular/router';
         overflow-x: hidden;
       }
 
-      :host ::ng-deep .mat-mdc-form-field {
-        width: 100%;
-      }
 
       :host ::ng-deep .mat-mdc-button,
       :host ::ng-deep .mat-mdc-unelevated-button,

@@ -20,6 +20,8 @@ import { OutboundMessageService } from
 import { ContactService } from
   '../../../../../core/services/contact.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 /**
  * Administrator Sent Emails mailbox.
  *
@@ -40,8 +42,7 @@ import { ContactService } from
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,
-  ],
+    RouterLink, MatFormFieldModule, MatInputModule],
   template: `
 
    <!-- ============================================================
@@ -263,17 +264,10 @@ import { ContactService } from
           <div class="relative">
 
             <!-- Search icon -->
-            <span
-              class="pointer-events-none
-                     absolute inset-y-0 left-0
-                     flex items-center pl-4
-                     text-gray-400"
-              aria-hidden="true"
-            >
-              🔍
-            </span>
-
-            <input
+            <mat-form-field appearance="outline" class="zb-field">
+              <mat-label>Search recipient, sender, subject, or message...</mat-label>
+                  <span matPrefix class="pl-3 pr-1" aria-hidden="true">🔍</span>
+              <input matInput
               id="sent-email-search"
               type="search"
               [value]="searchQuery()"
@@ -284,23 +278,8 @@ import { ContactService } from
               "
               placeholder="Search recipient, sender, subject, or message..."
               autocomplete="off"
-              class="w-full
-                     rounded-xl
-                     border border-gray-300
-                     bg-white
-                     py-3
-                     pl-11
-                     pr-10
-                     text-sm
-                     text-gray-900
-                     shadow-sm
-                     outline-none
-                     transition
-                     placeholder:text-gray-400
-                     focus:border-[#032D42]
-                     focus:ring-2
-                     focus:ring-[#032D42]/20"
             />
+            </mat-form-field>
 
             <!-- Clear -->
             @if (searchQuery()) {
@@ -1317,13 +1296,10 @@ import { ContactService } from
               (submit)="$event.preventDefault(); sendComposedMessage()"
             >
               <div>
-                <label
-                  for="sent-compose-to"
-                  class="block text-xs font-semibold text-gray-600"
-                >
-                  To
-                </label>
-                <input
+
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>To</mat-label>
+                  <input matInput
                   id="sent-compose-to"
                   type="email"
                   [value]="composeTo()"
@@ -1332,42 +1308,30 @@ import { ContactService } from
                   autocomplete="email"
                   [disabled]="sending()"
                   placeholder="recipient@example.com"
-                  class="mt-1 h-10 w-full rounded-lg border border-gray-300
-                         px-3 text-sm text-gray-900 outline-none
-                         focus:border-[#032D42] focus:ring-2
-                         focus:ring-[#032D42]/15 disabled:bg-gray-100"
                 />
+                </mat-form-field>
               </div>
 
               <div>
-                <label
-                  for="sent-compose-subject"
-                  class="block text-xs font-semibold text-gray-600"
-                >
-                  Subject
-                </label>
-                <input
+
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Subject</mat-label>
+                  <input matInput
                   id="sent-compose-subject"
                   type="text"
                   [value]="composeSubject()"
                   (input)="composeSubject.set($any($event.target).value)"
                   required
                   [disabled]="sending()"
-                  class="mt-1 h-10 w-full rounded-lg border border-gray-300
-                         px-3 text-sm text-gray-900 outline-none
-                         focus:border-[#032D42] focus:ring-2
-                         focus:ring-[#032D42]/15 disabled:bg-gray-100"
                 />
+                </mat-form-field>
               </div>
 
               <div>
-                <label
-                  for="sent-compose-message"
-                  class="block text-xs font-semibold text-gray-600"
-                >
-                  Message
-                </label>
-                <textarea
+
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Message</mat-label>
+                  <textarea matInput
                   id="sent-compose-message"
                   rows="9"
                   [value]="composeMessage()"
@@ -1375,11 +1339,8 @@ import { ContactService } from
                   required
                   [disabled]="sending()"
                   placeholder="Write your message..."
-                  class="mt-1 w-full resize-y rounded-lg border border-gray-300
-                         px-3 py-2 text-sm leading-6 text-gray-900 outline-none
-                         focus:border-[#032D42] focus:ring-2
-                         focus:ring-[#032D42]/15 disabled:bg-gray-100"
                 ></textarea>
+                </mat-form-field>
               </div>
 
               <div class="flex justify-end gap-2 border-t pt-4">
@@ -2434,5 +2395,5 @@ private showSuccessToast(message: string): void {
 
   }
 
-  
+
 }

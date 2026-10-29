@@ -23,6 +23,10 @@ import {
 import { ContactStore } from '../../../contact/stores/contact.store';
 import { AuthService } from '../../../../core/services/auth.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
 type MailboxFilter = 'all' | 'unread' | 'read' | 'archived';
 
 type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
@@ -30,7 +34,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
 @Component({
   selector: 'app-contact-mailbox',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule],
+  imports: [CommonModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
   template: `
     <!-- =========================================================
          PAGE
@@ -236,7 +240,6 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                ===================================================== -->
 
           <section class="mb-4">
-            <label for="mailbox-search" class="sr-only"> Search mailbox </label>
 
             <div class="relative">
               <!-- Search icon -->
@@ -251,24 +254,17 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                 search
               </mat-icon>
 
-              <input
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Search mailbox</mat-label>
+                <input matInput
                 id="mailbox-search"
                 type="search"
                 [value]="searchQuery()"
                 (input)="searchQuery.set($any($event.target).value)"
                 placeholder="Search sender, email, subject, or message..."
                 autocomplete="off"
-                class="h-12 w-full rounded-xl
-                       border border-gray-300
-                       bg-white pl-11 pr-11
-                       text-sm text-gray-900
-                       shadow-sm outline-none
-                       transition
-                       placeholder:text-gray-400
-                       focus:border-[#032D42]
-                       focus:ring-2
-                       focus:ring-[#032D42]/15"
               />
+              </mat-form-field>
 
               <!-- ONE clear button -->
               @if (searchQuery()) {
@@ -1093,19 +1089,16 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                     </button>
                   </div>
 
-                  <select
-                    class="h-9 rounded-lg
-                           border border-gray-200
-                           bg-white px-3
-                           text-xs text-gray-700
-                           outline-none
-                           sm:text-sm"
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Messages per page</mat-label>
+                    <mat-select
                     aria-label="Messages per page"
                   >
-                    <option>10 per page</option>
-                    <option>25 per page</option>
-                    <option>50 per page</option>
-                  </select>
+                    <mat-option>10 per page</mat-option>
+                    <mat-option>25 per page</mat-option>
+                    <mat-option>50 per page</mat-option>
+                  </mat-select>
+                  </mat-form-field>
                 </div>
               </div>
             }
@@ -1610,16 +1603,10 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
           >
             <!-- To -->
             <div>
-              <label
-                for="compose-to"
-                class="block text-sm
-                       font-medium
-                       text-gray-700"
-              >
-                To
-              </label>
 
-              <input
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>To</mat-label>
+                <input matInput
                 id="compose-to"
                 type="email"
                 [value]="composeTo()"
@@ -1627,31 +1614,16 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                 placeholder="recipient@example.com"
                 required
                 [disabled]="sending()"
-                class="mt-1 h-10 w-full
-                       rounded-lg
-                       border border-gray-300
-                       px-3 text-sm
-                       text-gray-900
-                       outline-none
-                       focus:border-[#032D42]
-                       focus:ring-2
-                       focus:ring-[#032D42]/15
-                       disabled:bg-gray-100"
               />
+              </mat-form-field>
             </div>
 
             <!-- Subject -->
             <div>
-              <label
-                for="compose-subject"
-                class="block text-sm
-                       font-medium
-                       text-gray-700"
-              >
-                Subject
-              </label>
 
-              <input
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Subject</mat-label>
+                <input matInput
                 id="compose-subject"
                 type="text"
                 [value]="composeSubject()"
@@ -1659,31 +1631,16 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                 placeholder="Message subject"
                 required
                 [disabled]="sending()"
-                class="mt-1 h-10 w-full
-                       rounded-lg
-                       border border-gray-300
-                       px-3 text-sm
-                       text-gray-900
-                       outline-none
-                       focus:border-[#032D42]
-                       focus:ring-2
-                       focus:ring-[#032D42]/15
-                       disabled:bg-gray-100"
               />
+              </mat-form-field>
             </div>
 
             <!-- Message -->
             <div>
-              <label
-                for="compose-message"
-                class="block text-sm
-                       font-medium
-                       text-gray-700"
-              >
-                Message
-              </label>
 
-              <textarea
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Message</mat-label>
+                <textarea matInput
                 id="compose-message"
                 rows="7"
                 [value]="composeMessage()"
@@ -1691,18 +1648,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                 placeholder="Write your message..."
                 required
                 [disabled]="sending()"
-                class="mt-1 w-full
-                       resize-y rounded-lg
-                       border border-gray-300
-                       px-3 py-2
-                       text-sm leading-6
-                       text-gray-900
-                       outline-none
-                       focus:border-[#032D42]
-                       focus:ring-2
-                       focus:ring-[#032D42]/15
-                       disabled:bg-gray-100"
               ></textarea>
+              </mat-form-field>
             </div>
 
             <!-- Actions -->

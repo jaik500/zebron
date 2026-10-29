@@ -38,6 +38,9 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import { Router } from '@angular/router';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 type KnowledgeStatusFilter = 'all' | KnowledgeArticleStatus;
 
 @Component({
@@ -50,8 +53,7 @@ type KnowledgeStatusFilter = 'all' | KnowledgeArticleStatus;
     MatMenuModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    MatDividerModule,
-  ],
+    MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="w-full min-w-0 space-y-6 mt-16">
@@ -124,44 +126,50 @@ type KnowledgeStatusFilter = 'all' | KnowledgeArticleStatus;
               search
             </mat-icon>
 
-            <input
+            <mat-form-field appearance="outline" class="zb-field">
+              <mat-label>Search articles...</mat-label>
+              <input matInput
               type="search"
-              class="h-11 w-full min-w-0 rounded-lg border border-emerald-100 bg-emerald-50/30 pl-11 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#2a835f] focus:bg-white focus:ring-2 focus:ring-[#2a835f]/15"
               placeholder="Search articles..."
               [value]="searchTerm()"
               (input)="onSearch($event)"
             />
+            </mat-form-field>
           </div>
 
           <!-- Filters -->
-          <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <select
-              class="h-11 min-w-0 rounded-lg border border-emerald-100 bg-emerald-50/30 px-3 text-sm text-slate-700 outline-none focus:border-[#2a835f] focus:bg-white focus:ring-2 focus:ring-[#2a835f]/15"
+          <div class="grid min-w-0 grid-cols-1 gap-x-3 sm:grid-cols-2 lg:grid-cols-3">
+            <mat-form-field appearance="outline" class="zb-field">
+              <mat-label>Application</mat-label>
+              <mat-select
               [value]="applicationKey()"
-              (change)="onApplicationChange($event)"
+              (selectionChange)="onApplicationChange($event.value)"
             >
-              <option value="">All applications</option>
+              <mat-option value="">All applications</mat-option>
 
               @for (application of applications; track application.key) {
-                <option [value]="application.key">
+                <mat-option [value]="application.key">
                   {{ application.name }}
-                </option>
+                </mat-option>
               }
-            </select>
+            </mat-select>
+            </mat-form-field>
 
-            <select
-              class="h-11 min-w-0 rounded-lg border border-emerald-100 bg-emerald-50/30 px-3 text-sm text-slate-700 outline-none focus:border-[#2a835f] focus:bg-white focus:ring-2 focus:ring-[#2a835f]/15"
+            <mat-form-field appearance="outline" class="zb-field">
+              <mat-label>Content type</mat-label>
+              <mat-select
               [value]="contentType()"
-              (change)="onContentTypeChange($event)"
+              (selectionChange)="onContentTypeChange($event.value)"
             >
-              <option value="">All content types</option>
+              <mat-option value="">All content types</mat-option>
 
               @for (type of contentTypes; track type) {
-                <option [value]="type">
+                <mat-option [value]="type">
                   {{ contentTypeLabel(type) }}
-                </option>
+                </mat-option>
               }
-            </select>
+            </mat-select>
+            </mat-form-field>
 
             <button
               mat-stroked-button
@@ -621,18 +629,14 @@ export class KnowledgeCenterComponent implements OnInit {
     this.searchTerm.set(input.value);
   }
 
-  onApplicationChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-
-    this.applicationKey.set(select.value);
+  onApplicationChange(applicationKey: string): void {
+    this.applicationKey.set(applicationKey);
 
     void this.loadArticles();
   }
 
-  onContentTypeChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-
-    this.contentType.set(select.value as KnowledgeContentType | '');
+  onContentTypeChange(contentType: KnowledgeContentType | ''): void {
+    this.contentType.set(contentType);
 
     void this.loadArticles();
   }

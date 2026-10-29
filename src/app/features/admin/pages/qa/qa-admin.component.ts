@@ -20,6 +20,10 @@ import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
 import { firestore } from '../../../../core/services/firebase-config';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 interface QaTaskDocument {
   name: string;
   url: string;
@@ -32,7 +36,7 @@ interface QaTaskDocument {
 @Component({
   selector: 'app-qa-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatIconModule],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -173,10 +177,10 @@ interface QaTaskDocument {
             <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 
               <div class="md:col-span-2">
-                <label for="qa-title" class="mb-1.5 block text-sm font-semibold text-gray-700">
-                  Task title *
-                </label>
-                <input
+
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Task title</mat-label>
+                  <input matInput
                   id="qa-title"
                   [readonly]="isViewingTask()"
                   name="title"
@@ -185,15 +189,15 @@ interface QaTaskDocument {
                   maxlength="200"
                   [(ngModel)]="form.title"
                   placeholder="Example: Verify organization onboarding"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
                 />
+                </mat-form-field>
               </div>
 
               <div>
-                <label for="qa-application" class="mb-1.5 block text-sm font-semibold text-gray-700">
-                  Application or feature *
-                </label>
-                <input
+
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Application or feature</mat-label>
+                  <input matInput
                   id="qa-application"
                   [readonly]="isViewingTask()"
                   name="application"
@@ -202,15 +206,15 @@ interface QaTaskDocument {
                   maxlength="120"
                   [(ngModel)]="form.application"
                   placeholder="Example: Test Center"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
                 />
+                </mat-form-field>
               </div>
 
               <div>
-                <label for="qa-description" class="mb-1.5 block text-sm font-semibold text-gray-700">
-                  Description *
-                </label>
-                <input
+
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Description</mat-label>
+                  <input matInput
                   id="qa-description"
                   [readonly]="isViewingTask()"
                   name="description"
@@ -219,15 +223,15 @@ interface QaTaskDocument {
                   maxlength="1000"
                   [(ngModel)]="form.description"
                   placeholder="Briefly describe what needs testing"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
                 />
+                </mat-form-field>
               </div>
 
               <div>
-                <label for="qa-instructions" class="mb-1.5 block text-sm font-semibold text-gray-700">
-                  Testing instructions *
-                </label>
-                <textarea
+
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Testing instructions</mat-label>
+                  <textarea matInput
                   id="qa-instructions"
                   [readonly]="isViewingTask()"
                   name="instructions"
@@ -236,15 +240,15 @@ interface QaTaskDocument {
                   maxlength="10000"
                   [(ngModel)]="form.instructions"
                   placeholder="Describe the steps the tester should follow."
-                  class="w-full resize-y rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
                 ></textarea>
+                </mat-form-field>
               </div>
 
               <div>
-                <label for="qa-expected-result" class="mb-1.5 block text-sm font-semibold text-gray-700">
-                  Expected result *
-                </label>
-                <textarea
+
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Expected result</mat-label>
+                  <textarea matInput
                   id="qa-expected-result"
                   [readonly]="isViewingTask()"
                   name="expectedResult"
@@ -253,26 +257,26 @@ interface QaTaskDocument {
                   maxlength="10000"
                   [(ngModel)]="form.expectedResult"
                   placeholder="Describe the expected application behavior."
-                  class="w-full resize-y rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
                 ></textarea>
+                </mat-form-field>
               </div>
               <div>
-                <label for="qa-status" class="mb-1.5 block text-sm font-semibold text-gray-700">
-                  Status *
-                </label>
-                <select
+
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Status</mat-label>
+                  <mat-select
                   id="qa-status"
                   name="status"
                   [(ngModel)]="form.status"
                   [disabled]="form.status === 'closed'"
-                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100 disabled:bg-gray-100 disabled:text-gray-600"
                 >
-                  <option value="open">Open</option>
-                  <option value="in_progress">In progress</option>
-                  <option value="submitted">Submitted</option>
-                  <option value="closed">Closed</option>
-                </select>
-               
+                  <mat-option value="open">Open</mat-option>
+                  <mat-option value="in_progress">In progress</mat-option>
+                  <mat-option value="submitted">Submitted</mat-option>
+                  <mat-option value="closed">Closed</mat-option>
+                </mat-select>
+                </mat-form-field>
+
               </div>
 
               <!-- Task documents -->
@@ -319,7 +323,7 @@ interface QaTaskDocument {
               </div>
             </div>
 
-        
+
 <!-- Tester assignment -->
 <div class="border-t border-gray-200 pt-6">
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -350,22 +354,7 @@ interface QaTaskDocument {
   } @else {
     <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       @for (tester of testers(); track tester.id) {
-        <label
-          class="flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition"
-          [class.border-teal-500]="isTesterSelected(tester.id)"
-          [class.bg-teal-50]="isTesterSelected(tester.id)"
-          [class.border-gray-200]="!isTesterSelected(tester.id)"
-          [class.bg-white]="!isTesterSelected(tester.id)"
-        >
-          <input
-            type="checkbox"
-            [checked]="isTesterSelected(tester.id)"
-            [disabled]="isViewingTask()"
-            (change)="toggleTester(tester.id, $any($event.target).checked)"
-            class="mt-1 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-          />
-
-          <span class="min-w-0 flex-1">
+        <mat-checkbox class="zb-checkbox--top" [checked]="isTesterSelected(tester.id)" [disabled]="isViewingTask()" (change)="toggleTester(tester.id, $event.checked)"><span class="min-w-0 flex-1">
             <span class="block break-words text-sm font-semibold text-gray-900">
               {{ testerLabel(tester.id) }}
             </span>
@@ -376,9 +365,8 @@ interface QaTaskDocument {
               </span>
             }
 
-           
-          </span>
-        </label>
+
+          </span></mat-checkbox>
       }
     </div>
   }
@@ -521,18 +509,20 @@ interface QaTaskDocument {
                           {{ formatStatus(task.status) }}
                         </span>
 
-                        <select
+                        <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense" subscriptSizing="dynamic">
+                          <mat-label>Status</mat-label>
+                          <mat-select
                           [id]="'status-' + task.id"
                           [name]="'status-' + task.id"
                           [ngModel]="draftStatus(task)"
                           (ngModelChange)="setDraftStatus(task.id, $event)"
-                          class="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-2 text-sm text-gray-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
                         >
-                          <option value="open">Open</option>
-                          <option value="in_progress">In progress</option>
-                          <option value="submitted">Submitted</option>
-                          <option value="closed">Closed</option>
-                        </select>
+                          <mat-option value="open">Open</mat-option>
+                          <mat-option value="in_progress">In progress</mat-option>
+                          <mat-option value="submitted">Submitted</mat-option>
+                          <mat-option value="closed">Closed</mat-option>
+                        </mat-select>
+                        </mat-form-field>
 
                         @if (hasStatusChange(task)) {
                           <button
@@ -549,7 +539,7 @@ interface QaTaskDocument {
                       <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-500">
                         {{ formatDate(task.createdAt) }}
                       </td> 
-                      
+
                       <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-500">
                         {{ formatDate(task.updatedAt) }}
                       </td>
@@ -599,26 +589,22 @@ interface QaTaskDocument {
             </div>
 
             <div class="w-full sm:max-w-sm">
-              <label
-                for="submission-task-filter"
-                class="mb-1.5 block text-sm font-medium text-gray-700"
-              >
-                Filter by task
-              </label>
 
-              <select
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Filter by task</mat-label>
+                <mat-select
                 id="submission-task-filter"
                 name="submissionTaskFilter"
                 [ngModel]="selectedSubmissionTaskId()"
                 (ngModelChange)="selectedSubmissionTaskId.set($event)"
-                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
               >
-                <option value="all">All tasks</option>
+                <mat-option value="all">All tasks</mat-option>
 
                 @for (task of tasks(); track task.id) {
-                  <option [value]="task.id">{{ task.title }}</option>
+                  <mat-option [value]="task.id">{{ task.title }}</mat-option>
                 }
-              </select>
+              </mat-select>
+              </mat-form-field>
             </div>
           </div>
 
