@@ -3541,6 +3541,49 @@ service cloud.firestore {
       }
     }
 
+        // ============================================================
+    // RESOURCE TYPES (public lookup list)
+    // ============================================================
+
+    match /resourceTypes/{typeId} {
+      allow get, list: if true;
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // SYSTEM SETTINGS
+    // ============================================================
+
+    /*
+     * Application-wide configuration loaded by SettingsService.
+     * Readable by the app (it may be needed before sign-in, e.g.
+     * feature flags). Never store secrets here — use Secret Manager.
+     * Only platform administrators can change settings.
+     */
+    match /systemSettings/{settingKey} {
+      allow get, list: if true;
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // COURSE ENROLLMENTS
+    // ============================================================
+
+    /*
+     * Users can read only their own enrollments.
+     * Enrollments are created and changed by trusted backend code
+     * or platform administrators.
+     */
+    match /courseEnrollments/{enrollmentId} {
+      allow get, list: if isPlatformAdmin()
+        || (
+          isAuthenticated()
+          && resource.data.get("userId", "") == request.auth.uid
+        );
+
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
     match /outboundMessages/{messageId} {
       allow get, list: if isPlatformAdmin();
       allow create, update, delete: if false;
