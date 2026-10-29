@@ -5,7 +5,6 @@ import "./firebase-admin";
 
 import {
   onCall,
-  onRequest,
   HttpsError,
   CallableRequest,
 } from "firebase-functions/v2/https";
@@ -957,36 +956,6 @@ export const submitContactMessage = onCall(
 
 
 
-/**
- * Escape HTML values before inserting
- * email/user-controlled content into the
- * forwarded message.
- */
-function escapeHtml(
-  value: string,
-): string {
-  return value
-    .replace(
-      /&/g,
-      "&amp;",
-    )
-    .replace(
-      /</g,
-      "&lt;",
-    )
-    .replace(
-      />/g,
-      "&gt;",
-    )
-    .replace(
-      /"/g,
-      "&quot;",
-    )
-    .replace(
-      /'/g,
-      "&#039;",
-    );
-}
 
 /**
  * Send a reply from the administrator mailbox.
