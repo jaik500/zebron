@@ -1,0 +1,41 @@
+// ============================================================
+// NEW INPUT FIELDS — Zebron form field standard
+// Angular Material (mat-form-field, appearance="outline") + Tailwind
+// See NEW_INPUT_FIELDS.md
+// ============================================================
+
+// Doubled-up selectors outrank Material's own
+// `.mat-mdc-form-field { display: inline-flex }`.
+mat-form-field.zb-field,
+.mat-mdc-form-field.zb-field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+// Field in a flex row next to an icon button.
+mat-form-field.zb-field.zb-field--grow,
+.mat-mdc-form-field.zb-field.zb-field--grow {
+  flex: 1 1 0%;
+  width: auto;
+}
+
+// Field with no bottom spacing.
+mat-form-field.zb-field.zb-field--flush,
+.mat-mdc-form-field.zb-field.zb-field--flush {
+  margin-bottom: 0;
+}
+
+// Mobile: prevent iOS zoom-on-focus (needs >= 16px).
+// Never disable zoom in the viewport meta tag instead.
+@media (max-width: 767.98px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea,
+  .mat-mdc-input-element,
+  .mat-mdc-select {
+    font-size: 16px;
+  }
+}
