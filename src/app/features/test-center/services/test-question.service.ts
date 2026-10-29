@@ -215,12 +215,13 @@ async getQuestionsForTest(
         ];
 
   const snapshot = await getDocs(
-    query(
-      this.questionsCollection,
-      ...ownershipConstraints,
-      where('courseId', '==', courseId),
-    ),
-  );
+  query(
+    this.questionsCollection,
+    ...ownershipConstraints,
+    where('courseId', '==', courseId),
+    where('status', '==', 'published'), // added
+  ),
+);
 
   const selectedTopics = new Set(topicIds);
 

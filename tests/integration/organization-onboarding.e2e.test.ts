@@ -1,3 +1,4 @@
+import { getFirestore as getAdminFirestore, FieldValue as AdminFieldValue } from '../../functions/node_modules/firebase-admin/lib/firestore';
 import {
   afterAll,
   beforeAll,
@@ -100,11 +101,11 @@ function configureAdminEnvironment(): void {
 function initializeAdmin(): void {
   configureAdminEnvironment();
 
-  if (!admin.apps.length) {
+  if (!admin.getApps().length) {
     admin.initializeApp();
   }
 
-  adminDb = admin.firestore();
+  adminDb = getAdminFirestore();
 }
 
 function callableRequest<T>(
@@ -205,9 +206,9 @@ async function seedPlatformAdmin(): Promise<void> {
       role: 'admin',
       active: true,
       createdAt:
-        admin.firestore.FieldValue.serverTimestamp(),
+        AdminFieldValue.serverTimestamp(),
       updatedAt:
-        admin.firestore.FieldValue.serverTimestamp(),
+        AdminFieldValue.serverTimestamp(),
     });
 }
 
@@ -223,9 +224,9 @@ async function seedOwner(): Promise<void> {
       platformRole: 'user',
       active: true,
       createdAt:
-        admin.firestore.FieldValue.serverTimestamp(),
+        AdminFieldValue.serverTimestamp(),
       updatedAt:
-        admin.firestore.FieldValue.serverTimestamp(),
+        AdminFieldValue.serverTimestamp(),
     });
 }
 
@@ -271,16 +272,16 @@ async function seedApprovedRequest(
     status: 'approved',
 
     approvedAt:
-      admin.firestore.FieldValue.serverTimestamp(),
+      AdminFieldValue.serverTimestamp(),
 
     submittedAt:
-      admin.firestore.FieldValue.serverTimestamp(),
+      AdminFieldValue.serverTimestamp(),
 
     createdAt:
-      admin.firestore.FieldValue.serverTimestamp(),
+      AdminFieldValue.serverTimestamp(),
 
     updatedAt:
-      admin.firestore.FieldValue.serverTimestamp(),
+      AdminFieldValue.serverTimestamp(),
   });
 }
 
@@ -385,8 +386,8 @@ afterAll(async () => {
     await testEnvironment.cleanup();
   }
 
-  if (admin.apps.length) {
-    await admin.app().delete();
+  if (admin.getApps().length) {
+    await admin.deleteApp(admin.getApp());
   }
 });
 

@@ -3296,3 +3296,7 @@ export {
   recordCommunityPostView,
 } from "./community-post-view";
 
+export {
+  lookupCommunicationRecipients,
+  sendOrganizationCommunication,
+} from "./organization-communications";

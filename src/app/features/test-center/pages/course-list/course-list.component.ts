@@ -1,532 +1,263 @@
-
 import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
-  computed,
   inject,
   signal,
 } from '@angular/core';
-
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
+import { RouterLink } from '@angular/router';
 
 import { TestCourseService } from '../../services/test-course.service';
 import { TestCourse } from '../../models/test-course.model';
+import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 
 @Component({
   selector: 'app-course-list',
   standalone: true,
-  imports: [
-    RouterLink,
-    MatIconModule,
-  ],
+  imports: [RouterLink],
   template: `
-    <main class="min-h-screen bg-gray-50 mt-16">
-
-      <!-- =====================================================
-           STICKY HEADER WITH SEARCH
-           ===================================================== -->
-
-      <header
-        class="sticky top-0 z-50 border-b border-white/10
-               bg-gradient-to-br from-teal-800 via-teal-700
-               to-teal-600 shadow-md"
-      >
-        <div
-          class="mx-auto flex max-w-7xl items-center justify-between
-                 gap-4 px-4 py-2 sm:gap-6 sm:px-6 lg:px-8"
-        >
-
-          <!-- Left: Page title -->
-          <div
-            class="flex min-w-0 shrink-0 items-center gap-3 text-white"
-          >
-            <div
-              class="hidden h-10 w-10 shrink-0 items-center justify-center
-                     rounded-xl bg-white/15 sm:flex"
-              aria-hidden="true"
-            >
-              <mat-icon class="!h-8 !w-8 !text-3xl">
-                school
-              </mat-icon>
-            </div>
-
-            <div class="min-w-0">
-              <h1
-                class="text-base font-bold tracking-tight sm:text-xl"
-              >
-                Courses
-              </h1>
-
-              <p class="hidden text-xs text-teal-100 sm:block">
-                Explore courses and start learning
-              </p>
-            </div>
-          </div>
-
-          <!-- Right: Search -->
-       
-<div class="min-w-0 flex-1 md:ml-8">
-  <div class="ml-auto max-w-2xl">
-    <div
-      class="group flex min-h-11 w-full items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 shadow-sm transition-colors duration-200 hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/15 sm:min-h-12 sm:px-4"
-    >
-      <mat-icon
-        aria-hidden="true"
-        class="!h-5 !w-5 shrink-0 !text-xl !text-[#007979]"
-      >
-        search
-      </mat-icon>
-
-      <input
-        id="course-search"
-        type="search"
-        autocomplete="off"
-        [value]="searchTerm()"
-        (input)="searchTerm.set($any($event.target).value)"
-        placeholder="Search courses..."
-        aria-label="Search courses"
-        class="min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-0 focus:outline-none focus:ring-0 sm:text-base"
-      />
-
-      @if (searchTerm()) {
-        <button
-          type="button"
-          aria-label="Clear course search"
-          (click)="searchTerm.set('')"
-          class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]"
-        >
-          <mat-icon aria-hidden="true">close</mat-icon>
-        </button>
-      }
-    </div>
-  </div>
-</div>
-
-
-
-        </div>
-      </header>
-
-
-      <!-- =====================================================
-           COURSE CONTENT
-           ===================================================== -->
-
-      <section
-        class="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8"
-      >
-
-        <!-- Back navigation and course count -->
-        <div
-          class="mb-6 flex flex-wrap items-center justify-between gap-3"
-        >
+    <main class="min-h-screen bg-gray-50">
+      <!-- Page heading -->
+      <section class="border-b border-gray-200 bg-white">
+        <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <a
-            [routerLink]="[learnerBaseRoute()]"
-            class="inline-flex min-h-10 items-center gap-2
-                   rounded-lg text-sm font-medium text-[#007979]
-                   transition hover:text-teal-900 hover:underline
-                   focus:outline-none focus:ring-2
-                   focus:ring-teal-600"
+            [routerLink]="testCenterRoute()"
+            class="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#007979] hover:underline"
           >
             <span aria-hidden="true">←</span>
             Test Center
           </a>
 
-          @if (!loading() && !error()) {
-            <span class="text-sm text-gray-500">
-              {{ filteredCourses().length }}
-              {{ filteredCourses().length === 1 ? 'course' : 'courses' }}
-            </span>
-          }
-        </div>
-
-
-        <!-- Loading -->
-        @if (loading()) {
-          <div
-            class="flex min-h-48 items-center justify-center"
-            role="status"
-            aria-live="polite"
-          >
-            <div class="flex items-center gap-3">
-              <span
-                class="h-5 w-5 animate-spin rounded-full
-                       border-2 border-teal-700
-                       border-t-transparent"
-                aria-hidden="true"
-              ></span>
-
-              <p class="text-sm text-gray-500">
-                Loading courses...
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h1 class="text-3xl font-bold tracking-tight text-[#032D42] sm:text-4xl">
+                Courses
+              </h1>
+              <p class="mt-2 max-w-2xl text-gray-600">
+                Explore available courses, review what you will learn, and enroll when you're ready.
               </p>
             </div>
+
+            @if (!loading() && !error()) {
+              <span class="text-sm text-gray-500">
+                {{ courses().length }} {{ courses().length === 1 ? 'course' : 'courses' }}
+              </span>
+            }
           </div>
-        }
+        </div>
+      </section>
 
-
-        <!-- Error -->
-        @else if (error()) {
-          <div
-            class="rounded-xl border border-red-200
-                   bg-red-50 p-6 text-center"
-            role="alert"
-          >
-            <mat-icon
-              class="!h-8 !w-8 !text-3xl !text-red-600"
-              aria-hidden="true"
-            >
-              error_outline
-            </mat-icon>
-
-            <p class="mt-2 font-medium text-red-700">
-              {{ error() }}
-            </p>
-
+      <section class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        @if (loading()) {
+          <div class="flex min-h-48 items-center justify-center">
+            <p class="text-sm text-gray-500">Loading courses...</p>
+          </div>
+        } @else if (error()) {
+          <div class="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+            <p class="font-medium text-red-700">{{ error() }}</p>
             <button
               type="button"
               (click)="loadCourses()"
-              class="mt-4 rounded-lg bg-[#007979]
-                     px-4 py-2 text-sm font-semibold
-                     text-white transition hover:bg-[#006666]
-                     focus:outline-none focus:ring-2
-                     focus:ring-teal-600 focus:ring-offset-2"
+              class="mt-4 rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white hover:bg-[#006666]"
             >
               Try again
             </button>
           </div>
-        }
-
-
-        <!-- Empty results -->
-        @else if (filteredCourses().length === 0) {
-          <div
-            class="rounded-2xl border border-gray-200
-                   bg-white px-6 py-14 text-center shadow-sm"
-          >
-            <div
-              class="mx-auto flex h-14 w-14 items-center
-                     justify-center rounded-full bg-[#E5F4F4]
-                     text-[#007979]"
-            >
-              <mat-icon
-                class="!h-8 !w-8 !text-3xl"
-                aria-hidden="true"
-              >
-                {{
-                  searchTerm().trim()
-                    ? 'search_off'
-                    : 'menu_book'
-                }}
-              </mat-icon>
-            </div>
-
-            <h2
-              class="mt-4 text-lg font-semibold text-[#032D42]"
-            >
-              {{
-                searchTerm().trim()
-                  ? 'No matching courses'
-                  : 'No courses available'
-              }}
-            </h2>
-
-            <p class="mx-auto mt-2 max-w-md text-sm text-gray-500">
-              {{
-                searchTerm().trim()
-                  ? 'Try another search term or clear your search to see all available courses.'
-                  : 'There are currently no active courses available in this learning area.'
-              }}
+        } @else if (courses().length === 0) {
+          <div class="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+            <h2 class="text-lg font-semibold text-[#032D42]">No courses available</h2>
+            <p class="mt-2 text-sm text-gray-500">
+              There are currently no active courses available.
             </p>
-
-            @if (searchTerm().trim()) {
-              <button
-                type="button"
-                (click)="searchTerm.set('')"
-                class="mt-5 inline-flex items-center gap-2
-                       rounded-lg border border-teal-700
-                       px-4 py-2 text-sm font-semibold
-                       text-teal-800 transition
-                       hover:bg-teal-50"
-              >
-                <mat-icon aria-hidden="true">close</mat-icon>
-                Clear search
-              </button>
-            }
           </div>
-        }
-
-
-        <!-- Course cards -->
-        @else {
-          <div
-            class="grid grid-cols-1 gap-5
-                   sm:grid-cols-2 lg:grid-cols-3"
-          >
-            @for (
-              course of filteredCourses();
-              track course.id
-            ) {
-              <a
-                [routerLink]="[
-                  learnerBaseRoute(),
-                  'courses',
-                  course.slug
-                ]"
-                class="group flex h-full flex-col rounded-2xl
-                       border border-gray-200 bg-white p-6
-                       shadow-sm transition-all duration-200
-                       hover:-translate-y-0.5
-                       hover:border-[#007979]/40
-                       hover:shadow-md
-                       focus:outline-none focus:ring-2
-                       focus:ring-teal-600 focus:ring-offset-2"
+        } @else {
+          <div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            @for (course of courses(); track course.id) {
+              <article
+                class="flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-[#007979]/40 hover:shadow-md"
               >
+                <div class="flex-1 p-5 sm:p-6">
+                  <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    @if (course.scope === 'platform') {
+                      <span class="inline-flex rounded-full bg-[#007979]/10 px-2.5 py-1 text-xs font-semibold text-[#007979]">
+                        Zebron Course
+                      </span>
+                    } @else {
+                      <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
+                        <span class="mr-1" aria-hidden="true">▦</span>
+                        Organization Course
+                      </span>
+                    }
 
-                <!-- Course scope -->
-                <div class="mb-4 flex flex-wrap items-center gap-2">
-                  @if (course.scope === 'platform') {
-                    <span
-                      class="inline-flex items-center gap-1.5
-                             rounded-full bg-[#007979]/10
-                             px-2.5 py-1 text-xs font-semibold
-                             text-[#007979]"
-                    >
-                      <mat-icon
-                        class="!h-4 !w-4 !text-base"
-                        aria-hidden="true"
-                      >
-                        public
-                      </mat-icon>
-
-                      Zebron Course
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+                      <span aria-hidden="true">◷</span>
+                      {{ estimatedDuration(course) }}
                     </span>
+                  </div>
+
+                  <h2 class="text-lg font-bold leading-snug text-[#032D42]">
+                    {{ course.name }}
+                  </h2>
+
+                  @if (course.description) {
+                    <p class="mt-2 text-sm leading-6 text-gray-600">
+                      {{ course.description }}
+                    </p>
                   } @else {
-                    <span
-                      class="inline-flex items-center gap-1.5
-                             rounded-full bg-gray-100
-                             px-2.5 py-1 text-xs font-semibold
-                             text-gray-700"
-                    >
-                      <mat-icon
-                        class="!h-4 !w-4 !text-base"
-                        aria-hidden="true"
-                      >
-                        business
-                      </mat-icon>
+                    <p class="mt-2 text-sm italic leading-6 text-gray-400">
+                      No course description available.
+                    </p>
+                  }
 
-                      Organization Course
-                    </span>
+                  @if (expandedCourseId() === course.id) {
+                    <div class="mt-4 rounded-xl border border-[#007979]/15 bg-[#007979]/5 p-4">
+                      <h3 class="text-sm font-semibold text-[#032D42]">About this course</h3>
+                      <p class="mt-2 whitespace-pre-line text-sm leading-6 text-gray-700">
+                        {{ detailedDescription(course) }}
+                      </p>
+
+                      <div class="mt-4 flex flex-wrap gap-2">
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200">
+                          Self-paced learning
+                        </span>
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200">
+                          Learn at your own speed
+                        </span>
+                      </div>
+                    </div>
                   }
                 </div>
 
-
-                <!-- Course title -->
-                <h2
-                  class="text-lg font-bold text-[#032D42]
-                         transition group-hover:text-[#007979]"
-                >
-                  {{ course.name }}
-                </h2>
-
-
-                <!-- Description -->
-                @if (course.description) {
-                  <p
-                    class="mt-2 line-clamp-3 text-sm
-                           leading-6 text-gray-600"
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-4 sm:px-6">
+                  <button
+                    type="button"
+                    (click)="toggleExpanded(course.id)"
+                    [attr.aria-expanded]="expandedCourseId() === course.id"
+                    class="inline-flex items-center gap-2 rounded-lg px-1 py-2 text-sm font-semibold text-[#007979] hover:text-[#005f5f] focus:outline-none focus:ring-2 focus:ring-[#007979]/30"
                   >
-                    {{ course.description }}
-                  </p>
-                } @else {
-                  <p
-                    class="mt-2 text-sm italic text-gray-400"
+                    {{ expandedCourseId() === course.id ? 'Show less' : 'View details' }}
+                    <span class="text-base" aria-hidden="true">
+                      {{ expandedCourseId() === course.id ? '⌃' : '⌄' }}
+                    </span>
+                  </button>
+
+                  <a
+                    [routerLink]="courseDetailRoute(course)"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#006666] focus:outline-none focus:ring-2 focus:ring-[#007979]/40 focus:ring-offset-2"
                   >
-                    No course description available.
-                  </p>
-                }
-
-
-                <!-- Provider -->
-                @if (course.provider) {
-                  <p
-                    class="mt-3 text-xs font-medium
-                           text-gray-500"
-                  >
-                    {{ course.provider }}
-                  </p>
-                }
-
-
-                <!-- Action -->
-                <div
-                  class="mt-auto flex items-center justify-between
-                         border-t border-gray-100 pt-4 mt-5"
-                >
-                  <span
-                    class="text-sm font-semibold text-[#007979]"
-                  >
-                    View course
-                  </span>
-
-                  <mat-icon
-                    class="!transition-transform
-                           group-hover:translate-x-1
-                           !text-[#007979]"
-                    aria-hidden="true"
-                  >
-                    arrow_forward
-                  </mat-icon>
+                    Enroll
+                    <span aria-hidden="true">→</span>
+                  </a>
                 </div>
-
-              </a>
+              </article>
             }
           </div>
         }
-
       </section>
     </main>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CourseListComponent implements OnInit {
-
-  // =========================================================
-  // Services
-  // =========================================================
-
   private readonly courseService = inject(TestCourseService);
-  private readonly route = inject(ActivatedRoute);
-
-
-  // =========================================================
-  // Route Context
-  // =========================================================
-
-  /**
-   * Finds the organization ID anywhere in the active route hierarchy.
-   * This supports nested organization-specific Test Center routes.
-   */
-  protected get organizationId(): string | null {
-    for (const route of [...this.route.pathFromRoot].reverse()) {
-      const organizationId =
-        route.snapshot.paramMap.get('organizationId')?.trim();
-
-      if (organizationId) {
-        return organizationId;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Detects organization-specific routes so a missing organization ID
-   * cannot silently fall back to the public platform course catalog.
-   */
-  private get isOrganizationRoute(): boolean {
-    return this.route.pathFromRoot.some((route) =>
-      route.routeConfig?.path
-        ?.split('/')
-        .includes(':organizationId'),
-    );
-  }
-
-  /**
-   * Maintains the appropriate route for platform and organization users.
-   */
-  protected learnerBaseRoute(): string {
-    const organizationId = this.organizationId;
-
-    return organizationId
-      ? `/partner/org/${organizationId}/learn/test-center`
-      : '/test-center';
-  }
-
-
-  // =========================================================
-  // State
-  // =========================================================
+  private readonly organizationContext = inject(OrganizationContextService);
 
   protected readonly courses = signal<TestCourse[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-
-  protected readonly searchTerm = signal('');
-
-  /**
-   * Filters the already-loaded courses locally.
-   * Search does not issue additional Firestore requests.
-   */
-  protected readonly filteredCourses = computed(() => {
-    const term = this.searchTerm().trim().toLowerCase();
-
-    if (!term) {
-      return this.courses();
-    }
-
-    return this.courses().filter((course) => {
-      const searchableValues = [
-        course.name,
-        course.description,
-        course.provider,
-      ];
-
-      return searchableValues.some((value) =>
-        value?.toLowerCase().includes(term),
-      );
-    });
-  });
-
-
-  // =========================================================
-  // Initialization
-  // =========================================================
+  protected readonly expandedCourseId = signal<string | null>(null);
 
   ngOnInit(): void {
     void this.loadCourses();
   }
-
-
-  // =========================================================
-  // Load Courses
-  // =========================================================
 
   protected async loadCourses(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
     try {
-      const organizationId = this.organizationId;
-
-      // Fail closed if an organization route has no organization ID.
-      if (this.isOrganizationRoute && !organizationId) {
-        throw new Error(
-          'The organization ID is missing from the course route.',
-        );
-      }
-
-      const courses =
-        await this.courseService.getAvailableCourses(
-          organizationId,
-        );
-
+      const organizationId = this.organizationContext.organizationId();
+      const courses = await this.courseService.getAvailableCourses(organizationId);
       this.courses.set(courses);
     } catch (error) {
-      console.error(
-        'Failed to load Test Center courses:',
-        error,
-      );
-
+      console.error('Failed to load Test Center courses:', error);
       this.courses.set([]);
-
-      this.error.set(
-        'Unable to load courses. Please try again later.',
-      );
+      this.error.set('Unable to load courses. Please try again later.');
     } finally {
       this.loading.set(false);
     }
   }
-}
 
+  protected toggleExpanded(courseId: string): void {
+    this.expandedCourseId.update((current) => current === courseId ? null : courseId);
+  }
+
+  /**
+   * Supports duration fields on existing or future course records without
+   * requiring every older Firestore document to have one.
+   */
+  protected estimatedDuration(course: TestCourse): string {
+    const record = course as TestCourse & {
+      estimatedDuration?: string | number;
+      estimatedDurationMinutes?: number;
+      durationMinutes?: number;
+      estimatedHours?: number;
+    };
+
+    if (typeof record.estimatedDuration === 'string' && record.estimatedDuration.trim()) {
+      return record.estimatedDuration;
+    }
+
+    const minutes = record.estimatedDurationMinutes ?? record.durationMinutes;
+    if (typeof minutes === 'number' && Number.isFinite(minutes) && minutes > 0) {
+      if (minutes < 60) return `${minutes} min`;
+      const hours = Math.floor(minutes / 60);
+      const remainder = minutes % 60;
+      return remainder ? `${hours} hr ${remainder} min` : `${hours} ${hours === 1 ? 'hr' : 'hrs'}`;
+    }
+
+    if (typeof record.estimatedHours === 'number' && record.estimatedHours > 0) {
+      return `${record.estimatedHours} ${record.estimatedHours === 1 ? 'hour' : 'hours'}`;
+    }
+
+    return 'Time varies';
+  }
+
+  protected detailedDescription(course: TestCourse): string {
+    const record = course as TestCourse & {
+      detailedDescription?: string;
+      longDescription?: string;
+      learningObjectives?: string[];
+    };
+
+    const detail = record.detailedDescription?.trim() || record.longDescription?.trim();
+    if (detail) return detail;
+
+    const objectives = record.learningObjectives?.filter(Boolean) ?? [];
+    const baseDescription = course.description?.trim();
+
+    if (baseDescription && objectives.length) {
+      return `${baseDescription}\n\nWhat you'll learn:\n${objectives.map((item) => `• ${item}`).join('\n')}`;
+    }
+
+    if (baseDescription) {
+      return `${baseDescription}\n\nExplore the course content at your own pace. Enroll to open the course page and review the available learning activities.`;
+    }
+
+    return 'Detailed course information has not been added yet. Enroll to open the course page and review the available learning activities.';
+  }
+
+  protected testCenterRoute(): string {
+    const organizationId = this.organizationContext.organizationId();
+    return organizationId
+      ? `/partner/org/${organizationId}/learn/test-center`
+      : '/test-center';
+  }
+
+  protected courseDetailRoute(course: TestCourse): string[] {
+    const organizationId = this.organizationContext.organizationId();
+    return organizationId
+      ? ['/partner', 'org', organizationId, 'learn', 'test-center', 'courses', course.slug]
+      : ['/test-center', 'courses', course.slug];
+  }
+}

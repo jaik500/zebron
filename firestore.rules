@@ -121,64 +121,61 @@ service cloud.firestore {
         ).data.get("active", false) == true;
     }
 
-/**
-/**
- * Returns the lifecycle status of an organization.
- *
- * Legacy organizations without a status field remain compatible:
- * - active == true or missing: treated as active
- * - active == false: treated as suspended
- *
- * A missing organization is treated as restricted rather than active.
- */
-function organizationStatus(organizationId) {
-  let organizationPath =
-    /databases/$(database)/documents/organizations/$(organizationId);
+    /**
+     * Returns the lifecycle status of an organization.
+     *
+     * Legacy organizations without a status field remain compatible:
+     * - active == true or missing: treated as active
+     * - active == false: treated as suspended
+     *
+     * A missing organization is treated as restricted rather than active.
+     */
+    function organizationStatus(organizationId) {
+      let organizationPath =
+        /databases/$(database)/documents/organizations/$(organizationId);
 
-  return exists(organizationPath)
-    ? get(organizationPath).data.get(
-        "status",
-        get(organizationPath).data.get("active", true) == true
-          ? "active"
-          : "suspended"
-      )
-    : "missing";
-}
+      return exists(organizationPath)
+        ? get(organizationPath).data.get(
+            "status",
+            get(organizationPath).data.get("active", true) == true
+              ? "active"
+              : "suspended"
+          )
+        : "missing";
+    }
 
-/**
- * True when normal tenant operations are allowed.
- *
- * Onboarding remains separate from active operation so that
- * onboarding-specific permissions can be evaluated independently.
- */
-function isOrganizationOperational(organizationId) {
-  return organizationStatus(organizationId) == "active";
-}
+    /**
+     * True when normal tenant operations are allowed.
+     *
+     * Onboarding remains separate from active operation so that
+     * onboarding-specific permissions can be evaluated independently.
+     */
+    function isOrganizationOperational(organizationId) {
+      return organizationStatus(organizationId) == "active";
+    }
 
-/**
- * True when the organization can continue its onboarding workflow.
- */
-function isOrganizationOnboarding(organizationId) {
-  return organizationStatus(organizationId) == "onboarding";
-}
+    /**
+     * True when the organization can continue its onboarding workflow.
+     */
+    function isOrganizationOnboarding(organizationId) {
+      return organizationStatus(organizationId) == "onboarding";
+    }
 
-/** Organization configuration is allowed while active or onboarding. */
-function isOrganizationConfigurable(organizationId) {
-  return isOrganizationOperational(organizationId)
-    || isOrganizationOnboarding(organizationId);
-}
+    /** Organization configuration is allowed while active or onboarding. */
+    function isOrganizationConfigurable(organizationId) {
+      return isOrganizationOperational(organizationId)
+        || isOrganizationOnboarding(organizationId);
+    }
 
-/**
- * True when an organization is suspended or archived.
- */
-function isOrganizationRestricted(organizationId) {
-  return organizationStatus(organizationId) in [
-    "suspended",
-    "archived"
-  ];
-}
-
-
+    /**
+     * True when an organization is suspended or archived.
+     */
+    function isOrganizationRestricted(organizationId) {
+      return organizationStatus(organizationId) in [
+        "suspended",
+        "archived"
+      ];
+    }
 
     function isOrganizationRole(
       organizationId,
@@ -358,29 +355,29 @@ function isOrganizationRestricted(organizationId) {
     // ORGANIZATIONS
     // ============================================================
 
-   match /organizations/{organizationId} {
+    match /organizations/{organizationId} {
 
-  // Platform administrators must retain access to manage
-  // suspended and archived organizations.
-  allow get: if isPlatformAdmin()
-    || (
-      isOrganizationMember(organizationId)
-      && !isOrganizationRestricted(organizationId)
-    );
+      // Platform administrators must retain access to manage
+      // suspended and archived organizations.
+      allow get: if isPlatformAdmin()
+        || (
+          isOrganizationMember(organizationId)
+          && !isOrganizationRestricted(organizationId)
+        );
 
-  // Organization enumeration is reserved for platform admins.
-  allow list: if isPlatformAdmin();
+      // Organization enumeration is reserved for platform admins.
+      allow list: if isPlatformAdmin();
 
-  // Organization creation remains a trusted administrative action.
-  allow create: if isPlatformAdmin();
+      // Organization creation remains a trusted administrative action.
+      allow create: if isPlatformAdmin();
 
-  // Lifecycle changes will be handled by trusted Cloud Functions.
-  allow update: if isPlatformAdmin();
+      // Lifecycle changes will be handled by trusted Cloud Functions.
+      allow update: if isPlatformAdmin();
 
-  // Do not allow browser clients to permanently delete organizations.
-  // A separately designed deletion workflow will handle this later.
-  allow delete: if false;
-}
+      // Do not allow browser clients to permanently delete organizations.
+      // A separately designed deletion workflow will handle this later.
+      allow delete: if false;
+    }
 
     // ============================================================
     // ORGANIZATION APPLICATIONS
@@ -422,7 +419,7 @@ function isOrganizationRestricted(organizationId) {
           ]
         );
 
-           allow update: if isPlatformAdmin()
+      allow update: if isPlatformAdmin()
         || (
           isOrganizationConfigurable(organizationId)
           && isOrganizationAdmin(organizationId)
@@ -494,10 +491,10 @@ function isOrganizationRestricted(organizationId) {
        * update onboarding progress.
        */
       allow update: if isPlatformAdmin()
-  || (
-    isOrganizationAdmin(organizationId)
-    && isOrganizationOnboarding(organizationId)
-  );
+        || (
+          isOrganizationAdmin(organizationId)
+          && isOrganizationOnboarding(organizationId)
+        );
 
       /*
        * Onboarding records are retained for audit/history.
@@ -509,47 +506,47 @@ function isOrganizationRestricted(organizationId) {
     // ORGANIZATION INVITATIONS
     // ============================================================
 
-match /organizationInvitations/{invitationId} {
+    match /organizationInvitations/{invitationId} {
 
-  /*
-   * Platform administrators can inspect all invitations.
-   *
-   * Active members can read invitations belonging to their
-   * organization.
-   *
-   * The invited user does not need direct Firestore access
-   * before acceptance. The trusted callable handles acceptance.
-   *
-   * After acceptance, the user becomes an active organization
-   * member and may read organization invitation records.
-   */
-  allow get: if isPlatformAdmin()
-    || (
-      isAuthenticated()
-      && resource.data.organizationId is string
-      && isOrganizationConfigurable(
-        resource.data.organizationId
-      )
-      && isOrganizationMember(
-        resource.data.organizationId
-      )
-    );
+      /*
+       * Platform administrators can inspect all invitations.
+       *
+       * Active members can read invitations belonging to their
+       * organization.
+       *
+       * The invited user does not need direct Firestore access
+       * before acceptance. The trusted callable handles acceptance.
+       *
+       * After acceptance, the user becomes an active organization
+       * member and may read organization invitation records.
+       */
+      allow get: if isPlatformAdmin()
+        || (
+          isAuthenticated()
+          && resource.data.organizationId is string
+          && isOrganizationConfigurable(
+            resource.data.organizationId
+          )
+          && isOrganizationMember(
+            resource.data.organizationId
+          )
+        );
 
-  /*
-   * Invitation queries are intentionally disabled.
-   *
-   * Invitation management uses trusted callable functions.
-   */
-  allow list: if false;
+      /*
+       * Invitation queries are intentionally disabled.
+       *
+       * Invitation management uses trusted callable functions.
+       */
+      allow list: if false;
 
-  /*
-   * Invitation creation and lifecycle changes are exclusively
-   * handled by trusted backend functions.
-   */
-  allow create: if false;
-  allow update: if false;
-  allow delete: if false;
-}
+      /*
+       * Invitation creation and lifecycle changes are exclusively
+       * handled by trusted backend functions.
+       */
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
 
     // ============================================================
     // ORGANIZATION MEMBERSHIPS
@@ -581,61 +578,62 @@ match /organizationInvitations/{invitationId} {
         );
 
       allow create: if isPlatformAdmin()
-  || (
-    request.resource.data.keys().hasAny(["organizationId"])
-    && request.resource.data.get("organizationId", "") != ""
-    && isOrganizationOperational(request.resource.data.get("organizationId", ""))
-    && isOrganizationAdmin(request.resource.data.get("organizationId", ""))
-    && request.resource.data.get("role", "") in [
-      "org_admin",
-      "org_manager",
-      "org_staff",
-      "org_member"
-    ]
-  );
+        || (
+          request.resource.data.keys().hasAny(["organizationId"])
+          && request.resource.data.get("organizationId", "") != ""
+          && isOrganizationOperational(request.resource.data.get("organizationId", ""))
+          && isOrganizationAdmin(request.resource.data.get("organizationId", ""))
+          && request.resource.data.get("role", "") in [
+            "org_admin",
+            "org_manager",
+            "org_staff",
+            "org_member"
+          ]
+        );
 
-   allow update: if isPlatformAdmin()
-    || ( isOrganizationOperational(
-       resource.data.get("organizationId", "")
-        ) && isOrganizationAdmin(
-           resource.data.get("organizationId", "")
-            )
+      allow update: if isPlatformAdmin()
+        || (
+          isOrganizationOperational(
+            resource.data.get("organizationId", "")
+          )
+          && isOrganizationAdmin(
+            resource.data.get("organizationId", "")
+          )
 
-    // Preserve membership identity.
-    && request.resource.data.get("userId", "")
-     == resource.data.get("userId", "")
-     && request.resource.data.get("organizationId", "")
-      == resource.data.get("organizationId", "")
+          // Preserve membership identity.
+          && request.resource.data.get("userId", "")
+            == resource.data.get("userId", "")
+          && request.resource.data.get("organizationId", "")
+            == resource.data.get("organizationId", "")
 
-    // Organization admins cannot assign the owner role.
-    && request.resource.data.get("role", "") in [
-       "org_admin",
-       "org_manager",
-       "org_staff",
-       "org_member"
-       ]
+          // Organization admins cannot assign the owner role.
+          && request.resource.data.get("role", "") in [
+            "org_admin",
+            "org_manager",
+            "org_staff",
+            "org_member"
+          ]
 
-    // Prevent an administrator from changing their own role.
-    && (
-      request.auth.uid != resource.data.get("userId", "")
-      || request.resource.data.get("role", "")
-      == resource.data.get("role", "")
-      )
+          // Prevent an administrator from changing their own role.
+          && (
+            request.auth.uid != resource.data.get("userId", "")
+            || request.resource.data.get("role", "")
+              == resource.data.get("role", "")
+          )
 
-    // Restrict updates to explicitly approved fields.
-
-    && request.resource.data.diff(resource.data)
-    .affectedKeys()
-    .hasOnly([
-      "role",
-      "active",
-      "displayName",
-      "email",
-      "title",
-      "phoneNumber",
-      "updatedAt"
-      ])
-    );
+          // Restrict updates to explicitly approved fields.
+          && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "role",
+              "active",
+              "displayName",
+              "email",
+              "title",
+              "phoneNumber",
+              "updatedAt"
+            ])
+        );
 
       allow delete: if isPlatformAdmin()
         || (
@@ -896,23 +894,23 @@ match /organizationInvitations/{invitationId} {
       ).data.get("active", false) == true;
     }
 
-  function groupAssignmentReferencesSameGroup(
-  organizationId,
-  groupId,
-  groupMembershipId,
-  groupRoleId
-) {
-  return activeGroupMembershipExists(
-    organizationId,
-    groupId,
-    groupMembershipId
-  )
-  && activeGroupRoleExists(
-    organizationId,
-    groupId,
-    groupRoleId
-  );
-}
+    function groupAssignmentReferencesSameGroup(
+      organizationId,
+      groupId,
+      groupMembershipId,
+      groupRoleId
+    ) {
+      return activeGroupMembershipExists(
+        organizationId,
+        groupId,
+        groupMembershipId
+      )
+      && activeGroupRoleExists(
+        organizationId,
+        groupId,
+        groupRoleId
+      );
+    }
 
     // ============================================================
     // ORGANIZATION GROUPS
@@ -956,44 +954,44 @@ match /organizationInvitations/{invitationId} {
         );
     }
 
-// ============================================================
-// ORGANIZATION SETTINGS
-// ============================================================
+    // ============================================================
+    // ORGANIZATION SETTINGS
+    // ============================================================
 
-/**
- * Organization settings are tenant-scoped configuration.
- *
- * Platform administrators retain access regardless of lifecycle
- * status. Organization administrators can manage settings while
- * their organization is active or completing onboarding.
- *
- * Permanent deletion remains platform-admin-only.
- */
-match /organizationSettings/{organizationId} {
+    /**
+     * Organization settings are tenant-scoped configuration.
+     *
+     * Platform administrators retain access regardless of lifecycle
+     * status. Organization administrators can manage settings while
+     * their organization is active or completing onboarding.
+     *
+     * Permanent deletion remains platform-admin-only.
+     */
+    match /organizationSettings/{organizationId} {
 
-  function canManageOrganizationSettings() {
-    return isPlatformAdmin()
-      || (
-        isOrganizationAdmin(organizationId)
-        && isOrganizationConfigurable(organizationId)
-      );
-  }
+      function canManageOrganizationSettings() {
+        return isPlatformAdmin()
+          || (
+            isOrganizationAdmin(organizationId)
+            && isOrganizationConfigurable(organizationId)
+          );
+      }
 
-  // Read settings.
-  allow get: if canManageOrganizationSettings();
+      // Read settings.
+      allow get: if canManageOrganizationSettings();
 
-  // Settings are accessed by organization ID.
-  allow list: if false;
+      // Settings are accessed by organization ID.
+      allow list: if false;
 
-  // Create settings.
-  allow create: if canManageOrganizationSettings();
+      // Create settings.
+      allow create: if canManageOrganizationSettings();
 
-  // Update settings.
-  allow update: if canManageOrganizationSettings();
+      // Update settings.
+      allow update: if canManageOrganizationSettings();
 
-  // Permanent deletion is restricted to platform administrators.
-  allow delete: if isPlatformAdmin();
-}
+      // Permanent deletion is restricted to platform administrators.
+      allow delete: if isPlatformAdmin();
+    }
 
     // ============================================================
     // PARTNER ORGANIZATION SETTINGS
@@ -1485,12 +1483,12 @@ match /organizationSettings/{organizationId} {
 
       allow list: if isPlatformAdmin();
 
-        allow create: if isPlatformAdmin()
-    || (
-      isCurrentUser(userId)
-      && request.resource.data.get("role", "user") != "admin"
-      && request.resource.data.get("platformRole", "") != "platform-admin"
-    );
+      allow create: if isPlatformAdmin()
+        || (
+          isCurrentUser(userId)
+          && request.resource.data.get("role", "user") != "admin"
+          && request.resource.data.get("platformRole", "") != "platform-admin"
+        );
 
       allow update: if
         isPlatformAdmin()
@@ -1594,104 +1592,104 @@ match /organizationSettings/{organizationId} {
     }
 
     // ============================================================
-// PLATFORM TEST CENTER HELPERS
-// ============================================================
+    // PLATFORM TEST CENTER HELPERS
+    // ============================================================
 
-function isActivePublicPlatformCourse(courseId) {
-  let coursePath =
-    /databases/$(database)/documents/testCourses/$(courseId);
+    function isActivePublicPlatformCourse(courseId) {
+      let coursePath =
+        /databases/$(database)/documents/testCourses/$(courseId);
 
-  return exists(coursePath)
-    && get(coursePath).data.get("scope", "") == "platform"
-    && get(coursePath).data.get("accessType", "") == "public"
-    && get(coursePath).data.get("organizationId", null) == null
-    && get(coursePath).data.get("active", false) == true;
-}
+      return exists(coursePath)
+        && get(coursePath).data.get("scope", "") == "platform"
+        && get(coursePath).data.get("accessType", "") == "public"
+        && get(coursePath).data.get("organizationId", null) == null
+        && get(coursePath).data.get("active", false) == true;
+    }
 
-function isActivePlatformTopic(topicId, courseId) {
-  let topicPath =
-    /databases/$(database)/documents/testTopics/$(topicId);
+    function isActivePlatformTopic(topicId, courseId) {
+      let topicPath =
+        /databases/$(database)/documents/testTopics/$(topicId);
 
-  return exists(topicPath)
-    && get(topicPath).data.get("scope", "") == "platform"
-    && get(topicPath).data.get("organizationId", null) == null
-    && get(topicPath).data.get("courseId", "") == courseId
-    && get(topicPath).data.get("active", false) == true
-    && isActivePublicPlatformCourse(courseId);
-}
+      return exists(topicPath)
+        && get(topicPath).data.get("scope", "") == "platform"
+        && get(topicPath).data.get("organizationId", null) == null
+        && get(topicPath).data.get("courseId", "") == courseId
+        && get(topicPath).data.get("active", false) == true
+        && isActivePublicPlatformCourse(courseId);
+    }
 
-function isPublishedPlatformQuestion(questionId) {
-  let questionPath =
-    /databases/$(database)/documents/testQuestions/$(questionId);
+    function isPublishedPlatformQuestion(questionId) {
+      let questionPath =
+        /databases/$(database)/documents/testQuestions/$(questionId);
 
-  return exists(questionPath)
-    && get(questionPath).data.get("scope", "") == "platform"
-    && get(questionPath).data.get("organizationId", null) == null
-    && get(questionPath).data.get("status", "") == "published"
-    && isActivePlatformTopic(
-      get(questionPath).data.get("topicId", ""),
-      get(questionPath).data.get("courseId", "")
-    );
-}
+      return exists(questionPath)
+        && get(questionPath).data.get("scope", "") == "platform"
+        && get(questionPath).data.get("organizationId", null) == null
+        && get(questionPath).data.get("status", "") == "published"
+        && isActivePlatformTopic(
+          get(questionPath).data.get("topicId", ""),
+          get(questionPath).data.get("courseId", "")
+        );
+    }
 
     // ============================================================
     // TEST CENTER HELPERS
     // ============================================================
 
-/**
- * Test Center access requires:
- * - An operational organization.
- * - An active organization membership.
- * - An active Test Center application entitlement.
- *
- * Platform administrators retain access for support and recovery.
- */
-function hasActiveTestCenterEntitlement(organizationId) {
-  let entitlementPath =
-    /databases/$(database)/documents/organizations/$(organizationId)/applications/test-center;
+    /**
+     * Test Center access requires:
+     * - An operational organization.
+     * - An active organization membership.
+     * - An active Test Center application entitlement.
+     *
+     * Platform administrators retain access for support and recovery.
+     */
+    function hasActiveTestCenterEntitlement(organizationId) {
+      let entitlementPath =
+        /databases/$(database)/documents/organizations/$(organizationId)/applications/test-center;
 
-  return exists(entitlementPath)
-    && get(entitlementPath).data.get("status", "") == "active";
-}
+      return exists(entitlementPath)
+        && get(entitlementPath).data.get("status", "") == "active";
+    }
 
-function isTestCenterMember(organizationId) {
-  return isPlatformAdmin()
-    || (
-      isOrganizationOperational(organizationId)
-      && isOrganizationMember(organizationId)
-      && hasActiveTestCenterEntitlement(organizationId)
-    );
-}
+    function isTestCenterMember(organizationId) {
+      return isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationMember(organizationId)
+          && hasActiveTestCenterEntitlement(organizationId)
+        );
+    }
 
-/**
- * Test Center administration requires an operational organization,
- * an appropriate organization role, and an active entitlement.
- */
-function isTestCenterAdmin(organizationId) {
-  return isPlatformAdmin()
-    || (
-      isOrganizationOperational(organizationId)
-      && isOrganizationManagerOrAbove(organizationId)
-      && hasActiveTestCenterEntitlement(organizationId)
-    );
-}
+    /**
+     * Test Center administration requires an operational organization,
+     * an appropriate organization role, and an active entitlement.
+     */
+    function isTestCenterAdmin(organizationId) {
+      return isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+          && hasActiveTestCenterEntitlement(organizationId)
+        );
+    }
 
-/** Preserve owner/admin-only access for attempt and result administration. */
-function isOperationalOrganizationAdmin(organizationId) {
-  return isPlatformAdmin()
-    || (
-      isOrganizationOperational(organizationId)
-      && isOrganizationAdmin(organizationId)
-    );
-}
+    /** Preserve owner/admin-only access for attempt and result administration. */
+    function isOperationalOrganizationAdmin(organizationId) {
+      return isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationAdmin(organizationId)
+        );
+    }
 
-/**
- * Test Center document creation follows the same authorization
- * requirements as Test Center administration.
- */
-function canCreateTestCenterDocument(organizationId) {
-  return isTestCenterAdmin(organizationId);
-}
+    /**
+     * Test Center document creation follows the same authorization
+     * requirements as Test Center administration.
+     */
+    function canCreateTestCenterDocument(organizationId) {
+      return isTestCenterAdmin(organizationId);
+    }
 
     // ============================================================
     // TEST PROGRAM HELPERS
@@ -1767,30 +1765,30 @@ function canCreateTestCenterDocument(organizationId) {
       ).data.organizationId == organizationId;
     }
 
- /**
- * Verifies that a topic exists and belongs to the specified
- * organization and course.
- *
- * Uses get() instead of an explicit exists() call.
- */
-function testCenterTopicBelongsToOrganization(
-  topicId,
-  organizationId,
-  courseId
-) {
-  let topicPath =
-    /databases/$(database)/documents/testTopics/$(topicId);
+    /**
+     * Verifies that a topic exists and belongs to the specified
+     * organization and course.
+     *
+     * Uses get() instead of an explicit exists() call.
+     */
+    function testCenterTopicBelongsToOrganization(
+      topicId,
+      organizationId,
+      courseId
+    ) {
+      let topicPath =
+        /databases/$(database)/documents/testTopics/$(topicId);
 
-  return topicId is string
-    && topicId != ""
-    && organizationId is string
-    && organizationId != ""
-    && courseId is string
-    && courseId != ""
-    && exists(topicPath)
-    && get(topicPath).data.organizationId == organizationId
-    && get(topicPath).data.courseId == courseId;
-}
+      return topicId is string
+        && topicId != ""
+        && organizationId is string
+        && organizationId != ""
+        && courseId is string
+        && courseId != ""
+        && exists(topicPath)
+        && get(topicPath).data.organizationId == organizationId
+        && get(topicPath).data.courseId == courseId;
+    }
 
     function canCreateTestCenterTopic(
       organizationId,
@@ -1803,25 +1801,25 @@ function testCenterTopicBelongsToOrganization(
         );
     }
 
-/**
- * Authorizes question creation by Test Center administrators
- * and active members of the owning organization.
- *
- * Organization members may create questions for review.
- * Administrative permissions for editing and deletion remain separate.
- */
-function canCreateTestCenterQuestion(
-  organizationId,
-  courseId,
-  topicId
-) {
-  return isTestCenterMember(organizationId)
-    && testCenterTopicBelongsToOrganization(
-      topicId,
+    /**
+     * Authorizes question creation by Test Center administrators
+     * and active members of the owning organization.
+     *
+     * Organization members may create questions for review.
+     * Administrative permissions for editing and deletion remain separate.
+     */
+    function canCreateTestCenterQuestion(
       organizationId,
-      courseId
-    );
-}
+      courseId,
+      topicId
+    ) {
+      return isTestCenterMember(organizationId)
+        && testCenterTopicBelongsToOrganization(
+          topicId,
+          organizationId,
+          courseId
+        );
+    }
 
     function canCreateTestCenterAttempt(
       organizationId,
@@ -1858,38 +1856,38 @@ function canCreateTestCenterQuestion(
     }
 
     // ============================================================
-// TEST ATTEMPT AND RESULT VALIDATION
-// ============================================================
+    // TEST ATTEMPT AND RESULT VALIDATION
+    // ============================================================
 
-function canCreatePlatformTestAttempt() {
-  return isAuthenticated()
-    && request.resource.data.get("organizationId", "missing") == null
-    && request.resource.data.get("userId", "") == request.auth.uid
-    && request.resource.data.get("courseId", "") is string
-    && isActivePublicPlatformCourse(
-      request.resource.data.courseId
-    );
-}
+    function canCreatePlatformTestAttempt() {
+      return isAuthenticated()
+        && request.resource.data.get("organizationId", "missing") == null
+        && request.resource.data.get("userId", "") == request.auth.uid
+        && request.resource.data.get("courseId", "") is string
+        && isActivePublicPlatformCourse(
+          request.resource.data.courseId
+        );
+    }
 
-function canCreatePlatformTestResult() {
-  let attemptId = request.resource.data.get("attemptId", "");
-  let courseId = request.resource.data.get("courseId", "");
+    function canCreatePlatformTestResult() {
+      let attemptId = request.resource.data.get("attemptId", "");
+      let courseId = request.resource.data.get("courseId", "");
 
-  let attemptPath =
-    /databases/$(database)/documents/testAttempts/$(attemptId);
+      let attemptPath =
+        /databases/$(database)/documents/testAttempts/$(attemptId);
 
-  return isAuthenticated()
-    && request.resource.data.get("organizationId", "missing") == null
-    && request.resource.data.get("userId", "") == request.auth.uid
-    && courseId is string
-    && isActivePublicPlatformCourse(courseId)
-    && attemptId is string
-    && attemptId != ""
-    && existsAfter(attemptPath)
-    && getAfter(attemptPath).data.get("organizationId", "missing") == null
-    && getAfter(attemptPath).data.get("userId", "") == request.auth.uid
-    && getAfter(attemptPath).data.get("courseId", "") == courseId;
-}
+      return isAuthenticated()
+        && request.resource.data.get("organizationId", "missing") == null
+        && request.resource.data.get("userId", "") == request.auth.uid
+        && courseId is string
+        && isActivePublicPlatformCourse(courseId)
+        && attemptId is string
+        && attemptId != ""
+        && existsAfter(attemptPath)
+        && getAfter(attemptPath).data.get("organizationId", "missing") == null
+        && getAfter(attemptPath).data.get("userId", "") == request.auth.uid
+        && getAfter(attemptPath).data.get("courseId", "") == courseId;
+    }
 
     // ============================================================
     // ORGANIZATION-SCOPED KNOWLEDGE ARTICLES
@@ -2177,44 +2175,41 @@ function canCreatePlatformTestResult() {
     // TEST CENTER TOPICS
     // ============================================================
 
+    /*
+     * Read rules are written so that they can be proven from the query
+     * itself. A list query is rejected unless its where() clauses
+     * guarantee that every possible result passes the rule, so clients
+     * must query with:
+     *
+     *   - platform topics:      scope == 'platform', organizationId == null,
+     *                           courseId == X, active == true
+     *   - organization topics:  organizationId == X, courseId == Y,
+     *                           active == true
+     *
+     * Test Center managers and above (isTestCenterAdmin) may read all
+     * topics for their organization, including inactive ones.
+     */
     match /testTopics/{topicId} {
 
-     allow get: if isPlatformAdmin()
-  || (
-    isAuthenticated()
-    && resource.data.get("scope", "") == "platform"
-    && resource.data.get("organizationId", null) == null
-    && resource.data.get("active", false) == true
-    && isActivePlatformTopic(
-      topicId,
-      resource.data.get("courseId", "")
-    )
-  )
-  || (
-    resource.data.get("scope", "organization") == "organization"
-    && resource.data.get("organizationId", null) != null
-    && isTestCenterMember(resource.data.organizationId)
-    && resource.data.get("active", false) == true
-  );
-
-allow list: if isPlatformAdmin()
-  || (
-    isAuthenticated()
-    && resource.data.get("scope", "") == "platform"
-    && resource.data.get("organizationId", null) == null
-    && resource.data.get("active", false) == true
-    && isActivePlatformTopic(
-      resource.data.get("id", ""),
-      resource.data.get("courseId", "")
-    )
-  )
-  || (
-    isAuthenticated()
-    && resource.data.get("scope", "organization") == "organization"
-    && resource.data.get("organizationId", null) != null
-    && isTestCenterMember(resource.data.organizationId)
-    && resource.data.get("active", false) == true
-  );
+      allow get, list: if isPlatformAdmin()
+        || (
+          isAuthenticated()
+          && resource.data.get("scope", "") == "platform"
+          && resource.data.get("organizationId", null) == null
+          && resource.data.get("active", false) == true
+          && isActivePublicPlatformCourse(
+            resource.data.get("courseId", "")
+          )
+        )
+        || (
+          resource.data.get("organizationId", null) != null
+          && isTestCenterMember(resource.data.organizationId)
+          && resource.data.get("active", false) == true
+        )
+        || (
+          resource.data.get("organizationId", null) != null
+          && isTestCenterAdmin(resource.data.organizationId)
+        );
 
       allow create: if
         request.resource.data.organizationId is string
@@ -2239,45 +2234,53 @@ allow list: if isPlatformAdmin()
     // TEST CENTER QUESTIONS
     // ============================================================
 
+    /*
+     * As with topics, list queries must constrain the fields these rules
+     * check. Learners must query with status == 'published' (and, for
+     * platform questions, scope == 'platform' and organizationId == null).
+     * Test Center managers and above can read every question for their
+     * organization.
+     */
     match /testQuestions/{questionId} {
 
       allow get: if isPlatformAdmin()
-  || (
-    isAuthenticated()
-    && resource.data.get("scope", "") == "platform"
-    && resource.data.get("organizationId", null) == null
-    && isPublishedPlatformQuestion(questionId)
-  )
-  || (
-    resource.data.get("organizationId", null) != null
-    && isTestCenterMember(resource.data.organizationId)
-    && resource.data.get("status", "") == "published"
-  )
-  || (
-    resource.data.get("organizationId", null) != null
-    && isTestCenterAdmin(resource.data.organizationId)
-  );
+        || (
+          isAuthenticated()
+          && resource.data.get("scope", "") == "platform"
+          && resource.data.get("organizationId", null) == null
+          && isPublishedPlatformQuestion(questionId)
+        )
+        || (
+          resource.data.get("organizationId", null) != null
+          && isTestCenterMember(resource.data.organizationId)
+          && resource.data.get("status", "") == "published"
+        )
+        || (
+          resource.data.get("organizationId", null) != null
+          && isTestCenterAdmin(resource.data.organizationId)
+        );
 
-allow list: if isPlatformAdmin()
-  || (
-    isAuthenticated()
-    && resource.data.get("scope", "") == "platform"
-    && resource.data.get("organizationId", null) == null
-    && isPublishedPlatformQuestion(
-      resource.data.get("id", "")
-    )
-  )
-  || (
-    isAuthenticated()
-    && resource.data.get("organizationId", null) != null
-    && isTestCenterMember(resource.data.organizationId)
-    && resource.data.get("status", "") == "published"
-  )
-  || (
-    isAuthenticated()
-    && resource.data.get("organizationId", null) != null
-    && isTestCenterAdmin(resource.data.organizationId)
-  );
+      allow list: if isPlatformAdmin()
+        || (
+          isAuthenticated()
+          && resource.data.get("scope", "") == "platform"
+          && resource.data.get("organizationId", null) == null
+          && resource.data.get("status", "") == "published"
+          && isActivePublicPlatformCourse(
+            resource.data.get("courseId", "")
+          )
+        )
+        || (
+          isAuthenticated()
+          && resource.data.get("organizationId", null) != null
+          && isTestCenterMember(resource.data.organizationId)
+          && resource.data.get("status", "") == "published"
+        )
+        || (
+          isAuthenticated()
+          && resource.data.get("organizationId", null) != null
+          && isTestCenterAdmin(resource.data.organizationId)
+        );
 
       allow create: if
         request.resource.data.organizationId is string
@@ -2333,16 +2336,16 @@ allow list: if isPlatformAdmin()
         );
 
       allow create: if isAuthenticated()
-  && (
-    (
-      request.resource.data.get("organizationId", null) is string
-      && isTestCenterMember(
-        request.resource.data.organizationId
-      )
-      && request.resource.data.get("userId", "") == request.auth.uid
-    )
-    || canCreatePlatformTestAttempt()
-  );
+        && (
+          (
+            request.resource.data.get("organizationId", null) is string
+            && isTestCenterMember(
+              request.resource.data.organizationId
+            )
+            && request.resource.data.get("userId", "") == request.auth.uid
+          )
+          || canCreatePlatformTestAttempt()
+        );
 
       allow update: if isPlatformAdmin()
         || (
@@ -2390,16 +2393,16 @@ allow list: if isPlatformAdmin()
         );
 
       allow create: if isAuthenticated()
-  && (
-    (
-      request.resource.data.get("organizationId", null) is string
-      && isTestCenterMember(
-        request.resource.data.organizationId
-      )
-      && request.resource.data.get("userId", "") == request.auth.uid
-    )
-    || canCreatePlatformTestResult()
-  );
+        && (
+          (
+            request.resource.data.get("organizationId", null) is string
+            && isTestCenterMember(
+              request.resource.data.organizationId
+            )
+            && request.resource.data.get("userId", "") == request.auth.uid
+          )
+          || canCreatePlatformTestResult()
+        );
 
       allow update: if isPlatformAdmin()
         || (
@@ -2999,235 +3002,235 @@ allow list: if isPlatformAdmin()
       allow delete: if false;
     }
 
-   // ============================================================
-// COMMUNITY CHAT CONVERSATIONS
-// ============================================================
+    // ============================================================
+    // COMMUNITY CHAT CONVERSATIONS
+    // ============================================================
 
-match /communityConversations/{conversationId} {
+    match /communityConversations/{conversationId} {
 
-  function isConversationParticipant() {
-    return isAuthenticated()
-      && resource.data.participantIds is list
-      && request.auth.uid in resource.data.participantIds;
-  }
+      function isConversationParticipant() {
+        return isAuthenticated()
+          && resource.data.participantIds is list
+          && request.auth.uid in resource.data.participantIds;
+      }
 
-  // Only conversation participants can read the conversation.
-  allow get, list: if isConversationParticipant();
+      // Only conversation participants can read the conversation.
+      allow get, list: if isConversationParticipant();
 
-  // Allow a participant to mark their own conversation as read.
-  //
-  // The update may change only:
-  // - unreadCounts
-  // - updatedAt
-  //
-  // The participant can change only their own unread-count entry.
-  allow update: if isConversationParticipant()
-    && request.resource.data.diff(resource.data)
-      .affectedKeys()
-      .hasOnly(['unreadCounts', 'updatedAt'])
-    && request.resource.data.unreadCounts is map
-    && request.resource.data.unreadCounts
-      .get(request.auth.uid, -1) == 0
-    && (
-      // Support older conversations with no unreadCounts map.
-      (
-        !resource.data.keys().hasAny(['unreadCounts'])
-        && request.resource.data.unreadCounts.keys()
-          .hasOnly([request.auth.uid])
-      )
-
-      ||
-
-      // Otherwise, only this participant's entry may change.
-      (
-        resource.data.unreadCounts is map
+      // Allow a participant to mark their own conversation as read.
+      //
+      // The update may change only:
+      // - unreadCounts
+      // - updatedAt
+      //
+      // The participant can change only their own unread-count entry.
+      allow update: if isConversationParticipant()
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['unreadCounts', 'updatedAt'])
+        && request.resource.data.unreadCounts is map
         && request.resource.data.unreadCounts
-          .diff(resource.data.unreadCounts)
-          .affectedKeys()
-          .hasOnly([request.auth.uid])
-      )
-    );
-
-  // ==========================================================
-  // COMMUNITY CHAT MESSAGES
-  // ==========================================================
-
-  match /messages/{messageId} {
-
-    function isParentConversationParticipant() {
-      let conversationPath =
-        /databases/$(database)/documents/communityConversations/$(conversationId);
-
-      return isAuthenticated()
-        && exists(conversationPath)
-        && request.auth.uid in
-          get(conversationPath).data.participantIds;
-    }
-
-    // Only participants can read messages.
-    allow get, list: if isParentConversationParticipant();
-  }
-}
-
- // ============================================================
-// COMMUNITY CHAT CALLS
-// ============================================================
-
-match /communityChatCalls/{callId} {
-
-  function isCallParticipant() {
-    return isAuthenticated()
-      && (
-        resource.data.get('callerId', '') == request.auth.uid
-        || resource.data.get('calleeId', '') == request.auth.uid
-      );
-  }
-
-  function conversationContainsBothParticipants(
-    conversationId,
-    callerId,
-    calleeId
-  ) {
-    let conversationPath =
-      /databases/$(database)/documents/communityConversations/$(conversationId);
-
-    return exists(conversationPath)
-      && get(conversationPath).data.get('participantIds', []) is list
-      && callerId in get(conversationPath).data.participantIds
-      && calleeId in get(conversationPath).data.participantIds;
-  }
-
-  // A caller or callee can read an individual call.
-  allow get: if isCallParticipant();
-
-  // Incoming-call listener:
-  // Only the intended recipient can list their ringing calls.
-  allow list: if isAuthenticated()
-    && resource.data.get('calleeId', '') == request.auth.uid
-    && resource.data.get('status', '') == 'ringing';
-
-  // Only a conversation participant can initiate a call,
-  // and the call must identify both participants correctly.
-  allow create: if isAuthenticated()
-    && request.resource.data.keys().hasAll([
-      'conversationId',
-      'callerId',
-      'calleeId',
-      'type',
-      'status',
-      'offer',
-      'answer',
-      'createdAt',
-      'updatedAt'
-    ])
-    && request.resource.data.get('callerId', '') == request.auth.uid
-    && request.resource.data.get('calleeId', '') is string
-    && request.resource.data.get('calleeId', '') != request.auth.uid
-    && request.resource.data.get('conversationId', '') is string
-    && request.resource.data.get('type', '') in ['voice', 'video']
-    && request.resource.data.get('status', '') == 'ringing'
-    && request.resource.data.get('offer', null) == null
-    && request.resource.data.get('answer', null) == null
-    && conversationContainsBothParticipants(
-      request.resource.data.conversationId,
-      request.resource.data.callerId,
-      request.resource.data.calleeId
-    );
-
-  // Allow only the defined call-signaling transitions.
-  // Call participants, conversation identity, and creation time
-  // cannot be changed after creation.
-  allow update: if isCallParticipant()
-    && request.resource.data.get('conversationId', '')
-      == resource.data.get('conversationId', '')
-    && request.resource.data.get('callerId', '')
-      == resource.data.get('callerId', '')
-    && request.resource.data.get('calleeId', '')
-      == resource.data.get('calleeId', '')
-    && request.resource.data.get('type', '')
-      == resource.data.get('type', '')
-    && request.resource.data.get('createdAt', null)
-      == resource.data.get('createdAt', null)
-    && (
-      // Caller publishes the WebRTC offer.
-      (
-        request.auth.uid == resource.data.get('callerId', '')
-        && resource.data.get('status', '') == 'ringing'
-        && request.resource.data.get('status', '') == 'ringing'
-        && request.resource.data.get('offer', null) is map
-        && request.resource.data.diff(resource.data)
-          .affectedKeys()
-          .hasOnly(['offer', 'updatedAt'])
-      )
-
-      ||
-
-      // Recipient accepts and supplies the answer.
-      (
-        request.auth.uid == resource.data.get('calleeId', '')
-        && resource.data.get('status', '') == 'ringing'
-        && request.resource.data.get('status', '') == 'accepted'
-        && request.resource.data.get('answer', null) is map
-        && request.resource.data.diff(resource.data)
-          .affectedKeys()
-          .hasOnly(['status', 'answer', 'updatedAt'])
-      )
-
-      ||
-
-      // Recipient declines a ringing call.
-      (
-        request.auth.uid == resource.data.get('calleeId', '')
-        && resource.data.get('status', '') == 'ringing'
-        && request.resource.data.get('status', '') == 'declined'
-        && request.resource.data.diff(resource.data)
-          .affectedKeys()
-          .hasOnly(['status', 'updatedAt'])
-      )
-
-      ||
-
-      // Either participant can end an active or ringing call.
-      // The caller can also mark a ringing call as missed.
-      (
-        resource.data.get('status', '') in ['ringing', 'accepted']
-        && request.resource.data.get('status', '') in ['ended', 'missed']
-        && request.resource.data.diff(resource.data)
-          .affectedKeys()
-          .hasOnly(['status', 'updatedAt'])
-      )
-    );
-
-  // ==========================================================
-  // WEBRTC ICE CANDIDATES
-  // ==========================================================
-
-  match /candidates/{candidateId} {
-
-    function isParentCallParticipant() {
-      let callPath =
-        /databases/$(database)/documents/communityChatCalls/$(callId);
-
-      return isAuthenticated()
-        && exists(callPath)
+          .get(request.auth.uid, -1) == 0
         && (
-          get(callPath).data.get('callerId', '') == request.auth.uid
-          || get(callPath).data.get('calleeId', '') == request.auth.uid
+          // Support older conversations with no unreadCounts map.
+          (
+            !resource.data.keys().hasAny(['unreadCounts'])
+            && request.resource.data.unreadCounts.keys()
+              .hasOnly([request.auth.uid])
+          )
+
+          ||
+
+          // Otherwise, only this participant's entry may change.
+          (
+            resource.data.unreadCounts is map
+            && request.resource.data.unreadCounts
+              .diff(resource.data.unreadCounts)
+              .affectedKeys()
+              .hasOnly([request.auth.uid])
+          )
         );
+
+      // ==========================================================
+      // COMMUNITY CHAT MESSAGES
+      // ==========================================================
+
+      match /messages/{messageId} {
+
+        function isParentConversationParticipant() {
+          let conversationPath =
+            /databases/$(database)/documents/communityConversations/$(conversationId);
+
+          return isAuthenticated()
+            && exists(conversationPath)
+            && request.auth.uid in
+              get(conversationPath).data.participantIds;
+        }
+
+        // Only participants can read messages.
+        allow get, list: if isParentConversationParticipant();
+      }
     }
 
-    // Only participants can receive signaling candidates.
-    allow get, list: if isParentCallParticipant();
+    // ============================================================
+    // COMMUNITY CHAT CALLS
+    // ============================================================
 
-    // Each participant can publish only their own candidate.
-    allow create: if isParentCallParticipant()
-      && request.resource.data.get('senderId', '')
-        == request.auth.uid
-      && request.resource.data.get('candidate', null) is map;
+    match /communityChatCalls/{callId} {
 
-    allow update, delete: if false;
-  }
-}
+      function isCallParticipant() {
+        return isAuthenticated()
+          && (
+            resource.data.get('callerId', '') == request.auth.uid
+            || resource.data.get('calleeId', '') == request.auth.uid
+          );
+      }
+
+      function conversationContainsBothParticipants(
+        conversationId,
+        callerId,
+        calleeId
+      ) {
+        let conversationPath =
+          /databases/$(database)/documents/communityConversations/$(conversationId);
+
+        return exists(conversationPath)
+          && get(conversationPath).data.get('participantIds', []) is list
+          && callerId in get(conversationPath).data.participantIds
+          && calleeId in get(conversationPath).data.participantIds;
+      }
+
+      // A caller or callee can read an individual call.
+      allow get: if isCallParticipant();
+
+      // Incoming-call listener:
+      // Only the intended recipient can list their ringing calls.
+      allow list: if isAuthenticated()
+        && resource.data.get('calleeId', '') == request.auth.uid
+        && resource.data.get('status', '') == 'ringing';
+
+      // Only a conversation participant can initiate a call,
+      // and the call must identify both participants correctly.
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasAll([
+          'conversationId',
+          'callerId',
+          'calleeId',
+          'type',
+          'status',
+          'offer',
+          'answer',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.get('callerId', '') == request.auth.uid
+        && request.resource.data.get('calleeId', '') is string
+        && request.resource.data.get('calleeId', '') != request.auth.uid
+        && request.resource.data.get('conversationId', '') is string
+        && request.resource.data.get('type', '') in ['voice', 'video']
+        && request.resource.data.get('status', '') == 'ringing'
+        && request.resource.data.get('offer', null) == null
+        && request.resource.data.get('answer', null) == null
+        && conversationContainsBothParticipants(
+          request.resource.data.conversationId,
+          request.resource.data.callerId,
+          request.resource.data.calleeId
+        );
+
+      // Allow only the defined call-signaling transitions.
+      // Call participants, conversation identity, and creation time
+      // cannot be changed after creation.
+      allow update: if isCallParticipant()
+        && request.resource.data.get('conversationId', '')
+          == resource.data.get('conversationId', '')
+        && request.resource.data.get('callerId', '')
+          == resource.data.get('callerId', '')
+        && request.resource.data.get('calleeId', '')
+          == resource.data.get('calleeId', '')
+        && request.resource.data.get('type', '')
+          == resource.data.get('type', '')
+        && request.resource.data.get('createdAt', null)
+          == resource.data.get('createdAt', null)
+        && (
+          // Caller publishes the WebRTC offer.
+          (
+            request.auth.uid == resource.data.get('callerId', '')
+            && resource.data.get('status', '') == 'ringing'
+            && request.resource.data.get('status', '') == 'ringing'
+            && request.resource.data.get('offer', null) is map
+            && request.resource.data.diff(resource.data)
+              .affectedKeys()
+              .hasOnly(['offer', 'updatedAt'])
+          )
+
+          ||
+
+          // Recipient accepts and supplies the answer.
+          (
+            request.auth.uid == resource.data.get('calleeId', '')
+            && resource.data.get('status', '') == 'ringing'
+            && request.resource.data.get('status', '') == 'accepted'
+            && request.resource.data.get('answer', null) is map
+            && request.resource.data.diff(resource.data)
+              .affectedKeys()
+              .hasOnly(['status', 'answer', 'updatedAt'])
+          )
+
+          ||
+
+          // Recipient declines a ringing call.
+          (
+            request.auth.uid == resource.data.get('calleeId', '')
+            && resource.data.get('status', '') == 'ringing'
+            && request.resource.data.get('status', '') == 'declined'
+            && request.resource.data.diff(resource.data)
+              .affectedKeys()
+              .hasOnly(['status', 'updatedAt'])
+          )
+
+          ||
+
+          // Either participant can end an active or ringing call.
+          // The caller can also mark a ringing call as missed.
+          (
+            resource.data.get('status', '') in ['ringing', 'accepted']
+            && request.resource.data.get('status', '') in ['ended', 'missed']
+            && request.resource.data.diff(resource.data)
+              .affectedKeys()
+              .hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      // ==========================================================
+      // WEBRTC ICE CANDIDATES
+      // ==========================================================
+
+      match /candidates/{candidateId} {
+
+        function isParentCallParticipant() {
+          let callPath =
+            /databases/$(database)/documents/communityChatCalls/$(callId);
+
+          return isAuthenticated()
+            && exists(callPath)
+            && (
+              get(callPath).data.get('callerId', '') == request.auth.uid
+              || get(callPath).data.get('calleeId', '') == request.auth.uid
+            );
+        }
+
+        // Only participants can receive signaling candidates.
+        allow get, list: if isParentCallParticipant();
+
+        // Each participant can publish only their own candidate.
+        allow create: if isParentCallParticipant()
+          && request.resource.data.get('senderId', '')
+            == request.auth.uid
+          && request.resource.data.get('candidate', null) is map;
+
+        allow update, delete: if false;
+      }
+    }
 
     // ============================================================
     // QA HUB
@@ -3385,6 +3388,91 @@ match /communityChatCalls/{callId} {
       // Submitted results cannot be modified or deleted by
       // testers. Administrators can correct or remove them.
       allow update, delete: if isPlatformAdmin();
+    }
+
+        // ============================================================
+    // AUDIT LOGS
+    // ============================================================
+
+    /*
+     * Append-only audit trail written by AuditService.
+     *
+     * - Signed-in users may create records only about themselves.
+     * - Only platform admins may record actorType "admin".
+     * - createdAt must be the server timestamp.
+     * - Records can never be modified or deleted from the client.
+     * - Only platform admins may read them.
+     *
+     * Anonymous events (e.g. failed sign-ins) are rejected here;
+     * record those from a trusted Cloud Function if needed.
+     */
+    match /auditLogs/{auditId} {
+
+      function isValidAuditRecord(data) {
+        return data.keys().hasOnly([
+            "action",
+            "entityType",
+            "entityId",
+            "actorId",
+            "actorName",
+            "actorEmail",
+            "actorType",
+            "outcome",
+            "source",
+            "reason",
+            "metadata",
+            "before",
+            "after",
+            "createdAt"
+          ])
+          && data.keys().hasAll([
+            "action",
+            "entityType",
+            "actorId",
+            "actorType",
+            "outcome",
+            "source",
+            "createdAt"
+          ])
+          && data.action is string
+          && data.action.size() > 0
+          && data.action.size() <= 200
+          && data.entityType is string
+          && data.entityType.size() > 0
+          && (data.get("entityId", null) == null
+            || data.get("entityId", null) is string)
+          && (data.get("actorName", null) == null
+            || data.get("actorName", null) is string)
+          && (data.get("actorEmail", null) == null
+            || data.get("actorEmail", null) is string)
+          && (data.get("reason", null) == null
+            || data.get("reason", null) is string)
+          && data.get("metadata", {}) is map
+          && data.outcome in [
+            "success",
+            "failure",
+            "denied",
+            "cancelled"
+          ]
+          && data.source == "web"
+          && data.createdAt == request.time;
+      }
+
+      allow get, list: if isPlatformAdmin();
+
+      allow create: if isAuthenticated()
+        && isValidAuditRecord(request.resource.data)
+        && request.resource.data.actorId == request.auth.uid
+        && (
+          request.resource.data.actorType == "user"
+          || (
+            request.resource.data.actorType == "admin"
+            && isPlatformAdmin()
+          )
+        );
+
+      // Audit records are immutable.
+      allow update, delete: if false;
     }
 
     // ============================================================

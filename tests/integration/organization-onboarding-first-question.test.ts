@@ -1,3 +1,4 @@
+import { getFirestore as getAdminFirestore, FieldValue as AdminFieldValue } from '../../functions/node_modules/firebase-admin/lib/firestore';
 import {
   afterAll,
   beforeAll,
@@ -101,8 +102,8 @@ async function createOrganization(
     slug: organizationId,
     status: "onboarding",
     active: true,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: AdminFieldValue.serverTimestamp(),
+    updatedAt: AdminFieldValue.serverTimestamp(),
   });
 }
 
@@ -120,8 +121,8 @@ async function createMembership(
       organizationId,
       role,
       active,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: AdminFieldValue.serverTimestamp(),
+      updatedAt: AdminFieldValue.serverTimestamp(),
     });
 }
 
@@ -137,8 +138,8 @@ async function createCourse(
     active: true,
     questionCount: 0,
     createdBy: OWNER_UID,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: AdminFieldValue.serverTimestamp(),
+    updatedAt: AdminFieldValue.serverTimestamp(),
   });
 }
 
@@ -156,8 +157,8 @@ async function createTopic(
     active: true,
     questionCount: 0,
     createdBy: OWNER_UID,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: AdminFieldValue.serverTimestamp(),
+    updatedAt: AdminFieldValue.serverTimestamp(),
   });
 }
 
@@ -180,8 +181,8 @@ async function createEntitlement(
     applicationKey: "test-center",
     status: entitlementStatus,
     onboarding,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: AdminFieldValue.serverTimestamp(),
+    updatedAt: AdminFieldValue.serverTimestamp(),
   });
 }
 
@@ -193,8 +194,8 @@ async function createCoreOnboarding(): Promise<void> {
     currentStep: "configuration",
     requiredSteps: CORE_STEPS,
     completedSteps: CORE_STEPS,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: AdminFieldValue.serverTimestamp(),
+    updatedAt: AdminFieldValue.serverTimestamp(),
   });
 }
 
@@ -242,10 +243,10 @@ beforeAll(async () => {
   process.env.GCLOUD_PROJECT = PROJECT_ID;
   process.env.GOOGLE_CLOUD_PROJECT = PROJECT_ID;
   process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
-  if (!admin.apps.length) {
+  if (!admin.getApps().length) {
     admin.initializeApp({ projectId: PROJECT_ID });
   }
-  db = admin.firestore();
+  db = getAdminFirestore();
 
   const module = await import(
     "../../functions/src/organization-onboarding-first-question"
@@ -277,8 +278,8 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  if (admin.apps.length) {
-    await Promise.all(admin.apps.map((app) => app?.delete()));
+  if (admin.getApps().length) {
+    await Promise.all(admin.getApps().map((app) => admin.deleteApp(app)));
   }
 });
 
@@ -366,7 +367,7 @@ describe("completeOrganizationFirstQuestion", () => {
   });
 
   it("rejects when Test Center onboarding is missing", async () => {
-    await entitlementRef().update({ onboarding: admin.firestore.FieldValue.delete() });
+    await entitlementRef().update({ onboarding: AdminFieldValue.delete() });
     await expectCallableError(
       completeOrganizationFirstQuestion.run(callableRequest(OWNER_UID, validInput())),
       "failed-precondition",

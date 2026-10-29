@@ -13,6 +13,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
@@ -21,6 +22,8 @@ import { PartnerOrganizationContextService } from '../../../../core/services/par
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
 import { TestCourse } from '../../../test-center/models/test-course.model';
+import { httpsCallable } from 'firebase/functions';
+import { firebaseAuth, firebaseFunctions } from '../../../../core/services/firebase-config';
 
 import {
   TestQuestion,
@@ -35,6 +38,7 @@ import { TestTopic } from '../../../test-center/models/test-topic.model';
 import { TestCourseService } from '../../../test-center/services/test-course.service';
 import { TestQuestionService } from '../../../test-center/services/test-question.service';
 import { TestTopicService } from '../../../test-center/services/test-topic.service';
+import { MatFormFieldModule } from '@angular/material/form-field';
 
 // ============================================================
 // FORM MODEL
@@ -55,6 +59,12 @@ interface QuestionForm {
   sourceReference: string;
 }
 
+interface OrganizationEmailRecipient {
+  uid: string;
+  email: string;
+  displayName?: string;
+}
+
 // ============================================================
 // COMPONENT
 // ============================================================
@@ -62,7 +72,14 @@ interface QuestionForm {
 @Component({
   selector: 'app-partner-test-questions',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatButtonModule, MatIconModule],
+  imports: [
+    FormsModule,
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 mt-16">
@@ -80,11 +97,9 @@ interface QuestionForm {
                 <span>/</span>
 
                 <a
-                  mat-stroked-button
                   [routerLink]="['/partner/org', context.organizationId(), 'test-center']"
-                  class="hidden sm:inline-flex !border-white/10 !text-white"
-                >
-                  <mat-icon>arrow_back</mat-icon> Test Center
+                  class="hover:text-white"                
+                  > Test Center
                 </a>
 
                 <span>/</span>
@@ -248,10 +263,186 @@ interface QuestionForm {
                       >
                     </button>
                   }
+                 
                 </div>
+
+<div class="flex flex-wrap items-center gap-2">
+  <button
+    type="button"
+    (click)="prepareQuizEmail()"
+    [disabled]="!selectedCourse() || !selectedTopic()"
+    class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    <mat-icon>mail</mat-icon>
+    Email 
+  </button>
+</div>
               </div>
             </section>
           }
+
+
+          <!-- Generate and email a quiz link -->
+
+
+@if (showQuizEmailForm()) {
+  <div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
+    <div class="mb-4">
+      <h3 class="text-lg font-bold text-gray-900">
+        Send Quiz Link
+      </h3>
+
+      <p class="mt-1 text-sm text-gray-600">
+        Enter the recipient's email address and send them the practice quiz link.
+      </p>
+    </div>
+
+<!-- Multiple recipients -->
+<div class="mb-4">
+<mat-form-field appearance="outline" class="w-full">
+  <mat-label>Recipient Emails</mat-label>
+
+  <textarea
+    matInput
+    [(ngModel)]="quizRecipientEmail"
+    name="quizRecipientEmail"
+    rows="3"
+    placeholder="learner1@example.com, learner2@example.com"
+  ></textarea>
+</mat-form-field>
+
+  <p class="mt-1 text-xs text-gray-500">
+    Enter multiple addresses separated by commas, semicolons, or new lines.
+  </p>
+
+  <button
+    type="button"
+    (click)="lookupOrganizationMembers()"
+    [disabled]="lookingUpMembers()"
+    class="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979] transition hover:bg-teal-50 disabled:opacity-50"
+  >
+    <mat-icon>person_search</mat-icon>
+
+    {{ lookingUpMembers() ? 'Loading Members...' : 'Look Up Members' }}
+  </button>
+</div>
+
+<!-- Organization member lookup -->
+@if (showMemberLookup()) {
+  <div class="mb-4 rounded-lg border border-gray-200 bg-white p-4">
+    <div class="mb-3 flex items-center justify-between gap-3">
+      <h4 class="font-semibold text-gray-900">
+        Organization Members
+      </h4>
+
+      <button
+        type="button"
+        (click)="showMemberLookup.set(false)"
+        class="text-sm text-gray-500 hover:text-gray-800"
+      >
+        Close
+      </button>
+    </div>
+
+    <input
+      type="search"
+      [(ngModel)]="memberSearchTerm"
+      placeholder="Search by name or email..."
+      class="mb-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#007979]"
+    />
+
+    <div class="max-h-64 space-y-2 overflow-y-auto">
+      @for (member of filteredOrganizationMembers(); track member.uid) {
+        <label
+          class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-100 p-3 hover:bg-gray-50"
+        >
+          <input
+            type="checkbox"
+            [checked]="isMemberSelected(member.email)"
+            (change)="toggleMemberRecipient(member.email, $any($event.target).checked)"
+            class="h-4 w-4 accent-[#007979]"
+          />
+
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-semibold text-gray-900">
+              {{ member.displayName || member.email }}
+            </span>
+
+            <span class="block truncate text-xs text-gray-500">
+              {{ member.email }}
+            </span>
+          </span>
+        </label>
+      } @empty {
+        <p class="py-4 text-center text-sm text-gray-500">
+          No organization members found.
+        </p>
+      }
+    </div>
+
+    <div class="mt-4 flex justify-end">
+      <button
+        type="button"
+        (click)="addSelectedMembers()"
+        class="rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white hover:bg-[#006666]"
+      >
+        Add Selected Members
+      </button>
+    </div>
+  </div>
+}
+
+    <!-- Generated link -->
+    <div class="mb-4">
+      <label
+        for="quiz-share-link"
+        class="mb-1 block text-sm font-semibold text-gray-700"
+      >
+        Quiz Link
+      </label>
+
+      <div class="flex flex-col gap-2 sm:flex-row">
+        <input
+          id="quiz-share-link"
+          type="url"
+          [value]="quizShareLink()"
+          readonly
+          class="min-w-0 flex-1 rounded-lg border border-gray-300 bg-gray-100 px-3 py-2.5 text-sm text-gray-700"
+        />
+
+        <button
+          type="button"
+          (click)="copyPreparedQuizLink()"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+        >
+          Copy Link
+        </button>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-wrap justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeQuizEmailForm()"
+        class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        (click)="sendQuizEmail()"
+        [disabled]="sendingQuizEmail() || !quizRecipientEmail.trim() || !quizShareLink()"
+        class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#007979] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <mat-icon>{{ sendingQuizEmail() ? 'hourglass_top' : 'send' }}</mat-icon>
+
+        {{ sendingQuizEmail() ? 'Sending...' : 'Send Email' }}
+      </button>
+    </div>
+  </div>
+}
 
           <!-- ================================================== -->
           <!-- QUESTION FORM -->
@@ -793,6 +984,26 @@ export class PartnerTestQuestionsComponent implements OnInit {
   protected readonly selectedTopicId = signal('');
 
   protected readonly statusFilter = signal<TestQuestionStatus | 'all'>('all');
+
+  protected readonly showQuizEmailForm = signal(false);
+
+protected readonly quizShareLink = signal('');
+
+protected readonly sendingQuizEmail = signal(false);
+
+protected readonly lookingUpMembers = signal(false);
+
+protected readonly showMemberLookup = signal(false);
+
+protected readonly organizationMembers =
+  signal<OrganizationEmailRecipient[]>([]);
+
+protected readonly selectedMemberEmails =
+  signal<string[]>([]);
+
+protected memberSearchTerm = '';
+
+protected quizRecipientEmail = '';
 
   protected readonly statusFilters: {
     label: string;
@@ -1651,4 +1862,493 @@ export class PartnerTestQuestionsComponent implements OnInit {
       sourceReference: '',
     };
   }
+
+  /**
+ * Generates and copies a shareable link to the selected
+ * course's Quiz Details page for organization learners.
+ */
+protected async copyQuizLink(): Promise<void> {
+  const course = this.selectedCourse();
+  const topic = this.selectedTopic();
+  const organizationId = this.context.organizationId();
+
+  if (!course) {
+    this.toast.error('Select a course before generating a test link.');
+    return;
+  }
+
+  if (!topic) {
+    this.toast.error('Select a topic before generating a test link.');
+    return;
+  }
+
+  if (!organizationId) {
+    this.toast.error('Unable to determine the organization.');
+    return;
+  }
+
+  if (!course.slug) {
+    this.toast.error('This course does not have a valid URL slug.');
+    return;
+  }
+
+  try {
+    // Load the latest questions for the selected topic.
+    const questions = await this.questionService.getAllQuestionsForTopic(
+      organizationId,
+      topic.id,
+    );
+
+    // Only published questions are available to learners.
+    const publishedQuestions = questions.filter(
+      (question) => question.status === 'published',
+    );
+
+    if (publishedQuestions.length === 0) {
+      this.toast.error(
+        'Cannot generate a test link. This topic has no published questions.',
+      );
+      return;
+    }
+
+    const quizUrl = new URL(
+      `/partner/org/${encodeURIComponent(organizationId)}/learn/test-center/quiz-details/${encodeURIComponent(course.slug)}`,
+      window.location.origin,
+    ).toString();
+
+    await navigator.clipboard.writeText(quizUrl);
+
+    this.toast.success(
+      `Test link copied! ${publishedQuestions.length} published question(s) are available for this topic.`,
+    );
+  } catch (error) {
+    console.error('Failed to generate test link:', error);
+    this.toast.error(
+      'Unable to generate the test link. Please try again.',
+    );
+  }
+}
+
+protected async prepareQuizEmail(): Promise<void> {
+  const course = this.selectedCourse();
+  const topic = this.selectedTopic();
+  const organizationId = this.context.organizationId();
+
+  if (!course || !topic || !organizationId) {
+    this.toast.error('Select a course and topic first.');
+    return;
+  }
+
+  if (!course.slug) {
+    this.toast.error('The selected course does not have a valid URL slug.');
+    return;
+  }
+
+  try {
+    const questions = await this.questionService.getAllQuestionsForTopic(
+      organizationId,
+      topic.id,
+    );
+
+    const publishedQuestions = questions.filter(
+      (question) => question.status === 'published',
+    );
+
+    if (publishedQuestions.length === 0) {
+      this.toast.error(
+        'Cannot send the quiz link because this topic has no published questions.',
+      );
+      return;
+    }
+
+    const link = new URL(
+      `/partner/org/${encodeURIComponent(organizationId)}/learn/test-center/quiz-details/${encodeURIComponent(course.slug)}`,
+      window.location.origin,
+    ).toString();
+
+    this.quizShareLink.set(link);
+    this.showQuizEmailForm.set(true);
+  } catch (error) {
+    console.error('Unable to prepare quiz link:', error);
+    this.toast.error('Unable to prepare the quiz link.');
+  }
+}
+
+protected async copyPreparedQuizLink(): Promise<void> {
+  const link = this.quizShareLink();
+
+  if (!link) {
+    this.toast.error('Generate a quiz link first.');
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(link);
+    this.toast.success('Quiz link copied.');
+  } catch (error) {
+    console.error('Unable to copy quiz link:', error);
+    window.prompt('Copy the quiz link:', link);
+  }
+}
+
+protected closeQuizEmailForm(): void {
+  this.showQuizEmailForm.set(false);
+  this.quizRecipientEmail = '';
+  this.quizShareLink.set('');
+}
+
+protected async sendQuizEmail(): Promise<void> {
+  const organizationId = this.context.organizationId();
+  const link = this.quizShareLink();
+
+  const recipientEmails = this.parseRecipientEmails(
+    this.quizRecipientEmail,
+  );
+
+  if (!organizationId) {
+    this.toast.error('No organization is selected.');
+    return;
+  }
+
+  if (!link) {
+    this.toast.error('Generate the quiz link first.');
+    return;
+  }
+
+  if (recipientEmails.length === 0) {
+    this.toast.error('Enter at least one recipient email address.');
+    return;
+  }
+
+  const invalidEmails = recipientEmails.filter(
+    (email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
+  );
+
+  if (invalidEmails.length > 0) {
+    this.toast.error(
+      `Invalid email address: ${invalidEmails[0]}`,
+    );
+    return;
+  }
+
+  if (recipientEmails.length > 50) {
+    this.toast.error('You can invite up to 50 members at a time.');
+    return;
+  }
+
+  if (this.sendingQuizEmail()) {
+    return;
+  }
+
+  this.sendingQuizEmail.set(true);
+
+  try {
+    const authenticated = await this.ensureAuthenticatedUser();
+    if (!authenticated) {
+      this.toast.error('Your sign-in session is not available. Please sign in again, then retry.');
+      return;
+    }
+
+    /*
+     * Resolve the requested email addresses against organization
+     * membership records. Never trust an email address alone as
+     * proof that someone belongs to the organization.
+     */
+    let members = this.organizationMembers();
+
+    const requestedEmails = new Set(recipientEmails);
+
+    const missingMembers = recipientEmails.some(
+      (email) =>
+        !members.some(
+          (member) => member.email.toLowerCase() === email,
+        ),
+    );
+
+    if (missingMembers) {
+      const lookupRecipients = httpsCallable<
+        { organizationId: string },
+        {
+          members?: Array<{
+            userId?: string;
+            uid?: string;
+            email?: string;
+            displayName?: string;
+          }>;
+        }
+      >(firebaseFunctions, 'lookupCommunicationRecipients');
+
+      const response = await lookupRecipients({ organizationId });
+
+      members = (response.data.members ?? [])
+        .filter(
+          (member) =>
+            Boolean(member.userId ?? member.uid) &&
+            Boolean(member.email),
+        )
+        .map((member) => ({
+          uid: member.userId ?? member.uid ?? '',
+          email: member.email!.trim().toLowerCase(),
+          displayName: member.displayName?.trim() || member.email!.trim(),
+        }));
+
+      this.organizationMembers.set(members);
+    }
+
+    const matchedMembers = members.filter((member) =>
+      requestedEmails.has(member.email.toLowerCase()),
+    );
+
+    const matchedEmails = new Set(
+      matchedMembers.map((member) => member.email.toLowerCase()),
+    );
+
+    const unmatchedEmails = recipientEmails.filter(
+      (email) => !matchedEmails.has(email),
+    );
+
+    if (unmatchedEmails.length > 0) {
+      this.toast.error(
+        `These addresses are not eligible organization members: ${unmatchedEmails.join(', ')}`,
+      );
+      return;
+    }
+
+    const recipientIds = [
+      ...new Set(matchedMembers.map((member) => member.uid)),
+    ].filter(Boolean);
+
+    if (recipientIds.length === 0) {
+      this.toast.error('Select at least one eligible organization member.');
+      return;
+    }
+
+    const course = this.selectedCourse();
+    const topic = this.selectedTopic();
+
+    if (!course || !topic) {
+      this.toast.error('Select a course and topic first.');
+      return;
+    }
+
+    const sendCommunication = httpsCallable<
+      {
+        organizationId: string;
+        type: 'quiz_invitation';
+        subject: string;
+        message: string;
+        recipientIds: string[];
+        metadata: {
+          courseName: string;
+          quizTitle: string;
+        };
+      },
+      {
+        success?: boolean;
+        sent?: number;
+        accepted?: number;
+      }
+    >(firebaseFunctions, 'sendOrganizationCommunication');
+
+    const result = await sendCommunication({
+      organizationId,
+      type: 'quiz_invitation',
+      subject: `Practice quiz invitation: ${course.name}`,
+      message: [
+        `You have been invited to take a practice quiz.`,
+        '',
+        `Course: ${course.name}`,
+        `Topic: ${topic.name}`,
+        '',
+        'Open the quiz using the link below:',
+        link,
+        '',
+        'Good luck!',
+        'The Zebron Team',
+      ].join('\n'),
+      recipientIds,
+      metadata: {
+        courseName: course.name,
+        quizTitle: topic.name,
+      },
+    });
+
+    // A successful callable response confirms the backend accepted the request.
+    // The backend records per-recipient delivery outcomes separately.
+    this.toast.success(
+      `Quiz invitation request submitted for ${recipientIds.length} member(s). Check communication delivery status if a recipient does not receive it.`,
+    );
+
+    this.closeQuizEmailForm();
+  } catch (error) {
+    console.error('Failed to send quiz invitations:', error);
+
+    this.toast.error(
+      'Unable to send quiz invitations. Please try again.',
+    );
+  } finally {
+    this.sendingQuizEmail.set(false);
+  }
+}
+
+protected filteredOrganizationMembers(): OrganizationEmailRecipient[] {
+  const search = this.memberSearchTerm.trim().toLowerCase();
+
+  if (!search) {
+    return this.organizationMembers();
+  }
+
+  return this.organizationMembers().filter((member) =>
+    member.email.toLowerCase().includes(search) ||
+    (member.displayName ?? '').toLowerCase().includes(search),
+  );
+}
+
+protected isMemberSelected(email: string): boolean {
+  return this.selectedMemberEmails().includes(email.toLowerCase());
+}
+
+protected toggleMemberRecipient(
+  email: string,
+  selected: boolean,
+): void {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (selected) {
+    this.selectedMemberEmails.update((emails) =>
+      emails.includes(normalizedEmail)
+        ? emails
+        : [...emails, normalizedEmail],
+    );
+  } else {
+    this.selectedMemberEmails.update((emails) =>
+      emails.filter((item) => item !== normalizedEmail),
+    );
+  }
+}
+
+protected addSelectedMembers(): void {
+  const existingEmails = this.parseRecipientEmails(
+    this.quizRecipientEmail,
+  );
+
+  const combinedEmails = new Set([
+    ...existingEmails,
+    ...this.selectedMemberEmails(),
+  ]);
+
+  this.quizRecipientEmail = [...combinedEmails].join(', ');
+
+  this.showMemberLookup.set(false);
+
+  this.toast.success('Selected member emails added.');
+}
+
+private parseRecipientEmails(value: string): string[] {
+  return [
+    ...new Set(
+      value
+        .split(/[;,\n]+/)
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+/** Wait for Firebase to restore its initial session before invoking protected callables. */
+private async ensureAuthenticatedUser(): Promise<boolean> {
+  await firebaseAuth.authStateReady();
+  return firebaseAuth.currentUser !== null;
+}
+
+protected async lookupOrganizationMembers(): Promise<void> {
+  const organizationId = this.context.organizationId();
+
+  if (!organizationId) {
+    this.toast.error('No organization is selected.');
+    return;
+  }
+
+  if (this.lookingUpMembers()) {
+    return;
+  }
+
+  this.lookingUpMembers.set(true);
+
+  try {
+    // Wait for Firebase to finish restoring the authentication session.
+    await firebaseAuth.authStateReady();
+
+    const user = firebaseAuth.currentUser;
+
+    // Diagnose missing authentication before calling the backend.
+    console.info('[Member Lookup] Firebase configuration', {
+      authenticated: !!user,
+      authAppName: firebaseAuth.app.name,
+      functionsAppName: firebaseFunctions.app.name,
+      authProjectId: firebaseAuth.app.options.projectId,
+      functionsProjectId: firebaseFunctions.app.options.projectId,
+    });
+
+    if (!user) {
+      this.toast.error(
+        'Your Firebase sign-in session is unavailable. Please sign in again.',
+      );
+      return;
+    }
+
+    // Refresh the ID token to rule out an expired authentication token.
+    await user.getIdToken(true);
+
+    const lookupRecipients = httpsCallable<
+      { organizationId: string },
+      {
+        organizationId: string;
+        members: Array<{
+          userId: string;
+          displayName?: string;
+          email: string;
+          role?: string;
+        }>;
+      }
+    >(firebaseFunctions, 'lookupCommunicationRecipients');
+
+    const response = await lookupRecipients({
+      organizationId,
+    });
+
+    const members: OrganizationEmailRecipient[] =
+      (response.data.members ?? [])
+        .filter((member) => member.userId && member.email)
+        .map((member) => ({
+          uid: member.userId,
+          email: member.email.trim().toLowerCase(),
+          displayName:
+            member.displayName?.trim() || member.email.trim(),
+        }));
+
+    this.organizationMembers.set(members);
+    this.showMemberLookup.set(true);
+
+    if (members.length === 0) {
+      this.toast.error(
+        'No eligible organization members with email addresses were found.',
+      );
+      return;
+    }
+
+    this.toast.success(`Loaded ${members.length} organization members.`);
+  } catch (error) {
+    console.error('[Member Lookup] Failed:', error);
+
+    this.toast.error(
+      error instanceof Error
+        ? `Member lookup failed: ${error.message}`
+        : 'Unable to load organization members.',
+    );
+  } finally {
+    this.lookingUpMembers.set(false);
+  }
+}
+
 }

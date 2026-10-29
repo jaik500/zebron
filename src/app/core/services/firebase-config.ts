@@ -1,8 +1,9 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
+
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAA7WmoDxeoIjNegg1ADl3di7YR45GPk-U',
@@ -11,15 +12,19 @@ const firebaseConfig = {
   storageBucket: 'zebron-2b49f.firebasestorage.app',
   messagingSenderId: '427124681171',
   appId: '1:427124681171:web:d05865aff76fee589a2726',
-  measurementId: 'G-PWD4V2RJCY'
+  measurementId: 'G-PWD4V2RJCY',
 };
 
-export const firebaseApp = initializeApp(firebaseConfig);
+// Reuse the existing app on hot reload / SSR re-evaluation
+// to avoid "Firebase App named '[DEFAULT]' already exists".
+export const firebaseApp = getApps().length
+  ? getApp()
+  : initializeApp(firebaseConfig);
 
 export const firebaseAuth = getAuth(firebaseApp);
 
 export const firestore = getFirestore(firebaseApp);
 
-export const firebaseFunctions = getFunctions(firebaseApp);
+export const firebaseFunctions = getFunctions(firebaseApp, 'us-central1');
 
 export const firebaseStorage = getStorage(firebaseApp);

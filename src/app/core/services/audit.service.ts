@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-
+ 
 import {
   addDoc,
   collection,
@@ -10,22 +10,22 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-
+ 
 import { firebaseAuth, firestore } from './firebase-config';
 import { LoggerService } from './logger.service';
-
+ 
 import {
   AuditActorType,
   AuditLog,
   AuditOutcome,
   AuditSource,
 } from '../models/audit-log.model';
-
-
+ 
+ 
 // ============================================================
 // AUDIT EVENT INPUT
 // ============================================================
-
+ 
 /**
  * Input required to create an audit record.
  *
@@ -35,7 +35,7 @@ import {
  * authentication user is used when available.
  */
 export interface AuditEventInput {
-
+ 
   /**
    * Action being performed.
    *
@@ -46,48 +46,48 @@ export interface AuditEventInput {
    * - configuration.audit.accessed
    */
   action: string;
-
-
+ 
+ 
   /**
    * Type of entity affected by the action.
    */
   entityType: string;
-
-
+ 
+ 
   /**
    * Optional identifier for the affected entity.
    */
   entityId?: string | null;
-
-
+ 
+ 
   // ============================================================
   // ACTOR
   // ============================================================
-
+ 
   /**
    * Firebase Authentication UID.
    *
    * Automatically resolved when omitted.
    */
   actorId?: string | null;
-
-
+ 
+ 
   /**
    * User's display name.
    *
    * Automatically resolved when omitted.
    */
   actorName?: string | null;
-
-
+ 
+ 
   /**
    * User's email address.
    *
    * Automatically resolved when omitted.
    */
   actorEmail?: string | null;
-
-
+ 
+ 
   /**
    * Type of actor performing the action.
    *
@@ -100,48 +100,48 @@ export interface AuditEventInput {
    * actorType: 'admin'.
    */
   actorType?: AuditActorType;
-
-
+ 
+ 
   // ============================================================
   // RESULT
   // ============================================================
-
+ 
   outcome: AuditOutcome;
-
-
+ 
+ 
   /**
    * Where the audit event originated.
    */
   source?: AuditSource;
-
-
+ 
+ 
   // ============================================================
   // ADDITIONAL CONTEXT
   // ============================================================
-
+ 
   reason?: string | null;
-
+ 
   metadata?: Record<string, unknown>;
-
+ 
   before?: unknown;
-
+ 
   after?: unknown;
 }
-
-
+ 
+ 
 // ============================================================
 // SERVICE
 // ============================================================
-
+ 
 @Injectable({
   providedIn: 'root',
 })
 export class AuditService {
-
+ 
   // ============================================================
   // SERVICES
   // ============================================================
-
+ 
   /**
    * Centralized application logger.
    *
@@ -154,23 +154,23 @@ export class AuditService {
    */
   private readonly logger =
     inject(LoggerService);
-
-
+ 
+ 
   // ============================================================
   // FIRESTORE
   // ============================================================
-
+ 
   private readonly auditCollection =
     collection(
       firestore,
       'auditLogs',
     );
-
-
+ 
+ 
   // ============================================================
   // CREATE AUDIT RECORD
   // ============================================================
-
+ 
   /**
    * Create a persistent audit record.
    *
@@ -185,222 +185,237 @@ export class AuditService {
    *
    * Passwords, tokens, credentials and secrets are never
    * persisted.
+   *
+   * Firestore rejects `undefined` field values, so every
+   * optional value is normalized to `null` and nested
+   * `undefined` values are removed during sanitization.
    */
   async log(
     input: AuditEventInput,
   ): Promise<string | null> {
-
+ 
     const operationId =
       this.logger.createOperationId();
-
-
+ 
+ 
     try {
-
+ 
       // --------------------------------------------------------
       // Resolve current Firebase user.
       //
       // We access Firebase directly instead of AuthService.
       // This is what breaks the AuthService/AuditService cycle.
       // --------------------------------------------------------
-
+ 
       const firebaseUser =
         firebaseAuth.currentUser;
-
-
+ 
+ 
       // --------------------------------------------------------
       // Resolve actor identity.
       //
       // Explicit values take precedence.
       // --------------------------------------------------------
-
+ 
       const actorId =
         input.actorId ??
         firebaseUser?.uid ??
         null;
-
-
+ 
+ 
       const actorName =
         input.actorName ??
         firebaseUser?.displayName ??
         null;
-
-
+ 
+ 
       const actorEmail =
         input.actorEmail ??
         firebaseUser?.email ??
         null;
-
-
+ 
+ 
       // --------------------------------------------------------
       // Resolve actor type.
       //
       // Administrative callers should explicitly supply
       // actorType: 'admin'.
       // --------------------------------------------------------
-
+ 
       const actorType =
         input.actorType ??
         this.resolveActorType();
-
-
+ 
+ 
       // --------------------------------------------------------
       // Resolve audit source.
       // --------------------------------------------------------
-
+ 
       const source =
         input.source ??
         'web';
-
-
+ 
+ 
       // --------------------------------------------------------
       // Build persistent audit record.
       //
       // createdAt MUST remain a Firestore server timestamp.
       // This prevents client clock manipulation.
+      //
+      // No field may be `undefined` — Firestore rejects it.
       // --------------------------------------------------------
-
+ 
       const auditRecord = {
-
+ 
         action:
           input.action,
-
+ 
         entityType:
           input.entityType,
-
+ 
         entityId:
           input.entityId ??
           null,
-
-
+ 
+ 
         // ------------------------------------------------------
         // Actor
         // ------------------------------------------------------
-
+ 
         actorId,
-
+ 
         actorName,
-
+ 
         actorEmail,
-
+ 
         actorType,
-
-
+ 
+ 
         // ------------------------------------------------------
         // Result
         // ------------------------------------------------------
-
+ 
         outcome:
           input.outcome,
-
+ 
         source,
-
-
+ 
+ 
         // ------------------------------------------------------
         // Additional context
         // ------------------------------------------------------
-
+ 
         reason:
           input.reason ??
           null,
-
+ 
         metadata:
           this.sanitize(
             input.metadata ??
             {},
-          ),
-
+          ) ?? {},
+ 
         before:
           this.sanitize(
             input.before,
-          ),
-
+          ) ?? null,
+ 
         after:
           this.sanitize(
             input.after,
-          ),
-
-
+          ) ?? null,
+ 
+ 
         // ------------------------------------------------------
         // Server-generated timestamp
         // ------------------------------------------------------
-
+ 
         createdAt:
           serverTimestamp(),
       };
-
-
+ 
+ 
       // --------------------------------------------------------
       // Persist audit record.
       // --------------------------------------------------------
-
+ 
       const document =
         await addDoc(
           this.auditCollection,
           auditRecord,
         );
-
-
+ 
+ 
       // --------------------------------------------------------
       // Technical logging.
       // --------------------------------------------------------
-
+ 
       this.logger.info(
         'AuditService',
         'Audit record created.',
         {
           operationId,
-
+ 
           auditId:
             document.id,
-
+ 
           action:
             input.action,
-
+ 
           entityType:
             input.entityType,
-
+ 
           entityId:
             input.entityId ??
             null,
-
+ 
           actorId,
-
+ 
           actorName,
-
+ 
           outcome:
             input.outcome,
         },
       );
-
-
+ 
+ 
       return document.id;
-
+ 
     } catch (error: unknown) {
-
+ 
       // --------------------------------------------------------
       // Technical failure logging.
       // --------------------------------------------------------
-
+ 
       this.logger.error(
         'AuditService',
         'Failed to create audit record.',
         error,
         {
           operationId,
-
+ 
           action:
             input.action,
-
+ 
           entityType:
             input.entityType,
-
+ 
           entityId:
             input.entityId ??
             null,
+ 
+          // Surface the underlying Firebase error in the log.
+          errorCode:
+            this.extractErrorCode(error),
+ 
+          errorMessage:
+            error instanceof Error
+              ? error.message
+              : String(error),
         },
       );
-
-
+ 
+ 
       /**
        * Audit failures should not normally prevent the
        * primary application operation from completing.
@@ -408,12 +423,12 @@ export class AuditService {
       return null;
     }
   }
-
-
+ 
+ 
   // ============================================================
   // READ RECENT AUDIT RECORDS
   // ============================================================
-
+ 
   /**
    * Retrieve the most recent audit records.
    *
@@ -423,197 +438,197 @@ export class AuditService {
   async getRecentLogs(
     maxResults = 100,
   ): Promise<AuditLog[]> {
-
+ 
     const operationId =
       this.logger.createOperationId();
-
-
+ 
+ 
     try {
-
+ 
       const auditQuery =
         query(
           this.auditCollection,
-
+ 
           orderBy(
             'createdAt',
             'desc',
           ),
-
+ 
           limit(
             maxResults,
           ),
         );
-
-
+ 
+ 
       const snapshot =
         await getDocs(
           auditQuery,
         );
-
-
+ 
+ 
       const logs =
         snapshot.docs.map(
           (document) => {
-
+ 
             const data =
               document.data();
-
-
+ 
+ 
             return {
-
+ 
               id:
                 document.id,
-
-
+ 
+ 
               // ------------------------------------------------
               // Action
               // ------------------------------------------------
-
+ 
               action:
                 typeof data['action'] === 'string'
                   ? data['action']
                   : 'unknown',
-
-
+ 
+ 
               // ------------------------------------------------
               // Entity
               // ------------------------------------------------
-
+ 
               entityType:
                 typeof data['entityType'] === 'string'
                   ? data['entityType']
                   : 'unknown',
-
-
+ 
+ 
               entityId:
                 this.toNullableString(
                   data['entityId'],
                 ),
-
-
+ 
+ 
               // ------------------------------------------------
               // Actor
               // ------------------------------------------------
-
+ 
               actorId:
                 this.toNullableString(
                   data['actorId'],
                 ),
-
-
+ 
+ 
               actorName:
                 this.toNullableString(
                   data['actorName'],
                 ),
-
-
+ 
+ 
               actorEmail:
                 this.toNullableString(
                   data['actorEmail'],
                 ),
-
-
+ 
+ 
               actorType:
                 this.toActorType(
                   data['actorType'],
                 ),
-
-
+ 
+ 
               // ------------------------------------------------
               // Result
               // ------------------------------------------------
-
+ 
               outcome:
                 this.toOutcome(
                   data['outcome'],
                 ),
-
-
+ 
+ 
               source:
                 this.toSource(
                   data['source'],
                 ),
-
-
+ 
+ 
               // ------------------------------------------------
               // Additional context
               // ------------------------------------------------
-
+ 
               reason:
                 this.toNullableString(
                   data['reason'],
                 ),
-
-
+ 
+ 
               metadata:
                 this.toRecord(
                   data['metadata'],
                 ),
-
-
+ 
+ 
               before:
                 this.sanitize(
                   data['before'],
                 ),
-
-
+ 
+ 
               after:
                 this.sanitize(
                   data['after'],
                 ),
-
-
+ 
+ 
               // ------------------------------------------------
               // Timestamp
               // ------------------------------------------------
-
+ 
               createdAt:
                 this.toTimestamp(
                   data['createdAt'],
                 ),
-
+ 
             } satisfies AuditLog;
           },
         );
-
-
+ 
+ 
       this.logger.info(
         'AuditService',
         'Audit records loaded.',
         {
           operationId,
-
+ 
           count:
             logs.length,
         },
       );
-
-
+ 
+ 
       return logs;
-
+ 
     } catch (error: unknown) {
-
+ 
       this.logger.error(
         'AuditService',
         'Failed to load audit records.',
         error,
         {
           operationId,
-
+ 
           maxResults,
         },
       );
-
-
+ 
+ 
       throw error;
     }
   }
-
-
+ 
+ 
   // ============================================================
   // ACTOR RESOLUTION
   // ============================================================
-
+ 
   /**
    * Determine the actor type without depending on AuthService.
    *
@@ -624,134 +639,161 @@ export class AuditService {
    * This avoids the AuthService/AuditService dependency cycle.
    */
   private resolveActorType(): AuditActorType {
-
+ 
     const firebaseUser =
       firebaseAuth.currentUser;
-
-
+ 
+ 
     if (!firebaseUser) {
       return 'anonymous';
     }
-
-
+ 
+ 
     return 'user';
   }
-
-
+ 
+ 
+  // ============================================================
+  // ERROR HELPERS
+  // ============================================================
+ 
+  /**
+   * Extract a Firebase error code (e.g. "permission-denied")
+   * from an unknown error, when present.
+   */
+  private extractErrorCode(
+    error: unknown,
+  ): string | null {
+ 
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      typeof (error as { code: unknown }).code === 'string'
+    ) {
+ 
+      return (error as { code: string }).code;
+    }
+ 
+ 
+    return null;
+  }
+ 
+ 
   // ============================================================
   // DATA CONVERSION HELPERS
   // ============================================================
-
+ 
   /**
    * Convert an unknown Firestore value to a nullable string.
    */
   private toNullableString(
     value: unknown,
   ): string | null {
-
+ 
     return typeof value === 'string'
       ? value
       : null;
   }
-
-
+ 
+ 
   /**
    * Convert an unknown value to an AuditActorType.
    */
   private toActorType(
     value: unknown,
   ): AuditActorType {
-
+ 
     switch (value) {
-
+ 
       case 'user':
         return 'user';
-
+ 
       case 'admin':
         return 'admin';
-
+ 
       case 'system':
         return 'system';
-
+ 
       case 'anonymous':
         return 'anonymous';
-
+ 
       default:
         return 'anonymous';
     }
   }
-
-
+ 
+ 
   /**
    * Convert an unknown value to an AuditOutcome.
    */
   private toOutcome(
     value: unknown,
   ): AuditOutcome {
-
+ 
     switch (value) {
-
+ 
       case 'success':
         return 'success';
-
+ 
       case 'failure':
         return 'failure';
-
+ 
       case 'denied':
         return 'denied';
-
+ 
       case 'cancelled':
         return 'cancelled';
-
+ 
       default:
         return 'failure';
     }
   }
-
-
+ 
+ 
   /**
    * Convert an unknown value to an AuditSource.
    */
   private toSource(
     value: unknown,
   ): AuditSource {
-
+ 
     switch (value) {
-
+ 
       case 'web':
         return 'web';
-
+ 
       case 'server':
         return 'server';
-
+ 
       case 'system':
         return 'system';
-
+ 
       default:
         return 'web';
     }
   }
-
-
+ 
+ 
   /**
    * Convert a Firestore timestamp value safely.
    */
   private toTimestamp(
     value: unknown,
   ): Timestamp | undefined {
-
+ 
     if (
       value instanceof Timestamp
     ) {
-
+ 
       return value;
     }
-
-
+ 
+ 
     return undefined;
   }
-
-
+ 
+ 
   /**
    * Convert unknown Firestore metadata into
    * a safe record.
@@ -759,78 +801,88 @@ export class AuditService {
   private toRecord(
     value: unknown,
   ): Record<string, unknown> {
-
+ 
     if (
       value &&
       typeof value === 'object' &&
       !Array.isArray(value)
     ) {
-
+ 
       return value as Record<
         string,
         unknown
       >;
     }
-
-
+ 
+ 
     return {};
   }
-
-
+ 
+ 
   // ============================================================
   // SANITIZATION
   // ============================================================
-
+ 
   /**
    * Sanitize audit data before persistence.
    *
-   * Sensitive values such as passwords, tokens,
-   * credentials and secrets are redacted.
+   * - Sensitive values such as passwords, tokens,
+   *   credentials and secrets are redacted.
+   * - `undefined` values are removed from objects and
+   *   arrays, because Firestore rejects them.
+   * - Dates are preserved (Firestore stores them as
+   *   timestamps).
    */
   private sanitize(
     value: unknown,
   ): unknown {
-
+ 
     if (
       value === null ||
       value === undefined
     ) {
-
+ 
       return value;
     }
-
-
+ 
+ 
     if (
       typeof value !== 'object'
     ) {
-
+ 
       return value;
     }
-
-
+ 
+ 
     if (
-      value instanceof Timestamp
+      value instanceof Timestamp ||
+      value instanceof Date
     ) {
-
+ 
       return value;
     }
-
-
+ 
+ 
     if (
       Array.isArray(value)
     ) {
-
-      return value.map(
-        (item) =>
-          this.sanitize(item),
-      );
+ 
+      return value
+        .filter(
+          (item) =>
+            item !== undefined,
+        )
+        .map(
+          (item) =>
+            this.sanitize(item),
+        );
     }
-
-
+ 
+ 
     const result:
       Record<string, unknown> = {};
-
-
+ 
+ 
     for (
       const [
         key,
@@ -842,27 +894,36 @@ export class AuditService {
         >,
       )
     ) {
-
+ 
+      // Firestore rejects undefined values.
+      if (
+        item === undefined
+      ) {
+ 
+        continue;
+      }
+ 
+ 
       if (
         this.isSensitiveKey(key)
       ) {
-
+ 
         result[key] =
           '[REDACTED]';
-
+ 
         continue;
       }
-
-
+ 
+ 
       result[key] =
         this.sanitize(item);
     }
-
-
+ 
+ 
     return result;
   }
-
-
+ 
+ 
   /**
    * Determine whether a property name contains
    * sensitive information.
@@ -870,7 +931,7 @@ export class AuditService {
   private isSensitiveKey(
     key: string,
   ): boolean {
-
+ 
     const normalized =
       key
         .toLowerCase()
@@ -878,44 +939,44 @@ export class AuditService {
           /[_-]/g,
           '',
         );
-
-
+ 
+ 
     const sensitiveKeys = [
-
+ 
       'password',
-
+ 
       'passwordconfirm',
-
+ 
       'confirmpassword',
-
+ 
       'token',
-
+ 
       'accesstoken',
-
+ 
       'refreshtoken',
-
+ 
       'idtoken',
-
+ 
       'authorization',
-
+ 
       'credential',
-
+ 
       'credentials',
-
+ 
       'secret',
-
+ 
       'apikey',
-
+ 
       'privatekey',
-
+ 
       'clientsecret',
-
+ 
       'securityanswer',
-
+ 
       'securityquestion',
     ];
-
-
+ 
+ 
     return sensitiveKeys.includes(
       normalized,
     );

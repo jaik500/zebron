@@ -1,23 +1,38 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import {
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PartnerOrganizationContextService } from '../../../../core/services/partner-organization-context.service';
+import { TestCourseService } from '../../services/test-course.service';
+import { TestCourse } from '../../models/test-course.model';
+import { TestTopicService } from '../../services/test-topic.service';
+import { TestQuestionService } from '../../services/test-question.service';
 
 type QuizDifficulty = 'Beginner' | 'Intermediate' | 'Advanced';
 type QuizStatus = 'Available' | 'In progress' | 'Completed';
 
 interface QuizListItem {
   id: string;
+  slug: string;
   title: string;
   description: string;
   category: string;
   difficulty: QuizDifficulty;
   questionCount: number;
+  topicCount: number;
   timeLimitMinutes: number;
   status: QuizStatus;
+  isFavorite: boolean;
   score?: number;
   progress?: number;
   tags: string[];
+  provider?: string;
+  type?: string;
 }
 
 @Component({
@@ -25,477 +40,482 @@ interface QuizListItem {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <main class="mt-12 min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
+    <main class="mt-14 min-h-screen bg-slate-50 px-4 py-4 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-7xl">
+
         <!-- Page heading -->
-    
-      
-        <!-- Search and filters -->
-        <section class="mb-5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-          <div
-            class="grid grid-cols-1 items-center gap-3 sm:grid-cols-[minmax(0,1fr)_160px_160px_auto]"
+        <header class="mb-4">
+          
+               <!-- Overall progress -->
+          <section
+            class="mb-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-1"
+            aria-label="Overall quiz progress"
           >
-            <!-- Search -->
-            <label class="block w-full min-w-0">
-              <span class="sr-only">Search quizzes</span>
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                  <p class="text-sm font-semibold uppercase tracking-wider text-[#007979]">
+            {{ organizationName() }}
+          </p>
 
-              <div
-                class="group box-border flex min-h-12 w-full min-w-0 items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 shadow-sm transition-colors duration-200 hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/15 sm:px-4"
-              >
-                <svg
-                  class="h-5 w-5 shrink-0 text-[#007979]"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  aria-hidden="true"
-                >
-                  <circle cx="11" cy="11" r="7"></circle>
-                  <path d="m16 16 4 4"></path>
-                </svg>
-
-                <input
-                  type="search"
-                  autocomplete="off"
-                  [value]="searchTerm()"
-                  (input)="setSearchTerm($any($event.target).value)"
-                  placeholder="Search quizzes..."
-                  class="box-border min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-0 focus:outline-none focus:ring-0"
-                />
+          <p class="mt-1 text-sm leading-6 text-slate-600">
+            Explore courses and practice questions available in your Test Center.
+          </p>
+                
+               
               </div>
-            </label>
 
-            <!-- Difficulty filter -->
-            <label class="block min-w-0">
-              <span class="sr-only">Filter by difficulty</span>
-
-              <select
-                [value]="difficultyFilter()"
-                (change)="setDifficultyFilter($any($event.target).value)"
-                class="box-border h-12 w-full min-w-0 rounded-xl border border-gray-300 bg-white px-3 text-base text-gray-700 shadow-sm outline-none transition-colors hover:border-gray-400 focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/15"
-              >
-                <option value="All">All difficulties</option>
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-              </select>
-            </label>
-
-         
-<!-- Status filter: hidden on mobile -->
-<label class="hidden min-w-0 sm:block">
-  <span class="sr-only">Filter by status</span>
-
-  <select
-    [value]="statusFilter()"
-    (change)="setStatusFilter($any($event.target).value)"
-    class="box-border h-12 w-full min-w-0 rounded-xl border border-gray-300 bg-white px-3 text-base text-gray-700 shadow-sm outline-none transition-colors hover:border-gray-400 focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/15"
-  >
-    <option value="All">All statuses</option>
-    <option value="Available">Available</option>
-    <option value="In progress">In progress</option>
-    <option value="Completed">Completed</option>
-  </select>
-</label>
-
-
-
-            <!-- Clear filters -->
-            <button
-              type="button"
-              (click)="clearFilters()"
-              class="h-11 rounded-xl border border-gray-300 px-4 text-sm font-semibold text-gray-700 transition-colors hover:border-[#007979] hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
-            >
-              Clear
-            </button>
-          </div>
-
-          <!-- Results count and category filters -->
-          <div
-            class="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <p class="text-xs text-slate-500">
-              Showing
-              <span class="font-semibold text-slate-800">
-                {{ filteredQuizzes().length }}
+              <span class="text-2xl font-bold text-blue-900">
+                <p class="text-sm font-semibold text-blue-900">
+                  Your quiz library
+                </p>
+                {{ quizzes().length }} 
               </span>
-              {{ filteredQuizzes().length === 1 ? 'quiz' : 'quizzes' }}
-            </p>
-
-            <div class="flex flex-wrap gap-2">
-              @for (category of categories(); track category) {
-                <button
-                  type="button"
-                  (click)="setCategoryFilter(category)"
-                  class="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#007979]/30"
-                  [class.bg-[#007979]]="categoryFilter() === category"
-                  [class.text-white]="categoryFilter() === category"
-                  [class.bg-slate-100]="categoryFilter() !== category"
-                  [class.text-slate-600]="categoryFilter() !== category"
-                  [class.hover:bg-teal-50]="categoryFilter() !== category"
-                  [class.hover:text-[#007979]]="categoryFilter() !== category"
-                  [attr.aria-pressed]="categoryFilter() === category"
-                >
-                  {{ category }}
-                </button>
-              }
             </div>
-          </div>
-        </section>
+          </section>
+        </header>
 
-<!-- Quiz Summary Cards -->
-<section
-  class="mb-5 grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-4"
-  aria-label="Filter quizzes by status"
->
-  <!-- Available -->
- <button
-  type="button"
-  (click)="selectStatus('Available')"
-  [attr.aria-pressed]="statusFilter() === 'Available'"
-  [attr.aria-label]="'Filter available quizzes: ' + availableCount()"
-  class="min-w-0 rounded-xl border bg-white p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:p-4"
-  [ngClass]="
-    statusFilter() === 'Available'
-      ? 'border-blue-500 ring-2 ring-blue-100'
-      : 'border-slate-200 ring-0'
-  "
->
-    <div class="flex min-w-0 items-center justify-between gap-1">
-      <p class="min-w-0 text-md font-medium leading-tight text-slate-500 sm:text-sm">
-        Available
-        <span class="sm:hidden">quizzes</span>
-      </p>
-
-      <!-- Icon: hidden on mobile -->
-      <span
-        class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-lg text-blue-700 sm:flex"
-        aria-hidden="true"
-      >
-        ▤
-      </span>
-    </div>
-
-    <p class="mt-2 text-center text-xl font-bold leading-tight text-slate-900 sm:text-left sm:text-2xl">
-  {{ availableCount() }}
-</p>
-
-    <!-- Description: hidden on mobile -->
-    <p class="mt-1 hidden text-md text-slate-500 sm:inline-flex">
-      Ready for you to start
-    </p>
-  </button>
-
-  <!-- In Progress -->
-
-
-<button
-  type="button"
-  (click)="selectStatus('In progress')"
-  [attr.aria-pressed]="statusFilter() === 'In progress'"
-  [attr.aria-label]="'Filter quizzes in progress: ' + inProgressCount()"
-  class="box-border min-w-0 rounded-xl border bg-white p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 sm:p-4"
-  [class.border-amber-500]="statusFilter() === 'In progress'"
-  [class.border-slate-200]="statusFilter() !== 'In progress'"
-  [class.ring-2]="statusFilter() === 'In progress'"
-  [class.ring-amber-100]="statusFilter() === 'In progress'"
-  [class.ring-0]="statusFilter() !== 'In progress'"
->
-
-    <div class="flex min-w-0 items-center justify-between gap-1">
-      <p class="min-w-0 text-md font-medium leading-tight text-slate-500 sm:text-sm">
-        In progress
-      </p>
-
-      <!-- Icon: hidden on mobile -->
-      <span
-        class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-lg text-amber-700 sm:flex"
-        aria-hidden="true"
-      >
-        ◷
-      </span>
-    </div>
-
-   <p class="mt-2 text-center text-xl font-bold leading-tight text-slate-900 sm:text-left sm:text-2xl">
-  {{ inProgressCount() }}
-</p>
-
-    <!-- Description: hidden on mobile -->
-    <p class="mt-1 hidden text-md text-slate-500 sm:inline-flex">
-      Pick up where you left off
-    </p>
-  </button>
-
-  <!-- Completed -->
-
-<button
-  type="button"
-  (click)="selectStatus('Completed')"
-  [attr.aria-pressed]="statusFilter() === 'Completed'"
-  [attr.aria-label]="'Filter completed quizzes: ' + completedCount()"
-  class="box-border min-w-0 rounded-xl border bg-white p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:p-4"
-  [class.border-emerald-500]="statusFilter() === 'Completed'"
-  [class.border-slate-200]="statusFilter() !== 'Completed'"
-  [class.ring-2]="statusFilter() === 'Completed'"
-  [class.ring-emerald-100]="statusFilter() === 'Completed'"
-  [class.ring-0]="statusFilter() !== 'Completed'"
->
-
-
-    <div class="flex min-w-0 items-center justify-between gap-1">
-      <p class="min-w-0 text-md font-medium leading-tight text-slate-500 sm:text-sm">
-        Completed
-      </p>
-
-      <!-- Icon: hidden on mobile -->
-      <span
-        class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-lg text-emerald-700 sm:flex"
-        aria-hidden="true"
-      >
-        ✓
-      </span>
-    </div>
-
-    <p class="mt-2 text-center text-xl font-bold leading-tight text-slate-900 sm:text-left sm:text-2xl">
-  {{ completedCount() }}
-</p>
-
-    <!-- Description: hidden on mobile -->
-    <p class="mt-1 hidden text-xs text-slate-500 sm:inline-flex">
-      Review previous attempts
-    </p>
-  </button>
-
-  <!-- Overall Quiz Progress: hidden on mobile -->
-  <div
-    class="hidden min-w-0 flex-col justify-between rounded-xl border border-blue-100 bg-blue-50 p-4 shadow-sm sm:flex"
-    aria-label="Overall quiz progress"
-  >
-    <div>
-      <p class="text-sm font-medium text-blue-700">
-        Your quiz progress
-      </p>
-
-      <div class="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span class="text-2xl font-bold leading-tight text-blue-900">
-          {{ completedCount() }}
-        </span>
-
-        <span class="text-xs text-blue-700">
-          of {{ quizzes().length }} completed
-        </span>
-      </div>
-    </div>
-
-    <div class="mt-4">
-      <div
-        class="h-2 w-full overflow-hidden rounded-full bg-blue-100"
-        role="progressbar"
-        [attr.aria-valuenow]="completionPercent()"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        [attr.aria-label]="'Quiz completion: ' + completionPercent() + '%'"
-      >
-        <div
-          class="h-full rounded-full bg-blue-600 transition-all duration-300"
-          [style.width.%]="completionPercent()"
-        ></div>
-      </div>
-
-      <p class="mt-2 text-xs text-blue-700">
-        {{ completionPercent() }}% complete
-      </p>
-    </div>
-  </div>
-</section>
-
-        <!-- Quiz cards -->
-        @if (filteredQuizzes().length > 0) {
-          <section class="grid grid-cols-1 gap-5 lg:grid-cols-2" aria-label="Quiz list">
-            @for (quiz of filteredQuizzes(); track quiz.id) {
+        <!-- Loading state -->
+        @if (loading()) {
+          <section
+            class="grid grid-cols-1 gap-5 lg:grid-cols-2"
+            aria-label="Loading quizzes"
+            aria-busy="true"
+          >
+            @for (item of [1, 2, 3, 4]; track item) {
               <article
-                class="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+                class="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 sm:p-6"
               >
-                <div
-                  class="h-1.5"
-                  [class.bg-blue-600]="quiz.difficulty === 'Beginner'"
-                  [class.bg-amber-500]="quiz.difficulty === 'Intermediate'"
-                  [class.bg-violet-600]="quiz.difficulty === 'Advanced'"
-                ></div>
-
-                <div class="flex flex-1 flex-col p-5 sm:p-6">
-                  <div class="flex items-start justify-between gap-4">
-                    <div class="flex min-w-0 items-start gap-3">
-                      <div
-                        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-700"
-                      >
-                        {{ getCategoryIcon(quiz.category) }}
-                      </div>
-
-                      <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-blue-600">
-                          {{ quiz.category }}
-                        </p>
-
-                        <h2
-                          class="mt-1 text-lg font-bold text-slate-900 transition group-hover:text-blue-700"
-                        >
-                          {{ quiz.title }}
-                        </h2>
-                      </div>
-                    </div>
-
-                    <span
-                      class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold"
-                      [class.bg-emerald-50]="quiz.status === 'Available'"
-                      [class.text-emerald-700]="quiz.status === 'Available'"
-                      [class.bg-amber-50]="quiz.status === 'In progress'"
-                      [class.text-amber-700]="quiz.status === 'In progress'"
-                      [class.bg-slate-100]="quiz.status === 'Completed'"
-                      [class.text-slate-600]="quiz.status === 'Completed'"
-                    >
-                      {{ quiz.status }}
-                    </span>
-                  </div>
-
-                  <p class="mt-4 text-sm leading-6 text-slate-600">
-                    {{ quiz.description }}
-                  </p>
-
-                  <div class="mt-4 flex flex-wrap gap-2">
-                    @for (tag of quiz.tags; track tag) {
-                      <span
-                        class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
-                      >
-                        {{ tag }}
-                      </span>
-                    }
-                  </div>
-
-                  <div class="mt-5 grid grid-cols-3 gap-3 rounded-xl bg-slate-50 p-3">
-                    <div>
-                      <p class="text-xs text-slate-500">Difficulty</p>
-                      <p
-                        class="mt-1 text-sm font-semibold"
-                        [class.text-emerald-700]="quiz.difficulty === 'Beginner'"
-                        [class.text-amber-700]="quiz.difficulty === 'Intermediate'"
-                        [class.text-violet-700]="quiz.difficulty === 'Advanced'"
-                      >
-                        {{ quiz.difficulty }}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p class="text-xs text-slate-500">Questions</p>
-                      <p class="mt-1 text-sm font-semibold text-slate-800">
-                        {{ quiz.questionCount }}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p class="text-xs text-slate-500">Time limit</p>
-                      <p class="mt-1 text-sm font-semibold text-slate-800">
-                        {{ quiz.timeLimitMinutes }} min
-                      </p>
-                    </div>
-                  </div>
-
-                  @if (quiz.status === 'In progress') {
-                    <div class="mt-4">
-                      <div class="mb-2 flex items-center justify-between text-xs">
-                        <span class="font-medium text-slate-500">Progress</span>
-                        <span class="font-semibold text-slate-700">
-                          {{ quiz.progress ?? 0 }}%
-                        </span>
-                      </div>
-
-                      <div class="h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          class="h-full rounded-full bg-amber-500 transition-all"
-                          [style.width.%]="quiz.progress ?? 0"
-                        ></div>
-                      </div>
-                    </div>
-                  }
-
-                  @if (quiz.status === 'Completed' && quiz.score !== undefined) {
-                    <div
-                      class="mt-4 flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3"
-                    >
-                      <span class="text-sm font-medium text-emerald-800"> Latest score </span>
-                      <span class="text-lg font-bold text-emerald-800"> {{ quiz.score }}% </span>
-                    </div>
-                  }
-
-                  <div class="mt-auto flex flex-col gap-3 pt-6 sm:flex-row">
-                    <button
-                      type="button"
-                      (click)="startQuiz(quiz)"
-                      class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200"
-                    >
-                      @if (quiz.status === 'In progress') {
-                        Continue quiz <span aria-hidden="true">→</span>
-                      } @else if (quiz.status === 'Completed') {
-                        Retake quiz <span aria-hidden="true">↻</span>
-                      } @else {
-                        Start quiz <span aria-hidden="true">→</span>
-                      }
-                    </button>
-
-                    @if (quiz.status === 'Completed') {
-                      <button
-                        type="button"
-                        (click)="viewResults(quiz)"
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                      >
-                        View results
-                      </button>
-                    }
-                  </div>
-                </div>
+                <div class="h-2 w-full rounded bg-slate-200"></div>
+                <div class="mt-5 h-5 w-2/3 rounded bg-slate-200"></div>
+                <div class="mt-3 h-3 w-full rounded bg-slate-100"></div>
+                <div class="mt-2 h-3 w-4/5 rounded bg-slate-100"></div>
+                <div class="mt-6 h-16 rounded-xl bg-slate-100"></div>
+                <div class="mt-5 h-11 rounded-xl bg-slate-200"></div>
               </article>
             }
           </section>
-        } @else {
+        }
+
+        <!-- Error state -->
+        @if (!loading() && error()) {
           <section
-            class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center"
+            class="rounded-2xl border border-red-200 bg-red-50 p-6"
+            role="alert"
           >
-            <div
-              class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl text-slate-500"
-            >
-              ⌕
-            </div>
+            <h2 class="font-bold text-red-800">
+              Unable to load quizzes
+            </h2>
 
-            <h2 class="mt-4 text-lg font-bold text-slate-900">No quizzes found</h2>
-
-            <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-              Try another search term or clear your filters to see all quizzes.
+            <p class="mt-2 text-sm text-red-700">
+              {{ error() }}
             </p>
 
             <button
               type="button"
-              (click)="clearFilters()"
-              class="mt-5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+              (click)="loadQuizzes()"
+              class="mt-4 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             >
-              Clear search and filters
+              Try again
             </button>
           </section>
         }
 
-        <footer class="mt-8 border-t border-slate-200 py-5 text-center text-xs text-slate-500">
+        @if (!loading() && !error()) {
+
+          <!-- Search and filters -->
+          <section
+            class="mb-5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4"
+          >
+            <div
+              class="grid grid-cols-1 items-center gap-3 sm:grid-cols-[minmax(0,1fr)_160px_160px_auto]"
+            >
+
+              <!-- Search -->
+              <label class="block w-full min-w-0">
+                <span class="sr-only">Search quizzes</span>
+
+                <div
+                  class="flex min-h-12 w-full items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 shadow-sm transition-colors hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/15 sm:px-4"
+                >
+                  <svg
+                    class="h-5 w-5 shrink-0 text-[#007979]"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="m16 16 4 4"></path>
+                  </svg>
+
+                  <input
+                    type="search"
+                    autocomplete="off"
+                    [value]="searchTerm()"
+                    (input)="setSearchTerm($any($event.target).value)"
+                    placeholder="Search courses and quizzes..."
+                    class="min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:ring-0"
+                  />
+                </div>
+              </label>
+
+              <!-- Difficulty -->
+              <label class="block min-w-0">
+                <span class="sr-only">Filter by difficulty</span>
+
+                <select
+                  [value]="difficultyFilter()"
+                  (change)="setDifficultyFilter($any($event.target).value)"
+                  class="h-12 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm outline-none focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/15"
+                >
+                  <option value="All">All difficulties</option>
+                  @for (difficulty of availableDifficulties(); track difficulty) {
+                    <option [value]="difficulty">{{ difficulty }}</option>
+                  }
+                </select>
+              </label>
+
+              <!-- Status -->
+              <label class="hidden min-w-0 sm:block">
+                <span class="sr-only">Filter by status</span>
+
+                <select
+                  [value]="statusFilter()"
+                  (change)="setStatusFilter($any($event.target).value)"
+                  class="h-12 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm outline-none focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/15"
+                >
+                  <option value="All">All statuses</option>
+                  <option value="Available">Available</option>
+                  <option value="In progress">In progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </label>
+
+              <button
+                type="button"
+                (click)="clearFilters()"
+                class="h-11 rounded-xl border border-gray-300 px-4 text-sm font-semibold text-gray-700 transition-colors hover:border-[#007979] hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
+              >
+                Clear
+              </button>
+            </div>
+
+            <!-- Results count and categories -->
+            <div
+              class="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <p class="text-md text-slate-500">
+                Showing
+                <span class="font-semibold text-slate-800">
+                  {{ filteredQuizzes().length }}
+                </span>
+                {{ filteredQuizzes().length === 1 ? 'quiz' : 'quizzes' }}
+              </p>
+
+              <div class="flex flex-wrap gap-2">
+                @for (category of categories(); track category) {
+                  <button
+                    type="button"
+                    (click)="setCategoryFilter(category)"
+                    class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#007979]/30"
+                    [class.bg-[#007979]]="categoryFilter() === category"
+                    [class.text-white]="categoryFilter() === category"
+                    [class.bg-slate-100]="categoryFilter() !== category"
+                    [class.text-slate-600]="categoryFilter() !== category"
+                    [attr.aria-pressed]="categoryFilter() === category"
+                  >
+                    {{ category }}
+                  </button>
+                }
+              </div>
+            </div>
+          </section>
+
+          <!-- Summary cards -->
+          <section
+            class="mb-5 grid grid-cols-3 gap-2 sm:gap-3"
+            aria-label="Quiz status summary"
+          >
+            <button
+              type="button"
+              (click)="selectStatus('Available')"
+              [attr.aria-pressed]="statusFilter() === 'Available'"
+              class="cursor-pointer rounded-xl border bg-white p-3 text-left shadow-sm transition hover:shadow-md sm:p-4"
+              [class.border-blue-500]="statusFilter() === 'Available'"
+              [class.border-slate-200]="statusFilter() !== 'Available'"
+            >
+              <p class="text-md text-center font-medium text-slate-500 sm:text-md">
+                Available
+              </p>
+              <p class="mt-1 text-center text-xl font-bold text-slate-900 sm:text-2xl">
+                {{ availableCount() }}
+              </p>
+            </button>
+
+            <button
+              type="button"
+              (click)="selectStatus('In progress')"
+              [attr.aria-pressed]="statusFilter() === 'In progress'"
+              class="cursor-pointer rounded-xl border bg-white p-3 text-left shadow-sm transition hover:shadow-md sm:p-4"
+              [class.border-amber-500]="statusFilter() === 'In progress'"
+              [class.border-slate-200]="statusFilter() !== 'In progress'"
+            >
+              <p class="text-md text-center font-medium text-slate-500 sm:text-md">
+                In progress
+              </p>
+              <p class="mt-1 text-center text-xl font-bold text-slate-900 sm:text-2xl">
+                {{ inProgressCount() }}
+              </p>
+            </button>
+
+            <button
+              type="button"
+              (click)="selectStatus('Completed')"
+              [attr.aria-pressed]="statusFilter() === 'Completed'"
+              class="cursor-pointer rounded-xl border bg-white p-3 text-left shadow-sm transition hover:shadow-md sm:p-4"
+              [class.border-emerald-500]="statusFilter() === 'Completed'"
+              [class.border-slate-200]="statusFilter() !== 'Completed'"
+            >
+              <p class="text-md text-center font-medium text-slate-500 sm:text-md">
+                Completed
+              </p>
+              <p class="mt-1 text-center text-xl font-bold text-slate-900 sm:text-2xl">
+                {{ completedCount() }}
+              </p>
+            </button>
+          </section>
+
+         
+
+          <!-- Quiz cards -->
+          @if (filteredQuizzes().length > 0) {
+            <section
+              class="grid grid-cols-1 gap-5 lg:grid-cols-2"
+              aria-label="Quiz list"
+            >
+              @for (quiz of filteredQuizzes(); track quiz.id) {
+                <article
+                  class="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-[#12BFC3] hover:shadow-md"
+                >
+                  <div
+                    class="h-1.5"
+                    [class.bg-blue-600]="quiz.difficulty === 'Beginner'"
+                    [class.bg-amber-500]="quiz.difficulty === 'Intermediate'"
+                    [class.bg-violet-600]="quiz.difficulty === 'Advanced'"
+                    [class.bg-[#007979]]="!quiz.difficulty"
+                  ></div>
+
+                  <div class="flex flex-1 flex-col p-5 sm:p-6">
+                    <div class="flex items-start justify-between gap-4">
+                      <div class="flex min-w-0 items-start gap-3">
+                        <div
+                          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#E5F4F4] text-xl text-[#007979]"
+                          aria-hidden="true"
+                        >
+                          {{ getCategoryIcon(quiz.category) }}
+                        </div>
+
+                        <div class="min-w-0">
+                          <p
+                            class="text-xs font-semibold uppercase tracking-wider text-[#007979]"
+                          >
+                            {{ quiz.category }}
+                          </p>
+
+                          <h2
+                            class="mt-1 text-lg font-bold text-slate-900 transition group-hover:text-[#007979]"
+                          >
+                            {{ quiz.title }}
+                          </h2>
+
+                          @if (quiz.provider) {
+                            <p class="mt-1 text-xs font-medium text-[#007979]">
+                              {{ quiz.provider }}
+                            </p>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="flex shrink-0 items-center gap-2">
+                        <span
+                          class="rounded-full px-3 py-1 text-xs font-semibold"
+                          [class.bg-emerald-50]="quiz.status === 'Available'"
+                          [class.text-emerald-700]="quiz.status === 'Available'"
+                          [class.bg-amber-50]="quiz.status === 'In progress'"
+                          [class.text-amber-700]="quiz.status === 'In progress'"
+                          [class.bg-slate-100]="quiz.status === 'Completed'"
+                          [class.text-slate-600]="quiz.status === 'Completed'"
+                        >
+                          {{ quiz.status }}
+                        </span>
+
+                        <button
+                          type="button"
+                          (click)="toggleFavorite(quiz)"
+                          [attr.aria-pressed]="quiz.isFavorite"
+                          [attr.aria-label]="quiz.isFavorite ? 'Remove ' + quiz.title + ' from Popular Practice' : 'Add ' + quiz.title + ' to Popular Practice'"
+                          [attr.title]="quiz.isFavorite ? 'Remove from Popular Practice' : 'Add to Popular Practice'"
+                          class="cursor-pointer inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition focus:outline-none focus:ring-2 focus:ring-[#007979] focus:ring-offset-2"
+                          [class.border-amber-300]="quiz.isFavorite"
+                          [class.bg-amber-50]="quiz.isFavorite"
+                          [class.text-amber-500]="quiz.isFavorite"
+                          [class.border-slate-200]="!quiz.isFavorite"
+                          [class.bg-white]="!quiz.isFavorite"
+                          [class.text-slate-400]="!quiz.isFavorite"
+                          [class.hover:border-amber-300]="!quiz.isFavorite"
+                          [class.hover:bg-amber-50]="!quiz.isFavorite"
+                          [class.hover:text-amber-500]="!quiz.isFavorite"
+                        >
+                          <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            [attr.fill]="quiz.isFavorite ? 'currentColor' : 'none'"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            aria-hidden="true"
+                          >
+                            <path d="m12 3 2.7 5.47 6.03.88-4.36 4.25 1.03 6.01L12 16.77l-5.4 2.84 1.03-6.01-4.36-4.25 6.03-.88L12 3Z" stroke-linejoin="round" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <p class="mt-4 text-sm leading-6 text-slate-600">
+                      {{ quiz.description || 'Practice questions for this course.' }}
+                    </p>
+
+                    @if (quiz.tags.length > 0) {
+                      <div class="mt-4 flex flex-wrap gap-2">
+                        @for (tag of quiz.tags; track tag) {
+                          <span
+                            class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
+                          >
+                            {{ tag }}
+                          </span>
+                        }
+                      </div>
+                    }
+
+                    <div class="mt-5 grid grid-cols-4 gap-3 rounded-xl bg-slate-50 p-3">
+                      <div>
+                        <p class="text-xs text-slate-500">Difficulty</p>
+                        <p
+                          class="mt-1 text-sm font-semibold text-slate-800"
+                          [class.text-emerald-700]="quiz.difficulty === 'Beginner'"
+                          [class.text-amber-700]="quiz.difficulty === 'Intermediate'"
+                          [class.text-violet-700]="quiz.difficulty === 'Advanced'"
+                        >
+                          {{ quiz.difficulty || 'Not specified' }}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p class="text-xs text-slate-500">Topics</p>
+                        <p class="mt-1 text-sm font-semibold text-slate-800">
+                          {{ quiz.topicCount }}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p class="text-xs text-slate-500">Questions</p>
+                        <p class="mt-1 text-sm font-semibold text-slate-800">
+                          {{ quiz.questionCount }}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p class="text-xs text-slate-500">Time limit</p>
+                        <p class="mt-1 text-sm font-semibold text-slate-800">
+                          {{ quiz.timeLimitMinutes > 0 ? quiz.timeLimitMinutes + ' min' : 'Flexible' }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="mt-auto flex flex-col gap-3 pt-6 sm:flex-row">
+                      <button
+                        type="button"
+                        (click)="startQuiz(quiz)"
+                        class="cursor-pointer inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#007979] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#006666] focus:outline-none focus:ring-4 focus:ring-teal-200"
+                      >
+                        @if (quiz.status === 'In progress') {
+                          Continue practice <span aria-hidden="true">→</span>
+                        } @else if (quiz.status === 'Completed') {
+                          Practice again <span aria-hidden="true">↻</span>
+                        } @else {
+                          Start practice <span aria-hidden="true">→</span>
+                        }
+                      </button>
+
+                      @if (quiz.status === 'Completed') {
+                        <button
+                          type="button"
+                          (click)="viewResults(quiz)"
+                          class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                        >
+                          View results
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </article>
+              }
+            </section>
+          } @else {
+            <section
+              class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center"
+            >
+              <div
+                class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E5F4F4] text-2xl text-[#007979]"
+                aria-hidden="true"
+              >
+                ⌕
+              </div>
+
+              <h2 class="mt-4 text-lg font-bold text-slate-900">
+                No quizzes found
+              </h2>
+
+              <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                Try another search term or clear your filters to see all courses.
+              </p>
+
+              <button
+                type="button"
+                (click)="clearFilters()"
+                class="mt-5 rounded-xl bg-[#007979] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006666]"
+              >
+                Clear search and filters
+              </button>
+            </section>
+          }
+        }
+
+        <footer
+          class="mt-8 border-t border-slate-200 py-5 text-center text-xs text-slate-500"
+        >
           {{ organizationName() }} · Quiz Library
         </footer>
       </div>
     </main>
   `,
 })
-export class QuizListComponent {
-  private readonly organizationContext = inject(PartnerOrganizationContextService);
+export class QuizListComponent implements OnInit {
+  private readonly organizationContext = inject(
+    PartnerOrganizationContextService,
+  );
+
+  private readonly courseService = inject(TestCourseService);
+  private readonly topicService = inject(TestTopicService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+private readonly questionService = inject(TestQuestionService); // add
 
   readonly organizationName = computed(
-    () => this.organizationContext.organization()?.name?.trim() || 'Organization',
+    () =>
+      this.organizationContext.organization()?.name?.trim() ||
+      'Organization',
   );
 
   readonly searchTerm = signal('');
@@ -503,89 +523,75 @@ export class QuizListComponent {
   readonly statusFilter = signal('All');
   readonly categoryFilter = signal('All');
 
-  // Sample data: replace with organization-scoped quizzes from the quiz service.
-  readonly quizzes = signal<QuizListItem[]>([
-    {
-      id: 'cyber-basics',
-      title: 'Cybersecurity Fundamentals',
-      description:
-        'Review core security concepts, common threats, and practical ways to protect systems and information.',
-      category: 'Cybersecurity',
-      difficulty: 'Beginner',
-      questionCount: 15,
-      timeLimitMinutes: 20,
-      status: 'Available',
-      tags: ['Security basics', 'Threats', 'Best practices'],
-    },
-    {
-      id: 'cloud-essentials',
-      title: 'Cloud Computing Essentials',
-      description:
-        'Check your understanding of cloud service models, deployment types, and shared responsibility.',
-      category: 'Cloud',
-      difficulty: 'Intermediate',
-      questionCount: 20,
-      timeLimitMinutes: 30,
-      status: 'In progress',
-      progress: 45,
-      tags: ['Cloud concepts', 'Infrastructure', 'Services'],
-    },
-    {
-      id: 'typescript-core',
-      title: 'TypeScript Core Concepts',
-      description:
-        'Practice types, interfaces, narrowing, and the language features used in modern Angular applications.',
-      category: 'Programming',
-      difficulty: 'Intermediate',
-      questionCount: 18,
-      timeLimitMinutes: 25,
-      status: 'Available',
-      tags: ['TypeScript', 'Web development', 'Angular'],
-    },
-    {
-      id: 'network-security',
-      title: 'Network Security Assessment',
-      description:
-        'Test your knowledge of network defenses, secure protocols, access control, and risk reduction.',
-      category: 'Cybersecurity',
-      difficulty: 'Advanced',
-      questionCount: 25,
-      timeLimitMinutes: 40,
-      status: 'Completed',
-      score: 88,
-      tags: ['Networking', 'Access control', 'Risk'],
-    },
-    {
-      id: 'cloud-security',
-      title: 'Cloud Security Checkpoint',
-      description:
-        'Apply cloud security principles to identity, configuration, monitoring, and data protection scenarios.',
-      category: 'Cloud',
-      difficulty: 'Advanced',
-      questionCount: 12,
-      timeLimitMinutes: 20,
-      status: 'Available',
-      tags: ['IAM', 'Monitoring', 'Data protection'],
-    },
-    {
-      id: 'web-foundations',
-      title: 'Web Development Foundations',
-      description:
-        'Reinforce foundational knowledge of browser behavior, HTML, CSS, and JavaScript.',
-      category: 'Programming',
-      difficulty: 'Beginner',
-      questionCount: 10,
-      timeLimitMinutes: 15,
-      status: 'Completed',
-      score: 94,
-      tags: ['HTML', 'CSS', 'JavaScript'],
-    },
-  ]);
+  readonly courses = signal<TestCourse[]>([]);
+  readonly favoriteCourseIds = signal<string[]>([]);
+  readonly topicCounts = signal<Record<string, number>>({});
+  readonly loading = signal(true);
+  readonly error = signal('');
+  readonly questionCounts = signal<Record<string, number>>({});
+
+  /**
+   * Normalize course records for the existing quiz-list presentation.
+   *
+   * Courses are the source of practice quizzes. Optional metadata is
+   * read defensively so missing fields do not prevent the list rendering.
+   */
+  readonly quizzes = computed<QuizListItem[]>(() =>
+    this.courses().map((course) => {
+      const record = course as TestCourse & Record<string, unknown>;
+
+      const category =
+        this.readString(record, 'category') ||
+        this.readString(record, 'programName') ||
+        this.readString(record, 'provider') ||
+        (record.type === 'certification' ? 'Certification' : 'Course');
+
+      const difficulty = this.normalizeDifficulty(
+        this.readString(record, 'difficulty') ||
+          this.readString(record, 'level'),
+      );
+
+      const tags = this.readStringArray(record, 'tags');
+
+      const questionCount =
+  this.questionCounts()[String(record.id ?? '')] ??
+  this.readNumber(record, 'questionCount');
+
+      const timeLimitMinutes =
+        this.readNumber(record, 'timeLimitMinutes') ||
+        this.readNumber(record, 'timeLimit');
+
+      return {
+        id: String(record.id ?? ''),
+        slug: this.readString(record, 'slug') || String(record.id ?? ''),
+        title: this.readString(record, 'name') || 'Untitled course',
+        description: this.readString(record, 'description'),
+        category,
+        difficulty,
+        questionCount,
+        topicCount: this.topicCounts()[String(record.id ?? '')] ?? this.getEmbeddedTopicCount(record),
+        timeLimitMinutes,
+        status: 'Available' as QuizStatus,
+        isFavorite: this.favoriteCourseIds().includes(String(record.id ?? '')),
+        tags,
+        provider: this.readString(record, 'provider'),
+        type: this.readString(record, 'type'),
+      };
+    }).filter((quiz) => quiz.id.length > 0),
+  );
 
   readonly categories = computed(() => [
     'All',
     ...new Set(this.quizzes().map((quiz) => quiz.category)),
   ]);
+
+  readonly availableDifficulties = computed(() =>
+    [...new Set(
+      this.quizzes()
+        .map((quiz) => quiz.difficulty)
+        .filter((difficulty): difficulty is QuizDifficulty => Boolean(difficulty)),
+    )],
+  );
 
   readonly filteredQuizzes = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
@@ -594,7 +600,13 @@ export class QuizListComponent {
     const category = this.categoryFilter();
 
     return this.quizzes().filter((quiz) => {
-      const searchableText = [quiz.title, quiz.description, quiz.category, ...quiz.tags]
+      const searchableText = [
+        quiz.title,
+        quiz.description,
+        quiz.category,
+        quiz.provider ?? '',
+        ...quiz.tags,
+      ]
         .join(' ')
         .toLowerCase();
 
@@ -611,6 +623,7 @@ export class QuizListComponent {
     () => this.quizzes().filter((quiz) => quiz.status === 'Available').length,
   );
 
+  // Learner-attempt integration can populate these statuses when available.
   readonly inProgressCount = computed(
     () => this.quizzes().filter((quiz) => quiz.status === 'In progress').length,
   );
@@ -621,8 +634,161 @@ export class QuizListComponent {
 
   readonly completionPercent = computed(() => {
     const total = this.quizzes().length;
-    return total ? Math.round((this.completedCount() / total) * 100) : 0;
+
+    return total
+      ? Math.round((this.completedCount() / total) * 100)
+      : 0;
   });
+
+  async ngOnInit(): Promise<void> {
+    await this.loadQuizzes();
+  }
+
+  /**
+   * Load the available courses for the current organization.
+   * TestCourseService remains responsible for the Firebase query and access scope.
+   */
+  async loadQuizzes(): Promise<void> {
+    this.loading.set(true);
+    this.error.set('');
+
+    try {
+      const organizationId =
+        this.route.snapshot.paramMap.get('organizationId');
+
+      this.loadFavoriteCourseIds(organizationId);
+
+      const courses =
+        await this.courseService.getAvailableCourses(organizationId);
+
+      const availableCourses = courses ?? [];
+      this.courses.set(availableCourses);
+
+      // Topics live in the separate `testTopics` collection, so the count
+      // must be loaded by course ID instead of relying on a missing field
+      // in the `testCourses` document.
+      const resolvedTopicCounts: Record<string, number> = {};
+const resolvedQuestionCounts: Record<string, number> = {};
+
+await Promise.all(
+  availableCourses.map(async (course) => {
+    const courseId = String(course.id ?? '').trim();
+
+    if (!courseId) {
+      return;
+    }
+
+    const record = course as TestCourse & Record<string, unknown>;
+    const isPlatform = course.scope === 'platform';
+
+    // Platform content is owned by null; organization content by the org.
+    const ownerId = isPlatform ? null : organizationId?.trim() || null;
+    const canQuery = isPlatform || ownerId !== null;
+    const scope = isPlatform ? 'platform' : 'organization';
+
+    const [topicCount, questionCount] = await Promise.all([
+      canQuery
+        ? this.topicService
+            .getActiveTopics(ownerId, courseId)
+            .then((topics) => topics.length)
+            .catch((topicError) => {
+              console.warn(`Unable to load topic count for "${courseId}".`, topicError);
+              return null;
+            })
+        : Promise.resolve(null),
+
+      canQuery
+        ? this.questionService
+            .getPublishedQuestionCount(ownerId, courseId, [], scope)
+            .catch((questionError) => {
+              console.warn(`Unable to load question count for "${courseId}".`, questionError);
+              return null;
+            })
+        : Promise.resolve(null),
+    ]);
+
+    resolvedTopicCounts[courseId] =
+      topicCount ?? this.getEmbeddedTopicCount(record);
+
+    if (questionCount !== null) {
+      resolvedQuestionCounts[courseId] = questionCount;
+    }
+  }),
+);
+
+this.topicCounts.set(resolvedTopicCounts);
+this.questionCounts.set(resolvedQuestionCounts);
+    } catch (error) {
+      console.error('Failed to load Test Center quizzes:', error);
+
+      this.courses.set([]);
+      this.error.set(
+        'We could not load the available courses right now. Please try again.',
+      );
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /**
+   * Toggle a course's learner-specific Popular Practice favorite.
+   *
+   * Favorites are stored per organization in browser storage so the quiz
+   * list and Learning & Assessment dashboard can read the same selection.
+   */
+  toggleFavorite(quiz: QuizListItem): void {
+    const favorites = new Set(this.favoriteCourseIds());
+
+    if (favorites.has(quiz.id)) {
+      favorites.delete(quiz.id);
+    } else {
+      favorites.add(quiz.id);
+    }
+
+    const nextFavorites = [...favorites];
+    this.favoriteCourseIds.set(nextFavorites);
+    this.persistFavoriteCourseIds(nextFavorites);
+  }
+
+  private favoriteStorageKey(organizationId: string | null): string {
+    return `zebron:test-center:favorites:${organizationId?.trim() || 'platform'}`;
+  }
+
+  private loadFavoriteCourseIds(organizationId: string | null): void {
+    if (typeof localStorage === 'undefined') {
+      this.favoriteCourseIds.set([]);
+      return;
+    }
+
+    try {
+      const stored = localStorage.getItem(this.favoriteStorageKey(organizationId));
+      const parsed: unknown = stored ? JSON.parse(stored) : [];
+
+      this.favoriteCourseIds.set(
+        Array.isArray(parsed)
+          ? parsed.filter((id): id is string => typeof id === 'string')
+          : [],
+      );
+    } catch (error) {
+      console.warn('Unable to read Popular Practice favorites:', error);
+      this.favoriteCourseIds.set([]);
+    }
+  }
+
+  private persistFavoriteCourseIds(courseIds: string[]): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        this.favoriteStorageKey(this.route.snapshot.paramMap.get('organizationId')),
+        JSON.stringify(courseIds),
+      );
+    } catch (error) {
+      console.warn('Unable to save Popular Practice favorites:', error);
+    }
+  }
 
   setSearchTerm(value: string): void {
     this.searchTerm.set(value);
@@ -636,9 +802,10 @@ export class QuizListComponent {
     this.statusFilter.set(value);
   }
 
-  /** Click a summary card to filter by status; click it again to show all. */
   selectStatus(status: QuizStatus): void {
-    this.statusFilter.set(this.statusFilter() === status ? 'All' : status);
+    this.statusFilter.set(
+      this.statusFilter() === status ? 'All' : status,
+    );
   }
 
   setCategoryFilter(value: string): void {
@@ -653,25 +820,130 @@ export class QuizListComponent {
   }
 
   getCategoryIcon(category: string): string {
-    switch (category) {
-      case 'Cybersecurity':
+    switch (category.toLowerCase()) {
+      case 'cybersecurity':
         return '⌘';
-      case 'Cloud':
+      case 'cloud':
         return '☁';
-      case 'Programming':
+      case 'programming':
         return '</>';
+      case 'certification':
+        return '★';
       default:
         return '▤';
     }
   }
 
-  startQuiz(quiz: QuizListItem): void {
-    // Update this route to match your existing organization-scoped quiz runner.
-    void this.router.navigate(['/test-center/quizzes', quiz.id]);
-  }
+  /**
+   * Navigate using the organization-scoped learner route when an
+   * organization ID is present; otherwise use the standard Test Center.
+   */
+ startQuiz(quiz: QuizListItem): void {
+  const baseRoute = this.learnerBaseRoute();
+
+  void this.router.navigate([
+    baseRoute,
+    'quiz-details',
+    quiz.slug,
+  ]);
+}
 
   viewResults(quiz: QuizListItem): void {
-    // Update this route to match your existing organization-scoped quiz results page.
-    void this.router.navigate(['/test-center/quizzes', quiz.id, 'results']);
+    const baseRoute = this.learnerBaseRoute();
+
+    void this.router.navigate([
+      baseRoute,
+      'courses',
+      quiz.slug,
+    ]);
+  }
+
+  private learnerBaseRoute(): string {
+    const organizationId =
+      this.route.snapshot.paramMap.get('organizationId');
+
+    return organizationId
+      ? `/partner/org/${organizationId}/learn/test-center`
+      : '/test-center';
+  }
+
+  /**
+   * Fallback for platform courses or when topic metadata is already
+   * embedded in a course document. Organization course counts are
+   * normally retrieved from the `testTopics` collection.
+   */
+  private getEmbeddedTopicCount(
+    record: Record<string, unknown>,
+  ): number {
+    const explicitCount =
+      this.readNumber(record, 'topicCount') ||
+      this.readNumber(record, 'topicsCount') ||
+      this.readNumber(record, 'totalTopics');
+
+    if (explicitCount > 0) {
+      return explicitCount;
+    }
+
+    const topics = record['topics'];
+
+    return Array.isArray(topics) ? topics.length : 0;
+  }
+
+  private readString(
+    record: Record<string, unknown>,
+    key: string,
+  ): string {
+    const value = record[key];
+
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private readNumber(
+    record: Record<string, unknown>,
+    key: string,
+  ): number {
+    const value = record[key];
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Math.max(0, value);
+    }
+
+    return 0;
+  }
+
+  private readStringArray(
+    record: Record<string, unknown>,
+    key: string,
+  ): string[] {
+    const value = record[key];
+
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.filter(
+      (item): item is string =>
+        typeof item === 'string' && item.trim().length > 0,
+    );
+  }
+
+  private normalizeDifficulty(value: string): QuizDifficulty {
+    switch (value.trim().toLowerCase()) {
+      case 'beginner':
+      case 'easy':
+        return 'Beginner';
+
+      case 'intermediate':
+      case 'medium':
+        return 'Intermediate';
+
+      case 'advanced':
+      case 'hard':
+        return 'Advanced';
+
+      default:
+        return 'Beginner';
+    }
   }
 }
+

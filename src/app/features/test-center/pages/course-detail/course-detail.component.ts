@@ -1,1035 +1,419 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+interface StudyLesson {
+  id: string;
+  title: string;
+  duration: string;
+  summary: string;
+  content: string[];
+  videoUrl?: string;
+}
 
-import { MatIconModule } from '@angular/material/icon';
+interface StudyModule {
+  id: string;
+  title: string;
+  description: string;
+  lessons: StudyLesson[];
+}
 
-import { TestCourse } from '../../models/test-course.model';
-import { TestCourseService } from '../../services/test-course.service';
-import { TestStore } from '../../store/test.store';
-import { OrganizationContextService } from '../../../../core/services/organization-context.service';
+interface StudyCourse {
+  slug: string;
+  title: string;
+  category: string;
+  level: string;
+  duration: string;
+  description: string;
+  outcomes: string[];
+  modules: StudyModule[];
+}
 
 @Component({
-  selector: 'app-test-course-detail',
-
+  selector: 'app-course-details',
   standalone: true,
-
-  imports: [RouterLink, MatIconModule],
-
+  imports: [CommonModule, RouterLink],
   template: `
-    <main class="min-h-screen bg-gray-50">
-      <!-- ===================================================
-           HEADER
-           =================================================== -->
-
-      <header
-        class="border-b
-               border-white/10
-               bg-[#032D42]"
-      >
-        <div
-          class="mx-auto
-                 flex
-                 max-w-7xl
-                 items-center
-                 justify-between
-                 gap-4
-                 px-5
-                 py-2
-                 sm:px-6
-                 lg:px-8"
-        >
-          <!-- Zebron logo -->
-
-          <a
-            routerLink="/"
-            aria-label="Zebron home"
-            class="flex
-                   items-center
-                   gap-2
-                   text-white"
-          >
-            <img src="/zebron-favicon.svg" alt="" class="h-7 w-7" />
-
-            <span
-              class="text-lg
-                     font-bold
-                     tracking-tight"
-            >
-              Zebron
-            </span>
+    <main class="min-h-screen bg-slate-50 text-slate-800">
+      <header class="bg-[#032D42] text-white">
+        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
+          <a routerLink="/" class="flex items-center gap-2 font-bold" aria-label="Zebron home">
+            <img src="/zebron-favicon.svg" alt="" class="h-8 w-8" />
+            <span class="text-lg">Zebron <span class="font-normal text-cyan-200">Learning</span></span>
           </a>
-
-          <!-- Desktop navigation -->
-
-          <nav
-            class="hidden
-                   items-center
-                   gap-6
-                   md:flex"
-            aria-label="Primary navigation"
-          >
-            <a
-              routerLink="/resources"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              Resources
-            </a>
-
-            <a
-              routerLink="/find"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              Find Jobs
-            </a>
-
-            <a
-              [routerLink]="learnerBaseRoute()"
-              class="text-sm
-                     font-semibold
-                     text-[#12BFC3]"
-              aria-current="page"
-            >
-              Test Center
-            </a>
-
-            <a
-              routerLink="/about"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              About
-            </a>
-
-            <a
-              routerLink="/contact"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              Contact
-            </a>
-          </nav>
+          <a [routerLink]="learnerBaseRoute()" class="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10">
+            ← All courses
+          </a>
         </div>
       </header>
 
-      <!-- ===================================================
-           LOADING COURSE
-           =================================================== -->
-
-      @if (loading()) {
-        <section
-          class="mx-auto
-                 max-w-5xl
-                 px-5
-                 py-12
-                 text-center
-                 sm:px-6
-                 lg:px-8"
-        >
-          <div
-            class="mx-auto
-                   h-8
-                   w-8
-                   animate-spin
-                   rounded-full
-                   border-4
-                   border-[#E5F4F4]
-                   border-t-[#007979]"
-            aria-label="Loading"
-          ></div>
-
-          <p
-            class="mt-3
-                   text-sm
-                   text-gray-500"
-          >
-            Loading course...
-          </p>
-        </section>
-      }
-
-      <!-- ===================================================
-           COURSE ERROR
-           =================================================== -->
-
-      @if (!loading() && error()) {
-        <section
-          class="mx-auto
-                 max-w-5xl
-                 px-5
-                 py-10
-                 sm:px-6
-                 lg:px-8"
-        >
-          <div
-            class="rounded-xl
-                   border
-                   border-red-200
-                   bg-red-50
-                   p-6
-                   text-center"
-          >
-            <div
-              class="mx-auto
-                     flex
-                     h-11
-                     w-11
-                     items-center
-                     justify-center
-                     rounded-full
-                     bg-red-100
-                     text-red-600"
-            >
-              <mat-icon aria-hidden="true"> error_outline </mat-icon>
+      <section class="bg-gradient-to-br from-[#032D42] to-[#07556A] px-5 py-10 text-white sm:px-6 lg:px-8">
+        <div class="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
+          <div>
+            <div class="mb-4 flex flex-wrap gap-2">
+              <span class="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-bold uppercase tracking-wide text-cyan-100">{{ course().category }}</span>
+              <span class="rounded-full border border-white/20 px-3 py-1 text-xs">{{ course().level }}</span>
+              <span class="rounded-full border border-white/20 px-3 py-1 text-xs">{{ course().duration }}</span>
             </div>
-
-            <h1
-              class="mt-3
-                     text-lg
-                     font-bold
-                     text-gray-900"
-            >
-              Course not found
-            </h1>
-
-            <p
-              class="mt-1
-                     text-sm
-                     text-gray-600"
-            >
-              {{ error() }}
-            </p>
-
-            <a
-              routerLink="/test-center"
-              class="mt-4
-                     inline-flex
-                     rounded-lg
-                     bg-[#007979]
-                     px-4
-                     py-2
-                     text-sm
-                     font-semibold
-                     text-white
-                     transition
-                     hover:bg-[#006666]"
-            >
-              Back to Test Center
-            </a>
+            <p class="text-sm font-semibold uppercase tracking-[.18em] text-cyan-200">Course</p>
+            <h1 class="mt-2 max-w-3xl text-3xl font-extrabold tracking-tight sm:text-4xl">{{ course().title }}</h1>
+            <p class="mt-4 max-w-3xl text-base leading-7 text-slate-200">{{ course().description }}</p>
+            <div class="mt-6 flex flex-wrap gap-3">
+              <button type="button" (click)="startLearning()" class="rounded-lg bg-cyan-300 px-5 py-3 text-sm font-bold text-[#032D42] hover:bg-cyan-200">
+                {{ activeLesson() ? 'Continue studying' : 'Start studying' }}
+              </button>
+              <span class="self-center text-sm text-slate-200">{{ completedCount() }} of {{ totalLessons() }} lessons completed</span>
+            </div>
+            <div class="mt-4 h-2 max-w-xl overflow-hidden rounded-full bg-white/20" role="progressbar" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100" aria-label="Course progress">
+              <div class="h-full rounded-full bg-cyan-300 transition-all" [style.width.%]="progressPercent()"></div>
+            </div>
           </div>
-        </section>
-      }
+          <aside class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
+            <p class="text-sm font-semibold text-cyan-100">What you'll learn</p>
+            <ul class="mt-4 space-y-3">
+              @for (outcome of course().outcomes; track outcome) {
+                <li class="flex gap-2 text-sm leading-5 text-white">
+                  <span class="font-bold text-cyan-300">✓</span><span>{{ outcome }}</span>
+                </li>
+              }
+            </ul>
+          </aside>
+        </div>
+      </section>
 
-      <!-- ===================================================
-           COURSE CONTENT
-           =================================================== -->
+      <div class="mx-auto grid max-w-7xl gap-8 px-5 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:px-8">
+        <section class="min-w-0">
+          <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-[.16em] text-teal-700">Course material</p>
+              <h2 class="mt-1 text-2xl font-bold text-[#032D42]">Study lesson</h2>
+            </div>
+            @if (activeLesson()) {
+              <button type="button" (click)="toggleCompleted(activeLesson()!.id)" class="rounded-lg border px-3 py-2 text-sm font-semibold" [class.border-teal-700]="isCompleted(activeLesson()!.id)" [class.text-teal-800]="isCompleted(activeLesson()!.id)" [class.border-slate-300]="!isCompleted(activeLesson()!.id)">
+                {{ isCompleted(activeLesson()!.id) ? '✓ Completed' : 'Mark as complete' }}
+              </button>
+            }
+          </div>
 
-      @if (!loading() && !error() && course()) {
-        <!-- ================================================
-             COURSE HERO
-             ================================================ -->
-
-        <section
-          class="bg-[#032D42]
-                 px-5
-                 py-7
-                 text-white
-                 sm:px-6
-                 lg:px-8"
-        >
-          <div
-            class="mx-auto
-                   max-w-5xl"
-          >
-            <!-- Back link -->
-
-            <a
-              routerLink="/test-center"
-              class="inline-flex
-                     items-center
-                     gap-1
-                     text-sm
-                     font-semibold
-                     text-white/75
-                     transition
-                     hover:text-white"
-            >
-              ← Test Center
-            </a>
-
-            <div
-              class="mt-5
-                     flex
-                     flex-col
-                     gap-5
-                     sm:flex-row
-                     sm:items-start
-                     sm:justify-between"
-            >
-              <!-- Course information -->
-
-              <div class="max-w-3xl">
-                <div
-                  class="flex
-                         flex-wrap
-                         items-center
-                         gap-2"
-                >
-                  <span
-                    class="rounded-full
-                           bg-[#12BFC3]/15
-                           px-2.5
-                           py-1
-                           text-[10px]
-                           font-bold
-                           uppercase
-                           tracking-wider
-                           text-[#7DD3D3]"
-                  >
-                    {{ course()!.type }}
-                  </span>
-
-                  @if (course()!.certificationCode) {
-                    <span
-                      class="rounded-full
-                             border
-                             border-white/20
-                             px-2.5
-                             py-1
-                             text-[10px]
-                             font-semibold
-                             text-white/80"
-                    >
-                      {{ course()!.certificationCode }}
-                    </span>
+          @if (activeLesson(); as lesson) {
+            <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              @if (lesson.videoUrl) {
+                <div class="aspect-video bg-slate-950">
+                  <iframe
+                    class="h-full w-full"
+                    [src]="safeVideoUrl(lesson.videoUrl)"
+                    [title]="lesson.title + ' video lesson'"
+                    loading="lazy"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen>
+                  </iframe>
+                </div>
+              } @else {
+                <div class="flex aspect-video flex-col items-center justify-center bg-gradient-to-br from-[#032D42] to-[#087C83] p-6 text-center text-white">
+                  <span class="mb-3 grid h-14 w-14 place-items-center rounded-full border border-white/30 bg-white/10 text-2xl" aria-hidden="true">▶</span>
+                  <p class="text-lg font-bold">Video lesson slot</p>
+                  <p class="mt-2 max-w-md text-sm text-cyan-50">Add a YouTube/Vimeo embed URL or a hosted MP4 URL to this lesson's <code class="rounded bg-black/20 px-1">videoUrl</code> field.</p>
+                </div>
+              }
+              <div class="p-5 sm:p-7">
+                <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-500">
+                  <span>{{ activeModuleTitle() }}</span>
+                  <span>{{ lesson.duration }}</span>
+                </div>
+                <h2 class="mt-2 text-2xl font-bold text-[#032D42]">{{ lesson.title }}</h2>
+                <p class="mt-3 leading-7 text-slate-600">{{ lesson.summary }}</p>
+                <div class="mt-6 space-y-5">
+                  @for (paragraph of lesson.content; track $index) {
+                    <p class="leading-7 text-slate-700">{{ paragraph }}</p>
                   }
                 </div>
-
-                <h1
-                  class="mt-2
-                         text-2xl
-                         font-bold
-                         tracking-tight
-                         sm:text-3xl"
-                >
-                  {{ course()!.name }}
-                </h1>
-
-                @if (course()!.provider) {
-                  <p
-                    class="mt-1
-                           text-sm
-                           font-medium
-                           text-[#7DD3D3]"
-                  >
-                    {{ course()!.provider }}
-                  </p>
-                }
-
-                @if (course()!.description) {
-                  <p
-                    class="mt-3
-                           max-w-2xl
-                           text-sm
-                           leading-6
-                           text-blue-100
-                           sm:text-base"
-                  >
-                    {{ course()!.description }}
-                  </p>
-                }
+                <div class="mt-8 flex flex-wrap justify-between gap-3 border-t border-slate-100 pt-5">
+                  <button type="button" (click)="previousLesson()" [disabled]="!hasPreviousLesson()" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">← Previous lesson</button>
+                  <button type="button" (click)="nextLesson()" [disabled]="!hasNextLesson()" class="rounded-lg bg-[#007979] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-40">Next lesson →</button>
+                </div>
               </div>
+            </article>
+          } @else {
+            <div class="rounded-xl border border-slate-200 bg-white p-8 text-center">
+              <p class="font-semibold">Select a lesson from the course outline.</p>
+            </div>
+          }
 
-              <!-- Question count -->
-
-              <div
-                class="shrink-0
-                       rounded-xl
-                       border
-                       border-white/10
-                       bg-white/5
-                       px-5
-                       py-4
-                       sm:min-w-40
-                       sm:text-center"
-              >
-                <p
-                  class="text-2xl
-                         font-bold
-                         text-white"
-                >
-                  {{ course()!.questionCount }}
-                </p>
-
-                <p
-                  class="text-xs
-                         text-white/65"
-                >
-                  practice questions
-                </p>
+          <section class="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
+            <h2 class="text-xl font-bold text-[#032D42]">Study notes</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-600">Use this area to review key ideas from the current lesson. The content below is starter material and can be replaced with your course's actual notes.</p>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+              <div class="rounded-xl bg-slate-50 p-4">
+                <p class="text-sm font-bold text-[#032D42]">Remember</p>
+                <p class="mt-1 text-sm leading-6 text-slate-600">Study each concept, connect it to a practical example, and summarize it in your own words.</p>
+              </div>
+              <div class="rounded-xl bg-slate-50 p-4">
+                <p class="text-sm font-bold text-[#032D42]">Practice</p>
+                <p class="mt-1 text-sm leading-6 text-slate-600">After each lesson, identify one thing you can explain without looking at the material.</p>
               </div>
             </div>
-          </div>
+          </section>
         </section>
 
-        <!-- ================================================
-             TOPIC SELECTION
-             ================================================ -->
-
-        <section
-          class="mx-auto
-                 max-w-5xl
-                 px-5
-                 py-7
-                 sm:px-6
-                 lg:px-8"
-        >
-          <div
-            class="grid
-                   gap-7
-                   lg:grid-cols-[1fr_280px]"
-          >
-            <!-- ============================================
-                 TOPICS
-                 ============================================ -->
-
-            <div>
-              <div>
-                <h2
-                  class="text-xl
-                         font-bold
-                         text-[#032D42]"
-                >
-                  Choose your topics
-                </h2>
-
-                <p
-                  class="mt-1
-                         text-sm
-                         text-gray-600"
-                >
-                  Select the areas you want to practice. You can choose one or several topics.
-                </p>
-              </div>
-
-              <!-- ==========================================
-                   SELECT ALL
-                   ========================================== -->
-
-              @if (topics().length > 0) {
-                <div
-                  class="mt-4
-                         flex
-                         items-center
-                         justify-between
-                         gap-4
-                         rounded-lg
-                         border
-                         border-gray-200
-                         bg-white
-                         px-4
-                         py-3"
-                >
-                  <div>
-                    <p
-                      class="text-sm
-                             font-semibold
-                             text-[#032D42]"
-                    >
-                      Select all topics
-                    </p>
-
-                    <p
-                      class="text-xs
-                             text-gray-500"
-                    >
-                      Practice across the entire course.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    class="shrink-0
-                           rounded-lg
-                           border
-                           border-[#007979]
-                           px-3
-                           py-1.5
-                           text-xs
-                           font-semibold
-                           text-[#007979]
-                           transition
-                           hover:bg-[#E5F4F4]"
-                    (click)="toggleAllTopics()"
-                  >
-                    {{ allTopicsSelected() ? 'Clear all' : 'Select all' }}
-                  </button>
-                </div>
-              }
-
-              <!-- ==========================================
-                   TOPIC LOADING
-                   ========================================== -->
-
-              @if (topicsLoading()) {
-                <div
-                  class="mt-4
-                         rounded-xl
-                         border
-                         border-gray-200
-                         bg-white
-                         p-8
-                         text-center"
-                >
-                  <div
-                    class="mx-auto
-                           h-7
-                           w-7
-                           animate-spin
-                           rounded-full
-                           border-4
-                           border-[#E5F4F4]
-                           border-t-[#007979]"
-                    aria-label="Loading topics"
-                  ></div>
-
-                  <p
-                    class="mt-2
-                           text-sm
-                           text-gray-500"
-                  >
-                    Loading topics...
-                  </p>
-                </div>
-              }
-
-              <!-- ==========================================
-                   TOPIC ERROR
-                   ========================================== -->
-
-              @if (!topicsLoading() && topicsError()) {
-                <div
-                  class="mt-4
-                         rounded-xl
-                         border
-                         border-red-200
-                         bg-red-50
-                         p-4
-                         text-sm
-                         text-red-700"
-                >
-                  {{ topicsError() }}
-                </div>
-              }
-
-              <!-- ==========================================
-                   TOPIC LIST
-                   ========================================== -->
-
-              @if (!topicsLoading() && !topicsError() && topics().length > 0) {
-                <div
-                  class="mt-4
-                         space-y-2.5"
-                >
-                  @for (topic of topics(); track topic.id) {
-                    <button
-                      type="button"
-                      class="flex
-                             w-full
-                             items-center
-                             gap-4
-                             rounded-xl
-                             border
-                             p-4
-                             text-left
-                             transition-all
-                             duration-200"
-                      [class.border-[#12BFC3]]="isSelected(topic.id)"
-                      [class.bg-[#E5F4F4]]="isSelected(topic.id)"
-                      [class.border-gray-200]="!isSelected(topic.id)"
-                      [class.bg-white]="!isSelected(topic.id)"
-                      [class.hover:border-[#12BFC3]]="!isSelected(topic.id)"
-                      [class.hover:bg-[#E5F4F4]]="!isSelected(topic.id)"
-                      (click)="toggleTopic(topic.id)"
-                    >
-                      <!-- Selection indicator -->
-
-                      <span
-                        class="flex
-                               h-5
-                               w-5
-                               shrink-0
-                               items-center
-                               justify-center
-                               rounded
-                               border
-                               transition"
-                        [class.border-[#007979]]="isSelected(topic.id)"
-                        [class.bg-[#007979]]="isSelected(topic.id)"
-                        [class.border-gray-300]="!isSelected(topic.id)"
-                      >
-                        @if (isSelected(topic.id)) {
-                          <mat-icon
-                            class="!h-4
-                                   !w-4
-                                   !text-base
-                                   !leading-4
-                                   !text-white"
-                            aria-hidden="true"
-                          >
-                            check
-                          </mat-icon>
-                        }
+        <aside class="h-fit overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div class="border-b border-slate-200 p-5">
+            <p class="text-xs font-bold uppercase tracking-[.16em] text-teal-700">Learning path</p>
+            <h2 class="mt-1 text-xl font-bold text-[#032D42]">Course outline</h2>
+            <p class="mt-1 text-sm text-slate-500">{{ totalLessons() }} lessons · {{ course().modules.length }} modules</p>
+          </div>
+          <div class="divide-y divide-slate-100">
+            @for (module of course().modules; track module.id) {
+              <div class="p-4">
+                <h3 class="text-sm font-bold text-[#032D42]">{{ module.title }}</h3>
+                <p class="mt-1 text-xs leading-5 text-slate-500">{{ module.description }}</p>
+                <div class="mt-3 space-y-1">
+                  @for (lesson of module.lessons; track lesson.id) {
+                    <button type="button" (click)="selectLesson(module.id, lesson.id)" class="flex w-full items-start gap-3 rounded-lg p-3 text-left transition hover:bg-slate-50" [class.bg-teal-50]="activeLessonId() === lesson.id" [attr.aria-current]="activeLessonId() === lesson.id ? 'true' : null">
+                      <span class="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border text-xs font-bold" [class.border-teal-700]="activeLessonId() === lesson.id" [class.bg-teal-700]="isCompleted(lesson.id)" [class.text-white]="isCompleted(lesson.id)" [class.border-slate-300]="!isCompleted(lesson.id) && activeLessonId() !== lesson.id">
+                        {{ isCompleted(lesson.id) ? '✓' : lessonNumber(lesson.id) }}
                       </span>
-
-                      <!-- Topic -->
-
-                      <span
-                        class="min-w-0
-                               flex-1"
-                      >
-                        <span
-                          class="block
-                                 text-sm
-                                 font-bold
-                                 text-[#032D42]"
-                        >
-                          {{ topic.name }}
-                        </span>
-
-                        @if (topic.description) {
-                          <span
-                            class="mt-0.5
-                                   block
-                                   text-xs
-                                   leading-5
-                                   text-gray-600"
-                          >
-                            {{ topic.description }}
-                          </span>
-                        }
-                      </span>
-
-                      <!-- Question count -->
-
-                      <span
-                        class="shrink-0
-                               text-xs
-                               font-medium
-                               text-gray-500"
-                      >
-                        {{ topic.questionCount }}
-                        questions
+                      <span class="min-w-0 flex-1">
+                        <span class="block text-sm font-semibold" [class.text-teal-800]="activeLessonId() === lesson.id" [class.text-slate-700]="activeLessonId() !== lesson.id">{{ lesson.title }}</span>
+                        <span class="mt-1 block text-xs text-slate-500">{{ lesson.duration }}@if (lesson.videoUrl) { · Video }</span>
                       </span>
                     </button>
                   }
                 </div>
-              }
-
-              <!-- ==========================================
-                   NO TOPICS
-                   ========================================== -->
-
-              @if (!topicsLoading() && !topicsError() && topics().length === 0) {
-                <div
-                  class="mt-4
-                         rounded-xl
-                         border
-                         border-dashed
-                         border-gray-300
-                         bg-white
-                         p-8
-                         text-center"
-                >
-                  <div
-                    class="mx-auto
-                           flex
-                           h-11
-                           w-11
-                           items-center
-                           justify-center
-                           rounded-full
-                           bg-[#E5F4F4]
-                           text-[#007979]"
-                  >
-                    <mat-icon aria-hidden="true"> topic </mat-icon>
-                  </div>
-
-                  <h3
-                    class="mt-3
-                           text-sm
-                           font-bold
-                           text-[#032D42]"
-                  >
-                    Topics are coming soon
-                  </h3>
-
-                  <p
-                    class="mt-1
-                           text-xs
-                           text-gray-600"
-                  >
-                    Practice topics for this course haven't been published yet.
-                  </p>
-                </div>
-              }
-            </div>
-
-            <!-- ============================================
-                 PRACTICE SUMMARY
-                 ============================================ -->
-
-            <aside>
-              <div
-                class="sticky
-                       top-4
-                       rounded-xl
-                       border
-                       border-gray-200
-                       bg-white
-                       p-5
-                       shadow-sm"
-              >
-                <div
-                  class="flex
-                         h-10
-                         w-10
-                         items-center
-                         justify-center
-                         rounded-lg
-                         bg-[#E5F4F4]
-                         text-[#007979]"
-                >
-                  <mat-icon aria-hidden="true"> quiz </mat-icon>
-                </div>
-
-                <h2
-                  class="mt-3
-                         text-base
-                         font-bold
-                         text-[#032D42]"
-                >
-                  Your practice test
-                </h2>
-
-                <dl
-                  class="mt-4
-                         space-y-3"
-                >
-                  <div
-                    class="flex
-                           items-center
-                           justify-between
-                           gap-4"
-                  >
-                    <dt
-                      class="text-sm
-                             text-gray-600"
-                    >
-                      Topics
-                    </dt>
-
-                    <dd
-                      class="text-sm
-                             font-bold
-                             text-[#032D42]"
-                    >
-                      {{ selectedTopicCount() }}
-                    </dd>
-                  </div>
-
-                  <div
-                    class="flex
-                           items-center
-                           justify-between
-                           gap-4"
-                  >
-                    <dt
-                      class="text-sm
-                             text-gray-600"
-                    >
-                      Questions
-                    </dt>
-
-                    <dd
-                      class="text-sm
-                             font-bold
-                             text-[#032D42]"
-                    >
-                      {{ selectedQuestionCount() }}
-                    </dd>
-                  </div>
-                </dl>
-
-                <div
-                  class="my-4
-                         border-t
-                         border-gray-100"
-                ></div>
-
-                <p
-                  class="text-xs
-                         leading-5
-                         text-gray-500"
-                >
-                  Select the topics you want to practice. You can configure the number and
-                  difficulty of questions next.
-                </p>
-
-                <button
-                  type="button"
-                  class="mt-5
-                         w-full
-                         rounded-lg
-                         bg-[#007979]
-                         px-4
-                         py-3
-                         text-sm
-                         font-bold
-                         text-white
-                         shadow-sm
-                         transition
-                         hover:bg-[#006666]
-                         disabled:cursor-not-allowed
-                         disabled:bg-gray-300"
-                  [disabled]="selectedTopicCount() === 0"
-                  (click)="continueToSetup()"
-                >
-                  Continue →
-                </button>
-
-                @if (selectedTopicCount() === 0) {
-                  <p
-                    class="mt-2
-                           text-center
-                           text-[11px]
-                           text-gray-500"
-                  >
-                    Select at least one topic
-                  </p>
-                }
               </div>
-            </aside>
+            }
           </div>
-        </section>
-      }
+        </aside>
+      </div>
+
+      <footer class="border-t border-slate-200 bg-white px-5 py-6 text-center text-sm text-slate-500">
+        Study at your own pace. Your progress is kept for this page session while this course uses hardcoded sample data.
+      </footer>
     </main>
   `,
-
-  styles: [],
 })
-export class TestCourseDetailComponent implements OnInit {
-  // =====================================================
-  // DEPENDENCIES
-  // =====================================================
-
+export class CourseDetailsComponent {
   private readonly route = inject(ActivatedRoute);
-
-  private readonly router = inject(Router);
-
-  private readonly courseService = inject(TestCourseService);
-
-  private readonly organizationContext = inject(OrganizationContextService);
-
-  private readonly testStore = inject(TestStore);
-
-  // =====================================================
-  // COURSE STATE
-  // =====================================================
-
-  readonly course = signal<TestCourse | null>(null);
-
-  readonly loading = signal(true);
-
-  readonly error = signal('');
-
-  // =====================================================
-  // TEST STORE STATE
-  // =====================================================
-
-  /**
-   * Topics are owned by TestStore.
-   *
-   * The component reads the signal directly from
-   * the store instead of maintaining another topics
-   * signal locally.
-   */
-  readonly topics = this.testStore.topics;
-
-  /**
-   * Selected topics are also owned by TestStore.
-   */
-  readonly selectedTopics = this.testStore.selectedTopicIds;
-
-  /**
-   * Topic loading/error state is owned by TestStore.
-   */
-  readonly topicsLoading = this.testStore.loading;
-
-  readonly topicsError = this.testStore.error;
-
-  // =====================================================
-  // DERIVED STATE
-  // =====================================================
-
-  readonly selectedTopicCount = computed(() => this.selectedTopics().length);
-
-  readonly selectedQuestionCount = this.testStore.selectedTopicQuestionCount;
-
-  readonly allTopicsSelected = computed(() => {
-    const topics = this.topics();
-
-    const selected = this.selectedTopics();
-
-    return topics.length > 0 && topics.every((topic) => selected.includes(topic.id));
-  });
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly organizationId = computed(
-  () => this.route.snapshot.paramMap.get('organizationId'),
-);
+    () =>
+      this.route.snapshot.paramMap.get('organizationId') ??
+      this.route.parent?.snapshot.paramMap.get('organizationId') ??
+      null,
+  );
 
-readonly learnerBaseRoute = computed(() => {
-  const organizationId = this.organizationId();
+  readonly learnerBaseRoute = computed(() => {
+    const organizationId = this.organizationId();
+    return organizationId
+      ? `/partner/org/${organizationId}/learn/test-center`
+      : '/test-center';
+  });
 
-  return organizationId
-    ? `/partner/org/${organizationId}/learn/test-center`
-    : '/test-center';
-});
+  // Hardcoded demo content for the first UI pass. Replace these records with
+  // Firestore-backed course/module/lesson models when the content workflow is ready.
+  readonly course = signal<StudyCourse>({
+    slug: 'intro-to-cybersecurity',
+    title: 'Introduction to Cybersecurity',
+    category: 'Cybersecurity',
+    level: 'Beginner',
+    duration: 'About 2 hours',
+    description:
+      'Build a foundation in security concepts, common threats, safe digital habits, and the principles used to protect systems and information.',
+    outcomes: [
+      'Explain confidentiality, integrity, and availability.',
+      'Recognize common threats such as phishing and malware.',
+      'Describe practical account and device protection habits.',
+      'Understand the purpose of incident reporting and response.',
+    ],
+    modules: [
+      {
+        id: 'foundations',
+        title: 'Module 1 · Security foundations',
+        description: 'Learn the core principles behind information security.',
+        lessons: [
+          {
+            id: 'cia-triad',
+            title: 'The CIA triad',
+            duration: '8 min',
+            summary: 'Confidentiality, integrity, and availability are three core goals used to reason about information security.',
+            content: [
+              'Confidentiality means information is accessible only to people and systems that are authorized to see it. Access controls, encryption, and careful handling of sensitive information help support confidentiality.',
+              'Integrity means information remains accurate and is changed only in authorized ways. Validation, permissions, audit logs, and cryptographic checks can help detect or prevent unauthorized changes.',
+              'Availability means systems and information are usable when authorized people need them. Backups, resilient design, patching, and recovery planning all contribute to availability.',
+              'A single event can affect more than one goal. For example, ransomware can prevent access to files (availability) and may also expose information (confidentiality).',
+            ],
+          },
+          {
+            id: 'risk-and-assets',
+            title: 'Assets, threats, and risk',
+            duration: '10 min',
+            summary: 'Security decisions begin by identifying what needs protection and what could harm it.',
+            content: [
+              'An asset is something valuable that an organization wants to protect: data, devices, applications, services, credentials, or business operations.',
+              'A threat is a potential cause of harm. A vulnerability is a weakness that a threat could exploit. Risk considers the likelihood and impact of a harmful event in a particular context.',
+              'Controls reduce risk but rarely eliminate it entirely. A useful security program prioritizes controls according to business impact, exposure, and the resources available.',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'common-threats',
+        title: 'Module 2 · Common threats',
+        description: 'Recognize common ways attackers target people and systems.',
+        lessons: [
+          {
+            id: 'phishing',
+            title: 'Phishing and social engineering',
+            duration: '12 min',
+            summary: 'Attackers may manipulate people into revealing information, approving access, or opening malicious content.',
+            content: [
+              'Phishing messages often create urgency, imitate trusted organizations, or encourage a person to open an attachment or visit a fraudulent sign-in page.',
+              'Check the sender and the destination of links carefully. Unexpected requests for passwords, payment, gift cards, authentication codes, or sensitive files deserve extra scrutiny.',
+              'When a message seems suspicious, verify the request through a known, independent channel. Report it using your organization’s approved process rather than forwarding it widely.',
+            ],
+          },
+          {
+            id: 'malware',
+            title: 'Malware and safe downloads',
+            duration: '11 min',
+            summary: 'Malware is software intended to perform harmful or unauthorized actions on a device or network.',
+            content: [
+              'Malware includes ransomware, spyware, trojans, and other malicious programs. It can arrive through unsafe downloads, compromised websites, malicious attachments, or exploited vulnerabilities.',
+              'Install software only from trusted sources, keep systems updated, use approved endpoint protection, and avoid disabling security controls to run an unknown file.',
+              'If you suspect a device is compromised, follow your organization’s incident process. Avoid attempting ad hoc cleanup that could destroy evidence or spread the problem.',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'protect-yourself',
+        title: 'Module 3 · Everyday protection',
+        description: 'Apply safer authentication and device practices.',
+        lessons: [
+          {
+            id: 'authentication',
+            title: 'Passwords and multifactor authentication',
+            duration: '9 min',
+            summary: 'Strong authentication makes it harder for someone to access an account using a stolen password alone.',
+            content: [
+              'Use a unique password or passphrase for each account and consider an approved password manager. Reusing passwords means one compromised service can put other accounts at risk.',
+              'Multifactor authentication adds a second proof of identity. Prefer phishing-resistant methods where supported, and never approve an unexpected authentication prompt.',
+              'Never share one-time codes or recovery codes with someone who contacts you unexpectedly. Report repeated or unfamiliar prompts as a possible sign of attempted account access.',
+            ],
+          },
+          {
+            id: 'incident-response',
+            title: 'Recognizing and reporting an incident',
+            duration: '10 min',
+            summary: 'Quick, accurate reporting helps the appropriate team contain and investigate security events.',
+            content: [
+              'Possible warning signs include unexpected account prompts, suspicious file changes, unusual device behavior, data sent to an unknown recipient, or a lost device that can access work information.',
+              'Use your organization’s reporting channel and provide concise facts: what happened, when it happened, which device or account was involved, and what actions you already took.',
+              'Follow the response team’s instructions. Do not conceal a mistake or assume an event is harmless just because you are unsure whether information was exposed.',
+            ],
+          },
+        ],
+      },
+    ],
+  });
 
-backToCourses(): void {
-  void this.router.navigate([this.learnerBaseRoute()]);
-}
+  readonly activeLessonId = signal('cia-triad');
+  readonly completedLessonIds = signal<string[]>([]);
 
-  // =====================================================
-  // INITIALIZATION
-  // =====================================================
+  readonly allLessons = computed(() =>
+    this.course().modules.flatMap((module) =>
+      module.lessons.map((lesson) => ({ module, lesson })),
+    ),
+  );
 
-  async ngOnInit(): Promise<void> {
-    const slug = this.route.snapshot.paramMap.get('slug');
+  readonly activeEntry = computed(
+    () => this.allLessons().find((entry) => entry.lesson.id === this.activeLessonId()) ?? null,
+  );
 
-    if (!slug) {
-      this.error.set('The course could not be identified.');
+  readonly activeLesson = computed(() => this.activeEntry()?.lesson ?? null);
+  readonly activeModuleTitle = computed(() => this.activeEntry()?.module.title ?? '');
+  readonly totalLessons = computed(() => this.allLessons().length);
+  readonly completedCount = computed(() => this.completedLessonIds().length);
+  readonly progressPercent = computed(() =>
+    this.totalLessons() ? Math.round((this.completedCount() / this.totalLessons()) * 100) : 0,
+  );
 
-      this.loading.set(false);
+  selectLesson(moduleId: string, lessonId: string): void {
+    const exists = this.course().modules.some(
+      (module) => module.id === moduleId && module.lessons.some((lesson) => lesson.id === lessonId),
+    );
+    if (exists) this.activeLessonId.set(lessonId);
+  }
 
-      return;
+  startLearning(): void {
+    if (!this.activeLesson() && this.allLessons().length) {
+      this.activeLessonId.set(this.allLessons()[0].lesson.id);
     }
+  }
 
+  isCompleted(lessonId: string): boolean {
+    return this.completedLessonIds().includes(lessonId);
+  }
+
+  toggleCompleted(lessonId: string): void {
+    this.completedLessonIds.update((completed) =>
+      completed.includes(lessonId)
+        ? completed.filter((id) => id !== lessonId)
+        : [...completed, lessonId],
+    );
+  }
+
+  lessonNumber(lessonId: string): number {
+    return this.allLessons().findIndex((entry) => entry.lesson.id === lessonId) + 1;
+  }
+
+  hasPreviousLesson(): boolean {
+    const index = this.allLessons().findIndex((entry) => entry.lesson.id === this.activeLessonId());
+    return index > 0;
+  }
+
+  hasNextLesson(): boolean {
+    const index = this.allLessons().findIndex((entry) => entry.lesson.id === this.activeLessonId());
+    return index >= 0 && index < this.allLessons().length - 1;
+  }
+
+  previousLesson(): void {
+    const index = this.allLessons().findIndex((entry) => entry.lesson.id === this.activeLessonId());
+    if (index > 0) this.activeLessonId.set(this.allLessons()[index - 1].lesson.id);
+  }
+
+  nextLesson(): void {
+    const index = this.allLessons().findIndex((entry) => entry.lesson.id === this.activeLessonId());
+    if (index >= 0 && index < this.allLessons().length - 1) {
+      this.activeLessonId.set(this.allLessons()[index + 1].lesson.id);
+    }
+  }
+
+  safeVideoUrl(url: string): SafeResourceUrl {
+    const embedUrl = this.toEmbedUrl(url);
+    return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
+  }
+
+  private toEmbedUrl(url: string): string {
+    // Accept YouTube watch/share URLs, direct YouTube embed URLs, and hosted MP4 URLs.
     try {
-      this.loading.set(true);
-
-      this.error.set('');
-
-      // -----------------------------------------------
-      // Load course
-      // -----------------------------------------------
-
-     // Resolve the organization from the current route first.
-// The organization ID may be on a parent route.
-const organizationId =
-  this.route.snapshot.paramMap.get('organizationId') ??
-  this.route.parent?.snapshot.paramMap.get('organizationId') ??
-  this.organizationContext.organizationId();
-
-// Load the course using the resolved organization context.
-const course = await this.courseService.getCourseBySlug(
-  organizationId,
-  slug,
-);
-
-
-
-      if (!course) {
-        this.error.set('The course you requested could not be found.');
-
-        return;
+      const parsed = new URL(url);
+      if (parsed.hostname.includes('youtube.com') && parsed.pathname === '/watch') {
+        const id = parsed.searchParams.get('v');
+        return id ? `https://www.youtube-nocookie.com/embed/${id}` : url;
       }
-
-      this.course.set(course);
-
-      // -----------------------------------------------
-      // Store the selected course
-      // -----------------------------------------------
-
-      this.testStore.setCourse(course);
-
-      // -----------------------------------------------
-      // Load topics through TestStore
-      // -----------------------------------------------
-
-      await this.testStore.loadTopics(course.id);
-    } catch (error) {
-      console.error('Failed to load Test Center course:', error);
-
-      this.error.set('We could not load this course right now.');
-    } finally {
-      this.loading.set(false);
+      if (parsed.hostname === 'youtu.be') {
+        const id = parsed.pathname.replace(/^\/+/, '');
+        return id ? `https://www.youtube-nocookie.com/embed/${id}` : url;
+      }
+      if (parsed.hostname.includes('youtube.com') && parsed.pathname.startsWith('/embed/')) {
+        return `https://www.youtube-nocookie.com${parsed.pathname}${parsed.search}`;
+      }
+    } catch {
+      return url;
     }
-  }
-
-  // =====================================================
-  // TOPIC SELECTION
-  // =====================================================
-
-  toggleTopic(topicId: string): void {
-    this.testStore.toggleTopic(topicId);
-  }
-
-  isSelected(topicId: string): boolean {
-    return this.selectedTopics().includes(topicId);
-  }
-
-  toggleAllTopics(): void {
-    if (this.allTopicsSelected()) {
-      this.testStore.setTopics([]);
-
-      return;
-    }
-
-    this.testStore.setTopics(this.topics().map((topic) => topic.id));
-  }
-
-  // =====================================================
-  // CONTINUE TO SETUP
-  // =====================================================
-
-  continueToSetup(): void {
-    const course = this.course();
-
-    const topics = this.selectedTopics();
-
-    if (!course || topics.length === 0) {
-      return;
-    }
-
-    /*
-     * Course and topics are already in TestStore.
-     *
-     * We explicitly set them here as well so that
-     * the transition into Test Setup is deterministic.
-     */
-
-    this.testStore.setCourse(course);
-
-    this.testStore.setTopics(topics);
-
-    this.router.navigate([
-  this.learnerBaseRoute(),
-  'setup',
-]);
+    return url;
   }
 }

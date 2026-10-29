@@ -1,3 +1,4 @@
+import { getFirestore as getAdminFirestore, FieldValue as AdminFieldValue } from '../../functions/node_modules/firebase-admin/lib/firestore';
 import {
   afterAll,
   beforeAll,
@@ -94,13 +95,13 @@ function initializeAdmin(): void {
   process.env.GOOGLE_CLOUD_PROJECT = PROJECT_ID;
   process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 
-  if (!admin.apps.length) {
+  if (!admin.getApps().length) {
     admin.initializeApp({
       projectId: PROJECT_ID,
     });
   }
 
-  adminDb = admin.firestore();
+  adminDb = getAdminFirestore();
 }
 
 async function createOrganization(): Promise<void> {
@@ -132,8 +133,8 @@ async function createMembership(
       organizationId: ORGANIZATION_ID,
       role,
       active,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: AdminFieldValue.serverTimestamp(),
+      updatedAt: AdminFieldValue.serverTimestamp(),
     });
 }
 
@@ -165,10 +166,10 @@ async function createOnboarding(
       ],
 
       startedAt:
-        admin.firestore.FieldValue.serverTimestamp(),
+        AdminFieldValue.serverTimestamp(),
 
       updatedAt:
-        admin.firestore.FieldValue.serverTimestamp(),
+        AdminFieldValue.serverTimestamp(),
 
       ...overrides,
     });
@@ -323,8 +324,8 @@ afterAll(async () => {
 
   await testEnvironment.cleanup();
 
-  if (admin.apps.length) {
-    await admin.app().delete();
+  if (admin.getApps().length) {
+    await admin.deleteApp(admin.getApp());
   }
 });
 
@@ -697,9 +698,9 @@ it('rejects when onboarding is not currently at first_program', async () => {
         courseCount: 0,
         createdBy: OWNER_UID,
         createdAt:
-          admin.firestore.FieldValue.serverTimestamp(),
+          AdminFieldValue.serverTimestamp(),
         updatedAt:
-          admin.firestore.FieldValue.serverTimestamp(),
+          AdminFieldValue.serverTimestamp(),
       });
 
     const input: FirstProgramInput = {

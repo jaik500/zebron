@@ -72,19 +72,13 @@ async getActiveTopics(
       where('scope', '==', 'platform'),
       where('organizationId', '==', null),
       where('courseId', '==', courseId),
+      where('active', '==', true), // added
     );
 
     const snapshot = await getDocs(platformQuery);
 
     return snapshot.docs
-      .map(
-        (document) =>
-          ({
-            id: document.id,
-            ...document.data(),
-          }) as TestTopic,
-      )
-      .filter((topic) => topic.active === true)
+      .map((document) => ({ id: document.id, ...document.data() }) as TestTopic)
       .sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
@@ -94,19 +88,13 @@ async getActiveTopics(
     this.topicsCollection,
     where('organizationId', '==', organizationId),
     where('courseId', '==', courseId),
+    where('active', '==', true), // added
   );
 
   const snapshot = await getDocs(organizationQuery);
 
   return snapshot.docs
-    .map(
-      (document) =>
-        ({
-          id: document.id,
-          ...document.data(),
-        }) as TestTopic,
-    )
-    .filter((topic) => topic.active === true)
+    .map((document) => ({ id: document.id, ...document.data() }) as TestTopic)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 

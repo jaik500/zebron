@@ -49,6 +49,7 @@ const functionsRequire = createRequire(
 const admin = functionsRequire(
   'firebase-admin',
 ) as typeof import('firebase-admin');
+const { getFirestore: getAdminFirestore } = functionsRequire('firebase-admin/firestore') as typeof import('firebase-admin/firestore');
 
 const { FieldValue } = functionsRequire(
   'firebase-admin/firestore',
@@ -284,17 +285,17 @@ describe('provisionOrganization', () => {
      *
      * We only create the app if one does not already exist.
      */
-    if (!admin.apps.length) {
+    if (!admin.getApps().length) {
       adminApp = admin.initializeApp({
         projectId: PROJECT_ID,
       });
 
       createdAdminApp = true;
     } else {
-      adminApp = admin.app();
+      adminApp = admin.getApp();
     }
 
-    adminDb = admin.firestore();
+    adminDb = getAdminFirestore();
 
     testEnvironment =
       await initializeTestEnvironment({
@@ -350,7 +351,7 @@ describe('provisionOrganization', () => {
      * teardown error.
      */
     if (createdAdminApp && adminApp) {
-      await adminApp.delete();
+      await admin.deleteApp(adminApp);
     }
   });
 

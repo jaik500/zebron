@@ -27,6 +27,7 @@ const functionsRequire = createRequire(
 );
 
 const admin = functionsRequire('firebase-admin') as typeof import('firebase-admin');
+const { getFirestore: getAdminFirestore } = functionsRequire('firebase-admin/firestore') as typeof import('firebase-admin/firestore');
 
 let testEnvironment: RulesTestEnvironment;
 let adminApp: ReturnType<typeof admin.initializeApp>;
@@ -117,14 +118,14 @@ async function getEntitlement(
 }
 
 beforeAll(async () => {
-  if (!admin.apps.length) {
+  if (!admin.getApps().length) {
     adminApp = admin.initializeApp({ projectId: PROJECT_ID });
     createdAdminApp = true;
   } else {
-    adminApp = admin.app();
+    adminApp = admin.getApp();
   }
 
-  db = admin.firestore();
+  db = getAdminFirestore();
 
   testEnvironment = await initializeTestEnvironment({
     projectId: PROJECT_ID,
@@ -151,7 +152,7 @@ afterAll(async () => {
   }
 
   if (createdAdminApp && adminApp) {
-    await adminApp.delete();
+    await admin.deleteApp(adminApp);
   }
 });
 
