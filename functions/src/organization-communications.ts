@@ -606,7 +606,7 @@ export const sendOrganizationCommunication = onCall(
   {
     region: REGION,
     secrets: ["RESEND_API_KEY"],
-    enforceAppCheck: true,
+    enforceAppCheck: false,
   },
   async (request) => {
     const uid = requireAuthenticatedUser(request.auth?.uid);
