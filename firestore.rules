@@ -3512,6 +3512,40 @@ service cloud.firestore {
       allow delete: if isPlatformAdmin();
     }
 
+        // ============================================================
+    // PLATFORM CONTACT MAILBOX
+    // ============================================================
+
+    /*
+     * Written by trusted Cloud Functions (submitContactMessage,
+     * receiveInboundEmail, sendContactReply) via the Admin SDK.
+     * Platform administrators can read messages and update their
+     * mailbox status. Clients never create or rewrite messages.
+     */
+    match /contactMessages/{messageId} {
+
+      allow get, list: if isPlatformAdmin();
+
+      allow create: if false;
+
+      allow update: if isPlatformAdmin()
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(["status", "read", "archived", "updatedAt", "readAt", "archivedAt"]);
+
+      allow delete: if isPlatformAdmin();
+
+      match /replies/{replyId} {
+        allow get, list: if isPlatformAdmin();
+        allow create, update, delete: if false;
+      }
+    }
+
+    match /outboundMessages/{messageId} {
+      allow get, list: if isPlatformAdmin();
+      allow create, update, delete: if false;
+    }
+
     // ============================================================
     // DEFAULT DENY
     // ============================================================
