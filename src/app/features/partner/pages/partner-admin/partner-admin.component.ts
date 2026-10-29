@@ -445,12 +445,17 @@ interface DashboardCard {
                         >
                           <mat-icon>settings</mat-icon>
                         </button>
-                      } @else if (card.enabled && card.id !== 'test-center') {
-                        <mat-icon
-                          class="shrink-0 text-gray-300 transition-colors group-hover:text-[#007979]"
+                      } @else if (card.enabled) {
+                        <!-- Same destination as the card itself. Members see this
+                             on Test Center instead of the settings gear. -->
+                        <a
+                          [routerLink]="dashboardCardRoute(card)"
+                          tabindex="-1"
+                          aria-hidden="true"
+                          class="shrink-0 rounded-lg p-2 text-gray-300 transition-colors group-hover:text-[#007979] hover:bg-teal-50"
                         >
-                          arrow_forward
-                        </mat-icon>
+                          <mat-icon>arrow_forward</mat-icon>
+                        </a>
                       } @else if (!card.enabled) {
                         <span
                           class="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-500"
@@ -586,6 +591,11 @@ export class PartnerAdminComponent implements OnInit {
   );
 
   protected readonly roleLabel = computed(() => {
+    // Platform admins have full access whatever their organization role.
+    if (this.access.isPlatformAdmin()) {
+      return 'Platform Admin';
+    }
+
     switch (this.access.role()) {
       case 'org_owner':
         return 'Owner';
@@ -608,6 +618,11 @@ export class PartnerAdminComponent implements OnInit {
   });
 
   protected readonly accessIcon = computed(() => {
+    // Platform admins have full access whatever their organization role.
+    if (this.access.isPlatformAdmin()) {
+      return 'shield_person';
+    }
+
     switch (this.access.role()) {
       case 'org_owner':
       case 'org_admin':
@@ -626,6 +641,11 @@ export class PartnerAdminComponent implements OnInit {
   });
 
   protected readonly accessDescription = computed(() => {
+    // Platform admins have full access whatever their organization role.
+    if (this.access.isPlatformAdmin()) {
+      return 'Zebron platform administrator — full access to every organization';
+    }
+
     switch (this.access.role()) {
       case 'org_owner':
         return 'Organization owner';

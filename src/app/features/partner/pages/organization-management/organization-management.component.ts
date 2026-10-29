@@ -110,13 +110,18 @@ interface RoleGroup {
             </h2>
 
             <p class=" text-sm text-gray-500">
-              Review onboarding, configuration, and organization membership.
+              @if (canManageOrganization()) {
+                Review onboarding, configuration, and organization membership.
+              } @else {
+                Manage staff, access, and organization members.
+              }
             </p>
           </section>
 
-          <!-- ORGANIZATION SETUP AND CONFIGURATION -->
+          <!-- ORGANIZATION SETUP AND CONFIGURATION: admins and owners only -->
 
-          <div class="grid gap-5 lg:grid-cols-2">
+          @if (canManageOrganization()) {
+          <div class="mb-8 grid gap-5 lg:grid-cols-2">
             <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <div class="flex items-start gap-4">
                 <div
@@ -155,7 +160,7 @@ interface RoleGroup {
                     }
                   </p>
 
-                  @if (!setupComplete() && canManageOrganization()) {
+                  @if (!setupComplete()) {
                     <a
                       mat-flat-button
                       class="mt-4 !bg-[#007979] !text-white"
@@ -173,7 +178,6 @@ interface RoleGroup {
               </div>
             </section>
 
-            @if (canManageOrganization()) {
               <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div class="flex items-start gap-4">
                   <div
@@ -227,17 +231,11 @@ interface RoleGroup {
                   </div>
                 </div>
               </section>
-            }
           </div>
-
-          @if (!canManageOrganization()) {
-            <p class="mt-5 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-              Configuration status is visible only to organization owners and administrators.
-            </p>
           }
 
           <!-- ACCESS CONTROL: collapsed by default -->
-          <section class="mt-8 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <button
               type="button"
               class="flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition hover:bg-gray-50 sm:px-6"
