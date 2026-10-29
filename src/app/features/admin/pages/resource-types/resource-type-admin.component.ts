@@ -8,12 +8,15 @@ import { ResourceTypeStore } from '../../../resource-types/stores/resource-type.
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-resource-type-admin',
 
   standalone: true,
 
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatCheckboxModule],
 
   template: `
     <!-- =====================================================
@@ -154,7 +157,9 @@ import { HotToastService } from '@ngxpert/hot-toast';
             >
               <!-- Name -->
               <div>
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Enter resource type name</mat-label>
+                  <input matInput
                   id="resource-type-name"
                   name="name"
                   type="text"
@@ -162,55 +167,23 @@ import { HotToastService } from '@ngxpert/hot-toast';
                   (ngModelChange)="generateSlug($event)"
                   placeholder="Enter resource type name"
                   required
-                  class="mt-1.5
-           block
-           w-full
-           rounded-lg
-           border
-           border-gray-300
-           bg-white
-           px-3.5
-           py-2.5
-           text-sm
-           text-gray-700
-           focus:border-[#007979]
-           focus:outline-none
-           focus:ring-2
-           focus:ring-[#007979]/20"
                 />
+                </mat-form-field>
               </div>
 
               <!-- Slug -->
               <div>
-                <label
-                  for="resource-type-slug"
-                  class="block
-                         text-sm
-                         font-semibold
-                         text-[#032D42]"
-                >
-                  Slug
-                </label>
 
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Slug</mat-label>
+                  <input matInput
                   id="resource-type-slug"
                   name="slug"
                   type="text"
                   [(ngModel)]="form.slug"
                   readonly
-                  class="mt-1.5
-         block
-         w-full
-         rounded-lg
-         border
-         border-gray-200
-         bg-gray-50
-         px-3.5
-         py-2.5
-         text-sm
-         text-gray-600
-         focus:outline-none"
                 />
+                </mat-form-field>
 
                 <p
                   class="mt-1
@@ -223,37 +196,17 @@ import { HotToastService } from '@ngxpert/hot-toast';
 
               <!-- Description -->
               <div>
-                <label
-                  for="resource-type-description"
-                  class="block
-                         text-sm
-                         font-semibold
-                         text-[#032D42]"
-                >
-                  Description
-                </label>
 
-                <textarea
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Description</mat-label>
+                  <textarea matInput
                   id="resource-type-description"
                   name="description"
                   rows="4"
                   [(ngModel)]="form.description"
                   placeholder="Describe the types of resources that belong here..."
-                  class="mt-1.5
-                         block
-                         w-full
-                         resize-y
-                         rounded-lg
-                         border
-                         border-gray-300
-                         px-3.5
-                         py-2.5
-                         text-sm
-                         focus:border-[#007979]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                 ></textarea>
+                </mat-form-field>
               </div>
 
               <!-- Active / Sort order -->
@@ -268,24 +221,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                          border-gray-200
                          p-4"
                 >
-                  <label
-                    class="flex
-                           items-center
-                           gap-3"
-                  >
-                    <input
-                      type="checkbox"
-                      name="active"
-                      [(ngModel)]="form.active"
-                      class="h-4
-                             w-4
-                             rounded
-                             border-gray-300
-                             text-[#007979]
-                             focus:ring-[#007979]/20"
-                    />
-
-                    <span>
+                  <mat-checkbox class="zb-checkbox--top" name="active" [(ngModel)]="form.active"><span>
                       <span
                         class="block
                                text-sm
@@ -302,41 +238,21 @@ import { HotToastService } from '@ngxpert/hot-toast';
                       >
                         Available for resource selection.
                       </span>
-                    </span>
-                  </label>
+                    </span></mat-checkbox>
                 </div>
 
                 <div>
-                  <label
-                    for="resource-type-sort"
-                    class="block
-                           text-sm
-                           font-semibold
-                           text-[#032D42]"
-                  >
-                    Sort Order
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Sort Order</mat-label>
+                    <input matInput
                     id="resource-type-sort"
                     name="sortOrder"
-                    type="number"
+                    type="number" inputmode="decimal"
                     min="0"
                     [(ngModel)]="form.sortOrder"
-                    class="mt-1.5
-                           block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           px-3.5
-                           py-2.5
-                           text-sm
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
               </div>
 
@@ -475,28 +391,18 @@ import { HotToastService } from '@ngxpert/hot-toast';
                        border-gray-100
                        p-4"
               >
-                <label for="resource-type-search" class="sr-only"> Search resource types </label>
 
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Search resource types</mat-label>
+                  <input matInput
                   id="resource-type-search"
                   name="resourceTypeSearch"
                   type="search"
                   [value]="searchTerm()"
                   (input)="onSearch($event)"
                   placeholder="Search resource types..."
-                  class="block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         px-3.5
-                         py-2.5
-                         text-sm
-                         focus:border-[#007979]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                 />
+                </mat-form-field>
               </div>
 
               <!-- List -->

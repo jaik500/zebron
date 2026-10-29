@@ -12,10 +12,14 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { PlatformRole } from '../../../../core/models/role.model';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-user-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule],
+  imports: [FormsModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
   template: `
     <header class="border-b border-gray-200 bg-[#032D42]">
       <div
@@ -182,21 +186,11 @@ import { PlatformRole } from '../../../../core/models/role.model';
         >
           <!-- Search -->
           <div class="w-full sm:max-w-md">
-            <label for="userSearch" class="sr-only"> Search users </label>
 
-            <div class="relative">
-              <mat-icon
-                class="pointer-events-none
-               absolute left-3 top-1/2
-               -translate-y-1/2
-               !h-5 !w-5
-               !text-[20px]
-               text-gray-400"
-              >
-                search
-              </mat-icon>
-
-              <input
+            <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+              <mat-label>Search users</mat-label>
+              <mat-icon matPrefix class="ml-3 mr-1 !text-gray-400" aria-hidden="true">search</mat-icon>
+              <input matInput
                 id="userSearch"
                 name="userSearch"
                 type="search"
@@ -204,36 +198,13 @@ import { PlatformRole } from '../../../../core/models/role.model';
                 (ngModelChange)="searchTerm.set($event)"
                 placeholder="Search users..."
                 autocomplete="off"
-                class="block w-full
-                       rounded-lg border
-                       border-gray-300
-                       bg-white px-4 py-2.5
-                       pr-10 pl-10 text-sm
-                       text-gray-900
-                       placeholder:text-gray-400
-                       focus:border-[#007979]
-                       focus:outline-none
-                       focus:ring-2
-                       focus:ring-[#007979]/20"
               />
-
               @if (searchTerm()) {
-                <button
-                  type="button"
-                  (click)="clearSearch()"
-                  aria-label="Clear search"
-                  title="Clear search"
-                  class="absolute right-3
-                         top-1/2
-                         -translate-y-1/2
-                         text-gray-400
-                         transition
-                         hover:text-gray-700"
-                >
-                  ✕
+                <button mat-icon-button matSuffix type="button" aria-label="Clear search" (click)="clearSearch()">
+                  <mat-icon>close</mat-icon>
                 </button>
               }
-            </div>
+            </mat-form-field>
 
             <!-- Search result status -->
             @if (searchTerm().trim()) {
@@ -907,45 +878,25 @@ import { PlatformRole } from '../../../../core/models/role.model';
 
                 <!-- Display name -->
                 <div>
-                  <label
-                    for="adminDisplayName"
-                    class="block text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Display name
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Display name</mat-label>
+                    <input matInput
                     id="adminDisplayName"
                     name="adminDisplayName"
                     type="text"
                     [(ngModel)]="form.displayName"
                     required
-                    class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
 
                 <!-- Email -->
                 <div>
-                  <label
-                    for="adminEmail"
-                    class="block text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Email address
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Email address</mat-label>
+                    <input matInput
                     id="adminEmail"
                     name="adminEmail"
                     type="email"
@@ -953,18 +904,8 @@ import { PlatformRole } from '../../../../core/models/role.model';
                     [disabled]="!!editingUser()"
                     required
                     autocomplete="email"
-                    class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           disabled:bg-gray-50
-                           disabled:text-gray-500
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
 
                   @if (editingUser()) {
                     <p
@@ -1005,16 +946,10 @@ import { PlatformRole } from '../../../../core/models/role.model';
                   >
                     <!-- Password -->
                     <div>
-                      <label
-                        for="adminPassword"
-                        class="block text-sm
-                               font-medium
-                               text-gray-700"
-                      >
-                        Password
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Password</mat-label>
+                        <input matInput
                         id="adminPassword"
                         name="adminPassword"
                         type="password"
@@ -1022,16 +957,8 @@ import { PlatformRole } from '../../../../core/models/role.model';
                         autocomplete="new-password"
                         required
                         minlength="6"
-                        class="mt-1.5 block w-full
-                               rounded-lg border
-                               border-gray-300
-                               bg-white px-4 py-2.5
-                               text-sm text-gray-900
-                               focus:border-[#007979]
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
 
                       <p
                         class="mt-1.5 text-xs
@@ -1043,16 +970,10 @@ import { PlatformRole } from '../../../../core/models/role.model';
 
                     <!-- Confirm password -->
                     <div>
-                      <label
-                        for="adminConfirmPassword"
-                        class="block text-sm
-                               font-medium
-                               text-gray-700"
-                      >
-                        Confirm password
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Confirm password</mat-label>
+                        <input matInput
                         id="adminConfirmPassword"
                         name="adminConfirmPassword"
                         type="password"
@@ -1060,51 +981,29 @@ import { PlatformRole } from '../../../../core/models/role.model';
                         autocomplete="new-password"
                         required
                         minlength="6"
-                        class="mt-1.5 block w-full
-                               rounded-lg border
-                               border-gray-300
-                               bg-white px-4 py-2.5
-                               text-sm text-gray-900
-                               focus:border-[#007979]
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
                   </div>
                 }
 
                 <!-- Role -->
                 <div>
-                  <label
-                    for="adminRole"
-                    class="block text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Role
-                  </label>
 
-                  <select
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Role</mat-label>
+                    <mat-select
                     id="adminRole"
                     name="adminRole"
                     [(ngModel)]="form.platformRole"
-                    class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   >
-                    <option [ngValue]="undefined">Standard User</option>
-                    <option value="platform-admin">Platform Administrator</option>
-                    <option value="platform-operator">Platform Operator</option>
-                    <option value="platform-support">Platform Support</option>
-                    <option value="platform-auditor">Platform Auditor</option>
-                  </select>
+                    <mat-option [value]="undefined">Standard User</mat-option>
+                    <mat-option value="platform-admin">Platform Administrator</mat-option>
+                    <mat-option value="platform-operator">Platform Operator</mat-option>
+                    <mat-option value="platform-support">Platform Support</mat-option>
+                    <mat-option value="platform-auditor">Platform Auditor</mat-option>
+                  </mat-select>
+                  </mat-form-field>
                 </div>
 
                 <!-- =================================================
@@ -1128,117 +1027,61 @@ import { PlatformRole } from '../../../../core/models/role.model';
                 >
                   <!-- First name -->
                   <div>
-                    <label
-                      for="adminFirstName"
-                      class="block text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      First name
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>First name</mat-label>
+                      <input matInput
                       id="adminFirstName"
                       name="adminFirstName"
                       type="text"
                       [(ngModel)]="form.firstName"
                       autocomplete="given-name"
-                      class="mt-1.5 block w-full
-                             rounded-lg border
-                             border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Last name -->
                   <div>
-                    <label
-                      for="adminLastName"
-                      class="block text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      Last name
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Last name</mat-label>
+                      <input matInput
                       id="adminLastName"
                       name="adminLastName"
                       type="text"
                       [(ngModel)]="form.lastName"
                       autocomplete="family-name"
-                      class="mt-1.5 block w-full
-                             rounded-lg border
-                             border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Preferred name -->
                   <div>
-                    <label
-                      for="adminPreferredName"
-                      class="block text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      Preferred name
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Preferred name</mat-label>
+                      <input matInput
                       id="adminPreferredName"
                       name="adminPreferredName"
                       type="text"
                       [(ngModel)]="form.preferredName"
-                      class="mt-1.5 block w-full
-                             rounded-lg border
-                             border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Phone -->
                   <div>
-                    <label
-                      for="adminPhone"
-                      class="block text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      Phone
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Phone</mat-label>
+                      <input matInput
                       id="adminPhone"
                       name="adminPhone"
                       type="tel"
                       [(ngModel)]="form.phone"
                       autocomplete="tel"
-                      class="mt-1.5 block w-full
-                             rounded-lg border
-                             border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
                 </div>
 
@@ -1263,172 +1106,88 @@ import { PlatformRole } from '../../../../core/models/role.model';
                 >
                   <!-- Country of origin -->
                   <div>
-                    <label
-                      for="adminCountryOfOrigin"
-                      class="block text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      Country of origin
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Country of origin</mat-label>
+                      <input matInput
                       id="adminCountryOfOrigin"
                       name="adminCountryOfOrigin"
                       type="text"
                       [(ngModel)]="form.countryOfOrigin"
-                      class="mt-1.5 block w-full
-                             rounded-lg border
-                             border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Current country -->
                   <div>
-                    <label
-                      for="adminCurrentCountry"
-                      class="block text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      Current country
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Current country</mat-label>
+                      <input matInput
                       id="adminCurrentCountry"
                       name="adminCurrentCountry"
                       type="text"
                       [(ngModel)]="form.currentCountry"
-                      class="mt-1.5 block w-full
-                             rounded-lg border
-                             border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- City -->
                   <div>
-                    <label
-                      for="adminCity"
-                      class="block text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      City
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>City</mat-label>
+                      <input matInput
                       id="adminCity"
                       name="adminCity"
                       type="text"
                       [(ngModel)]="form.city"
-                      class="mt-1.5 block w-full
-                             rounded-lg border
-                             border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- State -->
                   <div>
-                    <label
-                      for="adminState"
-                      class="block text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      State / Province
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>State / Province</mat-label>
+                      <input matInput
                       id="adminState"
                       name="adminState"
                       type="text"
                       [(ngModel)]="form.state"
-                      class="mt-1.5 block w-full
-                             rounded-lg border
-                             border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Postal code -->
                   <div>
-                    <label
-                      for="adminPostalCode"
-                      class="block text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      ZIP / Postal code
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>ZIP / Postal code</mat-label>
+                      <input matInput
                       id="adminPostalCode"
                       name="adminPostalCode"
                       type="text"
                       [(ngModel)]="form.postalCode"
                       autocomplete="postal-code"
-                      class="mt-1.5 block w-full
-                             rounded-lg border
-                             border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Preferred language -->
                   <div>
-                    <label
-                      for="adminLanguage"
-                      class="block text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      Preferred language
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Preferred language</mat-label>
+                      <input matInput
                       id="adminLanguage"
                       name="adminLanguage"
                       type="text"
                       [(ngModel)]="form.preferredLanguage"
                       placeholder="English, French, etc."
-                      class="mt-1.5 block w-full
-                             rounded-lg border
-                             border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
                 </div>
 
@@ -1449,31 +1208,17 @@ import { PlatformRole } from '../../../../core/models/role.model';
 
                 <!-- Bio -->
                 <div>
-                  <label
-                    for="adminBio"
-                    class="block text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    About
-                  </label>
 
-                  <textarea
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>About</mat-label>
+                    <textarea matInput
                     id="adminBio"
                     name="adminBio"
                     rows="4"
                     maxlength="500"
                     [(ngModel)]="form.bio"
-                    class="mt-1.5 block w-full
-                           resize-y rounded-lg
-                           border border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   ></textarea>
+                  </mat-form-field>
 
                   <p
                     class="mt-1.5 text-xs
@@ -1485,31 +1230,17 @@ import { PlatformRole } from '../../../../core/models/role.model';
 
                 <!-- Website -->
                 <div>
-                  <label
-                    for="adminWebsite"
-                    class="block text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Website / LinkedIn
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Website / LinkedIn</mat-label>
+                    <input matInput
                     id="adminWebsite"
                     name="adminWebsite"
                     type="url"
                     [(ngModel)]="form.website"
                     placeholder="https://example.com"
-                    class="mt-1.5 block w-full
-                           rounded-lg border
-                           border-gray-300
-                           bg-white px-4 py-2.5
-                           text-sm text-gray-900
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
 
                 <!-- =================================================

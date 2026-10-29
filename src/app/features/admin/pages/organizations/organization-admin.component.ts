@@ -26,10 +26,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatButtonModule } from '@angular/material/button';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-organization-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatExpansionModule, MatButtonModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatExpansionModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
   template: `
     <div class="min-h-screen bg-gray-50 mt-16">
       <!-- =========================================================
@@ -49,7 +53,7 @@ import { MatButtonModule } from '@angular/material/button';
 
           </div>
 
-       
+
         </div>
       </header>
 
@@ -118,15 +122,10 @@ import { MatButtonModule } from '@angular/material/button';
                     <!-- Name -->
 
                     <div class="sm:col-span-2">
-                      <label
-                        for="name"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        Organization name
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Organization name</mat-label>
+                        <input matInput
                         id="name"
                         name="name"
                         type="text"
@@ -134,47 +133,25 @@ import { MatButtonModule } from '@angular/material/button';
                         (ngModelChange)="generateSlug()"
                         required
                         placeholder="Maryland Food Bank"
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm text-gray-900
-                               placeholder:text-gray-400
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
 
                     <!-- Slug -->
 
                     <div class="sm:col-span-2">
-                      <label
-                        for="slug"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        Slug
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Slug</mat-label>
+                        <input matInput
                         id="slug"
                         name="slug"
                         type="text"
                         [(ngModel)]="form.slug"
                         required
                         placeholder="maryland-food-bank"
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm text-gray-700
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
 
                       <p class="mt-1.5 text-xs text-gray-500">
                         Automatically generated from the organization name.
@@ -184,31 +161,17 @@ import { MatButtonModule } from '@angular/material/button';
                     <!-- Description -->
 
                     <div class="sm:col-span-2">
-                      <label
-                        for="description"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        Description
-                      </label>
 
-                      <textarea
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Description</mat-label>
+                        <textarea matInput
                         id="description"
                         name="description"
                         rows="4"
                         [(ngModel)]="form.description"
                         placeholder="Describe the organization and the services it provides."
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm text-gray-900
-                               placeholder:text-gray-400
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       ></textarea>
+                      </mat-form-field>
                     </div>
                   </div>
                 </section>
@@ -230,91 +193,49 @@ import { MatButtonModule } from '@angular/material/button';
                     <!-- Website -->
 
                     <div>
-                      <label
-                        for="website"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        Website
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Website</mat-label>
+                        <input matInput
                         id="website"
                         name="website"
                         type="url"
                         [(ngModel)]="form.website"
                         placeholder="https://example.org"
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm
-                               placeholder:text-gray-400
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
 
                     <!-- Phone -->
 
                     <div>
-                      <label
-                        for="phone"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        Phone
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Phone</mat-label>
+                        <input matInput
                         id="phone"
                         name="phone"
                         type="tel"
                         [(ngModel)]="form.phone"
                         placeholder="301-555-1234"
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm
-                               placeholder:text-gray-400
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
 
                     <!-- Email -->
 
                     <div class="sm:col-span-2">
-                      <label
-                        for="email"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        Email
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Email</mat-label>
+                        <input matInput
                         id="email"
                         name="email"
                         type="email"
                         [(ngModel)]="form.email"
                         placeholder="info@example.org"
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm
-                               placeholder:text-gray-400
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
                   </div>
                 </section>
@@ -337,152 +258,82 @@ import { MatButtonModule } from '@angular/material/button';
                     <!-- Address -->
 
                     <div class="sm:col-span-2">
-                      <label
-                        for="address"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        Street address
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Street address</mat-label>
+                        <input matInput
                         id="address"
                         name="address"
                         type="text"
                         [(ngModel)]="form.address"
                         placeholder="123 Main Street"
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm
-                               placeholder:text-gray-400
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
 
                     <!-- City -->
 
                     <div>
-                      <label
-                        for="city"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        City
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>City</mat-label>
+                        <input matInput
                         id="city"
                         name="city"
                         type="text"
                         [(ngModel)]="form.city"
                         placeholder="Baltimore"
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm
-                               placeholder:text-gray-400
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
 
                     <!-- State -->
 
                     <div>
-                      <label
-                        for="state"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        State
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>State</mat-label>
+                        <input matInput
                         id="state"
                         name="state"
                         type="text"
                         maxlength="2"
                         [(ngModel)]="form.state"
                         placeholder="MD"
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm uppercase
-                               placeholder:text-gray-400
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
 
                     <!-- ZIP -->
 
                     <div>
-                      <label
-                        for="zipCode"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        ZIP code
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>ZIP code</mat-label>
+                        <input matInput
                         id="zipCode"
                         name="zipCode"
                         type="text"
                         [(ngModel)]="form.zipCode"
                         placeholder="21201"
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm
-                               placeholder:text-gray-400
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
 
                     <!-- Country -->
 
                     <div>
-                      <label
-                        for="country"
-                        class="block text-sm font-medium
-                               text-gray-700"
-                      >
-                        Country
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Country</mat-label>
+                        <input matInput
                         id="country"
                         name="country"
                         type="text"
                         [(ngModel)]="form.country"
                         placeholder="United States"
-                        class="mt-1 block w-full rounded-lg
-                               border border-gray-300
-                               bg-gray-50 px-4 py-2.5
-                               text-sm
-                               placeholder:text-gray-400
-                               focus:border-[#007979]
-                               focus:bg-white
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
                   </div>
                 </section>
@@ -497,39 +348,9 @@ import { MatButtonModule } from '@angular/material/button';
                   </div>
 
                   <div class="flex flex-wrap gap-6">
-                    <label
-                      class="flex cursor-pointer
-                             items-center gap-3"
-                    >
-                      <input
-                        type="checkbox"
-                        name="verified"
-                        [(ngModel)]="form.verified"
-                        class="h-4 w-4 rounded
-                               border-gray-300
-                               text-[#007979]
-                               focus:ring-[#007979]"
-                      />
+                    <mat-checkbox name="verified" [(ngModel)]="form.verified">Verified organization</mat-checkbox>
 
-                      <span class="text-sm text-gray-700"> Verified organization </span>
-                    </label>
-
-                    <label
-                      class="flex cursor-pointer
-                             items-center gap-3"
-                    >
-                      <input
-                        type="checkbox"
-                        name="active"
-                        [(ngModel)]="form.active"
-                        class="h-4 w-4 rounded
-                               border-gray-300
-                               text-[#007979]
-                               focus:ring-[#007979]"
-                      />
-
-                      <span class="text-sm text-gray-700"> Active organization </span>
-                    </label>
+                    <mat-checkbox name="active" [(ngModel)]="form.active">Active organization</mat-checkbox>
                   </div>
                 </section>
 
@@ -907,74 +728,48 @@ import { MatButtonModule } from '@angular/material/button';
                   <!-- User -->
 
                   <div>
-                    <label
-                      for="memberUser"
-                      class="mb-1.5 block
-                             text-sm font-medium
-                             text-gray-700"
-                    >
-                      User
-                    </label>
 
-                    <select
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>User</mat-label>
+                      <mat-select
                       id="memberUser"
                       name="memberUser"
                       [ngModel]="selectedMemberUserId()"
                       (ngModelChange)="selectedMemberUserId.set($event)"
-                      class="w-full rounded-lg
-                             border border-gray-300
-                             bg-white px-3 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     >
-                      <option value="">Select a user</option>
+                      <mat-option value="">Select a user</mat-option>
 
                       @for (user of userStore.users(); track user.id) {
-                        <option [value]="user.id">
+                        <mat-option [value]="user.id">
                           {{ user.displayName || user.preferredName || user.email || user.id }}
                           @if (user.email) {
                             — {{ user.email }}
                           }
-                        </option>
+                        </mat-option>
                       }
-                    </select>
+                    </mat-select>
+                    </mat-form-field>
                   </div>
 
                   <!-- Role -->
 
                   <div>
-                    <label
-                      for="memberRole"
-                      class="mb-1.5 block
-                             text-sm font-medium
-                             text-gray-700"
-                    >
-                      Role
-                    </label>
 
-                    <select
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Role</mat-label>
+                      <mat-select
                       id="memberRole"
                       name="memberRole"
                       [ngModel]="selectedMemberRole()"
                       (ngModelChange)="selectedMemberRole.set($event)"
-                      class="w-full rounded-lg
-                             border border-gray-300
-                             bg-white px-3 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     >
                       @for (role of membershipRoles; track role) {
-                        <option [value]="role">
+                        <mat-option [value]="role">
                           {{ role | titlecase }}
-                        </option>
+                        </mat-option>
                       }
-                    </select>
+                    </mat-select>
+                    </mat-form-field>
                   </div>
 
                   <!-- Actions -->
@@ -1117,23 +912,20 @@ import { MatButtonModule } from '@angular/material/button';
                       <!-- Role -->
 
                       <div>
-                        <select
+                        <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                          <mat-label>Role</mat-label>
+                          <mat-select
                           [ngModel]="membership.role"
                           (ngModelChange)="updateMemberRole(membership, $event)"
                           [disabled]="membershipSaving()"
-                          class="w-full rounded-lg
-                                 border border-gray-300
-                                 bg-white px-2.5 py-2
-                                 text-sm text-gray-700
-                                 focus:border-[#007979]
-                                 focus:outline-none"
                         >
                           @for (role of membershipRoles; track role) {
-                            <option [value]="role">
+                            <mat-option [value]="role">
                               {{ role | titlecase }}
-                            </option>
+                            </mat-option>
                           }
-                        </select>
+                        </mat-select>
+                        </mat-form-field>
                       </div>
 
                       <!-- Status -->

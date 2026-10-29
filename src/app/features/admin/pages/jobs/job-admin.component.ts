@@ -14,12 +14,16 @@ import { HotToastService } from '@ngxpert/hot-toast';
 import { JobStore } from '../../../jobs/stores/job.store';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-job-admin',
 
   standalone: true,
 
-  imports: [RouterLink, MatMenuModule, MatDividerModule],
+  imports: [RouterLink, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
 
   template: `
     <main
@@ -375,42 +379,17 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                        min-w-0
                        flex-1"
               >
-                <span
-                  class="pointer-events-none
-                         absolute
-                         left-3
-                         top-1/2
-                         -translate-y-1/2
-                         text-gray-400"
-                  aria-hidden="true"
-                >
-                  🔎
-                </span>
-
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Search jobs</mat-label>
+                  <span matPrefix class="pl-3 pr-1" aria-hidden="true">🔎</span>
+                  <input matInput
                   type="search"
                   [value]="searchTerm()"
                   (input)="setSearchTerm($any($event.target).value)"
                   placeholder="Search jobs, organizations, locations, skills, tags..."
                   aria-label="Search jobs"
-                  class="block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         bg-white
-                         py-2.5
-                         pl-10
-                         pr-10
-                         text-sm
-                         text-gray-900
-                         outline-none
-                         transition
-                         placeholder:text-gray-400
-                         focus:border-[#007979]
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                 />
+                </mat-form-field>
 
                 @if (searchTerm()) {
                   <button
@@ -507,223 +486,112 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
             >
               <!-- Job Filter -->
               <div>
-                <label
-                  for="mobileJobFilter"
-                  class="mb-1
-                         block
-                         text-xs
-                         font-semibold
-                         text-gray-500"
-                >
-                  Job
-                </label>
 
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Job</mat-label>
+                  <input matInput
                   id="mobileJobFilter"
                   type="text"
                   [value]="jobFilter()"
                   (input)="setJobFilter($any($event.target).value)"
                   placeholder="Filter job title"
-                  class="block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         px-3 py-2
-                         text-sm
-                         outline-none
-                         focus:border-[#007979]
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                 />
+                </mat-form-field>
               </div>
 
               <!-- Organization Filter -->
               <div>
-                <label
-                  for="mobileOrganizationFilter"
-                  class="mb-1
-                         block
-                         text-xs
-                         font-semibold
-                         text-gray-500"
-                >
-                  Organization
-                </label>
 
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Organization</mat-label>
+                  <input matInput
                   id="mobileOrganizationFilter"
                   type="text"
                   [value]="organizationFilter()"
                   (input)="setOrganizationFilter($any($event.target).value)"
                   placeholder="Filter organization"
-                  class="block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         px-3 py-2
-                         text-sm
-                         outline-none
-                         focus:border-[#007979]
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                 />
+                </mat-form-field>
               </div>
 
               <!-- Type -->
               <div>
-                <label
-                  for="mobileTypeFilter"
-                  class="mb-1
-                         block
-                         text-xs
-                         font-semibold
-                         text-gray-500"
-                >
-                  Employment Type
-                </label>
 
-                <select
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Employment Type</mat-label>
+                  <mat-select
                   id="mobileTypeFilter"
                   [value]="employmentTypeFilter()"
-                  (change)="setEmploymentTypeFilter($any($event.target).value)"
-                  class="block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         bg-white
-                         px-3 py-2
-                         text-sm
-                         outline-none
-                         focus:border-[#007979]
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
+                  (selectionChange)="setEmploymentTypeFilter($event.value)"
                 >
-                  <option value="">All types</option>
+                  <mat-option value="">All types</mat-option>
 
-                  <option value="full-time">Full-time</option>
+                  <mat-option value="full-time">Full-time</mat-option>
 
-                  <option value="part-time">Part-time</option>
+                  <mat-option value="part-time">Part-time</mat-option>
 
-                  <option value="contract">Contract</option>
+                  <mat-option value="contract">Contract</mat-option>
 
-                  <option value="internship">Internship</option>
+                  <mat-option value="internship">Internship</mat-option>
 
-                  <option value="temporary">Temporary</option>
-                </select>
+                  <mat-option value="temporary">Temporary</mat-option>
+                </mat-select>
+                </mat-form-field>
               </div>
 
               <!-- Location -->
               <div>
-                <label
-                  for="mobileLocationFilter"
-                  class="mb-1
-                         block
-                         text-xs
-                         font-semibold
-                         text-gray-500"
-                >
-                  Location
-                </label>
 
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Location</mat-label>
+                  <input matInput
                   id="mobileLocationFilter"
                   type="text"
                   [value]="locationFilter()"
                   (input)="setLocationFilter($any($event.target).value)"
                   placeholder="City or state"
-                  class="block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         px-3 py-2
-                         text-sm
-                         outline-none
-                         focus:border-[#007979]
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                 />
+                </mat-form-field>
               </div>
 
               <!-- Status -->
               <div>
-                <label
-                  for="mobileStatusFilter"
-                  class="mb-1
-                         block
-                         text-xs
-                         font-semibold
-                         text-gray-500"
-                >
-                  Status
-                </label>
 
-                <select
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Status</mat-label>
+                  <mat-select
                   id="mobileStatusFilter"
                   [value]="statusFilter()"
-                  (change)="setStatusFilter($any($event.target).value)"
-                  class="block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         bg-white
-                         px-3 py-2
-                         text-sm
-                         outline-none
-                         focus:border-[#007979]
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
+                  (selectionChange)="setStatusFilter($event.value)"
                 >
-                  <option value="">All statuses</option>
+                  <mat-option value="">All statuses</mat-option>
 
-                  <option value="active">Active</option>
+                  <mat-option value="active">Active</mat-option>
 
-                  <option value="draft">Draft</option>
+                  <mat-option value="draft">Draft</mat-option>
 
-                  <option value="closed">Closed</option>
-                </select>
+                  <mat-option value="closed">Closed</mat-option>
+                </mat-select>
+                </mat-form-field>
               </div>
 
               <!-- Featured -->
               <div>
-                <label
-                  for="mobileFeaturedFilter"
-                  class="mb-1
-                         block
-                         text-xs
-                         font-semibold
-                         text-gray-500"
-                >
-                  Featured
-                </label>
 
-                <select
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Featured</mat-label>
+                  <mat-select
                   id="mobileFeaturedFilter"
                   [value]="featuredFilter()"
-                  (change)="setFeaturedFilter($any($event.target).value)"
-                  class="block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         bg-white
-                         px-3 py-2
-                         text-sm
-                         outline-none
-                         focus:border-[#007979]
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
+                  (selectionChange)="setFeaturedFilter($event.value)"
                 >
-                  <option value="">All jobs</option>
+                  <mat-option value="">All jobs</mat-option>
 
-                  <option value="featured">Featured</option>
+                  <mat-option value="featured">Featured</mat-option>
 
-                  <option value="not-featured">Not featured</option>
-                </select>
+                  <mat-option value="not-featured">Not featured</mat-option>
+                </mat-select>
+                </mat-form-field>
               </div>
             </div>
           </section>
@@ -924,31 +792,16 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                           Job
                         </div>
 
-                        <input
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Filter jobs by title</mat-label>
+                          <input matInput
                           type="text"
                           [value]="jobFilter()"
                           (input)="setJobFilter($any($event.target).value)"
                           placeholder="Filter job..."
                           aria-label="Filter jobs by title"
-                          class="mt-2
-                                 block
-                                 w-full
-                                 rounded-md
-                                 border
-                                 border-gray-300
-                                 bg-white
-                                 px-2.5 py-2
-                                 text-xs
-                                 font-normal
-                                 normal-case
-                                 tracking-normal
-                                 text-gray-700
-                                 outline-none
-                                 placeholder:text-gray-400
-                                 focus:border-[#007979]
-                                 focus:ring-1
-                                 focus:ring-[#007979]"
                         />
+                        </mat-form-field>
                       </th>
 
                       <!-- =====================================
@@ -969,31 +822,16 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                           Organization
                         </div>
 
-                        <input
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Filter by organization</mat-label>
+                          <input matInput
                           type="text"
                           [value]="organizationFilter()"
                           (input)="setOrganizationFilter($any($event.target).value)"
                           placeholder="Filter organization..."
                           aria-label="Filter by organization"
-                          class="mt-2
-                                 block
-                                 w-full
-                                 rounded-md
-                                 border
-                                 border-gray-300
-                                 bg-white
-                                 px-2.5 py-2
-                                 text-xs
-                                 font-normal
-                                 normal-case
-                                 tracking-normal
-                                 text-gray-700
-                                 outline-none
-                                 placeholder:text-gray-400
-                                 focus:border-[#007979]
-                                 focus:ring-1
-                                 focus:ring-[#007979]"
                         />
+                        </mat-form-field>
                       </th>
 
                       <!-- =====================================
@@ -1014,40 +852,26 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                           Type
                         </div>
 
-                        <select
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Filter by employment type</mat-label>
+                          <mat-select
                           [value]="employmentTypeFilter()"
-                          (change)="setEmploymentTypeFilter($any($event.target).value)"
+                          (selectionChange)="setEmploymentTypeFilter($event.value)"
                           aria-label="Filter by employment type"
-                          class="mt-2
-                                 block
-                                 w-full
-                                 rounded-md
-                                 border
-                                 border-gray-300
-                                 bg-white
-                                 px-2.5 py-2
-                                 text-xs
-                                 font-normal
-                                 normal-case
-                                 tracking-normal
-                                 text-gray-700
-                                 outline-none
-                                 focus:border-[#007979]
-                                 focus:ring-1
-                                 focus:ring-[#007979]"
                         >
-                          <option value="">All</option>
+                          <mat-option value="">All</mat-option>
 
-                          <option value="full-time">Full-time</option>
+                          <mat-option value="full-time">Full-time</mat-option>
 
-                          <option value="part-time">Part-time</option>
+                          <mat-option value="part-time">Part-time</mat-option>
 
-                          <option value="contract">Contract</option>
+                          <mat-option value="contract">Contract</mat-option>
 
-                          <option value="internship">Internship</option>
+                          <mat-option value="internship">Internship</mat-option>
 
-                          <option value="temporary">Temporary</option>
-                        </select>
+                          <mat-option value="temporary">Temporary</mat-option>
+                        </mat-select>
+                        </mat-form-field>
                       </th>
 
                       <!-- =====================================
@@ -1068,31 +892,16 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                           Location
                         </div>
 
-                        <input
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Filter by location</mat-label>
+                          <input matInput
                           type="text"
                           [value]="locationFilter()"
                           (input)="setLocationFilter($any($event.target).value)"
                           placeholder="City / state..."
                           aria-label="Filter by location"
-                          class="mt-2
-                                 block
-                                 w-full
-                                 rounded-md
-                                 border
-                                 border-gray-300
-                                 bg-white
-                                 px-2.5 py-2
-                                 text-xs
-                                 font-normal
-                                 normal-case
-                                 tracking-normal
-                                 text-gray-700
-                                 outline-none
-                                 placeholder:text-gray-400
-                                 focus:border-[#007979]
-                                 focus:ring-1
-                                 focus:ring-[#007979]"
                         />
+                        </mat-form-field>
                       </th>
 
                       <!-- =====================================
@@ -1113,36 +922,22 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                           Status
                         </div>
 
-                        <select
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Filter by status</mat-label>
+                          <mat-select
                           [value]="statusFilter()"
-                          (change)="setStatusFilter($any($event.target).value)"
+                          (selectionChange)="setStatusFilter($event.value)"
                           aria-label="Filter by status"
-                          class="mt-2
-                                 block
-                                 w-full
-                                 rounded-md
-                                 border
-                                 border-gray-300
-                                 bg-white
-                                 px-2.5 py-2
-                                 text-xs
-                                 font-normal
-                                 normal-case
-                                 tracking-normal
-                                 text-gray-700
-                                 outline-none
-                                 focus:border-[#007979]
-                                 focus:ring-1
-                                 focus:ring-[#007979]"
                         >
-                          <option value="">All</option>
+                          <mat-option value="">All</mat-option>
 
-                          <option value="active">Active</option>
+                          <mat-option value="active">Active</mat-option>
 
-                          <option value="draft">Draft</option>
+                          <mat-option value="draft">Draft</mat-option>
 
-                          <option value="closed">Closed</option>
-                        </select>
+                          <mat-option value="closed">Closed</mat-option>
+                        </mat-select>
+                        </mat-form-field>
                       </th>
 
                       <!-- =====================================
@@ -1163,34 +958,20 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                           Featured
                         </div>
 
-                        <select
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Filter featured jobs</mat-label>
+                          <mat-select
                           [value]="featuredFilter()"
-                          (change)="setFeaturedFilter($any($event.target).value)"
+                          (selectionChange)="setFeaturedFilter($event.value)"
                           aria-label="Filter featured jobs"
-                          class="mt-2
-                                 block
-                                 w-full
-                                 rounded-md
-                                 border
-                                 border-gray-300
-                                 bg-white
-                                 px-2.5 py-2
-                                 text-xs
-                                 font-normal
-                                 normal-case
-                                 tracking-normal
-                                 text-gray-700
-                                 outline-none
-                                 focus:border-[#007979]
-                                 focus:ring-1
-                                 focus:ring-[#007979]"
                         >
-                          <option value="">All</option>
+                          <mat-option value="">All</mat-option>
 
-                          <option value="featured">Featured</option>
+                          <mat-option value="featured">Featured</mat-option>
 
-                          <option value="not-featured">Not featured</option>
-                        </select>
+                          <mat-option value="not-featured">Not featured</mat-option>
+                        </mat-select>
+                        </mat-form-field>
                       </th>
 
                       <!-- Actions -->

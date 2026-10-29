@@ -11,10 +11,12 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { OrganizationProvisioningService } from '../../../../core/services/organization-provisioning.service';
 import { Timestamp } from 'firebase/firestore';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 @Component({
   selector: 'app-organization-application-admin',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, MatFormFieldModule, MatInputModule],
   template: `
     <main class="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8 mt-10">
       <div class="mx-auto max-w-7xl">
@@ -508,22 +510,21 @@ import { Timestamp } from 'firebase/firestore';
                 <!-- Rejection reason -->
                 @if (selectedApplication()!.status === 'under_review') {
                   <section class="border-t border-slate-200 pt-6">
-                    <label for="rejectionReason" class="block text-sm font-medium text-slate-700">
-                      Rejection Reason
-                    </label>
 
                     <p class="mt-1 text-xs text-slate-500">
                       Required when rejecting an application.
                     </p>
 
-                    <textarea
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Rejection Reason</mat-label>
+                      <textarea matInput
                       id="rejectionReason"
                       rows="4"
                       [value]="rejectionReason()"
                       (input)="rejectionReason.set($any($event.target).value)"
                       placeholder="Provide a clear reason if the application needs to be rejected."
-                      class="mt-2 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                     ></textarea>
+                    </mat-form-field>
                   </section>
                 }
 

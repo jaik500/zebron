@@ -19,10 +19,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatMenuModule } from '@angular/material/menu';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-resource-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule],
+  imports: [FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -353,15 +357,10 @@ import { MatMenuModule } from '@angular/material/menu';
                         <!-- Name / Slug -->
                         <div class="grid gap-5 sm:grid-cols-2">
                           <div>
-                            <label
-                              for="resourceName"
-                              class="block text-sm font-medium text-gray-700"
-                            >
-                              Name
-                              <span class="text-red-500">*</span>
-                            </label>
 
-                            <input
+                            <mat-form-field appearance="outline" class="zb-field">
+                              <mat-label>Name</mat-label>
+                              <input matInput
                               id="resourceName"
                               name="name"
                               type="text"
@@ -369,42 +368,23 @@ import { MatMenuModule } from '@angular/material/menu';
                               (ngModelChange)="generateSlug()"
                               required
                               placeholder="Food Assistance"
-                              class="mt-1.5 block w-full rounded-lg border
-                             border-gray-300 bg-gray-50 px-4 py-2.5
-                             text-sm text-gray-900
-                             placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2 focus:ring-[#007979]/20
-                             focus:bg-white"
                             />
+                            </mat-form-field>
                           </div>
 
                           <div>
-                            <label
-                              for="resourceSlug"
-                              class="block text-sm font-medium text-gray-700"
-                            >
-                              Slug
-                              <span class="text-red-500">*</span>
-                            </label>
 
-                            <input
+                            <mat-form-field appearance="outline" class="zb-field">
+                              <mat-label>Slug</mat-label>
+                              <input matInput
                               id="resourceSlug"
                               name="slug"
                               type="text"
                               [(ngModel)]="form.slug"
                               required
                               placeholder="food-assistance"
-                              class="mt-1.5 block w-full rounded-lg
-                             border border-gray-300 bg-gray-50
-                             px-4 py-2.5 font-mono text-sm
-                             text-gray-700 placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:bg-white focus:outline-none
-                             focus:ring-2 focus:ring-[#007979]/20
-                             focus:bg-white"
                             />
+                            </mat-form-field>
 
                             <p class="mt-1.5 text-xs text-gray-500">
                               Automatically generated from the resource name.
@@ -415,94 +395,68 @@ import { MatMenuModule } from '@angular/material/menu';
                         <!-- Category / Type -->
                         <div class="grid gap-5 sm:grid-cols-2">
                           <div>
-                            <label for="categoryId" class="block text-sm font-medium text-gray-700">
-                              Category
-                              <span class="text-red-500">*</span>
-                            </label>
 
-                            <select
+                            <mat-form-field appearance="outline" class="zb-field">
+                              <mat-label>Category</mat-label>
+                              <mat-select
                               id="categoryId"
                               name="categoryId"
                               [(ngModel)]="form.categoryId"
                               required
-                              class="mt-1.5 block w-full rounded-lg
-                             border border-gray-300 bg-gray-50
-                             px-4 py-2.5 text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2 focus:ring-[#007979]/20
-                             focus:bg-white"
                             >
-                              <option value="">Select a category</option>
+                              <mat-option value="">Select a category</mat-option>
 
                               @for (category of categories(); track category.id) {
-                                <option [value]="category.id">
+                                <mat-option [value]="category.id">
                                   {{ category.name }}
-                                </option>
+                                </mat-option>
                               }
-                            </select>
+                            </mat-select>
+                            </mat-form-field>
                           </div>
 
                           <div>
-                            <label
-                              for="resourceType"
-                              class="block text-sm font-medium text-gray-700"
-                            >
-                              Resource type
-                              <span class="text-red-500">*</span>
-                            </label>
 
-                            <select
+                            <mat-form-field appearance="outline" class="zb-field">
+                              <mat-label>Resource type</mat-label>
+                              <mat-select
                               id="resourceType"
                               name="resourceType"
                               [(ngModel)]="form.resourceType"
                               required
-                              class="mt-1.5 block w-full rounded-lg
-                             border border-gray-300 bg-gray-50
-                             px-4 py-2.5 text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2 focus:ring-[#007979]/20
-                             focus:bg-white"
                             >
                               @for (type of resourceTypes(); track type.id) {
-                                <option [value]="type.id">
+                                <mat-option [value]="type.id">
                                   {{ type.name }}
-                                </option>
+                                </mat-option>
                               }
-                            </select>
+                            </mat-select>
+                            </mat-form-field>
                           </div>
                         </div>
 
                         <!-- Location -->
                         <div>
-                          <label for="locationId" class="block text-sm font-medium text-gray-700">
-                            Location
-                          </label>
 
-                          <select
+                          <mat-form-field appearance="outline" class="zb-field">
+                            <mat-label>Location</mat-label>
+                            <mat-select
                             id="locationId"
                             name="locationId"
                             [(ngModel)]="form.locationId"
-                            class="mt-1.5 block w-full rounded-lg
-           border border-gray-300 bg-gray-50
-           px-4 py-2.5 text-sm text-gray-900
-           focus:border-[#007979]
-           focus:outline-none
-           focus:ring-2 focus:ring-[#007979]/20
-           focus:bg-white"
                           >
-                            <option value="">Select a location</option>
+                            <mat-option value="">Select a location</mat-option>
 
                             @for (location of locations(); track location.id) {
-                              <option [value]="location.id">
+                              <mat-option [value]="location.id">
                                 {{ location.city }}, {{ location.state }}
                                 @if (location.zipCode) {
                                   {{ location.zipCode }}
                                 }
-                              </option>
+                              </mat-option>
                             }
-                          </select>
+                          </mat-select>
+                          </mat-form-field>
 
                           <p class="mt-1.5 text-xs text-gray-500">
                             Select the location where this resource is available.
@@ -511,27 +465,18 @@ import { MatMenuModule } from '@angular/material/menu';
 
                         <!-- Description -->
                         <div>
-                          <label for="description" class="block text-sm font-medium text-gray-700">
-                            Description
-                            <span class="text-red-500">*</span>
-                          </label>
 
-                          <textarea
+                          <mat-form-field appearance="outline" class="zb-field">
+                            <mat-label>Description</mat-label>
+                            <textarea matInput
                             id="description"
                             name="description"
                             rows="4"
                             [(ngModel)]="form.description"
                             required
                             placeholder="Describe this resource."
-                            class="mt-1.5 block w-full resize-y rounded-lg
-                           border border-gray-300 bg-gray-50
-                           px-4 py-2.5 text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2 focus:ring-[#007979]/20
-                           focus:bg-white"
                           ></textarea>
+                          </mat-form-field>
                         </div>
                       </div>
                     </section>
@@ -553,94 +498,59 @@ import { MatMenuModule } from '@angular/material/menu';
 
                       <div class="grid gap-5 sm:grid-cols-2">
                         <div>
-                          <label for="website" class="block text-sm font-medium text-gray-700">
-                            Website
-                          </label>
 
-                          <input
+                          <mat-form-field appearance="outline" class="zb-field">
+                            <mat-label>Website</mat-label>
+                            <input matInput
                             id="website"
                             name="website"
                             type="url"
                             [(ngModel)]="form.website"
                             placeholder="https://example.org"
-                            class="mt-1.5 block w-full rounded-lg
-                           border border-gray-300 bg-gray-50
-                           px-4 py-2.5 text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2 focus:ring-[#007979]/20
-                           focus:bg-white"
                           />
+                          </mat-form-field>
                         </div>
 
                         <div>
-                          <label for="phone" class="block text-sm font-medium text-gray-700">
-                            Phone
-                          </label>
 
-                          <input
+                          <mat-form-field appearance="outline" class="zb-field">
+                            <mat-label>Phone</mat-label>
+                            <input matInput
                             id="phone"
                             name="phone"
                             type="tel"
                             [(ngModel)]="form.phone"
                             placeholder="555-555-5555"
-                            class="mt-1.5 block w-full rounded-lg
-                           border border-gray-300 bg-gray-50
-                           px-4 py-2.5 text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2 focus:ring-[#007979]/20
-                           focus:bg-white"
                           />
+                          </mat-form-field>
                         </div>
 
                         <div>
-                          <label for="email" class="block text-sm font-medium text-gray-700">
-                            Email
-                          </label>
 
-                          <input
+                          <mat-form-field appearance="outline" class="zb-field">
+                            <mat-label>Email</mat-label>
+                            <input matInput
                             id="email"
                             name="email"
                             type="email"
                             [(ngModel)]="form.email"
                             placeholder="contact@example.org"
-                            class="mt-1.5 block w-full rounded-lg
-                           border border-gray-300 bg-gray-50
-                           px-4 py-2.5 text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2 focus:ring-[#007979]/20
-                           focus:bg-white"
                           />
+                          </mat-form-field>
                         </div>
 
                         <div>
-                          <label
-                            for="organizationId"
-                            class="block text-sm font-medium text-gray-700"
-                          >
-                            Organization ID
-                          </label>
 
-                          <input
+                          <mat-form-field appearance="outline" class="zb-field">
+                            <mat-label>Organization ID</mat-label>
+                            <input matInput
                             id="organizationId"
                             name="organizationId"
                             type="text"
                             [(ngModel)]="form.organizationId"
                             placeholder="Optional"
-                            class="mt-1.5 block w-full rounded-lg
-                           border border-gray-300 bg-gray-50
-                           px-4 py-2.5 text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2 focus:ring-[#007979]/20
-                           focus:bg-white"
                           />
+                          </mat-form-field>
 
                           <p class="mt-1.5 text-xs text-gray-500">
                             The Firestore ID of the associated organization.
@@ -662,22 +572,7 @@ import { MatMenuModule } from '@angular/material/menu';
                       </div>
 
                       <div class="grid gap-3 sm:grid-cols-3">
-                        <label
-                          class="flex cursor-pointer items-start gap-3
-                         rounded-xl border border-gray-200
-                         bg-gray-50 p-4 transition
-                         hover:border-[#007979]/40
-                         hover:bg-[#007979]/5"
-                        >
-                          <input
-                            type="checkbox"
-                            name="online"
-                            [(ngModel)]="form.online"
-                            class="mt-0.5 h-4 w-4 rounded border-gray-300
-                           text-[#007979] focus:ring-[#007979]"
-                          />
-
-                          <span>
+                        <mat-checkbox class="zb-checkbox--top" name="online" [(ngModel)]="form.online"><span>
                             <span class="block text-sm font-semibold text-gray-900">
                               Available online
                             </span>
@@ -685,25 +580,9 @@ import { MatMenuModule } from '@angular/material/menu';
                             <span class="mt-1 block text-xs leading-5 text-gray-500">
                               Users can access this resource online.
                             </span>
-                          </span>
-                        </label>
+                          </span></mat-checkbox>
 
-                        <label
-                          class="flex cursor-pointer items-start gap-3
-                         rounded-xl border border-gray-200
-                         bg-gray-50 p-4 transition
-                         hover:border-[#007979]/40
-                         hover:bg-[#007979]/5"
-                        >
-                          <input
-                            type="checkbox"
-                            name="alwaysAvailable"
-                            [(ngModel)]="form.alwaysAvailable"
-                            class="mt-0.5 h-4 w-4 rounded border-gray-300
-                           text-[#007979] focus:ring-[#007979]"
-                          />
-
-                          <span>
+                        <mat-checkbox class="zb-checkbox--top" name="alwaysAvailable" [(ngModel)]="form.alwaysAvailable"><span>
                             <span class="block text-sm font-semibold text-gray-900">
                               Always available
                             </span>
@@ -711,25 +590,9 @@ import { MatMenuModule } from '@angular/material/menu';
                             <span class="mt-1 block text-xs leading-5 text-gray-500">
                               No appointment or schedule is required.
                             </span>
-                          </span>
-                        </label>
+                          </span></mat-checkbox>
 
-                        <label
-                          class="flex cursor-pointer items-start gap-3
-                         rounded-xl border border-gray-200
-                         bg-gray-50 p-4 transition
-                         hover:border-[#007979]/40
-                         hover:bg-[#007979]/5"
-                        >
-                          <input
-                            type="checkbox"
-                            name="byAppointment"
-                            [(ngModel)]="form.byAppointment"
-                            class="mt-0.5 h-4 w-4 rounded border-gray-300
-                           text-[#007979] focus:ring-[#007979]"
-                          />
-
-                          <span>
+                        <mat-checkbox class="zb-checkbox--top" name="byAppointment" [(ngModel)]="form.byAppointment"><span>
                             <span class="block text-sm font-semibold text-gray-900">
                               By appointment
                             </span>
@@ -737,8 +600,7 @@ import { MatMenuModule } from '@angular/material/menu';
                             <span class="mt-1 block text-xs leading-5 text-gray-500">
                               Users must schedule an appointment.
                             </span>
-                          </span>
-                        </label>
+                          </span></mat-checkbox>
                       </div>
                     </section>
 
@@ -755,22 +617,7 @@ import { MatMenuModule } from '@angular/material/menu';
                       </div>
 
                       <div class="space-y-5">
-                        <label
-                          class="flex cursor-pointer items-start gap-3
-                         rounded-xl border border-gray-200
-                         bg-gray-50 p-4 transition
-                         hover:border-[#007979]/40
-                         hover:bg-[#007979]/5"
-                        >
-                          <input
-                            type="checkbox"
-                            name="free"
-                            [(ngModel)]="form.free"
-                            class="mt-0.5 h-4 w-4 rounded border-gray-300
-                           text-[#007979] focus:ring-[#007979]"
-                          />
-
-                          <span>
+                        <mat-checkbox class="zb-checkbox--top" name="free" [(ngModel)]="form.free"><span>
                             <span class="block text-sm font-semibold text-gray-900">
                               Free service
                             </span>
@@ -778,32 +625,20 @@ import { MatMenuModule } from '@angular/material/menu';
                             <span class="mt-1 block text-xs leading-5 text-gray-500">
                               This resource does not require payment.
                             </span>
-                          </span>
-                        </label>
+                          </span></mat-checkbox>
 
                         <div>
-                          <label
-                            for="costDescription"
-                            class="block text-sm font-medium text-gray-700"
-                          >
-                            Cost description
-                          </label>
 
-                          <input
+                          <mat-form-field appearance="outline" class="zb-field">
+                            <mat-label>Cost description</mat-label>
+                            <input matInput
                             id="costDescription"
                             name="costDescription"
                             type="text"
                             [(ngModel)]="form.costDescription"
                             placeholder="Free for eligible residents."
-                            class="mt-1.5 block w-full rounded-lg
-                           border border-gray-300 bg-gray-50
-                           px-4 py-2.5 text-sm text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2 focus:ring-[#007979]/20
-                           focus:bg-white"
                           />
+                          </mat-form-field>
                         </div>
                       </div>
                     </section>
@@ -820,21 +655,16 @@ import { MatMenuModule } from '@angular/material/menu';
                         </p>
                       </div>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>food, assistance, community</mat-label>
+                        <input matInput
                         id="tags"
                         name="tags"
                         type="text"
                         [(ngModel)]="form.tags"
                         placeholder="food, assistance, community"
-                        class="block w-full rounded-lg border
-                       border-gray-300 bg-gray-50 px-4 py-2.5
-                       text-sm text-gray-900
-                       placeholder:text-gray-400
-                       focus:border-[#007979]
-                       focus:outline-none
-                       focus:ring-2 focus:ring-[#007979]/20
-                       focus:bg-white"
                       />
+                      </mat-form-field>
 
                       <p class="mt-1.5 text-xs text-gray-500">Separate tags with commas.</p>
                     </section>
@@ -853,47 +683,25 @@ import { MatMenuModule } from '@angular/material/menu';
 
                       <div class="space-y-5">
                         <div>
-                          <label for="status" class="block text-sm font-medium text-gray-700">
-                            Status
-                          </label>
 
-                          <select
+                          <mat-form-field appearance="outline" class="zb-field">
+                            <mat-label>Status</mat-label>
+                            <mat-select
                             id="status"
                             name="status"
                             [(ngModel)]="form.status"
-                            class="mt-1.5 block w-full rounded-lg
-                           border border-gray-300 bg-gray-50
-                           px-4 py-2.5 text-sm text-gray-900
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2 focus:ring-[#007979]/20
-                           focus:bg-white"
                           >
                             @for (status of resourceStatuses; track status) {
-                              <option [value]="status">
+                              <mat-option [value]="status">
                                 {{ formatLabel(status) }}
-                              </option>
+                              </mat-option>
                             }
-                          </select>
+                          </mat-select>
+                          </mat-form-field>
                         </div>
 
                         <div class="grid gap-3 sm:grid-cols-2">
-                          <label
-                            class="flex cursor-pointer items-start gap-3
-                           rounded-xl border border-gray-200
-                           bg-gray-50 p-4 transition
-                           hover:border-[#007979]/40
-                           hover:bg-[#007979]/5"
-                          >
-                            <input
-                              type="checkbox"
-                              name="verified"
-                              [(ngModel)]="form.verified"
-                              class="mt-0.5 h-4 w-4 rounded border-gray-300
-                             text-[#007979] focus:ring-[#007979]"
-                            />
-
-                            <span>
+                          <mat-checkbox class="zb-checkbox--top" name="verified" [(ngModel)]="form.verified"><span>
                               <span class="block text-sm font-semibold text-gray-900">
                                 Verified
                               </span>
@@ -901,25 +709,9 @@ import { MatMenuModule } from '@angular/material/menu';
                               <span class="mt-1 block text-xs leading-5 text-gray-500">
                                 Mark this resource as verified.
                               </span>
-                            </span>
-                          </label>
+                            </span></mat-checkbox>
 
-                          <label
-                            class="flex cursor-pointer items-start gap-3
-                           rounded-xl border border-gray-200
-                           bg-gray-50 p-4 transition
-                           hover:border-[#007979]/40
-                           hover:bg-[#007979]/5"
-                          >
-                            <input
-                              type="checkbox"
-                              name="featured"
-                              [(ngModel)]="form.featured"
-                              class="mt-0.5 h-4 w-4 rounded border-gray-300
-                             text-[#007979] focus:ring-[#007979]"
-                            />
-
-                            <span>
+                          <mat-checkbox class="zb-checkbox--top" name="featured" [(ngModel)]="form.featured"><span>
                               <span class="block text-sm font-semibold text-gray-900">
                                 Featured
                               </span>
@@ -927,8 +719,7 @@ import { MatMenuModule } from '@angular/material/menu';
                               <span class="mt-1 block text-xs leading-5 text-gray-500">
                                 Highlight this resource in featured results.
                               </span>
-                            </span>
-                          </label>
+                            </span></mat-checkbox>
                         </div>
                       </div>
                     </section>
@@ -1036,30 +827,18 @@ import { MatMenuModule } from '@angular/material/menu';
          px-4
          py-1"
                 >
-                  <label for="resource-search" class="sr-only"> Search resources </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Search resources</mat-label>
+                    <input matInput
                     id="resource-search"
                     name="resourceSearch"
                     type="search"
                     [value]="searchTerm()"
                     (input)="onSearch($event)"
                     placeholder="Search resources..."
-                    class="block
-           w-full
-           rounded-lg
-           border
-           border-gray-300
-           bg-white
-           px-3.5 py-2.5
-           text-sm
-           text-gray-900
-           placeholder:text-gray-400
-           focus:border-[#007979]
-           focus:outline-none
-           focus:ring-2
-           focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
 
                 <!-- Empty state -->

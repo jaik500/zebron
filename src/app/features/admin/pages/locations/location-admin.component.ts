@@ -12,12 +12,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../../core/services/auth.service';
 import { MatMenuModule } from '@angular/material/menu';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 @Component({
   selector: 'app-location-admin',
 
   standalone: true,
 
-  imports: [FormsModule, RouterLink, MatDividerModule, MatIconModule, MatMenuModule],
+  imports: [FormsModule, RouterLink, MatDividerModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule],
 
   template: `
     <!-- =====================================================
@@ -391,42 +393,20 @@ import { MatMenuModule } from '@angular/material/menu';
             >
 
               @if (editingId() || showLocationForm()) {
-             
+
                 <!-- Address -->
                 <div>
-                  <label
-                    for="address"
-                    class="block
-                         text-sm
-                         font-semibold
-                         text-[#032D42]"
-                  >
-                    Address
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Address</mat-label>
+                    <input matInput
                     id="address"
                     name="address"
                     type="text"
                     [(ngModel)]="form.address"
                     placeholder="123 Main Street"
-                    class="mt-1.5
-                         block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         bg-white
-                         px-3.5
-                         py-2.5
-                         text-sm
-                         text-gray-900
-                         placeholder:text-gray-400
-                         focus:border-[#007979]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
 
                 <!-- City / State -->
@@ -436,105 +416,46 @@ import { MatMenuModule } from '@angular/material/menu';
                        sm:grid-cols-2"
                 >
                   <div>
-                    <label
-                      for="city"
-                      class="block
-                           text-sm
-                           font-semibold
-                           text-[#032D42]"
-                    >
-                      City
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>City</mat-label>
+                      <input matInput
                       id="city"
                       name="city"
                       type="text"
                       [(ngModel)]="form.city"
                       placeholder="Upper Marlboro"
                       required
-                      class="mt-1.5
-                           block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3.5
-                           py-2.5
-                           text-sm
-                           text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <div>
-                    <label for="county" class="block text-sm font-semibold text-[#032D42]">
-                      County
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>County</mat-label>
+                      <input matInput
                       id="county"
                       name="county"
                       type="text"
                       [(ngModel)]="form.county"
                       placeholder="County"
-                      class="mt-1.5
-           block
-           w-full
-           rounded-lg
-           border
-           border-gray-200
-           bg-white
-           px-3.5
-           py-2.5
-           text-sm
-           text-gray-700
-           focus:border-[#007979]
-           focus:outline-none
-           focus:ring-2
-           focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <div>
-                    <label
-                      for="state"
-                      class="block
-                           text-sm
-                           font-semibold
-                           text-[#032D42]"
-                    >
-                      State/Province/Region
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>State/Province/Region</mat-label>
+                      <input matInput
                       id="state"
                       name="state"
                       type="text"
                       [(ngModel)]="form.state"
                       placeholder="MD"
-                      class="mt-1.5
-                           block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3.5
-                           py-2.5
-                           text-sm
-                           text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
                 </div>
 
@@ -545,76 +466,32 @@ import { MatMenuModule } from '@angular/material/menu';
                        sm:grid-cols-2"
                 >
                   <div>
-                    <label
-                      for="zipCode"
-                      class="block
-                           text-sm
-                           font-semibold
-                           text-[#032D42]"
-                    >
-                      ZIP Code
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>ZIP Code</mat-label>
+                      <input matInput
                       id="zipCode"
                       name="zipCode"
                       type="text"
                       [(ngModel)]="form.zipCode"
                       placeholder="20774"
-                      class="mt-1.5
-                           block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3.5
-                           py-2.5
-                           text-sm
-                           text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <div>
-                    <label
-                      for="country"
-                      class="block
-                           text-sm
-                           font-semibold
-                           text-[#032D42]"
-                    >
-                      Country
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Country</mat-label>
+                      <input matInput
                       id="country"
                       name="country"
                       type="text"
                       [(ngModel)]="form.country"
                       placeholder="United States"
                       required
-                      class="mt-1.5
-                           block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3.5
-                           py-2.5
-                           text-sm
-                           text-gray-900
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
                 </div>
 
@@ -644,77 +521,33 @@ import { MatMenuModule } from '@angular/material/menu';
                          sm:grid-cols-2"
                   >
                     <div>
-                      <label
-                        for="latitude"
-                        class="block
-                             text-xs
-                             font-medium
-                             text-gray-600"
-                      >
-                        Latitude
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Latitude</mat-label>
+                        <input matInput
                         id="latitude"
                         name="latitude"
-                        type="number"
+                        type="number" inputmode="decimal"
                         step="any"
                         [(ngModel)]="form.latitude"
                         placeholder="38.8151"
-                        class="mt-1.5
-                             block
-                             w-full
-                             rounded-lg
-                             border
-                             border-gray-300
-                             bg-white
-                             px-3.5
-                             py-2.5
-                             text-sm
-                             text-gray-900
-                             placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
 
                     <div>
-                      <label
-                        for="longitude"
-                        class="block
-                             text-xs
-                             font-medium
-                             text-gray-600"
-                      >
-                        Longitude
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Longitude</mat-label>
+                        <input matInput
                         id="longitude"
                         name="longitude"
-                        type="number"
+                        type="number" inputmode="decimal"
                         step="any"
                         [(ngModel)]="form.longitude"
                         placeholder="-76.7497"
-                        class="mt-1.5
-                             block
-                             w-full
-                             rounded-lg
-                             border
-                             border-gray-300
-                             bg-white
-                             px-3.5
-                             py-2.5
-                             text-sm
-                             text-gray-900
-                             placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
                   </div>
                 </div>
@@ -859,31 +692,18 @@ import { MatMenuModule } from '@angular/material/menu';
                        border-gray-100
                        px-4 py-1"
               >
-                <label for="location-search" class="sr-only"> Search locations </label>
 
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Search locations</mat-label>
+                  <input matInput
                   id="location-search"
                   name="locationSearch"
                   type="search"
                   [value]="searchTerm()"
                   (input)="onSearch($event)"
                   placeholder="Search locations..."
-                  class="block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         bg-white
-                         px-3.5
-                         py-2.5
-                         text-sm
-                         text-gray-900
-                         placeholder:text-gray-400
-                         focus:border-[#007979]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                 />
+                </mat-form-field>
               </div>
 
               <!-- Directory content -->

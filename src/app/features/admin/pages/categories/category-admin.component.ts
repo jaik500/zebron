@@ -8,10 +8,13 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
 import { Category } from '../../../../core/models/category.model';
 import { CategoryStore } from '../../../categories/stores/category.store';
 import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-category-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatIconModule],
+  imports: [FormsModule, RouterLink, MatIconModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -118,11 +121,10 @@ import { MatIconModule } from '@angular/material/icon';
                   <div class="grid gap-5 sm:grid-cols-2">
                     <!-- Category name -->
                     <div class="sm:col-span-2">
-                      <label for="categoryName" class="block text-sm font-medium text-gray-700">
-                        Category name
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Category name</mat-label>
+                        <input matInput
                         id="categoryName"
                         name="name"
                         type="text"
@@ -130,40 +132,24 @@ import { MatIconModule } from '@angular/material/icon';
                         (ngModelChange)="generateSlug()"
                         required
                         placeholder="Food Assistance"
-                        class="mt-1 block w-full rounded-lg
-                             border border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
                     </div>
 
                     <!-- Slug -->
                     <div class="sm:col-span-2">
-                      <label for="categorySlug" class="block text-sm font-medium text-gray-700">
-                        Slug
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Slug</mat-label>
+                        <input matInput
                         id="categorySlug"
                         name="slug"
                         type="text"
                         [(ngModel)]="form.slug"
                         required
                         placeholder="food-assistance"
-                        class="mt-1 block w-full rounded-lg
-                             border border-gray-300
-                             bg-gray-50 px-4 py-2.5
-                             text-sm text-gray-700
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
 
                       <p class="mt-1.5 text-xs text-gray-500">
                         Automatically generated from the category name.
@@ -172,29 +158,17 @@ import { MatIconModule } from '@angular/material/icon';
 
                     <!-- Description -->
                     <div class="sm:col-span-2">
-                      <label
-                        for="categoryDescription"
-                        class="block text-sm font-medium text-gray-700"
-                      >
-                        Description
-                      </label>
 
-                      <textarea
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Description</mat-label>
+                        <textarea matInput
                         id="categoryDescription"
                         name="description"
                         rows="4"
                         [(ngModel)]="form.description"
                         placeholder="Programs and services that provide food assistance."
-                        class="mt-1 block w-full rounded-lg
-                             border border-gray-300
-                             px-4 py-2.5 text-sm
-                             text-gray-900
-                             placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                       ></textarea>
+                      </mat-form-field>
 
                       <p class="mt-1.5 text-xs text-gray-500">
                         Briefly describe what types of resources belong in this category.
@@ -218,52 +192,35 @@ import { MatIconModule } from '@angular/material/icon';
                   <div class="grid gap-5 sm:grid-cols-2">
                     <!-- Icon -->
                     <div>
-                      <label for="categoryIcon" class="block text-sm font-medium text-gray-700">
-                        Icon
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Icon</mat-label>
+                        <input matInput
                         id="categoryIcon"
                         name="icon"
                         type="text"
                         [(ngModel)]="form.icon"
                         placeholder="food"
-                        class="mt-1 block w-full rounded-lg
-                             border border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
 
                       <p class="mt-1.5 text-xs text-gray-500">Optional icon identifier.</p>
                     </div>
 
                     <!-- Sort order -->
                     <div>
-                      <label for="sortOrder" class="block text-sm font-medium text-gray-700">
-                        Sort order
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Sort order</mat-label>
+                        <input matInput
                         id="sortOrder"
                         name="sortOrder"
-                        type="number"
+                        type="number" inputmode="decimal"
                         min="0"
                         [(ngModel)]="form.sortOrder"
                         required
-                        class="mt-1 block w-full rounded-lg
-                             border border-gray-300
-                             bg-white px-4 py-2.5
-                             text-sm text-gray-900
-                             focus:border-[#007979]
-                             focus:outline-none
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
 
                       <p class="mt-1.5 text-xs text-gray-500">Lower numbers appear first.</p>
                     </div>
@@ -282,18 +239,7 @@ import { MatIconModule } from '@angular/material/icon';
                     </p>
                   </div>
 
-                  <label class="flex cursor-pointer items-center gap-3">
-                    <input
-                      type="checkbox"
-                      name="active"
-                      [(ngModel)]="form.active"
-                      class="h-4 w-4 rounded border-gray-300
-                           text-[#007979]
-                           focus:ring-[#007979]"
-                    />
-
-                    <span class="text-sm text-gray-700"> Active category </span>
-                  </label>
+                  <mat-checkbox name="active" [(ngModel)]="form.active">Active category</mat-checkbox>
                 </section>
 
                 <!-- =================================================

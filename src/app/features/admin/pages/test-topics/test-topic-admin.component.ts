@@ -16,11 +16,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-test-topic-admin',
   standalone: true,
 
-  imports: [FormsModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule],
+  imports: [FormsModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButtonModule],
 
   template: `
     <main class="min-h-screen bg-gray-50">
@@ -359,156 +364,72 @@ import { MatDividerModule } from '@angular/material/divider';
                   <!-- Course -->
 
                   <div>
-                    <label
-                      for="course"
-                      class="block
-                       text-sm
-                       font-semibold
-                       text-[#032D42]"
-                    >
-                      Course
-                      <span class="text-red-500">*</span>
-                    </label>
 
-                    <select
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Course</mat-label>
+                      <mat-select
                       id="course"
                       name="courseId"
                       [(ngModel)]="form.courseId"
                       [disabled]="!!editingId()"
-                      class="mt-1.5
-                       block
-                       w-full
-                       rounded-lg
-                       border
-                       border-gray-200
-                       bg-white
-                       px-3.5
-                       py-2.5
-                       text-sm
-                       text-gray-800
-                       focus:border-[#007979]
-                       focus:outline-none
-                       focus:ring-2
-                       focus:ring-[#007979]/20
-                       disabled:bg-gray-100"
                     >
-                      <option value="">Select a course</option>
+                      <mat-option value="">Select a course</mat-option>
 
                       @for (course of courses(); track course.id) {
-                        <option [value]="course.id">
+                        <mat-option [value]="course.id">
                           {{ course.name }}
-                        </option>
+                        </mat-option>
                       }
-                    </select>
+                    </mat-select>
+                    </mat-form-field>
                   </div>
 
                   <!-- Topic Name -->
 
                   <div>
-                    <label
-                      for="topic-name"
-                      class="block
-                       text-sm
-                       font-semibold
-                       text-[#032D42]"
-                    >
-                      Topic Name
-                      <span class="text-red-500">*</span>
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Topic Name</mat-label>
+                      <input matInput
                       id="topic-name"
                       name="name"
                       type="text"
                       [(ngModel)]="form.name"
                       (ngModelChange)="onNameChange($event)"
                       autocomplete="off"
-                      class="mt-1.5
-                       block
-                       w-full
-                       rounded-lg
-                       border
-                       border-gray-200
-                       bg-white
-                       px-3.5
-                       py-2.5
-                       text-sm
-                       text-gray-800
-                       focus:border-[#007979]
-                       focus:outline-none
-                       focus:ring-2
-                       focus:ring-[#007979]/20"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Slug -->
 
                   <div>
-                    <label
-                      for="topic-slug"
-                      class="block
-                       text-sm
-                       font-semibold
-                       text-[#032D42]"
-                    >
-                      Slug
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Slug</mat-label>
+                      <input matInput
                       id="topic-slug"
                       name="slug"
                       type="text"
                       [(ngModel)]="form.slug"
                       readonly
-                      class="mt-1.5
-                       block
-                       w-full
-                       rounded-lg
-                       border
-                       border-gray-200
-                       bg-gray-50
-                       px-3.5
-                       py-2.5
-                       text-sm
-                       text-gray-600
-                       focus:outline-none"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Description -->
 
                   <div>
-                    <label
-                      for="topic-description"
-                      class="block
-                       text-sm
-                       font-semibold
-                       text-[#032D42]"
-                    >
-                      Description
-                    </label>
 
-                    <textarea
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Description</mat-label>
+                      <textarea matInput
                       id="topic-description"
                       name="description"
                       rows="4"
                       [(ngModel)]="form.description"
-                      class="mt-1.5
-                       block
-                       w-full
-                       rounded-lg
-                       border
-                       border-gray-200
-                       bg-white
-                       px-3.5
-                       py-2.5
-                       text-sm
-                       text-gray-800
-                       focus:border-[#007979]
-                       focus:outline-none
-                       focus:ring-2
-                       focus:ring-[#007979]/20"
                     ></textarea>
+                    </mat-form-field>
                   </div>
 
                   <!-- =================================================
@@ -524,39 +445,18 @@ import { MatDividerModule } from '@angular/material/divider';
                     <!-- Sort Order -->
 
                     <div>
-                      <label
-                        for="topic-sort-order"
-                        class="block
-             text-sm
-             font-semibold
-             text-[#032D42]"
-                      >
-                        Sort Order
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Sort Order</mat-label>
+                        <input matInput
                         id="topic-sort-order"
                         name="sortOrder"
-                        type="number"
+                        type="number" inputmode="decimal"
                         min="0"
                         step="1"
                         [(ngModel)]="form.sortOrder"
-                        class="mt-1.5
-             block
-             w-full
-             rounded-lg
-             border
-             border-gray-200
-             bg-white
-             px-3.5
-             py-2.5
-             text-sm
-             text-gray-800
-             focus:border-[#007979]
-             focus:outline-none
-             focus:ring-2
-             focus:ring-[#007979]/20"
                       />
+                      </mat-form-field>
 
                       <p
                         class="mt-1
@@ -578,25 +478,7 @@ import { MatDividerModule } from '@angular/material/divider';
            bg-gray-50
            px-4"
                     >
-                      <label
-                        class="flex
-             cursor-pointer
-             items-center
-             gap-3"
-                      >
-                        <input
-                          type="checkbox"
-                          name="active"
-                          [(ngModel)]="form.active"
-                          class="h-4
-               w-4
-               rounded
-               border-gray-300
-               text-[#007979]
-               focus:ring-[#007979]"
-                        />
-
-                        <span>
+                      <mat-checkbox class="zb-checkbox--top" name="active" [(ngModel)]="form.active"><span>
                           <span
                             class="block
                  text-sm
@@ -613,8 +495,7 @@ import { MatDividerModule } from '@angular/material/divider';
                           >
                             Available to Test Center users
                           </span>
-                        </span>
-                      </label>
+                        </span></mat-checkbox>
                     </div>
                   </div>
 

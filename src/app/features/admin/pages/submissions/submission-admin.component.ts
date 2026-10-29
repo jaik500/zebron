@@ -10,10 +10,13 @@ import { ResourceSubmission, SubmissionStatus } from '../../../../core/models/su
 
 import { SubmissionStore } from '../../../submissions/stores/submission.store';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-submission-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- <div class="m-1">
@@ -71,55 +74,35 @@ import { SubmissionStore } from '../../../submissions/stores/submission.store';
         >
           <div class="grid gap-4 md:grid-cols-2">
             <div>
-              <label
-                for="search"
-                class="mb-2 block text-sm
-                       font-medium text-gray-700"
-              >
-                Search submissions
-              </label>
 
-              <input
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Search submissions</mat-label>
+                <input matInput
                 id="search"
                 type="search"
                 [(ngModel)]="searchTerm"
                 placeholder="Search by resource name, organization, email..."
-                class="w-full rounded-lg border
-                       border-gray-300 px-4 py-2.5
-                       text-sm outline-none
-                       focus:border-[#007979]
-                       focus:ring-2
-                       focus:ring-[#007979]/20"
               />
+              </mat-form-field>
             </div>
 
             <div>
-              <label
-                for="status"
-                class="mb-2 block text-sm
-                       font-medium text-gray-700"
-              >
-                Status
-              </label>
 
-              <select
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Status</mat-label>
+                <mat-select
                 id="status"
                 [(ngModel)]="statusFilter"
-                class="w-full rounded-lg border
-                       border-gray-300 bg-white
-                       px-4 py-2.5 text-sm outline-none
-                       focus:border-[#007979]
-                       focus:ring-2
-                       focus:ring-[#007979]/20"
               >
-                <option value="all">All statuses</option>
+                <mat-option value="all">All statuses</mat-option>
 
-                <option value="pending">Pending</option>
+                <mat-option value="pending">Pending</mat-option>
 
-                <option value="approved">Approved</option>
+                <mat-option value="approved">Approved</mat-option>
 
-                <option value="rejected">Rejected</option>
-              </select>
+                <mat-option value="rejected">Rejected</mat-option>
+              </mat-select>
+              </mat-form-field>
             </div>
           </div>
 

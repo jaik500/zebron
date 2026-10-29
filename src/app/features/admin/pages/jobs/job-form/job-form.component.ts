@@ -24,12 +24,16 @@ import { OrganizationContextStore  } from '../../../../organizations/stores/orga
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-job-form',
 
   standalone: true,
 
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
 
   template: `
     <!-- =====================================================
@@ -287,98 +291,38 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 <div class="space-y-6">
                   <!-- Job Title -->
                   <div>
-                    <label
-                      for="title"
-                      class="block
-                             text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      Job title
-                      <span class="text-red-500">*</span>
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Job title</mat-label>
+                      <input matInput
                       id="title"
                       type="text"
                       formControlName="title"
                       placeholder="e.g. Junior Software Developer"
-                      class="mt-1.5 block
-                             w-full
-                             rounded-lg
-                             border
-                             border-gray-300
-                             bg-white
-                             px-3 py-2.5
-                             text-sm
-                             text-gray-900
-                             outline-none
-                             transition
-                             placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     />
-
-                    @if (jobForm.controls.title.touched && jobForm.controls.title.invalid) {
-                      <p
-                        class="mt-1.5
-                               text-xs
-                               text-red-600"
-                      >
-                        Job title is required.
-                      </p>
-                    }
+                      @if (jobForm.controls.title.touched && jobForm.controls.title.invalid) {
+                        <mat-error>Job title is required.</mat-error>
+                      }
+                    </mat-form-field>
                   </div>
 
                   <!-- Description -->
                   <div>
-                    <label
-                      for="description"
-                      class="block
-                             text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      Description
-                      <span class="text-red-500">*</span>
-                    </label>
 
-                    <textarea
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Description</mat-label>
+                      <textarea matInput
                       id="description"
                       rows="13"
                       formControlName="description"
                       placeholder="Describe the position, responsibilities, qualifications, and other relevant details."
-                      class="mt-1.5 block
-                             w-full
-                             resize-y
-                             rounded-lg
-                             border
-                             border-gray-300
-                             bg-white
-                             px-3 py-2.5
-                             text-sm
-                             leading-6
-                             text-gray-900
-                             outline-none
-                             transition
-                             placeholder:text-gray-400
-                             focus:border-[#007979]
-                             focus:ring-2
-                             focus:ring-[#007979]/20"
                     ></textarea>
-
-                    @if (
+                      @if (
                       jobForm.controls.description.touched && jobForm.controls.description.invalid
                     ) {
-                      <p
-                        class="mt-1.5
-                               text-xs
-                               text-red-600"
-                      >
-                        Job description is required and must contain at least 20 characters.
-                      </p>
-                    }
+                        <mat-error>Job description is required and must contain at least 20 characters.</mat-error>
+                      }
+                    </mat-form-field>
                   </div>
                 </div>
 
@@ -419,22 +363,16 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     >
                       <!-- Business Number -->
                       <div>
-                        <label
-                          for="companyNumber"
-                          class="block
-                                 text-sm
-                                 font-medium
-                                 text-gray-700"
-                        >
-                          Business / Registration Number
-                        </label>
 
                         <div
                           class="mt-1.5
                                  flex
+                                 items-start
                                  gap-2"
                         >
-                          <input
+                          <mat-form-field appearance="outline" class="zb-field zb-field--grow">
+                            <mat-label>Business / Registration Number</mat-label>
+                            <input matInput
                             id="companyNumber"
                             type="text"
                             formControlName="companyNumber"
@@ -442,21 +380,8 @@ import { HotToastService } from '@ngxpert/hot-toast';
                             [readonly]="
                               isEditMode() && organizationFound() && !organizationEditing()
                             "
-                            class="min-w-0
-                                   flex-1
-                                   rounded-lg
-                                   border
-                                   border-gray-300
-                                   bg-white
-                                   px-3 py-2.5
-                                   text-sm
-                                   outline-none
-                                   focus:border-[#007979]
-                                   focus:ring-2
-                                   focus:ring-[#007979]/20
-                                   read-only:cursor-not-allowed
-                                   read-only:bg-gray-50"
                           />
+                          </mat-form-field>
 
                           <button
                             type="button"
@@ -468,7 +393,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                                    justify-center
                                    rounded-lg
                                    bg-[#007979]
-                                   px-4 py-2.5
+                                   h-14 px-4
                                    text-sm
                                    font-semibold
                                    text-white
@@ -524,37 +449,16 @@ import { HotToastService } from '@ngxpert/hot-toast';
 
                       <!-- Organization Name -->
                       <div>
-                        <label
-                          for="companyName"
-                          class="block
-                                 text-sm
-                                 font-medium
-                                 text-gray-700"
-                        >
-                          Organization Name
-                          <span class="text-red-500">*</span>
-                        </label>
 
-                        <input
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Organization Name</mat-label>
+                          <input matInput
                           id="companyName"
                           type="text"
                           formControlName="companyName"
                           [readonly]="organizationFound() && !organizationEditing()"
-                          class="mt-1.5 block
-                                 w-full
-                                 rounded-lg
-                                 border
-                                 border-gray-300
-                                 px-3 py-2.5
-                                 text-sm
-                                 text-gray-900
-                                 outline-none
-                                 read-only:cursor-not-allowed
-                                 read-only:bg-gray-50
-                                 focus:border-[#007979]
-                                 focus:ring-2
-                                 focus:ring-[#007979]/20"
                         />
+                        </mat-form-field>
                       </div>
 
                       <!-- Organization Information -->
@@ -598,28 +502,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                                      items-center
                                      gap-3"
                             >
-                              <label
-                                class="inline-flex
-                                       cursor-pointer
-                                       items-center
-                                       gap-2
-                                       text-xs
-                                       font-medium
-                                       text-gray-600"
-                              >
-                                <input
-                                  type="checkbox"
-                                  [checked]="organizationEditing()"
-                                  (change)="toggleOrganizationEditing()"
-                                  class="h-4 w-4
-                                         rounded
-                                         border-gray-300
-                                         text-[#007979]
-                                         focus:ring-[#007979]"
-                                />
-
-                                <span> Edit </span>
-                              </label>
+                              <mat-checkbox [checked]="organizationEditing()" (change)="toggleOrganizationEditing()">Edit</mat-checkbox>
 
                               <span
                                 class="inline-flex
@@ -650,23 +533,14 @@ import { HotToastService } from '@ngxpert/hot-toast';
                             </p>
 
                             @if (organizationEditing()) {
-                              <input
+                              <mat-form-field appearance="outline" class="zb-field">
+                                <mat-label>https://example.org</mat-label>
+                                <input matInput
                                 type="url"
                                 formControlName="organizationWebsite"
                                 placeholder="https://example.org"
-                                class="mt-1.5 block
-                                       w-full
-                                       rounded-lg
-                                       border
-                                       border-gray-300
-                                       bg-white
-                                       px-3 py-2.5
-                                       text-sm
-                                       outline-none
-                                       focus:border-[#007979]
-                                       focus:ring-2
-                                       focus:ring-[#007979]/20"
                               />
+                              </mat-form-field>
                             } @else {
                               <p
                                 class="mt-1
@@ -692,23 +566,14 @@ import { HotToastService } from '@ngxpert/hot-toast';
                             </p>
 
                             @if (organizationEditing()) {
-                              <input
+                              <mat-form-field appearance="outline" class="zb-field">
+                                <mat-label>555-555-5555</mat-label>
+                                <input matInput
                                 type="tel"
                                 formControlName="organizationPhone"
                                 placeholder="555-555-5555"
-                                class="mt-1.5 block
-                                       w-full
-                                       rounded-lg
-                                       border
-                                       border-gray-300
-                                       bg-white
-                                       px-3 py-2.5
-                                       text-sm
-                                       outline-none
-                                       focus:border-[#007979]
-                                       focus:ring-2
-                                       focus:ring-[#007979]/20"
                               />
+                              </mat-form-field>
                             } @else {
                               <p
                                 class="mt-1
@@ -733,23 +598,14 @@ import { HotToastService } from '@ngxpert/hot-toast';
                             </p>
 
                             @if (organizationEditing()) {
-                              <input
+                              <mat-form-field appearance="outline" class="zb-field">
+                                <mat-label>contact@example.org</mat-label>
+                                <input matInput
                                 type="email"
                                 formControlName="organizationEmail"
                                 placeholder="contact@example.org"
-                                class="mt-1.5 block
-                                       w-full
-                                       rounded-lg
-                                       border
-                                       border-gray-300
-                                       bg-white
-                                       px-3 py-2.5
-                                       text-sm
-                                       outline-none
-                                       focus:border-[#007979]
-                                       focus:ring-2
-                                       focus:ring-[#007979]/20"
                               />
+                              </mat-form-field>
                             } @else {
                               <p
                                 class="mt-1
@@ -879,131 +735,74 @@ import { HotToastService } from '@ngxpert/hot-toast';
               >
                 <!-- Employment Type -->
                 <div>
-                  <label
-                    for="employmentType"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Employment type
-                    <span class="text-red-500">*</span>
-                  </label>
 
-                  <select
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Employment type</mat-label>
+                    <mat-select
                     id="employmentType"
                     formControlName="employmentType"
-                    class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   >
-                    <option value="">Select type</option>
+                    <mat-option value="">Select type</mat-option>
 
-                    <option value="full-time">Full-time</option>
+                    <mat-option value="full-time">Full-time</mat-option>
 
-                    <option value="part-time">Part-time</option>
+                    <mat-option value="part-time">Part-time</mat-option>
 
-                    <option value="contract">Contract</option>
+                    <mat-option value="contract">Contract</mat-option>
 
-                    <option value="internship">Internship</option>
+                    <mat-option value="internship">Internship</mat-option>
 
-                    <option value="temporary">Temporary</option>
-                  </select>
+                    <mat-option value="temporary">Temporary</mat-option>
+                  </mat-select>
+                  </mat-form-field>
                 </div>
 
                 <!-- Work Arrangement -->
                 <div>
-                  <label
-                    for="workArrangement"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Work arrangement
-                    <span class="text-red-500">*</span>
-                  </label>
 
-                  <select
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Work arrangement</mat-label>
+                    <mat-select
                     id="workArrangement"
                     formControlName="workArrangement"
-                    class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   >
-                    <option value="">Select arrangement</option>
+                    <mat-option value="">Select arrangement</mat-option>
 
-                    <option value="on-site">On-site</option>
+                    <mat-option value="on-site">On-site</mat-option>
 
-                    <option value="hybrid">Hybrid</option>
+                    <mat-option value="hybrid">Hybrid</mat-option>
 
-                    <option value="remote">Remote</option>
-                  </select>
+                    <mat-option value="remote">Remote</mat-option>
+                  </mat-select>
+                  </mat-form-field>
                 </div>
 
                 <!-- Category -->
                 <div>
-                  <label
-                    for="categoryName"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Category
-                    <span class="text-red-500">*</span>
-                  </label>
 
-                  <select
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Category</mat-label>
+                    <mat-select
                     id="categoryName"
                     formControlName="categoryName"
-                    class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   >
-                    <option value="">Select category</option>
+                    <mat-option value="">Select category</mat-option>
 
-                    <option value="Technology & IT">Technology & IT</option>
+                    <mat-option value="Technology & IT">Technology & IT</mat-option>
 
-                    <option value="Healthcare">Healthcare</option>
+                    <mat-option value="Healthcare">Healthcare</mat-option>
 
-                    <option value="Business & Finance">Business & Finance</option>
+                    <mat-option value="Business & Finance">Business & Finance</mat-option>
 
-                    <option value="Skilled Trades">Skilled Trades</option>
+                    <mat-option value="Skilled Trades">Skilled Trades</mat-option>
 
-                    <option value="Administrative">Administrative</option>
+                    <mat-option value="Administrative">Administrative</mat-option>
 
-                    <option value="Customer Service">Customer Service</option>
+                    <mat-option value="Customer Service">Customer Service</mat-option>
 
-                    <option value="Other">Other</option>
-                  </select>
+                    <mat-option value="Other">Other</mat-option>
+                  </mat-select>
+                  </mat-form-field>
                 </div>
               </div>
             </section>
@@ -1043,127 +842,75 @@ import { HotToastService } from '@ngxpert/hot-toast';
               >
                 <!-- City -->
                 <div>
-                  <label for="city" class="block text-sm font-medium text-gray-700"> City </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>City</mat-label>
+                    <input matInput
                     id="city"
                     type="text"
                     formControlName="city"
                     placeholder="e.g. Washington"
-                    class="mt-1.5 block
-             w-full
-             rounded-lg
-             border
-             border-gray-300
-             px-3 py-2.5
-             text-sm
-             outline-none
-             focus:border-[#007979]
-             focus:ring-2
-             focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
 
                 <!-- State -->
                 <div>
-                  <label for="state" class="block text-sm font-medium text-gray-700"> State </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>State</mat-label>
+                    <input matInput
                     id="state"
                     type="text"
                     formControlName="state"
                     placeholder="e.g. DC"
-                    class="mt-1.5 block
-             w-full
-             rounded-lg
-             border
-             border-gray-300
-             px-3 py-2.5
-             text-sm
-             outline-none
-             focus:border-[#007979]
-             focus:ring-2
-             focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
 
                 <!-- Minimum Salary -->
                 <div>
-                  <label for="salaryMin" class="block text-sm font-medium text-gray-700">
-                    Minimum salary
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Minimum salary</mat-label>
+                    <input matInput
                     id="salaryMin"
-                    type="number"
+                    type="number" inputmode="decimal"
                     min="0"
                     formControlName="salaryMin"
                     placeholder="e.g. 60000"
-                    class="mt-1.5 block
-             w-full
-             rounded-lg
-             border
-             border-gray-300
-             px-3 py-2.5
-             text-sm
-             outline-none
-             focus:border-[#007979]
-             focus:ring-2
-             focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
 
                 <!-- Maximum Salary -->
                 <div>
-                  <label for="salaryMax" class="block text-sm font-medium text-gray-700">
-                    Maximum salary
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Maximum salary</mat-label>
+                    <input matInput
                     id="salaryMax"
-                    type="number"
+                    type="number" inputmode="decimal"
                     min="0"
                     formControlName="salaryMax"
                     placeholder="e.g. 90000"
-                    class="mt-1.5 block
-             w-full
-             rounded-lg
-             border
-             border-gray-300
-             px-3 py-2.5
-             text-sm
-             outline-none
-             focus:border-[#007979]
-             focus:ring-2
-             focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
 
                 <!-- Pay Period -->
                 <div>
-                  <label for="salaryPeriod" class="block text-sm font-medium text-gray-700">
-                    Pay period
-                  </label>
 
-                  <select
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Pay period</mat-label>
+                    <mat-select
                     id="salaryPeriod"
                     formControlName="salaryPeriod"
-                    class="mt-1.5 block
-             w-full
-             rounded-lg
-             border
-             border-gray-300
-             bg-white
-             px-3 py-2.5
-             text-sm
-             outline-none
-             focus:border-[#007979]
-             focus:ring-2
-             focus:ring-[#007979]/20"
                   >
-                    <option value="year">Yearly</option>
-                    <option value="hour">Hourly</option>
-                  </select>
+                    <mat-option value="year">Yearly</mat-option>
+                    <mat-option value="hour">Hourly</mat-option>
+                  </mat-select>
+                  </mat-form-field>
                 </div>
               </div>
             </section>
@@ -1201,33 +948,16 @@ import { HotToastService } from '@ngxpert/hot-toast';
                        sm:px-6"
               >
                 <div>
-                  <label
-                    for="skills"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Skills
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Skills</mat-label>
+                    <input matInput
                     id="skills"
                     type="text"
                     formControlName="skills"
                     placeholder="e.g. JavaScript, Angular, Firebase"
-                    class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
 
                   <p
                     class="mt-1.5
@@ -1239,33 +969,16 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 </div>
 
                 <div>
-                  <label
-                    for="tags"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Tags
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Tags</mat-label>
+                    <input matInput
                     id="tags"
                     type="text"
                     formControlName="tags"
                     placeholder="e.g. entry-level, remote, cleared"
-                    class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
 
                   <p
                     class="mt-1.5
@@ -1277,63 +990,28 @@ import { HotToastService } from '@ngxpert/hot-toast';
                 </div>
 
                 <div>
-                  <label
-                    for="applicationUrl"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Application URL
-                    <span class="text-red-500">*</span>
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Application URL</mat-label>
+                    <input matInput
                     id="applicationUrl"
                     type="url"
                     formControlName="applicationUrl"
                     placeholder="https://example.com/apply"
-                    class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
 
                 <div class="sm:max-w-xs">
-                  <label
-                    for="applicationDeadline"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Application deadline
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Application deadline</mat-label>
+                    <input matInput
                     id="applicationDeadline"
                     type="date"
                     formControlName="applicationDeadline"
-                    class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   />
+                  </mat-form-field>
                 </div>
               </div>
             </section>
@@ -1372,62 +1050,23 @@ import { HotToastService } from '@ngxpert/hot-toast';
                        sm:px-6"
               >
                 <div>
-                  <label
-                    for="status"
-                    class="block
-                           text-sm
-                           font-medium
-                           text-gray-700"
-                  >
-                    Status
-                  </label>
 
-                  <select
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Status</mat-label>
+                    <mat-select
                     id="status"
                     formControlName="status"
-                    class="mt-1.5 block
-                           w-full
-                           rounded-lg
-                           border
-                           border-gray-300
-                           bg-white
-                           px-3 py-2.5
-                           text-sm
-                           outline-none
-                           focus:border-[#007979]
-                           focus:ring-2
-                           focus:ring-[#007979]/20"
                   >
-                    <option value="draft">Draft</option>
+                    <mat-option value="draft">Draft</mat-option>
 
-                    <option value="active">Active</option>
+                    <mat-option value="active">Active</mat-option>
 
-                    <option value="closed">Closed</option>
-                  </select>
+                    <mat-option value="closed">Closed</mat-option>
+                  </mat-select>
+                  </mat-form-field>
                 </div>
 
-                <label
-                  class="flex
-                         cursor-pointer
-                         items-center
-                         gap-3
-                         rounded-lg
-                         border
-                         border-gray-200
-                         px-4 py-3
-                         hover:bg-gray-50"
-                >
-                  <input
-                    type="checkbox"
-                    formControlName="featured"
-                    class="h-4 w-4
-                           rounded
-                           border-gray-300
-                           text-[#007979]
-                           focus:ring-[#007979]"
-                  />
-
-                  <span>
+                <mat-checkbox class="zb-checkbox--top" formControlName="featured"><span>
                     <span
                       class="block
                              text-sm
@@ -1444,8 +1083,7 @@ import { HotToastService } from '@ngxpert/hot-toast';
                     >
                       Give this opportunity additional visibility.
                     </span>
-                  </span>
-                </label>
+                  </span></mat-checkbox>
               </div>
             </section>
 

@@ -30,6 +30,11 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
 // ============================================================
 // FORM MODEL
 // ============================================================
@@ -55,8 +60,7 @@ interface CourseForm {
     RouterLink,
     MatIconModule,
     MatDividerModule,
-    MatMenuModule,
-  ],
+    MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButtonModule],
   template: `
     <!-- =========================================================
          PAGE
@@ -438,44 +442,24 @@ interface CourseForm {
                     <!-- Course Scope -->
 
                     <div>
-                      <label
-                        for="courseScope"
-                        class="mb-2 block
-                               text-sm
-                               font-semibold
-                               text-gray-700"
-                      >
-                        Course Scope
-                      </label>
 
-                      <select
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Course Scope</mat-label>
+                        <mat-select
                         id="courseScope"
                         name="courseScope"
                         [(ngModel)]="form.scope"
                         [disabled]="!!editingCourseId()"
-                        class="w-full
-                               rounded-lg
-                               border border-gray-300
-                               bg-white
-                               px-3 py-2.5
-                               text-sm
-                               text-gray-900
-                               shadow-sm
-                               focus:border-teal-600
-                               focus:outline-none
-                               focus:ring-2
-                               focus:ring-teal-200
-                               disabled:cursor-not-allowed
-                               disabled:bg-gray-100"
                       >
-                        <option value="organization">
+                        <mat-option value="organization">
                           Organization Course
-                        </option>
+                        </mat-option>
 
-                        <option value="platform">
+                        <mat-option value="platform">
                           Zebron Platform Course
-                        </option>
-                      </select>
+                        </mat-option>
+                      </mat-select>
+                      </mat-form-field>
 
                       <p
                         class="mt-1.5
@@ -495,54 +479,31 @@ interface CourseForm {
                     @if (form.scope === 'organization') {
 
                       <div>
-                        <label
-                          for="courseOrganization"
-                          class="mb-2 block
-                                 text-sm
-                                 font-semibold
-                                 text-gray-700"
-                        >
-                          Organization
-                          <span class="text-red-500">
-                            *
-                          </span>
-                        </label>
 
-                        <select
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Organization</mat-label>
+                          <mat-select
                           id="courseOrganization"
                           name="courseOrganization"
                           [(ngModel)]="form.organizationId"
                           [disabled]="!!editingCourseId() || organizationLoading()"
-                          class="w-full
-                                 rounded-lg
-                                 border border-gray-300
-                                 bg-white
-                                 px-3 py-2.5
-                                 text-sm
-                                 text-gray-900
-                                 shadow-sm
-                                 focus:border-teal-600
-                                 focus:outline-none
-                                 focus:ring-2
-                                 focus:ring-teal-200
-                                 disabled:cursor-not-allowed
-                                 disabled:bg-gray-100"
                         >
-                          <option value="">
+                          <mat-option value="">
                             Select an organization
-                          </option>
+                          </mat-option>
 
                           @for (
                             organization of organizations();
                             track organization.id
                           ) {
-                            <option
+                            <mat-option
                               [value]="organization.id"
                             >
                               {{ organization.name }}
-                            </option>
+                            </mat-option>
                           }
-                        </select>
+                        </mat-select>
+                        </mat-form-field>
 
                         @if (organizationLoading()) {
 
@@ -578,42 +539,18 @@ interface CourseForm {
                   @if (form.scope === 'organization') {
 
                     <div>
-                      <label
-                        for="courseProgram"
-                        class="mb-1.5 block
-                               text-sm
-                               font-medium
-                               text-gray-700"
-                      >
-                        Program
-                        <span class="text-red-500">
-                          *
-                        </span>
-                      </label>
 
-                      <select
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Program</mat-label>
+                        <mat-select
                         id="courseProgram"
                         name="courseProgram"
                         [(ngModel)]="form.programId"
                         [disabled]="!!editingCourseId()"
-                        class="w-full
-                               rounded-lg
-                               border border-gray-300
-                               bg-white
-                               px-3 py-2.5
-                               text-sm
-                               text-gray-900
-                               outline-none
-                               transition
-                               focus:border-teal-500
-                               focus:ring-2
-                               focus:ring-teal-100
-                               disabled:cursor-not-allowed
-                               disabled:bg-gray-100"
                       >
-                        <option value="">
+                        <mat-option value="">
                           Select a program
-                        </option>
+                        </mat-option>
 
                         <!--
                           Temporary program catalog.
@@ -622,18 +559,19 @@ interface CourseForm {
                           once organization-owned programs are connected.
                         -->
 
-                        <option value="cyber">
+                        <mat-option value="cyber">
                           Cybersecurity
-                        </option>
+                        </mat-option>
 
-                        <option value="aws">
+                        <mat-option value="aws">
                           AWS
-                        </option>
+                        </mat-option>
 
-                        <option value="linux">
+                        <mat-option value="linux">
                           Linux
-                        </option>
-                      </select>
+                        </mat-option>
+                      </mat-select>
+                      </mat-form-field>
 
                       <p
                         class="mt-1.5
@@ -658,20 +596,10 @@ interface CourseForm {
                     <!-- Course Name -->
 
                     <div>
-                      <label
-                        for="courseName"
-                        class="mb-1.5 block
-                               text-sm
-                               font-medium
-                               text-gray-700"
-                      >
-                        Course Name
-                        <span class="text-red-500">
-                          *
-                        </span>
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Course Name</mat-label>
+                        <input matInput
                         id="courseName"
                         name="courseName"
                         type="text"
@@ -679,38 +607,17 @@ interface CourseForm {
                         (ngModelChange)="onNameChange()"
                         placeholder="e.g. Cybersecurity Fundamentals"
                         autocomplete="off"
-                        class="w-full
-                               rounded-lg
-                               border border-gray-300
-                               bg-white
-                               px-3 py-2.5
-                               text-sm
-                               text-gray-900
-                               outline-none
-                               transition
-                               focus:border-teal-500
-                               focus:ring-2
-                               focus:ring-teal-100"
                       />
+                      </mat-form-field>
                     </div>
 
                     <!-- Slug -->
 
                     <div>
-                      <label
-                        for="courseSlug"
-                        class="mb-1.5 block
-                               text-sm
-                               font-medium
-                               text-gray-700"
-                      >
-                        URL Slug
-                        <span class="text-red-500">
-                          *
-                        </span>
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>URL Slug</mat-label>
+                        <input matInput
                         id="courseSlug"
                         name="courseSlug"
                         type="text"
@@ -718,21 +625,8 @@ interface CourseForm {
                         [readonly]="!!editingCourseId()"
                         placeholder="cybersecurity-fundamentals"
                         autocomplete="off"
-                        class="w-full
-                               rounded-lg
-                               border border-gray-300
-                               bg-white
-                               px-3 py-2.5
-                               text-sm
-                               text-gray-900
-                               outline-none
-                               transition
-                               focus:border-teal-500
-                               focus:ring-2
-                               focus:ring-teal-100
-                               read-only:bg-gray-100
-                               read-only:text-gray-500"
                       />
+                      </mat-form-field>
 
                       <p
                         class="mt-1
@@ -761,86 +655,47 @@ interface CourseForm {
                     <!-- Type -->
 
                     <div>
-                      <label
-                        for="courseType"
-                        class="mb-1.5 block
-                               text-sm
-                               font-medium
-                               text-gray-700"
-                      >
-                        Course Type
-                        <span class="text-red-500">
-                          *
-                        </span>
-                      </label>
 
-                      <select
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Course Type</mat-label>
+                        <mat-select
                         id="courseType"
                         name="courseType"
                         [(ngModel)]="form.type"
-                        class="w-full
-                               rounded-lg
-                               border border-gray-300
-                               bg-white
-                               px-3 py-2.5
-                               text-sm
-                               text-gray-900
-                               outline-none
-                               transition
-                               focus:border-teal-500
-                               focus:ring-2
-                               focus:ring-teal-100"
                       >
-                        <option value="certification">
+                        <mat-option value="certification">
                           Certification
-                        </option>
+                        </mat-option>
 
-                        <option value="course">
+                        <mat-option value="course">
                           Course
-                        </option>
+                        </mat-option>
 
-                        <option value="subject">
+                        <mat-option value="subject">
                           Subject
-                        </option>
+                        </mat-option>
 
-                        <option value="skill">
+                        <mat-option value="skill">
                           Skill
-                        </option>
-                      </select>
+                        </mat-option>
+                      </mat-select>
+                      </mat-form-field>
                     </div>
 
                     <!-- Provider -->
 
                     <div>
-                      <label
-                        for="provider"
-                        class="mb-1.5 block
-                               text-sm
-                               font-medium
-                               text-gray-700"
-                      >
-                        Provider
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Provider</mat-label>
+                        <input matInput
                         id="provider"
                         name="provider"
                         type="text"
                         [(ngModel)]="form.provider"
                         placeholder="e.g. Zebron"
-                        class="w-full
-                               rounded-lg
-                               border border-gray-300
-                               bg-white
-                               px-3 py-2.5
-                               text-sm
-                               text-gray-900
-                               outline-none
-                               transition
-                               focus:border-teal-500
-                               focus:ring-2
-                               focus:ring-teal-100"
                       />
+                      </mat-form-field>
                     </div>
 
                   </div>
@@ -850,35 +705,17 @@ interface CourseForm {
                        ================================================= -->
 
                   <div>
-                    <label
-                      for="certificationCode"
-                      class="mb-1.5 block
-                             text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      Certification Code
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Certification Code</mat-label>
+                      <input matInput
                       id="certificationCode"
                       name="certificationCode"
                       type="text"
                       [(ngModel)]="form.certificationCode"
                       placeholder="e.g. cybersecurity"
-                      class="w-full
-                             rounded-lg
-                             border border-gray-300
-                             bg-white
-                             px-3 py-2.5
-                             text-sm
-                             text-gray-900
-                             outline-none
-                             transition
-                             focus:border-teal-500
-                             focus:ring-2
-                             focus:ring-teal-100"
                     />
+                    </mat-form-field>
 
                     <p
                       class="mt-1
@@ -894,36 +731,17 @@ interface CourseForm {
                        ================================================= -->
 
                   <div>
-                    <label
-                      for="description"
-                      class="mb-1.5 block
-                             text-sm
-                             font-medium
-                             text-gray-700"
-                    >
-                      Description
-                    </label>
 
-                    <textarea
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Description</mat-label>
+                      <textarea matInput
                       id="description"
                       name="description"
                       [(ngModel)]="form.description"
                       rows="4"
                       placeholder="Describe what this course covers..."
-                      class="w-full
-                             resize-y
-                             rounded-lg
-                             border border-gray-300
-                             bg-white
-                             px-3 py-2.5
-                             text-sm
-                             text-gray-900
-                             outline-none
-                             transition
-                             focus:border-teal-500
-                             focus:ring-2
-                             focus:ring-teal-100"
                     ></textarea>
+                    </mat-form-field>
                   </div>
 
                   <!-- =================================================
@@ -937,23 +755,7 @@ interface CourseForm {
                            bg-gray-50
                            p-4"
                   >
-                    <label
-                      class="flex cursor-pointer
-                             items-start gap-3"
-                    >
-                      <input
-                        type="checkbox"
-                        name="active"
-                        [(ngModel)]="form.active"
-                        class="mt-0.5
-                               h-4 w-4
-                               rounded
-                               border-gray-300
-                               text-teal-600
-                               focus:ring-teal-500"
-                      />
-
-                      <span>
+                    <mat-checkbox class="zb-checkbox--top" name="active" [(ngModel)]="form.active"><span>
                         <span
                           class="block
                                  text-sm
@@ -971,8 +773,7 @@ interface CourseForm {
                         >
                           Active courses are available to Test Center users.
                         </span>
-                      </span>
-                    </label>
+                      </span></mat-checkbox>
                   </div>
 
                   <!-- =================================================

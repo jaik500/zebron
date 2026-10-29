@@ -30,10 +30,14 @@ import {
 import { TestQuestionImportService } from '../../../test-center/services/test-question-import.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import { OrganizationContextService } from '../../../../core/services/organization-context.service';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatRadioModule } from '@angular/material/radio';
 @Component({
   selector: 'app-test-question-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule, MatRadioModule],
   template: `
     <div class="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8 mt-10">
       <div class="mx-auto max-w-7xl">
@@ -172,31 +176,23 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                   </p>
                 </div>
 
-                <label for="importBank" class="mb-1.5 block text-sm font-medium text-gray-700">
-                  Question Bank
-                </label>
 
-                <select
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Question Bank</mat-label>
+                  <mat-select
                   id="importBank"
                   name="importBank"
                   [ngModel]="selectedImportBank()"
                   (ngModelChange)="selectedImportBank.set($event)"
                   [disabled]="importing()"
-                  class="w-full rounded-lg border border-gray-300
-                         bg-white px-3 py-2.5
-                         text-sm text-gray-900
-                         outline-none transition
-                         focus:border-teal-500
-                         focus:ring-2 focus:ring-teal-100
-                         disabled:cursor-not-allowed
-                         disabled:opacity-50"
                 >
                   @for (bank of questionBanks; track bank.id) {
-                    <option [value]="bank.id">
+                    <mat-option [value]="bank.id">
                       {{ bank.name }} — {{ bank.questions.length }} Questions
-                    </option>
+                    </mat-option>
                   }
-                </select>
+                </mat-select>
+                </mat-form-field>
 
                 @if (selectedImportBankDescription()) {
                   <p class="mt-2 text-xs text-gray-500">
@@ -430,55 +426,40 @@ import { OrganizationContextService } from '../../../../core/services/organizati
             <!-- Course -->
 
             <div>
-              <label for="course" class="mb-1.5 block text-sm font-medium text-gray-700">
-                Course <span class="text-red-500">*</span>
-              </label>
 
-              <select
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Course</mat-label>
+                <mat-select
                 id="course"
                 name="course"
                 [ngModel]="selectedCourseId()"
                 (ngModelChange)="onCourseChange($event)"
-                class="w-full rounded-lg border border-gray-300
-                       bg-white px-3 py-2.5
-                       text-sm text-gray-900
-                       outline-none transition
-                       focus:border-teal-500
-                       focus:ring-2 focus:ring-teal-100"
               >
-                <option value="">Select a course</option>
+                <mat-option value="">Select a course</mat-option>
 
                 @for (course of courses(); track course.id) {
-                  <option [value]="course.id">
+                  <mat-option [value]="course.id">
                     {{ course.name }}
-                  </option>
+                  </mat-option>
                 }
-              </select>
+              </mat-select>
+              </mat-form-field>
             </div>
 
             <!-- Topic -->
 
             <div>
-              <label for="topic" class="mb-1.5 block text-sm font-medium text-gray-700">
-                Topic <span class="text-red-500">*</span>
-              </label>
 
-              <select
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Topic</mat-label>
+                <mat-select
                 id="topic"
                 name="topic"
                 [ngModel]="selectedTopicId()"
                 (ngModelChange)="onTopicChange($event)"
                 [disabled]="!selectedCourseId() || loadingTopics()"
-                class="w-full rounded-lg border border-gray-300
-                       bg-white px-3 py-2.5
-                       text-sm text-gray-900
-                       outline-none transition
-                       focus:border-teal-500
-                       focus:ring-2 focus:ring-teal-100
-                       disabled:cursor-not-allowed
-                       disabled:bg-gray-100"
               >
-                <option value="">
+                <mat-option value="">
                   @if (loadingTopics()) {
                     Loading topics...
                   } @else if (!selectedCourseId()) {
@@ -486,14 +467,15 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                   } @else {
                     Select a topic
                   }
-                </option>
+                </mat-option>
 
                 @for (topic of topics(); track topic.id) {
-                  <option [value]="topic.id">
+                  <mat-option [value]="topic.id">
                     {{ topic.name }}
-                  </option>
+                  </mat-option>
                 }
-              </select>
+              </mat-select>
+              </mat-form-field>
             </div>
           </div>
 
@@ -812,126 +794,73 @@ import { OrganizationContextService } from '../../../../core/services/organizati
               <!-- Question -->
 
               <div>
-                <label
-                  for="questionText"
-                  class="mb-1.5 block
-                         text-sm font-medium
-                         text-gray-700"
-                >
-                  Question
-                  <span class="text-red-500">*</span>
-                </label>
 
-                <textarea
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Question</mat-label>
+                  <textarea matInput
                   id="questionText"
                   name="questionText"
                   rows="4"
                   [(ngModel)]="form.question"
                   placeholder="Enter the question..."
-                  class="w-full rounded-lg
-                         border border-gray-300
-                         px-3 py-2.5
-                         text-sm text-gray-900
-                         outline-none transition
-                         focus:border-teal-500
-                         focus:ring-2
-                         focus:ring-teal-100"
                 ></textarea>
+                </mat-form-field>
               </div>
 
               <!-- Type / Difficulty / Status -->
 
               <div class="grid gap-4 md:grid-cols-3">
                 <div>
-                  <label
-                    for="questionType"
-                    class="mb-1.5 block
-                           text-sm font-medium
-                           text-gray-700"
-                  >
-                    Question Type
-                  </label>
 
-                  <select
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Question Type</mat-label>
+                    <mat-select
                     id="questionType"
                     name="questionType"
                     [(ngModel)]="form.type"
                     (ngModelChange)="onQuestionTypeChange()"
-                    class="w-full rounded-lg
-                           border border-gray-300
-                           bg-white px-3 py-2.5
-                           text-sm text-gray-900
-                           outline-none transition
-                           focus:border-teal-500
-                           focus:ring-2
-                           focus:ring-teal-100"
                   >
-                    <option value="multiple-choice">Multiple Choice</option>
+                    <mat-option value="multiple-choice">Multiple Choice</mat-option>
 
-                    <option value="true-false">True / False</option>
-                  </select>
+                    <mat-option value="true-false">True / False</mat-option>
+                  </mat-select>
+                  </mat-form-field>
                 </div>
 
                 <div>
-                  <label
-                    for="difficulty"
-                    class="mb-1.5 block
-                           text-sm font-medium
-                           text-gray-700"
-                  >
-                    Difficulty
-                  </label>
 
-                  <select
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Difficulty</mat-label>
+                    <mat-select
                     id="difficulty"
                     name="difficulty"
                     [(ngModel)]="form.difficulty"
-                    class="w-full rounded-lg
-                           border border-gray-300
-                           bg-white px-3 py-2.5
-                           text-sm text-gray-900
-                           outline-none transition
-                           focus:border-teal-500
-                           focus:ring-2
-                           focus:ring-teal-100"
                   >
-                    <option value="easy">Easy</option>
+                    <mat-option value="easy">Easy</mat-option>
 
-                    <option value="medium">Medium</option>
+                    <mat-option value="medium">Medium</mat-option>
 
-                    <option value="hard">Hard</option>
-                  </select>
+                    <mat-option value="hard">Hard</mat-option>
+                  </mat-select>
+                  </mat-form-field>
                 </div>
 
                 <div>
-                  <label
-                    for="status"
-                    class="mb-1.5 block
-                           text-sm font-medium
-                           text-gray-700"
-                  >
-                    Status
-                  </label>
 
-                  <select
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Status</mat-label>
+                    <mat-select
                     id="status"
                     name="status"
                     [(ngModel)]="form.status"
-                    class="w-full rounded-lg
-                           border border-gray-300
-                           bg-white px-3 py-2.5
-                           text-sm text-gray-900
-                           outline-none transition
-                           focus:border-teal-500
-                           focus:ring-2
-                           focus:ring-teal-100"
                   >
-                    <option value="draft">Draft</option>
+                    <mat-option value="draft">Draft</mat-option>
 
-                    <option value="published">Published</option>
+                    <mat-option value="published">Published</mat-option>
 
-                    <option value="archived">Archived</option>
-                  </select>
+                    <mat-option value="archived">Archived</mat-option>
+                  </mat-select>
+                  </mat-form-field>
                 </div>
               </div>
 
@@ -985,18 +914,15 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                     >
                       <!-- Radio -->
 
-                      <div class="pt-2">
-                        <input
-                          type="radio"
+                      <div class="pt-1">
+                        <mat-radio-button
                           name="correctAnswer"
                           [value]="option.id"
-                          [(ngModel)]="form.correctAnswer"
+                          [checked]="form.correctAnswer === option.id"
+                          (change)="form.correctAnswer = $event.value"
                           [id]="'correct-' + option.id"
-                          class="h-4 w-4
-                                 border-gray-300
-                                 text-teal-600
-                                 focus:ring-teal-500"
-                        />
+                          [attr.aria-label]="'Mark option ' + (i + 1) + ' as correct'"
+                        ></mat-radio-button>
                       </div>
 
                       <!-- Letter -->
@@ -1019,21 +945,16 @@ import { OrganizationContextService } from '../../../../core/services/organizati
                           Option {{ optionLetter(i) }}
                         </label>
 
-                        <input
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Enter answer option...</mat-label>
+                          <input matInput
                           [id]="'option-' + option.id"
                           [name]="'option-' + option.id"
                           type="text"
                           [(ngModel)]="option.text"
                           placeholder="Enter answer option..."
-                          class="w-full rounded-lg
-                                 border border-gray-300
-                                 px-3 py-2
-                                 text-sm text-gray-900
-                                 outline-none transition
-                                 focus:border-teal-500
-                                 focus:ring-2
-                                 focus:ring-teal-100"
                         />
+                        </mat-form-field>
 
                         @if (form.correctAnswer === option.id) {
                           <p
@@ -1072,87 +993,48 @@ import { OrganizationContextService } from '../../../../core/services/organizati
 
               <div class="grid gap-5 md:grid-cols-2">
                 <div>
-                  <label
-                    for="explanation"
-                    class="mb-1.5 block
-                           text-sm font-medium
-                           text-gray-700"
-                  >
-                    Explanation
-                  </label>
 
-                  <textarea
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Explanation</mat-label>
+                    <textarea matInput
                     id="explanation"
                     name="explanation"
                     rows="4"
                     [(ngModel)]="form.explanation"
                     placeholder="Explain why the correct answer is correct..."
-                    class="w-full rounded-lg
-                           border border-gray-300
-                           px-3 py-2.5
-                           text-sm text-gray-900
-                           outline-none transition
-                           focus:border-teal-500
-                           focus:ring-2
-                           focus:ring-teal-100"
                   ></textarea>
+                  </mat-form-field>
                 </div>
 
                 <div>
-                  <label
-                    for="hint"
-                    class="mb-1.5 block
-                           text-sm font-medium
-                           text-gray-700"
-                  >
-                    Hint
-                  </label>
 
-                  <textarea
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Hint</mat-label>
+                    <textarea matInput
                     id="hint"
                     name="hint"
                     rows="4"
                     [(ngModel)]="form.hint"
                     placeholder="Optional answer-neutral hint..."
-                    class="w-full rounded-lg
-                           border border-gray-300
-                           px-3 py-2.5
-                           text-sm text-gray-900
-                           outline-none transition
-                           focus:border-teal-500
-                           focus:ring-2
-                           focus:ring-teal-100"
                   ></textarea>
+                  </mat-form-field>
                 </div>
               </div>
 
               <!-- Tags -->
 
               <div>
-                <label
-                  for="tags"
-                  class="mb-1.5 block
-                         text-sm font-medium
-                         text-gray-700"
-                >
-                  Tags
-                </label>
 
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Tags</mat-label>
+                  <input matInput
                   id="tags"
                   name="tags"
                   type="text"
                   [(ngModel)]="form.tagsText"
                   placeholder="e.g. cmdb, discovery, csdm"
-                  class="w-full rounded-lg
-                         border border-gray-300
-                         px-3 py-2.5
-                         text-sm text-gray-900
-                         outline-none transition
-                         focus:border-teal-500
-                         focus:ring-2
-                         focus:ring-teal-100"
                 />
+                </mat-form-field>
 
                 <p class="mt-1 text-xs text-gray-500">Separate multiple tags with commas.</p>
               </div>
@@ -1173,59 +1055,33 @@ import { OrganizationContextService } from '../../../../core/services/organizati
 
                 <div class="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label
-                      for="sourceType"
-                      class="mb-1.5 block
-                             text-sm font-medium
-                             text-gray-700"
-                    >
-                      Source Type
-                    </label>
 
-                    <select
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Source Type</mat-label>
+                      <mat-select
                       id="sourceType"
                       name="sourceType"
                       [(ngModel)]="form.sourceType"
-                      class="w-full rounded-lg
-                             border border-gray-300
-                             bg-white px-3 py-2.5
-                             text-sm text-gray-900
-                             outline-none transition
-                             focus:border-teal-500
-                             focus:ring-2
-                             focus:ring-teal-100"
                     >
-                      <option value="original">Original</option>
+                      <mat-option value="original">Original</mat-option>
 
-                      <option value="licensed">Licensed</option>
-                    </select>
+                      <mat-option value="licensed">Licensed</mat-option>
+                    </mat-select>
+                    </mat-form-field>
                   </div>
 
                   <div>
-                    <label
-                      for="sourceReference"
-                      class="mb-1.5 block
-                             text-sm font-medium
-                             text-gray-700"
-                    >
-                      Source Reference
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Source Reference</mat-label>
+                      <input matInput
                       id="sourceReference"
                       name="sourceReference"
                       type="text"
                       [(ngModel)]="form.sourceReference"
                       placeholder="Optional source/reference"
-                      class="w-full rounded-lg
-                             border border-gray-300
-                             bg-white px-3 py-2.5
-                             text-sm text-gray-900
-                             outline-none transition
-                             focus:border-teal-500
-                             focus:ring-2
-                             focus:ring-teal-100"
                     />
+                    </mat-form-field>
                   </div>
                 </div>
               </div>
