@@ -201,14 +201,6 @@ interface DashboardCard {
                   <div
                     class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500"
                   >
-                    @if (access.isPlatformAdmin()) {
-                      <span class="hidden sm:inline"> • </span>
-                      <span>
-                        {{ organizationStore.organizations().length }}
-                        organization{{ organizationStore.organizations().length === 1 ? '' : 's' }}
-                        available
-                      </span>
-                    }
                   </div>
                 </div>
               </div>

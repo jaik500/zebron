@@ -1234,8 +1234,20 @@ export const OrganizationContextStore = signalStore(
         });
 
         try {
-          const applications =
-            await organizationApplicationRepository.getApplications(normalizedId);
+          // Roles below admin may only read active entitlements.
+          let applications: OrganizationApplication[];
+
+          try {
+            applications =
+              await organizationApplicationRepository.getApplications(normalizedId);
+          } catch (error) {
+            if (!isPermissionDenied(error)) {
+              throw error;
+            }
+
+            applications =
+              await organizationApplicationRepository.getActiveApplications(normalizedId);
+          }
 
           patchState(store, {
             organizationApplications: applications,
@@ -1362,9 +1374,15 @@ export const OrganizationContextStore = signalStore(
             organizationRole === 'org_admin';
 
           const [applications, settings, onboarding] = await Promise.all([
+            // Owners/admins can read every entitlement. Everyone else may only
+            // read active ones, so their query must filter on status or
+            // Firestore rejects the whole list.
             loadOptional(
               'Application entitlements',
-              () => organizationApplicationRepository.getApplications(normalizedId),
+              () =>
+                canReadAdministrativeSettings
+                  ? organizationApplicationRepository.getApplications(normalizedId)
+                  : organizationApplicationRepository.getActiveApplications(normalizedId),
               [] as OrganizationApplication[],
               canReadAdministrativeSettings,
             ),
@@ -1521,9 +1539,15 @@ export const OrganizationContextStore = signalStore(
             organizationRole === 'org_admin';
 
           const [applications, settings, onboarding] = await Promise.all([
+            // Owners/admins can read every entitlement. Everyone else may only
+            // read active ones, so their query must filter on status or
+            // Firestore rejects the whole list.
             loadOptional(
               'Application entitlements',
-              () => organizationApplicationRepository.getApplications(normalizedId),
+              () =>
+                canReadAdministrativeSettings
+                  ? organizationApplicationRepository.getApplications(normalizedId)
+                  : organizationApplicationRepository.getActiveApplications(normalizedId),
               [] as OrganizationApplication[],
               canReadAdministrativeSettings,
             ),

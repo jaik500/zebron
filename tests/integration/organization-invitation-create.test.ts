@@ -1016,8 +1016,9 @@ it('rejects an org_owner invitation role', async () => {
       async (role) => {
         await seedOrganization();
 
+        // Owners can invite to every invitable role.
         await seedMembership({
-          role: 'org_admin',
+          role: 'org_owner',
         });
 
         const result =
@@ -1034,6 +1035,85 @@ it('rejects an org_owner invitation role', async () => {
         );
       },
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // ROLE LADDER: INVITE ONLY TO ROLES BELOW YOUR OWN
+  // -------------------------------------------------------------------------
+
+  describe('role ladder', () => {
+    it.each([
+      ['org_admin', 'org_manager'],
+      ['org_admin', 'org_staff'],
+      ['org_admin', 'org_member'],
+      ['org_manager', 'org_staff'],
+      ['org_manager', 'org_member'],
+    ])(
+      'allows %s to invite %s',
+      async (inviterRole, role) => {
+        await seedOrganization();
+
+        await seedMembership({
+          role: inviterRole,
+        });
+
+        const result =
+          await invokeCreate({
+            role,
+          });
+
+        expect(result.role).toBe(role);
+      },
+    );
+
+    it.each([
+      ['org_admin', 'org_admin'],
+      ['org_manager', 'org_manager'],
+      ['org_manager', 'org_admin'],
+    ])(
+      'rejects %s inviting %s',
+      async (inviterRole, role) => {
+        await seedOrganization();
+
+        await seedMembership({
+          role: inviterRole,
+        });
+
+        await expect(
+          invokeCreate({
+            role,
+          }),
+        ).rejects.toThrow(
+          'You can only invite people to roles below your own.',
+        );
+      },
+    );
+
+    it('allows a platform administrator to invite an org_admin', async () => {
+      await seedOrganization();
+
+      await testEnv.withSecurityRulesDisabled(
+        async (context) => {
+          await setDoc(
+            doc(
+              context.firestore(),
+              `users/${INVITER_USER_ID}`,
+            ),
+            {
+              platformRole: 'platform-admin',
+            },
+          );
+        },
+      );
+
+      const result =
+        await invokeCreate({
+          role: 'org_admin',
+          platformAdmin: true,
+        });
+
+      expect(result.role).toBe('org_admin');
+    });
   });
 
   // -------------------------------------------------------------------------
