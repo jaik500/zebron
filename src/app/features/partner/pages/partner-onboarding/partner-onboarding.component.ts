@@ -44,6 +44,7 @@ import { OrganizationInvitationService } from '../../services/organization-invit
 import { MatSelectModule } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
 
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 interface OnboardingStep {
   key: OrganizationOnboardingStep;
   label: string;
@@ -67,8 +68,7 @@ interface OnboardingStep {
     MatInputModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    MatSelectModule,
-  ],
+    MatSelectModule, MatSlideToggleModule],
   template: `
     <div class="onboarding-page">
       <!-- =========================================================
@@ -436,7 +436,7 @@ interface OnboardingStep {
                   </div>
 
                   <!-- Organization Name -->
-                  <mat-form-field appearance="outline" class="organization-form-field full-field">
+                  <mat-form-field appearance="outline" class="zb-field organization-form-field">
                     <mat-label> Organization Name </mat-label>
 
                     <mat-icon matPrefix> business </mat-icon>
@@ -456,7 +456,7 @@ interface OnboardingStep {
                   <!-- Short fields -->
                   <div class="field-grid">
                     <!-- Organization Slug -->
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label> Organization Slug </mat-label>
 
                       <mat-icon matPrefix> link </mat-icon>
@@ -467,7 +467,7 @@ interface OnboardingStep {
                     </mat-form-field>
 
                     <!-- Company Number -->
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label> Company / Registration Number </mat-label>
 
                       <mat-icon matPrefix> badge </mat-icon>
@@ -478,7 +478,7 @@ interface OnboardingStep {
                   </div>
 
                   <!-- Description -->
-                  <mat-form-field appearance="outline" class="organization-form-field full-field">
+                  <mat-form-field appearance="outline" class="zb-field organization-form-field">
                     <mat-label> Organization Description </mat-label>
 
                     <mat-icon matPrefix> description </mat-icon>
@@ -507,7 +507,7 @@ interface OnboardingStep {
 
                   <div class="field-grid">
                     <!-- Website -->
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label> Website </mat-label>
 
                       <mat-icon matPrefix> language </mat-icon>
@@ -517,7 +517,7 @@ interface OnboardingStep {
                     </mat-form-field>
 
                     <!-- Phone -->
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label> Organization Phone </mat-label>
 
                       <mat-icon matPrefix> phone </mat-icon>
@@ -527,7 +527,7 @@ interface OnboardingStep {
                     </mat-form-field>
 
                     <!-- Email -->
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label> Organization Email </mat-label>
 
                       <mat-icon matPrefix> email </mat-icon>
@@ -541,7 +541,7 @@ interface OnboardingStep {
                     </mat-form-field>
 
                     <!-- Location -->
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label> Location </mat-label>
 
                       <mat-icon matPrefix> location_on </mat-icon>
@@ -639,7 +639,7 @@ interface OnboardingStep {
 
                     <div class="field-grid">
                       <!-- First Name -->
-                      <mat-form-field appearance="outline" class="organization-form-field">
+                      <mat-form-field appearance="outline" class="zb-field organization-form-field">
                         <mat-label> First Name </mat-label>
 
                         <mat-icon matPrefix> person </mat-icon>
@@ -652,7 +652,7 @@ interface OnboardingStep {
                       </mat-form-field>
 
                       <!-- Last Name -->
-                      <mat-form-field appearance="outline" class="organization-form-field">
+                      <mat-form-field appearance="outline" class="zb-field organization-form-field">
                         <mat-label> Last Name </mat-label>
 
                         <mat-icon matPrefix> person </mat-icon>
@@ -665,7 +665,7 @@ interface OnboardingStep {
                       </mat-form-field>
 
                       <!-- Preferred Name -->
-                      <mat-form-field appearance="outline" class="organization-form-field">
+                      <mat-form-field appearance="outline" class="zb-field organization-form-field">
                         <mat-label> Preferred Name </mat-label>
 
                         <mat-icon matPrefix> badge </mat-icon>
@@ -676,7 +676,7 @@ interface OnboardingStep {
                       </mat-form-field>
 
                       <!-- Phone -->
-                      <mat-form-field appearance="outline" class="organization-form-field">
+                      <mat-form-field appearance="outline" class="zb-field organization-form-field">
                         <mat-label> Phone </mat-label>
 
                         <mat-icon matPrefix> phone </mat-icon>
@@ -689,7 +689,7 @@ interface OnboardingStep {
                       <!-- Email -->
                       <mat-form-field
                         appearance="outline"
-                        class="organization-form-field full-field"
+                        class="zb-field organization-form-field"
                       >
                         <mat-label> Email </mat-label>
 
@@ -770,7 +770,7 @@ interface OnboardingStep {
                   </div>
 
                   <div class="field-grid">
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label> Email Address </mat-label>
 
                       <mat-icon matPrefix> email </mat-icon>
@@ -788,7 +788,7 @@ interface OnboardingStep {
                       </mat-hint>
                     </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label> Organization Role </mat-label>
 
                       <mat-icon matPrefix> badge </mat-icon>
@@ -916,7 +916,7 @@ interface OnboardingStep {
                   </div>
 
                   <div class="field-grid">
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label>Default Member Role</mat-label>
                       <mat-icon matPrefix>person</mat-icon>
 
@@ -944,11 +944,7 @@ interface OnboardingStep {
                       </div>
                     </div>
 
-                    <input
-                      type="checkbox"
-                      [(ngModel)]="configuration.allowSelfRegistration"
-                      [disabled]="configurationSaving()"
-                    />
+                    <mat-slide-toggle [(ngModel)]="configuration.allowSelfRegistration" [disabled]="configurationSaving()"></mat-slide-toggle>
                   </label>
                 </div>
 
@@ -974,11 +970,7 @@ interface OnboardingStep {
                         </div>
                       </div>
 
-                      <input
-                        type="checkbox"
-                        [(ngModel)]="configuration.adminNotifications"
-                        [disabled]="configurationSaving()"
-                      />
+                      <mat-slide-toggle [(ngModel)]="configuration.adminNotifications" [disabled]="configurationSaving()"></mat-slide-toggle>
                     </label>
                   </div>
                 </div>
@@ -996,7 +988,7 @@ interface OnboardingStep {
                   </div>
 
                   <div class="field-grid">
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label>Primary Color</mat-label>
                       <mat-icon matPrefix>format_color_fill</mat-icon>
 
@@ -1012,7 +1004,7 @@ interface OnboardingStep {
                       <mat-hint>Hex color, for example #007979.</mat-hint>
                     </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="organization-form-field">
+                    <mat-form-field appearance="outline" class="zb-field organization-form-field">
                       <mat-label>Secondary Color</mat-label>
                       <mat-icon matPrefix>format_color_fill</mat-icon>
 
@@ -1688,16 +1680,7 @@ interface OnboardingStep {
         width: 100%;
       }
 
-      .full-field {
-        width: 100%;
-        margin-bottom: 1.75rem;
-      }
 
-      .organization-form-field {
-        display: block;
-        width: 100%;
-        margin-bottom: 1.75rem;
-      }
 
       :host ::ng-deep .organization-form-field .mat-mdc-text-field-wrapper {
         min-height: 56px;
@@ -1752,7 +1735,7 @@ interface OnboardingStep {
       :host ::ng-deep .organization-form-field input.mat-mdc-input-element,
       :host ::ng-deep .organization-form-field textarea.mat-mdc-input-element {
         color: var(--zebron-navy);
-        font-size: 0.9rem;
+        font-size: 16px;
       }
 
       :host ::ng-deep .organization-form-field input::placeholder,

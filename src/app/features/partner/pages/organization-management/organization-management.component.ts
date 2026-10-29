@@ -22,6 +22,9 @@ import { PartnerAccessService } from '../../../../core/services/partner-access.s
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import { firebaseFunctions } from '../../../../core/services/firebase-config';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 interface CreateOrganizationInvitationRequest {
   organizationId: string;
   email: string;
@@ -52,7 +55,7 @@ interface RoleGroup {
 @Component({
   selector: 'app-organization-management',
   standalone: true,
-  imports: [RouterLink, FormsModule, MatButtonModule, MatIconModule],
+  imports: [RouterLink, FormsModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="min-h-screen bg-gray-50 pt-14">
@@ -316,11 +319,10 @@ interface RoleGroup {
 
                   <form class="mt-5 grid gap-4 md:grid-cols-2" (ngSubmit)="sendInvitation()">
                     <div>
-                      <label for="inviteEmail" class="mb-1.5 block text-sm font-medium text-gray-700">
-                        Email address
-                      </label>
 
-                      <input
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Email address</mat-label>
+                        <input matInput
                         id="inviteEmail"
                         name="inviteEmail"
                         type="email"
@@ -329,27 +331,26 @@ interface RoleGroup {
                         autocomplete="email"
                         [(ngModel)]="inviteEmail"
                         placeholder="colleague@example.com"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-[#007979] focus:ring-2 focus:ring-teal-100"
                       />
+                      </mat-form-field>
                     </div>
 
                     <div>
-                      <label for="inviteRole" class="mb-1.5 block text-sm font-medium text-gray-700">
-                        Organization role
-                      </label>
 
-                      <select
+                      <mat-form-field appearance="outline" class="zb-field">
+                        <mat-label>Organization role</mat-label>
+                        <mat-select
                         id="inviteRole"
                         name="inviteRole"
                         required
                         [(ngModel)]="inviteRole"
-                        class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#007979] focus:ring-2 focus:ring-teal-100"
                       >
-                        <option value="org_member">Member</option>
-                        <option value="org_staff">Staff</option>
-                        <option value="org_manager">Manager</option>
-                        <option value="org_admin">Administrator</option>
-                      </select>
+                        <mat-option value="org_member">Member</mat-option>
+                        <mat-option value="org_staff">Staff</mat-option>
+                        <mat-option value="org_manager">Manager</mat-option>
+                        <mat-option value="org_admin">Administrator</mat-option>
+                      </mat-select>
+                      </mat-form-field>
                     </div>
 
                     @if (invitationError()) {
@@ -474,45 +475,36 @@ interface RoleGroup {
               <!-- SEARCH AND FILTERS -->
 
               <section class="mt-5 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                <div class="grid gap-4 md:grid-cols-[1fr_220px]">
+                <div class="grid gap-x-4 md:grid-cols-[1fr_220px]">
                   <div>
-                    <label for="memberSearch" class="mb-1.5 block text-sm font-medium text-gray-700">
-                      Search memberships
-                    </label>
 
-                    <div class="relative">
-                      <mat-icon
-                        class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      >
-                        search
-                      </mat-icon>
-
-                      <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Search memberships</mat-label>
+                      <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+                      <input matInput
                         id="memberSearch"
                         type="search"
                         [value]="memberSearch()"
                         (input)="setMemberSearch($any($event.target).value)"
                         placeholder="Search by user ID or role"
-                        class="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-[#007979] focus:ring-2 focus:ring-teal-100"
                       />
-                    </div>
+                    </mat-form-field>
                   </div>
 
                   <div>
-                    <label for="memberStatus" class="mb-1.5 block text-sm font-medium text-gray-700">
-                      Membership status
-                    </label>
 
-                    <select
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Membership status</mat-label>
+                      <mat-select
                       id="memberStatus"
                       [value]="statusFilter()"
-                      (change)="setStatusFilter($any($event.target).value)"
-                      class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#007979] focus:ring-2 focus:ring-teal-100"
+                      (selectionChange)="setStatusFilter($event.value)"
                     >
-                      <option value="all">All memberships</option>
-                      <option value="active">Active only</option>
-                      <option value="inactive">Inactive only</option>
-                    </select>
+                      <mat-option value="all">All memberships</mat-option>
+                      <mat-option value="active">Active only</mat-option>
+                      <mat-option value="inactive">Inactive only</mat-option>
+                    </mat-select>
+                    </mat-form-field>
                   </div>
                 </div>
 
@@ -705,15 +697,17 @@ interface RoleGroup {
               <div id="organization-members-directory-panel" class="border-t border-gray-100 p-5 sm:p-6">
                 <div class="mb-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
                   <div>
-                    <label for="regularMemberSearch" class="mb-1.5 block text-sm font-medium text-gray-700">Search regular members</label>
-                    <input
+
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Search regular members</mat-label>
+                      <input matInput
                       id="regularMemberSearch"
                       type="search"
                       [value]="regularMemberSearch()"
                       (input)="setRegularMemberSearch($any($event.target).value)"
                       placeholder="Search by member user ID"
-                      class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-[#007979] focus:ring-2 focus:ring-teal-100"
                     />
+                    </mat-form-field>
                   </div>
                   <p class="text-sm text-gray-500">{{ filteredRegularMembers().length }} regular member(s)</p>
                 </div>

@@ -23,6 +23,8 @@ import {
 } from '../../services/partner-admin-search.service';
 import { ActivatedRoute } from '@angular/router';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 interface DashboardCard {
   id: string;
   title: string;
@@ -36,7 +38,7 @@ interface DashboardCard {
 @Component({
   selector: 'app-partner-admin',
   standalone: true,
-  imports: [RouterLink, MatButtonModule, MatIconModule, MatMenuModule],
+  imports: [RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-15">
@@ -213,19 +215,12 @@ interface DashboardCard {
 
               <!-- Operational search is available after onboarding only. -->
               @if (canShowOperationalWorkspace()) {
-              
-<div class="relative mt-4">
-  <div
-    class="group flex min-h-11 w-full items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 shadow-sm transition-colors duration-200 hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/15 sm:min-h-12 sm:px-4"
-  >
-    <mat-icon
-      aria-hidden="true"
-      class="!h-5 !w-5 shrink-0 !text-xl !text-[#007979]"
-    >
-      search
-    </mat-icon>
 
-    <input
+<div class="relative mt-4">
+  <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+    <mat-label>Search partner resources</mat-label>
+    <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+    <input matInput
       id="partner-search"
       type="search"
       autocomplete="off"
@@ -233,27 +228,15 @@ interface DashboardCard {
       (input)="onSearch($event)"
       placeholder="Search your partner resources..."
       aria-label="Search partner resources"
-      class="min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-0 focus:outline-none focus:ring-0 sm:text-base"
     />
-
     @if (searching()) {
-      <mat-icon
-        aria-label="Searching"
-        class="!h-5 !w-5 shrink-0 animate-spin !text-xl !text-[#007979]"
-      >
-        sync
-      </mat-icon>
+      <mat-icon matSuffix class="mr-3 animate-spin !text-[#007979]" aria-label="Searching">sync</mat-icon>
     } @else if (searchQuery()) {
-      <button
-        type="button"
-        (click)="clearSearch()"
-        aria-label="Clear search"
-        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]"
-      >
-        <mat-icon aria-hidden="true">close</mat-icon>
+      <button mat-icon-button matSuffix type="button" aria-label="Clear search" (click)="clearSearch()">
+        <mat-icon>close</mat-icon>
       </button>
     }
-  </div>
+  </mat-form-field>
 </div>
 
 
@@ -699,7 +682,7 @@ export class PartnerAdminComponent implements OnInit {
     return onboarding?.status === 'completed';
   });
 
- 
+
 /**
  * Resolve application cards from the canonical application registry.
  *
@@ -794,7 +777,6 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
     return this.access.canManageCourses();
   }
 
-  
 
   async ngOnInit(): Promise<void> {
     await this.initialize();

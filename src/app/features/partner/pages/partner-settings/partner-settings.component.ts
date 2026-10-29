@@ -21,6 +21,10 @@ import {
 } from '../../models/partner-organization-settings.model';
 import { PartnerAccessService } from '../../../../core/services/partner-access.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 interface SettingsSection {
   id: string;
   title: string;
@@ -35,8 +39,7 @@ interface SettingsSection {
     FormsModule,
     RouterLink,
     MatButtonModule,
-    MatIconModule,
-  ],
+    MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatSlideToggleModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-slate-50 mt-10">
@@ -293,20 +296,15 @@ interface SettingsSection {
                     <div class="settings-content">
 
                       <div class="field">
-                        <label>
-                          Organization name
-                        </label>
-
-                        <input
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Organization name</mat-label>
+                          <input matInput
                           type="text"
                           [value]="organizationName()"
                           disabled
                         />
-
-                        <p>
-                          Organization identity is managed by
-                          the platform.
-                        </p>
+                          <mat-hint>Organization identity is managed by the platform.</mat-hint>
+                        </mat-form-field>
                       </div>
 
                       <div class="field">
@@ -364,20 +362,11 @@ interface SettingsSection {
                           </p>
                         </div>
 
-                        <label
-                          class="toggle"
-                          [class.opacity-50]="!canEditSettings()"
-                        >
-                          <input
-                            type="checkbox"
-                            [(ngModel)]="
-                              settings.testCenter.enabled
-                            "
-                            [disabled]="!canEditSettings()"
-                          />
-
-                          <span></span>
-                        </label>
+                        <mat-slide-toggle
+                          [(ngModel)]="settings.testCenter.enabled"
+                          [disabled]="!canEditSettings()"
+                          aria-label="Enable Test Center"
+                        ></mat-slide-toggle>
                       </div>
 
                       <!-- Member testing -->
@@ -394,43 +383,33 @@ interface SettingsSection {
                           </p>
                         </div>
 
-                        <label
-                          class="toggle"
-                          [class.opacity-50]="!canEditSettings()"
-                        >
-                          <input
-                            type="checkbox"
-                            [(ngModel)]="
-                              settings.testCenter.allowMemberTesting
-                            "
-                            [disabled]="!canEditSettings()"
-                          />
-
-                          <span></span>
-                        </label>
+                        <mat-slide-toggle
+                          [(ngModel)]="settings.testCenter.allowMemberTesting"
+                          [disabled]="!canEditSettings()"
+                          aria-label="Allow member testing"
+                        ></mat-slide-toggle>
                       </div>
 
                       <!-- Course visibility -->
 
                       <div class="field">
-                        <label>
-                          Course visibility
-                        </label>
-
-                        <select
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Course visibility</mat-label>
+                          <mat-select
                           [(ngModel)]="
                             settings.testCenter.courseVisibility
                           "
                           [disabled]="!canEditSettings()"
                         >
-                          <option value="organization">
+                          <mat-option value="organization">
                             Organization courses only
-                          </option>
+                          </mat-option>
 
-                          <option value="all">
+                          <mat-option value="all">
                             Organization and public courses
-                          </option>
-                        </select>
+                          </mat-option>
+                        </mat-select>
+                        </mat-form-field>
                       </div>
 
                     </div>
@@ -476,43 +455,33 @@ interface SettingsSection {
                           </p>
                         </div>
 
-                        <label
-                          class="toggle"
-                          [class.opacity-50]="!canEditSettings()"
-                        >
-                          <input
-                            type="checkbox"
-                            [(ngModel)]="
-                              settings.members.allowSelfRegistration
-                            "
-                            [disabled]="!canEditSettings()"
-                          />
-
-                          <span></span>
-                        </label>
+                        <mat-slide-toggle
+                          [(ngModel)]="settings.members.allowSelfRegistration"
+                          [disabled]="!canEditSettings()"
+                          aria-label="Member self-registration"
+                        ></mat-slide-toggle>
                       </div>
 
                       <!-- Default role -->
 
                       <div class="field">
-                        <label>
-                          Default member role
-                        </label>
-
-                        <select
+                        <mat-form-field appearance="outline" class="zb-field">
+                          <mat-label>Default member role</mat-label>
+                          <mat-select
                           [(ngModel)]="
                             settings.members.defaultMemberRole
                           "
                           [disabled]="!canEditSettings()"
                         >
-                          <option value="org_member">
+                          <mat-option value="org_member">
                             Member
-                          </option>
+                          </mat-option>
 
-                          <option value="org_manager">
+                          <mat-option value="org_manager">
                             Manager
-                          </option>
-                        </select>
+                          </mat-option>
+                        </mat-select>
+                        </mat-form-field>
                       </div>
 
                     </div>
@@ -559,20 +528,11 @@ interface SettingsSection {
                           </p>
                         </div>
 
-                        <label
-                          class="toggle"
-                          [class.opacity-50]="!canEditSettings()"
-                        >
-                          <input
-                            type="checkbox"
-                            [(ngModel)]="
-                              settings.notifications.adminNotifications
-                            "
-                            [disabled]="!canEditSettings()"
-                          />
-
-                          <span></span>
-                        </label>
+                        <mat-slide-toggle
+                          [(ngModel)]="settings.notifications.adminNotifications"
+                          [disabled]="!canEditSettings()"
+                          aria-label="Administrative notifications"
+                        ></mat-slide-toggle>
                       </div>
 
                       <!-- Test results -->
@@ -589,20 +549,11 @@ interface SettingsSection {
                           </p>
                         </div>
 
-                        <label
-                          class="toggle"
-                          [class.opacity-50]="!canEditSettings()"
-                        >
-                          <input
-                            type="checkbox"
-                            [(ngModel)]="
-                              settings.notifications.testResultNotifications
-                            "
-                            [disabled]="!canEditSettings()"
-                          />
-
-                          <span></span>
-                        </label>
+                        <mat-slide-toggle
+                          [(ngModel)]="settings.notifications.testResultNotifications"
+                          [disabled]="!canEditSettings()"
+                          aria-label="Test result notifications"
+                        ></mat-slide-toggle>
                       </div>
 
                     </div>
@@ -798,7 +749,7 @@ interface SettingsSection {
     }
 
     .field {
-      margin-bottom: 1.25rem;
+      margin-bottom: 0.25rem;
     }
 
     .field:last-child {
@@ -813,29 +764,8 @@ interface SettingsSection {
       color: rgb(51 65 85);
     }
 
-    .field input,
-    .field select {
-      width: 100%;
-      border: 1px solid rgb(203 213 225);
-      border-radius: 0.5rem;
-      padding: 0.625rem 0.75rem;
-      background: white;
-      color: rgb(30 41 59);
-      outline: none;
-    }
 
-    .field input:disabled,
-    .field select:disabled {
-      background: rgb(248 250 252);
-      color: rgb(100 116 139);
-      cursor: not-allowed;
-    }
 
-    .field input:focus,
-    .field select:focus {
-      border-color: #2a835f;
-      box-shadow: 0 0 0 2px rgb(42 131 95 / 0.12);
-    }
 
     .field p {
       margin-top: 0.375rem;
@@ -862,53 +792,12 @@ interface SettingsSection {
       background: rgb(34 197 94);
     }
 
-    .toggle {
-      position: relative;
-      display: inline-flex;
-      flex-shrink: 0;
-      cursor: pointer;
-    }
 
-    .toggle input {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-    }
 
-    .toggle span {
-      display: block;
-      width: 2.75rem;
-      height: 1.5rem;
-      border-radius: 9999px;
-      background: rgb(203 213 225);
-      transition: background 0.15s ease;
-    }
 
-    .toggle span::after {
-      content: '';
-      position: absolute;
-      top: 0.125rem;
-      left: 0.125rem;
-      width: 1.25rem;
-      height: 1.25rem;
-      border-radius: 9999px;
-      background: white;
-      box-shadow: 0 1px 2px rgb(15 23 42 / 0.2);
-      transition: transform 0.15s ease;
-    }
 
-    .toggle input:checked + span {
-      background: #2a835f;
-    }
 
-    .toggle input:checked + span::after {
-      transform: translateX(1.25rem);
-    }
 
-    .toggle input:disabled + span {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
   `],
 })
 export class PartnerSettingsComponent implements OnInit {

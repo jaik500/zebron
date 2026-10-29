@@ -29,6 +29,9 @@ import { PartnerAccessService } from '../../../../core/services/partner-access.s
 
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 interface ProgramForm {
   name: string;
   slug: string;
@@ -41,7 +44,7 @@ interface ProgramForm {
 
   standalone: true,
 
-  imports: [FormsModule, RouterLink, MatButtonModule, MatIconModule, MatMenuModule],
+  imports: [FormsModule, RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
 
   changeDetection: ChangeDetectionStrategy.OnPush,
 
@@ -219,62 +222,45 @@ interface ProgramForm {
 
               <!-- FORM -->
 
-              <div class="mt-6 grid gap-5 md:grid-cols-2">
+              <div class="mt-6 grid gap-x-5 md:grid-cols-2">
                 <!-- NAME -->
 
-                <label class="block">
-                  <span class="text-sm font-medium text-gray-700"> Program name </span>
-
-                  <input
+                <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Program name</mat-label>
+                    <input matInput
                     [(ngModel)]="form.name"
                     (ngModelChange)="onNameChange()"
-                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 outline-none transition focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/10"
-                    
+
                   />
-                </label>
+                  </mat-form-field>
 
                 <!-- SLUG -->
 
-                <label class="block">
-                  <span class="text-sm font-medium text-gray-700"> Slug </span>
-
-                  <input
+                <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Slug</mat-label>
+                    <input matInput
                     [(ngModel)]="form.slug"
                     [disabled]="!!editingProgramId()"
-                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 outline-none transition focus:border-[#007979] disabled:bg-gray-100"
-                    
-                  />
 
-                  @if (editingProgramId()) {
-                    <p class="mt-1 text-xs text-gray-500">
-                      Program slugs cannot be changed after creation.
-                    </p>
-                  }
-                </label>
+                  />
+                    @if (editingProgramId()) {
+                      <mat-hint>Program slugs cannot be changed after creation.</mat-hint>
+                    }
+                  </mat-form-field>
 
                 <!-- DESCRIPTION -->
 
-                <label class="block md:col-span-2">
-                  <span class="text-sm font-medium text-gray-700"> Description </span>
-
-                  <textarea
+                <mat-form-field appearance="outline" class="zb-field md:col-span-2">
+                    <mat-label>Description</mat-label>
+                    <textarea matInput
                     [(ngModel)]="form.description"
                     rows="4"
-                    class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 outline-none transition focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/10"
                   ></textarea>
-                </label>
+                  </mat-form-field>
 
                 <!-- ACTIVE -->
 
-                <label class="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    [(ngModel)]="form.active"
-                    class="h-4 w-4 rounded border-gray-300"
-                  />
-
-                  <span class="text-sm font-medium text-gray-700"> Program is active </span>
-                </label>
+                <mat-checkbox [(ngModel)]="form.active">Program is active</mat-checkbox>
               </div>
 
               <!-- FORM ACTIONS -->

@@ -31,6 +31,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-resource-list',
 
@@ -42,7 +43,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     MatIconModule,
     MatMenuModule,
     ResourceCardComponent,
-    UsefulLinksComponent, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
+    UsefulLinksComponent, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButtonModule],
 
   template: `
     <!-- =========================================================
