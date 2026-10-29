@@ -37,6 +37,8 @@ import {
 } from '../../models/chat-participant.model';
 
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 @Component({
   selector: 'app-chat-window',
   standalone: true,
@@ -44,8 +46,7 @@ import {
     FormsModule,
     MatButtonModule,
     MatIconModule,
-    MatMenuModule,
-  ],
+    MatMenuModule, MatFormFieldModule, MatInputModule],
   changeDetection:
     ChangeDetectionStrategy.OnPush,
 
@@ -1130,33 +1131,37 @@ import {
                  MESSAGE INPUT
                  ================================================= -->
 
-            <textarea
-              #messageInput
-              class="min-h-[44px] flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              name="message"
-              rows="1"
-              maxlength="5000"
-              placeholder="Write a message..."
-              [(ngModel)]="messageContent"
-              [disabled]="
-                store.isBusy()
-              "
-              (focus)="
-                rememberCursorPosition()
-              "
-              (click)="
-                rememberCursorPosition()
-              "
-              (keyup)="
-                rememberCursorPosition()
-              "
-              (select)="
-                rememberCursorPosition()
-              "
-              (keydown)="
-                onKeyDown($event)
-              "
-            ></textarea>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic"
+              class="zb-field zb-field--flush zb-field--grow zb-field--dense">
+              <textarea
+                matInput
+                #messageInput
+                aria-label="Message"
+                name="message"
+                rows="1"
+                maxlength="5000"
+                placeholder="Write a message..."
+                [(ngModel)]="messageContent"
+                [disabled]="
+                  store.isBusy()
+                "
+                (focus)="
+                  rememberCursorPosition()
+                "
+                (click)="
+                  rememberCursorPosition()
+                "
+                (keyup)="
+                  rememberCursorPosition()
+                "
+                (select)="
+                  rememberCursorPosition()
+                "
+                (keydown)="
+                  onKeyDown($event)
+                "
+              ></textarea>
+            </mat-form-field>
 
 
             <!-- =================================================

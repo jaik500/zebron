@@ -39,6 +39,8 @@ import {
 } from '../../../../core/services/logger.service';
 
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 // ================================================================
 // COMPONENT
 // ================================================================
@@ -53,8 +55,7 @@ import {
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
-    MatTooltipModule,
-  ],
+    MatTooltipModule, MatFormFieldModule, MatInputModule],
 
   changeDetection:
     ChangeDetectionStrategy.OnPush,
@@ -379,17 +380,19 @@ import {
 
                   <!-- Reply textarea -->
 
-                  <textarea
-                    class="block min-h-[104px] w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm leading-6 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-50"
-                    rows="4"
-                    maxlength="2000"
-                    placeholder="Write a reply..."
-                    [value]="replyContent()"
-                    [disabled]="commentStore.saving()"
-                    aria-label="Write a reply"
-                    (input)="onReplyInput($event)"
-                    (keydown)="onReplyKeydown($event)"
-                  ></textarea>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="zb-field zb-field--flush">
+                    <textarea
+                      matInput
+                      rows="4"
+                      maxlength="2000"
+                      placeholder="Write a reply..."
+                      [value]="replyContent()"
+                      [disabled]="commentStore.saving()"
+                      aria-label="Write a reply"
+                      (input)="onReplyInput($event)"
+                      (keydown)="onReplyKeydown($event)"
+                    ></textarea>
+                  </mat-form-field>
 
 
                   <!-- Actions -->

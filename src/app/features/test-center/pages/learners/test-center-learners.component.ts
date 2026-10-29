@@ -15,6 +15,10 @@ import { TestCenterLearner } from '../../models/test-center-learner.model';
 
 import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
 @Component({
   selector: 'app-test-center-learners',
   standalone: true,
@@ -22,8 +26,7 @@ import { OrganizationContextService } from '../../../../core/services/organizati
     CommonModule,
     FormsModule,
     RouterLink,
-    DatePipe
-  ],
+    DatePipe, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
 
@@ -164,35 +167,30 @@ import { OrganizationContextService } from '../../../../core/services/organizati
         <!-- Search and Filters -->
         <div class="grid grid-cols-1 gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4 md:grid-cols-[minmax(0,1fr)_220px] md:px-6">
 
-          <label class="flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 transition focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
-            <svg class="h-5 w-5 shrink-0 text-slate-400"
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              aria-hidden="true">
-              <circle cx="11" cy="11" r="7" stroke-width="1.8" />
-              <path stroke-linecap="round" stroke-width="1.8"
-                d="m16 16 4 4" />
-            </svg>
-
-            <input
+          <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+            <mat-label>Search learners</mat-label>
+            <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+            <input matInput
               type="search"
               placeholder="Search by name or email..."
-              class="w-full border-0 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:ring-0"
               [ngModel]="search()"
               (ngModelChange)="search.set($event)"
             />
-          </label>
+          </mat-form-field>
 
-          <select
+          <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+            <mat-label>Filter learners</mat-label>
+            <mat-select
             aria-label="Filter learners"
-            class="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
             [ngModel]="statusFilter()"
             (ngModelChange)="statusFilter.set($event)"
           >
-            <option value="all">All learners</option>
-            <option value="active">Has assessment activity</option>
-            <option value="not-started">Not started</option>
-            <option value="inactive">Inactive membership</option>
-          </select>
+            <mat-option value="all">All learners</mat-option>
+            <mat-option value="active">Has assessment activity</mat-option>
+            <mat-option value="not-started">Not started</mat-option>
+            <mat-option value="inactive">Inactive membership</mat-option>
+          </mat-select>
+          </mat-form-field>
 
         </div>
 

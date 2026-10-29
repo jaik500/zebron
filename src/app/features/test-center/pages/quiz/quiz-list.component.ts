@@ -13,6 +13,10 @@ import { TestCourse } from '../../models/test-course.model';
 import { TestTopicService } from '../../services/test-topic.service';
 import { TestQuestionService } from '../../services/test-question.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
 type QuizDifficulty = 'Beginner' | 'Intermediate' | 'Advanced';
 type QuizStatus = 'Available' | 'In progress' | 'Completed';
 
@@ -38,14 +42,14 @@ interface QuizListItem {
 @Component({
   selector: 'app-quiz-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
   template: `
     <main class="mt-14 min-h-screen bg-slate-50 px-4 py-4 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-7xl">
 
         <!-- Page heading -->
         <header class="mb-4">
-          
+
                <!-- Overall progress -->
           <section
             class="mb-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-1"
@@ -60,8 +64,7 @@ interface QuizListItem {
           <p class="mt-1 text-sm leading-6 text-slate-600">
             Explore courses and practice questions available in your Test Center.
           </p>
-                
-               
+
               </div>
 
               <span class="text-2xl font-bold text-blue-900">
@@ -131,67 +134,47 @@ interface QuizListItem {
             >
 
               <!-- Search -->
-              <label class="block w-full min-w-0">
-                <span class="sr-only">Search quizzes</span>
-
-                <div
-                  class="flex min-h-12 w-full items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 shadow-sm transition-colors hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/15 sm:px-4"
-                >
-                  <svg
-                    class="h-5 w-5 shrink-0 text-[#007979]"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    aria-hidden="true"
-                  >
-                    <circle cx="11" cy="11" r="7"></circle>
-                    <path d="m16 16 4 4"></path>
-                  </svg>
-
-                  <input
+              <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                <mat-label>Search quizzes</mat-label>
+                <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+                <input matInput
                     type="search"
                     autocomplete="off"
                     [value]="searchTerm()"
                     (input)="setSearchTerm($any($event.target).value)"
                     placeholder="Search courses and quizzes..."
-                    class="min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:ring-0"
                   />
-                </div>
-              </label>
+              </mat-form-field>
 
               <!-- Difficulty -->
-              <label class="block min-w-0">
-                <span class="sr-only">Filter by difficulty</span>
-
-                <select
+              <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                  <mat-label>Difficulty</mat-label>
+                  <mat-select
                   [value]="difficultyFilter()"
-                  (change)="setDifficultyFilter($any($event.target).value)"
-                  class="h-12 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm outline-none focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/15"
+                  (selectionChange)="setDifficultyFilter($event.value)"
                 >
-                  <option value="All">All difficulties</option>
+                  <mat-option value="All">All difficulties</mat-option>
                   @for (difficulty of availableDifficulties(); track difficulty) {
-                    <option [value]="difficulty">{{ difficulty }}</option>
+                    <mat-option [value]="difficulty">{{ difficulty }}</mat-option>
                   }
-                </select>
-              </label>
+                </mat-select>
+                </mat-form-field>
 
               <!-- Status -->
-              <label class="hidden min-w-0 sm:block">
-                <span class="sr-only">Filter by status</span>
-
-                <select
+              <div class="hidden min-w-0 sm:block">
+                <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                  <mat-label>Status</mat-label>
+                  <mat-select
                   [value]="statusFilter()"
-                  (change)="setStatusFilter($any($event.target).value)"
-                  class="h-12 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm outline-none focus:border-[#007979] focus:ring-2 focus:ring-[#007979]/15"
+                  (selectionChange)="setStatusFilter($event.value)"
                 >
-                  <option value="All">All statuses</option>
-                  <option value="Available">Available</option>
-                  <option value="In progress">In progress</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </label>
+                  <mat-option value="All">All statuses</mat-option>
+                  <mat-option value="Available">Available</mat-option>
+                  <mat-option value="In progress">In progress</mat-option>
+                  <mat-option value="Completed">Completed</mat-option>
+                </mat-select>
+                </mat-form-field>
+              </div>
 
               <button
                 type="button"
@@ -287,7 +270,6 @@ interface QuizListItem {
             </button>
           </section>
 
-         
 
           <!-- Quiz cards -->
           @if (filteredQuizzes().length > 0) {

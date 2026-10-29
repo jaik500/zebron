@@ -6,12 +6,13 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { TestMode, TestStore } from '../../store/test.store';
 
+import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-test-setup',
 
   standalone: true,
 
-  imports: [RouterLink, MatIconModule],
+  imports: [RouterLink, MatIconModule, MatCheckboxModule],
 
   template: `
     <main class="min-h-screen bg-gray-50">
@@ -588,85 +589,25 @@ import { TestMode, TestStore } from '../../store/test.store';
                 <div class="mt-4 space-y-3">
                   <!-- Random questions -->
 
-                  <label
-                    class="flex
-                           cursor-pointer
-                           items-start
-                           gap-3"
+                  <mat-checkbox
+                    class="zb-checkbox--top"
+                    [checked]="randomizeQuestions()"
+                    (change)="setRandomizeQuestions($event.checked)"
                   >
-                    <input
-                      type="checkbox"
-                      class="mt-0.5
-                             h-4
-                             w-4
-                             rounded
-                             border-gray-300
-                             text-[#007979]
-                             focus:ring-[#12BFC3]"
-                      [checked]="randomizeQuestions()"
-                      (change)="setRandomizeQuestions($any($event.target).checked)"
-                    />
-
-                    <span>
-                      <span
-                        class="block
-                               text-sm
-                               font-semibold
-                               text-[#032D42]"
-                      >
-                        Randomize questions
-                      </span>
-
-                      <span
-                        class="block
-                               text-xs
-                               text-gray-500"
-                      >
-                        Change the order each time you start a test.
-                      </span>
-                    </span>
-                  </label>
+                    <span class="block text-sm font-semibold text-[#032D42]">Randomize questions</span>
+                    <span class="block text-xs text-gray-500">Change the order each time you start a test.</span>
+                  </mat-checkbox>
 
                   <!-- Random answers -->
 
-                  <label
-                    class="flex
-                           cursor-pointer
-                           items-start
-                           gap-3"
+                  <mat-checkbox
+                    class="zb-checkbox--top"
+                    [checked]="randomizeAnswers()"
+                    (change)="setRandomizeAnswers($event.checked)"
                   >
-                    <input
-                      type="checkbox"
-                      class="mt-0.5
-                             h-4
-                             w-4
-                             rounded
-                             border-gray-300
-                             text-[#007979]
-                             focus:ring-[#12BFC3]"
-                      [checked]="randomizeAnswers()"
-                      (change)="setRandomizeAnswers($any($event.target).checked)"
-                    />
-
-                    <span>
-                      <span
-                        class="block
-                               text-sm
-                               font-semibold
-                               text-[#032D42]"
-                      >
-                        Randomize answers
-                      </span>
-
-                      <span
-                        class="block
-                               text-xs
-                               text-gray-500"
-                      >
-                        Shuffle the answer choices.
-                      </span>
-                    </span>
-                  </label>
+                    <span class="block text-sm font-semibold text-[#032D42]">Randomize answers</span>
+                    <span class="block text-xs text-gray-500">Shuffle the answer choices.</span>
+                  </mat-checkbox>
                 </div>
               </section>
             </div>

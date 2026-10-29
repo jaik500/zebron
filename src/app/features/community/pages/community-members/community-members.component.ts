@@ -24,6 +24,8 @@ import { CommunityFollowStore } from '../../store/community-follow.store';
 import { AuthService } from '../../../../core/services/auth.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 @Component({
   selector: 'app-community-members',
   standalone: true,
@@ -34,8 +36,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
     MatCardModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatTooltipModule,
-  ],
+    MatTooltipModule, MatFormFieldModule, MatInputModule],
 
   template: `
     <div class="min-h-screen bg-[#F7FAFA]">
@@ -159,46 +160,21 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                    md:items-center
                    md:justify-between"
           >
-            <div class="relative flex-1">
-              <mat-icon
-                class="pointer-events-none
-                       absolute left-3 top-1/2
-                       z-10 -translate-y-1/2
-                       !text-[#6B7D84]"
-              >
-                search
-              </mat-icon>
-
-              <input
+            <mat-form-field appearance="outline" class="zb-field zb-field--flush flex-1" subscriptSizing="dynamic">
+              <mat-label>Search community members</mat-label>
+              <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+              <input matInput
                 type="search"
                 [value]="searchTerm()"
                 (input)="setSearchTerm($any($event.target).value)"
                 placeholder="Search community members..."
                 aria-label="Search community members"
-                class="h-12 w-full
-                       rounded-xl
-                       border border-[#D6E6E7]
-                       bg-[#F7FAFA]
-                       pl-11 pr-11
-                       text-sm
-                       text-[#032D42]
-                       outline-none
-                       transition
-                       placeholder:text-[#8A9AA0]
-                       focus:border-[#007979]
-                       focus:bg-white
-                       focus:ring-2
-                       focus:ring-[#007979]/10"
               />
-
               @if (searchTerm()) {
                 <button
                   mat-icon-button
+                  matSuffix
                   type="button"
-                  class="!absolute
-                         !right-1
-                         !top-1/2
-                         !-translate-y-1/2"
                   aria-label="Clear member search"
                   matTooltip="Clear search"
                   (click)="clearSearch()"
@@ -206,7 +182,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                   <mat-icon> close </mat-icon>
                 </button>
               }
-            </div>
+            </mat-form-field>
 
             <!-- Result Count -->
 

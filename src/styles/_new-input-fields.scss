@@ -52,6 +52,16 @@ mat-form-field.zb-field.zb-field--flush,
   --mat-checkbox-unselected-hover-icon-color: #fff;
 }
 
+// mat-checkbox with a two-line label (title + description):
+// align the box with the first line instead of centering it.
+.zb-checkbox--top .mdc-form-field {
+  align-items: flex-start;
+}
+
+.zb-checkbox--top .mdc-checkbox {
+  margin-top: -6px;
+}
+
 // Mobile: prevent iOS zoom-on-focus (needs >= 16px).
 // Never disable zoom in the viewport meta tag instead.
 @media (max-width: 767.98px) {

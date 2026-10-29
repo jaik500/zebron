@@ -113,6 +113,39 @@ Use something else only when Material has no component for the job.
 </mat-checkbox>
 ```
 
+### Checkbox with title + description
+```html
+<mat-checkbox class="zb-checkbox--top" [checked]="randomize()" (change)="setRandomize($event.checked)">
+  <span class="block text-sm font-semibold">Randomize questions</span>
+  <span class="block text-xs text-gray-500">Change the order each time.</span>
+</mat-checkbox>
+```
+
+### Search box with icon and clear button
+```html
+<mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+  <mat-label>Search</mat-label>
+  <mat-icon matPrefix class="ml-3 mr-1" aria-hidden="true">search</mat-icon>
+  <input matInput type="search" [value]="term()" (input)="term.set($any($event.target).value)" />
+  @if (term()) {
+    <button mat-icon-button matSuffix type="button" aria-label="Clear search" (click)="term.set('')">
+      <mat-icon>close</mat-icon>
+    </button>
+  }
+</mat-form-field>
+```
+
+### Composer (chat / reply box) — no floating label
+```html
+<mat-form-field appearance="outline" subscriptSizing="dynamic" class="zb-field zb-field--flush zb-field--grow">
+  <textarea matInput rows="1" aria-label="Message" placeholder="Write a message..." [(ngModel)]="message"></textarea>
+</mat-form-field>
+```
+
+### Hiding a field responsively
+Put Tailwind visibility classes (`hidden sm:block`) on a **wrapper div**, not on the
+`mat-form-field` — `.zb-field` sets `display: block` and wins over Tailwind's layered utilities.
+
 ### Event handlers
 - `mat-select` → `(selectionChange)="handler($event.value)"`, handler takes the value (not `Event`).
 - `mat-checkbox` → `(change)="handler($event.checked)"`.

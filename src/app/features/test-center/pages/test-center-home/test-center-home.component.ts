@@ -1,13 +1,16 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
- 
+
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
- 
+
 import { MatIconModule } from '@angular/material/icon';
- 
+
 import { TestCourse } from '../../models/test-course.model';
 import { TestCourseService } from '../../services/test-course.service';
 import { TestQuestionService } from '../../services/test-question.service';
- 
+
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
 interface FavoriteQuiz {
   id: string;
   title: string;
@@ -16,26 +19,26 @@ interface FavoriteQuiz {
   questionCount?: number;
   courseName?: string;
 }
- 
+
 interface StoredPracticeFavorites {
   courses?: string[];
   certifications?: string[];
   quizzes?: FavoriteQuiz[];
 }
- 
+
 @Component({
   selector: 'app-test-center-home',
- 
+
   standalone: true,
- 
-  imports: [RouterLink, MatIconModule],
- 
+
+  imports: [RouterLink, MatIconModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+
   template: `
     <main class="min-h-screen bg-gray-50 mt-16">
       <!-- ===================================================
            SITE HEADER
            =================================================== -->
- 
+
       <header
         class="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-br from-teal-800 via-teal-700 to-teal-600 shadow-md"
       >
@@ -57,26 +60,19 @@ interface StoredPracticeFavorites {
                 <mat-icon class="!h-8 !w-8 !text-3xl">arrow_back</mat-icon>
               </div>
             </a>
- 
+
             <span class="text-base font-bold tracking-tight sm:text-xl">
               Learning & assessment
             </span>
           </div>
- 
+
           <!-- Right: Search bar -->
           <div class="min-w-0 flex-1 md:ml-8">
             <div class="ml-auto max-w-2xl">
-              <div
-                class="group flex min-h-11 w-full items-center gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 shadow-sm transition-colors duration-200 hover:border-gray-400 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-[#007979]/15 sm:min-h-12 sm:px-4"
-              >
-                <mat-icon
-                  aria-hidden="true"
-                  class="!h-5 !w-5 shrink-0 !text-xl !text-[#007979]"
-                >
-                  search
-                </mat-icon>
- 
-                <input
+              <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                <mat-label>Search Test Center</mat-label>
+                <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+                <input matInput
                   id="test-center-search"
                   type="search"
                   autocomplete="off"
@@ -84,45 +80,44 @@ interface StoredPracticeFavorites {
                   (input)="searchTerm.set($any($event.target).value)"
                   placeholder="Search courses, certifications, quizzes..."
                   aria-label="Search Test Center"
-                  class="min-h-6 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-0 focus:outline-none focus:ring-0 sm:text-base"
                 />
- 
                 @if (searchTerm()) {
                   <button
+                    mat-icon-button
+                    matSuffix
                     type="button"
                     aria-label="Clear search"
                     (click)="searchTerm.set('')"
-                    class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]"
                   >
-                    <mat-icon aria-hidden="true">close</mat-icon>
+                    <mat-icon>close</mat-icon>
                   </button>
                 }
-              </div>
+              </mat-form-field>
             </div>
           </div>
         </div>
       </header>
- 
+
       <!-- ===================================================
            MAIN CONTENT
            =================================================== -->
- 
+
       <section class="mx-auto max-w-7xl px-5 py-7 sm:px-6 lg:px-8">
         <!-- =================================================
              BROWSE
              ================================================= -->
- 
+
         <div>
           <div class="mb-4">
             <h2 class="text-xl font-bold text-[#032D42]">
               Browse the Test Center
             </h2>
- 
+
             <p class="mt-1 text-sm text-gray-600">
               Find practice material based on what you're learning.
             </p>
           </div>
- 
+
           <div class="grid grid-cols-4 gap-2 sm:gap-3">
             <!-- Certifications -->
             <a
@@ -134,18 +129,18 @@ interface StoredPracticeFavorites {
               >
                 <mat-icon aria-hidden="true"> workspace_premium </mat-icon>
               </div>
- 
+
               <h3
                 class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
               >
                 Certifications
               </h3>
- 
+
               <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
                 Prepare for professional certification exams.
               </p>
             </a>
- 
+
             <!-- Courses -->
             <a
               [routerLink]="[learnerBaseRoute(), 'courses']"
@@ -156,18 +151,18 @@ interface StoredPracticeFavorites {
               >
                 <mat-icon aria-hidden="true"> menu_book </mat-icon>
               </div>
- 
+
               <h3
                 class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
               >
                 Courses
               </h3>
- 
+
               <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
                 Practice what you're learning in a course or program.
               </p>
             </a>
- 
+
             <!-- Quizzes -->
             <a
               [routerLink]="[learnerBaseRoute(), 'quizzes']"
@@ -178,18 +173,18 @@ interface StoredPracticeFavorites {
               >
                 <mat-icon aria-hidden="true">quiz</mat-icon>
               </div>
- 
+
               <h3
                 class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
               >
                 Quizzes
               </h3>
- 
+
               <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
                 Explore quizzes across your programs and courses.
               </p>
             </a>
- 
+
             <!-- Skills -->
             <a
               routerLink="/test-center/skills"
@@ -200,36 +195,36 @@ interface StoredPracticeFavorites {
               >
                 <mat-icon aria-hidden="true"> psychology </mat-icon>
               </div>
- 
+
               <h3
                 class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
               >
                 Skills
               </h3>
- 
+
               <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
                 Strengthen practical and professional skills.
               </p>
             </a>
           </div>
         </div>
- 
+
         <!-- =================================================
              POPULAR PRACTICE
              ================================================= -->
- 
+
         <div class="mt-8">
           <div class="flex items-end justify-between gap-4">
             <div>
               <h2 class="text-xl font-bold text-[#032D42]">
                 Popular Practice
               </h2>
- 
+
               <p class="mt-1 text-sm text-gray-600">
                 Your saved quizzes, courses, and certifications—plus more practice to explore.
               </p>
             </div>
- 
+
             <a
               [routerLink]="[learnerBaseRoute(), 'quizzes']"
               class="text-sm font-semibold text-[#007979] transition hover:text-[#032D42]"
@@ -237,7 +232,7 @@ interface StoredPracticeFavorites {
               View all →
             </a>
           </div>
- 
+
           <!-- Loading -->
           @if (loading()) {
             <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -254,7 +249,7 @@ interface StoredPracticeFavorites {
               }
             </div>
           }
- 
+
           <!-- Error -->
           @if (!loading() && error()) {
             <div
@@ -263,7 +258,7 @@ interface StoredPracticeFavorites {
               {{ error() }}
             </div>
           }
- 
+
           <!-- Content -->
           @if (!loading() && !error()) {
             <!-- Favorite quizzes -->
@@ -314,7 +309,7 @@ interface StoredPracticeFavorites {
                 }
               </div>
             }
- 
+
             <!-- Courses & certifications -->
             @if (popularCourses().length > 0) {
               <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -329,7 +324,7 @@ interface StoredPracticeFavorites {
                       >
                         <mat-icon aria-hidden="true"> school </mat-icon>
                       </div>
- 
+
                       @if (course.type === 'certification') {
                         <span
                           class="rounded-full bg-[#E5F4F4] px-2 py-1 text-[10px] font-semibold text-[#007979]"
@@ -338,23 +333,23 @@ interface StoredPracticeFavorites {
                         </span>
                       }
                     </div>
- 
+
                     <h3
                       class="mt-3 text-base font-bold leading-5 text-[#032D42] group-hover:text-[#007979]"
                     >
                       {{ course.name }}
                     </h3>
- 
+
                     @if (course.provider) {
                       <p class="mt-1 text-xs font-medium text-[#007979]">
                         {{ course.provider }}
                       </p>
                     }
- 
+
                     <p class="mt-2 line-clamp-2 text-sm leading-5 text-gray-600">
                       {{ course.description }}
                     </p>
- 
+
                     <div
                       class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3"
                     >
@@ -362,7 +357,7 @@ interface StoredPracticeFavorites {
                         {{ courseQuestionCount(course) }}
                         questions
                       </span>
- 
+
                       <span class="text-xs font-semibold text-[#007979]">
                         Practice →
                       </span>
@@ -371,7 +366,7 @@ interface StoredPracticeFavorites {
                 }
               </div>
             }
- 
+
             <!-- Empty state: only when there is nothing at all to show -->
             @if (favoriteQuizzes().length === 0 && popularCourses().length === 0) {
               <div
@@ -382,11 +377,11 @@ interface StoredPracticeFavorites {
                 >
                   <mat-icon aria-hidden="true"> search_off </mat-icon>
                 </div>
- 
+
                 <h3 class="mt-3 text-sm font-bold text-[#032D42]">
                   No practice items found
                 </h3>
- 
+
                 <p class="mt-1 text-xs text-gray-600">
                   Try another course, certification, quiz, or topic.
                 </p>
@@ -397,7 +392,7 @@ interface StoredPracticeFavorites {
       </section>
     </main>
   `,
- 
+
   styles: [],
 })
 export class TestCenterHomeComponent implements OnInit {
@@ -405,7 +400,7 @@ export class TestCenterHomeComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 private readonly questionService = inject(TestQuestionService); // add
- 
+
   readonly courses = signal<TestCourse[]>([]);
   readonly favoriteCourseIds = signal<string[]>([]);
   readonly favoriteCertificationIds = signal<string[]>([]);
@@ -414,25 +409,25 @@ private readonly questionService = inject(TestQuestionService); // add
   readonly searchTerm = signal('');
   readonly loading = signal(true);
   readonly error = signal('');
- 
+
   readonly organizationId = computed(
   () =>
     this.route.snapshot.paramMap.get('organizationId') ??
     this.route.parent?.snapshot.paramMap.get('organizationId') ??
     null,
 );
- 
+
   readonly learnerBaseRoute = computed(() => {
     const organizationId = this.organizationId();
     return organizationId
       ? `/partner/org/${organizationId}/learn/test-center`
       : '/test-center';
   });
- 
+
   readonly filteredCourses = computed(() => {
     const search = this.searchTerm().trim().toLowerCase();
     if (!search) return this.courses();
- 
+
     return this.courses().filter((course) =>
       [
         course.name,
@@ -442,49 +437,49 @@ private readonly questionService = inject(TestQuestionService); // add
       ].some((value) => value.toLowerCase().includes(search)),
     );
   });
- 
+
   readonly popularCourses = computed(() => {
     const courseFavorites = new Set(this.favoriteCourseIds());
     const certificationFavorites = new Set(this.favoriteCertificationIds());
     const filtered = this.filteredCourses();
- 
+
     // Show the learner's saved courses and certifications together.
     const saved = filtered.filter((course) =>
       course.type === 'certification'
         ? certificationFavorites.has(course.id) || courseFavorites.has(course.id)
         : courseFavorites.has(course.id),
     );
- 
+
     // Preserve discovery behavior when the learner has not saved anything,
     // or when saved IDs no longer match available courses.
     return saved.length > 0 ? saved : filtered;
   });
- 
+
   private favoriteStorageKey(organizationId: string | null): string {
     return `zebron:test-center:favorites:${organizationId?.trim() || 'platform'}`;
   }
- 
+
   private favoriteQuizStorageKey(organizationId: string | null): string {
     return `zebron:test-center:favorite-quizzes:${organizationId?.trim() || 'platform'}`;
   }
- 
+
   private parseStringIds(value: unknown): string[] {
     return Array.isArray(value)
       ? value.filter((id): id is string => typeof id === 'string')
       : [];
   }
- 
+
   private loadFavorites(organizationId: string | null): void {
     this.favoriteCourseIds.set([]);
     this.favoriteCertificationIds.set([]);
     this.favoriteQuizzes.set([]);
- 
+
     if (typeof localStorage === 'undefined') return;
- 
+
     try {
       const raw = localStorage.getItem(this.favoriteStorageKey(organizationId));
       const parsed: unknown = raw ? JSON.parse(raw) : [];
- 
+
       // Backward compatibility: the original favorites value was string[].
       if (Array.isArray(parsed)) {
         this.favoriteCourseIds.set(this.parseStringIds(parsed));
@@ -496,7 +491,7 @@ private readonly questionService = inject(TestQuestionService); // add
         );
         this.favoriteQuizzes.set(this.normalizeFavoriteQuizzes(favorites.quizzes));
       }
- 
+
       // Also support quiz favorites saved separately by the quiz library.
       const quizRaw = localStorage.getItem(this.favoriteQuizStorageKey(organizationId));
       if (quizRaw) {
@@ -512,10 +507,10 @@ private readonly questionService = inject(TestQuestionService); // add
       console.warn('Unable to read Popular Practice favorites:', error);
     }
   }
- 
+
   private normalizeFavoriteQuizzes(value: unknown): FavoriteQuiz[] {
     if (!Array.isArray(value)) return [];
- 
+
     return value
       .filter((item): item is FavoriteQuiz => {
         if (!item || typeof item !== 'object') return false;
@@ -535,38 +530,38 @@ private readonly questionService = inject(TestQuestionService); // add
         courseName: quiz.courseName ?? '',
       }));
   }
- 
+
  practiceRoute(course: TestCourse): string[] {
   return this.quizDetailsRoute(course.slug);
 }
- 
+
   /** Builds the quiz-details route for the current org / platform context. */
   private quizDetailsRoute(slug: string): string[] {
     const organizationId = this.organizationId();
- 
+
     return organizationId
       ? ['/partner/org', organizationId, 'learn', 'test-center', 'quiz-details', slug]
       : ['/test-center', 'quiz-details', slug];
   }
- 
+
   /** Routes to quiz-details/:slug. */
   startQuiz(quiz: Pick<FavoriteQuiz, 'slug'>): void {
     if (!quiz?.slug) {
       console.error('Cannot start quiz: missing quiz slug.', quiz);
       return;
     }
- 
+
     void this.router.navigate(this.quizDetailsRoute(quiz.slug));
   }
- 
+
   async ngOnInit(): Promise<void> {
     try {
       this.loading.set(true);
       this.error.set('');
- 
+
       const organizationId = this.organizationId();
       this.loadFavorites(organizationId);
- 
+
       const courses = await this.courseService.getAvailableCourses(organizationId);
       this.courses.set(courses);
       await this.loadQuestionCounts(courses, organizationId); // add
