@@ -6,49 +6,51 @@ import {
   expect,
   it,
 } from "vitest";
-
+ 
 import {
   deleteApp,
   getApps,
   initializeApp,
 } from "../../functions/node_modules/firebase-admin/lib/app";
-
+ 
 import {
   getFirestore,
   Timestamp,
 } from "../../functions/node_modules/firebase-admin/lib/firestore";
-
+ 
 import {
   initializeTestEnvironment,
   RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-
+ 
 import fs from "node:fs";
-
+ 
 import {
   resendOrganizationInvitation,
 } from "../../functions/src/organization-invitation-resend";
-
+ 
+import {
+  formatInvitationExpiration,
+} from "../../functions/src/organization-email-outbox";
+ 
 const PROJECT_ID = "zebron-test";
-
+ 
 const FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
-
+ 
 const TEST_ORGANIZATION_ID = "org-001";
-
+ 
 const ORGANIZATION_NAME = "Test Organization";
-
-const NOW = new Date("2026-09-28T12:00:00.000Z");
-
+ 
 let testEnv: RulesTestEnvironment;
-
+ 
 let adminApp: ReturnType<typeof initializeApp>;
-
+ 
 let adminDb: ReturnType<typeof getFirestore>;
-
+ 
 beforeAll(async () => {
   process.env.FIRESTORE_EMULATOR_HOST =
     FIRESTORE_EMULATOR_HOST;
-
+ 
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,
     firestore: {
@@ -60,78 +62,78 @@ beforeAll(async () => {
       ),
     },
   });
-
+ 
   const existingApps = getApps();
-
+ 
   adminApp =
     existingApps.length > 0
       ? existingApps[0]
       : initializeApp({
           projectId: PROJECT_ID,
         });
-
+ 
   adminDb = getFirestore(adminApp);
 });
-
+ 
 afterEach(async () => {
   await testEnv.clearFirestore();
 });
-
+ 
 afterAll(async () => {
   await testEnv.cleanup();
-
+ 
   const apps = getApps();
-
+ 
   for (const app of apps) {
     await deleteApp(app);
   }
 });
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */
 /* -------------------------------------------------------------------------- */
-
+ 
 function createAuth(
   uid: string,
   email = `${uid}@example.com`,
   claims: Record<string, unknown> = {},
 ) {
   const rawToken = "test-auth-token";
-
+ 
   return {
     uid,
-
+ 
     token: {
       aud: PROJECT_ID,
       auth_time: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 3600,
-
+ 
       firebase: {
         identities: {
           email: [email],
         },
         sign_in_provider: "password",
       },
-
+ 
       iat: Math.floor(Date.now() / 1000),
-
+ 
       iss:
         `https://securetoken.google.com/${PROJECT_ID}`,
-
+ 
       sub: uid,
       uid,
       email,
       email_verified: true,
       name: "Test User",
-
+ 
       ...claims,
     },
-
+ 
     // Required by Firebase Functions AuthData.
     rawToken,
   };
 }
-
+ 
 function createCallableRequest(
   uid: string,
   email: string,
@@ -143,21 +145,21 @@ function createCallableRequest(
     email,
     claims,
   );
-
+ 
   return {
     data,
-
+ 
     auth,
-
+ 
     // The callable implementation does not use the raw HTTP request.
     // Firebase Functions types this as an Express Request, so the test
     // placeholder is intentionally cast to never.
     rawRequest: {} as never,
-
+ 
     acceptsStreaming: false,
   };
 }
-
+ 
 async function seedOrganization(
   overrides: Record<string, unknown> = {},
 ) {
@@ -180,7 +182,7 @@ async function seedOrganization(
       ...overrides,
     });
 }
-
+ 
 async function seedMembership(
   uid: string,
   role: string,
@@ -203,7 +205,7 @@ async function seedMembership(
       ),
     });
 }
-
+ 
 async function seedInvitation(
   invitationId: string,
   overrides: Record<string, unknown> = {},
@@ -219,23 +221,23 @@ async function seedInvitation(
       role: "org_member",
       status: "pending",
       createdByUserId: "owner-user",
-
+ 
       expiresAt: Timestamp.fromDate(
         new Date("2026-10-05T12:00:00.000Z"),
       ),
-
+ 
       createdAt: Timestamp.fromDate(
         new Date("2026-09-01T12:00:00.000Z"),
       ),
-
+ 
       updatedAt: Timestamp.fromDate(
         new Date("2026-09-01T12:00:00.000Z"),
       ),
-
+ 
       ...overrides,
     });
 }
-
+ 
 async function getInvitation(
   invitationId: string,
 ) {
@@ -244,7 +246,7 @@ async function getInvitation(
     .doc(invitationId)
     .get();
 }
-
+ 
 async function getOrganizationEmailOutbox(
   invitationId: string,
 ) {
@@ -253,11 +255,11 @@ async function getOrganizationEmailOutbox(
     .where("invitationId", "==", invitationId)
     .get();
 }
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Authentication                                                             */
 /* -------------------------------------------------------------------------- */
-
+ 
 describe("resendOrganizationInvitation", () => {
   describe("authentication", () => {
     it("rejects an unauthenticated request", async () => {
@@ -267,14 +269,14 @@ describe("resendOrganizationInvitation", () => {
             invitationId: "inv-001",
           },
           auth: undefined,
-         rawRequest: {} as never,
+          rawRequest: {} as never,
           acceptsStreaming: false,
         }),
       ).rejects.toMatchObject({
         code: "unauthenticated",
       });
     });
-
+ 
     it("rejects a missing invitation ID", async () => {
       await expect(
         resendOrganizationInvitation.run(
@@ -288,7 +290,7 @@ describe("resendOrganizationInvitation", () => {
         code: "invalid-argument",
       });
     });
-
+ 
     it("rejects a blank invitation ID", async () => {
       await expect(
         resendOrganizationInvitation.run(
@@ -305,20 +307,20 @@ describe("resendOrganizationInvitation", () => {
       });
     });
   });
-
+ 
   /* ------------------------------------------------------------------------ */
   /* Invitation validation                                                    */
   /* ------------------------------------------------------------------------ */
-
+ 
   describe("invitation validation", () => {
     it("rejects a nonexistent invitation", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await expect(
         resendOrganizationInvitation.run(
           createCallableRequest(
@@ -333,17 +335,17 @@ describe("resendOrganizationInvitation", () => {
         code: "not-found",
       });
     });
-
+ 
     it("allows a pending invitation to be resent", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-001");
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -354,7 +356,7 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.success).toBe(true);
       expect(result.invitationId).toBe("inv-001");
       expect(result.organizationId).toBe(
@@ -362,15 +364,15 @@ describe("resendOrganizationInvitation", () => {
       );
       expect(result.status).toBe("pending");
     });
-
+ 
     it("allows an expired invitation to be resent", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-002", {
         status: "expired",
         expiresAt: Timestamp.fromDate(
@@ -380,7 +382,7 @@ describe("resendOrganizationInvitation", () => {
           new Date("2026-09-20T12:00:00.000Z"),
         ),
       });
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -391,19 +393,19 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.success).toBe(true);
       expect(result.status).toBe("pending");
     });
-
+ 
     it("rejects an accepted invitation", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-003", {
         status: "accepted",
         acceptedAt: Timestamp.fromDate(
@@ -411,7 +413,7 @@ describe("resendOrganizationInvitation", () => {
         ),
         acceptedByUserId: "member-user",
       });
-
+ 
       await expect(
         resendOrganizationInvitation.run(
           createCallableRequest(
@@ -425,23 +427,23 @@ describe("resendOrganizationInvitation", () => {
       ).rejects.toMatchObject({
         code: "failed-precondition",
       });
-
+ 
       const snapshot =
         await getInvitation("inv-003");
-
+ 
       expect(snapshot.data()?.status).toBe(
         "accepted",
       );
     });
-
+ 
     it("rejects a cancelled invitation", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-004", {
         status: "cancelled",
         cancelledAt: Timestamp.fromDate(
@@ -449,7 +451,7 @@ describe("resendOrganizationInvitation", () => {
         ),
         cancelledByUserId: "admin-user",
       });
-
+ 
       await expect(
         resendOrganizationInvitation.run(
           createCallableRequest(
@@ -463,31 +465,31 @@ describe("resendOrganizationInvitation", () => {
       ).rejects.toMatchObject({
         code: "failed-precondition",
       });
-
+ 
       const snapshot =
         await getInvitation("inv-004");
-
+ 
       expect(snapshot.data()?.status).toBe(
         "cancelled",
       );
     });
   });
-
+ 
   /* ------------------------------------------------------------------------ */
   /* Authorization                                                            */
   /* ------------------------------------------------------------------------ */
-
+ 
   describe("authorization", () => {
     it("allows org_owner to resend an invitation", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "owner-user",
         "org_owner",
       );
-
+ 
       await seedInvitation("inv-owner");
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -498,20 +500,20 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.success).toBe(true);
     });
-
+ 
     it("allows org_admin to resend an invitation", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-admin");
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -522,20 +524,20 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.success).toBe(true);
     });
-
+ 
     it("allows org_manager to resend an invitation", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "manager-user",
         "org_manager",
       );
-
+ 
       await seedInvitation("inv-manager");
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -546,20 +548,20 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.success).toBe(true);
     });
-
+ 
     it("rejects org_staff from resending an invitation", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "staff-user",
         "org_staff",
       );
-
+ 
       await seedInvitation("inv-staff");
-
+ 
       await expect(
         resendOrganizationInvitation.run(
           createCallableRequest(
@@ -574,17 +576,17 @@ describe("resendOrganizationInvitation", () => {
         code: "permission-denied",
       });
     });
-
+ 
     it("rejects org_member from resending an invitation", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "member-user",
         "org_member",
       );
-
+ 
       await seedInvitation("inv-member");
-
+ 
       await expect(
         resendOrganizationInvitation.run(
           createCallableRequest(
@@ -599,12 +601,12 @@ describe("resendOrganizationInvitation", () => {
         code: "permission-denied",
       });
     });
-
+ 
     it("rejects a user without organization membership", async () => {
       await seedOrganization();
-
+ 
       await seedInvitation("inv-no-membership");
-
+ 
       await expect(
         resendOrganizationInvitation.run(
           createCallableRequest(
@@ -619,18 +621,18 @@ describe("resendOrganizationInvitation", () => {
         code: "permission-denied",
       });
     });
-
+ 
     it("rejects an inactive organization membership", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "inactive-admin",
         "org_admin",
         false,
       );
-
+ 
       await seedInvitation("inv-inactive");
-
+ 
       await expect(
         resendOrganizationInvitation.run(
           createCallableRequest(
@@ -645,12 +647,12 @@ describe("resendOrganizationInvitation", () => {
         code: "permission-denied",
       });
     });
-
+ 
     it("allows a platform admin without organization membership", async () => {
       await seedOrganization();
-
+ 
       await seedInvitation("inv-platform-admin");
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -664,28 +666,28 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.success).toBe(true);
     });
   });
-
+ 
   /* ------------------------------------------------------------------------ */
-  /* Organization lifecycle                                                  */
+  /* Organization lifecycle                                                   */
   /* ------------------------------------------------------------------------ */
-
+ 
   describe("organization lifecycle", () => {
     it("allows resend during onboarding", async () => {
       await seedOrganization({
         status: "onboarding",
       });
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-onboarding");
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -696,22 +698,22 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.success).toBe(true);
     });
-
+ 
     it("allows resend while active", async () => {
       await seedOrganization({
         status: "active",
       });
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-active");
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -722,23 +724,23 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.success).toBe(true);
     });
-
+ 
     it("rejects resend for an inactive organization", async () => {
       await seedOrganization({
         active: false,
         status: "active",
       });
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-inactive-org");
-
+ 
       await expect(
         resendOrganizationInvitation.run(
           createCallableRequest(
@@ -753,7 +755,7 @@ describe("resendOrganizationInvitation", () => {
         code: "failed-precondition",
       });
     });
-
+ 
     it.each([
       "pending",
       "provisioning",
@@ -765,16 +767,16 @@ describe("resendOrganizationInvitation", () => {
         await seedOrganization({
           status,
         });
-
+ 
         await seedMembership(
           "admin-user",
           "org_admin",
         );
-
+ 
         await seedInvitation(
           `inv-${status}`,
         );
-
+ 
         await expect(
           resendOrganizationInvitation.run(
             createCallableRequest(
@@ -791,27 +793,27 @@ describe("resendOrganizationInvitation", () => {
       },
     );
   });
-
+ 
   /* ------------------------------------------------------------------------ */
   /* State transition                                                         */
   /* ------------------------------------------------------------------------ */
-
+ 
   describe("state transition", () => {
     it("changes expired to pending", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-state-001", {
         status: "expired",
         expiresAt: Timestamp.fromDate(
           new Date("2026-09-20T12:00:00.000Z"),
         ),
       });
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -822,27 +824,27 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.status).toBe("pending");
-
+ 
       const snapshot =
         await getInvitation("inv-state-001");
-
+ 
       expect(snapshot.data()?.status).toBe(
         "pending",
       );
     });
-
+ 
     it("preserves the invitation ID", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-preserve-id");
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -853,32 +855,32 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.invitationId).toBe(
         "inv-preserve-id",
       );
-
+ 
       const snapshot =
         await getInvitation("inv-preserve-id");
-
+ 
       expect(snapshot.exists).toBe(true);
     });
-
+ 
     it("preserves organization, email, and role", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-preserve-data", {
         email: "Original@Example.com",
         normalizedEmail:
           "original@example.com",
         role: "org_manager",
       });
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -890,57 +892,57 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.organizationId).toBe(
         TEST_ORGANIZATION_ID,
       );
-
+ 
       expect(result.email).toBe(
         "Original@Example.com",
       );
-
+ 
       expect(result.normalizedEmail).toBe(
         "original@example.com",
       );
-
+ 
       expect(result.role).toBe(
         "org_manager",
       );
-
+ 
       const snapshot =
         await getInvitation(
           "inv-preserve-data",
         );
-
+ 
       const data = snapshot.data();
-
+ 
       expect(data?.organizationId).toBe(
         TEST_ORGANIZATION_ID,
       );
-
+ 
       expect(data?.email).toBe(
         "Original@Example.com",
       );
-
+ 
       expect(data?.normalizedEmail).toBe(
         "original@example.com",
       );
-
+ 
       expect(data?.role).toBe(
         "org_manager",
       );
     });
-
+ 
     it("increments resendCount from zero", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-count-001");
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -951,34 +953,34 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.resendCount).toBe(1);
-
+ 
       const snapshot =
         await getInvitation(
           "inv-count-001",
         );
-
+ 
       expect(
         snapshot.data()?.resendCount,
       ).toBe(1);
     });
-
+ 
     it("increments an existing resendCount", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-count-002", {
         resendCount: 4,
         lastResentAt: Timestamp.fromDate(
           new Date("2026-09-27T12:00:00.000Z"),
         ),
       });
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -989,31 +991,31 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.resendCount).toBe(5);
-
+ 
       const snapshot =
         await getInvitation(
           "inv-count-002",
         );
-
+ 
       expect(
         snapshot.data()?.resendCount,
       ).toBe(5);
     });
-
+ 
     it("creates lastResentAt", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-last-resent");
-
+ 
       const before = Date.now();
-
+ 
       await resendOrganizationInvitation.run(
         createCallableRequest(
           "admin-user",
@@ -1023,44 +1025,44 @@ describe("resendOrganizationInvitation", () => {
           },
         ),
       );
-
+ 
       const after = Date.now();
-
+ 
       const snapshot =
         await getInvitation(
           "inv-last-resent",
         );
-
+ 
       const lastResentAt =
         snapshot
           .data()
           ?.lastResentAt
           ?.toDate()
           ?.getTime();
-
+ 
       expect(lastResentAt).toBeGreaterThanOrEqual(
         before,
       );
-
+ 
       expect(lastResentAt).toBeLessThanOrEqual(
         after,
       );
     });
-
+ 
     it("extends the expiration by seven days", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-expiration", {
         expiresAt: Timestamp.fromDate(
           new Date("2026-09-20T12:00:00.000Z"),
         ),
       });
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -1072,45 +1074,45 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       const expiresAt = new Date(
         result.expiresAt,
       );
-
+ 
       const now = new Date();
-
+ 
       const difference =
         expiresAt.getTime() - now.getTime();
-
+ 
       const sevenDays =
         7 * 24 * 60 * 60 * 1000;
-
+ 
       expect(
         Math.abs(difference - sevenDays),
       ).toBeLessThan(5000);
     });
-
+ 
     it("updates updatedAt", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation("inv-updated-at", {
         updatedAt: Timestamp.fromDate(
           new Date("2026-09-01T12:00:00.000Z"),
         ),
       });
-
+ 
       const before =
         (
           await getInvitation(
             "inv-updated-at",
           )
         ).data()?.updatedAt.toDate().getTime();
-
+ 
       await resendOrganizationInvitation.run(
         createCallableRequest(
           "admin-user",
@@ -1121,37 +1123,37 @@ describe("resendOrganizationInvitation", () => {
           },
         ),
       );
-
+ 
       const after =
         (
           await getInvitation(
             "inv-updated-at",
           )
         ).data()?.updatedAt.toDate().getTime();
-
+ 
       expect(after).toBeGreaterThan(
         before,
       );
     });
   });
-
+ 
   /* ------------------------------------------------------------------------ */
   /* Cooldown                                                                 */
   /* ------------------------------------------------------------------------ */
-
+ 
   describe("resend cooldown", () => {
     it("rejects an immediate second resend", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation(
         "inv-cooldown",
       );
-
+ 
       await resendOrganizationInvitation.run(
         createCallableRequest(
           "admin-user",
@@ -1162,7 +1164,7 @@ describe("resendOrganizationInvitation", () => {
           },
         ),
       );
-
+ 
       await expect(
         resendOrganizationInvitation.run(
           createCallableRequest(
@@ -1178,15 +1180,15 @@ describe("resendOrganizationInvitation", () => {
         code: "resource-exhausted",
       });
     });
-
+ 
     it("rejects a resend when lastResentAt is less than 60 seconds ago", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation(
         "inv-cooldown-active",
         {
@@ -1198,7 +1200,7 @@ describe("resendOrganizationInvitation", () => {
             ),
         },
       );
-
+ 
       await expect(
         resendOrganizationInvitation.run(
           createCallableRequest(
@@ -1214,15 +1216,15 @@ describe("resendOrganizationInvitation", () => {
         code: "resource-exhausted",
       });
     });
-
+ 
     it("allows resend when the cooldown has elapsed", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation(
         "inv-cooldown-expired",
         {
@@ -1235,7 +1237,7 @@ describe("resendOrganizationInvitation", () => {
             ),
         },
       );
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -1247,17 +1249,17 @@ describe("resendOrganizationInvitation", () => {
             },
           ),
         );
-
+ 
       expect(result.success).toBe(true);
-
+ 
       expect(result.resendCount).toBe(2);
     });
   });
-
+ 
   /* ------------------------------------------------------------------------ */
   /* Role preservation                                                        */
   /* ------------------------------------------------------------------------ */
-
+ 
   describe("invitation roles", () => {
     it.each([
       "org_admin",
@@ -1268,19 +1270,19 @@ describe("resendOrganizationInvitation", () => {
       "can resend an invitation with role %s",
       async (role) => {
         await seedOrganization();
-
+ 
         await seedMembership(
           "admin-user",
           "org_admin",
         );
-
+ 
         await seedInvitation(
           `inv-role-${role}`,
           {
             role,
           },
         );
-
+ 
         const result =
           await resendOrganizationInvitation.run(
             createCallableRequest(
@@ -1292,25 +1294,25 @@ describe("resendOrganizationInvitation", () => {
               },
             ),
           );
-
+ 
         expect(result.success).toBe(true);
-
+ 
         expect(result.role).toBe(role);
       },
     );
   });
-
+ 
   /* ------------------------------------------------------------------------ */
-  /* Email outbox                                                              */
+  /* Email outbox                                                             */
   /* ------------------------------------------------------------------------ */
-
+ 
   describe("email outbox", () => {
     it("creates an email outbox record when an invitation is resent", async () => {
       await seedOrganization();
-
+ 
       await seedMembership("admin-user", "org_admin");
       await seedInvitation("inv-outbox-create");
-
+ 
       const result = await resendOrganizationInvitation.run(
         createCallableRequest(
           "admin-user",
@@ -1318,36 +1320,38 @@ describe("resendOrganizationInvitation", () => {
           { invitationId: "inv-outbox-create" },
         ),
       );
-
+ 
       const snapshot = await getOrganizationEmailOutbox(
         "inv-outbox-create",
       );
-
+ 
       expect(snapshot.size).toBe(1);
-
+ 
       const data = snapshot.docs[0].data();
-
+ 
       expect(data).toMatchObject({
         invitationId: "inv-outbox-create",
         organizationId: TEST_ORGANIZATION_ID,
         recipientEmail: "member@example.com",
         organizationName: ORGANIZATION_NAME,
         role: "org_member",
+        roleLabel: "Organization Member",
       });
-
+ 
       expect(data.status).toBe("pending");
       expect(data.attemptCount).toBe(0);
       expect(data.subject).toBeTruthy();
       expect(data.text).toBeTruthy();
       expect(data.html).toBeTruthy();
+      expect(data.text).toContain("Role: Organization Member");
       expect(result.outboxId).toBe(snapshot.docs[0].id);
     });
-
+ 
     it("creates a new outbox record for each successful resend", async () => {
       await seedOrganization();
       await seedMembership("admin-user", "org_admin");
       await seedInvitation("inv-outbox-repeat");
-
+ 
       await resendOrganizationInvitation.run(
         createCallableRequest(
           "admin-user",
@@ -1355,7 +1359,7 @@ describe("resendOrganizationInvitation", () => {
           { invitationId: "inv-outbox-repeat" },
         ),
       );
-
+ 
       await adminDb
         .collection("organizationInvitations")
         .doc("inv-outbox-repeat")
@@ -1364,7 +1368,7 @@ describe("resendOrganizationInvitation", () => {
             new Date(Date.now() - 61_000),
           ),
         });
-
+ 
       const result = await resendOrganizationInvitation.run(
         createCallableRequest(
           "admin-user",
@@ -1372,17 +1376,17 @@ describe("resendOrganizationInvitation", () => {
           { invitationId: "inv-outbox-repeat" },
         ),
       );
-
+ 
       const snapshot = await getOrganizationEmailOutbox(
         "inv-outbox-repeat",
       );
-
+ 
       expect(snapshot.size).toBe(2);
       expect(new Set(snapshot.docs.map((doc) => doc.id)).size).toBe(2);
       expect(result.outboxId).toBeTruthy();
       expect(snapshot.docs.some((doc) => doc.id === result.outboxId)).toBe(true);
     });
-
+ 
     it("creates an outbox record using the renewed expiration date", async () => {
       await seedOrganization();
       await seedMembership("admin-user", "org_admin");
@@ -1391,7 +1395,7 @@ describe("resendOrganizationInvitation", () => {
           new Date("2026-09-20T12:00:00.000Z"),
         ),
       });
-
+ 
       const result = await resendOrganizationInvitation.run(
         createCallableRequest(
           "admin-user",
@@ -1399,27 +1403,30 @@ describe("resendOrganizationInvitation", () => {
           { invitationId: "inv-outbox-expiration" },
         ),
       );
-
+ 
       const snapshot = await getOrganizationEmailOutbox(
         "inv-outbox-expiration",
       );
-
+ 
       expect(snapshot.size).toBe(1);
-
+ 
       const data = snapshot.docs[0].data();
-      const expectedExpiration = new Date(
-        result.expiresAt,
-      ).toLocaleString("en-US");
-
+ 
+      // Use the same formatter as the email so the assertion does not
+      // depend on the test machine's locale or time zone.
+      const expectedExpiration = formatInvitationExpiration(
+        new Date(result.expiresAt),
+      );
+ 
       expect(data.text).toContain(expectedExpiration);
       expect(data.html).toContain(expectedExpiration);
     });
-
+ 
     it("creates an outbox record containing the invitation acceptance link", async () => {
       await seedOrganization();
       await seedMembership("admin-user", "org_admin");
       await seedInvitation("inv-outbox-link");
-
+ 
       await resendOrganizationInvitation.run(
         createCallableRequest(
           "admin-user",
@@ -1427,26 +1434,26 @@ describe("resendOrganizationInvitation", () => {
           { invitationId: "inv-outbox-link" },
         ),
       );
-
+ 
       const snapshot = await getOrganizationEmailOutbox(
         "inv-outbox-link",
       );
-
+ 
       expect(snapshot.size).toBe(1);
-
+ 
       const data = snapshot.docs[0].data();
       const acceptanceUrl =
         "https://zebron.org/organization/invitations/accept?invitationId=inv-outbox-link";
-
+ 
       expect(data.text).toContain(acceptanceUrl);
       expect(data.html).toContain(acceptanceUrl);
     });
-
+ 
     it("creates a pending outbox record with zero attempts", async () => {
       await seedOrganization();
       await seedMembership("admin-user", "org_admin");
       await seedInvitation("inv-outbox-state");
-
+ 
       await resendOrganizationInvitation.run(
         createCallableRequest(
           "admin-user",
@@ -1454,34 +1461,34 @@ describe("resendOrganizationInvitation", () => {
           { invitationId: "inv-outbox-state" },
         ),
       );
-
+ 
       const snapshot = await getOrganizationEmailOutbox(
         "inv-outbox-state",
       );
-
+ 
       expect(snapshot.size).toBe(1);
-
+ 
       const data = snapshot.docs[0].data();
-
+ 
       expect(data.status).toBe("pending");
-expect(data.attemptCount).toBe(0);
-expect(data.nextAttemptAt).toBeDefined();
+      expect(data.attemptCount).toBe(0);
+      expect(data.nextAttemptAt).toBeDefined();
     });
   });
-
+ 
   /* ------------------------------------------------------------------------ */
-  /* Result                                                                    */
+  /* Result                                                                   */
   /* ------------------------------------------------------------------------ */
-
+ 
   describe("result", () => {
     it("returns the expected resend information", async () => {
       await seedOrganization();
-
+ 
       await seedMembership(
         "admin-user",
         "org_admin",
       );
-
+ 
       await seedInvitation(
         "inv-result",
         {
@@ -1491,7 +1498,7 @@ expect(data.nextAttemptAt).toBeDefined();
           role: "org_member",
         },
       );
-
+ 
       const result =
         await resendOrganizationInvitation.run(
           createCallableRequest(
@@ -1503,7 +1510,7 @@ expect(data.nextAttemptAt).toBeDefined();
             },
           ),
         );
-
+ 
       expect(result).toMatchObject({
         success: true,
         invitationId: "inv-result",
@@ -1517,14 +1524,15 @@ expect(data.nextAttemptAt).toBeDefined();
         resendCount: 1,
         resentByUserId: "admin-user",
       });
-
+ 
       expect(
         typeof result.expiresAt,
       ).toBe("string");
-
+ 
       expect(
         typeof result.lastResentAt,
       ).toBe("string");
     });
   });
 });
+ 

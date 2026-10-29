@@ -8,119 +8,122 @@ import {
   it,
   vi,
 } from "vitest";
-
+ 
 import {
   deleteApp,
   getApps,
   initializeApp,
 } from "../../functions/node_modules/firebase-admin/lib/app";
-
+ 
 import {
   getFirestore,
   Timestamp,
 } from "../../functions/node_modules/firebase-admin/lib/firestore";
-
+ 
 import {
   initializeTestEnvironment,
   RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-
+ 
 import fs from "node:fs";
-
+ 
 import {
   processOrganizationEmailOutbox,
   sendOrganizationEmailOutbox,
 } from "../../functions/src/organization-email-outbox";
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Test configuration                                                         */
 /* -------------------------------------------------------------------------- */
-
+ 
 const PROJECT_ID = "zebron-test";
-
+ 
 const FIRESTORE_EMULATOR_HOST =
   "127.0.0.1:8080";
-
+ 
 const OUTBOX_COLLECTION =
   "organizationEmailOutbox";
-
+ 
 const NOW =
   new Date("2026-09-28T12:00:00.000Z");
-
+ 
+const SENDING_LEASE_MS =
+  15 * 60 * 1000;
+ 
 const ORGANIZATION_ID =
   "org-001";
-
+ 
 const INVITATION_ID =
   "inv-001";
-
+ 
 const OUTBOX_ID =
   "outbox-001";
-
+ 
 const RECIPIENT_EMAIL =
   "member@example.com";
-
+ 
 const ORGANIZATION_NAME =
   "Test Organization";
-
+ 
 const ROLE =
   "org_member";
-
+ 
 const SUBJECT =
   "You're invited to join Test Organization on Zebron";
-
+ 
 const ACCEPTANCE_URL =
   "https://zebron.org/organization/invitations/accept" +
   "?invitationId=inv-001";
-
+ 
 const ORIGINAL_FETCH =
   globalThis.fetch;
-
+ 
 const ORIGINAL_RESEND_API_KEY =
   process.env["RESEND_API_KEY"];
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Test environment                                                           */
 /* -------------------------------------------------------------------------- */
-
+ 
 let testEnv:
   | RulesTestEnvironment
   | undefined;
-
+ 
 let adminDb:
   ReturnType<typeof getFirestore>;
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Lifecycle                                                                  */
 /* -------------------------------------------------------------------------- */
-
+ 
 beforeAll(async () => {
   process.env[
     "FIRESTORE_EMULATOR_HOST"
   ] = FIRESTORE_EMULATOR_HOST;
-
+ 
   process.env[
     "RESEND_API_KEY"
   ] = "test-resend-api-key";
-
+ 
   const rulesPath =
     "firestore.rules";
-
+ 
   expect(
     fs.existsSync(rulesPath),
   ).toBe(true);
-
+ 
   testEnv =
     await initializeTestEnvironment({
       projectId:
         PROJECT_ID,
-
+ 
       firestore: {
         host:
           "127.0.0.1",
-
+ 
         port:
           8080,
-
+ 
         rules:
           fs.readFileSync(
             rulesPath,
@@ -128,7 +131,7 @@ beforeAll(async () => {
           ),
       },
     });
-
+ 
   if (
     getApps().length === 0
   ) {
@@ -137,28 +140,28 @@ beforeAll(async () => {
         PROJECT_ID,
     });
   }
-
+ 
   adminDb =
     getFirestore();
 });
-
+ 
 afterEach(async () => {
   globalThis.fetch =
     ORIGINAL_FETCH;
-
+ 
   process.env[
     "RESEND_API_KEY"
   ] = "test-resend-api-key";
-
+ 
   if (testEnv) {
     await testEnv.clearFirestore();
   }
 });
-
+ 
 afterAll(async () => {
   globalThis.fetch =
     ORIGINAL_FETCH;
-
+ 
   if (
     ORIGINAL_RESEND_API_KEY ===
     undefined
@@ -172,38 +175,38 @@ afterAll(async () => {
     ] =
       ORIGINAL_RESEND_API_KEY;
   }
-
+ 
   if (testEnv) {
     await testEnv.cleanup();
   }
-
+ 
   for (
     const app of getApps()
   ) {
     await deleteApp(app);
   }
 });
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */
 /* -------------------------------------------------------------------------- */
-
+ 
 function createResendSuccessResponse(
   resendEmailId =
     "resend-test-001",
 ) {
   return {
     ok: true,
-
+ 
     status: 200,
-
+ 
     json: async () => ({
       id:
         resendEmailId,
     }),
   };
 }
-
+ 
 function createResendFailureResponse(
   status = 500,
   message =
@@ -211,15 +214,15 @@ function createResendFailureResponse(
 ) {
   return {
     ok: false,
-
+ 
     status,
-
+ 
     json: async () => ({
       message,
     }),
   };
 }
-
+ 
 function mockSuccessfulResend(
   resendEmailId =
     "resend-test-001",
@@ -231,7 +234,7 @@ function mockSuccessfulResend(
       ),
     );
 }
-
+ 
 function mockFailedResend(
   status = 500,
   message =
@@ -245,7 +248,7 @@ function mockFailedResend(
       ),
     );
 }
-
+ 
 async function seedOutbox(
   id = OUTBOX_ID,
   overrides: Record<
@@ -255,7 +258,7 @@ async function seedOutbox(
 ) {
   const now =
     NOW;
-
+ 
   await adminDb
     .collection(
       OUTBOX_COLLECTION,
@@ -264,70 +267,76 @@ async function seedOutbox(
     .set({
       type:
         "organization_invitation",
-
+ 
       invitationId:
         INVITATION_ID,
-
+ 
       organizationId:
         ORGANIZATION_ID,
-
+ 
       organizationName:
         ORGANIZATION_NAME,
-
+ 
       recipientEmail:
         RECIPIENT_EMAIL,
-
+ 
       role:
         ROLE,
-
+ 
+      roleLabel:
+        "Organization Member",
+ 
       subject:
         SUBJECT,
-
+ 
       text:
         [
           "You have been invited to join an organization on Zebron.",
           "",
           `Organization: ${ORGANIZATION_NAME}`,
-          `Role: ${ROLE}`,
+          "Role: Organization Member",
           "",
           "Accept your invitation:",
           ACCEPTANCE_URL,
         ].join("\n"),
-
+ 
       html:
         `<p>You have been invited to join an organization on Zebron.</p>` +
         `<p><strong>Organization:</strong> ${ORGANIZATION_NAME}</p>` +
-        `<p><strong>Role:</strong> ${ROLE}</p>` +
+        `<p><strong>Role:</strong> Organization Member</p>` +
         `<p><a href="${ACCEPTANCE_URL}">Accept your invitation</a></p>`,
-
+ 
       status:
         "pending",
-
+ 
       attemptCount:
         0,
-
+ 
       createdAt:
         now,
-
+ 
       updatedAt:
         now,
-
+ 
       sentAt:
         null,
-
+ 
       lastAttemptAt:
         null,
-
+ 
       nextAttemptAt:
         now,
-
+ 
+      leaseExpiresAt:
+        null,
+ 
       lastError:
         null,
-
+ 
       ...overrides,
     });
 }
-
+ 
 async function getOutbox(
   id = OUTBOX_ID,
 ) {
@@ -338,11 +347,11 @@ async function getOutbox(
     .doc(id)
     .get();
 }
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Successful delivery                                                        */
 /* -------------------------------------------------------------------------- */
-
+ 
 describe(
   "sendOrganizationEmailOutbox",
   () => {
@@ -352,24 +361,24 @@ describe(
       ] =
         "test-resend-api-key";
     });
-
+ 
     it(
       "sends an email through Resend",
       async () => {
         await seedOutbox();
-
+ 
         mockSuccessfulResend();
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         expect(
           snapshot.exists,
         ).toBe(true);
-
+ 
         const outbox =
           snapshot.data();
-
+ 
         await sendOrganizationEmailOutbox(
           {
             ...outbox,
@@ -378,7 +387,7 @@ describe(
           },
           NOW,
         );
-
+ 
         expect(
           globalThis.fetch,
         ).toHaveBeenCalledTimes(
@@ -386,19 +395,19 @@ describe(
         );
       },
     );
-
+ 
     it(
       "sends the expected Resend request",
       async () => {
         await seedOutbox();
-
+ 
         mockSuccessfulResend(
           "resend-payload-001",
         );
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         await sendOrganizationEmailOutbox(
           {
             ...snapshot.data(),
@@ -407,74 +416,74 @@ describe(
           },
           NOW,
         );
-
+ 
         const fetchMock =
           vi.mocked(
             globalThis.fetch,
           );
-
+ 
         expect(
           fetchMock,
         ).toHaveBeenCalledTimes(
           1,
         );
-
+ 
         const [
           url,
           options,
         ] =
           fetchMock.mock.calls[0];
-
+ 
         expect(url).toBe(
           "https://api.resend.com/emails",
         );
-
+ 
         expect(
           options,
         ).toMatchObject({
           method:
             "POST",
-
+ 
           headers: {
             Authorization:
               "Bearer test-resend-api-key",
-
+ 
             "Content-Type":
               "application/json",
           },
         });
-
+ 
         const body =
           JSON.parse(
             String(
               options?.body,
             ),
           );
-
+ 
         expect(body).toMatchObject({
           from:
             "Zebron <noreply@zebron.org>",
-
+ 
           to: [
             RECIPIENT_EMAIL,
           ],
-
+ 
           subject:
             SUBJECT,
         });
-
+ 
         expect(
           body.text,
         ).toContain(
           ORGANIZATION_NAME,
         );
-
+ 
         expect(
           body.text,
         ).toContain(
           ACCEPTANCE_URL,
         );
-
+ 
         expect(
           body.html,
         ).toContain(
@@ -482,19 +491,17 @@ describe(
         );
       },
     );
-
+ 
     it(
-      "marks the outbox record as sent",
+      "passes a timeout signal to the Resend request",
       async () => {
         await seedOutbox();
-
-        mockSuccessfulResend(
-          "resend-success-001",
-        );
-
+ 
+        mockSuccessfulResend();
+ 
         const snapshot =
           await getOutbox();
-
+ 
         await sendOrganizationEmailOutbox(
           {
             ...snapshot.data(),
@@ -503,17 +510,54 @@ describe(
           },
           NOW,
         );
-
+ 
+        const [
+          ,
+          options,
+        ] =
+          vi.mocked(
+            globalThis.fetch,
+          ).mock.calls[0];
+ 
+        expect(
+          options?.signal,
+        ).toBeInstanceOf(
+          AbortSignal,
+        );
+      },
+    );
+ 
+    it(
+      "marks the outbox record as sent",
+      async () => {
+        await seedOutbox();
+ 
+        mockSuccessfulResend(
+          "resend-success-001",
+        );
+ 
+        const snapshot =
+          await getOutbox();
+ 
+        await sendOrganizationEmailOutbox(
+          {
+            ...snapshot.data(),
+            id:
+              OUTBOX_ID,
+          },
+          NOW,
+        );
+ 
         const updated =
           await getOutbox();
-
+ 
         const data =
           updated.data();
-
+ 
         expect(
           data?.status,
         ).toBe("sent");
-
+ 
         expect(
           data?.sentAt,
         ).toEqual(
@@ -521,7 +565,7 @@ describe(
             NOW,
           ),
         );
-
+ 
         expect(
           data?.lastAttemptAt,
         ).toEqual(
@@ -529,7 +573,7 @@ describe(
             NOW,
           ),
         );
-
+ 
         expect(
           data?.updatedAt,
         ).toEqual(
@@ -539,19 +583,19 @@ describe(
         );
       },
     );
-
+ 
     it(
       "stores the Resend email ID",
       async () => {
         await seedOutbox();
-
+ 
         mockSuccessfulResend(
           "resend-id-123",
         );
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         await sendOrganizationEmailOutbox(
           {
             ...snapshot.data(),
@@ -560,10 +604,10 @@ describe(
           },
           NOW,
         );
-
+ 
         const updated =
           await getOutbox();
-
+ 
         expect(
           updated.data()
             ?.resendEmailId,
@@ -574,11 +618,11 @@ describe(
     );
   },
 );
-
+ 
 /* -------------------------------------------------------------------------- */
 /* Worker                                                                     */
 /* -------------------------------------------------------------------------- */
-
+ 
 describe(
   "processOrganizationEmailOutbox",
   () => {
@@ -586,63 +630,63 @@ describe(
       "processes a pending outbox record",
       async () => {
         await seedOutbox();
-
+ 
         mockSuccessfulResend();
-
+ 
         const result =
           await processOrganizationEmailOutbox(
             NOW,
           );
-
+ 
         expect(
           result.processed,
         ).toBe(1);
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         expect(
           snapshot.data()
             ?.status,
         ).toBe("sent");
       },
     );
-
+ 
     it(
       "increments attemptCount before sending",
       async () => {
         await seedOutbox();
-
+ 
         mockSuccessfulResend();
-
+ 
         await processOrganizationEmailOutbox(
           NOW,
         );
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         expect(
           snapshot.data()
             ?.attemptCount,
         ).toBe(1);
       },
     );
-
+ 
     it(
       "records lastAttemptAt",
       async () => {
         await seedOutbox();
-
+ 
         mockSuccessfulResend();
-
+ 
         await processOrganizationEmailOutbox(
           NOW,
         );
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         expect(
           snapshot.data()
             ?.lastAttemptAt,
@@ -653,40 +697,40 @@ describe(
         );
       },
     );
-
+ 
     it(
       "keeps a failed email pending when retries remain",
       async () => {
         await seedOutbox();
-
+ 
         mockFailedResend(
           500,
           "Temporary failure",
         );
-
+ 
         const result =
           await processOrganizationEmailOutbox(
             NOW,
           );
-
+ 
         expect(
           result.processed,
         ).toBe(1);
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         const data =
           snapshot.data();
-
+ 
         expect(
           data?.status,
         ).toBe("pending");
-
+ 
         expect(
           data?.attemptCount,
         ).toBe(1);
-
+ 
         expect(
           data?.lastError,
         ).toBe(
@@ -696,7 +740,7 @@ describe(
               "Temporary failure",
           }),
         );
-
+ 
         expect(
           data?.nextAttemptAt,
         ).toEqual(
@@ -709,7 +753,7 @@ describe(
         );
       },
     );
-
+ 
     it(
       "schedules the second retry for five minutes",
       async () => {
@@ -720,21 +764,21 @@ describe(
               1,
           },
         );
-
+ 
         mockFailedResend();
-
+ 
         await processOrganizationEmailOutbox(
           NOW,
         );
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         expect(
           snapshot.data()
             ?.attemptCount,
         ).toBe(2);
-
+ 
         expect(
           snapshot.data()
             ?.nextAttemptAt,
@@ -748,7 +792,7 @@ describe(
         );
       },
     );
-
+ 
     it(
       "schedules the third retry for fifteen minutes",
       async () => {
@@ -759,21 +803,21 @@ describe(
               2,
           },
         );
-
+ 
         mockFailedResend();
-
+ 
         await processOrganizationEmailOutbox(
           NOW,
         );
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         expect(
           snapshot.data()
             ?.attemptCount,
         ).toBe(3);
-
+ 
         expect(
           snapshot.data()
             ?.nextAttemptAt,
@@ -787,7 +831,7 @@ describe(
         );
       },
     );
-
+ 
     it(
       "schedules the fourth retry for one hour",
       async () => {
@@ -798,21 +842,21 @@ describe(
               3,
           },
         );
-
+ 
         mockFailedResend();
-
+ 
         await processOrganizationEmailOutbox(
           NOW,
         );
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         expect(
           snapshot.data()
             ?.attemptCount,
         ).toBe(4);
-
+ 
         expect(
           snapshot.data()
             ?.nextAttemptAt,
@@ -826,7 +870,7 @@ describe(
         );
       },
     );
-
+ 
     it(
       "marks the fifth failed attempt as failed",
       async () => {
@@ -837,36 +881,36 @@ describe(
               4,
           },
         );
-
+ 
         mockFailedResend(
           503,
           "Service unavailable",
         );
-
+ 
         await processOrganizationEmailOutbox(
           NOW,
         );
-
+ 
         const snapshot =
           await getOutbox();
-
+ 
         const data =
           snapshot.data();
-
+ 
         expect(
           data?.status,
         ).toBe("failed");
-
+ 
         expect(
           data?.attemptCount,
         ).toBe(5);
-
+ 
         expect(
           data?.lastError,
         ).toContain(
           "503",
         );
-
+ 
         expect(
           data?.nextAttemptAt,
         ).toEqual(
@@ -876,7 +920,7 @@ describe(
         );
       },
     );
-
+ 
     it(
       "does not process an already sent record",
       async () => {
@@ -885,29 +929,29 @@ describe(
           {
             status:
               "sent",
-
+ 
             sentAt:
               NOW,
           },
         );
-
+ 
         mockSuccessfulResend();
-
+ 
         const result =
           await processOrganizationEmailOutbox(
             NOW,
           );
-
+ 
         expect(
           result.processed,
         ).toBe(0);
-
+ 
         expect(
           globalThis.fetch,
         ).not.toHaveBeenCalled();
       },
     );
-
+ 
     it(
       "does not process a pending record scheduled for the future",
       async () => {
@@ -916,7 +960,7 @@ describe(
             NOW.getTime() +
             10 * 60 * 1000,
           );
-
+ 
         await seedOutbox(
           OUTBOX_ID,
           {
@@ -924,24 +968,24 @@ describe(
               future,
           },
         );
-
+ 
         mockSuccessfulResend();
-
+ 
         const result =
           await processOrganizationEmailOutbox(
             NOW,
           );
-
+ 
         expect(
           result.processed,
         ).toBe(0);
-
+ 
         expect(
           globalThis.fetch,
         ).not.toHaveBeenCalled();
       },
     );
-
+ 
     it(
       "processes a pending record whose next attempt is due",
       async () => {
@@ -950,7 +994,7 @@ describe(
             NOW.getTime() -
             1000,
           );
-
+ 
         await seedOutbox(
           OUTBOX_ID,
           {
@@ -958,18 +1002,18 @@ describe(
               due,
           },
         );
-
+ 
         mockSuccessfulResend();
-
+ 
         const result =
           await processOrganizationEmailOutbox(
             NOW,
           );
-
+ 
         expect(
           result.processed,
         ).toBe(1);
-
+ 
         expect(
           globalThis.fetch,
         ).toHaveBeenCalledTimes(
@@ -977,14 +1021,14 @@ describe(
         );
       },
     );
-
+ 
     it(
       "processes multiple pending records",
       async () => {
         await seedOutbox(
           "outbox-001",
         );
-
+ 
         await seedOutbox(
           "outbox-002",
           {
@@ -992,7 +1036,7 @@ describe(
               "inv-002",
           },
         );
-
+ 
         await seedOutbox(
           "outbox-003",
           {
@@ -1000,18 +1044,18 @@ describe(
               "inv-003",
           },
         );
-
+ 
         mockSuccessfulResend();
-
+ 
         const result =
           await processOrganizationEmailOutbox(
             NOW,
           );
-
+ 
         expect(
           result.processed,
         ).toBe(3);
-
+ 
         expect(
           globalThis.fetch,
         ).toHaveBeenCalledTimes(
@@ -1021,11 +1065,371 @@ describe(
     );
   },
 );
-
+ 
+/* -------------------------------------------------------------------------- */
+/* Claiming, leases and permanent failures                                    */
+/* -------------------------------------------------------------------------- */
+ 
+describe(
+  "processOrganizationEmailOutbox claiming",
+  () => {
+    it(
+      "holds a sending lease while the email is being delivered",
+      async () => {
+        await seedOutbox();
+ 
+        let duringSend:
+          | Record<string, unknown>
+          | undefined;
+ 
+        globalThis.fetch =
+          vi.fn(async () => {
+            duringSend =
+              (await getOutbox()).data();
+ 
+            return createResendSuccessResponse();
+          }) as unknown as typeof fetch;
+ 
+        await processOrganizationEmailOutbox(
+          NOW,
+        );
+ 
+        expect(
+          duringSend?.status,
+        ).toBe("sending");
+ 
+        expect(
+          duringSend?.attemptCount,
+        ).toBe(1);
+ 
+        expect(
+          duringSend?.leaseExpiresAt,
+        ).toEqual(
+          Timestamp.fromDate(
+            new Date(
+              NOW.getTime() +
+              SENDING_LEASE_MS,
+            ),
+          ),
+        );
+      },
+    );
+ 
+    it(
+      "clears the lease after a successful send",
+      async () => {
+        await seedOutbox();
+ 
+        mockSuccessfulResend();
+ 
+        await processOrganizationEmailOutbox(
+          NOW,
+        );
+ 
+        const data =
+          (await getOutbox()).data();
+ 
+        expect(
+          data?.status,
+        ).toBe("sent");
+ 
+        expect(
+          data?.leaseExpiresAt,
+        ).toBeNull();
+      },
+    );
+ 
+    it(
+      "clears the lease after a failed send",
+      async () => {
+        await seedOutbox();
+ 
+        mockFailedResend();
+ 
+        await processOrganizationEmailOutbox(
+          NOW,
+        );
+ 
+        const data =
+          (await getOutbox()).data();
+ 
+        expect(
+          data?.status,
+        ).toBe("pending");
+ 
+        expect(
+          data?.leaseExpiresAt,
+        ).toBeNull();
+      },
+    );
+ 
+    it(
+      "skips a record another worker is still sending",
+      async () => {
+        await seedOutbox(
+          OUTBOX_ID,
+          {
+            status:
+              "sending",
+ 
+            attemptCount:
+              1,
+ 
+            leaseExpiresAt:
+              new Date(
+                NOW.getTime() +
+                5 * 60 * 1000,
+              ),
+          },
+        );
+ 
+        mockSuccessfulResend();
+ 
+        const result =
+          await processOrganizationEmailOutbox(
+            NOW,
+          );
+ 
+        expect(
+          result.processed,
+        ).toBe(0);
+ 
+        expect(
+          globalThis.fetch,
+        ).not.toHaveBeenCalled();
+ 
+        expect(
+          (await getOutbox()).data()
+            ?.status,
+        ).toBe("sending");
+      },
+    );
+ 
+    it(
+      "reclaims a record whose sending lease has expired",
+      async () => {
+        await seedOutbox(
+          OUTBOX_ID,
+          {
+            status:
+              "sending",
+ 
+            attemptCount:
+              1,
+ 
+            leaseExpiresAt:
+              new Date(
+                NOW.getTime() -
+                1000,
+              ),
+          },
+        );
+ 
+        mockSuccessfulResend();
+ 
+        const result =
+          await processOrganizationEmailOutbox(
+            NOW,
+          );
+ 
+        expect(
+          result.processed,
+        ).toBe(1);
+ 
+        const data =
+          (await getOutbox()).data();
+ 
+        expect(
+          data?.status,
+        ).toBe("sent");
+ 
+        expect(
+          data?.attemptCount,
+        ).toBe(2);
+      },
+    );
+ 
+    it(
+      "marks an expired lease as failed when no attempts remain",
+      async () => {
+        await seedOutbox(
+          OUTBOX_ID,
+          {
+            status:
+              "sending",
+ 
+            attemptCount:
+              5,
+ 
+            leaseExpiresAt:
+              new Date(
+                NOW.getTime() -
+                1000,
+              ),
+          },
+        );
+ 
+        mockSuccessfulResend();
+ 
+        const result =
+          await processOrganizationEmailOutbox(
+            NOW,
+          );
+ 
+        expect(
+          result.processed,
+        ).toBe(1);
+ 
+        expect(
+          globalThis.fetch,
+        ).not.toHaveBeenCalled();
+ 
+        expect(
+          (await getOutbox()).data()
+            ?.status,
+        ).toBe("failed");
+      },
+    );
+ 
+    it(
+      "sends only once when two worker runs overlap",
+      async () => {
+        await seedOutbox();
+ 
+        mockSuccessfulResend();
+ 
+        const [
+          first,
+          second,
+        ] = await Promise.all([
+          processOrganizationEmailOutbox(
+            NOW,
+          ),
+          processOrganizationEmailOutbox(
+            NOW,
+          ),
+        ]);
+ 
+        expect(
+          first.processed +
+          second.processed,
+        ).toBe(1);
+ 
+        expect(
+          globalThis.fetch,
+        ).toHaveBeenCalledTimes(
+          1,
+        );
+ 
+        expect(
+          (await getOutbox()).data()
+            ?.status,
+        ).toBe("sent");
+      },
+    );
+ 
+    it(
+      "fails a 4xx response immediately without retrying",
+      async () => {
+        await seedOutbox();
+ 
+        mockFailedResend(
+          422,
+          "Invalid recipient",
+        );
+ 
+        await processOrganizationEmailOutbox(
+          NOW,
+        );
+ 
+        const data =
+          (await getOutbox()).data();
+ 
+        expect(
+          data?.status,
+        ).toBe("failed");
+ 
+        expect(
+          data?.attemptCount,
+        ).toBe(1);
+ 
+        expect(
+          data?.lastError,
+        ).toContain(
+          "422",
+        );
+      },
+    );
+ 
+    it(
+      "retries a 429 rate-limit response",
+      async () => {
+        await seedOutbox();
+ 
+        mockFailedResend(
+          429,
+          "Too many requests",
+        );
+ 
+        await processOrganizationEmailOutbox(
+          NOW,
+        );
+ 
+        const data =
+          (await getOutbox()).data();
+ 
+        expect(
+          data?.status,
+        ).toBe("pending");
+ 
+        expect(
+          data?.attemptCount,
+        ).toBe(1);
+      },
+    );
+ 
+    it(
+      "fails a record with missing content immediately",
+      async () => {
+        await seedOutbox(
+          OUTBOX_ID,
+          {
+            recipientEmail:
+              null,
+          },
+        );
+ 
+        mockSuccessfulResend();
+ 
+        await processOrganizationEmailOutbox(
+          NOW,
+        );
+ 
+        const data =
+          (await getOutbox()).data();
+ 
+        expect(
+          globalThis.fetch,
+        ).not.toHaveBeenCalled();
+ 
+        expect(
+          data?.status,
+        ).toBe("failed");
+ 
+        expect(
+          data?.lastError,
+        ).toBe(
+          "Outbox item is missing recipientEmail.",
+        );
+      },
+    );
+  },
+);
+ 
 /* -------------------------------------------------------------------------- */
 /* Validation                                                                 */
 /* -------------------------------------------------------------------------- */
-
+ 
 describe(
   "sendOrganizationEmailOutbox validation",
   () => {
@@ -1035,19 +1439,19 @@ describe(
         delete process.env[
           "RESEND_API_KEY"
         ];
-
+ 
         await expect(
           sendOrganizationEmailOutbox(
             {
               id:
                 OUTBOX_ID,
-
+ 
               recipientEmail:
                 RECIPIENT_EMAIL,
-
+ 
               subject:
                 SUBJECT,
-
+ 
               text:
                 "Test email",
             },
@@ -1058,7 +1462,7 @@ describe(
         );
       },
     );
-
+ 
     it(
       "rejects an outbox item without recipientEmail",
       async () => {
@@ -1067,10 +1471,10 @@ describe(
             {
               id:
                 OUTBOX_ID,
-
+ 
               subject:
                 SUBJECT,
-
+ 
               text:
                 "Test email",
             },
@@ -1081,7 +1485,7 @@ describe(
         );
       },
     );
-
+ 
     it(
       "rejects an outbox item without subject",
       async () => {
@@ -1090,10 +1494,10 @@ describe(
             {
               id:
                 OUTBOX_ID,
-
+ 
               recipientEmail:
                 RECIPIENT_EMAIL,
-
+ 
               text:
                 "Test email",
             },
@@ -1104,7 +1508,7 @@ describe(
         );
       },
     );
-
+ 
     it(
       "rejects an outbox item without text",
       async () => {
@@ -1113,10 +1517,10 @@ describe(
             {
               id:
                 OUTBOX_ID,
-
+ 
               recipientEmail:
                 RECIPIENT_EMAIL,
-
+ 
               subject:
                 SUBJECT,
             },
@@ -1129,3 +1533,4 @@ describe(
     );
   },
 );
+ 
