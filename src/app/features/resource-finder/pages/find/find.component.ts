@@ -16,14 +16,16 @@ import {
 
 import { JobStore } from '../../../jobs/stores/job.store';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-find',
   standalone: true,
 
   imports: [
     CommonModule,
-    RouterLink,
-  ],
+    RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule],
 
   template: `
     <!-- =========================================================
@@ -370,30 +372,15 @@ import { JobStore } from '../../../jobs/stores/job.store';
             <!-- Search -->
             <div>
 
-              <label
-                for="jobSearch"
-                class="sr-only"
-              >
-                Search jobs
-              </label>
 
               <div
                 class="relative"
               >
 
-                <span
-                  class="pointer-events-none
-                         absolute
-                         inset-y-0
-                         left-3
-                         flex
-                         items-center
-                         text-gray-400"
-                >
-                  🔎
-                </span>
-
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Search jobs</mat-label>
+                  <span matPrefix class="pl-3 pr-1" aria-hidden="true">🔎</span>
+                  <input matInput
                   id="jobSearch"
                   type="search"
                   [value]="searchTerm()"
@@ -403,23 +390,8 @@ import { JobStore } from '../../../jobs/stores/job.store';
                     )
                   "
                   placeholder="Search jobs, organizations, skills..."
-                  class="block
-                         w-full
-                         rounded-lg
-                         border
-                         border-gray-300
-                         bg-white
-                         py-2.5
-                         pl-10
-                         pr-4
-                         text-sm
-                         text-gray-900
-                         outline-none
-                         placeholder:text-gray-400
-                         focus:border-[#007979]
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                 />
+                </mat-form-field>
 
               </div>
 
@@ -436,132 +408,108 @@ import { JobStore } from '../../../jobs/stores/job.store';
             >
 
               <!-- Category -->
-              <select
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Category</mat-label>
+                <mat-select
                 [value]="categoryFilter()"
-                (change)="
+                (selectionChange)="
                   setCategoryFilter(
-                    $any($event.target).value
+                    $event.value
                   )
                 "
-                class="rounded-lg
-                       border
-                       border-gray-300
-                       bg-white
-                       px-3 py-2.5
-                       text-sm
-                       text-gray-700
-                       outline-none
-                       focus:border-[#007979]
-                       focus:ring-2
-                       focus:ring-[#007979]/20"
               >
 
-                <option value="">
+                <mat-option value="">
                   All categories
-                </option>
+                </mat-option>
 
                 @for (
                   category of categories();
                   track category
                 ) {
 
-                  <option
+                  <mat-option
                     [value]="category"
                   >
                     {{ category }}
-                  </option>
+                  </mat-option>
 
                 }
 
-              </select>
+              </mat-select>
+              </mat-form-field>
 
 
               <!-- Employment type -->
-              <select
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Employment type</mat-label>
+                <mat-select
                 [value]="employmentTypeFilter()"
-                (change)="
+                (selectionChange)="
                   setEmploymentTypeFilter(
-                    $any($event.target).value
+                    $event.value
                   )
                 "
-                class="rounded-lg
-                       border
-                       border-gray-300
-                       bg-white
-                       px-3 py-2.5
-                       text-sm
-                       text-gray-700
-                       outline-none
-                       focus:border-[#007979]
-                       focus:ring-2
-                       focus:ring-[#007979]/20"
               >
 
-                <option value="">
+                <mat-option value="">
                   All employment types
-                </option>
+                </mat-option>
 
-                <option value="full-time">
+                <mat-option value="full-time">
                   Full-time
-                </option>
+                </mat-option>
 
-                <option value="part-time">
+                <mat-option value="part-time">
                   Part-time
-                </option>
+                </mat-option>
 
-                <option value="contract">
+                <mat-option value="contract">
                   Contract
-                </option>
+                </mat-option>
 
-                <option value="internship">
+                <mat-option value="internship">
                   Internship
-                </option>
+                </mat-option>
 
-                <option value="temporary">
+                <mat-option value="temporary">
                   Temporary
-                </option>
+                </mat-option>
 
-              </select>
+              </mat-select>
+              </mat-form-field>
 
 
               <!-- Work arrangement -->
-              <select
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Work arrangement</mat-label>
+                <mat-select
                 [value]="workArrangementFilter()"
-                (change)="
+                (selectionChange)="
                   setWorkArrangementFilter(
-                    $any($event.target).value
+                    $event.value
                   )
                 "
-                class="rounded-lg
-                       border
-                       border-gray-300
-                       bg-white
-                       px-3 py-2.5
-                       text-sm
-                       text-gray-700
-                       outline-none
-                       focus:border-[#007979]
-                       focus:ring-2
-                       focus:ring-[#007979]/20"
               >
 
-                <option value="">
+                <mat-option value="">
                   All work arrangements
-                </option>
+                </mat-option>
 
-                <option value="remote">
+                <mat-option value="remote">
                   Remote
-                </option>
+                </mat-option>
 
-                <option value="hybrid">
+                <mat-option value="hybrid">
                   Hybrid
-                </option>
+                </mat-option>
 
-                <option value="on-site">
+                <mat-option value="on-site">
                   On-site
-                </option>
+                </mat-option>
 
-              </select>
+              </mat-select>
+              </mat-form-field>
 
 
               <!-- Location -->
@@ -569,7 +517,9 @@ import { JobStore } from '../../../jobs/stores/job.store';
                 class="flex gap-2"
               >
 
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Location</mat-label>
+                  <input matInput
                   type="text"
                   [value]="locationFilter()"
                   (input)="
@@ -578,21 +528,8 @@ import { JobStore } from '../../../jobs/stores/job.store';
                     )
                   "
                   placeholder="Location"
-                  class="min-w-0
-                         flex-1
-                         rounded-lg
-                         border
-                         border-gray-300
-                         bg-white
-                         px-3 py-2.5
-                         text-sm
-                         text-gray-700
-                         outline-none
-                         placeholder:text-gray-400
-                         focus:border-[#007979]
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                 />
+                </mat-form-field>
 
                 @if (hasActiveFilters()) {
 

@@ -24,14 +24,16 @@ import { SubmissionService } from '../../../../core/services/submission.service'
 import { CategoryService } from '../../../../core/services/category.service';
 import { Category } from '../../../../core/models/category.model';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-submit-resource',
   standalone: true,
 
   imports: [
     ReactiveFormsModule,
-    RouterLink,
-  ],
+    RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule],
 
   template: `
     <main class="min-h-screen bg-gray-50">
@@ -240,7 +242,7 @@ import { Category } from '../../../../core/models/category.model';
 
 
             <div
-              class="mt-7 space-y-6"
+              class="mt-7 space-y-1"
             >
 
               <!-- =================================================
@@ -248,50 +250,20 @@ import { Category } from '../../../../core/models/category.model';
                    ================================================= -->
               <div>
 
-                <label
-                  for="resourceName"
-                  class="mb-2 block
-                         text-sm font-semibold
-                         text-gray-700"
-                >
-                  Resource Name
-                  <span class="text-red-600">
-                    *
-                  </span>
-                </label>
 
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Resource Name</mat-label>
+                  <input matInput
                   id="resourceName"
                   type="text"
                   formControlName="resourceName"
                   placeholder="Example: Community Food Bank"
                   autocomplete="organization"
-                  class="w-full rounded-xl
-                         border border-gray-300
-                         bg-white px-4 py-3
-                         text-sm text-gray-900
-                         outline-none
-                         transition
-                         placeholder:text-gray-400
-                         hover:border-gray-400
-                         focus:border-[#007979]
-                         focus:ring-4
-                         focus:ring-[#007979]/10"
-                  [class.border-red-400]="
-                    isInvalid('resourceName')
-                  "
                 />
-
-                @if (
-                  isInvalid('resourceName')
-                ) {
-                  <p
-                    class="mt-2 text-sm
-                           text-red-600"
-                  >
-                    Resource name is required.
-                  </p>
-                }
+                  @if (isInvalid('resourceName')) {
+                    <mat-error>Resource name is required.</mat-error>
+                  }
+                </mat-form-field>
 
               </div>
 
@@ -301,39 +273,16 @@ import { Category } from '../../../../core/models/category.model';
                    ================================================= -->
               <div>
 
-                <label
-                  for="description"
-                  class="mb-2 block
-                         text-sm font-semibold
-                         text-gray-700"
-                >
-                  Description
-                  <span class="text-red-600">
-                    *
-                  </span>
-                </label>
 
-                <textarea
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Description</mat-label>
+                  <textarea matInput
                   id="description"
                   formControlName="description"
                   rows="6"
                   placeholder="Describe what this resource provides, who it helps, and any important details users should know."
-                  class="w-full resize-y
-                         rounded-xl
-                         border border-gray-300
-                         bg-white px-4 py-3
-                         text-sm text-gray-900
-                         outline-none
-                         transition
-                         placeholder:text-gray-400
-                         hover:border-gray-400
-                         focus:border-[#007979]
-                         focus:ring-4
-                         focus:ring-[#007979]/10"
-                  [class.border-red-400]="
-                    isInvalid('description')
-                  "
                 ></textarea>
+                </mat-form-field>
 
                 <div
                   class="mt-2 flex
@@ -377,48 +326,20 @@ import { Category } from '../../../../core/models/category.model';
                    ================================================= -->
               <div>
 
-                <label
-                  for="website"
-                  class="mb-2 block
-                         text-sm font-semibold
-                         text-gray-700"
-                >
-                  Website
-                </label>
 
-                <input
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Website</mat-label>
+                  <input matInput
                   id="website"
                   type="url"
                   formControlName="website"
                   placeholder="https://example.org"
                   autocomplete="url"
-                  class="w-full rounded-xl
-                         border border-gray-300
-                         bg-white px-4 py-3
-                         text-sm text-gray-900
-                         outline-none
-                         transition
-                         placeholder:text-gray-400
-                         hover:border-gray-400
-                         focus:border-[#007979]
-                         focus:ring-4
-                         focus:ring-[#007979]/10"
-                  [class.border-red-400]="
-                    isInvalid('website')
-                  "
                 />
-
-                @if (
-                  isInvalid('website')
-                ) {
-                  <p
-                    class="mt-2 text-sm
-                           text-red-600"
-                  >
-                    Please enter a valid website
-                    beginning with http:// or https://.
-                  </p>
-                }
+                  @if (isInvalid('website')) {
+                    <mat-error>Please enter a valid website beginning with http:// or https://.</mat-error>
+                  }
+                </mat-form-field>
 
               </div>
 
@@ -427,53 +348,38 @@ import { Category } from '../../../../core/models/category.model';
                    Category / Organization
                    ================================================= -->
               <div
-                class="grid gap-6
+                class="grid gap-x-6
                        sm:grid-cols-2"
               >
 
                 <!-- Category -->
                 <div>
 
-                  <label
-                    for="categoryId"
-                    class="mb-2 block
-                           text-sm font-semibold
-                           text-gray-700"
-                  >
-                    Category
-                  </label>
 
-                  <select
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Category</mat-label>
+                    <mat-select
                     id="categoryId"
                     formControlName="categoryId"
-                    class="w-full rounded-xl
-                           border border-gray-300
-                           bg-white px-4 py-3
-                           text-sm text-gray-900
-                           outline-none
-                           transition
-                           hover:border-gray-400
-                           focus:border-[#007979]
-                           focus:ring-4
-                           focus:ring-[#007979]/10"
                   >
 
-                    <option value="">
+                    <mat-option value="">
                       Select a category
-                    </option>
+                    </mat-option>
 
                     @for (
                       category of categories();
                       track category.id
                     ) {
-                      <option
+                      <mat-option
                         [value]="category.id"
                       >
                         {{ category.name }}
-                      </option>
+                      </mat-option>
                     }
 
-                  </select>
+                  </mat-select>
+                  </mat-form-field>
 
                 </div>
 
@@ -481,33 +387,17 @@ import { Category } from '../../../../core/models/category.model';
                 <!-- Organization -->
                 <div>
 
-                  <label
-                    for="organizationName"
-                    class="mb-2 block
-                           text-sm font-semibold
-                           text-gray-700"
-                  >
-                    Organization Name
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Organization Name</mat-label>
+                    <input matInput
                     id="organizationName"
                     type="text"
                     formControlName="organizationName"
                     placeholder="Organization or provider"
                     autocomplete="organization"
-                    class="w-full rounded-xl
-                           border border-gray-300
-                           bg-white px-4 py-3
-                           text-sm text-gray-900
-                           outline-none
-                           transition
-                           placeholder:text-gray-400
-                           hover:border-gray-400
-                           focus:border-[#007979]
-                           focus:ring-4
-                           focus:ring-[#007979]/10"
                   />
+                  </mat-form-field>
 
                 </div>
 
@@ -552,47 +442,20 @@ import { Category } from '../../../../core/models/category.model';
 
             <div class="mt-7">
 
-              <label
-                for="submitterEmail"
-                class="mb-2 block
-                       text-sm font-semibold
-                       text-gray-700"
-              >
-                Email
-              </label>
 
-              <input
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Email</mat-label>
+                <input matInput
                 id="submitterEmail"
                 type="email"
                 formControlName="submitterEmail"
                 placeholder="you@example.com"
                 autocomplete="email"
-                class="w-full rounded-xl
-                       border border-gray-300
-                       bg-white px-4 py-3
-                       text-sm text-gray-900
-                       outline-none
-                       transition
-                       placeholder:text-gray-400
-                       hover:border-gray-400
-                       focus:border-[#007979]
-                       focus:ring-4
-                       focus:ring-[#007979]/10"
-                [class.border-red-400]="
-                  isInvalid('submitterEmail')
-                "
               />
-
-              @if (
-                isInvalid('submitterEmail')
-              ) {
-                <p
-                  class="mt-2 text-sm
-                         text-red-600"
-                >
-                  Please enter a valid email address.
-                </p>
-              }
+                    @if (isInvalid('submitterEmail')) {
+                      <mat-error>Please enter a valid email address.</mat-error>
+                    }
+                  </mat-form-field>
 
               <div
                 class="mt-4 rounded-xl

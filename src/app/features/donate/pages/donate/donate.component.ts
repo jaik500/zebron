@@ -8,10 +8,12 @@ import { inject } from '@angular/core';
 import { DonationService } from '../../../../core/services/donation.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 @Component({
   selector: 'app-donate',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, MatFormFieldModule, MatInputModule],
   template: `
     <!-- Header -->
     <!-- Header -->
@@ -85,86 +87,38 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
 
             <!-- Custom amount -->
             <div class="mt-6">
-              <label
-                for="customAmount"
-                class="block text-sm
-                       font-medium
-                       text-gray-700"
-              >
-                Or enter a custom amount
-              </label>
 
-              <div class="relative mt-2">
-                <span
-                  class="absolute inset-y-0
-                         left-0 flex
-                         items-center
-                         pl-4
-                         text-gray-500"
-                >
-                  $
-                </span>
-
-                <input
+              <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>Or enter a custom amount</mat-label>
+                  <input matInput
                   id="customAmount"
                   name="customAmount"
-                  type="number"
+                  type="number" inputmode="decimal"
                   min="1"
                   max="10000"
                   step="0.01"
                   [ngModel]="customAmount()"
                   (ngModelChange)="setCustomAmount($event)"
                   placeholder="25.00"
-                  class="block w-full
-                         rounded-xl
-                         border border-gray-300
-                         bg-white
-                         py-3 pl-9 pr-4
-                         text-gray-900
-                         focus:border-[#007979]
-                         focus:outline-none
-                         focus:ring-2
-                         focus:ring-[#007979]/20"
                 />
-              </div>
+                  <span matTextPrefix>$&nbsp;</span>
+                </mat-form-field>
             </div>
 
             <!-- Email -->
             <div class="mt-6">
-              <label
-                for="email"
-                class="block text-sm
-                       font-medium
-                       text-gray-700"
-              >
-                Email
-                <span
-                  class="font-normal
-                         text-gray-400"
-                >
-                  (optional)
-                </span>
-              </label>
 
-              <input
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>Email (optional)</mat-label>
+                <input matInput
                 id="email"
                 name="email"
                 type="email"
                 autocomplete="email"
                 [(ngModel)]="email"
                 placeholder="you@example.com"
-                class="mt-2 block w-full
-                       rounded-xl
-                       border border-gray-300
-                       bg-white
-                       px-4 py-3
-                       text-sm text-gray-900
-                       placeholder:text-gray-400
-                       focus:border-[#007979]
-                       focus:outline-none
-                       focus:ring-2
-                       focus:ring-[#007979]/20"
               />
+              </mat-form-field>
 
               <p
                 class="mt-2 text-xs

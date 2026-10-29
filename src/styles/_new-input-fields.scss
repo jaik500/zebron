@@ -1,3 +1,5 @@
+@use '@angular/material' as mat;
+
 // ============================================================
 // NEW INPUT FIELDS — Zebron form field standard
 // Angular Material (mat-form-field, appearance="outline") + Tailwind
@@ -26,6 +28,28 @@ mat-form-field.zb-field.zb-field--grow,
 mat-form-field.zb-field.zb-field--flush,
 .mat-mdc-form-field.zb-field.zb-field--flush {
   margin-bottom: 0;
+}
+
+// Compact field for toolbars / filter bars (48px tall instead of 56px).
+// Keep a visible label; don't go below density -2.
+.zb-field--dense {
+  @include mat.form-field-density(-2);
+}
+
+// Field placed on a dark background (e.g. the navy filter bar).
+// Gives the control a white surface so text and outline stay readable.
+.zb-field--on-dark {
+  .mdc-text-field--outlined {
+    background-color: #fff;
+    border-radius: var(--mat-sys-corner-extra-small, 4px);
+  }
+}
+
+// mat-checkbox on a dark background.
+.zb-checkbox--on-dark {
+  --mat-checkbox-label-text-color: #fff;
+  --mat-checkbox-unselected-icon-color: rgba(255, 255, 255, 0.8);
+  --mat-checkbox-unselected-hover-icon-color: #fff;
 }
 
 // Mobile: prevent iOS zoom-on-focus (needs >= 16px).

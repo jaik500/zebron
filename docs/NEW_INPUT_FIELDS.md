@@ -19,7 +19,8 @@ Use something else only when Material has no component for the job.
 
 ## Setup (done)
 
-- `src/styles/_new-input-fields.scss` defines `.zb-field`, `.zb-field--grow`, `.zb-field--flush`.
+- `src/styles/_new-input-fields.scss` defines `.zb-field`, `.zb-field--grow`, `.zb-field--flush`,
+  `.zb-field--dense`, `.zb-field--on-dark` and `.zb-checkbox--on-dark`.
 - `src/styles.scss` imports it after Angular Material.
 - Components import: `FormsModule`, `MatFormFieldModule`, `MatInputModule`,
   `MatSelectModule`, `MatCheckboxModule` (as needed).
@@ -99,7 +100,25 @@ Use something else only when Material has no component for the job.
 </div>
 ```
 
-## Don'ts
+### Compact field on a dark filter bar
+```html
+<mat-form-field appearance="outline" subscriptSizing="dynamic"
+  class="zb-field zb-field--flush zb-field--dense zb-field--on-dark">
+  <mat-label>Category</mat-label>
+  <mat-select [value]="selected()" (selectionChange)="onCategoryChange($event.value)">…</mat-select>
+</mat-form-field>
+
+<mat-checkbox class="zb-checkbox--on-dark" [checked]="onlineOnly()" (change)="onOnlineChange($event.checked)">
+  Online
+</mat-checkbox>
+```
+
+### Event handlers
+- `mat-select` → `(selectionChange)="handler($event.value)"`, handler takes the value (not `Event`).
+- `mat-checkbox` → `(change)="handler($event.checked)"`.
+- `matInput` keeps native events: `(input)` / `(ngModelChange)` work unchanged.
+
+## Don't''s
 
 - No raw `<input>`, `<select>`, `<textarea>` styled with Tailwind (`rounded-xl border px-4 py-3 text-sm`).
   `text-sm` (14px) triggers the iOS zoom.

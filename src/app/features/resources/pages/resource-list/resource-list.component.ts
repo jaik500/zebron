@@ -27,6 +27,10 @@ import { UsefulLinksComponent } from '../../components/useful-links/useful-links
 import { HotToastService } from '@ngxpert/hot-toast';
 import { ResourceTypeService } from '../../../../core/services/resource-type.service';
 import { ResourceStore } from '../../stores/resource.store';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-resource-list',
 
@@ -38,8 +42,7 @@ import { ResourceStore } from '../../stores/resource.store';
     MatIconModule,
     MatMenuModule,
     ResourceCardComponent,
-    UsefulLinksComponent,
-  ],
+    UsefulLinksComponent, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
 
   template: `
     <!-- =========================================================
@@ -669,16 +672,6 @@ import { ResourceStore } from '../../stores/resource.store';
      Location
      ================================================= -->
               <div class="mt-4">
-                <label
-                  for="personalization-location"
-                  class="mb-1.5
-           block
-           text-sm
-           font-semibold
-           text-[#032D42]"
-                >
-                  Where are you located?
-                </label>
 
                 <div
                   class="flex
@@ -687,34 +680,22 @@ import { ResourceStore } from '../../stores/resource.store';
                 >
                   <!-- Location dropdown -->
                   <div class="min-w-0 flex-1 max-w-md">
-                    <select
+                    <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                      <mat-label>Where are you located?</mat-label>
+                      <mat-select
                       id="personalization-location"
                       [value]="personalizationService.preferences().locationId ?? ''"
-                      (change)="selectPersonalizationLocation($any($event.target).value || null)"
-                      class="block
-               h-10
-               w-full
-               rounded-lg
-               border
-               border-gray-200
-               bg-white
-               px-3
-               text-sm
-               text-gray-700
-               shadow-sm
-               focus:border-[#007979]
-               focus:outline-none
-               focus:ring-2
-               focus:ring-[#007979]/20"
+                      (selectionChange)="selectPersonalizationLocation($event.value || null)"
                     >
-                      <option value="">Select your location</option>
+                      <mat-option value="">Select your location</mat-option>
 
                       @for (location of locations(); track location.id) {
-                        <option [value]="location.id">
+                        <mat-option [value]="location.id">
                           {{ formatPersonalizationLocation(location) }}
-                        </option>
+                        </mat-option>
                       }
-                    </select>
+                    </mat-select>
+                    </mat-form-field>
                   </div>
 
                   <!-- Clear personalization -->
@@ -786,138 +767,64 @@ import { ResourceStore } from '../../stores/resource.store';
                        sm:col-span-1
                        sm:block"
               >
-                <label
-                  for="search"
-                  class="mb-0.5 block
-                         text-[14px]
-                         font-medium
-                         text-white
-                         sm:text-[16px]"
-                >
-                  Search
-                </label>
 
-                <div class="relative">
-                  <mat-icon
-                    aria-hidden="true"
-                    class="pointer-events-none
-                           absolute left-2
-                           top-1/2
-                           !m-0
-                           !h-4 !w-4
-                           -translate-y-1/2
-                           !text-[16px]
-                           !leading-4
-                           text-gray-400"
-                  >
-                    search
-                  </mat-icon>
-
-                  <input
+                <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense zb-field--on-dark" subscriptSizing="dynamic">
+                    <mat-label>Search</mat-label>
+                    <mat-icon matPrefix class="ml-2 !text-[18px]" aria-hidden="true">search</mat-icon>
+                    <input matInput
                     id="search"
                     type="search"
                     [value]="searchTerm()"
                     (input)="onSearch($event)"
                     placeholder="Search resources..."
-                    class="block h-9 w-full
-                           rounded-md
-                           border
-                           border-[#007979]/20
-                           bg-white
-                           pl-8 pr-2.5
-                           text-md
-                           text-gray-800
-                           placeholder:text-gray-300
-                           focus:border-[#007979]
-                           focus:outline-none
-                           focus:ring-1
-                           focus:ring-[#007979]/20"
                   />
-                </div>
+                  </mat-form-field>
               </div>
 
               <!-- =================================================
                    Category
                    ================================================= -->
               <div [class.hidden]="showSearch()" class="sm:block">
-                <label
-                  for="category"
-                  class="mb-0.5 block
-                         text-[14px]
-                         font-medium
-                         text-white
-                         sm:text-[16px]"
-                >
-                  Category
-                </label>
 
-                <select
+                <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense zb-field--on-dark" subscriptSizing="dynamic">
+                  <mat-label>Category</mat-label>
+                  <mat-select
                   id="category"
                   [value]="selectedCategory()"
-                  (change)="onCategoryChange($event)"
-                  class="block h-9 w-full
-                         rounded-md
-                         border
-                         border-[#007979]/20
-                         bg-white
-                         px-2
-                         text-md
-                         text-gray-800
-                         focus:border-[#007979]
-                         focus:outline-none
-                         focus:ring-1
-                         focus:ring-[#007979]/20"
+                  (selectionChange)="onCategoryChange($event.value)"
                 >
-                  <option value="">All categories</option>
+                  <mat-option value="">All categories</mat-option>
 
                   @for (category of categories(); track category.slug) {
-                    <option [value]="category.slug">
+                    <mat-option [value]="category.slug">
                       {{ category.name }}
-                    </option>
+                    </mat-option>
                   }
-                </select>
+                </mat-select>
+                </mat-form-field>
               </div>
 
               <!-- =================================================
                    Resource Type
                    ================================================= -->
               <div [class.hidden]="showSearch()" class="sm:block">
-                <label
-                  for="resourceType"
-                  class="mb-0.5 block
-                         text-[14px]
-                         font-medium
-                         text-white
-                         sm:text-[16px]"
-                >
-                  Type
-                </label>
 
-                <select
+                <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense zb-field--on-dark" subscriptSizing="dynamic">
+                  <mat-label>Type</mat-label>
+                  <mat-select
                   id="resourceType"
                   [value]="selectedType()"
-                  (change)="onTypeChange($event)"
-                  class="block h-9 w-full
-                         rounded-md
-                         border
-                         border-[#007979]/20
-                         bg-white
-                         px-2
-                         text-md
-                         text-gray-800
-                         focus:border-[#007979]
-                         focus:outline-none
-                         focus:ring-1
-                         focus:ring-[#007979]/20"
+                  (selectionChange)="onTypeChange($event.value)"
                 >
-                  <option value="">All types</option>
+                  <mat-option value="">All types</mat-option>
 
                   @for (type of resourceTypes(); track type.id) {
-                    <option [value]="type.id">
+                    <mat-option [value]="type.id">
                       {{ type.name }}
-                    </option>
+                    </mat-option>
                   }
-                </select>
+                </mat-select>
+                </mat-form-field>
               </div>
             </div>
 
@@ -941,52 +848,22 @@ import { ResourceStore } from '../../stores/resource.store';
            gap-3"
               >
                 <!-- Online -->
-                <label
-                  class="flex shrink-0
-             items-center
-             gap-1
-             text-md
-             text-white
-             sm:text-[14px]"
+                <mat-checkbox
+                  class="zb-checkbox--on-dark shrink-0"
+                  [checked]="onlineOnly()"
+                  (change)="onOnlineChange($event.checked)"
                 >
-                  <input
-                    type="checkbox"
-                    [checked]="onlineOnly()"
-                    (change)="onOnlineChange($event)"
-                    class="h-4 w-4
-               shrink-0
-               rounded
-               border-[#007979]/30
-               text-[#007979]
-               focus:ring-[#007979]/20"
-                  />
-
-                  <span>Online</span>
-                </label>
+                  Online
+                </mat-checkbox>
 
                 <!-- Featured -->
-                <label
-                  class="flex shrink-0
-             items-center
-             gap-1
-             text-md
-             text-white
-             sm:text-[14px]"
+                <mat-checkbox
+                  class="zb-checkbox--on-dark shrink-0"
+                  [checked]="featuredOnly()"
+                  (change)="onFeaturedChange($event.checked)"
                 >
-                  <input
-                    type="checkbox"
-                    [checked]="featuredOnly()"
-                    (change)="onFeaturedChange($event)"
-                    class="h-4 w-4
-               shrink-0
-               rounded
-               border-[#007979]/30
-               text-[#007979]
-               focus:ring-[#007979]/20"
-                  />
-
-                  <span>Featured</span>
-                </label>
+                  Featured
+                </mat-checkbox>
 
                 <!-- Clear -->
                 @if (hasActiveFilters()) {
@@ -1478,40 +1355,31 @@ export class ResourceListComponent implements OnInit {
   // Resource Type
   // =========================================================
 
-  protected onTypeChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-
-    this.resourceStore.setResourceType(select.value);
+  protected onTypeChange(resourceType: string): void {
+    this.resourceStore.setResourceType(resourceType);
   }
 
   // =========================================================
   // Online Filter
   // =========================================================
 
-  protected onOnlineChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-
-    this.resourceStore.setOnlineOnly(input.checked);
+  protected onOnlineChange(checked: boolean): void {
+    this.resourceStore.setOnlineOnly(checked);
   }
 
   // =========================================================
   // Featured Filter
   // =========================================================
 
-  protected onFeaturedChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-
-    this.resourceStore.setFeaturedOnly(input.checked);
+  protected onFeaturedChange(checked: boolean): void {
+    this.resourceStore.setFeaturedOnly(checked);
   }
 
   // =========================================================
   // Category Filter
   // =========================================================
 
-  protected onCategoryChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-
-    const category = select.value;
+  protected onCategoryChange(category: string): void {
 
     this.resourceStore.setCategory(category);
 

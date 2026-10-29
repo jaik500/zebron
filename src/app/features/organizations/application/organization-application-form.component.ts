@@ -29,14 +29,15 @@ import {
   OrganizationApplicationRequest,
 } from '../../../core/models/organization-application-request.model';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 @Component({
   selector: 'app-organization-application-form',
   standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterLink,
-  ],
+    RouterLink, MatFormFieldModule, MatInputModule],
   template: `
     <main class="mt-6 min-h-screen bg-slate-50 px-3 py-5 sm:mt-10 sm:px-6 sm:py-8 lg:px-8">
       <div class="mx-auto w-full max-w-4xl">
@@ -118,103 +119,80 @@ import {
     </p>
   </div>
 
-                 <div class="space-y-5 p-4 sm:p-6 lg:p-8">
+                 <div class="space-y-1 p-4 sm:p-6 lg:p-8">
 
                   <!-- Organization Name -->
                   <div class="sm:col-span-2">
-                    <label
-                      for="organizationName"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      Organization Name
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Organization Name</mat-label>
+                      <input matInput
                       id="organizationName"
                       type="text"
                       formControlName="organizationName"
-                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
-
-                    @if (
+                      @if (
                       form.controls.organizationName.touched &&
                       form.controls.organizationName.invalid
                     ) {
-                      <p class="mt-1 text-xs text-red-600">
-                        Organization name is required.
-                      </p>
-                    }
+                        <mat-error>Organization name is required.</mat-error>
+                      }
+                    </mat-form-field>
                   </div>
 
                   <!-- Organization Type -->
                   <div>
-                    <label
-                      for="organizationType"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      Organization Type
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Organization Type</mat-label>
+                      <input matInput
                       id="organizationType"
                       type="text"
                       formControlName="organizationType"
                       placeholder="Nonprofit, Company, School..."
-                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Company Number -->
                   <div>
-                    <label
-                      for="companyNumber"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      Company / Registration Number
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Company / Registration Number</mat-label>
+                      <input matInput
                       id="companyNumber"
                       type="text"
                       formControlName="companyNumber"
-                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Website -->
                   <div class="sm:col-span-2">
-                    <label
-                      for="website"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      Website
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Website</mat-label>
+                      <input matInput
                       id="website"
                       type="url"
                       formControlName="website"
                       placeholder="https://example.org"
-                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Description -->
                   <div class="sm:col-span-2">
-                    <label
-                      for="description"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      Organization Description
-                    </label>
 
-                    <textarea
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Organization Description</mat-label>
+                      <textarea matInput
                       id="description"
                       rows="4"
                       formControlName="description"
-                      class="organization-form-control organization-form-textarea mt-2 block w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                       placeholder="Tell us briefly about your organization."
                     ></textarea>
+                    </mat-form-field>
                   </div>
 
                 </div>
@@ -236,126 +214,96 @@ import {
                 </div>
 
                  <!-- Section form fields -->
-  <div class="space-y-5 p-4 sm:p-6 lg:p-8">
+  <div class="space-y-1 p-4 sm:p-6 lg:p-8">
 
                   <!-- Contact Name -->
                   <div>
-                    <label
-                      for="contactName"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      Contact Name
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Contact Name</mat-label>
+                      <input matInput
                       id="contactName"
                       type="text"
                       formControlName="contactName"
-                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
-
-                    @if (
+                      @if (
                       form.controls.contactName.touched &&
                       form.controls.contactName.invalid
                     ) {
-                      <p class="mt-1 text-xs text-red-600">
-                        Contact name is required.
-                      </p>
-                    }
+                        <mat-error>Contact name is required.</mat-error>
+                      }
+                    </mat-form-field>
                   </div>
 
                   <!-- Contact Email -->
                   <div>
-                    <label
-                      for="contactEmail"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      Contact Email
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Contact Email</mat-label>
+                      <input matInput
                       id="contactEmail"
                       type="email"
                       formControlName="contactEmail"
-                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
-
-                    @if (
+                      @if (
                       form.controls.contactEmail.touched &&
                       form.controls.contactEmail.invalid
                     ) {
-                      <p class="mt-1 text-xs text-red-600">
-                        A valid contact email is required.
-                      </p>
-                    }
+                        <mat-error>A valid contact email is required.</mat-error>
+                      }
+                    </mat-form-field>
                   </div>
 
                   <!-- Phone -->
                   <div>
-                    <label
-                      for="contactPhone"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      Contact Phone
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Contact Phone</mat-label>
+                      <input matInput
                       id="contactPhone"
                       type="tel"
                       formControlName="contactPhone"
-                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- Country -->
                   <div>
-                    <label
-                      for="country"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      Country
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>Country</mat-label>
+                      <input matInput
                       id="country"
                       type="text"
                       formControlName="country"
-                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- State -->
                   <div>
-                    <label
-                      for="state"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      State / Province
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>State / Province</mat-label>
+                      <input matInput
                       id="state"
                       type="text"
                       formControlName="state"
-                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
+                    </mat-form-field>
                   </div>
 
                   <!-- City -->
                   <div>
-                    <label
-                      for="city"
-                      class="block text-sm font-medium text-slate-700"
-                    >
-                      City
-                    </label>
 
-                    <input
+                    <mat-form-field appearance="outline" class="zb-field">
+                      <mat-label>City</mat-label>
+                      <input matInput
                       id="city"
                       type="text"
                       formControlName="city"
-                      class="organization-form-control mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                     />
+                    </mat-form-field>
                   </div>
 
                 </div>
@@ -439,7 +387,7 @@ import {
                 </div>
               }
 
-              
+
 <!-- Actions -->
 <div class="grid grid-cols-3 gap-2 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-3">
 
@@ -482,51 +430,6 @@ import {
       </div>
     </main>
   `,
-  styles: [`
-    /*
-     * Mobile-friendly controls: a generous tap target and 16px text prevent
-     * accidental taps and iOS input zoom. Focused fields expand so users can
-     * clearly see and edit the active field on narrow screens.
-     */
-    .organization-form-control {
-      box-sizing: border-box;
-      width: 100%;
-      min-height: 3.25rem;
-      font-size: 16px;
-      line-height: 1.5;
-      -webkit-appearance: none;
-      appearance: none;
-      scroll-margin-block: 7rem;
-      transition: min-height 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-    }
-
-    .organization-form-textarea {
-      min-height: 8rem;
-      line-height: 1.55;
-    }
-
-    @media (max-width: 639px) {
-      .organization-form-control:focus {
-        min-height: 3.75rem;
-      }
-
-      .organization-form-textarea:focus {
-        min-height: 10rem;
-      }
-    }
-
-    @media (min-width: 640px) {
-      .organization-form-control {
-        font-size: 14px;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .organization-form-control {
-        transition: none;
-      }
-    }
-  `],
 })
 export class OrganizationApplicationFormComponent
   implements OnInit {

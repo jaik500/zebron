@@ -14,11 +14,13 @@ import {
 
 import { ContactMessageService } from '../../../../core/services/contact-message.service';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 @Component({
   selector: 'app-contact',
   standalone: true,
 
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule],
 
   template: `
     <main class="min-h-screen bg-gray-50">
@@ -294,204 +296,84 @@ import { ContactMessageService } from '../../../../core/services/contact-message
             </div>
 
             <form [formGroup]="form" (ngSubmit)="submit()" class="p-6 sm:p-8">
-              <div class="space-y-6">
+              <div class="space-y-1">
                 <!-- =================================================
                      Name
                      ================================================= -->
                 <div>
-                  <label
-                    for="name"
-                    class="mb-2 block
-                           text-sm
-                           font-semibold
-                           text-gray-700"
-                  >
-                    Your name
-                    <span class="text-red-600">*</span>
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Your name</mat-label>
+                    <input matInput
                     id="name"
                     type="text"
                     formControlName="name"
                     autocomplete="name"
                     placeholder="Your name"
-                    class="w-full
-                           rounded-xl
-                           border
-                           border-gray-300
-                           px-4 py-3
-                           text-sm
-                           outline-none
-                           transition
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:ring-4
-                           focus:ring-[#007979]/10"
                   />
-
-                  @if (invalid('name')) {
-                    <p
-                      class="mt-2
-                             text-sm
-                             text-red-600"
-                    >
-                      Please enter your name.
-                    </p>
-                  }
+                    @if (invalid('name')) {
+                      <mat-error>Please enter your name.</mat-error>
+                    }
+                  </mat-form-field>
                 </div>
 
                 <!-- =================================================
                      Email
                      ================================================= -->
                 <div>
-                  <label
-                    for="email"
-                    class="mb-2 block
-                           text-sm
-                           font-semibold
-                           text-gray-700"
-                  >
-                    Email address
-                    <span class="text-red-600">*</span>
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Email address</mat-label>
+                    <input matInput
                     id="email"
                     type="email"
                     formControlName="email"
                     autocomplete="email"
                     placeholder="you@example.com"
-                    class="w-full
-                           rounded-xl
-                           border
-                           border-gray-300
-                           px-4 py-3
-                           text-sm
-                           outline-none
-                           transition
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:ring-4
-                           focus:ring-[#007979]/10"
                   />
-
-                  @if (invalid('email')) {
-                    <p
-                      class="mt-2
-                             text-sm
-                             text-red-600"
-                    >
-                      Please enter a valid email address.
-                    </p>
-                  }
+                    @if (invalid('email')) {
+                      <mat-error>Please enter a valid email address.</mat-error>
+                    }
+                  </mat-form-field>
                 </div>
 
                 <!-- =================================================
                      Subject
                      ================================================= -->
                 <div>
-                  <label
-                    for="subject"
-                    class="mb-2 block
-                           text-sm
-                           font-semibold
-                           text-gray-700"
-                  >
-                    Subject
-                    <span class="text-red-600">*</span>
-                  </label>
 
-                  <input
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Subject</mat-label>
+                    <input matInput
                     id="subject"
                     type="text"
                     formControlName="subject"
                     placeholder="How can we help?"
-                    class="w-full
-                           rounded-xl
-                           border
-                           border-gray-300
-                           px-4 py-3
-                           text-sm
-                           outline-none
-                           transition
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:ring-4
-                           focus:ring-[#007979]/10"
                   />
-
-                  @if (invalid('subject')) {
-                    <p
-                      class="mt-2
-                             text-sm
-                             text-red-600"
-                    >
-                      Please enter a subject.
-                    </p>
-                  }
+                    @if (invalid('subject')) {
+                      <mat-error>Please enter a subject.</mat-error>
+                    }
+                  </mat-form-field>
                 </div>
 
                 <!-- =================================================
                      Message
                      ================================================= -->
                 <div>
-                  <div
-                    class="flex
-                           items-center
-                           justify-between
-                           gap-4"
-                  >
-                    <label
-                      for="message"
-                      class="mb-2 block
-                             text-sm
-                             font-semibold
-                             text-gray-700"
-                    >
-                      Message
-                      <span class="text-red-600">*</span>
-                    </label>
-
-                    <span
-                      class="text-xs
-                             text-gray-400"
-                    >
-                      {{ form.controls.message.value.length }}/5000
-                    </span>
-                  </div>
-
-                  <textarea
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Message</mat-label>
+                    <textarea matInput
                     id="message"
                     formControlName="message"
                     rows="8"
                     maxlength="5000"
                     placeholder="Tell us how we can help..."
-                    class="w-full
-                           resize-y
-                           rounded-xl
-                           border
-                           border-gray-300
-                           px-4 py-3
-                           text-sm
-                           leading-6
-                           outline-none
-                           transition
-                           placeholder:text-gray-400
-                           focus:border-[#007979]
-                           focus:ring-4
-                           focus:ring-[#007979]/10"
                   ></textarea>
-
-                  @if (invalid('message')) {
-                    <p
-                      class="mt-2
-                             text-sm
-                             text-red-600"
-                    >
-                      Please enter a message.
-                    </p>
-                  }
+                    @if (invalid('message')) {
+                      <mat-error>Please enter a message.</mat-error>
+                    }
+                    <mat-hint align="end">{{ form.controls.message.value.length }}/5000</mat-hint>
+                  </mat-form-field>
                 </div>
 
                 <!-- =================================================

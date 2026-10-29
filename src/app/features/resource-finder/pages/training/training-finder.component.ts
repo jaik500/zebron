@@ -2,14 +2,15 @@ import { Component, inject, signal,  } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 @Component({
   selector: 'app-training-finder',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule],
   template: `
     <main
       class="min-h-screen bg-gray-50">
-     
 
         <!-- Header -->
 <header class="border-b border-gray-200 bg-[#032D42]">
@@ -353,32 +354,17 @@ import { Router, RouterLink } from '@angular/router';
               included when available.
             </p>
 
-            <label
-              for="trainingLocation"
-              class="mt-8 block text-sm
-                     font-semibold
-                     text-gray-900"
-            >
-              Location
-            </label>
 
-            <input
+            <mat-form-field appearance="outline" class="zb-field mt-8">
+              <mat-label>Location</mat-label>
+              <input matInput
               id="trainingLocation"
               name="trainingLocation"
               type="text"
               [(ngModel)]="location"
               placeholder="e.g. Washington, DC"
-              class="mt-3 block w-full
-                     rounded-xl
-                     border border-gray-300
-                     bg-white
-                     px-4 py-3
-                     text-sm
-                     focus:border-[#007979]
-                     focus:outline-none
-                     focus:ring-2
-                     focus:ring-[#007979]/20"
             />
+            </mat-form-field>
 
             <p
               class="mt-2 text-xs
