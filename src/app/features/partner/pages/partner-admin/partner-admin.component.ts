@@ -93,7 +93,7 @@ interface DashboardCard {
               }
 
               @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
-                <a mat-menu-item routerLink="/partner/admin">
+                <a mat-menu-item [routerLink]="administrationRoute()">
                   <mat-icon>admin_panel_settings</mat-icon>
                   <span>Administration</span>
                 </a>
@@ -489,11 +489,7 @@ interface DashboardCard {
 
               <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 <a
-                  [routerLink]="[
-                    '/partner/org',
-                    organizationStore.selectedOrganizationId(),
-                    'settings',
-                  ]"
+                  [routerLink]="administrationRoute()"
                   class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
                 >
                   <div class="flex items-start justify-between">
@@ -551,8 +547,8 @@ interface DashboardCard {
                     Profile
                   </a>
 
-                  @if (access.canAccessAdministration()) {
-                    <a mat-stroked-button routerLink="/partner/admin">
+                  @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
+                    <a mat-stroked-button [routerLink]="administrationRoute()">
                       <mat-icon>admin_panel_settings</mat-icon>
                       Administration
                     </a>
@@ -686,9 +682,9 @@ export class PartnerAdminComponent implements OnInit {
 /**
  * Resolve application cards from the canonical application registry.
  *
- * All organization members can access provisioned learner applications.
- * Administrative applications are only displayed to users who have
- * administration access.
+ * Every member, staff, manager, admin and owner sees every application
+ * provisioned for the organization. What each role can do inside an
+ * application is decided by PartnerAccessService and the route guards.
  *
  * Organization entitlements determine which applications are available
  * to the current organization.
@@ -705,9 +701,6 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
     return [];
   }
 
-  const canAccessAdministration =
-    this.access.canAccessAdministration();
-
   return this.applicationRegistry
     .getEnabledApplications()
     .filter((application) => application.requiresOrganization)
@@ -717,15 +710,6 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
     .filter((application) =>
       this.organizationStore.hasActiveApplication(application.id),
     )
-    .filter((application) => {
-      // Hide administrative applications from regular members.
-      const adminOnly =
-        (application as typeof application & {
-          adminOnly?: boolean;
-        }).adminOnly === true;
-
-      return !adminOnly || canAccessAdministration;
-    })
     .map((application) => ({
       id: application.id,
       title: application.name,
@@ -772,9 +756,14 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
     return card.route;
   }
 
-  /** Only organization roles permitted to manage courses see Test Center settings. */
+  /** Staff, managers, admins and owners see the Test Center settings icon. */
   protected canManageTestCenter(): boolean {
-    return this.access.canManageCourses();
+    return this.access.can('testCenter.settings');
+  }
+
+  /** Organization Management (Administration) page for this organization. */
+  protected administrationRoute(): (string | null)[] {
+    return ['/partner/org', this.organizationStore.selectedOrganizationId(), 'settings'];
   }
 
 

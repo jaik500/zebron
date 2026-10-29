@@ -64,8 +64,6 @@ interface RoleGroup {
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <!-- Page title and description -->
             <div>
-              <h2 class="text-2xl font-bold text-white">Organization Management</h2>
-
               <p class=" text-sm text-white/80">
                 Manage organization setup, configuration, staff, and access.
               </p>
@@ -86,7 +84,7 @@ interface RoleGroup {
         </div>
       </header>
 
-      <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8">
         @if (
           organizationStore.contextLoading() ||
           organizationStore.onboardingLoading() ||
@@ -107,15 +105,11 @@ interface RoleGroup {
           </section>
         } @else {
           <section class="mb-6">
-            <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-              Organization
-            </p>
-
-            <h2 class="mt-1 text-2xl font-bold text-gray-900">
+            <h2 class=" text-2xl font-bold text-gray-900">
               {{ organizationStore.selectedOrganization()?.name ?? 'Organization' }}
             </h2>
 
-            <p class="mt-1 text-sm text-gray-500">
+            <p class=" text-sm text-gray-500">
               Review onboarding, configuration, and organization membership.
             </p>
           </section>
@@ -269,7 +263,7 @@ interface RoleGroup {
 
             @if (accessControlExpanded()) {
               <div id="organization-access-control-panel" class="border-t border-gray-100 p-5 sm:p-6">
-                @if (canManageOrganization()) {
+                @if (canManageMembers()) {
                   <div class="mb-5 flex justify-end">
                     <button mat-flat-button class="!bg-[#007979] !text-white" type="button" (click)="toggleInviteForm()">
                       <mat-icon>{{ inviteFormVisible() ? 'close' : 'person_add' }}</mat-icon>
@@ -298,7 +292,7 @@ interface RoleGroup {
                 </div>
               }
 
-              @if (inviteFormVisible() && canManageOrganization()) {
+              @if (inviteFormVisible() && canManageMembers()) {
                 <section class="mt-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                   <div class="flex items-start gap-3">
                     <div
@@ -345,10 +339,9 @@ interface RoleGroup {
                         required
                         [(ngModel)]="inviteRole"
                       >
-                        <mat-option value="org_member">Member</mat-option>
-                        <mat-option value="org_staff">Staff</mat-option>
-                        <mat-option value="org_manager">Manager</mat-option>
-                        <mat-option value="org_admin">Administrator</mat-option>
+                        @for (role of assignableRoles(); track role) {
+                          <mat-option [value]="role">{{ roleLabel(role) }}</mat-option>
+                        }
                       </mat-select>
                       </mat-form-field>
                     </div>
@@ -634,11 +627,40 @@ interface RoleGroup {
                                   {{ member.active ? 'Active' : 'Inactive' }}
                                 </span>
 
-                                <span
-                                  class="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-[#007979]"
-                                >
-                                  {{ roleLabel(member.role) }}
-                                </span>
+                                @if (canEditMember(member)) {
+                                  <mat-form-field
+                                    appearance="outline"
+                                    class="zb-field zb-field--flush zb-field--dense w-44"
+                                    subscriptSizing="dynamic"
+                                  >
+                                    <mat-label>Role</mat-label>
+                                    <mat-select
+                                      [value]="member.role"
+                                      [disabled]="updatingMemberId() === member.id"
+                                      (selectionChange)="changeMemberRole(member, $event.value)"
+                                    >
+                                      @for (role of assignableRoles(); track role) {
+                                        <mat-option [value]="role">{{ roleLabel(role) }}</mat-option>
+                                      }
+                                    </mat-select>
+                                  </mat-form-field>
+
+                                  <button
+                                    mat-stroked-button
+                                    type="button"
+                                    [disabled]="updatingMemberId() === member.id"
+                                    (click)="toggleMemberActive(member)"
+                                  >
+                                    <mat-icon>{{ member.active ? 'person_off' : 'person_check' }}</mat-icon>
+                                    {{ member.active ? 'Deactivate' : 'Reactivate' }}
+                                  </button>
+                                } @else {
+                                  <span
+                                    class="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-[#007979]"
+                                  >
+                                    {{ roleLabel(member.role) }}
+                                  </span>
+                                }
                               </div>
                             </article>
                           }
@@ -823,11 +845,22 @@ export class OrganizationManagementComponent implements OnInit {
     },
   ];
 
-  protected readonly canManageOrganization = computed(() => {
-    const role = this.access.role();
+  /** Configuration card and status: admins and owners only. */
+  protected readonly canManageOrganization = computed(() =>
+    this.access.can('organization.configure'),
+  );
 
-    return role === 'org_owner' || role === 'org_admin';
-  });
+  /** Invite people and change roles below your own: managers and above. */
+  protected readonly canManageMembers = computed(() =>
+    this.access.can('members.manage'),
+  );
+
+  /** Roles the current user can hand out (always below their own). */
+  protected readonly assignableRoles = computed(
+    () => this.access.assignableRoles() as Exclude<OrganizationMembershipRole, 'org_owner'>[],
+  );
+
+  protected readonly updatingMemberId = signal<string | null>(null);
 
   protected readonly setupComplete = computed(
     () => this.organizationStore.onboarding()?.status === 'completed',
@@ -942,6 +975,59 @@ export class OrganizationManagementComponent implements OnInit {
     }
   }
 
+  /** Members can only be changed by someone with a higher role. */
+  protected canEditMember(member: OrganizationMembership): boolean {
+    return member.role !== 'org_owner' && this.access.canManageRole(member.role);
+  }
+
+  protected async changeMemberRole(
+    member: OrganizationMembership,
+    role: OrganizationMembershipRole,
+  ): Promise<void> {
+    if (role === member.role) {
+      return;
+    }
+
+    if (!this.canEditMember(member) || !this.assignableRoles().some((item) => item === role)) {
+      this.memberError.set('You can only assign roles below your own.');
+      await this.loadMembers();
+      return;
+    }
+
+    this.updatingMemberId.set(member.id);
+    this.memberError.set('');
+
+    try {
+      await this.membershipService.updateMemberRole(member.id, role);
+      await this.loadMembers();
+    } catch (error: unknown) {
+      console.error('Failed to change member role.', error);
+      this.memberError.set(this.getErrorMessage(error));
+      await this.loadMembers();
+    } finally {
+      this.updatingMemberId.set(null);
+    }
+  }
+
+  protected async toggleMemberActive(member: OrganizationMembership): Promise<void> {
+    if (!this.canEditMember(member)) {
+      return;
+    }
+
+    this.updatingMemberId.set(member.id);
+    this.memberError.set('');
+
+    try {
+      await this.membershipService.setMemberActive(member.id, !member.active);
+      await this.loadMembers();
+    } catch (error: unknown) {
+      console.error('Failed to update member status.', error);
+      this.memberError.set(this.getErrorMessage(error));
+    } finally {
+      this.updatingMemberId.set(null);
+    }
+  }
+
   protected membersForRole(role: OrganizationMembershipRole): OrganizationMembership[] {
     return this.filteredMembers()
       .filter((member) => member.role === role)
@@ -1012,8 +1098,8 @@ export class OrganizationManagementComponent implements OnInit {
   }
 
   protected async sendInvitation(): Promise<void> {
-    if (!this.canManageOrganization()) {
-      this.invitationError.set('You do not have permission to manage organization invitations.');
+    if (!this.canManageMembers() || !this.assignableRoles().includes(this.inviteRole)) {
+      this.invitationError.set('You can only invite people to roles below your own.');
       return;
     }
 

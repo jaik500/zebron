@@ -251,6 +251,53 @@ service cloud.firestore {
         );
     }
 
+    /*
+     * Organization role ladder:
+     *   org_member (1) < org_staff (2) < org_manager (3)
+     *   < org_admin (4) < org_owner (5)
+     *
+     * Unknown or missing roles rank 0.
+     */
+    function organizationRoleRank(role) {
+      return {
+        "org_member": 1,
+        "org_staff": 2,
+        "org_manager": 3,
+        "org_admin": 4,
+        "org_owner": 5
+      }.get(role, 0);
+    }
+
+    /*
+     * Rank of the signed-in user in an organization.
+     *
+     * Always call after isOrganizationMember(organizationId), which
+     * guarantees the membership document exists and is active.
+     */
+    function myOrganizationRank(organizationId) {
+      return organizationRoleRank(
+        get(
+          organizationMembershipPath(
+            request.auth.uid,
+            organizationId
+          )
+        ).data.get("role", "")
+      );
+    }
+
+    /*
+     * Managers, admins and owners can manage people whose role is
+     * strictly below their own. Owners are never assigned by clients;
+     * ownership transfer goes through Zebron (platform administrators).
+     */
+    function canManageOrganizationRole(organizationId, targetRole) {
+      return isOrganizationMember(organizationId)
+        && myOrganizationRank(organizationId) >= 3
+        && organizationRoleRank(targetRole) >= 1
+        && organizationRoleRank(targetRole)
+          < myOrganizationRank(organizationId);
+    }
+
     // ============================================================
     // ORGANIZATION APPLICATION REQUESTS
     // ============================================================
@@ -554,6 +601,10 @@ service cloud.firestore {
 
     match /organizationMemberships/{membershipId} {
 
+      /*
+       * Managers and above can read their organization's members,
+       * so they can manage the roles below their own.
+       */
       allow get: if isPlatformAdmin()
         || (
           isAuthenticated()
@@ -561,7 +612,7 @@ service cloud.firestore {
         )
         || (
           isOrganizationOperational(resource.data.get("organizationId", ""))
-          && isOrganizationAdmin(resource.data.get("organizationId", ""))
+          && isOrganizationManagerOrAbove(resource.data.get("organizationId", ""))
         );
 
       allow list: if isPlatformAdmin()
@@ -574,54 +625,42 @@ service cloud.firestore {
           isAuthenticated()
           && resource.data.keys().hasAll(["organizationId"])
           && isOrganizationOperational(resource.data.get("organizationId", ""))
-          && isOrganizationAdmin(resource.data.get("organizationId", ""))
+          && isOrganizationManagerOrAbove(resource.data.get("organizationId", ""))
         );
 
+      /*
+       * New memberships can only carry a role below the creator's.
+       */
       allow create: if isPlatformAdmin()
         || (
-          request.resource.data.keys().hasAny(["organizationId"])
-          && request.resource.data.get("organizationId", "") != ""
+          request.resource.data.get("organizationId", "") != ""
           && isOrganizationOperational(request.resource.data.get("organizationId", ""))
-          && isOrganizationAdmin(request.resource.data.get("organizationId", ""))
-          && request.resource.data.get("role", "") in [
-            "org_admin",
-            "org_manager",
-            "org_staff",
-            "org_member"
-          ]
+          && request.resource.data.get("userId", "") != request.auth.uid
+          && canManageOrganizationRole(
+            request.resource.data.get("organizationId", ""),
+            request.resource.data.get("role", "")
+          )
         );
 
       allow update: if isPlatformAdmin()
-        || (
-          isOrganizationOperational(
-            resource.data.get("organizationId", "")
-          )
-          && isOrganizationAdmin(
-            resource.data.get("organizationId", "")
-          )
 
-          // Preserve membership identity.
+        // Change role or status of someone below you, to a role
+        // that is still below you. Never your own membership.
+        || (
+          isOrganizationOperational(resource.data.get("organizationId", ""))
+          && request.auth.uid != resource.data.get("userId", "")
           && request.resource.data.get("userId", "")
             == resource.data.get("userId", "")
           && request.resource.data.get("organizationId", "")
             == resource.data.get("organizationId", "")
-
-          // Organization admins cannot assign the owner role.
-          && request.resource.data.get("role", "") in [
-            "org_admin",
-            "org_manager",
-            "org_staff",
-            "org_member"
-          ]
-
-          // Prevent an administrator from changing their own role.
-          && (
-            request.auth.uid != resource.data.get("userId", "")
-            || request.resource.data.get("role", "")
-              == resource.data.get("role", "")
+          && canManageOrganizationRole(
+            resource.data.get("organizationId", ""),
+            resource.data.get("role", "")
           )
-
-          // Restrict updates to explicitly approved fields.
+          && canManageOrganizationRole(
+            resource.data.get("organizationId", ""),
+            request.resource.data.get("role", "")
+          )
           && request.resource.data.diff(resource.data)
             .affectedKeys()
             .hasOnly([
@@ -633,15 +672,32 @@ service cloud.firestore {
               "phoneNumber",
               "updatedAt"
             ])
+        )
+
+        // Admins and owners may update their own directory details,
+        // but never their own role or status.
+        || (
+          isOrganizationOperational(resource.data.get("organizationId", ""))
+          && request.auth.uid == resource.data.get("userId", "")
+          && isOrganizationAdmin(resource.data.get("organizationId", ""))
+          && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "displayName",
+              "email",
+              "title",
+              "phoneNumber",
+              "updatedAt"
+            ])
         );
 
       allow delete: if isPlatformAdmin()
         || (
           isOrganizationOperational(resource.data.get("organizationId", ""))
-          && isOrganizationAdmin(resource.data.get("organizationId", ""))
-          && (
-            request.auth.uid != resource.data.get("userId", "")
-            || resource.data.get("role", "") != "org_owner"
+          && request.auth.uid != resource.data.get("userId", "")
+          && canManageOrganizationRole(
+            resource.data.get("organizationId", ""),
+            resource.data.get("role", "")
           )
         );
     }

@@ -4,6 +4,7 @@ import { adminGuard } from './core/guards/admin.guard';
 import { featureGuard } from './core/guards/feature.guard';
 import { partnerAdminGuard } from './core/guards/partner-admin.guard';
 import { partnerOrganizationGuard } from './core/guards/partner-organization.guard';
+import { partnerRoleGuard } from './core/guards/partner-role.guard';
 import { applicationAccessGuard } from './core/guards/application-access.guard';
 import { resourceResolver } from './features/resources/resolvers/resource.resolver';
 import { AboutComponent } from './features/about/pages/about/about.component';
@@ -246,10 +247,11 @@ export const routes: Routes = [
         canActivate: [
             authGuard,
             partnerOrganizationGuard,
-            partnerAdminGuard
+            partnerRoleGuard,
         ],
         data: {
             title: 'Partner | Organization Management',
+            minimumOrganizationRole: 'org_manager',
         },
         loadComponent: () => import('./features/partner/pages/organization-management/organization-management.component').then((m) => m.OrganizationManagementComponent),
     },
@@ -556,14 +558,20 @@ export const routes: Routes = [
             {
                 path: '',
                 pathMatch: 'full',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_staff' },
                 loadComponent: () => import('./features/partner/test-center/partner-test-center.component').then((m) => m.PartnerTestCenterComponent),
             },
             {
                 path: 'learners',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_staff' },
                 loadComponent: () => import('./features/test-center/pages/learners/test-center-learners.component').then((m) => m.TestCenterLearnersComponent),
             },
             {
                 path: 'learners/:userId',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_staff' },
                 loadComponent: () => import('./features/test-center/pages/learner-dashboard/test-center-learner-dashboard.component').then((m) => m.TestCenterLearnerDashboardComponent),
             },
         ],
@@ -645,11 +653,13 @@ export const routes: Routes = [
             partnerOrganizationGuard,
             applicationAccessGuard,
             featureGuard,
+            partnerRoleGuard,
         ],
         data: {
             applicationId: 'test-center',
             title: 'Partner | Test Center Questions',
             featureKey: 'test-center',
+            minimumOrganizationRole: 'org_staff',
         },
         loadComponent: () => import('./features/partner/pages/partner-test-questions/partner-test-questions.component').then((m) => m.PartnerTestQuestionsComponent),
     },

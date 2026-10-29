@@ -10,6 +10,65 @@ export type PartnerRole =
   | 'org_staff'
   | 'org_member';
 
+/**
+ * Organization role ladder. Each role includes everything the
+ * roles below it can do.
+ */
+export const PARTNER_ROLE_RANK: Record<PartnerRole, number> = {
+  org_member: 1,
+  org_staff: 2,
+  org_manager: 3,
+  org_admin: 4,
+  org_owner: 5,
+};
+
+/** Roles ordered from lowest to highest. */
+export const PARTNER_ROLES_ASCENDING: readonly PartnerRole[] = [
+  'org_member',
+  'org_staff',
+  'org_manager',
+  'org_admin',
+  'org_owner',
+];
+
+/**
+ * Partner permissions and the minimum role each one needs.
+ *
+ * This is the single place to change who can do what in the
+ * partner dashboard. Route guards (`minimumOrganizationRole`) and
+ * Firestore rules enforce the same ladder.
+ */
+export const PARTNER_PERMISSIONS = {
+  /** See and open every provisioned application on the dashboard. */
+  'applications.view': 'org_member',
+
+  /** Settings icon on the Test Center card (Test Center management). */
+  'testCenter.settings': 'org_staff',
+
+  /** Administration card and the Organization Management page. */
+  'administration.access': 'org_manager',
+
+  /** Invite people and change roles of anyone below your own role. */
+  'members.manage': 'org_manager',
+
+  /** Contracts and billing (planned). */
+  'billing.manage': 'org_manager',
+
+  /** Configuration card on the Administration page. */
+  'organization.configure': 'org_admin',
+
+  /** Request new applications or retirement of existing ones. */
+  'applications.request': 'org_admin',
+
+  /** Approve application requests and retirements. */
+  'applications.approve': 'org_owner',
+
+  /** Terminate the partnership with Zebron. */
+  'partnership.terminate': 'org_owner',
+} as const satisfies Record<string, PartnerRole>;
+
+export type PartnerPermission = keyof typeof PARTNER_PERMISSIONS;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -127,14 +186,59 @@ export class PartnerAccessService {
    */
 
   /**
-   * Access to the Partner Administration workspace.
-   *
-   * Platform administrators always have access.
-   *
-   * Organization-scoped access is limited to owners and admins.
+   * Whether the current user holds a permission in the selected
+   * organization. Platform administrators hold every permission.
+   */
+  can(permission: PartnerPermission): boolean {
+    return this.hasMinimumRole(PARTNER_PERMISSIONS[permission]);
+  }
+
+  /**
+   * Access to the Administration card and the Organization
+   * Management page: managers, admins and owners.
    */
   canAccessAdministration(): boolean {
-    return this.isAdmin();
+    return this.can('administration.access');
+  }
+
+  /**
+   * Whether the current user may change, deactivate or remove a
+   * member who holds `targetRole`.
+   *
+   * Members can only be managed by someone with a higher role.
+   * Platform administrators can manage everyone, including owners
+   * (the fallback for ownership transfer requests sent to Zebron).
+   */
+  canManageRole(targetRole: PartnerRole): boolean {
+    if (this.isPlatformAdmin()) {
+      return true;
+    }
+
+    return (
+      this.can('members.manage') &&
+      PARTNER_ROLE_RANK[targetRole] < PARTNER_ROLE_RANK[this.role()]
+    );
+  }
+
+  /**
+   * Roles the current user may assign, through an invitation or a
+   * role change: every role below their own. Owners are never
+   * assigned here; ownership transfer is handled by Zebron.
+   */
+  assignableRoles(): PartnerRole[] {
+    if (this.isPlatformAdmin()) {
+      return PARTNER_ROLES_ASCENDING.filter((role) => role !== 'org_owner');
+    }
+
+    if (!this.can('members.manage')) {
+      return [];
+    }
+
+    const ownRank = PARTNER_ROLE_RANK[this.role()];
+
+    return PARTNER_ROLES_ASCENDING.filter(
+      (role) => PARTNER_ROLE_RANK[role] < ownRank,
+    );
   }
 
   /**
@@ -283,17 +387,9 @@ export class PartnerAccessService {
       return true;
     }
 
-    const levels: Record<PartnerRole, number> = {
-      org_member: 1,
-      org_staff: 2,
-      org_manager: 3,
-      org_admin: 4,
-      org_owner: 5,
-    };
-
     return (
-      levels[this.role()] >=
-      levels[requiredRole]
+      PARTNER_ROLE_RANK[this.role()] >=
+      PARTNER_ROLE_RANK[requiredRole]
     );
   }
 }

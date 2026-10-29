@@ -34,6 +34,14 @@ const INVITER_ROLES = [
   "org_manager",
 ] as const;
 
+const ROLE_RANK: Record<string, number> = {
+  org_member: 1,
+  org_staff: 2,
+  org_manager: 3,
+  org_admin: 4,
+  org_owner: 5,
+};
+
 type OrganizationStatus =
   | "pending"
   | "provisioning"
@@ -193,6 +201,19 @@ export const createOrganizationInvitation = onCall(
           throw new HttpsError(
             "permission-denied",
             "You do not have permission to invite users to this organization.",
+          );
+        }
+
+        // Inviters can only invite to roles below their own:
+        // owners -> admin and below, admins -> manager and below,
+        // managers -> staff and member.
+        if (
+          !isPlatformAdmin &&
+          ROLE_RANK[role] >= (ROLE_RANK[membershipRole] ?? 0)
+        ) {
+          throw new HttpsError(
+            "permission-denied",
+            "You can only invite people to roles below your own.",
           );
         }
 
