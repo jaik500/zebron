@@ -2475,3 +2475,4 @@ export { completeOrganizationFirstTopic } from "./organization-onboarding-first-
 export { getOrganizationInvitationPreview } from "./organization-invitation-preview";
 export { processOrganizationInvitationEmails } from "./organization-email-outbox";
 export { receiveInboundEmail } from "./inbound-email";
+export { getOrganizationMemberDirectory } from "./organization-member-directory";

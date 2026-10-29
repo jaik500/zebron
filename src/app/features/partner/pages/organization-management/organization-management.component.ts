@@ -42,6 +42,12 @@ interface CreateOrganizationInvitationResponse {
   createdByUserId: string;
 }
 
+interface MemberDirectoryEntry {
+  userId: string;
+  displayName: string | null;
+  email: string | null;
+}
+
 type MemberStatusFilter = 'all' | 'active' | 'inactive';
 type MemberSummaryFilter = 'all' | 'active' | 'administrators' | 'managers' | 'staff';
 
@@ -477,7 +483,7 @@ interface RoleGroup {
                         type="search"
                         [value]="memberSearch()"
                         (input)="setMemberSearch($any($event.target).value)"
-                        placeholder="Search by user ID or role"
+                        placeholder="Search by name, email or role"
                       />
                     </mat-form-field>
                   </div>
@@ -600,17 +606,17 @@ interface RoleGroup {
                                 <div
                                   class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-100 font-semibold text-gray-600"
                                 >
-                                  {{ initials(member.userId) }}
+                                  {{ initials(member) }}
                                 </div>
 
                                 <div class="min-w-0">
-                                  <p class="break-all text-sm font-semibold text-gray-900">
-                                    {{ member.userId }}
+                                  <p class="break-words text-sm font-semibold text-gray-900">
+                                    {{ memberName(member) }}
                                   </p>
 
-                                  <p class="mt-1 text-xs text-gray-500">
-                                    Membership ID: {{ member.id }}
-                                  </p>
+                                  @if (memberEmail(member); as email) {
+                                    <p class="mt-1 break-all text-xs text-gray-500">{{ email }}</p>
+                                  }
                                 </div>
                               </div>
 
@@ -725,7 +731,7 @@ interface RoleGroup {
                       type="search"
                       [value]="regularMemberSearch()"
                       (input)="setRegularMemberSearch($any($event.target).value)"
-                      placeholder="Search by member user ID"
+                      placeholder="Search by name or email"
                     />
                     </mat-form-field>
                   </div>
@@ -750,9 +756,12 @@ interface RoleGroup {
                     @for (member of filteredRegularMembers(); track member.id) {
                       <article class="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex min-w-0 items-center gap-3">
-                          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 font-semibold text-[#007979]">{{ initials(member.userId) }}</div>
+                          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 font-semibold text-[#007979]">{{ initials(member) }}</div>
                           <div class="min-w-0">
-                            <p class="break-all text-sm font-semibold text-gray-900">{{ member.userId }}</p>
+                            <p class="break-words text-sm font-semibold text-gray-900">{{ memberName(member) }}</p>
+                            @if (memberEmail(member); as email) {
+                              <p class="mt-1 break-all text-xs text-gray-500">{{ email }}</p>
+                            }
                             <p class="mt-1 text-xs text-gray-500">Regular member · {{ member.active ? 'Active' : 'Inactive' }}</p>
                             <p class="mt-1 text-xs text-gray-500">Learning progress will appear here when the LMS learner records are connected.</p>
                           </div>
@@ -761,7 +770,7 @@ interface RoleGroup {
                           mat-stroked-button
                           [routerLink]="['/learning']"
                           [queryParams]="{ organizationId: organizationStore.selectedOrganizationId(), memberId: member.userId }"
-                          [attr.aria-label]="'Open learning dashboard for member ' + member.userId"
+                          [attr.aria-label]="'Open learning dashboard for ' + memberName(member)"
                           class="shrink-0"
                         >
                           <mat-icon>school</mat-icon>
@@ -860,6 +869,9 @@ export class OrganizationManagementComponent implements OnInit {
 
   protected readonly updatingMemberId = signal<string | null>(null);
 
+  /** userId -> display name and email. */
+  protected readonly memberDetails = signal(new Map<string, MemberDirectoryEntry>());
+
   protected readonly setupComplete = computed(
     () => this.organizationStore.onboarding()?.status === 'completed',
   );
@@ -913,8 +925,7 @@ export class OrganizationManagementComponent implements OnInit {
 
       const matchesSearch =
         !search ||
-        member.userId.toLowerCase().includes(search) ||
-        member.id.toLowerCase().includes(search) ||
+        this.memberSearchText(member).includes(search) ||
         this.roleLabel(member.role).toLowerCase().includes(search);
 
       return matchesStatus && matchesSummary && matchesSearch;
@@ -925,8 +936,8 @@ export class OrganizationManagementComponent implements OnInit {
     const search = this.regularMemberSearch().trim().toLowerCase();
     return this.members()
       .filter((member) => member.role === 'org_member')
-      .filter((member) => !search || member.userId.toLowerCase().includes(search))
-      .sort((a, b) => a.userId.localeCompare(b.userId));
+      .filter((member) => !search || this.memberSearchText(member).includes(search))
+      .sort((a, b) => this.memberName(a).localeCompare(this.memberName(b)));
   });
 
   async ngOnInit(): Promise<void> {
@@ -961,7 +972,13 @@ export class OrganizationManagementComponent implements OnInit {
     this.memberError.set('');
 
     try {
-      const result = await this.membershipService.getOrganizationMembers(organizationId);
+      const [result] = await Promise.all([
+        this.membershipService.getOrganizationMembers(organizationId),
+        // Names only need loading once; role changes don't change them.
+        this.memberDetails().size === 0
+          ? this.loadMemberDetails(organizationId)
+          : Promise.resolve(),
+      ]);
 
       this.members.set(result);
     } catch (error: unknown) {
@@ -1029,7 +1046,7 @@ export class OrganizationManagementComponent implements OnInit {
   protected membersForRole(role: OrganizationMembershipRole): OrganizationMembership[] {
     return this.filteredMembers()
       .filter((member) => member.role === role)
-      .sort((a, b) => a.userId.localeCompare(b.userId));
+      .sort((a, b) => this.memberName(a).localeCompare(this.memberName(b)));
   }
 
   protected roleLabel(role: OrganizationMembershipRole): string {
@@ -1044,14 +1061,73 @@ export class OrganizationManagementComponent implements OnInit {
     return labels[role] ?? role;
   }
 
-  protected initials(userId: string): string {
-    const normalized = userId.trim();
+  /** Name, then email, then a neutral label. Never the raw user ID. */
+  protected memberName(member: OrganizationMembership): string {
+    const details = this.memberDetails().get(member.userId);
 
-    if (!normalized) {
-      return '?';
+    return details?.displayName || details?.email || 'Unnamed member';
+  }
+
+  /** Email shown under the name (omitted when it is already the name). */
+  protected memberEmail(member: OrganizationMembership): string | null {
+    const details = this.memberDetails().get(member.userId);
+
+    return details?.displayName && details.email ? details.email : null;
+  }
+
+  private memberSearchText(member: OrganizationMembership): string {
+    const details = this.memberDetails().get(member.userId);
+
+    return [
+      details?.displayName,
+      details?.email,
+      this.roleLabel(member.role),
+      member.userId,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+  }
+
+  protected initials(member: OrganizationMembership): string {
+    const details = this.memberDetails().get(member.userId);
+    const name = details?.displayName?.trim();
+
+    if (name) {
+      const words = name.split(/\s+/).filter(Boolean);
+
+      return (
+        words.length > 1
+          ? words[0][0] + words[words.length - 1][0]
+          : words[0].slice(0, 2)
+      ).toUpperCase();
     }
 
-    return normalized.slice(0, 2).toUpperCase();
+    const email = details?.email?.trim();
+
+    return email ? email.slice(0, 2).toUpperCase() : '?';
+  }
+
+  /**
+   * Names and emails come from a server function, because membership
+   * records only hold user IDs and user profiles are private.
+   * If it fails, the page still works and shows "Unnamed member".
+   */
+  private async loadMemberDetails(organizationId: string): Promise<void> {
+    try {
+      const getDirectory = httpsCallable<
+        { organizationId: string },
+        { organizationId: string; members: MemberDirectoryEntry[] }
+      >(firebaseFunctions, 'getOrganizationMemberDirectory');
+
+      const result = await getDirectory({ organizationId });
+
+      this.memberDetails.set(
+        new Map(result.data.members.map((entry) => [entry.userId, entry])),
+      );
+    } catch (error: unknown) {
+      console.warn('Unable to load member names and emails.', error);
+    }
   }
 
   protected toggleAccessControl(): void {
