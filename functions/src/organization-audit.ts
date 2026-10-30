@@ -11,7 +11,7 @@ import * as logger from "firebase-functions/logger";
 import {
   Change,
   FirestoreAuthEvent,
-  onDocumentWrittenWithAuthData,
+  onDocumentWrittenWithAuthContext,
 } from "firebase-functions/v2/firestore";
 
 /**
@@ -208,8 +208,8 @@ const WATCHED: WatchedCollection[] = [
 // ============================================================
 
 function triggerFor(collection: WatchedCollection) {
-  return onDocumentWrittenWithAuthData(
-    { document: collection.path, retry: false },
+  return onDocumentWrittenWithAuthContext(
+    collection.path,
     async (event: FirestoreAuthEvent<Change<DocumentSnapshot> | undefined, Record<string, string>>) => {
       try {
         await record(collection, event);
@@ -428,7 +428,7 @@ async function resolveActor(
 ): Promise<Actor> {
   let uid: string | null = null;
 
-  if (event.authType === "app_user" && event.authId) {
+  if (isEndUser(event) && event.authId) {
     uid = event.authId;
   } else {
     // Written by a Cloud Function or job: use who the function says acted.
@@ -461,7 +461,7 @@ async function resolveActor(
 
   // A Zebron admin acting without an organization role, or through a
   // Zebron-only function, is recorded as a platform action.
-  const actingAsPlatform = profile.platformAdmin && (!role || event.authType !== "app_user");
+  const actingAsPlatform = profile.platformAdmin && (!role || !isEndUser(event));
 
   return {
     source: actingAsPlatform ? "platform" : "organization",
@@ -471,6 +471,15 @@ async function resolveActor(
     email: profile.email,
     role: actingAsPlatform ? "platform_admin" : role,
   };
+}
+
+/**
+ * Firestore sends authType "app_user" for writes by signed-in users.
+ * The firebase-functions type list doesn't include it yet, so compare
+ * as a string.
+ */
+function isEndUser(event: FirestoreAuthEvent<unknown, Record<string, string>>): boolean {
+  return String(event.authType) === "app_user";
 }
 
 async function loadProfile(uid: string) {
