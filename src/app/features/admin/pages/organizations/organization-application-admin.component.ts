@@ -1,5 +1,6 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { AdminViewToolbarComponent, adminViewState } from '../../shared/admin-view';
 
 import {
   OrganizationApplicationRequest,
@@ -16,7 +17,7 @@ import { MatInputModule } from '@angular/material/input';
 @Component({
   selector: 'app-organization-application-admin',
   standalone: true,
-  imports: [CommonModule, DatePipe, MatFormFieldModule, MatInputModule],
+  imports: [AdminViewToolbarComponent, CommonModule, DatePipe, MatFormFieldModule, MatInputModule],
   template: `
     <main class="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8 mt-10">
       <div class="mx-auto max-w-7xl">
@@ -61,6 +62,15 @@ import { MatInputModule } from '@angular/material/input';
 
         <!-- Filters -->
         <section class="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="mb-3">
+            <app-admin-view-toolbar
+              [state]="viewState"
+              [allowSplit]="false"
+              placeholder="Search by organization, applicant or email"
+              [shown]="filteredApplications().length"
+              [total]="applications().length"
+            />
+          </div>
           <div class="flex flex-wrap gap-2">
             @for (filter of filters; track filter.status) {
               <button
@@ -104,8 +114,47 @@ import { MatInputModule } from '@angular/material/input';
           </section>
         }
 
+        <!-- Application cards (display preference) -->
+        @if (!loading() && filteredApplications().length > 0 && viewState.layout() === 'cards') {
+          <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            @for (application of filteredApplications(); track application.id) {
+              <article class="flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="truncate font-semibold text-slate-900">{{ application.organizationName }}</p>
+                    @if (application.organizationType) {
+                      <p class="mt-0.5 text-xs text-slate-500">{{ application.organizationType }}</p>
+                    }
+                  </div>
+                  <span [class]="'inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ' + statusClass(application.status)">
+                    {{ statusLabel(application.status) }}
+                  </span>
+                </div>
+                <p class="mt-3 text-sm font-medium text-slate-900">{{ application.contactName }}</p>
+                <p class="text-sm text-slate-500">{{ application.contactEmail }}</p>
+                <div class="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                  <span class="text-xs text-slate-500">
+                    @if (application.submittedAt) {
+                      {{ formatTimestamp(application.submittedAt) | date: 'mediumDate' }}
+                    } @else {
+                      Not submitted
+                    }
+                  </span>
+                  <button
+                    type="button"
+                    (click)="selectApplication(application)"
+                    class="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
+                  >
+                    Review
+                  </button>
+                </div>
+              </article>
+            }
+          </section>
+        }
+
         <!-- Application list -->
-        @if (!loading() && filteredApplications().length > 0) {
+        @if (!loading() && filteredApplications().length > 0 && viewState.layout() !== 'cards') {
           <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-slate-200">
@@ -793,14 +842,43 @@ export class OrganizationApplicationAdminComponent implements OnInit {
     }
   }
 
+  /** Table or cards (saved per admin) and the search box. */
+  protected readonly viewState = adminViewState('organizationApplications');
+
   filteredApplications(): OrganizationApplicationRequest[] {
     const filter = this.selectedFilter();
 
-    if (filter === 'all') {
-      return this.applications();
-    }
+    return this.applications().filter(
+      (application) =>
+        (filter === 'all' || application.status === filter) &&
+        this.viewState.matches(
+          application.organizationName,
+          application.organizationType,
+          application.contactName,
+          application.contactEmail,
+          application.website,
+        ),
+    );
+  }
 
-    return this.applications().filter((application) => application.status === filter);
+  /** Badge colours for a status (cards view). */
+  statusClass(status: OrganizationApplicationRequestStatus): string {
+    switch (status) {
+      case 'submitted':
+        return 'bg-blue-100 text-blue-800';
+      case 'under_review':
+      case 'provisioning':
+        return 'bg-amber-100 text-amber-800';
+      case 'approved':
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'onboarding':
+        return 'bg-teal-100 text-teal-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-slate-100 text-slate-700';
+    }
   }
 
   filterCount(status: OrganizationApplicationRequestStatus): number {

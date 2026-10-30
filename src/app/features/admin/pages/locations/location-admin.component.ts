@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
+import { AdminBackLinkComponent, AdminViewToolbarComponent, adminViewState } from '../../shared/admin-view';
 import { RouterLink } from '@angular/router';
 
 import { Location } from '../../../../core/models/location.model';
@@ -19,7 +20,7 @@ import { MatInputModule } from '@angular/material/input';
 
   standalone: true,
 
-  imports: [FormsModule, RouterLink, MatDividerModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule],
+  imports: [AdminViewToolbarComponent, AdminBackLinkComponent, FormsModule, RouterLink, MatDividerModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule],
 
   template: `
     <!-- =====================================================
@@ -218,7 +219,11 @@ import { MatInputModule } from '@angular/material/input';
           <!-- ================================================
                CREATE / EDIT FORM
                ================================================ -->
-          <div class="lg:col-span-2">
+@if (viewState.showForm()) {
+          <div [class]="viewState.layout() === 'split' ? 'lg:col-span-2' : 'lg:col-span-3'">
+              @if (viewState.layout() !== 'split') {
+                <app-admin-back-link label="Back to locations" (back)="cancelEdit()" />
+              }
             <section
               class="overflow-hidden
                      rounded-2xl
@@ -612,13 +617,13 @@ import { MatInputModule } from '@angular/material/input';
             </section>
           </div>
 
+}
           <!-- ================================================
                DIRECTORY
                ================================================ -->
+@if (viewState.showList()) {
           <aside
-            class="lg:sticky
-                   lg:top-6
-                   lg:self-start"
+            [class]="viewState.layout() === 'split' ? 'lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto' : 'lg:col-span-3'"
           >
             <section
               class="overflow-hidden
@@ -686,31 +691,22 @@ import { MatInputModule } from '@angular/material/input';
                 </div>
               </div>
 
-              <!-- Search -->
-              <div
-                class="border-b
-                       border-gray-100
-                       px-4 py-1"
-              >
 
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Search locations</mat-label>
-                  <input matInput
-                  id="location-search"
-                  name="locationSearch"
-                  type="search"
-                  [value]="searchTerm()"
-                  (input)="onSearch($event)"
-                  placeholder="Search locations..."
-                />
-                </mat-form-field>
+              <!-- Search, display preference and Create -->
+              <div class="border-b border-gray-100 p-4">
+                <app-admin-view-toolbar
+                  [state]="viewState"
+                  placeholder="Search locations"
+                  createLabel="Create Location"
+                  [shown]="filteredLocations().length"
+                  [total]="locations().length"
+                  (create)="startCreate()"
+                ></app-admin-view-toolbar>
               </div>
 
               <!-- Directory content -->
               <div
-                class="max-h-[calc(100vh-280px)]
-                       overflow-y-auto
-                       p-4"
+                class="p-4"
               >
                 @if (loading()) {
                   <div
@@ -788,7 +784,7 @@ import { MatInputModule } from '@angular/material/input';
                     }
                   </div>
                 } @else {
-                  <div class="space-y-1">
+                  <div [class]="viewState.layout() === 'cards' ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-1'">
                     @for (location of filteredLocations(); track location.id) {
                       <article
                         class="rounded-xl
@@ -887,7 +883,7 @@ import { MatInputModule } from '@angular/material/input';
                             <!-- =====================================================
            Existing location details
            ===================================================== -->
-                            @if (isExistingLocationExpanded(location.id!)) {
+                            @if (isExistingLocationExpanded(location.id!) || viewState.layout() === 'cards') {
                               <!-- State / ZIP -->
                               <p
                                 class="mt-0.5
@@ -971,6 +967,7 @@ import { MatInputModule } from '@angular/material/input';
               </div>
             </section>
           </aside>
+            }
         </div>
       </div>
     </main>
@@ -991,7 +988,22 @@ export class LocationAdminComponent implements OnInit {
 
   protected readonly saving = signal(false);
 
-  protected readonly searchTerm = signal('');
+
+  // =========================================================
+  // Views (list / form) and display preference
+  // =========================================================
+
+  protected readonly viewState = adminViewState('locations');
+
+  /** "Create": an empty form. */
+  protected startCreate(): void {
+    this.clearForm();
+    this.showLocationForm.set(true);
+    this.viewState.openForm();
+  }
+
+  /** Search text (shared with the toolbar). */
+  protected readonly searchTerm = this.viewState.search;
 
   protected readonly editingId = signal<string | null>(null);
 
@@ -1207,6 +1219,7 @@ export class LocationAdminComponent implements OnInit {
       }
 
       this.clearForm();
+      this.viewState.backToList();
 
       await this.loadLocations();
     } catch (error) {
@@ -1227,6 +1240,7 @@ export class LocationAdminComponent implements OnInit {
     }
 
     this.editingId.set(location.id);
+    this.viewState.openForm();
 
     this.form = {
       address: location.address || '',
@@ -1255,6 +1269,7 @@ export class LocationAdminComponent implements OnInit {
    */
   protected cancelEdit(): void {
     this.clearForm();
+    this.viewState.backToList();
   }
 
   /**

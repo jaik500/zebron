@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
+import { AdminBackLinkComponent, AdminViewToolbarComponent, adminViewState } from '../../shared/admin-view';
 import { RouterLink } from '@angular/router';
 
 import { ResourceType } from '../../../../core/models/resource-type.model';
@@ -16,7 +17,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 
   standalone: true,
 
-  imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatCheckboxModule],
+  imports: [AdminViewToolbarComponent, AdminBackLinkComponent, FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatCheckboxModule],
 
   template: `
     <!-- =====================================================
@@ -106,14 +107,13 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
           <!-- =================================================
                CREATE / EDIT
                ================================================= -->
+@if (viewState.showForm()) {
           <section
-            class="rounded-2xl
-                   border
-                   border-gray-200
-                   bg-white
-                   shadow-sm
-                   lg:col-span-2"
+            [class]="viewState.layout() === 'split' ? 'rounded-2xl border border-gray-200 bg-white shadow-sm lg:col-span-2' : 'rounded-2xl border border-gray-200 bg-white shadow-sm lg:col-span-3'"
           >
+              @if (viewState.layout() !== 'split') {
+                <div class="px-5 pt-4 sm:px-6"><app-admin-back-link label="Back to resource types" (back)="cancelEdit()" /></div>
+              }
             <div
               class="border-b
                      border-gray-100
@@ -309,13 +309,13 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
             </form>
           </section>
 
+}
           <!-- =================================================
                DIRECTORY
                ================================================= -->
+@if (viewState.showList()) {
           <aside
-            class="lg:sticky
-                   lg:top-6
-                   lg:self-start"
+            [class]="viewState.layout() === 'split' ? 'lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto' : 'lg:col-span-3'"
           >
             <section
               class="overflow-hidden
@@ -385,31 +385,22 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                 </div>
               </div>
 
-              <!-- Search -->
-              <div
-                class="border-b
-                       border-gray-100
-                       p-4"
-              >
 
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Search resource types</mat-label>
-                  <input matInput
-                  id="resource-type-search"
-                  name="resourceTypeSearch"
-                  type="search"
-                  [value]="searchTerm()"
-                  (input)="onSearch($event)"
-                  placeholder="Search resource types..."
-                />
-                </mat-form-field>
+              <!-- Search, display preference and Create -->
+              <div class="border-b border-gray-100 p-4">
+                <app-admin-view-toolbar
+                  [state]="viewState"
+                  placeholder="Search resource types"
+                  createLabel="Create Resource Type"
+                  [shown]="filteredResourceTypes().length"
+                  [total]="resourceTypes().length"
+                  (create)="startCreate()"
+                ></app-admin-view-toolbar>
               </div>
 
               <!-- List -->
               <div
-                class="max-h-[calc(100vh-280px)]
-                       overflow-y-auto
-                       p-4"
+                class="p-4"
               >
                 @if (loading()) {
                   <div
@@ -442,7 +433,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                     </p>
                   </div>
                 } @else {
-                  <div class="space-y-3">
+                  <div [class]="viewState.layout() === 'cards' ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-3'">
                     @for (type of filteredResourceTypes(); track type.id) {
                       <article
                         class="rounded-xl
@@ -581,6 +572,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
               </div>
             </section>
           </aside>
+            }
         </div>
       </div>
     </main>
@@ -599,7 +591,21 @@ export class ResourceTypeAdminComponent implements OnInit {
 
   protected readonly saving = signal(false);
 
-  protected readonly searchTerm = signal('');
+
+  // =========================================================
+  // Views (list / form) and display preference
+  // =========================================================
+
+  protected readonly viewState = adminViewState('resourceTypes');
+
+  /** "Create": an empty form. */
+  protected startCreate(): void {
+    this.clearForm();
+    this.viewState.openForm();
+  }
+
+  /** Search text (shared with the toolbar). */
+  protected readonly searchTerm = this.viewState.search;
 
   protected readonly editingId = signal<string | null>(null);
 
@@ -688,6 +694,7 @@ export class ResourceTypeAdminComponent implements OnInit {
       }
 
       this.clearForm();
+      this.viewState.backToList();
 
       await this.loadResourceTypes();
     } catch (error) {
@@ -705,6 +712,7 @@ export class ResourceTypeAdminComponent implements OnInit {
     }
 
     this.editingId.set(type.id);
+    this.viewState.openForm();
 
     this.form = {
       name: type.name,
@@ -726,6 +734,7 @@ export class ResourceTypeAdminComponent implements OnInit {
 
   protected cancelEdit(): void {
     this.clearForm();
+    this.viewState.backToList();
   }
 
   protected async deleteResourceType(type: ResourceType): Promise<void> {

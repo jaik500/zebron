@@ -2,6 +2,7 @@ import { Component, inject, OnDestroy, signal, TemplateRef, viewChild } from '@a
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { Location } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
@@ -31,7 +32,20 @@ const ADMIN_TOAST_ID = 'admin-login-prompt';
                  border-gray-200 bg-white shadow-lg"
         >
           <!-- Header -->
-          <div class="bg-[#032D42] px-6 py-6 text-white sm:px-8">
+          <div class="relative bg-[#032D42] px-6 py-6 text-white sm:px-8">
+            <!-- Cancel: back to the previous page -->
+            <button
+              type="button"
+              class="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+              aria-label="Cancel and go back"
+              title="Cancel"
+              (click)="cancel()"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+
             <div
               class="flex h-12 w-12 items-center justify-center
                      rounded-xl bg-white/10"
@@ -292,6 +306,24 @@ const ADMIN_TOAST_ID = 'admin-login-prompt';
 export class LoginComponent implements OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
+
+  /**
+   * Cancel (×): return to the page the person came from, or the home
+   * page when they opened this page directly.
+   */
+  protected cancel(): void {
+    const cameFromZebron =
+      typeof window !== 'undefined' &&
+      typeof window.history.state?.navigationId === 'number' &&
+      window.history.state.navigationId > 1;
+
+    if (cameFromZebron) {
+      this.location.back();
+    } else {
+      void this.router.navigate(['/']);
+    }
+  }
   private readonly toast = inject(HotToastService);
 
   protected email = '';

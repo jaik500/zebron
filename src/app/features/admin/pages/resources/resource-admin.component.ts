@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AdminBackLinkComponent, AdminViewToolbarComponent, adminViewState } from '../../shared/admin-view';
 import { RouterLink } from '@angular/router';
 
 import { Resource, ResourceStatus } from '../../../../core/models/resource.model';
@@ -26,7 +27,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-resource-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
+  imports: [AdminViewToolbarComponent, AdminBackLinkComponent, FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -190,7 +191,11 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
             <!-- =======================================================
            Resource form
            ======================================================= -->
-            <div class="lg:col-span-2">
+@if (viewState.showForm()) {
+            <div [class]="viewState.layout() === 'split' ? 'lg:col-span-2' : 'lg:col-span-3'">
+              @if (viewState.layout() !== 'split') {
+                <app-admin-back-link label="Back to resources" (back)="cancelEdit()" />
+              }
               <div
                 class="overflow-hidden rounded-2xl border
                  border-gray-200 bg-white shadow-sm"
@@ -778,10 +783,12 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
               </div>
             </div>
 
+}
             <!-- =======================================================
            Existing resources
            ======================================================= -->
-            <aside class="lg:sticky lg:top-6 lg:col-span-1">
+@if (viewState.showList()) {
+            <aside [class]="viewState.layout() === 'split' ? 'lg:col-span-1 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto' : 'lg:col-span-3'">
               <div
                 class="overflow-hidden rounded-2xl border
                  border-gray-200 bg-white shadow-sm"
@@ -818,28 +825,18 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                   </div>
                 </div>
 
-                <!-- =====================================================
-     Resource Search
-     ===================================================== -->
-                <div
-                  class="border-b
-         border-gray-100
-         px-4
-         py-1"
-                >
 
-                  <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Search resources</mat-label>
-                    <input matInput
-                    id="resource-search"
-                    name="resourceSearch"
-                    type="search"
-                    [value]="searchTerm()"
-                    (input)="onSearch($event)"
-                    placeholder="Search resources..."
-                  />
-                  </mat-form-field>
-                </div>
+              <!-- Search, display preference and Create -->
+              <div class="border-b border-gray-200 bg-white px-4 py-3">
+                <app-admin-view-toolbar
+                  [state]="viewState"
+                  placeholder="Search resources"
+                  createLabel="Create Resource"
+                  [shown]="filteredResources().length"
+                  [total]="resources().length"
+                  (create)="startCreate()"
+                ></app-admin-view-toolbar>
+              </div>
 
                 <!-- Empty state -->
                 @if (!loading() && resources().length === 0) {
@@ -854,16 +851,22 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 
                     <p class="mt-3 text-sm font-medium text-gray-700">No resources found</p>
 
-                    <p class="mt-1 text-xs text-gray-500">Create a resource using the form.</p>
+                    <p class="mt-1 text-xs text-gray-500">Use Create Resource to add the first one.</p>
                   </div>
                 }
 
                 <!-- Resource list -->
+                @if (resources().length > 0 && filteredResources().length === 0) {
+                  <p class="p-6 text-center text-sm text-gray-500">No resources match your search.</p>
+                }
+
                 @if (filteredResources().length > 0) {
-                  <div class="divide-y divide-gray-200">
+                  <div [class]="viewState.layout() === 'cards' ? 'grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3' : 'divide-y divide-gray-200'">
                     @for (resource of filteredResources(); track resource.id) {
                       <div
-                        class="p-4 transition hover:bg-gray-50"
+                        [class]="viewState.layout() === 'cards'
+                          ? 'rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow'
+                          : 'p-4 transition hover:bg-gray-50'"
                         [class.bg-[#007979]/5]="editingId() === resource.id"
                       >
                         <!-- =====================================================
@@ -916,7 +919,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                         <!-- =====================================================
          Existing resource details
          ===================================================== -->
-                        @if (isExistingResourceExpanded(resource.id)) {
+                        @if (isExistingResourceExpanded(resource.id) || viewState.layout() === 'cards') {
                           <!-- Slug + status -->
                           <div
                             class="mt-1 flex items-start
@@ -1043,6 +1046,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                 }
               </div>
             </aside>
+            }
           </div>
         </section>
       </main>
@@ -1066,7 +1070,22 @@ export class ResourceAdminComponent implements OnInit {
   /**
    * Search text used to filter existing resources.
    */
-  protected readonly searchTerm = signal('');
+
+  // =========================================================
+  // Views (list / form) and display preference
+  // =========================================================
+
+  protected readonly viewState = adminViewState('resources');
+
+  /** "Create": an empty form. */
+  protected startCreate(): void {
+    this.resetForm();
+    this.showNewResourceForm.set(true);
+    this.viewState.openForm();
+  }
+
+  /** Search text (shared with the toolbar). */
+  protected readonly searchTerm = this.viewState.search;
 
   /**
    * Existing resources filtered by the search field.
@@ -1393,6 +1412,7 @@ export class ResourceAdminComponent implements OnInit {
       // =======================================================
 
       this.resetForm();
+      this.viewState.backToList();
 
       await this.loadData();
     } catch (error) {
@@ -1411,6 +1431,7 @@ export class ResourceAdminComponent implements OnInit {
    */
   protected editResource(resource: Resource): void {
     this.editingId.set(resource.id);
+    this.viewState.openForm();
 
     this.form = {
       name: resource.name,
@@ -1459,6 +1480,7 @@ export class ResourceAdminComponent implements OnInit {
    */
   protected cancelEdit(): void {
     this.resetForm();
+    this.viewState.backToList();
   }
 
   /**

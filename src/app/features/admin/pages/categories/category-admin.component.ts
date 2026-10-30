@@ -1,5 +1,6 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AdminBackLinkComponent, AdminViewToolbarComponent, adminViewState } from '../../shared/admin-view';
 import { RouterLink } from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
@@ -14,7 +15,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-category-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatIconModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
+  imports: [AdminViewToolbarComponent, AdminBackLinkComponent, FormsModule, RouterLink, MatIconModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -76,7 +77,11 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
             <!-- =====================================================
                FORM
                ===================================================== -->
-            <div class="lg:col-span-2 p-6 sm:p-8">
+@if (viewState.showForm()) {
+            <div [class]="viewState.layout() === 'split' ? 'lg:col-span-2 p-6 sm:p-8' : 'lg:col-span-3 p-6 sm:p-8'">
+              @if (viewState.layout() !== 'split') {
+                <app-admin-back-link label="Back to categories" (back)="cancelEdit()" />
+              }
               <!-- Form header -->
               <div
                 class="flex flex-col gap-1
@@ -295,14 +300,13 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
               </form>
             </div>
 
+}
             <!-- =====================================================
                EXISTING CATEGORIES / DIRECTORY
                ===================================================== -->
+@if (viewState.showList()) {
             <aside
-              class="rounded-tr-2xl
-         border-t border-gray-200
-         bg-gray-50/60
-         lg:border-l lg:border-t-0"
+              [class]="viewState.layout() === 'split' ? 'rounded-tr-2xl border-t border-gray-200 bg-gray-50/60 lg:border-l lg:border-t-0 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto' : 'lg:col-span-3 rounded-2xl bg-gray-50/60'"
             >
               <div
                 class="flex items-center
@@ -350,10 +354,30 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                   </span>
                 }
               </div>
-              @for (category of categories(); track category.id) {
+
+              <!-- Search, display preference and Create -->
+              <div class="border-b border-gray-200 bg-white p-3">
+                <app-admin-view-toolbar
+                  [state]="viewState"
+                  placeholder="Search categories"
+                  createLabel="Create Category"
+                  [shown]="filteredCategories().length"
+                  [total]="categories().length"
+                  (create)="startCreate()"
+                ></app-admin-view-toolbar>
+              </div>
+
+              @if (!loading() && filteredCategories().length === 0) {
+                <p class="p-6 text-center text-sm text-gray-500">
+                  {{ categories().length ? 'No categories match your search.' : 'No categories yet.' }}
+                </p>
+              }
+              <div [class]="viewState.layout() === 'cards' ? 'grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3' : ''">
+              @for (category of filteredCategories(); track category.id) {
                 <div
-                  class="border-b border-gray-200
-           p-4 last:border-b-0"
+                  [class]="viewState.layout() === 'cards'
+                    ? 'rounded-xl border border-gray-200 bg-white p-4 shadow-sm'
+                    : 'border-b border-gray-200 p-4 last:border-b-0'"
                 >
                   <!-- =====================================================
          Category name + Show / Hide toggle
@@ -413,7 +437,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                   <!-- =====================================================
          Existing category details
          ===================================================== -->
-                  @if (isExistingRecordExpanded(category.id)) {
+                  @if (isExistingRecordExpanded(category.id) || viewState.layout() === 'cards') {
                     <!-- Slug + status -->
                     <div
                       class="mt-1 flex items-start
@@ -489,7 +513,9 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                   }
                 </div>
               }
+              </div>
             </aside>
+            }
           </div>
         </section>
       </main>
@@ -533,6 +559,24 @@ export class CategoryAdminComponent implements OnInit {
   }
 
   protected form = this.createEmptyForm();
+
+  // =========================================================
+  // Views (list / form) and display preference
+  // =========================================================
+
+  protected readonly viewState = adminViewState('categories');
+
+  /** "Create": an empty form. */
+  protected startCreate(): void {
+    this.resetForm();
+    this.viewState.openForm();
+  }
+
+  protected readonly filteredCategories = computed(() =>
+    this.categories().filter((category) =>
+      this.viewState.matches(category.name, category.slug, category.description, category.active ? 'active' : 'inactive'),
+    ),
+  );
 
   ngOnInit(): void {
     this.loadCategories();
@@ -681,6 +725,7 @@ private async loadCategories(): Promise<void> {
       // =============================================================
 
       this.resetForm();
+      this.viewState.backToList();
 
       await this.loadCategories();
     } catch (error: any) {
@@ -699,6 +744,7 @@ private async loadCategories(): Promise<void> {
    */
   protected editCategory(category: Category): void {
     this.editingId.set(category.id);
+    this.viewState.openForm();
 
     this.form = {
       name: category.name,
@@ -736,6 +782,7 @@ private async loadCategories(): Promise<void> {
    */
   protected cancelEdit(): void {
     this.resetForm();
+    this.viewState.backToList();
   }
 
   /**

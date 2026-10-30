@@ -1,5 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+
+import { AuthService } from '../../../../core/services/auth.service';
+import { firestore } from '../../../../core/services/firebase-config';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -75,7 +79,18 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                  ORGANIZATION FORM
                  =================================================== -->
 
-            <div class="lg:col-span-2 p-4 sm:p-6">
+            @if (showForm()) {
+            <div [class]="layout() === 'split' ? 'lg:col-span-2 p-4 sm:p-6' : 'lg:col-span-3 p-4 sm:p-6'">
+              @if (layout() !== 'split') {
+                <button
+                  type="button"
+                  (click)="backToDirectory()"
+                  class="mb-4 inline-flex items-center gap-1 text-sm font-medium text-[#007979] hover:underline"
+                >
+                  <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">arrow_back</mat-icon>
+                  Back to organizations
+                </button>
+              }
               <div
                 class="flex flex-col gap-1
                        border-b border-gray-200 pb-5 "
@@ -395,7 +410,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                     }}
                   </button>
 
-                  @if (editingId()) {
+                  @if (editingId() || layout() !== 'split') {
                     <button
                       type="button"
                       (click)="cancelEdit()"
@@ -413,17 +428,19 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                 </div>
               </form>
             </div>
+            }
 
             <!-- ===================================================
                  EXISTING ORGANIZATIONS
                  =================================================== -->
 
+            @if (showDirectory()) {
             <aside
-              class="border-t border-gray-200
-                     bg-gray-50/60
-                     lg:border-l lg:border-t-0"
+              [class]="layout() === 'split'
+                ? 'border-t border-gray-200 bg-gray-50/60 lg:border-l lg:border-t-0 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto'
+                : 'lg:col-span-3'"
             >
-              <div class="p-4 sm:p-4">
+              <div class="p-4 sm:p-6">
                 <div
                   class="flex items-start
                          justify-between gap-3"
@@ -444,9 +461,20 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                     </h2>
 
                     <p class="mt-1 text-sm text-gray-500">
-                      Select an organization to edit or delete it.
+                      Expand an organization to view, edit or manage it.
                     </p>
                   </div>
+
+                  @if (layout() !== 'split') {
+                    <button
+                      type="button"
+                      (click)="startCreate()"
+                      class="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#032D42] px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#032D42]/90"
+                    >
+                      <mat-icon class="!h-5 !w-5 !text-[18px]" aria-hidden="true">add</mat-icon>
+                      <span>Create Organization</span>
+                    </button>
+                  }
 
                   @if (!loading()) {
                     <span
@@ -460,6 +488,55 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                       {{ organizations().length }}
                     </span>
                   }
+                </div>
+
+                <!-- Search, status filter and display preference -->
+
+                <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div class="relative min-w-0 flex-1">
+                    <mat-icon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 !text-gray-400" aria-hidden="true">search</mat-icon>
+                    <input
+                      #orgSearch
+                      type="search"
+                      class="h-10 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-3 text-sm outline-none focus:border-[#007979] focus:ring-4 focus:ring-[#007979]/15"
+                      placeholder="Search by name, email or website"
+                      aria-label="Search organizations"
+                      [value]="search()"
+                      (input)="search.set(orgSearch.value)"
+                      (keydown.escape)="search.set('')"
+                    />
+                  </div>
+
+                  <select
+                    class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-[#007979]"
+                    aria-label="Filter by status"
+                    [value]="statusFilter()"
+                    (change)="statusFilter.set($any($event.target).value)"
+                  >
+                    <option value="">All statuses</option>
+                    @for (status of statusOptions(); track status) {
+                      <option [value]="status">{{ status | titlecase }}</option>
+                    }
+                  </select>
+
+                  <!-- Display preference (saved per admin) -->
+                  <div class="inline-flex shrink-0 rounded-lg bg-gray-100 p-1" role="radiogroup" aria-label="Display preference">
+                    @for (option of layoutOptions; track option.key) {
+                      <button
+                        type="button"
+                        role="radio"
+                        [attr.aria-checked]="layout() === option.key"
+                        [title]="option.title"
+                        (click)="setLayout(option.key)"
+                        [class]="layout() === option.key
+                          ? 'inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1.5 text-xs font-medium text-[#032D42] shadow-sm'
+                          : 'inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-[#032D42]'"
+                      >
+                        <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">{{ option.icon }}</mat-icon>
+                        <span class="hidden sm:inline">{{ option.label }}</span>
+                      </button>
+                    }
+                  </div>
                 </div>
 
                 <!-- Loading -->
@@ -489,20 +566,31 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                     </p>
 
                     <p class="mt-1 text-xs text-gray-500">
-                      Create the first organization using the form.
+                      Use Create Organization to add the first one.
                     </p>
                   </div>
                 }
 
                 <!-- Organization list -->
 
-                @if (organizations().length > 0) {
+                @if (organizations().length > 0 && filteredOrganizations().length === 0) {
+                  <div class="mt-5 rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center">
+                    <p class="text-sm font-medium text-gray-700">No organizations match your search.</p>
+                    <button type="button" class="mt-2 text-sm font-medium text-[#007979] hover:underline" (click)="clearFilters()">Clear filters</button>
+                  </div>
+                }
+
+                @if (filteredOrganizations().length > 0) {
                   <div
-                    class="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+                    [class]="layout() === 'cards'
+                      ? 'mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
+                      : 'mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm'"
                   >
-                    @for (organization of organizations(); track organization.id) {
-                      <div class="border-b border-gray-200 last:border-b-0">
+                    @for (organization of filteredOrganizations(); track organization.id) {
+                      <div [class]="layout() === 'cards' ? 'min-w-0' : 'border-b border-gray-200 last:border-b-0'">
                         <mat-expansion-panel
+                          [expanded]="layout() === 'cards' || expandedId() === organization.id"
+                          (opened)="expandedId.set(organization.id)"
                           class="!overflow-hidden !rounded-xl !border !border-gray-200 !shadow-none
          !bg-white
          [&.mat-expanded]:!bg-white"
@@ -641,6 +729,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                 }
               </div>
             </aside>
+            }
           </div>
         </section>
 
@@ -1003,6 +1092,126 @@ export class OrganizationAdminComponent implements OnInit {
 
   protected readonly organizations = this.organizationStore.organizations;
 
+  // ===============================================================
+  // Views and display preference
+  // ===============================================================
+
+  private readonly authService = inject(AuthService);
+
+  private static readonly LAYOUT_KEY = 'zebron:admin:organizations-layout';
+
+  /** Directory (list of organizations) or the create/edit form. */
+  protected readonly view = signal<'list' | 'form'>('list');
+
+  /** Expandable list, cards, or the form beside the list (split). */
+  protected readonly layout = signal<'list' | 'cards' | 'split'>(this.readLocalLayout());
+
+  protected readonly layoutOptions = [
+    { key: 'list' as const, label: 'List', icon: 'view_agenda', title: 'Expandable list' },
+    { key: 'cards' as const, label: 'Cards', icon: 'grid_view', title: 'Cards' },
+    { key: 'split' as const, label: 'Split', icon: 'vertical_split', title: 'Form beside the list' },
+  ];
+
+  protected readonly showForm = computed(() => this.layout() === 'split' || this.view() === 'form');
+
+  protected readonly showDirectory = computed(() => this.layout() === 'split' || this.view() === 'list');
+
+  protected readonly search = signal('');
+
+  protected readonly statusFilter = signal('');
+
+  protected readonly expandedId = signal<string | null>(null);
+
+  protected readonly statusOptions = computed(() =>
+    [...new Set(this.organizations().map((organization) => this.organizationStatus(organization)))].sort(),
+  );
+
+  protected readonly filteredOrganizations = computed(() => {
+    const words = this.search().trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const status = this.statusFilter();
+
+    return this.organizations().filter((organization) => {
+      if (status && this.organizationStatus(organization) !== status) {
+        return false;
+      }
+      if (!words.length) {
+        return true;
+      }
+      const text = [organization.name, organization.slug, organization.description, organization.email, organization.website]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return words.every((word) => text.includes(word));
+    });
+  });
+
+  protected clearFilters(): void {
+    this.search.set('');
+    this.statusFilter.set('');
+  }
+
+  /** "Create Organization": empty form. */
+  protected startCreate(): void {
+    this.resetForm();
+    this.view.set('form');
+    this.scrollToTop();
+  }
+
+  protected backToDirectory(): void {
+    this.resetForm();
+    this.view.set('list');
+    this.scrollToTop();
+  }
+
+  protected async setLayout(layout: 'list' | 'cards' | 'split'): Promise<void> {
+    this.layout.set(layout);
+
+    try {
+      localStorage.setItem(OrganizationAdminComponent.LAYOUT_KEY, layout);
+    } catch {
+      // Storage unavailable; the profile copy still applies.
+    }
+
+    const uid = this.authService.firebaseUser()?.uid;
+    if (uid) {
+      try {
+        await updateDoc(doc(firestore, 'users', uid), { 'adminPreferences.organizationsLayout': layout });
+      } catch {
+        // Kept for this browser only.
+      }
+    }
+  }
+
+  private async loadLayoutPreference(): Promise<void> {
+    const uid = this.authService.firebaseUser()?.uid;
+    if (!uid) {
+      return;
+    }
+    try {
+      const saved = (await getDoc(doc(firestore, 'users', uid))).data()?.['adminPreferences']?.['organizationsLayout'];
+      if (saved === 'list' || saved === 'cards' || saved === 'split') {
+        this.layout.set(saved);
+      }
+    } catch {
+      // Keep the browser preference.
+    }
+  }
+
+  private readLocalLayout(): 'list' | 'cards' | 'split' {
+    try {
+      const saved = typeof localStorage === 'undefined' ? null : localStorage.getItem(OrganizationAdminComponent.LAYOUT_KEY);
+      return saved === 'cards' || saved === 'split' ? saved : 'list';
+    } catch {
+      return 'list';
+    }
+  }
+
+  private scrollToTop(): void {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   protected readonly loading = this.organizationStore.loading;
 
   protected readonly storeError = this.organizationStore.error;
@@ -1076,6 +1285,7 @@ export class OrganizationAdminComponent implements OnInit {
   ngOnInit(): void {
     void this.loadOrganizations();
     void this.loadUsers();
+    void this.loadLayoutPreference();
   }
 
   // ===============================================================
@@ -1274,6 +1484,7 @@ export class OrganizationAdminComponent implements OnInit {
       }
 
       this.resetForm();
+      this.view.set('list');
     } catch (error) {
       console.error('Failed to save organization:', error);
 
@@ -1527,6 +1738,9 @@ export class OrganizationAdminComponent implements OnInit {
   protected async editOrganization(organization: Organization): Promise<void> {
     this.error.set(null);
 
+    this.view.set('form');
+    this.scrollToTop();
+
     this.editingId.set(organization.id);
 
     this.form = {
@@ -1599,6 +1813,7 @@ export class OrganizationAdminComponent implements OnInit {
 
   protected cancelEdit(): void {
     this.resetForm();
+    this.view.set('list');
   }
 
   // ===============================================================

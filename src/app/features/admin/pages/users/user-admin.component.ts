@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AdminLayoutSwitchComponent, adminViewState } from '../../shared/admin-view';
 import { Router, RouterLink } from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
@@ -19,7 +20,7 @@ import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-user-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
+  imports: [AdminLayoutSwitchComponent, FormsModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
   template: `
     <header class="border-b border-gray-200 bg-[#032D42]">
       <div
@@ -266,6 +267,9 @@ import { MatButtonModule } from '@angular/material/button';
            justify-end
            gap-2"
             >
+              <!-- Display preference: table or cards (saved per admin) -->
+              <app-admin-layout-switch [state]="viewState" [allowSplit]="false" />
+
               <!-- Add User -->
               <button
                 type="button"
@@ -385,8 +389,7 @@ import { MatButtonModule } from '@angular/material/button';
                DESKTOP TABLE
                ===================================================== -->
           <div
-            class="hidden overflow-x-auto
-                   md:block"
+            [class]="viewState.layout() === 'cards' ? 'hidden' : 'hidden overflow-x-auto md:block'"
           >
             <table
               class="min-w-full
@@ -638,11 +641,12 @@ import { MatButtonModule } from '@angular/material/button';
                MOBILE CARDS
                ===================================================== -->
           <div
-            class="divide-y divide-gray-200
-                   md:hidden"
+            [class]="viewState.layout() === 'cards'
+              ? 'grid gap-3 bg-gray-50 p-3 sm:grid-cols-2 lg:grid-cols-3'
+              : 'divide-y divide-gray-200 md:hidden'"
           >
             @for (user of filteredUsers(); track user.id) {
-              <article class="p-5">
+              <article [class]="viewState.layout() === 'cards' ? 'rounded-xl border border-gray-200 bg-white p-5 shadow-sm' : 'p-5'">
                 <div
                   class="flex items-start
                          justify-between gap-4"
@@ -1455,6 +1459,9 @@ export class UserAdminComponent implements OnInit {
    * recalculates as the user types.
    */
   protected readonly searchTerm = signal('');
+
+  /** Table or cards, saved per admin (the user form opens in a dialog). */
+  protected readonly viewState = adminViewState('users');
 
   /**
    * Users matching the current search.
