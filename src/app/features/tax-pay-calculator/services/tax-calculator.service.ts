@@ -68,11 +68,47 @@ async loadConfiguration(): Promise<void> {
   }
 
   // No configuration activated yet on Admin → Tax & Pay: use the built-in
-  // 2026 rates so the calculator always works, for guests too.
+  // 2026 rates so the calculator always works, for guests too. A saved
+  // configuration missing newer fields (for example the married filing
+  // separately brackets) gets them from the built-in rates.
+  const builtIn = createTaxPayConfiguration2026();
+
   this.setConfiguration(
-    configuration ?? createTaxPayConfiguration2026(),
+    configuration
+      ? this.withDefaults(configuration, builtIn)
+      : builtIn,
   );
 }
+
+  /**
+   * Fill fields missing from a saved configuration with the built-in
+   * values. Saved values always win; arrays (brackets, local rates) are
+   * kept as saved unless missing or empty.
+   */
+  private withDefaults<T>(saved: T, defaults: T): T {
+    if (Array.isArray(defaults)) {
+      return (Array.isArray(saved) && saved.length > 0 ? saved : defaults) as T;
+    }
+
+    if (
+      defaults &&
+      typeof defaults === 'object'
+    ) {
+      if (!saved || typeof saved !== 'object' || Array.isArray(saved)) {
+        return defaults;
+      }
+
+      const result: Record<string, unknown> = { ...(saved as Record<string, unknown>) };
+
+      for (const [key, value] of Object.entries(defaults as Record<string, unknown>)) {
+        result[key] = this.withDefaults(result[key], value);
+      }
+
+      return result as T;
+    }
+
+    return (saved === undefined || saved === null ? defaults : saved) as T;
+  }
 
   /**
    * Returns the configuration currently used by the calculator.
@@ -665,6 +701,7 @@ async loadConfiguration(): Promise<void> {
   ): number {
     if (
       taxableIncome <= 0 ||
+      !Array.isArray(brackets) ||
       brackets.length === 0
     ) {
       return 0;
@@ -1037,17 +1074,21 @@ private getStateTaxBrackets(
 ): TaxBracket[] {
   switch (filingStatus) {
     case 'married-filing-jointly':
-      return state.bracketsMarriedJointly;
+      return state.bracketsMarriedJointly ?? [];
 
     case 'head-of-household':
-      return state.bracketsHeadOfHousehold;
+      return state.bracketsHeadOfHousehold?.length
+        ? state.bracketsHeadOfHousehold
+        : state.bracketsMarriedJointly ?? [];
 
     case 'married-filing-separately':
-      return state.bracketsMarriedSeparately;
+      return state.bracketsMarriedSeparately?.length
+        ? state.bracketsMarriedSeparately
+        : state.bracketsSingle ?? [];
 
     case 'single':
     default:
-      return state.bracketsSingle;
+      return state.bracketsSingle ?? [];
   }
 }
 

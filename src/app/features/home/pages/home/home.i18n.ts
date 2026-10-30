@@ -11,6 +11,8 @@ const EN = {
   exploreResources: 'Explore Resources',
   findOpportunities: 'Find Opportunities',
   donate: 'Donate',
+  register: 'Register',
+  signIn: 'Sign in',
 
   exploreEyebrow: 'Explore Zebron',
   exploreTitle: 'One platform, multiple ways to move forward.',
@@ -77,6 +79,8 @@ const FR: HomeText = {
   exploreResources: 'Explorer les ressources',
   findOpportunities: 'Trouver des opportunités',
   donate: 'Faire un don',
+  register: 'S’inscrire',
+  signIn: 'Se connecter',
 
   exploreEyebrow: 'Découvrir Zebron',
   exploreTitle: 'Une plateforme, de nombreuses façons d’avancer.',

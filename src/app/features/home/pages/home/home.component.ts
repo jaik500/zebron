@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 
 import { LocalizationService } from '../../../../core/services/localization.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 import { homeText } from './home.i18n';
  
@@ -133,7 +134,7 @@ import { homeText } from './home.i18n';
            justify-center gap-2
            rounded-lg
            bg-[#007979]
-           px-6 py-3.5
+           px-4 py-1.5
            text-sm font-bold
            text-white
            shadow-lg shadow-black/10
@@ -147,6 +148,41 @@ import { homeText } from './home.i18n';
                 </mat-icon>
               </a>
  
+              @if (signedOut()) {
+                <a
+                  routerLink="/register"
+                  class="inline-flex items-center
+             justify-center gap-2
+             rounded-lg
+             bg-white
+             px-4 py-1.5
+             text-sm font-bold
+             text-[#032D42]
+             shadow-lg shadow-black/10
+             transition
+             hover:bg-[#E5F4F4]"
+                >
+                  <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">person_add</mat-icon>
+                  {{ t().register }}
+                </a>
+
+                <a
+                  routerLink="/login"
+                  class="inline-flex items-center
+             justify-center gap-2
+             rounded-lg
+             border border-white/25
+             bg-white/5
+             px-4 py-1.5
+             text-sm font-bold
+             text-white
+             transition
+             hover:bg-white/10"
+                >
+                  <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">login</mat-icon>
+                  {{ t().signIn }}
+                </a>
+              } @else {
               <a
                 routerLink="/find"
                 class="inline-flex items-center
@@ -154,7 +190,7 @@ import { homeText } from './home.i18n';
            rounded-lg
            border border-white/25
            bg-white/5
-           px-6 py-3.5
+           px-4 py-1.5
            text-sm font-bold
            text-white
            transition
@@ -162,6 +198,7 @@ import { homeText } from './home.i18n';
               >
                 {{ t().findOpportunities }}
               </a>
+              }
  
               <a
                 routerLink="/donate"
@@ -170,7 +207,7 @@ import { homeText } from './home.i18n';
            rounded-lg
            border border-[#65CFCF]/50
            bg-[#65CFCF]/10
-           px-6 py-3.5
+           px-4 py-1.5
            text-sm font-bold
            text-[#B9F0ED]
            transition
@@ -1121,6 +1158,11 @@ export class HomeComponent {
   // =========================================================
 
   private readonly localization = inject(LocalizationService);
+
+  private readonly auth = inject(AuthService);
+
+  /** Show Create account / Sign in only to visitors who aren't signed in. */
+  protected readonly signedOut = computed(() => !this.auth.isLoading() && !this.auth.firebaseUser());
 
   /** Page text in the selected language (English fallback). */
   protected readonly t = computed(() => homeText(this.localization.language()));

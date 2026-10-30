@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
  
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -752,9 +752,51 @@ import { LoggerService } from '../../../../core/services/logger.service';
  
         <!-- Results -->
         @if (result(); as calculation) {
-          <mat-card class="mt-6 !rounded-2xl">
+          <mat-card
+            id="tax-results"
+            tabindex="-1"
+            class="mt-6 scroll-mt-24 !rounded-2xl outline-none"
+            aria-label="Your take-home pay estimate"
+          >
             <div class="p-5 md:p-7">
-              <div class="text-center">
+              <!-- Pay Period Estimates -->
+              <div>
+                <h3 class="mb-4 text-lg font-semibold">Pay Period Estimates</h3>
+ 
+                <div
+                  class="
+                    grid
+                    gap-3
+                    sm:grid-cols-2
+                    lg:grid-cols-4
+                  "
+                >
+                  @for (period of payPeriods; track period.key) {
+                    <div
+                      [class]="selectedFrequency() === period.key
+                        ? 'relative rounded-xl border-2 border-[#007979] bg-[#E5F4F4] p-4 shadow-sm ring-4 ring-[#007979]/15'
+                        : 'rounded-xl border p-4'"
+                      [attr.aria-current]="selectedFrequency() === period.key ? 'true' : null"
+                    >
+                      <div class="flex items-center justify-between gap-2">
+                        <div [class]="selectedFrequency() === period.key ? 'text-xs font-semibold text-[#006666]' : 'text-xs text-slate-500'">
+                          {{ period.label }}
+                        </div>
+                        @if (selectedFrequency() === period.key) {
+                          <span class="rounded-full bg-[#007979] px-2 py-0.5 text-[11px] font-semibold text-white">Your pay</span>
+                        }
+                      </div>
+
+                      <div [class]="selectedFrequency() === period.key ? 'mt-1 text-2xl font-bold text-[#032D42]' : 'mt-1 text-lg font-semibold'">
+                        {{ calculation[period.key].netIncome | currency }}
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+ 
+              <!-- Annual summary -->
+              <div class="mt-7 border-t pt-6 text-center">
                 <p
                   class="
                     text-sm
@@ -768,12 +810,9 @@ import { LoggerService } from '../../../../core/services/logger.service';
                 </p>
  
                 <div
-                  class="
-                    mt-2
-                    text-4xl
-                    font-bold
-                    text-slate-900
-                  "
+                  [class]="selectedFrequency() === 'annually'
+                    ? 'mx-auto mt-2 inline-block rounded-xl bg-[#E5F4F4] px-4 py-1 text-4xl font-bold text-[#006666] ring-2 ring-[#007979]'
+                    : 'mt-2 text-4xl font-bold text-slate-900'"
                 >
                   {{ calculation.netIncome | currency }}
                 </div>
@@ -910,52 +949,6 @@ import { LoggerService } from '../../../../core/services/logger.service';
                 </div>
               </div>
  
-              <!-- Pay Period Estimates -->
-              <div class="mt-7 border-t pt-5">
-                <h3 class="mb-4 text-lg font-semibold">Pay Period Estimates</h3>
- 
-                <div
-                  class="
-                    grid
-                    gap-3
-                    sm:grid-cols-2
-                    lg:grid-cols-4
-                  "
-                >
-                  <div class="rounded-xl border p-4">
-                    <div class="text-xs text-slate-500">Weekly</div>
- 
-                    <div class="mt-1 text-lg font-semibold">
-                      {{ calculation.weekly.netIncome | currency }}
-                    </div>
-                  </div>
- 
-                  <div class="rounded-xl border p-4">
-                    <div class="text-xs text-slate-500">Biweekly</div>
- 
-                    <div class="mt-1 text-lg font-semibold">
-                      {{ calculation.biweekly.netIncome | currency }}
-                    </div>
-                  </div>
- 
-                  <div class="rounded-xl border p-4">
-                    <div class="text-xs text-slate-500">Semimonthly</div>
- 
-                    <div class="mt-1 text-lg font-semibold">
-                      {{ calculation.semimonthly.netIncome | currency }}
-                    </div>
-                  </div>
- 
-                  <div class="rounded-xl border p-4">
-                    <div class="text-xs text-slate-500">Monthly</div>
- 
-                    <div class="mt-1 text-lg font-semibold">
-                      {{ calculation.monthly.netIncome | currency }}
-                    </div>
-                  </div>
-                </div>
-              </div>
- 
               <div
                 class="
                   mt-6
@@ -987,6 +980,24 @@ import { LoggerService } from '../../../../core/services/logger.service';
 })
 export class TaxPayCalculatorComponent {
   private readonly taxCalculatorService = inject(TaxCalculatorService);
+
+  private readonly injector = inject(Injector);
+
+  /** Pay-period cards under "Pay Period Estimates". */
+  protected readonly payPeriods = [
+    { key: 'weekly', label: 'Weekly' },
+    { key: 'biweekly', label: 'Biweekly' },
+    { key: 'semimonthly', label: 'Semimonthly' },
+    { key: 'monthly', label: 'Monthly' },
+  ] as const;
+
+  /**
+   * The pay frequency to highlight in the results: the W-2 pay frequency
+   * (W-2 or mixed income). Pure 1099 income has no pay schedule.
+   */
+  protected readonly selectedFrequency = computed(() =>
+    this.workerType() === '1099' ? null : this.w2Income().payFrequency,
+  );
  
   private readonly logger =
   inject(LoggerService);
@@ -1375,6 +1386,16 @@ protected async calculate(): Promise<void> {
       this.taxCalculatorService.calculate(input);
  
     this.result.set(calculation);
+
+    // Bring the results into view and move focus there once they render.
+    afterNextRender(
+      () => {
+        const results = document.getElementById('tax-results');
+        results?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        results?.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
   } catch (error) {
     this.result.set(null);
  
