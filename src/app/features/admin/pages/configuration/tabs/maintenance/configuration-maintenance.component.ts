@@ -159,11 +159,11 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
   <mat-card appearance="outlined" class="!rounded-xl">
     <mat-card-content class="!p-2">
       <a
-        href="https://www.google.com/"
+        href="https://aistudio.google.com/app/apikey"
         target="_blank"
         class="text-sm"
       >
-        Placeholder
+        Google’s Gemini 2.5 Flash-Lite
       </a>
     </mat-card-content>
   </mat-card>
