@@ -268,6 +268,19 @@ export const routes: Routes = [
         },
         loadComponent: () => import('./features/partner/pages/member-profile/member-profile.component').then((m) => m.MemberProfileComponent),
     },
+    {
+        path: 'partner/org/:organizationId/mailbox',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            partnerRoleGuard,
+        ],
+        data: {
+            title: 'Partner | Mailbox',
+            minimumOrganizationRole: 'org_manager',
+        },
+        loadComponent: () => import('./features/partner/mailbox/organization-mailbox.component').then((m) => m.OrganizationMailboxComponent),
+    },
     // =====================================================
     // COMMUNITY
     // =====================================================

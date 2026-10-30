@@ -3645,8 +3645,8 @@ service cloud.firestore {
      * Email sent to org+<slug>@zebron.org is stored here by the
      * receiveInboundEmail Cloud Function (Admin SDK, bypasses rules).
      *
-     * - Organization owners/admins can read their organization's mail
-     *   and mark it read/archived.
+     * - Organization owners, admins and managers can read their
+     *   organization's mail and mark it read/archived.
      * - Platform administrators retain access for support.
      * - Clients can never create messages or change their content.
      * - Only platform administrators can permanently delete.
@@ -3656,7 +3656,7 @@ service cloud.firestore {
       allow get, list: if isPlatformAdmin()
         || (
           isOrganizationConfigurable(organizationId)
-          && isOrganizationAdmin(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
         );
  
       allow create: if false;
@@ -3664,7 +3664,7 @@ service cloud.firestore {
       allow update: if isPlatformAdmin()
         || (
           isOrganizationConfigurable(organizationId)
-          && isOrganizationAdmin(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
           && request.resource.data.diff(resource.data)
             .affectedKeys()
             .hasOnly(["status", "read", "archived", "updatedAt"])
@@ -3672,6 +3672,24 @@ service cloud.firestore {
         );
  
       allow delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // ORGANIZATION SENT MESSAGES (mailbox)
+    // ============================================================
+
+    /*
+     * Written only by the sendOrganizationMailboxEmail Cloud Function.
+     * Managers, admins and owners can read the organization's sent mail.
+     */
+    match /organizations/{organizationId}/sentMessages/{messageId} {
+      allow get, list: if isPlatformAdmin()
+        || (
+          isOrganizationConfigurable(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+        );
+
+      allow create, update, delete: if false;
     }
 
         // ============================================================

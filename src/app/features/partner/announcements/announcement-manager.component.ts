@@ -133,7 +133,7 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
           <mat-form-field appearance="outline" class="zb-field md:col-span-2">
             <mat-label>Button link</mat-label>
             <input matInput type="url" inputmode="url" [ngModel]="draft.ctaUrl ?? ''" (ngModelChange)="patch({ ctaUrl: $event })" name="ctaUrl" placeholder="https://" />
-            <mat-hint>Optional. Must start with https://</mat-hint>
+            <mat-hint>Optional. The button only appears when there's a link (https://).</mat-hint>
           </mat-form-field>
         </div>
 

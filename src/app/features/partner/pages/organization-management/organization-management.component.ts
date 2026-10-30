@@ -26,6 +26,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { AnnouncementManagerComponent } from '../../announcements/announcement-manager.component';
+import {
+  OrganizationMailboxService,
+  organizationMailboxAddress,
+} from '../../mailbox/organization-mailbox.service';
 interface CreateOrganizationInvitationRequest {
   organizationId: string;
   email: string;
@@ -239,6 +243,33 @@ interface RoleGroup {
                 </div>
               </section>
           </div>
+          }
+
+          <!-- MAILBOX: managers and above -->
+          @if (canUseMailbox()) {
+            <a
+              [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'mailbox']"
+              class="mb-8 flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md sm:px-6"
+            >
+              <span class="flex min-w-0 items-center gap-3">
+                <span class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
+                  <mat-icon>mail</mat-icon>
+                  @if (mailboxUnread() > 0) {
+                    <span class="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-[#007979] px-1.5 text-center text-[11px] font-bold leading-5 text-white">
+                      {{ mailboxUnread() > 99 ? '99+' : mailboxUnread() }}
+                    </span>
+                  }
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Communication</span>
+                  <span class="mt-1 block text-lg font-bold text-gray-900">Mailbox</span>
+                  <span class="mt-1 block break-all text-sm text-gray-600">
+                    Send and receive email{{ mailboxAddress() ? ' at ' + mailboxAddress() : '' }}.
+                  </span>
+                </span>
+              </span>
+              <mat-icon class="shrink-0 text-[#007979]">arrow_forward</mat-icon>
+            </a>
           }
 
           <!-- DASHBOARD BANNERS: managers and above -->
@@ -846,10 +877,20 @@ export class OrganizationManagementComponent implements OnInit {
   private readonly pageTitleService = inject(PageTitleService);
 
   private readonly membershipService = inject(OrganizationMembershipService);
+  private readonly mailboxService = inject(OrganizationMailboxService);
 
   protected readonly members = signal<OrganizationMembership[]>([]);
   protected readonly accessControlExpanded = signal(false);
   protected readonly announcementsExpanded = signal(false);
+
+  /** Organization mailbox: managers and above. */
+  protected readonly canUseMailbox = computed(() => this.access.can('mailbox.access'));
+
+  protected readonly mailboxUnread = signal(0);
+
+  protected readonly mailboxAddress = computed(() =>
+    organizationMailboxAddress(this.organizationStore.selectedOrganization()?.slug),
+  );
 
   /** Dashboard banners: managers and above. */
   protected readonly canManageAnnouncements = computed(() =>
@@ -1004,6 +1045,13 @@ export class OrganizationManagementComponent implements OnInit {
       await this.organizationStore.loadOrganizationContext(organizationId);
 
       this.pageTitleService.setTitle('Organization Management');
+
+      if (this.canUseMailbox()) {
+        this.mailboxService
+          .countUnread(organizationId)
+          .then((count) => this.mailboxUnread.set(count))
+          .catch(() => this.mailboxUnread.set(0));
+      }
 
       await this.loadMembers();
     } catch {

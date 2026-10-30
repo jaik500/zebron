@@ -121,9 +121,7 @@ export class OrganizationAnnouncementService {
       throw new Error('The button link must start with https://');
     }
 
-    if (ctaLabel && !ctaUrl) {
-      throw new Error('Add a link for the button, or clear the button text.');
-    }
+    // No link means no button; the starter button text is simply dropped.
 
     const imageUrl = input.imageUrl?.trim() || null;
 
