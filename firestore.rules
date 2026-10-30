@@ -3552,6 +3552,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Help assistant usage counters (rate limiting).
+    match /assistantUsage/{usageId} {
+      allow read, write: if false;
+    }
+
     match /organizationServiceRequests/{requestId} {
       allow read, write: if false;
     }

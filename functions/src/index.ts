@@ -2485,6 +2485,7 @@ export {
   listOrganizationSupportTickets,
   updateSupportTicket,
 } from "./support-tickets";
+export { askSupportAssistant } from "./support-assistant";
 export {
   getOrganizationMemberDirectory,
   getOrganizationMemberProfile,

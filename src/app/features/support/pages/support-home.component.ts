@@ -322,6 +322,10 @@ export class SupportHomeComponent implements OnInit {
       this.category = category as TicketCategory;
     }
 
+    // Prefilled by the help assistant's "open a support ticket".
+    this.subject = params.get('subject')?.slice(0, 150) ?? '';
+    this.description = params.get('details')?.slice(0, 10000) ?? '';
+
     if (params.get('tab') === 'mine') {
       this.tab.set('mine');
     }
