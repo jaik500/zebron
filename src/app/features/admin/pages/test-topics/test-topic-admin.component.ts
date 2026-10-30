@@ -6,6 +6,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 
 import { HotToastService } from '@ngxpert/hot-toast';
+import { PageTitleService } from '../../../../core/services/page-title.service';
 
 import { TestCourse } from '../../../../features/test-center/models/test-course.model';
 import { TestTopic } from '../../../../features/test-center/models/test-topic.model';
@@ -33,7 +34,7 @@ import { MatButtonModule } from '@angular/material/button';
      PAGE HEADER
      ============================================================ -->
 
-      <header class="bg-[#032D42] shadow-md">
+      <header class="bg-[#032D42] shadow-md mt-16">
         <div
           class="mx-auto max-w-7xl
            px-4 py-2
@@ -944,7 +945,12 @@ export class TestTopicAdminComponent implements OnInit {
   // INITIALIZATION
   // =========================================================
 
+  private readonly pageTitleService = inject(PageTitleService);
+
   async ngOnInit(): Promise<void> {
+    // Set straight away, like Courses and Questions, before data loads.
+    this.pageTitleService.setTitle('Test Center Topics');
+
     await Promise.all([this.loadCourses(), this.loadTopics()]);
   }
 

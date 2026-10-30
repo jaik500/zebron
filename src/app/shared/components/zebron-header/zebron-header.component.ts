@@ -283,6 +283,27 @@ import {
           >
  
             <!-- =================================================
+                 ALL APPS (public directory, every screen size)
+                 ================================================= -->
+
+            <a
+              mat-icon-button
+              routerLink="/apps"
+              matTooltip="All Zebron apps"
+              aria-label="All Zebron apps"
+              class="
+                !h-10
+                !w-10
+                !shrink-0
+                !text-white
+                hover:!bg-white/10
+              "
+            >
+              <mat-icon>apps</mat-icon>
+            </a>
+
+
+            <!-- =================================================
                  LANGUAGE SWITCHER
                  ================================================= -->
  

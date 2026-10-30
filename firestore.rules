@@ -4305,6 +4305,31 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // TAX & PAY CALCULATOR CONFIGURATION (public, free tool)
+    // ============================================================
+
+    /*
+     * The public Tax & Pay Calculator (/tax-calculator) is free for
+     * everyone, including visitors who are not signed in. It reads the
+     * tax-year configurations (brackets, deductions and rates: public
+     * information, nothing personal or secret). Only platform
+     * administrators create, change, activate or delete them on
+     * Admin → Tax & Pay. Calculations run in the browser; nothing a
+     * visitor enters is stored.
+     */
+    match /taxPayConfigurations/{configurationId} {
+      allow get, list: if true;
+
+      allow create, update: if isPlatformAdmin()
+        && request.resource.data.taxYear is int
+        && request.resource.data.taxYear >= 2000
+        && request.resource.data.taxYear <= 2100
+        && request.resource.data.active is bool;
+
+      allow delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
     // HELP ASSISTANT SETTINGS
     // ============================================================
 

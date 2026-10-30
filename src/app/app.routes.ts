@@ -771,6 +771,9 @@ export const routes: Routes = [
     // -----------------------------------------------------
     {
         path: 'partner/dashboard',
+        data: {
+            title: 'Zebron | Partner Dashboard',
+        },
         canActivate: [
             authGuard,
             partnerAdminGuard,
@@ -829,6 +832,9 @@ export const routes: Routes = [
     // -----------------------------------------------------
     {
         path: 'admin',
+        data: {
+            title: 'Admin | Admin Dashboard',
+        },
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/pages/admin-dashboard/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
     },
@@ -848,6 +854,9 @@ export const routes: Routes = [
     // -----------------------------------------------------
     {
         path: 'admin/users',
+        data: {
+            title: 'Admin | Users',
+        },
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/pages/users/user-admin.component').then((m) => m.UserAdminComponent),
     },
@@ -870,6 +879,7 @@ export const routes: Routes = [
         path: 'admin/resource-types',
         canActivate: [adminGuard, featureGuard],
         data: {
+            title: 'Admin | Resource Types',
             featureKey: 'resources',
         },
         loadComponent: () => import('./features/admin/pages/resource-types/resource-type-admin.component').then((m) => m.ResourceTypeAdminComponent),
@@ -879,6 +889,9 @@ export const routes: Routes = [
     // -----------------------------------------------------
     {
         path: 'admin/categories',
+        data: {
+            title: 'Admin | Categories',
+        },
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/pages/categories/category-admin.component').then((m) => m.CategoryAdminComponent),
     },
@@ -887,6 +900,9 @@ export const routes: Routes = [
     // -----------------------------------------------------
     {
         path: 'admin/locations',
+        data: {
+            title: 'Admin | Locations',
+        },
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/pages/locations/location-admin.component').then((m) => m.LocationAdminComponent),
     },
@@ -895,6 +911,9 @@ export const routes: Routes = [
     // -----------------------------------------------------
     {
         path: 'admin/submissions',
+        data: {
+            title: 'Admin | Submissions',
+        },
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/pages/submissions/submission-admin.component').then((m) => m.SubmissionAdminComponent),
     },
@@ -964,6 +983,7 @@ export const routes: Routes = [
         canActivate: [adminGuard, featureGuard],
         data: {
             featureKey: 'test-center',
+            title: 'Admin | Test Center Courses',
         },
         loadComponent: () => import('./features/admin/pages/test-courses/test-course-admin.component').then((m) => m.TestCourseAdminComponent),
     },
@@ -972,7 +992,7 @@ export const routes: Routes = [
         canActivate: [adminGuard, featureGuard],
         data: {
             featureKey: 'test-center',
-            title: 'Zebron | Test Center questions',
+            title: 'Admin | Test Center Questions',
         },
         loadComponent: () => import('./features/admin/pages/test-questions/test-question-admin.component').then((m) => m.TestQuestionAdminComponent),
     },
@@ -981,7 +1001,7 @@ export const routes: Routes = [
         canActivate: [adminGuard, featureGuard],
         data: {
             featureKey: 'test-center',
-            title: 'Zebron | Test Center topics',
+            title: 'Admin | Test Center Topics',
         },
         loadComponent: () => import('./features/admin/pages/test-topics/test-topic-admin.component').then((m) => m.TestTopicAdminComponent),
     },
@@ -1145,6 +1165,7 @@ export const routes: Routes = [
         path: 'admin/business',
         canActivate: [adminGuard, featureGuard],
         data: {
+            title: 'Admin | Business Operations',
             featureKey: 'business-operations',
         },
         loadComponent: () => import('./features/business/pages/business-dashboard/business-dashboard.component').then((m) => m.BusinessDashboardComponent),
@@ -1153,6 +1174,7 @@ export const routes: Routes = [
         path: 'admin/business/profile',
         canActivate: [adminGuard, featureGuard],
         data: {
+            title: 'Admin | Business Profile',
             featureKey: 'business-operations',
         },
         loadComponent: () => import('./features/business/pages/business-profile/business-profile.component').then((m) => m.BusinessProfileComponent),
@@ -1162,11 +1184,17 @@ export const routes: Routes = [
     // -----------------------------------------------------
     {
         path: 'admin/contact',
+        data: {
+            title: 'Admin | Contact Mailbox',
+        },
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/pages/contact/contact-mailbox.component').then((m) => m.ContactMailboxComponent),
     },
     {
         path: 'admin/contact/sent',
+        data: {
+            title: 'Admin | Sent Email',
+        },
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/pages/contact/sent/sent-email.component').then((m) => m.SentEmailComponent),
     },
@@ -1182,6 +1210,9 @@ export const routes: Routes = [
     //
     {
         path: 'feature-unavailable',
+        data: {
+            title: 'Zebron | Unavailable',
+        },
         loadComponent: () => import('./shared/pages/feature-unavailable/feature-unavailable.component').then((m) => m.FeatureUnavailableComponent),
     },
     // -----------------------------------------------------

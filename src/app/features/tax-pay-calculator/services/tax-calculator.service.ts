@@ -21,6 +21,7 @@ import {
 } from '../../../core/models/tax-pay-configuration.model';
 
 import { TaxCalculatorConfigurationService } from './tax-calculator-configuration.service';
+import { createTaxPayConfiguration2026 } from '../data/tax-pay-configuration-2026';
 
 @Injectable({
   providedIn: 'root',
@@ -52,16 +53,25 @@ export class TaxCalculatorService {
    * service itself to initialize its configuration.
    */
 async loadConfiguration(): Promise<void> {
-  const configuration =
-    await this.configurationService.getActive();
+  let configuration: TaxPayConfiguration | null = null;
 
-  if (!configuration) {
-    throw new Error(
-      'No active tax configuration is available.',
+  try {
+    configuration =
+      await this.configurationService.getActive();
+  } catch (error) {
+    // Offline, or the database could not be reached: the calculator is a
+    // free public tool, so fall back to the built-in rates below.
+    console.warn(
+      '[Zebron] Tax & Pay configuration could not be loaded; using the built-in 2026 rates.',
+      error,
     );
   }
 
-  this.setConfiguration(configuration);
+  // No configuration activated yet on Admin → Tax & Pay: use the built-in
+  // 2026 rates so the calculator always works, for guests too.
+  this.setConfiguration(
+    configuration ?? createTaxPayConfiguration2026(),
+  );
 }
 
   /**

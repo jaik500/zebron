@@ -94,6 +94,18 @@ import { RouterLink } from '@angular/router';
             >
               <li>
                 <a
+                  routerLink="/apps"
+                  class="text-sm
+                         text-white/70
+                         transition
+                         hover:text-white"
+                >
+                  All Zebron apps
+                </a>
+              </li>
+
+              <li>
+                <a
                   routerLink="/about"
                   class="text-sm
                          text-white/70
@@ -128,17 +140,7 @@ import { RouterLink } from '@angular/router';
                 </a>
               </li>
 
-              <li>
-                <a
-                  routerLink="/contact"
-                  class="text-sm
-                         text-white/70
-                         transition
-                         hover:text-white"
-                >
-                  Contact
-                </a>
-              </li>
+              
             </ul>
           </div>
 
@@ -192,6 +194,17 @@ import { RouterLink } from '@angular/router';
                hover:text-white"
                 >
                   FAQ
+                </a>
+              </li>
+              <li>
+                <a
+                  routerLink="/contact"
+                  class="text-sm
+                         text-white/70
+                         transition
+                         hover:text-white"
+                >
+                  Contact
                 </a>
               </li>
             </ul>

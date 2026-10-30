@@ -1,8 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 
 import { AuthService } from '../../../../core/services/auth.service';
+import { firestore } from '../../../../core/services/firebase-config';
 import { LocationStore } from '../../../locations/stores/location.store';
 import { Location } from '../../../../core/models/location.model';
 import { HotToastService } from '@ngxpert/hot-toast';
@@ -27,7 +30,7 @@ interface AdminDashboardCard {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, MatIconModule],
   template: `
     <div class="min-h-screen bg-gray-50 mt-16">
       <!-- =========================================================
@@ -308,14 +311,44 @@ interface AdminDashboardCard {
               Zebron Administration
             </p>
 
-            <h2
-              class="text-xl
-                     font-semibold
-                     text-[#032D42]
-                     sm:text-xl"
-            >
-              Manage content
-            </h2>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <h2
+                class="text-xl
+                       font-semibold
+                       text-[#032D42]
+                       sm:text-xl"
+              >
+                Manage content
+              </h2>
+              @if (favoriteRoutes().length) {
+                <p class="text-xs text-gray-500 sm:order-last sm:w-full">
+                  ★ {{ favoriteRoutes().length }} favorite{{ favoriteRoutes().length === 1 ? '' : 's' }} pinned to the top. Click a star to pin or unpin.
+                </p>
+              }
+
+              <!-- Search the admin tools -->
+              <div class="relative w-full sm:max-w-sm">
+                <mat-icon
+                  class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 !text-gray-400"
+                  aria-hidden="true"
+                >
+                  search
+                </mat-icon>
+                <input
+                  #cardSearchInput
+                  type="search"
+                  class="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-16 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-[#007979] focus:ring-4 focus:ring-[#007979]/15"
+                  placeholder="Search admin tools, e.g. jobs, tickets, knowledge"
+                  aria-label="Search admin tools"
+                  [value]="cardSearch()"
+                  (input)="cardSearch.set(cardSearchInput.value)"
+                  (keydown.escape)="cardSearch.set('')"
+                />
+                <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                  {{ filteredCards().length }} / {{ managementCards.length }}
+                </span>
+              </div>
+            </div>
           </div>
 
           <!-- =====================================================
@@ -343,10 +376,27 @@ interface AdminDashboardCard {
                    sm:gap-6
                    lg:grid-cols-4"
           >
-            @for (card of managementCards; track card.route) {
+            @for (card of filteredCards(); track card.route) {
+              <div class="relative min-w-0">
+              <!-- Favorite: pins the tool to the top of the page -->
+              <button
+                type="button"
+                class="absolute right-1.5 top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-amber-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-300/50 sm:right-3 sm:top-3"
+                [class]="isFavorite(card) ? 'text-amber-500' : 'text-gray-300 hover:text-amber-500'"
+                [attr.aria-pressed]="isFavorite(card)"
+                [attr.aria-label]="(isFavorite(card) ? 'Remove from favorites: ' : 'Add to favorites: ') + card.title"
+                [title]="isFavorite(card) ? 'Remove from favorites' : 'Add to favorites (shows at the top)'"
+                (click)="toggleFavorite(card)"
+              >
+                <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">{{ isFavorite(card) ? 'star' : 'star_outline' }}</mat-icon>
+              </button>
+
               <a
                 [routerLink]="card.route"
+                [style.border-color]="isFavorite(card) ? '#fcd34d' : null"
                 class="group
+                       block h-full
+                       pr-9 sm:pr-6
                        rounded-lg
                        border border-gray-200
                        bg-white
@@ -770,6 +820,9 @@ interface AdminDashboardCard {
                         />
                       </svg>
                     }
+                    @default {
+                      <mat-icon aria-hidden="true">{{ card.icon }}</mat-icon>
+                    }
                   }
                 </div>
 
@@ -817,8 +870,21 @@ interface AdminDashboardCard {
                   {{ card.actionLabel }} →
                 </div>
               </a>
+              </div>
             }
           </div>
+
+          @if (filteredCards().length === 0) {
+            <div class="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center">
+              <mat-icon class="!text-gray-400" aria-hidden="true">search_off</mat-icon>
+              <p class="mt-2 font-semibold text-[#032D42]">No admin tools match "{{ cardSearch() }}"</p>
+              <p class="mt-1 text-sm text-gray-500">Looking for a public app? Try the All Zebron apps page.</p>
+              <div class="mt-4 flex gap-2">
+                <button type="button" class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-400" (click)="cardSearch.set('')">Clear search</button>
+                <a routerLink="/apps" class="rounded-lg bg-[#007979] px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-700">All Zebron apps</a>
+              </div>
+            </div>
+          }
         </section>
       </main>
     </div>
@@ -872,6 +938,105 @@ export class AdminDashboardComponent {
    * require adding a new object here rather than duplicating
    * card markup in the template.
    */
+  /** Text typed in the admin tools search box. */
+  protected readonly cardSearch = signal('');
+
+  // ============================================================
+  // FAVORITES (pinned to the top; saved on the admin's profile)
+  // ============================================================
+
+  private static readonly FAVORITES_KEY = 'zebron:admin:favorites';
+
+  /** Routes of the favorite cards, in the order they were pinned. */
+  protected readonly favoriteRoutes = signal<string[]>(this.readLocalFavorites());
+
+  private favoritesLoadedFor: string | null = null;
+
+  private readonly loadFavorites = effect(() => {
+    const uid = this.authService.firebaseUser()?.uid;
+    if (!uid || this.favoritesLoadedFor === uid) {
+      return;
+    }
+    this.favoritesLoadedFor = uid;
+
+    void getDoc(doc(firestore, 'users', uid))
+      .then((snapshot) => {
+        const saved = snapshot.data()?.['adminFavorites'];
+        if (Array.isArray(saved)) {
+          const routes = saved.filter((route): route is string => typeof route === 'string');
+          this.favoriteRoutes.set(routes);
+          this.writeLocalFavorites(routes);
+        }
+      })
+      .catch(() => {
+        // Keep the favorites remembered in this browser.
+      });
+  });
+
+  protected isFavorite(card: AdminDashboardCard): boolean {
+    return this.favoriteRoutes().includes(card.route);
+  }
+
+  protected async toggleFavorite(card: AdminDashboardCard): Promise<void> {
+    const routes = this.isFavorite(card)
+      ? this.favoriteRoutes().filter((route) => route !== card.route)
+      : [...this.favoriteRoutes(), card.route];
+
+    this.favoriteRoutes.set(routes);
+    this.writeLocalFavorites(routes);
+
+    const uid = this.authService.firebaseUser()?.uid;
+    if (!uid) {
+      return;
+    }
+
+    try {
+      // Saved on the admin's profile so favorites follow them to other devices.
+      await updateDoc(doc(firestore, 'users', uid), { adminFavorites: routes });
+    } catch {
+      this.toast.error('Favorites are saved in this browser only; they could not be saved to your profile.');
+    }
+  }
+
+  private readLocalFavorites(): string[] {
+    try {
+      const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(AdminDashboardComponent.FAVORITES_KEY);
+      const value = raw ? JSON.parse(raw) : [];
+      return Array.isArray(value) ? value.filter((route): route is string => typeof route === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private writeLocalFavorites(routes: string[]): void {
+    try {
+      localStorage.setItem(AdminDashboardComponent.FAVORITES_KEY, JSON.stringify(routes));
+    } catch {
+      // Storage unavailable (private window); the profile copy still applies.
+    }
+  }
+
+  /** Favorites first (in pinned order), then the rest in their usual order. */
+  private readonly orderedCards = computed(() => {
+    const favorites = this.favoriteRoutes();
+    const pinned = favorites
+      .map((route) => this.managementCards.find((card) => card.route === route))
+      .filter((card): card is AdminDashboardCard => !!card);
+    return [...pinned, ...this.managementCards.filter((card) => !favorites.includes(card.route))];
+  });
+
+  /** Management cards matching every word of the search (title, description, action). */
+  protected readonly filteredCards = computed(() => {
+    const words = this.cardSearch().trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      return this.orderedCards();
+    }
+    return this.orderedCards().filter((card) => {
+      const text = `${card.title} ${card.description} ${card.actionLabel} ${card.route}`.toLowerCase();
+      return words.every((word) => text.includes(word));
+    });
+  });
+
   protected readonly managementCards: AdminDashboardCard[] = [
     {
       title: 'Categories',
@@ -1014,6 +1179,13 @@ export class AdminDashboardComponent {
       route: '/admin/configuration/help-assistant',
       actionLabel: 'Configure Assistant',
       icon: 'forum',
+    },
+    {
+      title: 'All Zebron Apps',
+      description: 'The public directory of every Zebron app (resources, jobs, training, Test Center, Community, tools), as visitors see it.',
+      route: '/apps',
+      actionLabel: 'View Public Apps',
+      icon: 'apps',
     },
     {
       title: 'Support',
