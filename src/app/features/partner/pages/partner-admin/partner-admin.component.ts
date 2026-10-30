@@ -379,10 +379,9 @@ interface DashboardCard {
             PROFILE CARD
             ========================================================= -->
 
-            <a
-              routerLink="/profile"
-              class="group block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md lg:min-w-[250px]"
-              aria-label="View and manage your profile"
+            <!-- The whole card opens Profile (stretched link); Help & Support sits above it. -->
+            <div
+              class="group relative block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md lg:min-w-[250px]"
             >
               <div class="flex items-start justify-between gap-4">
                 <div>
@@ -398,17 +397,32 @@ interface DashboardCard {
                     </div>
 
                     <div>
-                      <p class="font-semibold text-gray-900 group-hover:text-[#007979]">Profile</p>
+                      <a
+                        routerLink="/profile"
+                        aria-label="View and manage your profile"
+                        class="font-semibold text-gray-900 after:absolute after:inset-0 after:rounded-xl after:content-[''] group-hover:text-[#007979] focus:outline-none focus-visible:after:ring-2 focus-visible:after:ring-[#007979]"
+                      >Profile</a>
                       <p class="text-sm text-gray-500">View and manage your personal profile</p>
                     </div>
                   </div>
-                  <div
-                    class="mt-3 mr-5 inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/20"
-                  >
-                    Role:
-                    <span class="font-medium text-gray-700">
-                      {{ roleLabel() }}
-                    </span>
+                  <div class="mt-3 flex flex-wrap items-center gap-2">
+                    <div
+                      class="inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979]"
+                    >
+                      Role:
+                      <span class="font-medium text-gray-700">
+                        {{ roleLabel() }}
+                      </span>
+                    </div>
+
+                    <a
+                      routerLink="/support"
+                      [queryParams]="supportQuery()"
+                      class="relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-[#007979]/30 bg-white px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]"
+                    >
+                      <mat-icon class="!h-4 !w-4 !text-base">support_agent</mat-icon>
+                      Help &amp; Support
+                    </a>
                   </div>
                 </div>
 
@@ -416,7 +430,7 @@ interface DashboardCard {
                   arrow_forward
                 </mat-icon>
               </div>
-            </a>
+            </div>
           </section>
 
           <!-- =====================================================
@@ -844,6 +858,16 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
   /** Staff, managers, admins and owners see the Test Center settings icon. */
   protected canManageTestCenter(): boolean {
     return this.access.can('testCenter.settings');
+  }
+
+  /**
+   * Help & Support opens for this organization. Managers and above can file
+   * it as an organization ticket; everyone else files a personal one.
+   */
+  protected supportQuery(): Record<string, string> {
+    const organizationId = this.organizationStore.selectedOrganizationId();
+
+    return organizationId && this.access.canAccessAdministration() ? { organizationId } : {};
   }
 
   /** Organization Management (Administration) page for this organization. */

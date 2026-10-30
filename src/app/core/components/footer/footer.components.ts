@@ -185,31 +185,6 @@ import { RouterLink } from '@angular/router';
 
               <li>
                 <a
-                  routerLink="/support"
-                  class="text-sm
-                         font-semibold
-                         text-[#7CC242]
-                         transition
-                         hover:text-white"
-                >
-                  Help &amp; Support
-                </a>
-              </li>
-
-              <li>
-                <a
-                  routerLink="/accessibility"
-                  class="text-sm
-                         text-white/70
-                         transition
-                         hover:text-white"
-                >
-                  Accessibility
-                </a>
-              </li>
-
-              <li>
-                <a
                   routerLink="/faq"
                   class="text-sm
                text-white/70
