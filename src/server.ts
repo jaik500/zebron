@@ -64,6 +64,46 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 const app = express();
 
 /**
+ * Security headers on every response.
+ *
+ * - HSTS: browsers only use HTTPS for zebron.org for a year.
+ * - nosniff / frame / referrer: standard hardening.
+ * - Permissions-Policy: camera and microphone only for this site
+ *   (Community calls); location, USB and similar are off.
+ * - COOP allows sign-in popups (Google sign-in).
+ * - Content-Security-Policy is report-only for now: violations show in
+ *   the browser console without blocking anything. Once the console is
+ *   clean on every page, rename the header to Content-Security-Policy.
+ */
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'self'",
+  "form-action 'self'",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://apis.google.com https://js.stripe.com https://www.googletagmanager.com",
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://*.run.app https://firebasestorage.googleapis.com https://www.google-analytics.com https://*.google-analytics.com https://www.google.com https://api.stripe.com",
+  "frame-src 'self' https://*.firebaseapp.com https://www.google.com https://www.youtube-nocookie.com https://player.vimeo.com https://js.stripe.com https://checkout.stripe.com",
+  "worker-src 'self' blob:",
+].join('; ');
+
+app.use((_req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), usb=(), magnetometer=(), gyroscope=(), payment=(self)');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Content-Security-Policy-Report-Only', CONTENT_SECURITY_POLICY);
+  res.removeHeader('X-Powered-By');
+  next();
+});
+
+/**
  * Convert a Firestore Timestamp or Date into an ISO timestamp.
  * Return undefined for missing, invalid, or unsupported values.
  */

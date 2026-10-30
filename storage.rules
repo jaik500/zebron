@@ -1,22 +1,100 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+// Zebron Cloud Storage rules.
+//
+// Everything is denied unless a rule below allows it. The previous
+// starter rules expired on 17 September 2026, which blocked every
+// upload and download.
+//
+// Paths in use:
+//   communityChat/{conversationId}/attachments/{file}   chat attachments
+//   qaTasks/{taskId}/documents/{file}                   QA Hub documents
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // This rule allows anyone with your Storage bucket reference to view, edit,
-    // and delete all data in your Storage bucket. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Storage bucket will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Storage bucket will be denied until you Update
-    // your rules
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userProfile() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Roles on the sign-in token (see firestore.rules): when synced, the
+    // token decides without a billed Firestore lookup. Otherwise the same
+    // definition as Firestore rules: platformRole "platform-admin", or the
+    // legacy role "admin" when platformRole is absent.
+    function isPlatformAdmin() {
+      return signedIn()
+        && (
+          request.auth.token.get("zv", 0) == 1
+            ? request.auth.token.get("zpa", false) == true
+            : (
+              firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+              && (
+                userProfile().get("platformRole", "") == "platform-admin"
+                || (
+                  !userProfile().keys().hasAny(["platformRole"])
+                  && userProfile().get("role", "") == "admin"
+                )
+              )
+            )
+        );
+    }
+
+    // ------------------------------------------------------------
+    // COMMUNITY CHAT ATTACHMENTS
+    // ------------------------------------------------------------
+    // Only the two people in the conversation can upload, open or
+    // delete its attachments. Uploads up to 50 MB (the app's limit).
+    match /communityChat/{conversationId}/attachments/{fileName} {
+
+      function isParticipant() {
+        return signedIn()
+          && firestore.exists(/databases/(default)/documents/communityConversations/$(conversationId))
+          && request.auth.uid in firestore.get(
+            /databases/(default)/documents/communityConversations/$(conversationId)
+          ).data.participantIds;
+      }
+
+      allow read: if isParticipant();
+
+      allow create: if isParticipant()
+        && request.resource.size > 0
+        && request.resource.size <= 50 * 1024 * 1024;
+
+      allow update: if false;
+
+      // Used to clean up an upload when sending the message fails.
+      allow delete: if isParticipant();
+    }
+
+    // ------------------------------------------------------------
+    // QA HUB DOCUMENTS
+    // ------------------------------------------------------------
+    // Platform administrators upload. Active testers assigned to the
+    // task can open its documents.
+    match /qaTasks/{taskId}/documents/{fileName} {
+
+      function isAssignedTester() {
+        return signedIn()
+          && firestore.exists(/databases/(default)/documents/qaTesters/$(request.auth.uid))
+          && firestore.get(/databases/(default)/documents/qaTesters/$(request.auth.uid)).data.get("active", false) == true
+          && firestore.exists(/databases/(default)/documents/qaTasks/$(taskId))
+          && request.auth.uid in firestore.get(/databases/(default)/documents/qaTasks/$(taskId)).data.get("assignedTesterIds", []);
+      }
+
+      allow read: if isPlatformAdmin() || isAssignedTester();
+
+      allow create, update: if isPlatformAdmin()
+        && request.resource.size <= 25 * 1024 * 1024;
+
+      allow delete: if isPlatformAdmin();
+    }
+
+    // Everything else is closed.
     match /{allPaths=**} {
-      allow read, write: if request.time < timestamp.date(2026, 9, 17);
+      allow read, write: if false;
     }
   }
 }

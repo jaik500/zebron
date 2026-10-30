@@ -9,10 +9,12 @@ import {
   HttpsError,
   onCall,
 } from "firebase-functions/v2/https";
+import {isPlatformAdministrator} from "./platform-admin-authorization";
 
 const db = getFirestore();
 
 const VIEW_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const VIEW_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * Records a Community post view for the authenticated user.
@@ -75,6 +77,29 @@ export const recordCommunityPostView = onCall(
 
       const post = postSnapshot.data() ?? {};
 
+      // Organization community posts: active members only.
+      const organizationId = post["organizationId"];
+      if (typeof organizationId === "string" && organizationId) {
+        const [membership, organization] = await Promise.all([
+          transaction.get(
+            db.collection("organizationMemberships")
+              .doc(`${userId}_${organizationId}`),
+          ),
+          transaction.get(db.collection("organizations").doc(organizationId)),
+        ]);
+        const isMember =
+          membership.exists &&
+          membership.get("active") === true &&
+          organization.get("status") === "active";
+
+        if (!isMember && !(await isPlatformAdministrator(request))) {
+          throw new HttpsError(
+            "permission-denied",
+            "This post belongs to an organization community.",
+          );
+        }
+      }
+
       if (
         post["status"] !== "published" ||
         post["moderationStatus"] !== "approved"
@@ -113,6 +138,9 @@ export const recordCommunityPostView = onCall(
         userId,
         lastViewedAt: now,
         updatedAt: now,
+        // View records only prevent double counting within a day;
+        // Firestore deletes them automatically after 30 days (TTL).
+        expireAt: Timestamp.fromMillis(now.toMillis() + VIEW_RETENTION_MS),
       };
 
       if (!viewSnapshot.exists) {

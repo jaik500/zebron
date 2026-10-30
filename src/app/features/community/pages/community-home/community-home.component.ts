@@ -94,6 +94,9 @@ import {
 } from '../../chat/models/chat-participant.model';
 
 
+import { CommunityModerationService } from '../../services/community-moderation.service';
+import { CommunityScopeService } from '../../services/community-scope.service';
+
 @Component({
   selector: 'app-community-home',
 
@@ -778,11 +781,11 @@ import {
                  SETTINGS
                  ==================================================== -->
 
-            @if (authService.isAdmin) {
+            @if (canModerateCommunity()) {
 
               <a
                 mat-icon-button
-                routerLink="/admin/community/topics"
+                [routerLink]="communityTopicsRoute()"
                 aria-label="Settings"
                 matTooltip="Settings"
                 class="!text-white
@@ -1162,6 +1165,23 @@ export class CommunityHomeComponent
 
   readonly authService =
     inject(AuthService);
+
+  private readonly communityModeration =
+    inject(CommunityModerationService);
+
+  private readonly communityScope =
+    inject(CommunityScopeService);
+
+  /** Settings gear: platform admins, or organization managers+ in their community. */
+  canModerateCommunity(): boolean {
+    return this.communityModeration.canModerate();
+  }
+
+  communityTopicsRoute(): string[] {
+    return this.communityScope.isOrganizationCommunity()
+      ? [...this.communityScope.homeRoute(), 'topics']
+      : ['/admin/community/topics'];
+  }
 
 
   readonly pageTitleService =

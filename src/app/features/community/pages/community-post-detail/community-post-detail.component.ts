@@ -27,6 +27,9 @@ import { LoggerService } from '../../../../core/services/logger.service';
 import { ShareService } from '../../../../core/services/share.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import { CommunityPostViewService } from '../../services/community-post-view.service';
+import { CommunityPostActionsService } from '../../services/community-post-actions.service';
+import { CommunityPostService } from '../../services/community-post.service';
+import { CommunityPostDialogMode } from '../../components/community-post-dialog/community-post-dialog.component';
 
 @Component({
   selector: 'app-community-post-detail',
@@ -163,6 +166,11 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
              ======================================================== -->
 
         @else if (store.post(); as post) {
+          @if (post.status === 'hidden') {
+            <p class="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+              This post is hidden from the Community. Only moderators and the author can see it.
+            </p>
+          }
           <mat-card
             appearance="outlined"
             class="
@@ -320,13 +328,42 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
                     <span> Share post </span>
                   </button>
 
-                  <!-- Report -->
+                  @if (isAuthor(post)) {
+                    <button mat-menu-item type="button" (click)="runPostAction('edit', post)">
+                      <mat-icon>edit</mat-icon>
+                      <span> Edit post </span>
+                    </button>
 
-                  <button mat-menu-item type="button" (click)="reportPost(post)">
-                    <mat-icon>flag</mat-icon>
+                    <button mat-menu-item type="button" (click)="runPostAction('delete', post)">
+                      <mat-icon>delete</mat-icon>
+                      <span> Delete post </span>
+                    </button>
+                  } @else {
+                    <!-- Report -->
+                    <button mat-menu-item type="button" (click)="runPostAction('report', post)">
+                      <mat-icon>flag</mat-icon>
+                      <span> Report post </span>
+                    </button>
+                  }
 
-                    <span> Report post </span>
-                  </button>
+                  @if (canModerate()) {
+                    @if (post.status === 'hidden') {
+                      <button mat-menu-item type="button" (click)="restorePost(post)">
+                        <mat-icon>visibility</mat-icon>
+                        <span> Restore post </span>
+                      </button>
+                    } @else {
+                      <button mat-menu-item type="button" (click)="runPostAction('hide', post)">
+                        <mat-icon>visibility_off</mat-icon>
+                        <span> Hide post </span>
+                      </button>
+                    }
+
+                    <button mat-menu-item type="button" (click)="runPostAction('remove', post)">
+                      <mat-icon>block</mat-icon>
+                      <span> Remove post </span>
+                    </button>
+                  }
                 </mat-menu>
               </div>
 
@@ -865,6 +902,10 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
 
   private readonly postViewService = inject(CommunityPostViewService);
 
+  private readonly postActions = inject(CommunityPostActionsService);
+
+  private readonly postService = inject(CommunityPostService);
+
   // ==============================================================
   // STATE
   // ==============================================================
@@ -946,6 +987,42 @@ export class CommunityPostDetailComponent implements OnInit, OnDestroy {
         postId: this.postId,
         error: error instanceof Error ? error.message : String(error),
       });
+    }
+  }
+
+  // ==============================================================
+  // AUTHOR AND MODERATOR ACTIONS
+  // ==============================================================
+
+  isAuthor(post: CommunityPost): boolean {
+    return this.postActions.isAuthor(post);
+  }
+
+  canModerate(): boolean {
+    return this.postActions.canModerate();
+  }
+
+  async runPostAction(mode: CommunityPostDialogMode, post: CommunityPost): Promise<void> {
+    const outcome = await this.postActions.run(mode, post);
+
+    if (outcome.kind === 'removed') {
+      this.communityStore.removePost(post.id);
+      await this.router.navigate(this.communityHomeRoute);
+    } else if (outcome.kind === 'updated') {
+      this.communityStore.replacePost(outcome.post);
+      this.reloadPost();
+    }
+  }
+
+  async restorePost(post: CommunityPost): Promise<void> {
+    const userId = this.postActions.currentUserId();
+    if (!userId) return;
+
+    try {
+      await this.postService.moderatePost(post.id, 'restore', userId);
+      this.reloadPost();
+    } catch (error) {
+      this.logger.error('CommunityPostDetailComponent', 'Post could not be restored.', error);
     }
   }
 

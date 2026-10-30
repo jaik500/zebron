@@ -72,10 +72,14 @@ interface OrganizationEmailRecipient {
 // COMPONENT
 // ============================================================
  
+import { I18nService } from '../../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-partner-test-questions',
   standalone: true,
   imports: [
+    TranslatePipe,
     FormsModule,
     RouterLink,
     MatButtonModule,
@@ -98,24 +102,23 @@ interface OrganizationEmailRecipient {
           <div class="flex items-center justify-between gap-4">
             <div>
               <div class="flex items-center gap-2 text-sm text-white/60">
-                <a routerLink="/partner" class="hover:text-white"> Partner Portal </a>
+                <a routerLink="/partner" class="hover:text-white"> {{ 'Partner Portal' | t }} </a>
  
                 <span>/</span>
  
                 <a
                   [routerLink]="['/partner/org', context.organizationId(), 'test-center']"
                   class="hover:text-white"                
-                  > Test Center
+                  > {{ 'Test Center' | t }}
                 </a>
  
                 <span>/</span>
  
-                <span class="text-white/90"> Questions </span>
+                <span class="text-white/90"> {{ 'Questions' | t }} </span>
               </div>
  
               <p class="mt-1 text-sm text-white/70 hidden sm:block">
-                Create questions for your organization's courses and move them through the review
-                and publication workflow.
+                {{ 'Create questions for your organization\\u0027s courses and move them through the review and publication workflow.' | t }}
               </p>
             </div>
  
@@ -126,7 +129,7 @@ interface OrganizationEmailRecipient {
             >
               <mat-icon> arrow_back </mat-icon>
  
-              Test Center
+              {{ 'Test Center' | t }}
             </a>
           </div>
         </div>
@@ -145,7 +148,7 @@ interface OrganizationEmailRecipient {
           <section class="rounded-xl border border-gray-200 bg-white p-8 text-center">
             <mat-icon class="!h-8 !w-8 !text-3xl text-gray-500"> sync </mat-icon>
  
-            <p class="mt-3 text-sm text-gray-600">Loading your partner organization...</p>
+            <p class="mt-3 text-sm text-gray-600">{{ 'Loading your partner organization...' | t }}</p>
           </section>
         } @else if (context.error()) {
           <!-- ================================================== -->
@@ -153,10 +156,10 @@ interface OrganizationEmailRecipient {
           <!-- ================================================== -->
  
           <section class="rounded-xl border border-red-200 bg-red-50 p-6">
-            <h2 class="font-semibold text-red-900">Partner access unavailable</h2>
+            <h2 class="font-semibold text-red-900">{{ 'Partner access unavailable' | t }}</h2>
  
             <p class="mt-1 text-sm text-red-700">
-              {{ context.error() }}
+              {{ context.error() | t }}
             </p>
  
             <button
@@ -164,7 +167,7 @@ interface OrganizationEmailRecipient {
               (click)="initialize()"
               class="mt-4 rounded-lg bg-[#032D42] px-4 py-2 text-sm font-semibold text-white"
             >
-              Try again
+              {{ 'Try again' | t }}
             </button>
           </section>
         } @else {
@@ -176,13 +179,13 @@ interface OrganizationEmailRecipient {
             <div class="grid gap-4 md:grid-cols-[1fr_1fr_0.5fr]">
               <!-- COURSE -->
               <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                <mat-label>Course</mat-label>
+                <mat-label>{{ 'Course' | t }}</mat-label>
  
                 <mat-select
                   [ngModel]="selectedCourseId()"
                   (ngModelChange)="onCourseChange($event)"
                 >
-                  <mat-option value="">Select a course</mat-option>
+                  <mat-option value="">{{ 'Select a course' | t }}</mat-option>
  
                   @for (course of courses(); track course.id) {
                     <mat-option [value]="course.id">
@@ -194,14 +197,14 @@ interface OrganizationEmailRecipient {
  
               <!-- TOPIC -->
               <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                <mat-label>Topic</mat-label>
+                <mat-label>{{ 'Topic' | t }}</mat-label>
  
                 <mat-select
                   [ngModel]="selectedTopicId()"
                   (ngModelChange)="onTopicChange($event)"
                   [disabled]="!selectedCourseId() || loadingTopics()"
                 >
-                  <mat-option value="">Select a topic</mat-option>
+                  <mat-option value="">{{ 'Select a topic' | t }}</mat-option>
  
                   @for (topic of topics(); track topic.id) {
                     <mat-option [value]="topic.id">
@@ -220,7 +223,7 @@ interface OrganizationEmailRecipient {
                   class="mb-0 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#007979] px-5 py-3 text-base font-semibold text-white shadow-sm transition duration-200 hover:bg-[#006666] focus:outline-none focus:ring-4 focus:ring-[#007979]/20 disabled:cursor-not-allowed disabled:opacity-50 md:w-60"
                 >
                   <mat-icon>add</mat-icon>
-                  <span>New Question</span>
+                  <span>{{ 'New Question' | t }}</span>
                 </button>
               </div>
             </div>
@@ -239,7 +242,7 @@ interface OrganizationEmailRecipient {
                   </p>
  
                   <h2 class="mt-1 text-xl font-bold text-gray-900">
-                    {{ selectedTopic()?.name || 'Select a topic' }}
+                    {{ selectedTopic()?.name || ('Select a topic' | t) }}
                   </h2>
                 </div>
  
@@ -258,7 +261,7 @@ interface OrganizationEmailRecipient {
                       [class.text-gray-600]="statusFilter() !== filter.value"
                       [class.hover:border-[#007979]]="statusFilter() !== filter.value"
                     >
-                      {{ filter.label }}
+                      {{ filter.label | t }}
                       <span
                         class="rounded-full px-1.5 py-0.5 text-[14px]"
                         [class.bg-white/20]="statusFilter() === filter.value"
@@ -278,7 +281,7 @@ interface OrganizationEmailRecipient {
     class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50"
   >
     <mat-icon>mail</mat-icon>
-    Email 
+    {{ 'Email' | t }} 
   </button>
 </div>
               </div>
@@ -295,11 +298,11 @@ interface OrganizationEmailRecipient {
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div class="min-w-0">
         <h3 class="text-lg font-bold text-gray-900">
-          Send Quiz Link
+          {{ 'Send Quiz Link' | t }}
         </h3>
  
         <p class="mt-1 text-sm text-gray-600">
-          Enter the recipient's email address and send them the practice quiz link.
+          {{ 'Enter the recipient\\u0027s email address and send them the practice quiz link.' | t }}
         </p>
       </div>
  
@@ -311,14 +314,14 @@ interface OrganizationEmailRecipient {
       >
         <mat-icon>person_search</mat-icon>
  
-        {{ lookingUpMembers() ? 'Loading Members...' : 'Look Up Members' }}
+        {{ lookingUpMembers() ? ('Loading Members...' | t) : ('Look Up Members' | t) }}
       </button>
     </div>
  
 <!-- Subject (pre-filled by the server, editable before sending) -->
 <div class="mb-2">
   <mat-form-field appearance="outline" class="zb-field">
-    <mat-label>Subject</mat-label>
+    <mat-label>{{ 'Subject' | t }}</mat-label>
  
     <input
       matInput
@@ -328,7 +331,7 @@ interface OrganizationEmailRecipient {
       [ngModel]="quizEmailSubject()"
       (ngModelChange)="quizEmailSubject.set($event)"
       [disabled]="loadingQuizDefaults()"
-      [placeholder]="loadingQuizDefaults() ? 'Loading default subject...' : 'Email subject'"
+      [placeholder]="loadingQuizDefaults() ? ('Loading default subject...' | t) : ('Email subject' | t)"
     />
  
     <mat-hint align="end">{{ quizEmailSubject().length }} / 200</mat-hint>
@@ -336,7 +339,7 @@ interface OrganizationEmailRecipient {
  
   @if (quizEmailSignature()) {
     <p class="mt-1 text-xs text-gray-500">
-      The email will be signed "{{ quizEmailSignature() }}".
+      {{ 'The email will be signed "{0}".' | t: [quizEmailSignature()] }}
     </p>
   }
 </div>
@@ -344,19 +347,19 @@ interface OrganizationEmailRecipient {
 <!-- Multiple recipients -->
 <div class="mb-4">
 <mat-form-field appearance="outline" class="zb-field">
-  <mat-label>Recipient Emails</mat-label>
+  <mat-label>{{ 'Recipient Emails' | t }}</mat-label>
  
   <textarea
     matInput
     [(ngModel)]="quizRecipientEmail"
     name="quizRecipientEmail"
     rows="3"
-    placeholder="learner1@example.com, learner2@example.com"
+    [placeholder]="'learner1@example.com, learner2@example.com' | t"
   ></textarea>
 </mat-form-field>
  
   <p class="mt-1 text-xs text-gray-500">
-    Enter multiple addresses separated by commas, semicolons, or new lines.
+    {{ 'Enter multiple addresses separated by commas, semicolons, or new lines.' | t }}
   </p>
 </div>
  
@@ -365,7 +368,7 @@ interface OrganizationEmailRecipient {
   <div class="mb-4 rounded-lg border border-gray-200 bg-white p-4">
     <div class="mb-3 flex items-center justify-between gap-3">
       <h4 class="font-semibold text-gray-900">
-        Organization Members
+        {{ 'Organization Members' | t }}
       </h4>
  
       <button
@@ -373,18 +376,18 @@ interface OrganizationEmailRecipient {
         (click)="showMemberLookup.set(false)"
         class="text-sm text-gray-500 hover:text-gray-800"
       >
-        Close
+        {{ 'Close' | t }}
       </button>
     </div>
  
     <mat-form-field appearance="outline" class="zb-field" subscriptSizing="dynamic">
-      <mat-label>Search members</mat-label>
+      <mat-label>{{ 'Search members' | t }}</mat-label>
       <mat-icon matPrefix>search</mat-icon>
       <input
         matInput
         type="search"
         [(ngModel)]="memberSearchTerm"
-        placeholder="Name or email"
+        [placeholder]="'Name or email' | t"
         autocomplete="off"
       />
     </mat-form-field>
@@ -410,7 +413,7 @@ interface OrganizationEmailRecipient {
         </div>
       } @empty {
         <p class="py-4 text-center text-sm text-gray-500">
-          No organization members found.
+          {{ 'No organization members found.' | t }}
         </p>
       }
     </div>
@@ -421,7 +424,7 @@ interface OrganizationEmailRecipient {
         (click)="addSelectedMembers()"
         class="rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white hover:bg-[#006666]"
       >
-        Add Selected Members
+        {{ 'Add Selected Members' | t }}
       </button>
     </div>
   </div>
@@ -430,7 +433,7 @@ interface OrganizationEmailRecipient {
     <!-- Generated link -->
     <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
       <mat-form-field appearance="outline" class="zb-field zb-field--grow zb-field--flush" subscriptSizing="dynamic">
-        <mat-label>Quiz link</mat-label>
+        <mat-label>{{ 'Quiz link' | t }}</mat-label>
         <input
           matInput
           id="quiz-share-link"
@@ -446,7 +449,7 @@ interface OrganizationEmailRecipient {
         (click)="copyPreparedQuizLink()"
       >
         <mat-icon>content_copy</mat-icon>
-        Copy Link
+        {{ 'Copy Link' | t }}
       </button>
     </div>
  
@@ -457,7 +460,7 @@ interface OrganizationEmailRecipient {
         (click)="closeQuizEmailForm()"
         class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100"
       >
-        Cancel
+        {{ 'Cancel' | t }}
       </button>
  
       <button
@@ -468,7 +471,7 @@ interface OrganizationEmailRecipient {
       >
         <mat-icon>{{ sendingQuizEmail() ? 'hourglass_top' : 'send' }}</mat-icon>
  
-        {{ sendingQuizEmail() ? 'Sending...' : 'Send Email' }}
+        {{ sendingQuizEmail() ? ('Sending...' | t) : ('Send Email' | t) }}
       </button>
     </div>
   </div>
@@ -486,11 +489,11 @@ interface OrganizationEmailRecipient {
               <div class="flex items-start justify-between gap-4">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                    {{ editingQuestionId() ? 'Edit question' : 'New question' }}
+                    {{ editingQuestionId() ? ('Edit question' | t) : ('New question' | t) }}
                   </p>
  
                   <h2 class="mt-1 text-xl font-bold text-gray-900">
-                    {{ editingQuestionId() ? 'Edit Question' : 'Create Question' }}
+                    {{ editingQuestionId() ? ('Edit Question' | t) : ('Create Question' | t) }}
                   </h2>
                 </div>
  
@@ -498,7 +501,7 @@ interface OrganizationEmailRecipient {
                   type="button"
                   (click)="cancelForm()"
                   class="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
-                  aria-label="Close question form"
+                  [attr.aria-label]="'Close question form' | t"
                 >
                   <mat-icon> close </mat-icon>
                 </button>
@@ -508,12 +511,12 @@ interface OrganizationEmailRecipient {
                 <!-- QUESTION -->
  
                 <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Question</mat-label>
+                  <mat-label>{{ 'Question' | t }}</mat-label>
                   <textarea
                     matInput
                     [(ngModel)]="form.question"
                     rows="5"
-                    placeholder="Enter the question text."
+                    [placeholder]="'Enter the question text.' | t"
                   ></textarea>
                 </mat-form-field>
  
@@ -521,31 +524,31 @@ interface OrganizationEmailRecipient {
  
                 <div class="grid gap-x-5 md:grid-cols-3">
                   <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Type</mat-label>
+                    <mat-label>{{ 'Type' | t }}</mat-label>
                     <mat-select [(ngModel)]="form.type" (ngModelChange)="onTypeChange()">
-                      <mat-option value="multiple-choice">Multiple Choice</mat-option>
+                      <mat-option value="multiple-choice">{{ 'Multiple Choice' | t }}</mat-option>
  
-                      <mat-option value="true-false">True / False</mat-option>
+                      <mat-option value="true-false">{{ 'True / False' | t }}</mat-option>
                     </mat-select>
                   </mat-form-field>
  
                   <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Difficulty</mat-label>
+                    <mat-label>{{ 'Difficulty' | t }}</mat-label>
                     <mat-select [(ngModel)]="form.difficulty">
-                      <mat-option value="easy">Easy</mat-option>
+                      <mat-option value="easy">{{ 'Easy' | t }}</mat-option>
  
-                      <mat-option value="medium">Medium</mat-option>
+                      <mat-option value="medium">{{ 'Medium' | t }}</mat-option>
  
-                      <mat-option value="hard">Hard</mat-option>
+                      <mat-option value="hard">{{ 'Hard' | t }}</mat-option>
                     </mat-select>
                   </mat-form-field>
  
                   <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Source</mat-label>
+                    <mat-label>{{ 'Source' | t }}</mat-label>
                     <mat-select [(ngModel)]="form.sourceType">
-                      <mat-option value="original">Original</mat-option>
+                      <mat-option value="original">{{ 'Original' | t }}</mat-option>
  
-                      <mat-option value="licensed">Licensed</mat-option>
+                      <mat-option value="licensed">{{ 'Licensed' | t }}</mat-option>
                     </mat-select>
                   </mat-form-field>
                 </div>
@@ -554,7 +557,7 @@ interface OrganizationEmailRecipient {
  
                 <div>
                   <div class="flex items-center justify-between gap-3">
-                    <span class="text-sm font-medium text-gray-700"> Answer options </span>
+                    <span class="text-sm font-medium text-gray-700"> {{ 'Answer options' | t }} </span>
  
                     @if (form.type === 'multiple-choice') {
                       <button
@@ -562,7 +565,7 @@ interface OrganizationEmailRecipient {
                         (click)="addOption()"
                         class="text-sm font-semibold text-[#007979]"
                       >
-                        + Add option
+                        {{ '+ Add option' | t }}
                       </button>
                     }
                   </div>
@@ -570,7 +573,7 @@ interface OrganizationEmailRecipient {
                   <mat-radio-group
                     class="mt-3 block"
                     [(ngModel)]="form.correctAnswer"
-                    aria-label="Correct answer"
+                    [attr.aria-label]="'Correct answer' | t"
                   >
                     @for (option of form.options; track option.id) {
                       <div class="flex items-center gap-2">
@@ -589,7 +592,7 @@ interface OrganizationEmailRecipient {
                             type="button"
                             (click)="removeOption(option.id)"
                             class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-red-600"
-                            aria-label="Remove option"
+                            [attr.aria-label]="'Remove option' | t"
                           >
                             <mat-icon> delete </mat-icon>
                           </button>
@@ -599,7 +602,7 @@ interface OrganizationEmailRecipient {
                   </mat-radio-group>
  
                   <p class="mt-1 text-xs text-gray-500">
-                    Select the radio button for the correct answer.
+                    {{ 'Select the radio button for the correct answer.' | t }}
                   </p>
                 </div>
  
@@ -607,13 +610,13 @@ interface OrganizationEmailRecipient {
  
                 <div class="grid gap-x-5 md:grid-cols-2">
                   <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Explanation</mat-label>
-                    <textarea matInput [(ngModel)]="form.explanation" rows="4" placeholder="Explain why the answer is correct."></textarea>
+                    <mat-label>{{ 'Explanation' | t }}</mat-label>
+                    <textarea matInput [(ngModel)]="form.explanation" rows="4" [placeholder]="'Explain why the answer is correct.' | t"></textarea>
                   </mat-form-field>
  
                   <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Hint</mat-label>
-                    <textarea matInput [(ngModel)]="form.hint" rows="4" placeholder="Optional answer-neutral hint."></textarea>
+                    <mat-label>{{ 'Hint' | t }}</mat-label>
+                    <textarea matInput [(ngModel)]="form.hint" rows="4" [placeholder]="'Optional answer-neutral hint.' | t"></textarea>
                   </mat-form-field>
                 </div>
  
@@ -621,14 +624,14 @@ interface OrganizationEmailRecipient {
  
                 <div class="grid gap-x-5 md:grid-cols-2">
                   <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Tags</mat-label>
-                    <input matInput [(ngModel)]="form.tagsText" placeholder="cmdb, discovery, itil" />
-                    <mat-hint>Separate tags with commas.</mat-hint>
+                    <mat-label>{{ 'Tags' | t }}</mat-label>
+                    <input matInput [(ngModel)]="form.tagsText" [placeholder]="'cmdb, discovery, itil' | t" />
+                    <mat-hint>{{ 'Separate tags with commas.' | t }}</mat-hint>
                   </mat-form-field>
  
                   <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Source reference</mat-label>
-                    <input matInput [(ngModel)]="form.sourceReference" placeholder="Optional source or license reference" />
+                    <mat-label>{{ 'Source reference' | t }}</mat-label>
+                    <input matInput [(ngModel)]="form.sourceReference" [placeholder]="'Optional source or license reference' | t" />
                   </mat-form-field>
                 </div>
               </div>
@@ -641,7 +644,7 @@ interface OrganizationEmailRecipient {
                   (click)="cancelForm()"
                   class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700"
                 >
-                  Cancel
+                  {{ 'Cancel' | t }}
                 </button>
  
                 <button
@@ -650,7 +653,7 @@ interface OrganizationEmailRecipient {
                   [disabled]="saving()"
                   class="rounded-lg border border-[#007979] px-5 py-2.5 text-sm font-semibold text-[#007979] disabled:opacity-50"
                 >
-                  Save Draft
+                  {{ 'Save Draft' | t }}
                 </button>
  
                 <button
@@ -659,7 +662,7 @@ interface OrganizationEmailRecipient {
                   [disabled]="saving()"
                   class="rounded-lg bg-[#032D42] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
                 >
-                  Save &amp; Submit
+                  {{ 'Save & Submit' | t }}
                 </button>
               </div>
             </section>
@@ -672,13 +675,12 @@ interface OrganizationEmailRecipient {
           <section>
             <div class="mb-4 flex items-center justify-between">
               <div>
-                <h2 class="text-xl font-bold text-gray-900">Questions</h2>
+                <h2 class="text-xl font-bold text-gray-900">{{ 'Questions' | t }}</h2>
  
                 <p class="mt-1 text-sm text-gray-500">
-                  {{ filteredQuestions().length }}
-                  question{{ filteredQuestions().length === 1 ? '' : 's' }}
+                  {{ '{0} question{1}' | t: [filteredQuestions().length, (filteredQuestions().length === 1 ? '' : 's')] }}
                   @if (statusFilter() !== 'all') {
-                    <span> · {{ statusLabel(statusFilter()) }}</span>
+                    <span> · {{ statusLabel(statusFilter()) | t }}</span>
                   }
                 </p>
               </div>
@@ -686,7 +688,7 @@ interface OrganizationEmailRecipient {
  
             @if (loadingQuestions()) {
               <div class="rounded-xl border border-gray-200 bg-white p-8 text-center">
-                <p class="text-sm text-gray-500">Loading questions...</p>
+                <p class="text-sm text-gray-500">{{ 'Loading questions...' | t }}</p>
               </div>
             } @else if (!selectedTopicId()) {
               <div
@@ -694,10 +696,10 @@ interface OrganizationEmailRecipient {
               >
                 <mat-icon class="!h-10 !w-10 !text-4xl text-gray-400"> topic </mat-icon>
  
-                <p class="mt-3 font-semibold text-gray-900">Select a topic</p>
+                <p class="mt-3 font-semibold text-gray-900">{{ 'Select a topic' | t }}</p>
  
                 <p class="mt-1 text-sm text-gray-500">
-                  Choose a course and topic to manage its questions.
+                  {{ 'Choose a course and topic to manage its questions.' | t }}
                 </p>
               </div>
             } @else if (questions().length === 0) {
@@ -706,9 +708,9 @@ interface OrganizationEmailRecipient {
               >
                 <mat-icon class="!h-10 !w-10 !text-4xl text-gray-400"> quiz </mat-icon>
  
-                <p class="mt-3 font-semibold text-gray-900">No questions yet</p>
+                <p class="mt-3 font-semibold text-gray-900">{{ 'No questions yet' | t }}</p>
  
-                <p class="mt-1 text-sm text-gray-500">Create the first question for this topic.</p>
+                <p class="mt-1 text-sm text-gray-500">{{ 'Create the first question for this topic.' | t }}</p>
  
                 @if (access.canManageQuestions()) {
                   <button
@@ -718,7 +720,7 @@ interface OrganizationEmailRecipient {
                   >
                     <mat-icon> add </mat-icon>
  
-                    Create Question
+                    {{ 'Create Question' | t }}
                   </button>
                 }
               </div>
@@ -727,16 +729,16 @@ interface OrganizationEmailRecipient {
                 <div
                   class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center"
                 >
-                  <p class="font-semibold text-gray-900">No questions in this status</p>
+                  <p class="font-semibold text-gray-900">{{ 'No questions in this status' | t }}</p>
                   <p class="mt-1 text-sm text-gray-500">
-                    Choose another status filter to see more questions.
+                    {{ 'Choose another status filter to see more questions.' | t }}
                   </p>
                   <button
                     type="button"
                     (click)="setStatusFilter('all')"
                     class="mt-3 rounded-md bg-[#007979] px-3 py-2 text-sm font-semibold text-white"
                   >
-                    Show all questions
+                    {{ 'Show all questions' | t }}
                   </button>
                 </div>
               } @else {
@@ -753,19 +755,19 @@ interface OrganizationEmailRecipient {
                             <span
                               class="rounded-full bg-gray-100 px-2 py-1 text-sm font-semibold uppercase tracking-wide text-gray-600"
                             >
-                              {{ statusLabel(question.status) }}
+                              {{ statusLabel(question.status) | t }}
                             </span>
  
                             <span
                               class="rounded-full bg-teal-50 px-2 py-1 text-sm font-semibold text-[#007979]"
                             >
-                              {{ question.difficulty }}
+                              {{ question.difficulty | t }}
                             </span>
  
                             <span class="text-mdtext-gray-500">
                               {{
                                 question.type === 'multiple-choice'
-                                  ? 'Multiple Choice'
+                                  ? ('Multiple Choice' | t)
                                   : 'True / False'
                               }}
                             </span>
@@ -811,7 +813,7 @@ interface OrganizationEmailRecipient {
                                 @if (option.id === question.correctAnswer) {
                                   <mat-icon
                                     class="!h-4 !w-4 !text-base text-green-600"
-                                    aria-label="Correct answer"
+                                    [attr.aria-label]="'Correct answer' | t"
                                   >
                                     check_circle
                                   </mat-icon>
@@ -825,7 +827,7 @@ interface OrganizationEmailRecipient {
                             <div
                               class="mt-3 rounded-md border-l-2 border-teal-500 bg-teal-50 px-3 py-2"
                             >
-                              <p class="text-xs font-semibold text-teal-800">Explanation</p>
+                              <p class="text-xs font-semibold text-teal-800">{{ 'Explanation' | t }}</p>
  
                               <p class="mt-1 break-words text-xs leading-5 text-gray-700">
                                 {{ question.explanation }}
@@ -844,7 +846,7 @@ interface OrganizationEmailRecipient {
                             (click)="editQuestion(question)"
                             class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700"
                           >
-                            Edit
+                            {{ 'Edit' | t }}
                           </button>
                         }
  
@@ -854,7 +856,7 @@ interface OrganizationEmailRecipient {
                             (click)="submitForReview(question)"
                             class="rounded-lg bg-[#032D42] px-3 py-2 text-sm font-semibold text-white"
                           >
-                            Submit for Review
+                            {{ 'Submit for Review' | t }}
                           </button>
                         }
  
@@ -864,7 +866,7 @@ interface OrganizationEmailRecipient {
                             (click)="startReview(question)"
                             class="rounded-lg bg-[#007979] px-3 py-2 text-sm font-semibold text-white"
                           >
-                            Start Review
+                            {{ 'Start Review' | t }}
                           </button>
                         }
  
@@ -874,7 +876,7 @@ interface OrganizationEmailRecipient {
                             (click)="returnQuestion(question)"
                             class="rounded-lg border border-amber-400 px-3 py-2 text-sm font-semibold text-amber-700"
                           >
-                            Return
+                            {{ 'Return' | t }}
                           </button>
                         }
  
@@ -884,7 +886,7 @@ interface OrganizationEmailRecipient {
                             (click)="approveQuestion(question)"
                             class="rounded-lg bg-[#007979] px-3 py-2 text-xs font-semibold text-white"
                           >
-                            Approve
+                            {{ 'Approve' | t }}
                           </button>
                         }
  
@@ -894,7 +896,7 @@ interface OrganizationEmailRecipient {
                             (click)="publishQuestion(question)"
                             class="rounded-lg bg-green-700 px-3 py-2 text-xs font-semibold text-white"
                           >
-                            Publish
+                            {{ 'Publish' | t }}
                           </button>
                         }
  
@@ -904,7 +906,7 @@ interface OrganizationEmailRecipient {
                             (click)="retireQuestion(question)"
                             class="rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50"
                           >
-                            Retire
+                            {{ 'Retire' | t }}
                           </button>
                         }
  
@@ -914,7 +916,7 @@ interface OrganizationEmailRecipient {
                             (click)="deleteQuestion(question)"
                             class="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600"
                           >
-                            Delete
+                            {{ 'Delete' | t }}
                           </button>
                         }
                       </div>
@@ -939,6 +941,9 @@ export class PartnerTestQuestionsComponent implements OnInit {
   protected readonly access = inject(PartnerAccessService);
  
   private readonly route = inject(ActivatedRoute);
+
+  /** Messages built with values are translated where they are created. */
+  private readonly i18n = inject(I18nService);
  
   private readonly router = inject(Router);
  
@@ -1922,7 +1927,7 @@ protected async copyQuizLink(): Promise<void> {
     await navigator.clipboard.writeText(quizUrl);
  
     this.toast.success(
-      `Test link copied! ${publishedQuestions.length} published question(s) are available for this topic.`,
+      this.i18n.t('Test link copied! {0} published question(s) are available for this topic.', [publishedQuestions.length]),
     );
   } catch (error) {
     console.error('Failed to generate test link:', error);
@@ -2095,7 +2100,7 @@ protected async sendQuizEmail(): Promise<void> {
  
   if (invalidEmails.length > 0) {
     this.toast.error(
-      `Invalid email address: ${invalidEmails[0]}`,
+      this.i18n.t('Invalid email address: {0}', [invalidEmails[0]]),
     );
     return;
   }
@@ -2178,7 +2183,7 @@ protected async sendQuizEmail(): Promise<void> {
  
     if (unmatchedEmails.length > 0) {
       this.toast.error(
-        `These addresses are not eligible organization members: ${unmatchedEmails.join(', ')}`,
+        this.i18n.t('These addresses are not eligible organization members: {0}', [unmatchedEmails.join(', ')]),
       );
       return;
     }
@@ -2245,7 +2250,7 @@ protected async sendQuizEmail(): Promise<void> {
     // A successful callable response confirms the backend accepted the request.
     // The backend records per-recipient delivery outcomes separately.
     this.toast.success(
-      `Quiz invitation request submitted for ${recipientIds.length} member(s). Check communication delivery status if a recipient does not receive it.`,
+      this.i18n.t('Quiz invitation request submitted for {0} member(s). Check communication delivery status if a recipient does not receive it.', [recipientIds.length]),
     );
  
     this.closeQuizEmailForm();
@@ -2412,7 +2417,7 @@ protected async lookupOrganizationMembers(): Promise<void> {
  
     this.toast.error(
       error instanceof Error
-        ? `Member lookup failed: ${error.message}`
+        ? this.i18n.t('Member lookup failed: {0}', [error.message])
         : 'Unable to load organization members.',
     );
   } finally {

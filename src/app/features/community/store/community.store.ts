@@ -2355,6 +2355,26 @@ const selectFeedMode =
     // UPDATE COMMENT COUNT
     // ========================================================
 
+    /**
+     * Removes a post from the feed after it is deleted, hidden
+     * or removed by a moderator.
+     */
+    const removePost =
+      (postId: string): void => {
+        patchState(store, {
+          posts: store.posts().filter((post) => post.id !== postId),
+        });
+      };
+
+    /** Replaces a post in the feed after the author edits it. */
+    const replacePost =
+      (updated: CommunityPost): void => {
+        patchState(store, {
+          posts: store.posts().map((post) => (post.id === updated.id ? { ...post, ...updated } : post)),
+        });
+      };
+
+
     const updatePostCommentCount =
       (
         postId: string,
@@ -2874,6 +2894,10 @@ const selectFeedMode =
       updatePostCommentCount,
 
       toggleBookmark,
+
+      removePost,
+
+      replacePost,
 
     };
 

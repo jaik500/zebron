@@ -11,27 +11,30 @@ import { SupportService, SupportTicket, supportErrorMessage } from '../support.s
  * Organization support tickets (managers and above).
  * Route: /partner/org/:organizationId/support
  */
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-organization-support',
   standalone: true,
-  imports: [RouterLink, MatButtonModule, MatIconModule, SupportTicketListComponent],
+  imports: [
+    TranslatePipe,RouterLink, MatButtonModule, MatIconModule, SupportTicketListComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
       <header class="border-b border-white/10 bg-[#2a835f]">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div>
-            <h1 class="text-2xl font-bold text-white">Support Tickets</h1>
-            <p class="text-sm text-white/80">Issues and service requests your organization has raised with Zebron.</p>
+            <h1 class="text-2xl font-bold text-white">{{ 'Support Tickets' | t }}</h1>
+            <p class="text-sm text-white/80">{{ 'Issues and service requests your organization has raised with Zebron.' | t }}</p>
           </div>
           <div class="flex flex-wrap gap-2">
             <a mat-stroked-button class="!border-white/40 !text-white" [routerLink]="['/partner/org', organizationId, 'settings']">
               <mat-icon>arrow_back</mat-icon>
-              Administration
+              {{ 'Administration' | t }}
             </a>
             <a mat-flat-button class="!bg-white !text-[#007979]" routerLink="/support" [queryParams]="{ organizationId: organizationId }">
               <mat-icon>add</mat-icon>
-              New ticket
+              {{ 'New ticket' | t }}
             </a>
           </div>
         </div>
@@ -43,26 +46,26 @@ import { SupportService, SupportTicket, supportErrorMessage } from '../support.s
             <button type="button" class="rounded-full border px-3 py-1 text-sm"
               [class]="statusFilter() === filter.key ? 'border-teal-700 bg-teal-50 text-teal-800' : 'border-gray-200 bg-white text-gray-700'"
               (click)="statusFilter.set(filter.key)">
-              {{ filter.label }} ({{ count(filter.key) }})
+              {{ filter.label | t }} ({{ count(filter.key) }})
             </button>
           }
-          <button mat-icon-button type="button" class="!ml-auto" aria-label="Refresh" title="Refresh" [disabled]="loading()" (click)="load()">
+          <button mat-icon-button type="button" class="!ml-auto" [attr.aria-label]="'Refresh' | t" [title]="'Refresh' | t" [disabled]="loading()" (click)="load()">
             <mat-icon>refresh</mat-icon>
           </button>
         </div>
 
         @if (error()) {
-          <p class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{{ error() }}</p>
+          <p class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{{ error() | t }}</p>
         }
 
         @if (loading()) {
-          <p class="text-sm text-gray-500">Loading tickets…</p>
+          <p class="text-sm text-gray-500">{{ 'Loading tickets…' | t }}</p>
         } @else {
           <app-support-ticket-list [tickets]="filtered()" emptyText="No tickets here. Use New ticket to report an issue or request a service." />
         }
 
         <p class="mt-4 text-xs text-gray-500">
-          Organization tickets are visible to your organization's managers, admins and owners, and to Zebron support.
+          {{ 'Organization tickets are visible to your organization\\u0027s managers, admins and owners, and to Zebron support.' | t }}
         </p>
       </main>
     </div>

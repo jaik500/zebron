@@ -8,12 +8,15 @@ import { TestQuestionOption } from '../../models/test-question.model';
 
 import { TestStore } from '../../store/test.store';
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-test-practice',
 
   standalone: true,
 
-  imports: [CommonModule, RouterLink],
+  imports: [
+    TranslatePipe,CommonModule, RouterLink],
 
   template: `
     <main class="min-h-screen bg-gray-50">
@@ -43,7 +46,7 @@ import { TestStore } from '../../store/test.store';
                 class="text-[11px] font-medium uppercase
                  tracking-wide text-[#B8D5D7]"
               >
-                Test Center
+                {{ 'Test Center' | t }}
               </p>
 
               @if (course(); as currentCourse) {
@@ -58,7 +61,7 @@ import { TestStore } from '../../store/test.store';
                   class="text-base font-bold
                    text-white sm:text-lg"
                 >
-                  Practice Test
+                  {{ 'Practice Test' | t }}
                 </h1>
               }
             </div>
@@ -72,7 +75,7 @@ import { TestStore } from '../../store/test.store';
                text-[11px] font-semibold
                text-[#E5F3F4]"
             >
-              {{ modeLabel() }}
+              {{ modeLabel() | t }}
             </div>
           </div>
         </div>
@@ -109,14 +112,14 @@ import { TestStore } from '../../store/test.store';
               class="mt-3 text-lg font-bold
                      text-gray-900"
             >
-              No active test
+              {{ 'No active test' | t }}
             </h2>
 
             <p
               class="mx-auto mt-2 max-w-md
                      text-sm leading-6 text-gray-600"
             >
-              There are no questions loaded for the current test session.
+              {{ 'There are no questions loaded for the current test session.' | t }}
             </p>
 
             <a
@@ -127,7 +130,7 @@ import { TestStore } from '../../store/test.store';
                      font-semibold text-white
                      transition hover:bg-gray-800"
             >
-              Return to Test Center
+              {{ 'Return to Test Center' | t }}
             </a>
           </div>
         }
@@ -164,16 +167,14 @@ import { TestStore } from '../../store/test.store';
         class="text-[11px] font-medium
                text-gray-500"
       >
-        Question
+        {{ 'Question' | t }}
       </p>
 
       <p
         class="text-sm font-bold
                text-gray-900"
       >
-        {{ questionNumber() }}
-        of
-        {{ totalQuestions() }}
+        {{ '{0} of {1}' | t: [questionNumber(), totalQuestions()] }}
       </p>
 
     </div>
@@ -192,7 +193,7 @@ import { TestStore } from '../../store/test.store';
                text-[11px] font-medium
                text-gray-600"
       >
-        {{ difficultyLabel(question.difficulty) }}
+        {{ difficultyLabel(question.difficulty) | t }}
       </span>
 
       @if (question.type === 'true-false') {
@@ -203,7 +204,7 @@ import { TestStore } from '../../store/test.store';
                  text-[11px] font-medium
                  text-gray-600"
         >
-          True / False
+          {{ 'True / False' | t }}
         </span>
 
       } @else {
@@ -214,7 +215,7 @@ import { TestStore } from '../../store/test.store';
                  text-[11px] font-medium
                  text-gray-600"
         >
-          Multiple Choice
+          {{ 'Multiple Choice' | t }}
         </span>
 
       }
@@ -229,7 +230,7 @@ import { TestStore } from '../../store/test.store';
         class="text-[11px] font-medium
                text-gray-500"
       >
-        Progress
+        {{ 'Progress' | t }}
       </p>
 
       <p
@@ -273,14 +274,14 @@ import { TestStore } from '../../store/test.store';
   >
 
     <span>
-      Answered:
+      {{ 'Answered:' | t }}
       <strong class="text-gray-700">
         {{ answeredCount() }}
       </strong>
     </span>
 
     <span>
-      Remaining:
+      {{ 'Remaining:' | t }}
       <strong class="text-gray-700">
         {{ remainingCount() }}
       </strong>
@@ -326,7 +327,7 @@ import { TestStore } from '../../store/test.store';
                              font-semibold
                              text-gray-700"
                     >
-                      Show hint
+                      {{ 'Show hint' | t }}
                     </summary>
 
                     <p
@@ -335,7 +336,7 @@ import { TestStore } from '../../store/test.store';
                              px-3 py-2 text-sm
                              leading-5 text-gray-600"
                     >
-                      {{ question.hint }}
+                      {{ question.hint | t }}
                     </p>
                   </details>
                 }
@@ -425,7 +426,7 @@ import { TestStore } from '../../store/test.store';
                          disabled:cursor-not-allowed
                          disabled:opacity-40"
                 >
-                  ← Previous
+                  {{ '← Previous' | t }}
                 </button>
 
                 <!-- Status -->
@@ -435,9 +436,9 @@ import { TestStore } from '../../store/test.store';
                          sm:order-none"
                 >
                   @if (isLastQuestion()) {
-                    Last question
+                    {{ 'Last question' | t }}
                   } @else {
-                    Select an answer and continue
+                    {{ 'Select an answer and continue' | t }}
                   }
                 </div>
 
@@ -456,9 +457,9 @@ import { TestStore } from '../../store/test.store';
                          disabled:opacity-40"
                 >
                   @if (isLastQuestion()) {
-                    Finish Test
+                    {{ 'Finish Test' | t }}
                   } @else {
-                    Next →
+                    {{ 'Next →' | t }}
                   }
                 </button>
               </div>

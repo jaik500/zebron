@@ -39,10 +39,13 @@ interface DashboardCard {
   adminOnly?: boolean;
 }
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-partner-admin',
   standalone: true,
-  imports: [RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule, AnnouncementBannerComponent],
+  imports: [
+    TranslatePipe,RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule, AnnouncementBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-15">
@@ -56,12 +59,12 @@ interface DashboardCard {
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2 text-md text-white/70">
                 <a routerLink="/profile" class="transition-colors hover:text-white">
-                  Partner Portal
+                  {{ 'Partner Portal' | t }}
                 </a>
 
                 <span>/</span>
 
-                <span class="text-white">Dashboard</span>
+                <span class="text-white">{{ 'Dashboard' | t }}</span>
               </div>
             </div>
 
@@ -70,7 +73,7 @@ interface DashboardCard {
               type="button"
               mat-icon-button
               [matMenuTriggerFor]="dashboardMenu"
-              aria-label="Partner dashboard menu"
+              [attr.aria-label]="'Partner dashboard menu' | t"
               class="!text-white shrink-0"
             >
               <mat-icon>more_vert</mat-icon>
@@ -79,19 +82,19 @@ interface DashboardCard {
             <mat-menu #dashboardMenu="matMenu">
               <a mat-menu-item routerLink="/profile">
                 <mat-icon>person</mat-icon>
-                <span>Profile</span>
+                <span>{{ 'Profile' | t }}</span>
               </a>
 
               @for (card of visibleDashboardCards(); track card.id) {
                 @if (card.enabled) {
                   <a mat-menu-item [routerLink]="dashboardCardRoute(card)">
                     <mat-icon>{{ card.icon }}</mat-icon>
-                    <span>{{ card.title }}</span>
+                    <span>{{ card.title | t }}</span>
                   </a>
                 } @else {
                   <button mat-menu-item disabled>
                     <mat-icon>{{ card.icon }}</mat-icon>
-                    <span>{{ card.title }} — Coming soon</span>
+                    <span>{{ '{0} — Coming soon' | t: [card.title] }}</span>
                   </button>
                 }
               }
@@ -99,7 +102,7 @@ interface DashboardCard {
               @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
                 <a mat-menu-item [routerLink]="administrationRoute()">
                   <mat-icon>admin_panel_settings</mat-icon>
-                  <span>Administration</span>
+                  <span>{{ 'Administration' | t }}</span>
                 </a>
               }
             </mat-menu>
@@ -125,16 +128,16 @@ interface DashboardCard {
               <mat-icon class="shrink-0 text-amber-700">badge</mat-icon>
 
               <div>
-                <p class="text-sm font-semibold text-amber-900">Complete your profile</p>
+                <p class="text-sm font-semibold text-amber-900">{{ 'Complete your profile' | t }}</p>
                 <p class="mt-0.5 text-sm text-amber-800">
-                  Add your first and last name so your organization knows who you are.
+                  {{ 'Add your first and last name so your organization knows who you are.' | t }}
                 </p>
               </div>
             </div>
 
             <a mat-flat-button routerLink="/profile" class="shrink-0 !bg-amber-600 !text-white">
               <mat-icon>edit</mat-icon>
-              Complete profile
+              {{ 'Complete profile' | t }}
             </a>
           </section>
         }
@@ -161,10 +164,10 @@ interface DashboardCard {
             <mat-icon class="!h-9 !w-9 !text-4xl text-[#007979]"> sync </mat-icon>
 
             <p class="mt-4 text-sm font-medium text-gray-700">
-              Loading your partner organization...
+              {{ 'Loading your partner organization...' | t }}
             </p>
 
-            <p class="mt-1 text-sm text-gray-500">Please wait while we load your dashboard.</p>
+            <p class="mt-1 text-sm text-gray-500">{{ 'Please wait while we load your dashboard.' | t }}</p>
           </section>
         }
 
@@ -182,10 +185,10 @@ interface DashboardCard {
               </div>
 
               <div class="min-w-0">
-                <h2 class="font-semibold text-red-900">Partner access unavailable</h2>
+                <h2 class="font-semibold text-red-900">{{ 'Partner access unavailable' | t }}</h2>
 
                 <p class="mt-1 text-sm text-red-700">
-                  {{ organizationStore.contextError() }}
+                  {{ organizationStore.contextError() | t }}
                 </p>
 
                 <button
@@ -194,7 +197,7 @@ interface DashboardCard {
                   class="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#032D42] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#06445f]"
                 >
                   <mat-icon>refresh</mat-icon>
-                  Try again
+                  {{ 'Try again' | t }}
                 </button>
               </div>
             </div>
@@ -221,7 +224,7 @@ interface DashboardCard {
 
                 <div class="min-w-0">
                   <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Organization
+                    {{ 'Organization' | t }}
                   </p>
 
                   <h2 class="mt-1 text-xl font-bold text-gray-900">
@@ -237,7 +240,7 @@ interface DashboardCard {
                       class="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/20"
                     >
                       <mat-icon class="!h-5 !w-5 !text-xl">checklist</mat-icon>
-                      <span>Complete onboarding steps</span>
+                      <span>{{ 'Complete onboarding steps' | t }}</span>
                       <mat-icon class="!h-4 !w-4 !text-base">arrow_forward</mat-icon>
                     </a>
                   }
@@ -254,7 +257,7 @@ interface DashboardCard {
 
 <div class="relative mt-4">
   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-    <mat-label>Search partner resources</mat-label>
+    <mat-label>{{ 'Search partner resources' | t }}</mat-label>
     <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
     <input matInput
       id="partner-search"
@@ -262,13 +265,13 @@ interface DashboardCard {
       autocomplete="off"
       [value]="searchQuery()"
       (input)="onSearch($event)"
-      placeholder="Search your partner resources..."
-      aria-label="Search partner resources"
+      [placeholder]="'Search your partner resources...' | t"
+      [attr.aria-label]="'Search partner resources' | t"
     />
     @if (searching()) {
-      <mat-icon matSuffix class="mr-3 animate-spin !text-[#007979]" aria-label="Searching">sync</mat-icon>
+      <mat-icon matSuffix class="mr-3 animate-spin !text-[#007979]" [attr.aria-label]="'Searching' | t">sync</mat-icon>
     } @else if (searchQuery()) {
-      <button mat-icon-button matSuffix type="button" aria-label="Clear search" (click)="clearSearch()">
+      <button mat-icon-button matSuffix type="button" [attr.aria-label]="'Clear search' | t" (click)="clearSearch()">
         <mat-icon>close</mat-icon>
       </button>
     }
@@ -285,18 +288,17 @@ interface DashboardCard {
                       >
                         <mat-icon class="animate-spin text-[#007979]"> sync </mat-icon>
 
-                        <span class="text-sm text-gray-600"> Searching your organization... </span>
+                        <span class="text-sm text-gray-600"> {{ 'Searching your organization...' | t }} </span>
                       </div>
                     } @else if (searchResults().length > 0) {
                       <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
                         <div class="border-b border-gray-100 bg-gray-50 px-4 py-3">
                           <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                            Search Results
+                            {{ 'Search Results' | t }}
                           </p>
 
                           <p class="mt-1 text-xs text-gray-400">
-                            {{ searchResults().length }}
-                            result{{ searchResults().length === 1 ? '' : 's' }}
+                            {{ '{0} result{1}' | t: [searchResults().length, (searchResults().length === 1 ? '' : 's')] }}
                           </p>
                         </div>
 
@@ -329,12 +331,12 @@ interface DashboardCard {
                                   <span
                                     class="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500"
                                   >
-                                    {{ result.category }}
+                                    {{ result.category | t }}
                                   </span>
                                 </div>
 
                                 <p class="mt-1 truncate text-xs text-gray-500">
-                                  {{ result.description }}
+                                  {{ result.description | t }}
                                 </p>
 
                                 @if (result.metadata) {
@@ -350,7 +352,7 @@ interface DashboardCard {
                                 <span
                                   class="shrink-0 rounded-full bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-400"
                                 >
-                                  Coming soon
+                                  {{ 'Coming soon' | t }}
                                 </span>
                               }
                             </a>
@@ -363,10 +365,10 @@ interface DashboardCard {
                       >
                         <mat-icon class="text-gray-400"> search_off </mat-icon>
 
-                        <p class="mt-2 text-sm font-medium text-gray-700">No results found</p>
+                        <p class="mt-2 text-sm font-medium text-gray-700">{{ 'No results found' | t }}</p>
 
                         <p class="mt-1 text-xs text-gray-500">
-                          Try searching for a course, resource, or partner feature.
+                          {{ 'Try searching for a course, resource, or partner feature.' | t }}
                         </p>
                       </div>
                     }
@@ -386,7 +388,7 @@ interface DashboardCard {
               <div class="flex items-start justify-between gap-4">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                    My Account
+                    {{ 'My Account' | t }}
                   </p>
 
                   <div class="mt-3 flex items-center gap-3">
@@ -399,19 +401,19 @@ interface DashboardCard {
                     <div>
                       <a
                         routerLink="/profile"
-                        aria-label="View and manage your profile"
+                        [attr.aria-label]="'View and manage your profile' | t"
                         class="font-semibold text-gray-900 after:absolute after:inset-0 after:rounded-xl after:content-[''] group-hover:text-[#007979] focus:outline-none focus-visible:after:ring-2 focus-visible:after:ring-[#007979]"
-                      >Profile</a>
-                      <p class="text-sm text-gray-500">View and manage your personal profile</p>
+                      >{{ 'Profile' | t }}</a>
+                      <p class="text-sm text-gray-500">{{ 'View and manage your personal profile' | t }}</p>
                     </div>
                   </div>
                   <div class="mt-3 flex flex-wrap items-center gap-2">
                     <div
                       class="inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979]"
                     >
-                      Role:
+                      {{ 'Role:' | t }}
                       <span class="font-medium text-gray-700">
-                        {{ roleLabel() }}
+                        {{ roleLabel() | t }}
                       </span>
                     </div>
 
@@ -421,7 +423,7 @@ interface DashboardCard {
                       class="relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-[#007979]/30 bg-white px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]"
                     >
                       <mat-icon class="!h-4 !w-4 !text-base">support_agent</mat-icon>
-                      Help &amp; Support
+                      {{ 'Help & Support' | t }}
                     </a>
                   </div>
                 </div>
@@ -441,13 +443,13 @@ interface DashboardCard {
             <section>
               <div class="mb-5">
                 <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                  Partner Portal
+                  {{ 'Partner Portal' | t }}
                 </p>
 
-                <h2 class="mt-1 text-2xl font-bold text-gray-900">Your Workspace</h2>
+                <h2 class="mt-1 text-2xl font-bold text-gray-900">{{ 'Your Workspace' | t }}</h2>
 
                 <p class="mt-1 text-sm text-gray-500">
-                  Access the resources and services available to you.
+                  {{ 'Access the resources and services available to you.' | t }}
                 </p>
               </div>
 
@@ -475,29 +477,24 @@ interface DashboardCard {
                           <mat-icon class="text-white">{{ card.icon }}</mat-icon>
                         </div>
 
-                        <div class="min-w-0 flex-1">
-                          <h3 class="text-lg font-bold text-gray-900">
-                            {{ card.title }}
-                          </h3>
-                          <p class="mt-2 text-sm leading-6 text-gray-500">
-                            {{ card.description }}
-                          </p>
-                        </div>
+                        <h3 class="min-w-0 flex-1 self-center text-lg font-bold text-gray-900">
+                          {{ card.title | t }}
+                        </h3>
                       </a>
 
-                      @if (card.id === 'test-center' && canManageTestCenter()) {
+                      @if (card.enabled && settingsRoute(card); as manageRoute) {
                         <button
                           type="button"
-                          [routerLink]="card.route"
-                          aria-label="Manage Test Center"
-                          title="Manage Test Center"
+                          [routerLink]="manageRoute"
+                          [attr.aria-label]="'Manage {0}' | t: [(card.title | t)]"
+                          [title]="'Manage {0}' | t: [(card.title | t)]"
                           class="shrink-0 rounded-lg p-2 text-gray-600 transition-colors hover:bg-teal-50 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-[#007979]"
                         >
                           <mat-icon>settings</mat-icon>
                         </button>
                       } @else if (card.enabled) {
-                        <!-- Same destination as the card itself. Members see this
-                             on Test Center instead of the settings gear. -->
+                        <!-- Same destination as the card itself. Shown instead of the
+                             settings gear when the person cannot manage the app. -->
                         <a
                           [routerLink]="dashboardCardRoute(card)"
                           tabindex="-1"
@@ -510,10 +507,21 @@ interface DashboardCard {
                         <span
                           class="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-500"
                         >
-                          Coming soon
+                          {{ 'Coming soon' | t }}
                         </span>
                       }
                     </div>
+
+                    <!-- Description sits below the header row and spans the full card width. -->
+                    <a
+                      [routerLink]="card.enabled ? dashboardCardRoute(card) : null"
+                      tabindex="-1"
+                      aria-hidden="true"
+                      class="mt-4 block text-sm leading-6 text-gray-500 focus:outline-none"
+                      [class.pointer-events-none]="!card.enabled"
+                    >
+                      {{ card.description | t }}
+                    </a>
                   </div>
                 }
               </div>
@@ -531,14 +539,14 @@ interface DashboardCard {
                   <mat-icon class="text-[#007979]"> admin_panel_settings </mat-icon>
 
                   <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                    Administration
+                    {{ 'Administration' | t }}
                   </p>
                 </div>
 
-                <h2 class="mt-1 text-2xl font-bold text-gray-900">Organization Management</h2>
+                <h2 class="mt-1 text-2xl font-bold text-gray-900">{{ 'Organization Management' | t }}</h2>
 
                 <p class="mt-1 text-sm text-gray-500">
-                  Manage your organization's configuration, members, and resources.
+                  {{ 'Manage your organization\\u0027s configuration, members, and resources.' | t }}
                 </p>
               </div>
 
@@ -559,11 +567,10 @@ interface DashboardCard {
                     </mat-icon>
                   </div>
 
-                  <h3 class="mt-3 text-lg font-bold text-gray-900">Administration</h3>
+                  <h3 class="mt-3 text-lg font-bold text-gray-900">{{ 'Administration' | t }}</h3>
 
                   <p class="mt-2 text-sm leading-6 text-gray-500">
-                    Manage organization courses, members, programs, settings, notifications, and
-                    administrative operations.
+                    {{ 'Manage organization courses, members, programs, settings, notifications, and administrative operations.' | t }}
                   </p>
                 </a>
               </div>
@@ -579,13 +586,13 @@ interface DashboardCard {
               <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                    Quick Access
+                    {{ 'Quick Access' | t }}
                   </p>
 
-                  <h2 class="mt-1 text-lg font-bold text-gray-900">Partner Portal</h2>
+                  <h2 class="mt-1 text-lg font-bold text-gray-900">{{ 'Partner Portal' | t }}</h2>
 
                   <p class="mt-1 text-sm text-gray-500">
-                    Return to the areas you use most frequently.
+                    {{ 'Return to the areas you use most frequently.' | t }}
                   </p>
                 </div>
 
@@ -593,19 +600,19 @@ interface DashboardCard {
                   @for (card of visibleDashboardCards(); track card.id) {
                     <a mat-stroked-button [routerLink]="dashboardCardRoute(card)">
                       <mat-icon>{{ card.icon }}</mat-icon>
-                      {{ card.title }}
+                      {{ card.title | t }}
                     </a>
                   }
 
                   <a mat-stroked-button routerLink="/profile">
                     <mat-icon>person</mat-icon>
-                    Profile
+                    {{ 'Profile' | t }}
                   </a>
 
                   @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
                     <a mat-stroked-button [routerLink]="administrationRoute()">
                       <mat-icon>admin_panel_settings</mat-icon>
-                      Administration
+                      {{ 'Administration' | t }}
                     </a>
                   }
                 </div>
@@ -858,6 +865,23 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
   /** Staff, managers, admins and owners see the Test Center settings icon. */
   protected canManageTestCenter(): boolean {
     return this.access.can('testCenter.settings');
+  }
+
+  /**
+   * Management route behind a card's settings gear, or null for the arrow.
+   * - Test Center: staff and above (Test Center management).
+   * - Knowledge Center: managers and above (write and publish articles).
+   */
+  protected settingsRoute(card: DashboardCard): string | (string | null)[] | null {
+    if (card.id === 'test-center' && this.canManageTestCenter()) {
+      return card.route;
+    }
+
+    if (card.id === 'knowledge' && this.access.can('knowledge.manage')) {
+      return ['/partner/org', this.organizationStore.selectedOrganizationId(), 'knowledge', 'manage'];
+    }
+
+    return null;
   }
 
   /**

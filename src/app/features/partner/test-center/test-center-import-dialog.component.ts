@@ -60,10 +60,14 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
  *    Nothing is saved until the user confirms.
  * 3. Import, with progress.
  */
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-test-center-import-dialog',
   standalone: true,
   imports: [
+    TranslatePipe,
     FormsModule,
     MatButtonModule,
     MatDialogModule,
@@ -77,7 +81,7 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
   template: `
     <h2 mat-dialog-title class="!flex items-center gap-2">
       <mat-icon class="text-[#007979]">upload_file</mat-icon>
-      Import questions
+      {{ 'Import questions' | t }}
     </h2>
 
     <mat-dialog-content class="!max-h-[70vh]">
@@ -87,10 +91,7 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
              =================================================== -->
         @case ('choose') {
           <p class="text-sm leading-6 text-gray-600">
-            Import programs, courses, topics and questions from a <strong>CSV</strong> file
-            (from Excel or Google Sheets) or a <strong>JSON</strong> file. Missing programs,
-            courses and topics are created. Importing the same file again updates those
-            questions instead of duplicating them.
+            {{ 'Import programs, courses, topics and questions from a' | t }} <strong>{{ 'CSV' | t }}</strong> {{ 'file (from Excel or Google Sheets) or a' | t }} <strong>{{ 'JSON' | t }}</strong> {{ 'file. Missing programs, courses and topics are created. Importing the same file again updates those questions instead of duplicating them.' | t }}
           </p>
 
           <button
@@ -100,7 +101,7 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
             (click)="downloadTemplate()"
           >
             <mat-icon>download</mat-icon>
-            Download CSV template
+            {{ 'Download CSV template' | t }}
           </button>
 
           <label
@@ -116,10 +117,10 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
 
             @if (file(); as selected) {
               <span class="break-all text-sm font-semibold text-gray-900">{{ selected.name }}</span>
-              <span class="text-xs text-gray-500">Click to choose a different file</span>
+              <span class="text-xs text-gray-500">{{ 'Click to choose a different file' | t }}</span>
             } @else {
-              <span class="text-sm font-semibold text-gray-900">Choose a file or drop it here</span>
-              <span class="text-xs text-gray-500">.csv or .json · up to {{ maxRows }} questions</span>
+              <span class="text-sm font-semibold text-gray-900">{{ 'Choose a file or drop it here' | t }}</span>
+              <span class="text-xs text-gray-500">{{ '.csv or .json · up to {0} questions' | t: [maxRows] }}</span>
             }
 
             <input
@@ -130,16 +131,16 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
             />
           </label>
 
-          <h3 class="mt-6 text-sm font-semibold text-gray-900">For rows that leave these blank</h3>
+          <h3 class="mt-6 text-sm font-semibold text-gray-900">{{ 'For rows that leave these blank' | t }}</h3>
           <p class="mb-3 mt-1 text-xs text-gray-500">
-            Columns in the file always win. These are only used when a row has no course, program or topic.
+            {{ 'Columns in the file always win. These are only used when a row has no course, program or topic.' | t }}
           </p>
 
           <div class="grid gap-x-4 sm:grid-cols-2">
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Course</mat-label>
+              <mat-label>{{ 'Course' | t }}</mat-label>
               <mat-select [(ngModel)]="defaultCourseId" name="defaultCourseId">
-                <mat-option [value]="null">Use the file's "course" column</mat-option>
+                <mat-option [value]="null">{{ 'Use the file\\u0027s "course" column' | t }}</mat-option>
                 @for (course of data.courses; track course.id) {
                   <mat-option [value]="course.id">{{ course.name }}</mat-option>
                 }
@@ -147,9 +148,9 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Program for new courses</mat-label>
+              <mat-label>{{ 'Program for new courses' | t }}</mat-label>
               <mat-select [(ngModel)]="defaultProgramId" name="defaultProgramId">
-                <mat-option [value]="null">Use the file's "program" column</mat-option>
+                <mat-option [value]="null">{{ 'Use the file\\u0027s "program" column' | t }}</mat-option>
                 @for (program of data.programs; track program.id) {
                   <mat-option [value]="program.id">{{ program.name }}</mat-option>
                 }
@@ -157,15 +158,15 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Topic</mat-label>
-              <input matInput [(ngModel)]="defaultTopicName" name="defaultTopicName" placeholder="General" />
+              <mat-label>{{ 'Topic' | t }}</mat-label>
+              <input matInput [(ngModel)]="defaultTopicName" name="defaultTopicName" [placeholder]="'General' | t" />
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Save questions as</mat-label>
+              <mat-label>{{ 'Save questions as' | t }}</mat-label>
               <mat-select [(ngModel)]="status" name="status">
-                <mat-option value="published">Published (learners see them now)</mat-option>
-                <mat-option value="draft">Draft (review before publishing)</mat-option>
+                <mat-option value="published">{{ 'Published (learners see them now)' | t }}</mat-option>
+                <mat-option value="draft">{{ 'Draft (review before publishing)' | t }}</mat-option>
               </mat-select>
             </mat-form-field>
           </div>
@@ -177,15 +178,13 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
         @case ('review') {
           @if (plan(); as current) {
             <p class="text-sm text-gray-600">
-              <strong class="break-all">{{ current.fileName }}</strong> ·
-              {{ current.totalRows }} row{{ current.totalRows === 1 ? '' : 's' }} read.
-              Nothing has been saved yet.
+              <strong class="break-all">{{ current.fileName }}</strong> {{ '· {0} row{1} read. Nothing has been saved yet.' | t: [current.totalRows, (current.totalRows === 1 ? '' : 's')] }}
             </p>
 
             <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               @for (stat of summary(); track stat.label) {
                 <div class="rounded-xl border border-gray-200 bg-white p-3">
-                  <p class="text-xs font-medium text-gray-500">{{ stat.label }}</p>
+                  <p class="text-xs font-medium text-gray-500">{{ stat.label | t }}</p>
                   <p class="mt-1 text-xl font-bold text-gray-900">{{ stat.total }}</p>
                   <p class="text-xs text-gray-500">{{ stat.detail }}</p>
                 </div>
@@ -194,7 +193,7 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
 
             @if (newItems().length > 0) {
               <div class="mt-4 rounded-xl border border-teal-200 bg-teal-50 p-3">
-                <p class="text-sm font-semibold text-teal-900">Will be created</p>
+                <p class="text-sm font-semibold text-teal-900">{{ 'Will be created' | t }}</p>
                 <ul class="mt-1 space-y-0.5 text-sm text-teal-900">
                   @for (item of newItems(); track item) {
                     <li class="break-words">{{ item }}</li>
@@ -205,35 +204,34 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
 
             @if (current.duplicatesInFile > 0) {
               <p class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
-                {{ current.duplicatesInFile }} question{{ current.duplicatesInFile === 1 ? ' appears' : 's appear' }}
-                more than once in the file and will be imported once.
+                {{ '{0} question{1} more than once in the file and will be imported once.' | t: [current.duplicatesInFile, (current.duplicatesInFile === 1 ? ' appears' : 's appear')] }}
               </p>
             }
 
             @if (current.errors.length > 0) {
               <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
                 <p class="text-sm font-semibold text-amber-900">
-                  {{ current.errors.length }} row{{ current.errors.length === 1 ? '' : 's' }} will be skipped
+                  {{ '{0} row{1} will be skipped' | t: [current.errors.length, (current.errors.length === 1 ? '' : 's')] }}
                 </p>
 
                 <ul class="mt-2 max-h-48 space-y-1 overflow-y-auto text-sm text-amber-900">
                   @for (error of current.errors.slice(0, 100); track $index) {
-                    <li><strong>{{ lineLabel() }} {{ error.line }}:</strong> {{ error.message }}</li>
+                    <li><strong>{{ lineLabel() | t }} {{ error.line }}:</strong> {{ error.message | t }}</li>
                   }
                 </ul>
 
                 @if (current.errors.length > 100) {
-                  <p class="mt-1 text-xs text-amber-800">…and {{ current.errors.length - 100 }} more.</p>
+                  <p class="mt-1 text-xs text-amber-800">{{ '…and {0} more.' | t: [current.errors.length - 100] }}</p>
                 }
 
                 <p class="mt-2 text-xs text-amber-800">
-                  Fix them in the file and import it again. Rows already imported are updated, not duplicated.
+                  {{ 'Fix them in the file and import it again. Rows already imported are updated, not duplicated.' | t }}
                 </p>
               </div>
             }
 
             @if (current.questions.length === 0) {
-              <p class="mt-4 text-sm font-semibold text-red-700">There are no valid questions to import.</p>
+              <p class="mt-4 text-sm font-semibold text-red-700">{{ 'There are no valid questions to import.' | t }}</p>
             }
           }
         }
@@ -242,7 +240,7 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
              STEP 3: RUNNING
              =================================================== -->
         @case ('running') {
-          <p class="text-sm font-medium text-gray-900">{{ progressLabel() }}</p>
+          <p class="text-sm font-medium text-gray-900">{{ progressLabel() | t }}</p>
 
           <mat-progress-bar
             class="mt-3"
@@ -250,7 +248,7 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
             [value]="progressPercent() ?? 0"
           ></mat-progress-bar>
 
-          <p class="mt-3 text-xs text-gray-500">Keep this window open until the import finishes.</p>
+          <p class="mt-3 text-xs text-gray-500">{{ 'Keep this window open until the import finishes.' | t }}</p>
         }
 
         <!-- ===================================================
@@ -271,15 +269,12 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
 
               <div class="min-w-0 text-sm text-gray-800">
                 <p class="font-semibold">
-                  {{ done.errors.length === 0 ? 'Import complete' : 'Import finished with some problems' }}
+                  {{ done.errors.length === 0 ? ('Import complete' | t) : ('Import finished with some problems' | t) }}
                 </p>
                 <p class="mt-1">
-                  {{ done.questionsCreated }} question{{ done.questionsCreated === 1 ? '' : 's' }} added,
-                  {{ done.questionsUpdated }} updated.
+                  {{ '{0} question{1} added, {2} updated.' | t: [done.questionsCreated, (done.questionsCreated === 1 ? '' : 's'), done.questionsUpdated] }}
                   @if (done.programsCreated || done.coursesCreated || done.topicsCreated) {
-                    Created {{ done.programsCreated }} program{{ done.programsCreated === 1 ? '' : 's' }},
-                    {{ done.coursesCreated }} course{{ done.coursesCreated === 1 ? '' : 's' }} and
-                    {{ done.topicsCreated }} topic{{ done.topicsCreated === 1 ? '' : 's' }}.
+                    {{ 'Created {0} program{1}, {2} course{3} and {4} topic{5}.' | t: [done.programsCreated, (done.programsCreated === 1 ? '' : 's'), done.coursesCreated, (done.coursesCreated === 1 ? '' : 's'), done.topicsCreated, (done.topicsCreated === 1 ? '' : 's')] }}
                   }
                 </p>
               </div>
@@ -288,7 +283,7 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
             @if (done.errors.length > 0) {
               <ul class="mt-3 max-h-48 space-y-1 overflow-y-auto text-sm text-amber-900">
                 @for (error of done.errors.slice(0, 100); track $index) {
-                  <li class="break-words">{{ error }}</li>
+                  <li class="break-words">{{ error | t }}</li>
                 }
               </ul>
             }
@@ -298,7 +293,7 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
 
       @if (error()) {
         <p class="mt-4 whitespace-pre-line rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-          {{ error() }}
+          {{ error() | t }}
         </p>
       }
     </mat-dialog-content>
@@ -306,7 +301,7 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
     <mat-dialog-actions align="end" class="!flex-wrap gap-2">
       @switch (step()) {
         @case ('choose') {
-          <button mat-button type="button" (click)="close()">Cancel</button>
+          <button mat-button type="button" (click)="close()">{{ 'Cancel' | t }}</button>
           <button
             mat-flat-button
             type="button"
@@ -315,11 +310,11 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
             (click)="review()"
           >
             <mat-icon>fact_check</mat-icon>
-            {{ busy() ? 'Checking…' : 'Review import' }}
+            {{ busy() ? ('Checking…' | t) : ('Review import' | t) }}
           </button>
         }
         @case ('review') {
-          <button mat-button type="button" (click)="backToChoose()">Back</button>
+          <button mat-button type="button" (click)="backToChoose()">{{ 'Back' | t }}</button>
           <button
             mat-flat-button
             type="button"
@@ -328,11 +323,11 @@ const STAGE_LABELS: Record<ImportProgress['stage'], string> = {
             (click)="runImport()"
           >
             <mat-icon>upload</mat-icon>
-            Import {{ plan()?.questions?.length ?? 0 }} question{{ plan()?.questions?.length === 1 ? '' : 's' }}
+            {{ 'Import {0} question{1}' | t: [(plan()?.questions?.length ?? 0), (plan()?.questions?.length === 1 ? '' : 's')] }}
           </button>
         }
         @case ('done') {
-          <button mat-flat-button type="button" class="!bg-[#007979] !text-white" (click)="close()">Done</button>
+          <button mat-flat-button type="button" class="!bg-[#007979] !text-white" (click)="close()">{{ 'Done' | t }}</button>
         }
       }
     </mat-dialog-actions>
@@ -361,6 +356,9 @@ export class TestCenterImportDialogComponent {
   protected defaultTopicName = 'General';
   protected status: ImportDefaults['status'] = 'published';
 
+  /** Builds translated text inside computed values (language changes re-run them). */
+  private readonly i18n = inject(I18nService);
+
   protected readonly lineLabel = computed(() =>
     this.plan()?.fileName.toLowerCase().endsWith('.json') ? 'Item' : 'Line',
   );
@@ -383,13 +381,13 @@ export class TestCenterImportDialogComponent {
     const updates = plan.questions.filter((question) => question.existingId).length;
 
     return [
-      { label: 'Programs', total: programs.total, detail: `${programs.created} new` },
-      { label: 'Courses', total: courses.total, detail: `${courses.created} new` },
-      { label: 'Topics', total: topics.total, detail: `${topics.created} new` },
+      { label: 'Programs', total: programs.total, detail: this.i18n.t('{0} new', [programs.created]) },
+      { label: 'Courses', total: courses.total, detail: this.i18n.t('{0} new', [courses.created]) },
+      { label: 'Topics', total: topics.total, detail: this.i18n.t('{0} new', [topics.created]) },
       {
         label: 'Questions',
         total: plan.questions.length,
-        detail: `${plan.questions.length - updates} new · ${updates} update`,
+        detail: this.i18n.t('{0} new · {1} update', [plan.questions.length - updates, updates]),
       },
     ];
   });
@@ -404,11 +402,11 @@ export class TestCenterImportDialogComponent {
     const courseNames = new Map(plan.courses.map((course) => [course.key, course.name]));
 
     return [
-      ...plan.programs.filter((item) => !item.existing).map((item) => `Program: ${item.name}`),
-      ...plan.courses.filter((item) => !item.existing).map((item) => `Course: ${item.name}`),
+      ...plan.programs.filter((item) => !item.existing).map((item) => this.i18n.t('Program: {0}', [item.name])),
+      ...plan.courses.filter((item) => !item.existing).map((item) => this.i18n.t('Course: {0}', [item.name])),
       ...plan.topics
         .filter((item) => !item.existing)
-        .map((item) => `Topic: ${item.name} (in ${courseNames.get(item.courseKey) ?? 'course'})`),
+        .map((item) => this.i18n.t('Topic: {0} (in {1})', [item.name, courseNames.get(item.courseKey) ?? this.i18n.t('course')])),
     ];
   });
 
@@ -419,9 +417,9 @@ export class TestCenterImportDialogComponent {
       return 'Starting…';
     }
 
-    const label = STAGE_LABELS[progress.stage];
+    const label = this.i18n.t(STAGE_LABELS[progress.stage]);
 
-    return progress.total > 0 ? `${label} (${progress.done} of ${progress.total})` : label;
+    return progress.total > 0 ? this.i18n.t('{0} ({1} of {2})', [label, progress.done, progress.total]) : label;
   });
 
   protected readonly progressPercent = computed(() => {

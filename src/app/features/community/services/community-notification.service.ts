@@ -74,6 +74,9 @@ export class CommunityNotificationService {
 
       route: input.route ?? null,
 
+      // Notifications are deleted automatically after 180 days (TTL).
+      expireAt: Timestamp.fromMillis(Date.now() + 180 * 24 * 60 * 60 * 1000),
+
       read: false,
 
       createdAt: Timestamp.now(),

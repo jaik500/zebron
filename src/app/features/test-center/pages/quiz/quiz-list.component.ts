@@ -39,10 +39,13 @@ interface QuizListItem {
   type?: string;
 }
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-quiz-list',
   standalone: true,
-  imports: [CommonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
+  imports: [
+    TranslatePipe,CommonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
   template: `
     <main class="mt-14 min-h-screen bg-slate-50 px-4 py-4 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-7xl">
@@ -53,7 +56,7 @@ interface QuizListItem {
                <!-- Overall progress -->
           <section
             class="mb-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-1"
-            aria-label="Overall quiz progress"
+            [attr.aria-label]="'Overall quiz progress' | t"
           >
             <div class="flex items-center justify-between gap-3">
               <div>
@@ -62,14 +65,14 @@ interface QuizListItem {
           </p>
 
           <p class="mt-1 text-sm leading-6 text-slate-600">
-            Explore courses and practice questions available in your Test Center.
+            {{ 'Explore courses and practice questions available in your Test Center.' | t }}
           </p>
 
               </div>
 
               <span class="text-2xl font-bold text-blue-900">
                 <p class="text-sm font-semibold text-blue-900">
-                  Your quiz library
+                  {{ 'Your quiz library' | t }}
                 </p>
                 {{ quizzes().length }} 
               </span>
@@ -81,7 +84,7 @@ interface QuizListItem {
         @if (loading()) {
           <section
             class="grid grid-cols-1 gap-5 lg:grid-cols-2"
-            aria-label="Loading quizzes"
+            [attr.aria-label]="'Loading quizzes' | t"
             aria-busy="true"
           >
             @for (item of [1, 2, 3, 4]; track item) {
@@ -106,11 +109,11 @@ interface QuizListItem {
             role="alert"
           >
             <h2 class="font-bold text-red-800">
-              Unable to load quizzes
+              {{ 'Unable to load quizzes' | t }}
             </h2>
 
             <p class="mt-2 text-sm text-red-700">
-              {{ error() }}
+              {{ error() | t }}
             </p>
 
             <button
@@ -118,7 +121,7 @@ interface QuizListItem {
               (click)="loadQuizzes()"
               class="mt-4 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             >
-              Try again
+              {{ 'Try again' | t }}
             </button>
           </section>
         }
@@ -135,27 +138,27 @@ interface QuizListItem {
 
               <!-- Search -->
               <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                <mat-label>Search quizzes</mat-label>
+                <mat-label>{{ 'Search quizzes' | t }}</mat-label>
                 <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
                 <input matInput
                     type="search"
                     autocomplete="off"
                     [value]="searchTerm()"
                     (input)="setSearchTerm($any($event.target).value)"
-                    placeholder="Search courses and quizzes..."
+                    [placeholder]="'Search courses and quizzes...' | t"
                   />
               </mat-form-field>
 
               <!-- Difficulty -->
               <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                  <mat-label>Difficulty</mat-label>
+                  <mat-label>{{ 'Difficulty' | t }}</mat-label>
                   <mat-select
                   [value]="difficultyFilter()"
                   (selectionChange)="setDifficultyFilter($event.value)"
                 >
-                  <mat-option value="All">All difficulties</mat-option>
+                  <mat-option value="All">{{ 'All difficulties' | t }}</mat-option>
                   @for (difficulty of availableDifficulties(); track difficulty) {
-                    <mat-option [value]="difficulty">{{ difficulty }}</mat-option>
+                    <mat-option [value]="difficulty">{{ difficulty | t }}</mat-option>
                   }
                 </mat-select>
                 </mat-form-field>
@@ -163,15 +166,15 @@ interface QuizListItem {
               <!-- Status -->
               <div class="hidden min-w-0 sm:block">
                 <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                  <mat-label>Status</mat-label>
+                  <mat-label>{{ 'Status' | t }}</mat-label>
                   <mat-select
                   [value]="statusFilter()"
                   (selectionChange)="setStatusFilter($event.value)"
                 >
-                  <mat-option value="All">All statuses</mat-option>
-                  <mat-option value="Available">Available</mat-option>
-                  <mat-option value="In progress">In progress</mat-option>
-                  <mat-option value="Completed">Completed</mat-option>
+                  <mat-option value="All">{{ 'All statuses' | t }}</mat-option>
+                  <mat-option value="Available">{{ 'Available' | t }}</mat-option>
+                  <mat-option value="In progress">{{ 'In progress' | t }}</mat-option>
+                  <mat-option value="Completed">{{ 'Completed' | t }}</mat-option>
                 </mat-select>
                 </mat-form-field>
               </div>
@@ -181,7 +184,7 @@ interface QuizListItem {
                 (click)="clearFilters()"
                 class="h-11 rounded-xl border border-gray-300 px-4 text-sm font-semibold text-gray-700 transition-colors hover:border-[#007979] hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
               >
-                Clear
+                {{ 'Clear' | t }}
               </button>
             </div>
 
@@ -190,11 +193,11 @@ interface QuizListItem {
               class="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <p class="text-md text-slate-500">
-                Showing
+                {{ 'Showing' | t }}
                 <span class="font-semibold text-slate-800">
                   {{ filteredQuizzes().length }}
                 </span>
-                {{ filteredQuizzes().length === 1 ? 'quiz' : 'quizzes' }}
+                {{ filteredQuizzes().length === 1 ? ('quiz' | t) : ('quizzes' | t) }}
               </p>
 
               <div class="flex flex-wrap gap-2">
@@ -209,7 +212,7 @@ interface QuizListItem {
                     [class.text-slate-600]="categoryFilter() !== category"
                     [attr.aria-pressed]="categoryFilter() === category"
                   >
-                    {{ category }}
+                    {{ category | t }}
                   </button>
                 }
               </div>
@@ -219,7 +222,7 @@ interface QuizListItem {
           <!-- Summary cards -->
           <section
             class="mb-5 grid grid-cols-3 gap-2 sm:gap-3"
-            aria-label="Quiz status summary"
+            [attr.aria-label]="'Quiz status summary' | t"
           >
             <button
               type="button"
@@ -230,7 +233,7 @@ interface QuizListItem {
               [class.border-slate-200]="statusFilter() !== 'Available'"
             >
               <p class="text-md text-center font-medium text-slate-500 sm:text-md">
-                Available
+                {{ 'Available' | t }}
               </p>
               <p class="mt-1 text-center text-xl font-bold text-slate-900 sm:text-2xl">
                 {{ availableCount() }}
@@ -246,7 +249,7 @@ interface QuizListItem {
               [class.border-slate-200]="statusFilter() !== 'In progress'"
             >
               <p class="text-md text-center font-medium text-slate-500 sm:text-md">
-                In progress
+                {{ 'In progress' | t }}
               </p>
               <p class="mt-1 text-center text-xl font-bold text-slate-900 sm:text-2xl">
                 {{ inProgressCount() }}
@@ -262,7 +265,7 @@ interface QuizListItem {
               [class.border-slate-200]="statusFilter() !== 'Completed'"
             >
               <p class="text-md text-center font-medium text-slate-500 sm:text-md">
-                Completed
+                {{ 'Completed' | t }}
               </p>
               <p class="mt-1 text-center text-xl font-bold text-slate-900 sm:text-2xl">
                 {{ completedCount() }}
@@ -275,7 +278,7 @@ interface QuizListItem {
           @if (filteredQuizzes().length > 0) {
             <section
               class="grid grid-cols-1 gap-5 lg:grid-cols-2"
-              aria-label="Quiz list"
+              [attr.aria-label]="'Quiz list' | t"
             >
               @for (quiz of filteredQuizzes(); track quiz.id) {
                 <article
@@ -303,7 +306,7 @@ interface QuizListItem {
                           <p
                             class="text-xs font-semibold uppercase tracking-wider text-[#007979]"
                           >
-                            {{ quiz.category }}
+                            {{ quiz.category | t }}
                           </p>
 
                           <h2
@@ -330,15 +333,15 @@ interface QuizListItem {
                           [class.bg-slate-100]="quiz.status === 'Completed'"
                           [class.text-slate-600]="quiz.status === 'Completed'"
                         >
-                          {{ quiz.status }}
+                          {{ quiz.status | t }}
                         </span>
 
                         <button
                           type="button"
                           (click)="toggleFavorite(quiz)"
                           [attr.aria-pressed]="quiz.isFavorite"
-                          [attr.aria-label]="quiz.isFavorite ? 'Remove ' + quiz.title + ' from Popular Practice' : 'Add ' + quiz.title + ' to Popular Practice'"
-                          [attr.title]="quiz.isFavorite ? 'Remove from Popular Practice' : 'Add to Popular Practice'"
+                          [attr.aria-label]="(quiz.isFavorite ? 'Remove {0} from Popular Practice' : 'Add {0} to Popular Practice') | t: [quiz.title]"
+                          [attr.title]="(quiz.isFavorite ? 'Remove from Popular Practice' : 'Add to Popular Practice') | t"
                           class="cursor-pointer inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition focus:outline-none focus:ring-2 focus:ring-[#007979] focus:ring-offset-2"
                           [class.border-amber-300]="quiz.isFavorite"
                           [class.bg-amber-50]="quiz.isFavorite"
@@ -365,7 +368,7 @@ interface QuizListItem {
                     </div>
 
                     <p class="mt-4 text-sm leading-6 text-slate-600">
-                      {{ quiz.description || 'Practice questions for this course.' }}
+                      {{ quiz.description || ('Practice questions for this course.' | t) }}
                     </p>
 
                     @if (quiz.tags.length > 0) {
@@ -382,35 +385,35 @@ interface QuizListItem {
 
                     <div class="mt-5 grid grid-cols-4 gap-3 rounded-xl bg-slate-50 p-3">
                       <div>
-                        <p class="text-xs text-slate-500">Difficulty</p>
+                        <p class="text-xs text-slate-500">{{ 'Difficulty' | t }}</p>
                         <p
                           class="mt-1 text-sm font-semibold text-slate-800"
                           [class.text-emerald-700]="quiz.difficulty === 'Beginner'"
                           [class.text-amber-700]="quiz.difficulty === 'Intermediate'"
                           [class.text-violet-700]="quiz.difficulty === 'Advanced'"
                         >
-                          {{ quiz.difficulty || 'Not specified' }}
+                          {{ quiz.difficulty || ('Not specified' | t) }}
                         </p>
                       </div>
 
                       <div>
-                        <p class="text-xs text-slate-500">Topics</p>
+                        <p class="text-xs text-slate-500">{{ 'Topics' | t }}</p>
                         <p class="mt-1 text-sm font-semibold text-slate-800">
                           {{ quiz.topicCount }}
                         </p>
                       </div>
 
                       <div>
-                        <p class="text-xs text-slate-500">Questions</p>
+                        <p class="text-xs text-slate-500">{{ 'Questions' | t }}</p>
                         <p class="mt-1 text-sm font-semibold text-slate-800">
                           {{ quiz.questionCount }}
                         </p>
                       </div>
 
                       <div>
-                        <p class="text-xs text-slate-500">Time limit</p>
+                        <p class="text-xs text-slate-500">{{ 'Time limit' | t }}</p>
                         <p class="mt-1 text-sm font-semibold text-slate-800">
-                          {{ quiz.timeLimitMinutes > 0 ? quiz.timeLimitMinutes + ' min' : 'Flexible' }}
+                          {{ quiz.timeLimitMinutes > 0 ? quiz.timeLimitMinutes + ' min' : ('Flexible' | t) }}
                         </p>
                       </div>
                     </div>
@@ -422,11 +425,11 @@ interface QuizListItem {
                         class="cursor-pointer inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#007979] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#006666] focus:outline-none focus:ring-4 focus:ring-teal-200"
                       >
                         @if (quiz.status === 'In progress') {
-                          Continue practice <span aria-hidden="true">→</span>
+                          {{ 'Continue practice' | t }} <span aria-hidden="true">→</span>
                         } @else if (quiz.status === 'Completed') {
-                          Practice again <span aria-hidden="true">↻</span>
+                          {{ 'Practice again' | t }} <span aria-hidden="true">↻</span>
                         } @else {
-                          Start practice <span aria-hidden="true">→</span>
+                          {{ 'Start practice' | t }} <span aria-hidden="true">→</span>
                         }
                       </button>
 
@@ -436,7 +439,7 @@ interface QuizListItem {
                           (click)="viewResults(quiz)"
                           class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                         >
-                          View results
+                          {{ 'View results' | t }}
                         </button>
                       }
                     </div>
@@ -456,11 +459,11 @@ interface QuizListItem {
               </div>
 
               <h2 class="mt-4 text-lg font-bold text-slate-900">
-                No quizzes found
+                {{ 'No quizzes found' | t }}
               </h2>
 
               <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                Try another search term or clear your filters to see all courses.
+                {{ 'Try another search term or clear your filters to see all courses.' | t }}
               </p>
 
               <button
@@ -468,7 +471,7 @@ interface QuizListItem {
                 (click)="clearFilters()"
                 class="mt-5 rounded-xl bg-[#007979] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006666]"
               >
-                Clear search and filters
+                {{ 'Clear search and filters' | t }}
               </button>
             </section>
           }
@@ -477,7 +480,7 @@ interface QuizListItem {
         <footer
           class="mt-8 border-t border-slate-200 py-5 text-center text-xs text-slate-500"
         >
-          {{ organizationName() }} · Quiz Library
+          {{ '{0} · Quiz Library' | t: [organizationName()] }}
         </footer>
       </div>
     </main>

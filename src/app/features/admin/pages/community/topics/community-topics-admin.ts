@@ -20,6 +20,10 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { RouterLink } from '@angular/router';
+
+import { CommunityScopeService } from '../../../../../features/community/services/community-scope.service';
+
 import { AuthService } from '../../../../../core/services/auth.service';
 
 import { LoggerService } from '../../../../../core/services/logger.service';
@@ -35,6 +39,7 @@ import {
   selector: 'app-community-topics-admin',
   standalone: true,
   imports: [
+    RouterLink,
     FormsModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -78,13 +83,18 @@ import {
                 <h1
                   class="text-2xl font-bold text-[#032D42]"
                 >
-                  Community Topics
+                  {{ isOrganization ? 'Organization Community Topics' : 'Community Topics' }}
                 </h1>
 
                 <p
                   class="mt-1 text-sm text-slate-500"
                 >
-                  Manage the topics available throughout the Community.
+                  {{
+                    isOrganization
+                      ? 'Topics for your organization’s private community. Zebron’s public topics are also available to your members.'
+                      : 'Manage the topics available throughout the public Community.'
+                  }}
+                  <a class="ml-1 font-semibold text-[#007979] hover:underline" [routerLink]="communityRoute">Back to Community</a>
                 </p>
 
               </div>
@@ -951,6 +961,16 @@ export class CommunityTopicsAdminComponent
 
   readonly authService =
     inject(AuthService);
+
+  /** Public topics (Zebron admins) or an organization's own topics (managers+). */
+  private readonly scope =
+    inject(CommunityScopeService);
+
+  readonly isOrganization =
+    this.scope.isOrganizationCommunity();
+
+  readonly communityRoute =
+    this.scope.homeRoute();
 
 
   // ============================================================

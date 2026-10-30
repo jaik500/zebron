@@ -21,10 +21,13 @@ import {
  * One announcement banner. Used on the dashboard, and as the live
  * preview in the Administration page editor.
  */
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-announcement-banner',
   standalone: true,
-  imports: [DatePipe, MatIconModule],
+  imports: [
+    TranslatePipe,DatePipe, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section
@@ -80,14 +83,14 @@ import {
 
         <div class="min-w-0 flex-1 pr-8">
           <p class="text-xs font-semibold uppercase tracking-wider" [class]="theme().muted">
-            {{ badge() }}
+            {{ badge() | t }}
             @if (announcement().eventDate) {
               <span> · {{ announcement().eventDate! + 'T00:00:00' | date: 'EEE, MMM d, y' }}</span>
             }
           </p>
 
           <h2 class="mt-1 break-words text-xl leading-tight sm:text-2xl" [class]="font().title">
-            {{ announcement().title || 'Your headline' }}
+            {{ announcement().title || ('Your headline' | t) }}
           </h2>
 
           @if (announcement().honoreeName) {
@@ -96,7 +99,7 @@ import {
 
           @if (announcement().message) {
             <p class="mt-2 whitespace-pre-line break-words text-sm leading-6" [class]="theme().muted">
-              {{ announcement().message }}
+              {{ announcement().message | t }}
             </p>
           }
         </div>
@@ -109,7 +112,7 @@ import {
             class="inline-flex min-h-10 shrink-0 items-center justify-center gap-1 self-start rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition sm:self-center"
             [class]="theme().button"
           >
-            {{ announcement().ctaLabel || 'Learn more' }}
+            {{ announcement().ctaLabel || ('Learn more' | t) }}
             <mat-icon class="!h-4 !w-4 !text-base">open_in_new</mat-icon>
           </a>
         }
@@ -120,8 +123,8 @@ import {
           type="button"
           class="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full transition focus:outline-none focus:ring-2 focus:ring-current"
           [class]="theme().close"
-          aria-label="Close announcement"
-          title="Close"
+          [attr.aria-label]="'Close announcement' | t"
+          [title]="'Close' | t"
           (click)="dismissed.emit()"
         >
           <mat-icon>close</mat-icon>

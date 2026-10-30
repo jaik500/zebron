@@ -13,7 +13,7 @@ export const SUPPORTED_LANGUAGES: readonly SupportedLanguage[] = [
     name: 'French',
     nativeName: 'Français',
     direction: 'ltr',
-    enabled: false,
+    enabled: true,
   },
   {
     code: 'es',

@@ -26,12 +26,15 @@ interface StoredPracticeFavorites {
   quizzes?: FavoriteQuiz[];
 }
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-test-center-home',
 
   standalone: true,
 
-  imports: [RouterLink, MatIconModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [
+    TranslatePipe,RouterLink, MatIconModule, MatFormFieldModule, MatInputModule, MatButtonModule],
 
   template: `
     <main class="min-h-screen bg-gray-50 mt-16">
@@ -50,8 +53,8 @@ interface StoredPracticeFavorites {
             <a
               [routerLink]="['/partner/org', organizationId(), 'dashboard']"
               class="flex min-w-0 shrink-0 items-center gap-3 rounded-lg text-white transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              aria-label="Back to organization dashboard"
-              title="Back to organization dashboard"
+              [attr.aria-label]="'Back to organization dashboard' | t"
+              [title]="'Back to organization dashboard' | t"
             >
               <div
                 class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 sm:flex"
@@ -62,7 +65,7 @@ interface StoredPracticeFavorites {
             </a>
 
             <span class="text-base font-bold tracking-tight sm:text-xl">
-              Learning & assessment
+              {{ 'Learning & assessment' | t }}
             </span>
           </div>
 
@@ -70,7 +73,7 @@ interface StoredPracticeFavorites {
           <div class="min-w-0 flex-1 md:ml-8">
             <div class="ml-auto max-w-2xl">
               <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                <mat-label>Search Test Center</mat-label>
+                <mat-label>{{ 'Search Test Center' | t }}</mat-label>
                 <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
                 <input matInput
                   id="test-center-search"
@@ -78,15 +81,15 @@ interface StoredPracticeFavorites {
                   autocomplete="off"
                   [value]="searchTerm()"
                   (input)="searchTerm.set($any($event.target).value)"
-                  placeholder="Search courses, certifications, quizzes..."
-                  aria-label="Search Test Center"
+                  [placeholder]="'Search courses, certifications, quizzes...' | t"
+                  [attr.aria-label]="'Search Test Center' | t"
                 />
                 @if (searchTerm()) {
                   <button
                     mat-icon-button
                     matSuffix
                     type="button"
-                    aria-label="Clear search"
+                    [attr.aria-label]="'Clear search' | t"
                     (click)="searchTerm.set('')"
                   >
                     <mat-icon>close</mat-icon>
@@ -110,11 +113,11 @@ interface StoredPracticeFavorites {
         <div>
           <div class="mb-4">
             <h2 class="text-xl font-bold text-[#032D42]">
-              Browse the Test Center
+              {{ 'Browse the Test Center' | t }}
             </h2>
 
             <p class="mt-1 text-sm text-gray-600">
-              Find practice material based on what you're learning.
+              {{ 'Find practice material based on what you\\u0027re learning.' | t }}
             </p>
           </div>
 
@@ -133,11 +136,11 @@ interface StoredPracticeFavorites {
               <h3
                 class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
               >
-                Certifications
+                {{ 'Certifications' | t }}
               </h3>
 
               <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
-                Prepare for professional certification exams.
+                {{ 'Prepare for professional certification exams.' | t }}
               </p>
             </a>
 
@@ -155,11 +158,11 @@ interface StoredPracticeFavorites {
               <h3
                 class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
               >
-                Courses
+                {{ 'Courses' | t }}
               </h3>
 
               <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
-                Practice what you're learning in a course or program.
+                {{ 'Practice what you\\u0027re learning in a course or program.' | t }}
               </p>
             </a>
 
@@ -177,11 +180,11 @@ interface StoredPracticeFavorites {
               <h3
                 class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
               >
-                Quizzes
+                {{ 'Quizzes' | t }}
               </h3>
 
               <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
-                Explore quizzes across your programs and courses.
+                {{ 'Explore quizzes across your programs and courses.' | t }}
               </p>
             </a>
 
@@ -199,11 +202,11 @@ interface StoredPracticeFavorites {
               <h3
                 class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
               >
-                Skills
+                {{ 'Skills' | t }}
               </h3>
 
               <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
-                Strengthen practical and professional skills.
+                {{ 'Strengthen practical and professional skills.' | t }}
               </p>
             </a>
           </div>
@@ -217,11 +220,11 @@ interface StoredPracticeFavorites {
           <div class="flex items-end justify-between gap-4">
             <div>
               <h2 class="text-xl font-bold text-[#032D42]">
-                Popular Practice
+                {{ 'Popular Practice' | t }}
               </h2>
 
               <p class="mt-1 text-sm text-gray-600">
-                Your saved quizzes, courses, and certifications—plus more practice to explore.
+                {{ 'Your saved quizzes, courses, and certifications—plus more practice to explore.' | t }}
               </p>
             </div>
 
@@ -229,7 +232,7 @@ interface StoredPracticeFavorites {
               [routerLink]="[learnerBaseRoute(), 'quizzes']"
               class="text-sm font-semibold text-[#007979] transition hover:text-[#032D42]"
             >
-              View all →
+              {{ 'View all →' | t }}
             </a>
           </div>
 
@@ -255,7 +258,7 @@ interface StoredPracticeFavorites {
             <div
               class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
             >
-              {{ error() }}
+              {{ error() | t }}
             </div>
           }
 
@@ -279,7 +282,7 @@ interface StoredPracticeFavorites {
                       <span
                         class="rounded-full bg-violet-50 px-2 py-1 text-[10px] font-semibold text-violet-700"
                       >
-                        Favorite quiz
+                        {{ 'Favorite quiz' | t }}
                       </span>
                     </div>
                     <h3
@@ -293,16 +296,16 @@ interface StoredPracticeFavorites {
                       </p>
                     }
                     <p class="mt-2 line-clamp-2 text-sm leading-5 text-gray-600">
-                      {{ quiz.description || 'Continue practicing with this saved quiz.' }}
+                      {{ quiz.description || ('Continue practicing with this saved quiz.' | t) }}
                     </p>
                     <div
                       class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3"
                     >
                       <span class="text-xs text-gray-500">
-                        {{ quizQuestionCount(quiz) }} questions
+                        {{ '{0} questions' | t: [quizQuestionCount(quiz)] }}
                       </span>
                       <span class="text-xs font-semibold text-[#007979]">
-                        Practice →
+                        {{ 'Practice →' | t }}
                       </span>
                     </div>
                   </button>
@@ -329,7 +332,7 @@ interface StoredPracticeFavorites {
                         <span
                           class="rounded-full bg-[#E5F4F4] px-2 py-1 text-[10px] font-semibold text-[#007979]"
                         >
-                          Certification
+                          {{ 'Certification' | t }}
                         </span>
                       }
                     </div>
@@ -347,19 +350,18 @@ interface StoredPracticeFavorites {
                     }
 
                     <p class="mt-2 line-clamp-2 text-sm leading-5 text-gray-600">
-                      {{ course.description }}
+                      {{ course.description | t }}
                     </p>
 
                     <div
                       class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3"
                     >
                       <span class="text-xs text-gray-500">
-                        {{ courseQuestionCount(course) }}
-                        questions
+                        {{ '{0} questions' | t: [courseQuestionCount(course)] }}
                       </span>
 
                       <span class="text-xs font-semibold text-[#007979]">
-                        Practice →
+                        {{ 'Practice →' | t }}
                       </span>
                     </div>
                   </a>
@@ -379,11 +381,11 @@ interface StoredPracticeFavorites {
                 </div>
 
                 <h3 class="mt-3 text-sm font-bold text-[#032D42]">
-                  No practice items found
+                  {{ 'No practice items found' | t }}
                 </h3>
 
                 <p class="mt-1 text-xs text-gray-600">
-                  Try another course, certification, quiz, or topic.
+                  {{ 'Try another course, certification, quiz, or topic.' | t }}
                 </p>
               </div>
             }

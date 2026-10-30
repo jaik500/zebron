@@ -52,10 +52,13 @@ interface OnboardingStep {
   icon: string;
 }
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-partner-onboarding',
   standalone: true,
   imports: [
+    TranslatePipe,
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
@@ -84,19 +87,19 @@ interface OnboardingStep {
               mat-icon-button
               type="button"
               class="back-button"
-              matTooltip="Back to Partner Dashboard"
-              aria-label="Back to Partner Dashboard"
+              [matTooltip]="'Back to Partner Dashboard' | t"
+              [attr.aria-label]="'Back to Partner Dashboard' | t"
               (click)="goBack()"
             >
               <mat-icon> arrow_back </mat-icon>
             </button>
 
             <div class="header-breadcrumb">
-              <span class="breadcrumb-primary"> Partner Portal </span>
+              <span class="breadcrumb-primary"> {{ 'Partner Portal' | t }} </span>
 
               <mat-icon class="breadcrumb-separator"> chevron_right </mat-icon>
 
-              <span class="breadcrumb-current"> Organization Onboarding </span>
+              <span class="breadcrumb-current"> {{ 'Organization Onboarding' | t }} </span>
             </div>
           </div>
 
@@ -106,17 +109,17 @@ interface OnboardingStep {
             </div>
 
             <div>
-              <h1>Organization Onboarding</h1>
+              <h1>{{ 'Organization Onboarding' | t }}</h1>
 
               @if (organization()) {
                 <p>
-                  Complete the setup for
+                  {{ 'Complete the setup for' | t }}
                   <strong>
                     {{ organization()?.name }}
                   </strong>
                 </p>
               } @else {
-                <p>Complete the setup for your organization.</p>
+                <p>{{ 'Complete the setup for your organization.' | t }}</p>
               }
             </div>
           </div>
@@ -132,9 +135,9 @@ interface OnboardingStep {
                 <mat-spinner diameter="36"></mat-spinner>
               </div>
 
-              <h2>Loading your onboarding</h2>
+              <h2>{{ 'Loading your onboarding' | t }}</h2>
 
-              <p>We're retrieving your organization's onboarding information.</p>
+              <p>{{ 'We\\u0027re retrieving your organization\\u0027s onboarding information.' | t }}</p>
             </div>
           </section>
         }
@@ -149,10 +152,10 @@ interface OnboardingStep {
                 <mat-icon> error_outline </mat-icon>
               </div>
 
-              <h2>Unable to load onboarding</h2>
+              <h2>{{ 'Unable to load onboarding' | t }}</h2>
 
               <p>
-                {{ error() }}
+                {{ error() | t }}
               </p>
 
               <button
@@ -163,7 +166,7 @@ interface OnboardingStep {
               >
                 <mat-icon> refresh </mat-icon>
 
-                Try Again
+                {{ 'Try Again' | t }}
               </button>
             </div>
           </section>
@@ -179,57 +182,56 @@ interface OnboardingStep {
                 <mat-icon>task_alt</mat-icon>
               </div>
 
-              <h2>Review your organization setup</h2>
+              <h2>{{ 'Review your organization setup' | t }}</h2>
 
               <p>
-                The configuration has been submitted and your organization's onboarding is complete.
-                Review the details below before continuing to your Partner Dashboard.
+                {{ 'The configuration has been submitted and your organization\\u0027s onboarding is complete. Review the details below before continuing to your Partner Dashboard.' | t }}
               </p>
 
               <div class="review-summary">
                 <div class="review-summary-row">
-                  <span>Organization</span>
-                  <strong>{{ organization()?.name || 'Your organization' }}</strong>
+                  <span>{{ 'Organization' | t }}</span>
+                  <strong>{{ organization()?.name || ('Your organization' | t) }}</strong>
                 </div>
                 <div class="review-summary-row">
-                  <span>Onboarding status</span>
-                  <strong>Completed</strong>
+                  <span>{{ 'Onboarding status' | t }}</span>
+                  <strong>{{ 'Completed' | t }}</strong>
                 </div>
                 <div class="review-summary-row">
-                  <span>Setup steps</span>
-                  <strong>4 of 4 completed</strong>
+                  <span>{{ 'Setup steps' | t }}</span>
+                  <strong>{{ '4 of 4 completed' | t }}</strong>
                 </div>
                 <div class="review-summary-row">
-                  <span>Default member role</span>
-                  <strong>{{ configuration.defaultMemberRole }}</strong>
+                  <span>{{ 'Default member role' | t }}</span>
+                  <strong>{{ configuration.defaultMemberRole | t }}</strong>
                 </div>
                 <div class="review-summary-row">
-                  <span>Self-registration</span>
+                  <span>{{ 'Self-registration' | t }}</span>
                   <strong>{{
-                    configuration.allowSelfRegistration ? 'Enabled' : 'Disabled'
+                    configuration.allowSelfRegistration ? ('Enabled' | t) : ('Disabled' | t)
                   }}</strong>
                 </div>
                 <div class="review-summary-row">
-                  <span>Administrator notifications</span>
-                  <strong>{{ configuration.adminNotifications ? 'Enabled' : 'Disabled' }}</strong>
+                  <span>{{ 'Administrator notifications' | t }}</span>
+                  <strong>{{ configuration.adminNotifications ? ('Enabled' | t) : ('Disabled' | t) }}</strong>
                 </div>
               </div>
 
               <div class="review-branding">
-                <span>Organization branding</span>
+                <span>{{ 'Organization branding' | t }}</span>
                 <div class="review-color-row">
                   <span
                     class="review-color-swatch"
                     [style.backgroundColor]="configuration.primaryColor"
                   ></span>
-                  <span>Primary: {{ configuration.primaryColor }}</span>
+                  <span>{{ 'Primary: {0}' | t: [configuration.primaryColor] }}</span>
                 </div>
                 <div class="review-color-row">
                   <span
                     class="review-color-swatch"
                     [style.backgroundColor]="configuration.secondaryColor"
                   ></span>
-                  <span>Secondary: {{ configuration.secondaryColor }}</span>
+                  <span>{{ 'Secondary: {0}' | t: [configuration.secondaryColor] }}</span>
                 </div>
               </div>
 
@@ -241,7 +243,7 @@ interface OnboardingStep {
                   (click)="editOrganizationSetup()"
                 >
                   <mat-icon>edit</mat-icon>
-                  <span>Edit Setup</span>
+                  <span>{{ 'Edit Setup' | t }}</span>
                 </button>
 
                 <button
@@ -250,7 +252,7 @@ interface OnboardingStep {
                   class="primary-button save-button"
                   (click)="goToPartnerDashboard()"
                 >
-                  <span>Go to Partner Dashboard</span>
+                  <span>{{ 'Go to Partner Dashboard' | t }}</span>
                   <mat-icon iconPositionEnd>arrow_forward</mat-icon>
                 </button>
               </div>
@@ -269,9 +271,9 @@ interface OnboardingStep {
                 </div>
 
                 <div>
-                  <h2>Setup Progress</h2>
+                  <h2>{{ 'Setup Progress' | t }}</h2>
 
-                  <p>Step {{ currentStepNumber() }} of {{ steps.length }}</p>
+                  <p>{{ 'Step {0} of {1}' | t: [currentStepNumber(), steps.length] }}</p>
                 </div>
               </div>
 
@@ -297,7 +299,7 @@ interface OnboardingStep {
                     [class.step-reviewing]="reviewingStep() === step.key"
                     [disabled]="!isStepCompleted(step.key)"
                     [attr.aria-label]="
-                      isStepCompleted(step.key) ? 'Review ' + step.label : step.label
+                      isStepCompleted(step.key) ? ('Review ' | t) + step.label : step.label
                     "
                     [attr.aria-current]="isCurrentStep(step.key) ? 'step' : null"
                     (click)="reviewCompletedStep(step.key)"
@@ -305,12 +307,12 @@ interface OnboardingStep {
                     <div class="step-content">
                       <!-- Step title -->
                       <div class="step-title">
-                        {{ step.label }}
+                        {{ step.label | t }}
                       </div>
 
                       <!-- Step description -->
                       <div class="step-description">
-                        {{ step.description }}
+                        {{ step.description | t }}
                       </div>
 
                       <!-- Bottom indicator -->
@@ -330,7 +332,7 @@ interface OnboardingStep {
 
                         <!-- Current indicator -->
                         @if (isCurrentStep(step.key)) {
-                          <span class="step-status current-status"> CURRENT </span>
+                          <span class="step-status current-status"> {{ 'CURRENT' | t }} </span>
                         }
                       </div>
                     </div>
@@ -352,7 +354,7 @@ interface OnboardingStep {
                 </div>
 
                 <div>
-                  <span class="form-step-label"> STEP {{ displayedStepNumber() }} </span>
+                  <span class="form-step-label"> {{ 'STEP {0}' | t: [displayedStepNumber()] }} </span>
 
                   <h2>
                     {{ displayedStepLabel() }}
@@ -360,15 +362,15 @@ interface OnboardingStep {
 
                   <p>
                     @if (displayedStep() === 'organization_profile') {
-                      Tell us about your organization.
+                      {{ 'Tell us about your organization.' | t }}
                     } @else if (displayedStep() === 'owner_profile') {
-                      Confirm the primary administrator's information.
+                      {{ 'Confirm the primary administrator\\u0027s information.' | t }}
                     } @else if (displayedStep() === 'invite_members') {
-                      Confirm the primary administrator's information.
+                      {{ 'Confirm the primary administrator\\u0027s information.' | t }}
                     } @else if (displayedStep() === 'configuration') {
-                      Set organization-wide access, notifications, and branding preferences.
+                      {{ 'Set organization-wide access, notifications, and branding preferences.' | t }}
                     } @else {
-                      Complete this step to continue your organization's setup.
+                      {{ 'Complete this step to continue your organization\\u0027s setup.' | t }}
                     }
                   </p>
                 </div>
@@ -383,9 +385,9 @@ interface OnboardingStep {
                   <mat-icon>visibility</mat-icon>
                 </div>
                 <div class="review-banner-content">
-                  <strong>Reviewing completed step</strong>
+                  <strong>{{ 'Reviewing completed step' | t }}</strong>
                   <span
-                    >This step is read-only. Your current onboarding progress is unchanged.</span
+                    >{{ 'This step is read-only. Your current onboarding progress is unchanged.' | t }}</span
                   >
                 </div>
                 <button
@@ -395,7 +397,7 @@ interface OnboardingStep {
                   (click)="returnToCurrentStep()"
                 >
                   <mat-icon>arrow_forward</mat-icon>
-                  Return to Current Step
+                  {{ 'Return to Current Step' | t }}
                 </button>
               </div>
             }
@@ -426,30 +428,29 @@ interface OnboardingStep {
                     </div>
 
                     <div>
-                      <h3>Organization Details</h3>
+                      <h3>{{ 'Organization Details' | t }}</h3>
 
                       <p>
-                        Provide the basic information that members and administrators will see
-                        throughout Zebron.
+                        {{ 'Provide the basic information that members and administrators will see throughout Zebron.' | t }}
                       </p>
                     </div>
                   </div>
 
                   <!-- Organization Name -->
                   <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                    <mat-label> Organization Name </mat-label>
+                    <mat-label> {{ 'Organization Name' | t }} </mat-label>
 
                     <mat-icon matPrefix> business </mat-icon>
 
                     <input matInput formControlName="name" autocomplete="organization" />
-                    <mat-hint>Enter organization name</mat-hint>
+                    <mat-hint>{{ 'Enter organization name' | t }}</mat-hint>
 
                     @if (organizationForm.controls.name.hasError('required')) {
-                      <mat-error> Organization name is required. </mat-error>
+                      <mat-error> {{ 'Organization name is required.' | t }} </mat-error>
                     }
 
                     @if (organizationForm.controls.name.hasError('maxlength')) {
-                      <mat-error> Organization name is too long. </mat-error>
+                      <mat-error> {{ 'Organization name is too long.' | t }} </mat-error>
                     }
                   </mat-form-field>
 
@@ -457,35 +458,35 @@ interface OnboardingStep {
                   <div class="field-grid">
                     <!-- Organization Slug -->
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label> Organization Slug </mat-label>
+                      <mat-label> {{ 'Organization Slug' | t }} </mat-label>
 
                       <mat-icon matPrefix> link </mat-icon>
 
                       <input matInput formControlName="slug" readonly />
 
-                      <mat-hint> URL-friendly identifier. </mat-hint>
+                      <mat-hint> {{ 'URL-friendly identifier.' | t }} </mat-hint>
                     </mat-form-field>
 
                     <!-- Company Number -->
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label> Company / Registration Number </mat-label>
+                      <mat-label> {{ 'Company / Registration Number' | t }} </mat-label>
 
                       <mat-icon matPrefix> badge </mat-icon>
 
                       <input matInput formControlName="companyNumber" />
-                      <mat-hint>Enter organization name</mat-hint>
+                      <mat-hint>{{ 'Enter organization name' | t }}</mat-hint>
                     </mat-form-field>
                   </div>
 
                   <!-- Description -->
                   <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                    <mat-label> Organization Description </mat-label>
+                    <mat-label> {{ 'Organization Description' | t }} </mat-label>
 
                     <mat-icon matPrefix> description </mat-icon>
 
                     <textarea matInput formControlName="description" rows="5"></textarea>
 
-                    <mat-hint> A short description of your organization. </mat-hint>
+                    <mat-hint> {{ 'A short description of your organization.' | t }} </mat-hint>
                   </mat-form-field>
                 </div>
 
@@ -499,56 +500,56 @@ interface OnboardingStep {
                     </div>
 
                     <div>
-                      <h3>Contact Information</h3>
+                      <h3>{{ 'Contact Information' | t }}</h3>
 
-                      <p>Provide contact details for your organization.</p>
+                      <p>{{ 'Provide contact details for your organization.' | t }}</p>
                     </div>
                   </div>
 
                   <div class="field-grid">
                     <!-- Website -->
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label> Website </mat-label>
+                      <mat-label> {{ 'Website' | t }} </mat-label>
 
                       <mat-icon matPrefix> language </mat-icon>
 
                       <input matInput formControlName="website" type="url" autocomplete="url" />
-                      <mat-hint> Ex. https://example.org </mat-hint>
+                      <mat-hint> {{ 'Ex. https://example.org' | t }} </mat-hint>
                     </mat-form-field>
 
                     <!-- Phone -->
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label> Organization Phone </mat-label>
+                      <mat-label> {{ 'Organization Phone' | t }} </mat-label>
 
                       <mat-icon matPrefix> phone </mat-icon>
 
                       <input matInput formControlName="phone" type="tel" autocomplete="tel" />
-                      <mat-hint> Optional </mat-hint>
+                      <mat-hint> {{ 'Optional' | t }} </mat-hint>
                     </mat-form-field>
 
                     <!-- Email -->
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label> Organization Email </mat-label>
+                      <mat-label> {{ 'Organization Email' | t }} </mat-label>
 
                       <mat-icon matPrefix> email </mat-icon>
 
                       <input matInput formControlName="email" type="email" autocomplete="email" />
-                      <mat-hint> Ex. organization@example.org. </mat-hint>
+                      <mat-hint> {{ 'Ex. organization@example.org.' | t }} </mat-hint>
 
                       @if (organizationForm.controls.email.hasError('email')) {
-                        <mat-error> Enter a valid email address. </mat-error>
+                        <mat-error> {{ 'Enter a valid email address.' | t }} </mat-error>
                       }
                     </mat-form-field>
 
                     <!-- Location -->
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label> Location </mat-label>
+                      <mat-label> {{ 'Location' | t }} </mat-label>
 
                       <mat-icon matPrefix> location_on </mat-icon>
 
                       <input matInput formControlName="locationId" />
 
-                      <mat-hint> Organization location reference (Optional). </mat-hint>
+                      <mat-hint> {{ 'Organization location reference (Optional).' | t }} </mat-hint>
                     </mat-form-field>
                   </div>
                 </div>
@@ -563,7 +564,7 @@ interface OnboardingStep {
                     </div>
 
                     <div class="save-error-content">
-                      <h4>Unable to save organization profile</h4>
+                      <h4>{{ 'Unable to save organization profile' | t }}</h4>
 
                       <p>
                         {{ saveError() }}
@@ -585,7 +586,7 @@ interface OnboardingStep {
                   >
                     <mat-icon> arrow_back </mat-icon>
 
-                    Back
+                    {{ 'Back' | t }}
                   </button>
 
                   <button
@@ -597,9 +598,9 @@ interface OnboardingStep {
                   >
                     @if (saving()) {
                       <mat-spinner diameter="19" class="button-spinner"></mat-spinner>
-                      <span>Saving...</span>
+                      <span>{{ 'Saving...' | t }}</span>
                     } @else {
-                      <span>Save &amp; Continue</span>
+                      <span>{{ 'Save & Continue' | t }}</span>
                       <ng-container>
                         <mat-icon iconPositionEnd>arrow_forward</mat-icon>
                       </ng-container>
@@ -631,59 +632,59 @@ interface OnboardingStep {
                       </div>
 
                       <div>
-                        <h3>Personal Information</h3>
+                        <h3>{{ 'Personal Information' | t }}</h3>
 
-                        <p>Provide the primary administrator's contact information.</p>
+                        <p>{{ 'Provide the primary administrator\\u0027s contact information.' | t }}</p>
                       </div>
                     </div>
 
                     <div class="field-grid">
                       <!-- First Name -->
                       <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                        <mat-label> First Name </mat-label>
+                        <mat-label> {{ 'First Name' | t }} </mat-label>
 
                         <mat-icon matPrefix> person </mat-icon>
 
                         <input matInput formControlName="firstName" autocomplete="given-name" />
 
                         @if (ownerForm.controls.firstName.hasError('required')) {
-                          <mat-error> First name is required. </mat-error>
+                          <mat-error> {{ 'First name is required.' | t }} </mat-error>
                         }
                       </mat-form-field>
 
                       <!-- Last Name -->
                       <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                        <mat-label> Last Name </mat-label>
+                        <mat-label> {{ 'Last Name' | t }} </mat-label>
 
                         <mat-icon matPrefix> person </mat-icon>
 
                         <input matInput formControlName="lastName" autocomplete="family-name" />
 
                         @if (ownerForm.controls.lastName.hasError('required')) {
-                          <mat-error> Last name is required. </mat-error>
+                          <mat-error> {{ 'Last name is required.' | t }} </mat-error>
                         }
                       </mat-form-field>
 
                       <!-- Preferred Name -->
                       <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                        <mat-label> Preferred Name </mat-label>
+                        <mat-label> {{ 'Preferred Name' | t }} </mat-label>
 
                         <mat-icon matPrefix> badge </mat-icon>
 
                         <input matInput formControlName="preferredName" autocomplete="nickname" />
 
-                        <mat-hint> Optional </mat-hint>
+                        <mat-hint> {{ 'Optional' | t }} </mat-hint>
                       </mat-form-field>
 
                       <!-- Phone -->
                       <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                        <mat-label> Phone </mat-label>
+                        <mat-label> {{ 'Phone' | t }} </mat-label>
 
                         <mat-icon matPrefix> phone </mat-icon>
 
                         <input matInput formControlName="phone" type="tel" autocomplete="tel" />
 
-                        <mat-hint> Optional </mat-hint>
+                        <mat-hint> {{ 'Optional' | t }} </mat-hint>
                       </mat-form-field>
 
                       <!-- Email -->
@@ -691,7 +692,7 @@ interface OnboardingStep {
                         appearance="outline"
                         class="zb-field organization-form-field"
                       >
-                        <mat-label> Email </mat-label>
+                        <mat-label> {{ 'Email' | t }} </mat-label>
 
                         <mat-icon matPrefix> email </mat-icon>
 
@@ -703,7 +704,7 @@ interface OnboardingStep {
                           autocomplete="email"
                         />
 
-                        <mat-hint> Email is linked to your Zebron account. </mat-hint>
+                        <mat-hint> {{ 'Email is linked to your Zebron account.' | t }} </mat-hint>
                       </mat-form-field>
                     </div>
                   </div>
@@ -720,7 +721,7 @@ interface OnboardingStep {
                     >
                       <mat-icon> arrow_back </mat-icon>
 
-                      Back
+                      {{ 'Back' | t }}
                     </button>
 
                     <button
@@ -731,9 +732,9 @@ interface OnboardingStep {
                     >
                       @if (ownerSaving()) {
                         <mat-spinner diameter="18" class="button-spinner"></mat-spinner>
-                        <span>Saving...</span>
+                        <span>{{ 'Saving...' | t }}</span>
                       } @else {
-                        <span>Save &amp; Continue</span>
+                        <span>{{ 'Save & Continue' | t }}</span>
                         <ng-container>
                           <mat-icon iconPositionEnd>arrow_forward</mat-icon>
                         </ng-container>
@@ -763,15 +764,15 @@ interface OnboardingStep {
                     </div>
 
                     <div>
-                      <h3>Add a Team Member</h3>
+                      <h3>{{ 'Add a Team Member' | t }}</h3>
 
-                      <p>Send an invitation and assign the appropriate organization role.</p>
+                      <p>{{ 'Send an invitation and assign the appropriate organization role.' | t }}</p>
                     </div>
                   </div>
 
                   <div class="field-grid">
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label> Email Address </mat-label>
+                      <mat-label> {{ 'Email Address' | t }} </mat-label>
 
                       <mat-icon matPrefix> email </mat-icon>
 
@@ -784,12 +785,12 @@ interface OnboardingStep {
                       />
 
                       <mat-hint>
-                        The person will receive an invitation to join your organization.
+                        {{ 'The person will receive an invitation to join your organization.' | t }}
                       </mat-hint>
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label> Organization Role </mat-label>
+                      <mat-label> {{ 'Organization Role' | t }} </mat-label>
 
                       <mat-icon matPrefix> badge </mat-icon>
 
@@ -799,7 +800,7 @@ interface OnboardingStep {
                       >
                         @for (role of invitationRoles; track role.value) {
                           <mat-option [value]="role.value">
-                            {{ role.label }}
+                            {{ role.label | t }}
                           </mat-option>
                         }
                       </mat-select>
@@ -816,7 +817,7 @@ interface OnboardingStep {
                     >
                       <mat-icon> add </mat-icon>
 
-                      Add Invitation
+                      {{ 'Add Invitation' | t }}
                     </button>
                   </div>
                 </div>
@@ -829,9 +830,9 @@ interface OnboardingStep {
                       </div>
 
                       <div>
-                        <h3>Invitations</h3>
+                        <h3>{{ 'Invitations' | t }}</h3>
 
-                        <p>Team members who have been invited to join your organization.</p>
+                        <p>{{ 'Team members who have been invited to join your organization.' | t }}</p>
                       </div>
                     </div>
 
@@ -853,7 +854,7 @@ interface OnboardingStep {
                           </div>
 
                           <span class="invitation-status">
-                            {{ invitation.status }}
+                            {{ invitation.status | t }}
                           </span>
                         </div>
                       }
@@ -871,7 +872,7 @@ interface OnboardingStep {
                   >
                     <mat-icon> arrow_back </mat-icon>
 
-                    Back
+                    {{ 'Back' | t }}
                   </button>
 
                   <div class="form-actions-right">
@@ -882,7 +883,7 @@ interface OnboardingStep {
                       [disabled]="invitationSaving()"
                       (click)="continueInviteMembers()"
                     >
-                      Skip for now
+                      {{ 'Skip for now' | t }}
                     </button>
 
                     <button
@@ -892,7 +893,7 @@ interface OnboardingStep {
                       [disabled]="invitationSaving()"
                       (click)="continueInviteMembers()"
                     >
-                      <span> Continue </span>
+                      <span> {{ 'Continue' | t }} </span>
 
                       <mat-icon> arrow_forward </mat-icon>
                     </button>
@@ -910,37 +911,37 @@ interface OnboardingStep {
                     </div>
 
                     <div>
-                      <h3>Member Access</h3>
-                      <p>Define course visibility and default member access.</p>
+                      <h3>{{ 'Member Access' | t }}</h3>
+                      <p>{{ 'Define course visibility and default member access.' | t }}</p>
                     </div>
                   </div>
 
                   <div class="field-grid">
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label>Default Member Role</mat-label>
+                      <mat-label>{{ 'Default Member Role' | t }}</mat-label>
                       <mat-icon matPrefix>person</mat-icon>
 
                       <mat-select
                         [(ngModel)]="configuration.defaultMemberRole"
                         [disabled]="configurationSaving()"
                       >
-                        <mat-option value="org_member"> Organization Member </mat-option>
+                        <mat-option value="org_member"> {{ 'Organization Member' | t }} </mat-option>
 
-                        <mat-option value="org_staff"> Organization Staff </mat-option>
+                        <mat-option value="org_staff"> {{ 'Organization Staff' | t }} </mat-option>
 
-                        <mat-option value="org_manager"> Organization Manager </mat-option>
+                        <mat-option value="org_manager"> {{ 'Organization Manager' | t }} </mat-option>
                       </mat-select>
 
-                      <mat-hint> Role assigned to newly registered members. </mat-hint>
+                      <mat-hint> {{ 'Role assigned to newly registered members.' | t }} </mat-hint>
                     </mat-form-field>
                   </div>
 
                   <label class="configuration-option">
                     <div class="configuration-option-content">
-                      <div class="configuration-option-title">Allow Self Registration</div>
+                      <div class="configuration-option-title">{{ 'Allow Self Registration' | t }}</div>
 
                       <div class="configuration-option-description">
-                        Allow users to register themselves with the organization.
+                        {{ 'Allow users to register themselves with the organization.' | t }}
                       </div>
                     </div>
 
@@ -955,18 +956,18 @@ interface OnboardingStep {
                     </div>
 
                     <div>
-                      <h3>Notifications</h3>
-                      <p>Choose which organization events should generate notifications.</p>
+                      <h3>{{ 'Notifications' | t }}</h3>
+                      <p>{{ 'Choose which organization events should generate notifications.' | t }}</p>
                     </div>
                   </div>
 
                   <div class="configuration-options">
                     <label class="configuration-option">
                       <div class="configuration-option-content">
-                        <div class="configuration-option-title">Administrator Notifications</div>
+                        <div class="configuration-option-title">{{ 'Administrator Notifications' | t }}</div>
 
                         <div class="configuration-option-description">
-                          Notify organization administrators about relevant activity.
+                          {{ 'Notify organization administrators about relevant activity.' | t }}
                         </div>
                       </div>
 
@@ -982,14 +983,14 @@ interface OnboardingStep {
                     </div>
 
                     <div>
-                      <h3>Organization Branding</h3>
-                      <p>Choose the primary and secondary colors for your organization.</p>
+                      <h3>{{ 'Organization Branding' | t }}</h3>
+                      <p>{{ 'Choose the primary and secondary colors for your organization.' | t }}</p>
                     </div>
                   </div>
 
                   <div class="field-grid">
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label>Primary Color</mat-label>
+                      <mat-label>{{ 'Primary Color' | t }}</mat-label>
                       <mat-icon matPrefix>format_color_fill</mat-icon>
 
                       <input
@@ -1001,11 +1002,11 @@ interface OnboardingStep {
                         placeholder="#007979"
                       />
 
-                      <mat-hint>Hex color, for example #007979.</mat-hint>
+                      <mat-hint>{{ 'Hex color, for example #007979.' | t }}</mat-hint>
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="zb-field organization-form-field">
-                      <mat-label>Secondary Color</mat-label>
+                      <mat-label>{{ 'Secondary Color' | t }}</mat-label>
                       <mat-icon matPrefix>format_color_fill</mat-icon>
 
                       <input
@@ -1017,7 +1018,7 @@ interface OnboardingStep {
                         placeholder="#032D42"
                       />
 
-                      <mat-hint>Hex color, for example #032D42.</mat-hint>
+                      <mat-hint>{{ 'Hex color, for example #032D42.' | t }}</mat-hint>
                     </mat-form-field>
                   </div>
                 </div>
@@ -1032,7 +1033,7 @@ interface OnboardingStep {
                     (click)="goToPreviousStep()"
                   >
                     <mat-icon>arrow_back</mat-icon>
-                    Back
+                    {{ 'Back' | t }}
                   </button>
 
                   <button
@@ -1044,9 +1045,9 @@ interface OnboardingStep {
                   >
                     @if (configurationSaving()) {
                       <mat-spinner diameter="19" class="button-spinner text-white"></mat-spinner>
-                      <span>Submitting...</span>
+                      <span>{{ 'Submitting...' | t }}</span>
                     } @else {
-                      <span>Submit</span>
+                      <span>{{ 'Submit' | t }}</span>
                       <ng-container>
                         <mat-icon iconPositionEnd>arrow_forward</mat-icon>
                       </ng-container>

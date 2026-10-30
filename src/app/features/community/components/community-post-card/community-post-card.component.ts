@@ -19,6 +19,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { CommunityPost } from '../../models/community-post.model';
 import { CommunityFollowStore } from '../../store/community-follow.store';
+import { CommunityStore } from '../../store/community.store';
+import { CommunityPostDialogMode } from '../community-post-dialog/community-post-dialog.component';
+import { CommunityPostActionsService } from '../../services/community-post-actions.service';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { LoggerService } from '../../../../core/services/logger.service';
@@ -206,17 +209,37 @@ import { LoggerService } from '../../../../core/services/logger.service';
             </span>
           </button>
 
-          <!-- Report -->
+          @if (isAuthor()) {
+            <!-- Author -->
+            <button mat-menu-item type="button" (click)="runAction('edit', $event)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit post</span>
+            </button>
 
-          <button
-            mat-menu-item
-            type="button"
-            (click)="onReportClick($event)"
-          >
-            <mat-icon>flag</mat-icon>
+            <button mat-menu-item type="button" (click)="runAction('delete', $event)">
+              <mat-icon>delete</mat-icon>
+              <span>Delete post</span>
+            </button>
+          } @else {
+            <!-- Report -->
+            <button mat-menu-item type="button" (click)="runAction('report', $event)">
+              <mat-icon>flag</mat-icon>
+              <span>Report post</span>
+            </button>
+          }
 
-            <span>Report post</span>
-          </button>
+          @if (canModerate()) {
+            <!-- Moderators: platform admins, organization managers+ -->
+            <button mat-menu-item type="button" (click)="runAction('hide', $event)">
+              <mat-icon>visibility_off</mat-icon>
+              <span>Hide post</span>
+            </button>
+
+            <button mat-menu-item type="button" (click)="runAction('remove', $event)">
+              <mat-icon>block</mat-icon>
+              <span>Remove post</span>
+            </button>
+          }
 
         </mat-menu>
       </div>
@@ -413,6 +436,10 @@ export class CommunityPostCardComponent {
   private readonly authService = inject(AuthService);
 
   private readonly logger = inject(LoggerService);
+
+  private readonly postActions = inject(CommunityPostActionsService);
+
+  private readonly communityStore = inject(CommunityStore);
 
   // ============================================================
   // INPUTS
@@ -697,6 +724,30 @@ export class CommunityPostCardComponent {
     event.stopPropagation();
 
     this.report.emit(this.post());
+  }
+
+  // ============================================================
+  // AUTHOR AND MODERATOR ACTIONS
+  // ============================================================
+
+  isAuthor(): boolean {
+    return this.postActions.isAuthor(this.post());
+  }
+
+  canModerate(): boolean {
+    return this.postActions.canModerate();
+  }
+
+  async runAction(mode: CommunityPostDialogMode, event: MouseEvent): Promise<void> {
+    event.stopPropagation();
+
+    const outcome = await this.postActions.run(mode, this.post());
+
+    if (outcome.kind === 'removed') {
+      this.communityStore.removePost(this.post().id);
+    } else if (outcome.kind === 'updated') {
+      this.communityStore.replacePost(outcome.post);
+    }
   }
 
   // ============================================================

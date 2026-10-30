@@ -6,6 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 
 import { MatIconModule } from '@angular/material/icon';
 
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 /**
  * Configuration passed into the confirmation dialog.
  */
@@ -52,7 +54,7 @@ export interface ConfirmationDialogData {
 
   standalone: true,
 
-  imports: [MatDialogModule, MatButtonModule, MatIconModule],
+  imports: [MatDialogModule, MatButtonModule, MatIconModule, TranslatePipe],
 
   changeDetection: ChangeDetectionStrategy.OnPush,
 
@@ -101,7 +103,7 @@ export interface ConfirmationDialogData {
                    font-semibold
                    text-[#032D42]"
           >
-            {{ data.title }}
+            {{ data.title | t }}
           </h2>
         </div>
       </div>
@@ -120,7 +122,7 @@ export interface ConfirmationDialogData {
                  leading-6
                  text-gray-700"
         >
-          {{ data.message }}
+          {{ data.message | t }}
         </p>
 
         @if (data.warning) {
@@ -144,7 +146,7 @@ export interface ConfirmationDialogData {
             </mat-icon>
 
             <p class="leading-6">
-              {{ data.warning }}
+              {{ data.warning | t }}
             </p>
           </div>
         }
@@ -163,7 +165,7 @@ export interface ConfirmationDialogData {
                !py-4"
       >
         <button mat-button type="button" (click)="cancel()">
-          {{ data.cancelText || 'Cancel' }}
+          {{ (data.cancelText || 'Cancel') | t }}
         </button>
 
         <button
@@ -174,7 +176,7 @@ export interface ConfirmationDialogData {
           [class.!bg-[#032D42]]="!data.destructive"
           class="!text-white"
         >
-          {{ data.confirmText || 'Confirm' }}
+          {{ (data.confirmText || 'Confirm') | t }}
         </button>
       </mat-dialog-actions>
     </div>

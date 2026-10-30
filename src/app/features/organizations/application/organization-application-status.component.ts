@@ -14,38 +14,41 @@ import {
 } from '../../../core/models/organization-application-request.model';
 import { Timestamp } from 'firebase/firestore';
 
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-organization-application-status',
   standalone: true,
-  imports: [CommonModule, DatePipe, RouterLink],
+  imports: [
+    TranslatePipe,CommonModule, DatePipe, RouterLink],
   template: `
     <main class="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-5xl">
         <!-- Header -->
         <div class="mb-8">
           <a routerLink="/" class="text-sm font-medium text-slate-600 hover:text-slate-900">
-            ← Back to Zebron
+            {{ '← Back to Zebron' | t }}
           </a>
 
-          <h1 class="mt-4 text-3xl font-bold text-slate-900">Organization Application</h1>
+          <h1 class="mt-4 text-3xl font-bold text-slate-900">{{ 'Organization Application' | t }}</h1>
 
-          <p class="mt-2 text-slate-600">Track the status of your organization application.</p>
+          <p class="mt-2 text-slate-600">{{ 'Track the status of your organization application.' | t }}</p>
         </div>
 
         <!-- Loading -->
         @if (loading()) {
           <div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-            <div class="text-slate-600">Loading your application...</div>
+            <div class="text-slate-600">{{ 'Loading your application...' | t }}</div>
           </div>
         }
 
         <!-- Error -->
         @if (!loading() && errorMessage()) {
           <div class="rounded-xl border border-red-200 bg-red-50 p-6">
-            <h2 class="font-semibold text-red-900">Unable to load application</h2>
+            <h2 class="font-semibold text-red-900">{{ 'Unable to load application' | t }}</h2>
 
             <p class="mt-2 text-sm text-red-700">
-              {{ errorMessage() }}
+              {{ errorMessage() | t }}
             </p>
 
             <div class="mt-5">
@@ -53,7 +56,7 @@ import { Timestamp } from 'firebase/firestore';
                 routerLink="/organizations/apply"
                 class="inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
               >
-                Start an application
+                {{ 'Start an application' | t }}
               </a>
             </div>
           </div>
@@ -64,14 +67,14 @@ import { Timestamp } from 'firebase/firestore';
           <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p class="text-sm font-medium text-slate-500">Organization</p>
+                <p class="text-sm font-medium text-slate-500">{{ 'Organization' | t }}</p>
 
                 <h2 class="mt-1 text-2xl font-bold text-slate-900">
                   {{ request()!.organizationName }}
                 </h2>
 
                 <p class="mt-2 text-sm text-slate-500">
-                  Application ID:
+                  {{ 'Application ID:' | t }}
                   <span class="font-mono">
                     {{ request()!.id }}
                   </span>
@@ -116,7 +119,7 @@ import { Timestamp } from 'firebase/firestore';
                   [routerLink]="['/organizations/apply', request()!.id]"
                   class="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
                 >
-                  Edit Application
+                  {{ 'Edit Application' | t }}
                 </a>
 
                 <button
@@ -125,7 +128,7 @@ import { Timestamp } from 'firebase/firestore';
                   [disabled]="submitting()"
                   class="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {{ submitting() ? 'Submitting...' : 'Submit Application' }}
+                  {{ submitting() ? ('Submitting...' | t) : ('Submit Application' | t) }}
                 </button>
               </div>
             }
@@ -133,7 +136,7 @@ import { Timestamp } from 'firebase/firestore';
             <!-- Rejection -->
             @if (request()!.status === 'rejected' && request()!.rejectionReason) {
               <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-5">
-                <h3 class="font-semibold text-red-900">Application requires changes</h3>
+                <h3 class="font-semibold text-red-900">{{ 'Application requires changes' | t }}</h3>
 
                 <p class="mt-2 text-sm text-red-800">
                   {{ request()!.rejectionReason }}
@@ -144,10 +147,10 @@ import { Timestamp } from 'firebase/firestore';
 
           <!-- Lifecycle -->
           <section class="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <h2 class="text-xl font-semibold text-slate-900">Application Progress</h2>
+            <h2 class="text-xl font-semibold text-slate-900">{{ 'Application Progress' | t }}</h2>
 
             <p class="mt-1 text-sm text-slate-500">
-              Your application moves through these stages after submission.
+              {{ 'Your application moves through these stages after submission.' | t }}
             </p>
 
             <div class="mt-8 space-y-7">
@@ -189,7 +192,7 @@ import { Timestamp } from 'firebase/firestore';
                       [class.text-slate-900]="stepState(step.status) !== 'upcoming'"
                       [class.text-slate-400]="stepState(step.status) === 'upcoming'"
                     >
-                      {{ step.label }}
+                      {{ step.label | t }}
                     </h3>
 
                     <p
@@ -197,7 +200,7 @@ import { Timestamp } from 'firebase/firestore';
                       [class.text-slate-600]="stepState(step.status) !== 'upcoming'"
                       [class.text-slate-400]="stepState(step.status) === 'upcoming'"
                     >
-                      {{ step.description }}
+                      {{ step.description | t }}
                     </p>
                   </div>
                 </div>
@@ -207,12 +210,12 @@ import { Timestamp } from 'firebase/firestore';
 
           <!-- Organization Details -->
           <section class="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <h2 class="text-xl font-semibold text-slate-900">Organization Details</h2>
+            <h2 class="text-xl font-semibold text-slate-900">{{ 'Organization Details' | t }}</h2>
 
             <div class="mt-6 grid gap-5 sm:grid-cols-2">
               <div>
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Organization Name
+                  {{ 'Organization Name' | t }}
                 </p>
 
                 <p class="mt-1 text-sm text-slate-900">
@@ -223,7 +226,7 @@ import { Timestamp } from 'firebase/firestore';
               @if (request()!.organizationType) {
                 <div>
                   <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Organization Type
+                    {{ 'Organization Type' | t }}
                   </p>
 
                   <p class="mt-1 text-sm text-slate-900">
@@ -234,7 +237,7 @@ import { Timestamp } from 'firebase/firestore';
 
               @if (request()!.website) {
                 <div>
-                  <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Website</p>
+                  <p class="text-xs font-medium uppercase tracking-wide text-slate-500">{{ 'Website' | t }}</p>
 
                   <p class="mt-1 text-sm text-slate-900">
                     {{ request()!.website }}
@@ -244,7 +247,7 @@ import { Timestamp } from 'firebase/firestore';
 
               <div>
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Contact Name
+                  {{ 'Contact Name' | t }}
                 </p>
 
                 <p class="mt-1 text-sm text-slate-900">
@@ -254,7 +257,7 @@ import { Timestamp } from 'firebase/firestore';
 
               <div>
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Contact Email
+                  {{ 'Contact Email' | t }}
                 </p>
 
                 <p class="mt-1 text-sm text-slate-900">
@@ -265,7 +268,7 @@ import { Timestamp } from 'firebase/firestore';
               @if (request()!.contactPhone) {
                 <div>
                   <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Contact Phone
+                    {{ 'Contact Phone' | t }}
                   </p>
 
                   <p class="mt-1 text-sm text-slate-900">
@@ -276,7 +279,7 @@ import { Timestamp } from 'firebase/firestore';
 
               @if (request()!.city || request()!.state || request()!.country) {
                 <div>
-                  <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Location</p>
+                  <p class="text-xs font-medium uppercase tracking-wide text-slate-500">{{ 'Location' | t }}</p>
 
                   <p class="mt-1 text-sm text-slate-900">
                     {{ getLocation(request()!) }}
@@ -288,7 +291,7 @@ import { Timestamp } from 'firebase/firestore';
 
           <!-- Requested Applications -->
           <section class="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <h2 class="text-xl font-semibold text-slate-900">Requested Applications</h2>
+            <h2 class="text-xl font-semibold text-slate-900">{{ 'Requested Applications' | t }}</h2>
 
             <div class="mt-5 flex flex-wrap gap-2">
               @for (application of request()!.requestedApplications; track application) {
@@ -303,11 +306,11 @@ import { Timestamp } from 'firebase/firestore';
 
           <!-- Dates -->
           <section class="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <h2 class="text-xl font-semibold text-slate-900">Application History</h2>
+            <h2 class="text-xl font-semibold text-slate-900">{{ 'Application History' | t }}</h2>
 
             <div class="mt-5 space-y-4 text-sm">
               <div class="flex justify-between gap-4">
-                <span class="text-slate-500"> Created </span>
+                <span class="text-slate-500"> {{ 'Created' | t }} </span>
 
                 <span class="text-right text-slate-900">
                   {{ formatTimestamp(request()!.createdAt) | date:'medium' }}
@@ -316,7 +319,7 @@ import { Timestamp } from 'firebase/firestore';
 
               @if (request()!.submittedAt) {
                 <div class="flex justify-between gap-4">
-                  <span class="text-slate-500"> Submitted </span>
+                  <span class="text-slate-500"> {{ 'Submitted' | t }} </span>
 
                   <span class="text-right text-slate-900">
                    {{ formatTimestamp(request()!.submittedAt) | date:'medium' }}
@@ -326,7 +329,7 @@ import { Timestamp } from 'firebase/firestore';
 
               @if (request()!.reviewedAt) {
                 <div class="flex justify-between gap-4">
-                  <span class="text-slate-500"> Reviewed </span>
+                  <span class="text-slate-500"> {{ 'Reviewed' | t }} </span>
 
                   <span class="text-right text-slate-900">
                    {{ formatTimestamp(request()!.reviewedAt) | date:'medium' }}
@@ -336,7 +339,7 @@ import { Timestamp } from 'firebase/firestore';
 
               @if (request()!.approvedAt) {
                 <div class="flex justify-between gap-4">
-                  <span class="text-slate-500"> Approved </span>
+                  <span class="text-slate-500"> {{ 'Approved' | t }} </span>
 
                   <span class="text-right text-slate-900">
                    {{ formatTimestamp(request()!.approvedAt) | date:'medium' }}
@@ -346,7 +349,7 @@ import { Timestamp } from 'firebase/firestore';
 
               @if (request()!.organizationId) {
                 <div class="flex justify-between gap-4">
-                  <span class="text-slate-500"> Organization ID </span>
+                  <span class="text-slate-500"> {{ 'Organization ID' | t }} </span>
 
                   <span class="font-mono text-right text-slate-900">
                     {{ request()!.organizationId }}

@@ -1,4 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+
+import { I18nService } from '../i18n/i18n.service';
  
 /**
  * Default title shown by the global Zebron header.
@@ -11,11 +13,14 @@ export const DEFAULT_PAGE_TITLE = 'Zebron';
 export class PageTitleService {
  
   private readonly titleState = signal(DEFAULT_PAGE_TITLE);
- 
+
+  private readonly i18n = inject(I18nService);
+
   /**
-   * Read-only page title for consumers such as the global header.
+   * Read-only page title for consumers such as the global header,
+   * in the selected language (titles are set in English).
    */
-  readonly title = this.titleState.asReadonly();
+  readonly title = computed(() => this.i18n.t(this.titleState()));
  
   /**
    * Set the title displayed in the global header.

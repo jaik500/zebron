@@ -16,11 +16,13 @@ import {
   QuerySnapshot,
   serverTimestamp,
   startAfter,
+  updateDoc,
   where,
 } from 'firebase/firestore';
 
 import { firestore } from '../../../core/services/firebase-config';
 import { LoggerService } from '../../../core/services/logger.service';
+import { CommunityScopeService } from './community-scope.service';
 
 import {
   CommunityPost,
@@ -186,6 +188,13 @@ export class CommunityPostService {
   private readonly logger =
     inject(LoggerService);
 
+  /**
+   * Public Community (null) or an organization's private community.
+   * Every feed query filters on it; Firestore rules require that.
+   */
+  private readonly scope =
+    inject(CommunityScopeService);
+
 
   // ============================================================
   // GET POSTS
@@ -263,6 +272,12 @@ export class CommunityPostService {
 
       const baseConstraints:
         QueryConstraint[] = [
+
+          where(
+            'organizationId',
+            '==',
+            this.scope.organizationId(),
+          ),
 
           where(
             'status',
@@ -1248,6 +1263,12 @@ private findDocumentSnapshot(
                   this.postsCollection,
 
                   where(
+                    'organizationId',
+                    '==',
+                    this.scope.organizationId(),
+                  ),
+
+                  where(
                     'status',
                     '==',
                     'published',
@@ -1386,6 +1407,12 @@ private findDocumentSnapshot(
 
         return null;
       }
+
+      // Deleted posts are kept for history but never shown.
+      if (snapshot.data()['status'] === 'deleted') {
+        return null;
+      }
+
 
 
       return {
@@ -1709,6 +1736,10 @@ private findDocumentSnapshot(
 
       trendingScore:
         0,
+      // null = public Zebron Community; otherwise the organization's
+      // private community (members only).
+      organizationId:
+        this.scope.organizationId(),
 
       createdAt:
         serverTimestamp(),
@@ -1764,5 +1795,107 @@ private findDocumentSnapshot(
 
       throw error;
     }
+  }
+
+
+  // ============================================================
+  // EDIT POST (AUTHOR)
+  // ============================================================
+
+  /**
+   * Authors change the title, text and tags of their own published
+   * post. Engagement and moderation fields are untouched.
+   */
+  async updatePost(
+    postId: string,
+    input: {
+      title: string;
+      content: string;
+      tags?: string[];
+    },
+  ): Promise<void> {
+    const title = input.title.trim();
+    const content = input.content.trim();
+
+    if (!title || title.length > 200) {
+      throw new Error('A title of up to 200 characters is required.');
+    }
+
+    if (!content || content.length > 10000) {
+      throw new Error('Post content is required (up to 10,000 characters).');
+    }
+
+    const tags = (input.tags ?? [])
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`))
+      .slice(0, 20);
+
+    await updateDoc(doc(firestore, 'communityPosts', postId), {
+      title,
+      content,
+      tags,
+      editedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  // ============================================================
+  // DELETE POST (AUTHOR)
+  // ============================================================
+
+  /** Soft-deletes the author's own post. */
+  async deleteOwnPost(postId: string): Promise<void> {
+    await updateDoc(doc(firestore, 'communityPosts', postId), {
+      status: 'deleted',
+      deletedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  // ============================================================
+  // MODERATION
+  // ============================================================
+
+  /**
+   * Hide, restore or remove a post.
+   *
+   * Organization managers, admins and owners moderate their
+   * organization's community; platform administrators moderate
+   * everything (enforced by Firestore rules).
+   */
+  async moderatePost(
+    postId: string,
+    action: 'hide' | 'restore' | 'remove',
+    moderatorId: string,
+    reason = '',
+  ): Promise<void> {
+    const changes = {
+      hide: { status: 'hidden', moderationStatus: 'flagged' },
+      restore: { status: 'published', moderationStatus: 'approved' },
+      remove: { status: 'deleted', moderationStatus: 'rejected' },
+    }[action];
+
+    await updateDoc(doc(firestore, 'communityPosts', postId), {
+      ...changes,
+      moderatedBy: moderatorId,
+      moderatedAt: serverTimestamp(),
+      moderationReason: reason.trim().slice(0, 500),
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  /** Hidden posts in the current community (moderators only). */
+  async getHiddenPosts(): Promise<CommunityPost[]> {
+    const snapshot = await getDocs(
+      query(
+        this.postsCollection,
+        where('organizationId', '==', this.scope.organizationId()),
+        where('status', '==', 'hidden'),
+        limit(100),
+      ),
+    );
+
+    return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as CommunityPost);
   }
 }

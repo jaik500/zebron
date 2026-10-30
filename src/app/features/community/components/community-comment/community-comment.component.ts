@@ -41,6 +41,7 @@ import {
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { CommunityModerationService } from '../../services/community-moderation.service';
 // ================================================================
 // COMPONENT
 // ================================================================
@@ -557,6 +558,11 @@ export class CommunityCommentComponent {
     inject(LoggerService);
 
 
+  /** Moderators (platform admins; organization managers+) remove comments. */
+  private readonly moderation =
+    inject(CommunityModerationService);
+
+
   // ==============================================================
   // INPUTS
   // ==============================================================
@@ -630,7 +636,8 @@ readonly commentDeleted = output<string>();
 
       return (
         comment.authorId ===
-        user.id
+        user.id ||
+        this.moderation.canModerate()
       );
     });
 

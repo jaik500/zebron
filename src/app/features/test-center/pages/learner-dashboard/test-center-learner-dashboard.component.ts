@@ -8,26 +8,29 @@ import {
   LearnerAssessmentSummary,
 } from '../../models/test-center-learner.model';
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-test-center-learner-dashboard',
   standalone: true,
-  imports: [CommonModule, DatePipe, RouterLink],
+  imports: [
+    TranslatePipe,CommonModule, DatePipe, RouterLink],
   template: `
     <main class="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8 mt-15">
       <div class="mx-auto max-w-7xl space-y-6">
         <!-- Breadcrumb -->
         <nav class="flex items-center gap-2 text-sm text-slate-500">
-          <a routerLink="/test-center" class="transition hover:text-blue-600"> Test Center </a>
+          <a routerLink="/test-center" class="transition hover:text-blue-600"> {{ 'Test Center' | t }} </a>
 
           <span>/</span>
 
           <a routerLink="/test-center/learners" class="transition hover:text-blue-600">
-            Learners
+            {{ 'Learners' | t }}
           </a>
 
           <span>/</span>
 
-          <span class="font-medium text-slate-800"> Learning Dashboard </span>
+          <span class="font-medium text-slate-800"> {{ 'Learning Dashboard' | t }} </span>
         </nav>
 
         <!-- Loading -->
@@ -38,7 +41,7 @@ import {
               class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"
             ></div>
 
-            <p class="mt-4 text-sm font-medium text-slate-600">Loading learner dashboard...</p>
+            <p class="mt-4 text-sm font-medium text-slate-600">{{ 'Loading learner dashboard...' | t }}</p>
           </section>
         }
 
@@ -53,11 +56,11 @@ import {
             </div>
 
             <h2 class="mt-4 text-lg font-semibold text-slate-900">
-              Unable to load learner dashboard
+              {{ 'Unable to load learner dashboard' | t }}
             </h2>
 
             <p class="mt-2 text-sm text-slate-600">
-              {{ errorMessage }}
+              {{ errorMessage | t }}
             </p>
 
             <button
@@ -65,14 +68,14 @@ import {
               (click)="loadDashboard()"
               class="mt-5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
-              Try again
+              {{ 'Try again' | t }}
             </button>
 
             <a
               routerLink="/test-center/learners"
               class="ml-3 inline-flex rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Back to learners
+              {{ 'Back to learners' | t }}
             </a>
           </section>
         }
@@ -96,7 +99,7 @@ import {
 
                     <div class="min-w-0">
                       <p class="text-xs font-semibold uppercase tracking-wider text-blue-600">
-                        Learner Dashboard
+                        {{ 'Learner Dashboard' | t }}
                       </p>
 
                       <h1
@@ -106,7 +109,7 @@ import {
                       </h1>
 
                       <p class="mt-1 break-all text-sm text-slate-500">
-                        {{ dashboard.learner.email || 'No email available' }}
+                        {{ dashboard.learner.email || ('No email available' | t) }}
                       </p>
 
                       <div class="mt-3 flex flex-wrap items-center gap-2">
@@ -114,13 +117,13 @@ import {
                           class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
                           [ngClass]="getStatusClasses(dashboard.learner.status)"
                         >
-                          {{ getStatusLabel(dashboard.learner.status) }}
+                          {{ getStatusLabel(dashboard.learner.status) | t }}
                         </span>
 
                         <span
                           class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
                         >
-                          Organization Member
+                          {{ 'Organization Member' | t }}
                         </span>
                       </div>
                     </div>
@@ -131,7 +134,7 @@ import {
                     class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     <span aria-hidden="true">←</span>
-                    Back to learners
+                    {{ 'Back to learners' | t }}
                   </a>
                 </div>
               </div>
@@ -142,7 +145,7 @@ import {
               <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="flex items-start justify-between">
                   <div>
-                    <p class="text-sm font-medium text-slate-500">Assessments Taken</p>
+                    <p class="text-sm font-medium text-slate-500">{{ 'Assessments Taken' | t }}</p>
 
                     <p class="mt-1 text-2xl font-bold text-blue-700">
                       {{ dashboard.learner.assessmentCount }}
@@ -156,13 +159,13 @@ import {
                   </div>
                 </div>
 
-                <p class="mt-3 text-xs text-slate-500">Recorded assessment attempts</p>
+                <p class="mt-3 text-xs text-slate-500">{{ 'Recorded assessment attempts' | t }}</p>
               </article>
 
               <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="flex items-start justify-between">
                   <div>
-                    <p class="text-sm font-medium text-slate-500">Average Score</p>
+                    <p class="text-sm font-medium text-slate-500">{{ 'Average Score' | t }}</p>
 
                     <p class="mt-3 text-3xl font-bold text-slate-900">
                       {{
@@ -180,13 +183,13 @@ import {
                   </div>
                 </div>
 
-                <p class="mt-3 text-xs text-slate-500">Across assessments with recorded scores</p>
+                <p class="mt-3 text-xs text-slate-500">{{ 'Across assessments with recorded scores' | t }}</p>
               </article>
 
               <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="flex items-start justify-between">
                   <div>
-                    <p class="text-sm font-medium text-slate-500">Courses Enrolled</p>
+                    <p class="text-sm font-medium text-slate-500">{{ 'Courses Enrolled' | t }}</p>
 
                     <p class="mt-3 text-3xl font-bold text-slate-900">
                       {{ dashboard.learner.enrolledCourseIds.length }}
@@ -200,13 +203,13 @@ import {
                   </div>
                 </div>
 
-                <p class="mt-3 text-xs text-slate-500">Courses confirmed by enrollment data</p>
+                <p class="mt-3 text-xs text-slate-500">{{ 'Courses confirmed by enrollment data' | t }}</p>
               </article>
 
               <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="flex items-start justify-between">
                   <div>
-                    <p class="text-sm font-medium text-slate-500">Courses Completed</p>
+                    <p class="text-sm font-medium text-slate-500">{{ 'Courses Completed' | t }}</p>
 
                     <p class="mt-3 text-3xl font-bold text-slate-900">
                       {{ dashboard.learner.completedCourseIds.length }}
@@ -220,7 +223,7 @@ import {
                   </div>
                 </div>
 
-                <p class="mt-3 text-xs text-slate-500">Courses with confirmed completion</p>
+                <p class="mt-3 text-xs text-slate-500">{{ 'Courses with confirmed completion' | t }}</p>
               </article>
             </section>
 
@@ -234,17 +237,17 @@ import {
                   class="flex flex-col gap-2 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
-                    <h2 class="text-lg font-bold text-slate-900">Assessment History</h2>
+                    <h2 class="text-lg font-bold text-slate-900">{{ 'Assessment History' | t }}</h2>
 
                     <p class="mt-1 text-sm text-slate-500">
-                      A record of this learner's assessment activity.
+                      {{ 'A record of this learner\\u0027s assessment activity.' | t }}
                     </p>
                   </div>
 
                   <span
                     class="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
                   >
-                    {{ dashboard.assessments.length }} records
+                    {{ '{0} records' | t: [dashboard.assessments.length] }}
                   </span>
                 </div>
 
@@ -255,11 +258,10 @@ import {
                     ▤
                   </div>
 
-                  <h3 class="mt-4 font-semibold text-slate-900">No assessment activity yet</h3>
+                  <h3 class="mt-4 font-semibold text-slate-900">{{ 'No assessment activity yet' | t }}</h3>
 
                   <p class="mx-auto mt-2 max-w-sm text-sm text-slate-500">
-                    Assessment results will appear here after the learner completes an assessment
-                    that is recorded in the system.
+                    {{ 'Assessment results will appear here after the learner completes an assessment that is recorded in the system.' | t }}
                   </p>
                 </div>
 
@@ -277,7 +279,7 @@ import {
 
                       <div class="min-w-0">
                         <h3 class="break-words font-semibold text-slate-900">
-                          {{ assessment.courseName || 'Assessment' }}
+                          {{ assessment.courseName || ('Assessment' | t) }}
                         </h3>
 
                         <p class="mt-1 text-sm text-slate-500">
@@ -289,7 +291,7 @@ import {
                         </p>
 
                         <p *ngIf="assessment.courseName" class="mt-1 text-xs text-slate-500">
-                          Course: {{ assessment.courseName }}
+                          {{ 'Course: {0}' | t: [assessment.courseName] }}
                         </p>
                       </div>
                     </div>
@@ -310,7 +312,7 @@ import {
                             assessment.correctAnswers !== null &&
                             assessment.correctAnswers !== undefined
                               ? assessment.correctAnswers + ' correct'
-                              : 'Score details unavailable'
+                              : ('Score details unavailable' | t)
                           }}
                         </p>
                       </div>
@@ -319,7 +321,7 @@ import {
                         class="rounded-full px-3 py-1 text-xs font-semibold"
                         [ngClass]="getAssessmentClasses(assessment)"
                       >
-                        {{ getAssessmentLabel(assessment) }}
+                        {{ getAssessmentLabel(assessment) | t }}
                       </span>
                     </div>
                   </article>
@@ -329,14 +331,14 @@ import {
               <!-- Learner Overview -->
               <aside class="space-y-6">
                 <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h2 class="text-lg font-bold text-slate-900">Learner Overview</h2>
+                  <h2 class="text-lg font-bold text-slate-900">{{ 'Learner Overview' | t }}</h2>
 
-                  <p class="mt-1 text-sm text-slate-500">Membership and activity details.</p>
+                  <p class="mt-1 text-sm text-slate-500">{{ 'Membership and activity details.' | t }}</p>
 
                   <dl class="mt-6 space-y-5">
                     <div>
                       <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Full Name
+                        {{ 'Full Name' | t }}
                       </dt>
 
                       <dd class="mt-1 break-words text-sm font-medium text-slate-800">
@@ -346,27 +348,27 @@ import {
 
                     <div>
                       <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Email Address
+                        {{ 'Email Address' | t }}
                       </dt>
 
                       <dd class="mt-1 break-all text-sm font-medium text-slate-800">
-                        {{ dashboard.learner.email || 'Not provided' }}
+                        {{ dashboard.learner.email || ('Not provided' | t) }}
                       </dd>
                     </div>
 
                     <div>
                       <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Membership Status
+                        {{ 'Membership Status' | t }}
                       </dt>
 
                       <dd class="mt-1 text-sm font-medium text-slate-800">
-                        {{ getStatusLabel(dashboard.learner.status) }}
+                        {{ getStatusLabel(dashboard.learner.status) | t }}
                       </dd>
                     </div>
 
                     <div>
                       <dt class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Last Assessment
+                        {{ 'Last Assessment' | t }}
                       </dt>
 
                       <dd class="mt-1 text-sm font-medium text-slate-800">
@@ -390,15 +392,14 @@ import {
                     ↗
                   </div>
 
-                  <h2 class="mt-4 text-lg font-bold text-slate-900">Learning Activity</h2>
+                  <h2 class="mt-4 text-lg font-bold text-slate-900">{{ 'Learning Activity' | t }}</h2>
 
                   <p class="mt-2 text-sm leading-6 text-slate-600">
-                    This overview reflects recorded assessment activity. Course enrollment and
-                    completion counts depend on confirmed course enrollment and completion data.
+                    {{ 'This overview reflects recorded assessment activity. Course enrollment and completion counts depend on confirmed course enrollment and completion data.' | t }}
                   </p>
 
                   <div class="mt-5 rounded-xl border border-white bg-white/80 p-4">
-                    <p class="text-xs font-medium text-slate-500">Recorded assessment attempts</p>
+                    <p class="text-xs font-medium text-slate-500">{{ 'Recorded assessment attempts' | t }}</p>
 
                     <p class="mt-1 text-2xl font-bold text-blue-700">
                       {{ dashboard.learner.assessmentCount }}
@@ -411,10 +412,10 @@ import {
             <!-- Course Progress -->
             <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div class="border-b border-slate-200 px-6 py-5">
-                <h2 class="text-lg font-bold text-slate-900">Course Progress</h2>
+                <h2 class="text-lg font-bold text-slate-900">{{ 'Course Progress' | t }}</h2>
 
                 <p class="mt-1 text-sm text-slate-500">
-                  Courses and learning progress available for this learner.
+                  {{ 'Courses and learning progress available for this learner.' | t }}
                 </p>
               </div>
 
@@ -425,11 +426,10 @@ import {
                   ▦
                 </div>
 
-                <h3 class="mt-4 font-semibold text-slate-900">No course progress available</h3>
+                <h3 class="mt-4 font-semibold text-slate-900">{{ 'No course progress available' | t }}</h3>
 
                 <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                  Course activity will appear here when the learner's enrollment and progress
-                  records are available.
+                  {{ 'Course activity will appear here when the learner\\u0027s enrollment and progress records are available.' | t }}
                 </p>
               </div>
 
@@ -451,7 +451,7 @@ import {
                     <span
                       class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
                     >
-                      {{ course.status || 'In progress' }}
+                      {{ course.status || ('In progress' | t) }}
                     </span>
                   </div>
 
@@ -460,14 +460,12 @@ import {
                   </h3>
 
                   <p class="mt-2 text-sm text-slate-500">
-                    {{ course.assessmentCount }} recorded assessment{{
-                      course.assessmentCount === 1 ? '' : 's'
-                    }}
+                    {{ '{0} recorded assessment{1}' | t: [course.assessmentCount, (course.assessmentCount === 1 ? '' : 's')] }}
                   </p>
 
                   <div class="mt-4">
                     <div class="mb-2 flex items-center justify-between">
-                      <span class="text-xs font-medium text-slate-500"> Average score </span>
+                      <span class="text-xs font-medium text-slate-500"> {{ 'Average score' | t }} </span>
 
                       <span class="text-xs font-bold text-slate-700">
                         {{ getCourseActivityPercent(course) }}%
@@ -489,13 +487,13 @@ import {
             <footer
               class="flex flex-col gap-3 border-t border-slate-200 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between"
             >
-              <p>Zebron Test Center · Learner Performance</p>
+              <p>{{ 'Zebron Test Center · Learner Performance' | t }}</p>
 
               <a
                 routerLink="/test-center/learners"
                 class="font-semibold text-blue-600 hover:text-blue-800"
               >
-                Return to learner directory →
+                {{ 'Return to learner directory →' | t }}
               </a>
             </footer>
           </ng-container>

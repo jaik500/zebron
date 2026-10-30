@@ -16,6 +16,7 @@ import { firestore } from '../../../core/services/firebase-config';
 import { LoggerService } from '../../../core/services/logger.service';
 
 import { CommunityTopic } from '../models/community-topic.model';
+import { CommunityScopeService } from './community-scope.service';
 
 export interface CreateCommunityTopicInput {
   name: string;
@@ -36,45 +37,54 @@ export type UpdateCommunityTopicInput =
 export class CommunityTopicService {
   private readonly logger = inject(LoggerService);
 
-  private readonly topicsCollection =
-    collection(
-      firestore,
-      'communityTopics',
-    );
+  private readonly scope = inject(CommunityScopeService);
 
   /**
-   * Returns all active Community topics.
+   * Public topics live in communityTopics (platform admins manage).
+   * Organization topics live in organizations/{id}/communityTopics
+   * (members read; managers, admins and owners manage).
+   */
+  private get topicsCollection() {
+    const organizationId = this.scope.organizationId();
+
+    return organizationId
+      ? collection(firestore, 'organizations', organizationId, 'communityTopics')
+      : collection(firestore, 'communityTopics');
+  }
+
+  private topicDocument(topicId: string) {
+    return doc(this.topicsCollection, topicId);
+  }
+
+  /**
+   * Returns active topics for the current Community.
    *
-   * Sorting is performed in memory so the query does not
-   * require a composite Firestore index.
+   * Organization communities show their own topics first, followed
+   * by Zebron's public topics, so members can post before managers
+   * create any. Sorting is in memory (no composite index needed).
    */
   async getActiveTopics(): Promise<CommunityTopic[]> {
-    const topicsQuery =
-      query(
-        this.topicsCollection,
-        where(
-          'active',
-          '==',
-          true,
-        ),
+    const organizationId = this.scope.organizationId();
+    const active = (reference: ReturnType<typeof collection>) =>
+      getDocs(query(reference, where('active', '==', true))).then((snapshot) =>
+        snapshot.docs
+          .map((document) => ({ id: document.id, ...document.data() }) as CommunityTopic)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
       );
 
-    const snapshot =
-      await getDocs(topicsQuery);
+    const publicTopics = active(collection(firestore, 'communityTopics'));
 
-    return snapshot.docs
-      .map(
-        (document) =>
-          ({
-            id: document.id,
-            ...document.data(),
-          }) as CommunityTopic,
-      )
-      .sort(
-        (a, b) =>
-          (a.sortOrder ?? 0) -
-          (b.sortOrder ?? 0),
-      );
+    if (!organizationId) {
+      return publicTopics;
+    }
+
+    const [ownTopics, sharedTopics] = await Promise.all([
+      active(collection(firestore, 'organizations', organizationId, 'communityTopics')).catch(() => []),
+      publicTopics,
+    ]);
+    const ownSlugs = new Set(ownTopics.map((topic) => topic.slug));
+
+    return [...ownTopics, ...sharedTopics.filter((topic) => !ownSlugs.has(topic.slug))];
   }
 
   /**
@@ -248,11 +258,7 @@ export class CommunityTopicService {
     }
 
     await updateDoc(
-      doc(
-        firestore,
-        'communityTopics',
-        topicId,
-      ),
+      this.topicDocument(topicId),
       updates,
     );
 
@@ -273,11 +279,7 @@ export class CommunityTopicService {
     active: boolean,
   ): Promise<void> {
     await updateDoc(
-      doc(
-        firestore,
-        'communityTopics',
-        topicId,
-      ),
+      this.topicDocument(topicId),
       {
         active,
         updatedAt:
@@ -311,11 +313,7 @@ export class CommunityTopicService {
     }
 
     await deleteDoc(
-      doc(
-        firestore,
-        'communityTopics',
-        topicId,
-      ),
+      this.topicDocument(topicId),
     );
 
     this.logger.info(

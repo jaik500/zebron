@@ -16,9 +16,9 @@ import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FooterComponent } from './core/components/footer/footer.components';
-import { AuthService } from './core/services/auth.service';
-import { SupportAssistantComponent } from './features/support/assistant/support-assistant.component';
 import { ZebronHeaderComponent } from './shared/components/zebron-header/zebron-header.component';
+import { LocalizationService } from './core/services/localization.service';
+import { ClaimsSyncService } from './core/services/claims-sync.service';
 
 @Component({
   selector: 'app-root',
@@ -27,7 +27,6 @@ import { ZebronHeaderComponent } from './shared/components/zebron-header/zebron-
     RouterOutlet,
     FooterComponent,
     ZebronHeaderComponent,
-    SupportAssistantComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -58,14 +57,6 @@ import { ZebronHeaderComponent } from './shared/components/zebron-header/zebron-
 
       <app-footer />
 
-      <!-- Help assistant: partner portal and support pages, signed-in users -->
-      @if (showAssistant() && auth.firebaseUser()) {
-        <app-support-assistant
-          [organizationId]="assistantOrganizationId()"
-          [firstName]="auth.user()?.firstName ?? null"
-        />
-      }
-
     </div>
   `,
   styles: [],
@@ -73,13 +64,8 @@ import { ZebronHeaderComponent } from './shared/components/zebron-header/zebron-
 export class App {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly auth = inject(AuthService);
-
-  /** Assistant shows on /partner/... and /support pages. */
-  protected readonly showAssistant = signal(this.isAssistantRoute(this.router.url));
-
-  /** Organization taken from /partner/org/:organizationId/... */
-  protected readonly assistantOrganizationId = signal(this.organizationFromUrl(this.router.url));
+  private readonly localization = inject(LocalizationService);
+  private readonly claimsSync = inject(ClaimsSyncService);
 
   /**
    * Controls whether the global header is displayed.
@@ -95,6 +81,12 @@ export class App {
   );
 
   constructor() {
+    // Restore the saved language (or the browser's, if supported).
+    this.localization.initialize();
+
+    // Keep roles on the sign-in token current (browser only).
+    this.claimsSync.start();
+
     this.router.events
       .pipe(
         filter(
@@ -107,23 +99,7 @@ export class App {
         this.showHeader.set(
           !this.isHomeRoute(event.urlAfterRedirects),
         );
-
-        this.showAssistant.set(this.isAssistantRoute(event.urlAfterRedirects));
-        this.assistantOrganizationId.set(
-          this.organizationFromUrl(event.urlAfterRedirects) ??
-            new URLSearchParams(event.urlAfterRedirects.split('?')[1] ?? '').get('organizationId'),
-        );
       });
-  }
-
-  private isAssistantRoute(url: string): boolean {
-    const path = url.split('?')[0].split('#')[0];
-    return path.startsWith('/partner') || path.startsWith('/support');
-  }
-
-  private organizationFromUrl(url: string): string | null {
-    const match = url.split('?')[0].match(/^\/partner\/org\/([^/]+)/);
-    return match ? decodeURIComponent(match[1]) : null;
   }
 
   private isHomeRoute(url: string): boolean {

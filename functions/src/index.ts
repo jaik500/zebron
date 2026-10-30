@@ -2,6 +2,7 @@
 
 // Initialize Firebase Admin before importing modules that use Firebase services.
 import "./firebase-admin";
+import "./global-options";
 
 import {
   onCall,
@@ -2433,6 +2434,10 @@ export {
 } from "./community-post-view";
 
 export {
+  backfillCommunityPostScope,
+} from "./community-scope-migration";
+
+export {
   lookupCommunicationRecipients,
   sendOrganizationCommunication,
   getCommunicationDefaults,
@@ -2490,3 +2495,9 @@ export {
   getOrganizationMemberDirectory,
   getOrganizationMemberProfile,
 } from "./organization-member-directory";
+
+export {
+  syncClaimsOnMembershipWrite,
+  syncClaimsOnUserWrite,
+  syncMyClaims,
+} from "./user-claims";

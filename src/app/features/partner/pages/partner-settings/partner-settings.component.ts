@@ -32,10 +32,13 @@ interface SettingsSection {
   icon: string;
 }
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-partner-settings',
   standalone: true,
   imports: [
+    TranslatePipe,
     FormsModule,
     RouterLink,
     MatButtonModule,
@@ -62,7 +65,7 @@ interface SettingsSection {
                   routerLink="/partner/admin"
                   class="transition hover:text-white"
                 >
-                  Administration
+                  {{ 'Administration' | t }}
                 </a>
 
                 <mat-icon
@@ -72,14 +75,14 @@ interface SettingsSection {
                 </mat-icon>
 
                 <span class="text-white">
-                  Settings
+                  {{ 'Settings' | t }}
                 </span>
               </div>
 
               <h1
                 class="mt-1 truncate text-xl font-semibold sm:text-2xl"
               >
-                {{ organizationName() }} Settings
+                {{ '{0} Settings' | t: [organizationName()] }}
               </h1>
             </div>
 
@@ -89,7 +92,7 @@ interface SettingsSection {
               class="!border-white/50 !text-white"
             >
               <mat-icon>arrow_back</mat-icon>
-              Administration
+              {{ 'Administration' | t }}
             </a>
           </div>
         </div>
@@ -117,7 +120,7 @@ interface SettingsSection {
               </mat-icon>
 
               <p class="text-sm text-slate-600">
-                Loading organization settings...
+                {{ 'Loading organization settings...' | t }}
               </p>
             </div>
           </div>
@@ -139,11 +142,11 @@ interface SettingsSection {
 
               <div>
                 <h2 class="font-semibold text-red-900">
-                  Unable to load settings
+                  {{ 'Unable to load settings' | t }}
                 </h2>
 
                 <p class="mt-1 text-sm text-red-700">
-                  {{ errorMessage() }}
+                  {{ errorMessage() | t }}
                 </p>
 
                 <button
@@ -152,7 +155,7 @@ interface SettingsSection {
                   class="mt-4"
                   (click)="initialize()"
                 >
-                  Retry
+                  {{ 'Retry' | t }}
                 </button>
               </div>
             </div>
@@ -176,7 +179,7 @@ interface SettingsSection {
                 <p
                   class="text-xs font-semibold uppercase tracking-wide text-slate-500"
                 >
-                  Organization
+                  {{ 'Organization' | t }}
                 </p>
 
                 <h2
@@ -186,8 +189,7 @@ interface SettingsSection {
                 </h2>
 
                 <p class="mt-1 text-sm text-slate-500">
-                  Configure settings for your organization and
-                  partner portal.
+                  {{ 'Configure settings for your organization and partner portal.' | t }}
                 </p>
               </div>
 
@@ -195,11 +197,11 @@ interface SettingsSection {
                 class="rounded-lg bg-slate-100 px-4 py-3"
               >
                 <p class="text-xs text-slate-500">
-                  Access level
+                  {{ 'Access level' | t }}
                 </p>
 
                 <p class="font-medium text-slate-800">
-                  {{ roleLabel() }}
+                  {{ roleLabel() | t }}
                 </p>
               </div>
             </div>
@@ -220,7 +222,7 @@ interface SettingsSection {
                 <p
                   class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
                 >
-                  Settings
+                  {{ 'Settings' | t }}
                 </p>
 
                 @for (
@@ -247,13 +249,13 @@ interface SettingsSection {
 
                     <span class="min-w-0">
                       <span class="block font-medium">
-                        {{ section.title }}
+                        {{ section.title | t }}
                       </span>
 
                       <span
                         class="mt-0.5 block text-xs text-slate-500"
                       >
-                        {{ section.description }}
+                        {{ section.description | t }}
                       </span>
                     </span>
                   </button>
@@ -283,12 +285,11 @@ interface SettingsSection {
 
                       <div>
                         <h2>
-                          Organization
+                          {{ 'Organization' | t }}
                         </h2>
 
                         <p>
-                          View and manage organization-level
-                          information.
+                          {{ 'View and manage organization-level information.' | t }}
                         </p>
                       </div>
                     </div>
@@ -297,24 +298,24 @@ interface SettingsSection {
 
                       <div class="field">
                         <mat-form-field appearance="outline" class="zb-field">
-                          <mat-label>Organization name</mat-label>
+                          <mat-label>{{ 'Organization name' | t }}</mat-label>
                           <input matInput
                           type="text"
                           [value]="organizationName()"
                           disabled
                         />
-                          <mat-hint>Organization identity is managed by the platform.</mat-hint>
+                          <mat-hint>{{ 'Organization identity is managed by the platform.' | t }}</mat-hint>
                         </mat-form-field>
                       </div>
 
                       <div class="field">
                         <label>
-                          Organization status
+                          {{ 'Organization status' | t }}
                         </label>
 
                         <div class="status-badge">
                           <span class="status-dot"></span>
-                          Active
+                          {{ 'Active' | t }}
                         </div>
                       </div>
 
@@ -336,12 +337,11 @@ interface SettingsSection {
 
                       <div>
                         <h2>
-                          Test Center
+                          {{ 'Test Center' | t }}
                         </h2>
 
                         <p>
-                          Configure testing behavior for your
-                          organization.
+                          {{ 'Configure testing behavior for your organization.' | t }}
                         </p>
                       </div>
                     </div>
@@ -353,19 +353,18 @@ interface SettingsSection {
                       <div class="setting-row">
                         <div>
                           <h3>
-                            Enable Test Center
+                            {{ 'Enable Test Center' | t }}
                           </h3>
 
                           <p>
-                            Allow members of this organization
-                            to access Test Center resources.
+                            {{ 'Allow members of this organization to access Test Center resources.' | t }}
                           </p>
                         </div>
 
                         <mat-slide-toggle
                           [(ngModel)]="settings.testCenter.enabled"
                           [disabled]="!canEditSettings()"
-                          aria-label="Enable Test Center"
+                          [attr.aria-label]="'Enable Test Center' | t"
                         ></mat-slide-toggle>
                       </div>
 
@@ -374,19 +373,18 @@ interface SettingsSection {
                       <div class="setting-row">
                         <div>
                           <h3>
-                            Allow member testing
+                            {{ 'Allow member testing' | t }}
                           </h3>
 
                           <p>
-                            Allow organization members to take
-                            available tests.
+                            {{ 'Allow organization members to take available tests.' | t }}
                           </p>
                         </div>
 
                         <mat-slide-toggle
                           [(ngModel)]="settings.testCenter.allowMemberTesting"
                           [disabled]="!canEditSettings()"
-                          aria-label="Allow member testing"
+                          [attr.aria-label]="'Allow member testing' | t"
                         ></mat-slide-toggle>
                       </div>
 
@@ -394,7 +392,7 @@ interface SettingsSection {
 
                       <div class="field">
                         <mat-form-field appearance="outline" class="zb-field">
-                          <mat-label>Course visibility</mat-label>
+                          <mat-label>{{ 'Course visibility' | t }}</mat-label>
                           <mat-select
                           [(ngModel)]="
                             settings.testCenter.courseVisibility
@@ -402,11 +400,11 @@ interface SettingsSection {
                           [disabled]="!canEditSettings()"
                         >
                           <mat-option value="organization">
-                            Organization courses only
+                            {{ 'Organization courses only' | t }}
                           </mat-option>
 
                           <mat-option value="all">
-                            Organization and public courses
+                            {{ 'Organization and public courses' | t }}
                           </mat-option>
                         </mat-select>
                         </mat-form-field>
@@ -430,11 +428,11 @@ interface SettingsSection {
 
                       <div>
                         <h2>
-                          Members
+                          {{ 'Members' | t }}
                         </h2>
 
                         <p>
-                          Configure organization member behavior.
+                          {{ 'Configure organization member behavior.' | t }}
                         </p>
                       </div>
                     </div>
@@ -446,19 +444,18 @@ interface SettingsSection {
                       <div class="setting-row">
                         <div>
                           <h3>
-                            Member self-registration
+                            {{ 'Member self-registration' | t }}
                           </h3>
 
                           <p>
-                            Allow users to request membership
-                            in this organization.
+                            {{ 'Allow users to request membership in this organization.' | t }}
                           </p>
                         </div>
 
                         <mat-slide-toggle
                           [(ngModel)]="settings.members.allowSelfRegistration"
                           [disabled]="!canEditSettings()"
-                          aria-label="Member self-registration"
+                          [attr.aria-label]="'Member self-registration' | t"
                         ></mat-slide-toggle>
                       </div>
 
@@ -466,7 +463,7 @@ interface SettingsSection {
 
                       <div class="field">
                         <mat-form-field appearance="outline" class="zb-field">
-                          <mat-label>Default member role</mat-label>
+                          <mat-label>{{ 'Default member role' | t }}</mat-label>
                           <mat-select
                           [(ngModel)]="
                             settings.members.defaultMemberRole
@@ -474,11 +471,11 @@ interface SettingsSection {
                           [disabled]="!canEditSettings()"
                         >
                           <mat-option value="org_member">
-                            Member
+                            {{ 'Member' | t }}
                           </mat-option>
 
                           <mat-option value="org_manager">
-                            Manager
+                            {{ 'Manager' | t }}
                           </mat-option>
                         </mat-select>
                         </mat-form-field>
@@ -502,12 +499,11 @@ interface SettingsSection {
 
                       <div>
                         <h2>
-                          Notifications
+                          {{ 'Notifications' | t }}
                         </h2>
 
                         <p>
-                          Configure administrative and member
-                          notifications.
+                          {{ 'Configure administrative and member notifications.' | t }}
                         </p>
                       </div>
                     </div>
@@ -519,19 +515,18 @@ interface SettingsSection {
                       <div class="setting-row">
                         <div>
                           <h3>
-                            Administrative notifications
+                            {{ 'Administrative notifications' | t }}
                           </h3>
 
                           <p>
-                            Receive important organization
-                            administration notifications.
+                            {{ 'Receive important organization administration notifications.' | t }}
                           </p>
                         </div>
 
                         <mat-slide-toggle
                           [(ngModel)]="settings.notifications.adminNotifications"
                           [disabled]="!canEditSettings()"
-                          aria-label="Administrative notifications"
+                          [attr.aria-label]="'Administrative notifications' | t"
                         ></mat-slide-toggle>
                       </div>
 
@@ -540,19 +535,18 @@ interface SettingsSection {
                       <div class="setting-row">
                         <div>
                           <h3>
-                            Test result notifications
+                            {{ 'Test result notifications' | t }}
                           </h3>
 
                           <p>
-                            Receive notifications related to
-                            member test results.
+                            {{ 'Receive notifications related to member test results.' | t }}
                           </p>
                         </div>
 
                         <mat-slide-toggle
                           [(ngModel)]="settings.notifications.testResultNotifications"
                           [disabled]="!canEditSettings()"
-                          aria-label="Test result notifications"
+                          [attr.aria-label]="'Test result notifications' | t"
                         ></mat-slide-toggle>
                       </div>
 
@@ -574,12 +568,11 @@ interface SettingsSection {
 
                       <div>
                         <h2>
-                          Security
+                          {{ 'Security' | t }}
                         </h2>
 
                         <p>
-                          Review organization-level security
-                          behavior.
+                          {{ 'Review organization-level security behavior.' | t }}
                         </p>
                       </div>
                     </div>
@@ -589,13 +582,11 @@ interface SettingsSection {
                       <div class="setting-row">
                         <div>
                           <h3>
-                            Organization administrators
+                            {{ 'Organization administrators' | t }}
                           </h3>
 
                           <p>
-                            Only authorized organization
-                            administrators can modify partner
-                            settings.
+                            {{ 'Only authorized organization administrators can modify partner settings.' | t }}
                           </p>
                         </div>
 
@@ -607,12 +598,11 @@ interface SettingsSection {
                       <div class="setting-row">
                         <div>
                           <h3>
-                            Organization isolation
+                            {{ 'Organization isolation' | t }}
                           </h3>
 
                           <p>
-                            Organization resources remain scoped
-                            to the current organization.
+                            {{ 'Organization resources remain scoped to the current organization.' | t }}
                           </p>
                         </div>
 
@@ -639,8 +629,7 @@ interface SettingsSection {
                   <p
                     class="mr-auto text-sm text-slate-500"
                   >
-                    Only organization owners and administrators
-                    can modify these settings.
+                    {{ 'Only organization owners and administrators can modify these settings.' | t }}
                   </p>
                 }
 
@@ -659,8 +648,8 @@ interface SettingsSection {
 
                   {{
                     isSaving()
-                      ? 'Saving...'
-                      : 'Save Settings'
+                      ? ('Saving...' | t)
+                      : ('Save Settings' | t)
                   }}
                 </button>
 

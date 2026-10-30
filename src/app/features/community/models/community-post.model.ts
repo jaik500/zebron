@@ -153,6 +153,26 @@ trendingScore?: number;
 
 
   // ==========================================================
+  // SCOPE AND MODERATION
+  // ==========================================================
+
+  /**
+   * null (or missing on older posts): public Zebron Community.
+   * Otherwise the organization's private community.
+   */
+  organizationId?: string | null;
+
+  /** Set when the author edits the post. */
+  editedAt?: Timestamp;
+
+  moderatedBy?: string;
+
+  moderatedAt?: Timestamp;
+
+  moderationReason?: string;
+
+
+  // ==========================================================
   // TIMESTAMPS
   // ==========================================================
 

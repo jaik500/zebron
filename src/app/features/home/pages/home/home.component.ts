@@ -1,10 +1,14 @@
-import { Component, DOCUMENT, inject } from '@angular/core';
+import { Component, DOCUMENT, computed, effect, inject } from '@angular/core';
  
 import { Meta, Title } from '@angular/platform-browser';
  
 import { RouterLink } from '@angular/router';
  
 import { MatIconModule } from '@angular/material/icon';
+
+import { LocalizationService } from '../../../../core/services/localization.service';
+
+import { homeText } from './home.i18n';
  
 @Component({
   selector: 'app-home',
@@ -94,7 +98,7 @@ import { MatIconModule } from '@angular/material/icon';
                  sm:text-4xl
                  lg:text-5xl"
               >
-                Everything you need to discover, explore, and move forward.
+                {{ t().heroTitle }}
               </h1>
  
               <!-- =================================================
@@ -109,8 +113,7 @@ import { MatIconModule } from '@angular/material/icon';
                  text-white/80
                  sm:text-xl"
               >
-                Connect with resources, organizations, services, opportunities, information, and
-                more—all in one place.
+                {{ t().heroText }}
               </p>
  
               <!-- =================================================
@@ -137,7 +140,7 @@ import { MatIconModule } from '@angular/material/icon';
            transition
            hover:bg-[#008989]"
               >
-                Explore Resources
+                {{ t().exploreResources }}
  
                 <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">
                   arrow_forward
@@ -157,7 +160,7 @@ import { MatIconModule } from '@angular/material/icon';
            transition
            hover:bg-white/10"
               >
-                Find Opportunities
+                {{ t().findOpportunities }}
               </a>
  
               <a
@@ -173,7 +176,7 @@ import { MatIconModule } from '@angular/material/icon';
            transition
            hover:bg-[#65CFCF]/20"
               >
-                Donate
+                {{ t().donate }}
               </a>
             </div>
           </div>
@@ -197,7 +200,7 @@ import { MatIconModule } from '@angular/material/icon';
                      tracking-wider
                      text-[#007979]"
             >
-              Explore Zebron
+              {{ t().exploreEyebrow }}
             </p>
  
             <h2
@@ -205,7 +208,7 @@ import { MatIconModule } from '@angular/material/icon';
                      tracking-tight
                      text-[#032D42]"
             >
-              One platform, multiple ways to move forward.
+              {{ t().exploreTitle }}
             </h2>
  
             <p
@@ -213,7 +216,7 @@ import { MatIconModule } from '@angular/material/icon';
                      text-gray-600
                      sm:text-base"
             >
-              Start with what you need and explore the opportunities that connect to it.
+              {{ t().exploreText }}
             </p>
           </div>
  
@@ -248,7 +251,7 @@ import { MatIconModule } from '@angular/material/icon';
                   class="min-w-0 text-xl font-bold
                          text-[#032D42]"
                 >
-                  Resources
+                  {{ t().resourcesTitle }}
                 </h3>
               </div>
  
@@ -256,8 +259,7 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-4 text-sm leading-6
                        text-gray-600"
               >
-                Discover services, programs, organizations, and resources that can help you reach
-                your next goal.
+                {{ t().resourcesText }}
               </p>
  
               <span
@@ -266,7 +268,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-sm font-bold
                        text-[#007979]"
               >
-                Explore Resources
+                {{ t().exploreResources }}
  
                 <mat-icon
                   aria-hidden="true"
@@ -307,7 +309,7 @@ import { MatIconModule } from '@angular/material/icon';
                   class="min-w-0 text-xl font-bold
                          text-[#032D42]"
                 >
-                  Jobs
+                  {{ t().jobsTitle }}
                 </h3>
               </div>
  
@@ -315,8 +317,7 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-4 text-sm leading-6
                        text-gray-600"
               >
-                Find employment opportunities and discover organizations looking for people with
-                your skills.
+                {{ t().jobsText }}
               </p>
  
               <span
@@ -325,7 +326,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-sm font-bold
                        text-[#007979]"
               >
-                Find Jobs
+                {{ t().jobsLink }}
  
                 <mat-icon
                   aria-hidden="true"
@@ -368,7 +369,7 @@ import { MatIconModule } from '@angular/material/icon';
                   class="min-w-0 text-xl font-bold
                          text-[#032D42]"
                 >
-                  Training
+                  {{ t().trainingTitle }}
                 </h3>
               </div>
  
@@ -376,8 +377,7 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-4 text-sm leading-6
                        text-gray-600"
               >
-                Explore bootcamps, courses, educational programs, and other opportunities to build
-                your skills.
+                {{ t().trainingText }}
               </p>
  
               <span
@@ -386,7 +386,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-sm font-bold
                        text-[#007979]"
               >
-                Explore Training
+                {{ t().trainingLink }}
  
                 <mat-icon
                   aria-hidden="true"
@@ -427,7 +427,7 @@ import { MatIconModule } from '@angular/material/icon';
                   class="min-w-0 text-xl font-bold
                          text-[#032D42]"
                 >
-                  Test Center
+                  {{ t().testCenterTitle }}
                 </h3>
               </div>
  
@@ -435,8 +435,7 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-4 text-sm leading-6
                        text-gray-600"
               >
-                Challenge yourself today, and build the competitive edge you need to stand out
-                tomorrow.
+                {{ t().testCenterText }}
               </p>
  
               <span
@@ -445,7 +444,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-sm font-bold
                        text-[#007979]"
               >
-                Explore Test Center
+                {{ t().testCenterLink }}
  
                 <mat-icon
                   aria-hidden="true"
@@ -488,7 +487,7 @@ import { MatIconModule } from '@angular/material/icon';
                   class="min-w-0 text-xl font-bold
                          text-[#032D42]"
                 >
-                  Community
+                  {{ t().communityTitle }}
                 </h3>
               </div>
  
@@ -496,8 +495,7 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-4 text-sm leading-6
                        text-gray-600"
               >
-                Connect with people, exchange experiences, ask questions and discover helpful
-                resources.
+                {{ t().communityText }}
               </p>
  
               <span
@@ -506,7 +504,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-sm font-bold
                        text-[#007979]"
               >
-                Explore Community
+                {{ t().communityLink }}
  
                 <mat-icon
                   aria-hidden="true"
@@ -549,7 +547,7 @@ import { MatIconModule } from '@angular/material/icon';
                   class="min-w-0 text-xl font-bold
                          text-[#032D42]"
                 >
-                  Tax & Pay Calculator
+                  {{ t().taxTitle }}
                 </h3>
               </div>
  
@@ -557,8 +555,7 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-4 text-sm leading-6
                        text-gray-600"
               >
-                Crunch your numbers, clear your doubts, and keep more of your hard-earned money with
-                a smarter tax calculator
+                {{ t().taxText }}
               </p>
  
               <span
@@ -567,7 +564,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-sm font-bold
                        text-[#007979]"
               >
-                Try Tax Calculator
+                {{ t().taxLink }}
  
                 <mat-icon
                   aria-hidden="true"
@@ -607,7 +604,7 @@ import { MatIconModule } from '@angular/material/icon';
                   class="min-w-0 text-xl font-bold
                          text-[#032D42]"
                 >
-                  Organization Application
+                  {{ t().organizationTitle }}
                 </h3>
               </div>
  
@@ -615,8 +612,7 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-4 text-sm leading-6
            text-gray-600"
               >
-                Apply to bring your organization onto Zebron and request access to the applications
-                and tools your organization needs.
+                {{ t().organizationText }}
               </p>
  
               <span
@@ -625,7 +621,7 @@ import { MatIconModule } from '@angular/material/icon';
            text-sm font-bold
            text-[#007979]"
               >
-                Apply for an Organization
+                {{ t().organizationLink }}
  
                 <mat-icon
                   aria-hidden="true"
@@ -659,7 +655,7 @@ import { MatIconModule } from '@angular/material/icon';
                      tracking-wider
                      text-[#007979]"
             >
-              How Zebron works
+              {{ t().howEyebrow }}
             </p>
  
             <h2
@@ -667,7 +663,7 @@ import { MatIconModule } from '@angular/material/icon';
                      tracking-tight
                      text-[#032D42]"
             >
-              From discovery to opportunity.
+              {{ t().howTitle }}
             </h2>
           </div>
  
@@ -693,7 +689,7 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-5 text-lg font-bold
                        text-[#032D42]"
               >
-                Discover
+                {{ t().discover }}
               </h3>
  
               <p
@@ -701,7 +697,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-sm leading-6
                        text-gray-600"
               >
-                Search for resources, organizations, jobs, and training that match your needs.
+                {{ t().discoverText }}
               </p>
             </div>
  
@@ -723,7 +719,7 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-5 text-lg font-bold
                        text-[#032D42]"
               >
-                Explore
+                {{ t().explore }}
               </h3>
  
               <p
@@ -731,8 +727,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-sm leading-6
                        text-gray-600"
               >
-                Learn more about the organizations, services, programs, and opportunities you
-                discover.
+                {{ t().exploreStepText }}
               </p>
             </div>
  
@@ -754,7 +749,7 @@ import { MatIconModule } from '@angular/material/icon';
                 class="mt-5 text-lg font-bold
                        text-[#032D42]"
               >
-                Connect
+                {{ t().connect }}
               </h3>
  
               <p
@@ -762,7 +757,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-sm leading-6
                        text-gray-600"
               >
-                Take the next step by connecting directly with the organization or opportunity.
+                {{ t().connectText }}
               </p>
             </div>
           </div>
@@ -790,7 +785,7 @@ import { MatIconModule } from '@angular/material/icon';
                        tracking-wider
                        text-[#007979]"
               >
-                Built for discovery
+                {{ t().valueEyebrow }}
               </p>
  
               <h2
@@ -799,7 +794,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-[#032D42]
                        sm:text-4xl"
               >
-                Spend less time searching. Spend more time moving forward.
+                {{ t().valueTitle }}
               </h2>
  
               <p
@@ -807,8 +802,7 @@ import { MatIconModule } from '@angular/material/icon';
                        text-gray-600
                        sm:text-base"
               >
-                Zebron brings useful information together so you can spend less time searching
-                across disconnected websites and more time exploring options that fit your goals.
+                {{ t().valueText }}
               </p>
  
               <div class="mt-7">
@@ -819,7 +813,7 @@ import { MatIconModule } from '@angular/material/icon';
                          text-[#007979]
                          hover:underline"
                 >
-                  Start exploring
+                  {{ t().startExploring }}
  
                   <mat-icon
                     aria-hidden="true"
@@ -869,14 +863,14 @@ import { MatIconModule } from '@angular/material/icon';
                         class="text-xs
                                text-white/50"
                       >
-                        Discover
+                        {{ t().discover }}
                       </p>
  
                       <p
                         class="text-sm font-semibold
                                text-white"
                       >
-                        Resources & Services
+                        {{ t().resourcesServices }}
                       </p>
                     </div>
                   </div>
@@ -903,14 +897,14 @@ import { MatIconModule } from '@angular/material/icon';
                         class="text-xs
                                text-white/50"
                       >
-                        Explore
+                        {{ t().explore }}
                       </p>
  
                       <p
                         class="text-sm font-semibold
                                text-white"
                       >
-                        Training & Education
+                        {{ t().trainingEducation }}
                       </p>
                     </div>
                   </div>
@@ -937,14 +931,14 @@ import { MatIconModule } from '@angular/material/icon';
                         class="text-xs
                                text-white/50"
                       >
-                        Connect
+                        {{ t().connect }}
                       </p>
  
                       <p
                         class="text-sm font-semibold
                                text-white"
                       >
-                        Jobs & Opportunities
+                        {{ t().jobsOpportunities }}
                       </p>
                     </div>
                   </div>
@@ -978,7 +972,7 @@ import { MatIconModule } from '@angular/material/icon';
                        tracking-wider
                        text-[#007979]"
               >
-                For organizations
+                {{ t().forOrganizations }}
               </p>
 
               <h2
@@ -986,15 +980,14 @@ import { MatIconModule } from '@angular/material/icon';
                        tracking-tight
                        text-[#032D42]"
               >
-                Share what your organization provides.
+                {{ t().forOrganizationsTitle }}
               </h2>
 
               <p
                 class="mt-3 text-sm leading-6
                        text-gray-600"
               >
-                Help people discover your resources, programs, services, and opportunities through
-                Zebron.
+                {{ t().forOrganizationsText }}
               </p>
             </div>
 
@@ -1011,7 +1004,7 @@ import { MatIconModule } from '@angular/material/icon';
                      transition
                      hover:bg-[#006666]"
             >
-              Add a Resource
+              {{ t().addResource }}
 
               <mat-icon
                 aria-hidden="true"
@@ -1045,7 +1038,7 @@ import { MatIconModule } from '@angular/material/icon';
                  tracking-wider
                  text-[#65CFCF]"
                     >
-                      Support Zebron
+                      {{ t().supportZebron }}
                     </p>
 
                     <h2
@@ -1054,7 +1047,7 @@ import { MatIconModule } from '@angular/material/icon';
                  text-white
                  sm:text-3xl"
                     >
-                      Help make resources easier to find.
+                      {{ t().supportTitle }}
                     </h2>
 
                     <p
@@ -1062,8 +1055,7 @@ import { MatIconModule } from '@angular/material/icon';
                  text-white/70
                  sm:text-base"
                     >
-                      Your support helps Zebron connect people with trusted resources,
-                      organizations, services, and opportunities.
+                      {{ t().supportText }}
                     </p>
                   </div>
 
@@ -1080,7 +1072,7 @@ import { MatIconModule } from '@angular/material/icon';
                transition
                hover:bg-[#008989]"
                   >
-                    Support Zebron
+                    {{ t().supportZebron }}
 
                     <mat-icon
                       aria-hidden="true"
@@ -1114,8 +1106,18 @@ export class HomeComponent {
  
   private readonly document = inject(DOCUMENT);
  
+  // =========================================================
+  // LANGUAGE
+  // =========================================================
+
+  private readonly localization = inject(LocalizationService);
+
+  /** Page text in the selected language (English fallback). */
+  protected readonly t = computed(() => homeText(this.localization.language()));
+
   constructor() {
-    this.updateSeoMetadata();
+    // Re-applies the title and description when the language changes.
+    effect(() => this.updateSeoMetadata());
   }
  
   // =========================================================
@@ -1123,10 +1125,9 @@ export class HomeComponent {
   // =========================================================
  
   private updateSeoMetadata(): void {
-    const pageTitle = 'Zebron | Discover Resources, Jobs & Opportunities';
+    const pageTitle = this.t().seoTitle;
  
-    const description =
-      'Zebron helps you discover resources, organizations, jobs, training, and opportunities in one place. Explore what is available and find your next opportunity.';
+    const description = this.t().seoDescription;
  
     const canonicalUrl = 'https://zebron.org/';
  

@@ -16,6 +16,8 @@ import { MatListModule } from '@angular/material/list';
 import { AuthService } from '../../../../core/services/auth.service';
 
 import { CommunityStore } from '../../store/community.store';
+import { CommunityModerationService } from '../../services/community-moderation.service';
+import { CommunityScopeService } from '../../services/community-scope.service';
 
 @Component({
   selector: 'app-community-sidebar',
@@ -203,7 +205,7 @@ import { CommunityStore } from '../../store/community.store';
            ADMIN ONLY
            ============================================================ -->
 
-      @if (authService.isAdmin) {
+      @if (canModerate()) {
 
         <section>
 
@@ -224,7 +226,7 @@ import { CommunityStore } from '../../store/community.store';
 
               <a
                 mat-button
-                routerLink="/admin/community/topics"
+                [routerLink]="topicsRoute()"
                 routerLinkActive="!bg-[#E5F4F4] !text-[#007979]"
                 [routerLinkActiveOptions]="{
                   exact: true
@@ -235,18 +237,39 @@ import { CommunityStore } from '../../store/community.store';
                        hover:!bg-[#E5F4F4]
                        hover:!text-[#007979]"
               >
-
                 <mat-icon
                   class="!text-[#032D42]"
                   routerLinkActive="!text-[#007979]"
                 >
                   settings
                 </mat-icon>
-
                 <span class="ml-2">
-                  Community Settings
+                  Topics
                 </span>
+              </a>
 
+              <a
+                mat-button
+                [routerLink]="moderationRoute()"
+                routerLinkActive="!bg-[#E5F4F4] !text-[#007979]"
+                [routerLinkActiveOptions]="{
+                  exact: true
+                }"
+                class="!w-full !justify-start
+                       !rounded-xl
+                       !text-[#032D42]
+                       hover:!bg-[#E5F4F4]
+                       hover:!text-[#007979]"
+              >
+                <mat-icon
+                  class="!text-[#032D42]"
+                  routerLinkActive="!text-[#007979]"
+                >
+                  shield
+                </mat-icon>
+                <span class="ml-2">
+                  Moderation
+                </span>
               </a>
 
             </div>
@@ -359,6 +382,32 @@ export class CommunitySidebarComponent {
 
   readonly store =
     inject(CommunityStore);
+
+  private readonly moderation =
+    inject(CommunityModerationService);
+
+  private readonly scope =
+    inject(CommunityScopeService);
+
+  /**
+   * Administration links: platform admins (public Community) and
+   * organization managers, admins and owners (their community).
+   */
+  canModerate(): boolean {
+    return this.moderation.canModerate();
+  }
+
+  topicsRoute(): string[] {
+    return this.scope.isOrganizationCommunity()
+      ? [...this.scope.homeRoute(), 'topics']
+      : ['/admin/community/topics'];
+  }
+
+  moderationRoute(): string[] {
+    return this.scope.isOrganizationCommunity()
+      ? [...this.scope.homeRoute(), 'moderation']
+      : ['/admin/community/moderation'];
+  }
 
 
   // ============================================================

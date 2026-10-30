@@ -1,0 +1,32 @@
+# Dependabot: weekly pull requests for outdated or vulnerable packages.
+# Minor and patch updates are grouped into one PR per folder to keep the
+# noise down; major updates (for example a new Angular version) come
+# separately so they can be planned. Security fixes are raised as soon as
+# GitHub knows about them.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    groups:
+      website-minor-and-patch:
+        update-types: [minor, patch]
+    labels: [dependencies]
+
+  - package-ecosystem: npm
+    directory: /functions
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    groups:
+      functions-minor-and-patch:
+        update-types: [minor, patch]
+    labels: [dependencies]

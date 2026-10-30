@@ -64,10 +64,13 @@ interface RoleGroup {
   icon: string;
 }
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-organization-management',
   standalone: true,
-  imports: [RouterLink, FormsModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, AnnouncementManagerComponent, OrganizationAuditLogComponent],
+  imports: [
+    TranslatePipe,RouterLink, FormsModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, AnnouncementManagerComponent, OrganizationAuditLogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="min-h-screen bg-gray-50 pt-14">
@@ -77,7 +80,7 @@ interface RoleGroup {
             <!-- Page title and description -->
             <div>
               <p class=" text-sm text-white/80">
-                Manage organization setup, configuration, staff, and access.
+                {{ 'Manage organization setup, configuration, staff, and access.' | t }}
               </p>
             </div>
 
@@ -90,7 +93,7 @@ interface RoleGroup {
               ]"
               class="inline-flex shrink-0 items-center justify-center rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
             >
-              ← Organization Dashboard
+              {{ '← Organization Dashboard' | t }}
             </a>
           </div>
         </div>
@@ -105,27 +108,27 @@ interface RoleGroup {
           <section
             class="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm"
           >
-            Loading organization management details…
+            {{ 'Loading organization management details…' | t }}
           </section>
         } @else if (organizationStore.contextError()) {
           <section class="rounded-xl border border-red-200 bg-white p-6 shadow-sm">
-            <h2 class="font-semibold text-red-800">Unable to load organization</h2>
+            <h2 class="font-semibold text-red-800">{{ 'Unable to load organization' | t }}</h2>
 
             <p class="mt-2 text-sm text-red-700">
-              {{ organizationStore.contextError() }}
+              {{ organizationStore.contextError() | t }}
             </p>
           </section>
         } @else {
           <section class="mb-6">
             <h2 class=" text-2xl font-bold text-gray-900">
-              {{ organizationStore.selectedOrganization()?.name ?? 'Organization' }}
+              {{ organizationStore.selectedOrganization()?.name ?? ('Organization' | t) }}
             </h2>
 
             <p class=" text-sm text-gray-500">
               @if (canManageOrganization()) {
-                Review onboarding, configuration, and organization membership.
+                {{ 'Review onboarding, configuration, and organization membership.' | t }}
               } @else {
-                Manage staff, access, and organization members.
+                {{ 'Manage staff, access, and organization members.' | t }}
               }
             </p>
           </section>
@@ -150,7 +153,7 @@ interface RoleGroup {
 
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="font-semibold text-gray-900">Organization Setup</h3>
+                    <h3 class="font-semibold text-gray-900">{{ 'Organization Setup' | t }}</h3>
 
                     <span
                       class="rounded-full px-2.5 py-1 text-xs font-semibold"
@@ -159,16 +162,15 @@ interface RoleGroup {
                       [class.bg-amber-50]="!setupComplete()"
                       [class.text-amber-800]="!setupComplete()"
                     >
-                      {{ setupComplete() ? 'Completed' : 'In progress' }}
+                      {{ setupComplete() ? ('Completed' | t) : ('In progress' | t) }}
                     </span>
                   </div>
 
                   <p class="mt-2 text-sm text-gray-600">
                     @if (setupComplete()) {
-                      All four core organization onboarding steps are complete.
+                      {{ 'All four core organization onboarding steps are complete.' | t }}
                     } @else {
-                      Complete the organization profile, owner profile, member invitations, and
-                      configuration steps.
+                      {{ 'Complete the organization profile, owner profile, member invitations, and configuration steps.' | t }}
                     }
                   </p>
 
@@ -183,7 +185,7 @@ interface RoleGroup {
                       ]"
                     >
                       <mat-icon>checklist</mat-icon>
-                      Continue setup
+                      {{ 'Continue setup' | t }}
                     </a>
                   }
                 </div>
@@ -206,7 +208,7 @@ interface RoleGroup {
 
                   <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-center gap-2">
-                      <h3 class="font-semibold text-gray-900">Configuration</h3>
+                      <h3 class="font-semibold text-gray-900">{{ 'Configuration' | t }}</h3>
 
                       <span
                         class="rounded-full px-2.5 py-1 text-xs font-semibold"
@@ -215,16 +217,15 @@ interface RoleGroup {
                         [class.bg-amber-50]="!configurationSaved()"
                         [class.text-amber-800]="!configurationSaved()"
                       >
-                        {{ configurationSaved() ? 'Configured' : 'Not configured' }}
+                        {{ configurationSaved() ? ('Configured' | t) : ('Not configured' | t) }}
                       </span>
                     </div>
 
                     <p class="mt-2 text-sm text-gray-600">
                       @if (configurationSaved()) {
-                        Organization settings are available, including registration, default member
-                        role, administrator notifications, and branding colors.
+                        {{ 'Organization settings are available, including registration, default member role, administrator notifications, and branding colors.' | t }}
                       } @else {
-                        Organization settings have not been saved yet.
+                        {{ 'Organization settings have not been saved yet.' | t }}
                       }
                     </p>
 
@@ -238,7 +239,7 @@ interface RoleGroup {
                       ]"
                     >
                       <mat-icon>tune</mat-icon>
-                      {{ configurationSaved() ? 'Update configuration' : 'Configure organization' }}
+                      {{ configurationSaved() ? ('Update configuration' | t) : ('Configure organization' | t) }}
                     </a>
                   </div>
                 </div>
@@ -258,9 +259,9 @@ interface RoleGroup {
                   <mat-icon>handshake</mat-icon>
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Zebron partnership</span>
-                  <span class="mt-1 block text-lg font-bold text-gray-900">Contract & Billing</span>
-                  <span class="mt-1 block text-sm text-gray-600">Your agreement, applications, billing contact and requests to Zebron.</span>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Zebron partnership' | t }}</span>
+                  <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Contract & Billing' | t }}</span>
+                  <span class="mt-1 block text-sm text-gray-600">{{ 'Your agreement, applications, billing contact and requests to Zebron.' | t }}</span>
                 </span>
               </span>
               <mat-icon class="shrink-0 text-[#007979]">arrow_forward</mat-icon>
@@ -278,9 +279,9 @@ interface RoleGroup {
                   <mat-icon>confirmation_number</mat-icon>
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Zebron support</span>
-                  <span class="mt-1 block text-lg font-bold text-gray-900">Support Tickets</span>
-                  <span class="mt-1 block text-sm text-gray-600">Report issues, request services and track their status.</span>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Zebron support' | t }}</span>
+                  <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Support Tickets' | t }}</span>
+                  <span class="mt-1 block text-sm text-gray-600">{{ 'Report issues, request services and track their status.' | t }}</span>
                 </span>
               </span>
               <mat-icon class="shrink-0 text-[#007979]">arrow_forward</mat-icon>
@@ -303,10 +304,10 @@ interface RoleGroup {
                   }
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Communication</span>
-                  <span class="mt-1 block text-lg font-bold text-gray-900">Mailbox</span>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Communication' | t }}</span>
+                  <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Mailbox' | t }}</span>
                   <span class="mt-1 block break-all text-sm text-gray-600">
-                    Send and receive email{{ mailboxAddress() ? ' at ' + mailboxAddress() : '' }}.
+                    {{ mailboxAddress() ? ('Send and receive email at {0}.' | t: [mailboxAddress()]) : ('Send and receive email.' | t) }}
                   </span>
                 </span>
               </span>
@@ -331,13 +332,13 @@ interface RoleGroup {
                     <mat-icon>campaign</mat-icon>
                   </span>
                   <span class="min-w-0">
-                    <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Communication</span>
-                    <span class="mt-1 block text-lg font-bold text-gray-900">Dashboard Banners</span>
-                    <span class="mt-1 block text-sm text-gray-600">Announce events, new cohorts, graduations and student shout-outs.</span>
+                    <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Communication' | t }}</span>
+                    <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Dashboard Banners' | t }}</span>
+                    <span class="mt-1 block text-sm text-gray-600">{{ 'Announce events, new cohorts, graduations and student shout-outs.' | t }}</span>
                   </span>
                 </span>
                 <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[#007979]">
-                  <span class="hidden sm:inline">{{ announcementsExpanded() ? 'Collapse' : 'Expand' }}</span>
+                  <span class="hidden sm:inline">{{ announcementsExpanded() ? ('Collapse' | t) : ('Expand' | t) }}</span>
                   <mat-icon>{{ announcementsExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
                 </span>
               </button>
@@ -362,13 +363,13 @@ interface RoleGroup {
                   <mat-icon>admin_panel_settings</mat-icon>
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Access Control</span>
-                  <span class="mt-1 block text-lg font-bold text-gray-900">Staff & Access Management</span>
-                  <span class="mt-1 block text-sm text-gray-600">Manage roles, invitations, and organization access.</span>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Access Control' | t }}</span>
+                  <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Staff & Access Management' | t }}</span>
+                  <span class="mt-1 block text-sm text-gray-600">{{ 'Manage roles, invitations, and organization access.' | t }}</span>
                 </span>
               </span>
               <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[#007979]">
-                <span class="hidden sm:inline">{{ accessControlExpanded() ? 'Collapse' : 'Expand' }}</span>
+                <span class="hidden sm:inline">{{ accessControlExpanded() ? ('Collapse' | t) : ('Expand' | t) }}</span>
                 <mat-icon>{{ accessControlExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
               </span>
             </button>
@@ -379,7 +380,7 @@ interface RoleGroup {
                   <div class="mb-5 flex justify-end">
                     <button mat-flat-button class="!bg-[#007979] !text-white" type="button" (click)="toggleInviteForm()">
                       <mat-icon>{{ inviteFormVisible() ? 'close' : 'person_add' }}</mat-icon>
-                      {{ inviteFormVisible() ? 'Cancel invitation' : 'Invite member' }}
+                      {{ inviteFormVisible() ? ('Cancel invitation' | t) : ('Invite member' | t) }}
                     </button>
                   </div>
                 }
@@ -389,15 +390,15 @@ interface RoleGroup {
                     <mat-icon class="text-red-700">error_outline</mat-icon>
 
                     <div class="min-w-0 flex-1">
-                      <h3 class="font-semibold text-red-900">Unable to load organization members</h3>
+                      <h3 class="font-semibold text-red-900">{{ 'Unable to load organization members' | t }}</h3>
 
                       <p class="mt-1 break-words text-sm text-red-800">
-                        {{ memberError() }}
+                        {{ memberError() | t }}
                       </p>
 
                       <button mat-stroked-button type="button" class="mt-3" (click)="loadMembers()">
                         <mat-icon>refresh</mat-icon>
-                        Try again
+                        {{ 'Try again' | t }}
                       </button>
                     </div>
                   </div>
@@ -414,11 +415,10 @@ interface RoleGroup {
                     </div>
 
                     <div class="min-w-0 flex-1">
-                      <h3 class="font-semibold text-gray-900">Invite a team member</h3>
+                      <h3 class="font-semibold text-gray-900">{{ 'Invite a team member' | t }}</h3>
 
                       <p class="mt-1 text-sm text-gray-600">
-                        Send an invitation through Zebron's existing invitation workflow. The
-                        recipient will be invited with the role you select.
+                        {{ 'Send an invitation through Zebron\\u0027s existing invitation workflow. The recipient will be invited with the role you select.' | t }}
                       </p>
                     </div>
                   </div>
@@ -427,7 +427,7 @@ interface RoleGroup {
                     <div>
 
                       <mat-form-field appearance="outline" class="zb-field">
-                        <mat-label>Email address</mat-label>
+                        <mat-label>{{ 'Email address' | t }}</mat-label>
                         <input matInput
                         id="inviteEmail"
                         name="inviteEmail"
@@ -436,7 +436,7 @@ interface RoleGroup {
                         email
                         autocomplete="email"
                         [(ngModel)]="inviteEmail"
-                        placeholder="colleague@example.com"
+                        [placeholder]="'colleague@example.com' | t"
                       />
                       </mat-form-field>
                     </div>
@@ -444,7 +444,7 @@ interface RoleGroup {
                     <div>
 
                       <mat-form-field appearance="outline" class="zb-field">
-                        <mat-label>Organization role</mat-label>
+                        <mat-label>{{ 'Organization role' | t }}</mat-label>
                         <mat-select
                         id="inviteRole"
                         name="inviteRole"
@@ -452,7 +452,7 @@ interface RoleGroup {
                         [(ngModel)]="inviteRole"
                       >
                         @for (role of assignableRoles(); track role) {
-                          <mat-option [value]="role">{{ roleLabel(role) }}</mat-option>
+                          <mat-option [value]="role">{{ roleLabel(role) | t }}</mat-option>
                         }
                       </mat-select>
                       </mat-form-field>
@@ -463,7 +463,7 @@ interface RoleGroup {
                         class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 md:col-span-2"
                         role="alert"
                       >
-                        {{ invitationError() }}
+                        {{ invitationError() | t }}
                       </div>
                     }
 
@@ -472,7 +472,7 @@ interface RoleGroup {
                         class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 md:col-span-2"
                         role="status"
                       >
-                        {{ invitationSuccess() }}
+                        {{ invitationSuccess() | t }}
                       </div>
                     }
 
@@ -487,7 +487,7 @@ interface RoleGroup {
                           {{ sendingInvitation() ? 'hourglass_top' : 'send' }}
                         </mat-icon>
 
-                        {{ sendingInvitation() ? 'Sending invitation…' : 'Send invitation' }}
+                        {{ sendingInvitation() ? ('Sending invitation…' | t) : ('Send invitation' | t) }}
                       </button>
 
                       <button
@@ -496,7 +496,7 @@ interface RoleGroup {
                         [disabled]="sendingInvitation()"
                         (click)="toggleInviteForm()"
                       >
-                        Cancel
+                        {{ 'Cancel' | t }}
                       </button>
                     </div>
                   </form>
@@ -505,7 +505,7 @@ interface RoleGroup {
 
               <!-- MEMBERSHIP SUMMARY -->
 
-              <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" aria-label="Membership summary filters">
+              <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" [attr.aria-label]="'Membership summary filters' | t">
                 <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#007979]" [class.border-[#007979]]="summaryFilter() === 'all'" [class.ring-2]="summaryFilter() === 'all'" [class.ring-teal-100]="summaryFilter() === 'all'" [attr.aria-pressed]="summaryFilter() === 'all'" (click)="selectSummaryFilter('all')">
                   <div
                     class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700"
@@ -513,7 +513,7 @@ interface RoleGroup {
                     <mat-icon>groups</mat-icon>
                   </div>
 
-                  <p class="mt-2 text-sm text-gray-500">Total memberships</p>
+                  <p class="mt-2 text-sm text-gray-500">{{ 'Total memberships' | t }}</p>
 
                   <p class="mt-1 text-3xl font-bold text-gray-900">
                     {{ members().length }}
@@ -527,7 +527,7 @@ interface RoleGroup {
                     <mat-icon>check_circle</mat-icon>
                   </div>
 
-                  <p class="mt-2 text-sm text-gray-500">Active members</p>
+                  <p class="mt-2 text-sm text-gray-500">{{ 'Active members' | t }}</p>
 
                   <p class="mt-1 text-3xl font-bold text-gray-900">
                     {{ activeMemberCount() }}
@@ -541,7 +541,7 @@ interface RoleGroup {
                     <mat-icon>admin_panel_settings</mat-icon>
                   </div>
 
-                  <p class="mt-2 text-sm text-gray-500">Administrators</p>
+                  <p class="mt-2 text-sm text-gray-500">{{ 'Administrators' | t }}</p>
 
                   <p class="mt-1 text-3xl font-bold text-gray-900">
                     {{ administratorCount() }}
@@ -555,7 +555,7 @@ interface RoleGroup {
                     <mat-icon>supervisor_account</mat-icon>
                   </div>
 
-                  <p class="mt-2 text-sm text-gray-500">Managers</p>
+                  <p class="mt-2 text-sm text-gray-500">{{ 'Managers' | t }}</p>
 
                   <p class="mt-1 text-3xl font-bold text-gray-900">
                     {{ managerCount() }}
@@ -569,7 +569,7 @@ interface RoleGroup {
                     <mat-icon>badge</mat-icon>
                   </div>
 
-                  <p class="mt-4 text-sm text-gray-500">Staff</p>
+                  <p class="mt-4 text-sm text-gray-500">{{ 'Staff' | t }}</p>
 
                   <p class="mt-1 text-3xl font-bold text-gray-900">
                     {{ staffCount() }}
@@ -584,14 +584,14 @@ interface RoleGroup {
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Search memberships</mat-label>
+                      <mat-label>{{ 'Search memberships' | t }}</mat-label>
                       <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
                       <input matInput
                         id="memberSearch"
                         type="search"
                         [value]="memberSearch()"
                         (input)="setMemberSearch($any($event.target).value)"
-                        placeholder="Search by name, email or role"
+                        [placeholder]="'Search by name, email or role' | t"
                       />
                     </mat-form-field>
                   </div>
@@ -599,15 +599,15 @@ interface RoleGroup {
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Membership status</mat-label>
+                      <mat-label>{{ 'Membership status' | t }}</mat-label>
                       <mat-select
                       id="memberStatus"
                       [value]="statusFilter()"
                       (selectionChange)="setStatusFilter($event.value)"
                     >
-                      <mat-option value="all">All memberships</mat-option>
-                      <mat-option value="active">Active only</mat-option>
-                      <mat-option value="inactive">Inactive only</mat-option>
+                      <mat-option value="all">{{ 'All memberships' | t }}</mat-option>
+                      <mat-option value="active">{{ 'Active only' | t }}</mat-option>
+                      <mat-option value="inactive">{{ 'Inactive only' | t }}</mat-option>
                     </mat-select>
                     </mat-form-field>
                   </div>
@@ -617,7 +617,7 @@ interface RoleGroup {
                   class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4"
                 >
                   <p class="text-sm text-gray-500">
-                    Showing {{ filteredMembers().length }} of {{ members().length }} memberships
+                    {{ 'Showing {0} of {1} memberships' | t: [filteredMembers().length, members().length] }}
                   </p>
 
                   <button
@@ -627,7 +627,7 @@ interface RoleGroup {
                     (click)="loadMembers()"
                   >
                     <mat-icon>refresh</mat-icon>
-                    Refresh
+                    {{ 'Refresh' | t }}
                   </button>
                 </div>
               </section>
@@ -642,7 +642,7 @@ interface RoleGroup {
                     progress_activity
                   </mat-icon>
 
-                  <p class="mt-3 text-sm text-gray-600">Loading organization memberships…</p>
+                  <p class="mt-3 text-sm text-gray-600">{{ 'Loading organization memberships…' | t }}</p>
                 </section>
               } @else if (!memberError() && filteredMembers().length === 0) {
                 <section
@@ -654,10 +654,10 @@ interface RoleGroup {
                     <mat-icon class="!h-7 !w-7 !text-[28px]"> group_off </mat-icon>
                   </div>
 
-                  <h3 class="mt-4 font-semibold text-gray-900">No matching memberships</h3>
+                  <h3 class="mt-4 font-semibold text-gray-900">{{ 'No matching memberships' | t }}</h3>
 
                   <p class="mt-2 text-sm text-gray-500">
-                    Try changing your search or membership-status filter.
+                    {{ 'Try changing your search or membership-status filter.' | t }}
                   </p>
                 </section>
               } @else if (!memberError()) {
@@ -689,11 +689,11 @@ interface RoleGroup {
 
                             <div>
                               <h3 class="font-semibold text-gray-900">
-                                {{ group.title }}
+                                {{ group.title | t }}
                               </h3>
 
                               <p class="mt-0.5 text-xs text-gray-500">
-                                {{ group.description }}
+                                {{ group.description | t }}
                               </p>
                             </div>
                           </div>
@@ -714,7 +714,7 @@ interface RoleGroup {
                                 <a
                                   [routerLink]="memberProfileRoute(member)"
                                   [attr.aria-label]="'View profile of ' + memberName(member)"
-                                  title="View profile"
+                                  [title]="'View profile' | t"
                                   class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-100 font-semibold text-gray-600 transition hover:bg-teal-50 hover:text-[#007979] hover:ring-2 hover:ring-[#007979]/30 focus:outline-none focus:ring-2 focus:ring-[#007979]"
                                 >
                                   {{ initials(member) }}
@@ -742,7 +742,7 @@ interface RoleGroup {
                                   [class.bg-gray-100]="!member.active"
                                   [class.text-gray-600]="!member.active"
                                 >
-                                  {{ member.active ? 'Active' : 'Inactive' }}
+                                  {{ member.active ? ('Active' | t) : ('Inactive' | t) }}
                                 </span>
 
                                 @if (canEditMember(member)) {
@@ -751,14 +751,14 @@ interface RoleGroup {
                                     class="zb-field zb-field--flush zb-field--dense w-44"
                                     subscriptSizing="dynamic"
                                   >
-                                    <mat-label>Role</mat-label>
+                                    <mat-label>{{ 'Role' | t }}</mat-label>
                                     <mat-select
                                       [value]="member.role"
                                       [disabled]="updatingMemberId() === member.id"
                                       (selectionChange)="changeMemberRole(member, $event.value)"
                                     >
                                       @for (role of assignableRoles(); track role) {
-                                        <mat-option [value]="role">{{ roleLabel(role) }}</mat-option>
+                                        <mat-option [value]="role">{{ roleLabel(role) | t }}</mat-option>
                                       }
                                     </mat-select>
                                   </mat-form-field>
@@ -770,13 +770,13 @@ interface RoleGroup {
                                     (click)="toggleMemberActive(member)"
                                   >
                                     <mat-icon>{{ member.active ? 'person_off' : 'person_check' }}</mat-icon>
-                                    {{ member.active ? 'Deactivate' : 'Reactivate' }}
+                                    {{ member.active ? ('Deactivate' | t) : ('Reactivate' | t) }}
                                   </button>
                                 } @else {
                                   <span
                                     class="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-[#007979]"
                                   >
-                                    {{ roleLabel(member.role) }}
+                                    {{ roleLabel(member.role) | t }}
                                   </span>
                                 }
                               </div>
@@ -795,12 +795,10 @@ interface RoleGroup {
                 <mat-icon class="text-blue-700">info</mat-icon>
 
                 <div>
-                  <h3 class="text-sm font-semibold text-blue-900">About organization access</h3>
+                  <h3 class="text-sm font-semibold text-blue-900">{{ 'About organization access' | t }}</h3>
 
                   <p class="mt-1 text-sm text-blue-800">
-                    Organization memberships are separate from platform administrator roles. Role
-                    changes and membership removal will be enabled after the corresponding
-                    authorization safeguards are verified.
+                    {{ 'Organization memberships are separate from platform administrator roles. Role changes and membership removal will be enabled after the corresponding authorization safeguards are verified.' | t }}
                   </p>
                 </div>
               </div>
@@ -822,13 +820,13 @@ interface RoleGroup {
                   <mat-icon>groups</mat-icon>
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Learning & Development</span>
-                  <span class="mt-1 block text-lg font-bold text-gray-900">Organization Members</span>
-                  <span class="mt-1 block text-sm text-gray-600">Browse regular members and open their learning dashboard.</span>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Learning & Development' | t }}</span>
+                  <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Organization Members' | t }}</span>
+                  <span class="mt-1 block text-sm text-gray-600">{{ 'Browse regular members and open their learning dashboard.' | t }}</span>
                 </span>
               </span>
               <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[#007979]">
-                <span class="hidden sm:inline">{{ membersDirectoryExpanded() ? 'Collapse' : 'Expand' }}</span>
+                <span class="hidden sm:inline">{{ membersDirectoryExpanded() ? ('Collapse' | t) : ('Expand' | t) }}</span>
                 <mat-icon>{{ membersDirectoryExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
               </span>
             </button>
@@ -839,31 +837,31 @@ interface RoleGroup {
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Search regular members</mat-label>
+                      <mat-label>{{ 'Search regular members' | t }}</mat-label>
                       <input matInput
                       id="regularMemberSearch"
                       type="search"
                       [value]="regularMemberSearch()"
                       (input)="setRegularMemberSearch($any($event.target).value)"
-                      placeholder="Search by name or email"
+                      [placeholder]="'Search by name or email' | t"
                     />
                     </mat-form-field>
                   </div>
-                  <p class="text-sm text-gray-500">{{ filteredRegularMembers().length }} regular member(s)</p>
+                  <p class="text-sm text-gray-500">{{ '{0} regular member(s)' | t: [filteredRegularMembers().length] }}</p>
                 </div>
 
                 @if (membersLoading()) {
-                  <div class="rounded-lg bg-gray-50 p-8 text-center text-sm text-gray-600">Loading organization members…</div>
+                  <div class="rounded-lg bg-gray-50 p-8 text-center text-sm text-gray-600">{{ 'Loading organization members…' | t }}</div>
                 } @else if (memberError()) {
                   <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
-                    {{ memberError() }}
-                    <button type="button" class="ml-2 font-semibold underline" (click)="loadMembers()">Try again</button>
+                    {{ memberError() | t }}
+                    <button type="button" class="ml-2 font-semibold underline" (click)="loadMembers()">{{ 'Try again' | t }}</button>
                   </div>
                 } @else if (filteredRegularMembers().length === 0) {
                   <div class="rounded-lg bg-gray-50 p-8 text-center">
                     <mat-icon class="text-gray-400">person_search</mat-icon>
-                    <p class="mt-2 font-semibold text-gray-800">No regular members found</p>
-                    <p class="mt-1 text-sm text-gray-500">Try another search or invite members to this organization.</p>
+                    <p class="mt-2 font-semibold text-gray-800">{{ 'No regular members found' | t }}</p>
+                    <p class="mt-1 text-sm text-gray-500">{{ 'Try another search or invite members to this organization.' | t }}</p>
                   </div>
                 } @else {
                   <div class="divide-y divide-gray-100 rounded-lg border border-gray-100">
@@ -873,7 +871,7 @@ interface RoleGroup {
                           <a
                             [routerLink]="memberProfileRoute(member)"
                             [attr.aria-label]="'View profile of ' + memberName(member)"
-                            title="View profile"
+                            [title]="'View profile' | t"
                             class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 font-semibold text-[#007979] transition hover:ring-2 hover:ring-[#007979]/30 focus:outline-none focus:ring-2 focus:ring-[#007979]"
                           >{{ initials(member) }}</a>
                           <div class="min-w-0">
@@ -884,8 +882,8 @@ interface RoleGroup {
                             @if (memberEmail(member); as email) {
                               <p class="mt-1 break-all text-xs text-gray-500">{{ email }}</p>
                             }
-                            <p class="mt-1 text-xs text-gray-500">Regular member · {{ member.active ? 'Active' : 'Inactive' }}</p>
-                            <p class="mt-1 text-xs text-gray-500">Learning progress will appear here when the LMS learner records are connected.</p>
+                            <p class="mt-1 text-xs text-gray-500">{{ 'Regular member · {0}' | t: [(member.active ? 'Active' : 'Inactive')] }}</p>
+                            <p class="mt-1 text-xs text-gray-500">{{ 'Learning progress will appear here when the LMS learner records are connected.' | t }}</p>
                           </div>
                         </div>
                         <a
@@ -896,14 +894,14 @@ interface RoleGroup {
                           class="shrink-0"
                         >
                           <mat-icon>school</mat-icon>
-                          View Learning Dashboard
+                          {{ 'View Learning Dashboard' | t }}
                         </a>
                       </article>
                     }
                   </div>
                 }
                 <p class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
-                  Learning summaries are not fabricated: course enrollments, accomplishments, assessment results, and activity need to be connected to the existing LMS records. The dashboard route must also enforce authorization before showing another member's data.
+                  {{ 'Learning summaries are not fabricated: course enrollments, accomplishments, assessment results, and activity need to be connected to the existing LMS records. The dashboard route must also enforce authorization before showing another member\\u0027s data.' | t }}
                 </p>
               </div>
             }
@@ -924,13 +922,13 @@ interface RoleGroup {
                     <mat-icon>history</mat-icon>
                   </span>
                   <span class="min-w-0">
-                    <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Security & compliance</span>
-                    <span class="mt-1 block text-lg font-bold text-gray-900">Audit Log</span>
-                    <span class="mt-1 block text-sm text-gray-600">Every change made by your organization, by Zebron, and by the system.</span>
+                    <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Security & compliance' | t }}</span>
+                    <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Audit Log' | t }}</span>
+                    <span class="mt-1 block text-sm text-gray-600">{{ 'Every change made by your organization, by Zebron, and by the system.' | t }}</span>
                   </span>
                 </span>
                 <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[#007979]">
-                  <span class="hidden sm:inline">{{ auditExpanded() ? 'Collapse' : 'Expand' }}</span>
+                  <span class="hidden sm:inline">{{ auditExpanded() ? ('Collapse' | t) : ('Expand' | t) }}</span>
                   <mat-icon>{{ auditExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
                 </span>
               </button>

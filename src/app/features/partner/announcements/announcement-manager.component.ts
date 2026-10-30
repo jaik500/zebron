@@ -37,10 +37,13 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
  * graduations and student shout-outs. Shown to managers and above on
  * the Administration page.
  */
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-announcement-manager',
   standalone: true,
   imports: [
+    TranslatePipe,
     FormsModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -55,7 +58,7 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
     <div class="border-t border-gray-100 p-5 sm:p-6">
       @if (error()) {
         <p class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-          {{ error() }}
+          {{ error() | t }}
         </p>
       }
 
@@ -65,17 +68,17 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
              ===================================================== -->
         <div class="mb-4 flex items-center justify-between gap-3">
           <h3 class="font-semibold text-gray-900">
-            {{ editingId() ? 'Edit banner' : 'New banner' }}
+            {{ editingId() ? ('Edit banner' | t) : ('New banner' | t) }}
           </h3>
 
           <button mat-button type="button" (click)="cancelEdit()">
             <mat-icon>close</mat-icon>
-            Cancel
+            {{ 'Cancel' | t }}
           </button>
         </div>
 
         <!-- Banner type -->
-        <p class="mb-2 text-xs font-medium text-gray-500">What are you announcing?</p>
+        <p class="mb-2 text-xs font-medium text-gray-500">{{ 'What are you announcing?' | t }}</p>
         <div class="mb-5 flex flex-wrap gap-2">
           @for (type of types; track type.key) {
             <button
@@ -89,58 +92,58 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
               [attr.aria-pressed]="draft.type === type.key"
               (click)="chooseType(type.key)"
             >
-              {{ type.label }}
+              {{ type.label | t }}
             </button>
           }
         </div>
 
         <!-- Live preview -->
-        <p class="mb-2 text-xs font-medium text-gray-500">Preview</p>
+        <p class="mb-2 text-xs font-medium text-gray-500">{{ 'Preview' | t }}</p>
         <app-announcement-banner [announcement]="draft" [dismissible]="true"></app-announcement-banner>
 
         <div class="mt-6 grid gap-x-4 md:grid-cols-2">
           <mat-form-field appearance="outline" class="zb-field md:col-span-2">
-            <mat-label>Headline</mat-label>
+            <mat-label>{{ 'Headline' | t }}</mat-label>
             <input matInput maxlength="120" [ngModel]="draft.title" (ngModelChange)="patch({ title: $event })" name="title" required />
             <mat-hint align="end">{{ draft.title.length }}/120</mat-hint>
           </mat-form-field>
 
           @if (draft.type === 'shoutout') {
             <mat-form-field appearance="outline" class="zb-field md:col-span-2">
-              <mat-label>Student's name</mat-label>
+              <mat-label>{{ 'Student\\u0027s name' | t }}</mat-label>
               <input matInput maxlength="80" [ngModel]="draft.honoreeName ?? ''" (ngModelChange)="patch({ honoreeName: $event })" name="honoreeName" />
             </mat-form-field>
           }
 
           <mat-form-field appearance="outline" class="zb-field md:col-span-2">
-            <mat-label>Message</mat-label>
+            <mat-label>{{ 'Message' | t }}</mat-label>
             <textarea matInput rows="3" maxlength="500" [ngModel]="draft.message" (ngModelChange)="patch({ message: $event })" name="message"></textarea>
             <mat-hint align="end">{{ draft.message.length }}/500</mat-hint>
           </mat-form-field>
 
           @if (draft.type !== 'shoutout') {
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>{{ dateLabel() }}</mat-label>
+              <mat-label>{{ dateLabel() | t }}</mat-label>
               <input matInput type="date" [ngModel]="draft.eventDate ?? ''" (ngModelChange)="patch({ eventDate: $event || null })" name="eventDate" />
             </mat-form-field>
           }
 
           <mat-form-field appearance="outline" class="zb-field">
-            <mat-label>Button text</mat-label>
-            <input matInput maxlength="40" [ngModel]="draft.ctaLabel ?? ''" (ngModelChange)="patch({ ctaLabel: $event })" name="ctaLabel" placeholder="Register" />
+            <mat-label>{{ 'Button text' | t }}</mat-label>
+            <input matInput maxlength="40" [ngModel]="draft.ctaLabel ?? ''" (ngModelChange)="patch({ ctaLabel: $event })" name="ctaLabel" [placeholder]="'Register' | t" />
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="zb-field md:col-span-2">
-            <mat-label>Button link</mat-label>
-            <input matInput type="url" inputmode="url" [ngModel]="draft.ctaUrl ?? ''" (ngModelChange)="patch({ ctaUrl: $event })" name="ctaUrl" placeholder="https://" />
-            <mat-hint>Optional. The button only appears when there's a link (https://).</mat-hint>
+            <mat-label>{{ 'Button link' | t }}</mat-label>
+            <input matInput type="url" inputmode="url" [ngModel]="draft.ctaUrl ?? ''" (ngModelChange)="patch({ ctaUrl: $event })" name="ctaUrl" [placeholder]="'https://' | t" />
+            <mat-hint>{{ 'Optional. The button only appears when there\\u0027s a link (https://).' | t }}</mat-hint>
           </mat-form-field>
         </div>
 
         <!-- Look -->
-        <h4 class="mb-2 mt-4 text-sm font-semibold text-gray-900">Look</h4>
+        <h4 class="mb-2 mt-4 text-sm font-semibold text-gray-900">{{ 'Look' | t }}</h4>
 
-        <p class="mb-2 text-xs font-medium text-gray-500">Theme</p>
+        <p class="mb-2 text-xs font-medium text-gray-500">{{ 'Theme' | t }}</p>
         <div class="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
           @for (theme of themes; track theme.key) {
             <button
@@ -152,12 +155,12 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
               (click)="patch({ theme: theme.key })"
             >
               <span class="block h-10" [class]="theme.container"></span>
-              <span class="block bg-white px-2 py-1 text-xs font-medium text-gray-700">{{ theme.label }}</span>
+              <span class="block bg-white px-2 py-1 text-xs font-medium text-gray-700">{{ theme.label | t }}</span>
             </button>
           }
         </div>
 
-        <p class="mb-2 text-xs font-medium text-gray-500">Artwork</p>
+        <p class="mb-2 text-xs font-medium text-gray-500">{{ 'Artwork' | t }}</p>
         <div class="mb-5 flex flex-wrap gap-2">
           @for (art of artwork; track art.key) {
             <button
@@ -182,44 +185,44 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
 
         <div class="grid gap-x-4 md:grid-cols-2">
           <mat-form-field appearance="outline" class="zb-field">
-            <mat-label>Headline font</mat-label>
+            <mat-label>{{ 'Headline font' | t }}</mat-label>
             <mat-select [value]="draft.font" (selectionChange)="patch({ font: $event.value })">
               @for (font of fonts; track font.key) {
-                <mat-option [value]="font.key">{{ font.label }}</mat-option>
+                <mat-option [value]="font.key">{{ font.label | t }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="zb-field">
-            <mat-label>Photo link</mat-label>
-            <input matInput type="url" inputmode="url" [ngModel]="draft.imageUrl ?? ''" (ngModelChange)="patch({ imageUrl: $event })" name="imageUrl" placeholder="https://" />
-            <mat-hint>Optional, replaces the artwork. e.g. the student's photo.</mat-hint>
+            <mat-label>{{ 'Photo link' | t }}</mat-label>
+            <input matInput type="url" inputmode="url" [ngModel]="draft.imageUrl ?? ''" (ngModelChange)="patch({ imageUrl: $event })" name="imageUrl" [placeholder]="'https://' | t" />
+            <mat-hint>{{ 'Optional, replaces the artwork. e.g. the student\\u0027s photo.' | t }}</mat-hint>
           </mat-form-field>
         </div>
 
         <!-- Schedule -->
-        <h4 class="mb-2 mt-4 text-sm font-semibold text-gray-900">When to show it</h4>
+        <h4 class="mb-2 mt-4 text-sm font-semibold text-gray-900">{{ 'When to show it' | t }}</h4>
 
         <div class="grid gap-x-4 md:grid-cols-2">
           <mat-form-field appearance="outline" class="zb-field">
-            <mat-label>Show from</mat-label>
+            <mat-label>{{ 'Show from' | t }}</mat-label>
             <input matInput type="date" [ngModel]="draft.startsOn ?? ''" (ngModelChange)="patch({ startsOn: $event || null })" name="startsOn" />
-            <mat-hint>Leave empty to show right away.</mat-hint>
+            <mat-hint>{{ 'Leave empty to show right away.' | t }}</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="zb-field">
-            <mat-label>Show until</mat-label>
+            <mat-label>{{ 'Show until' | t }}</mat-label>
             <input matInput type="date" [ngModel]="draft.endsOn ?? ''" (ngModelChange)="patch({ endsOn: $event || null })" name="endsOn" />
-            <mat-hint>Leave empty to keep it until you hide it.</mat-hint>
+            <mat-hint>{{ 'Leave empty to keep it until you hide it.' | t }}</mat-hint>
           </mat-form-field>
         </div>
 
         <mat-slide-toggle class="mt-2" [checked]="draft.active" (change)="patch({ active: $event.checked })">
-          Visible on the dashboard
+          {{ 'Visible on the dashboard' | t }}
         </mat-slide-toggle>
 
         <div class="mt-6 flex flex-wrap justify-end gap-2">
-          <button mat-button type="button" (click)="cancelEdit()">Cancel</button>
+          <button mat-button type="button" (click)="cancelEdit()">{{ 'Cancel' | t }}</button>
           <button
             mat-flat-button
             type="button"
@@ -228,7 +231,7 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
             (click)="save()"
           >
             <mat-icon>{{ draft.active ? 'campaign' : 'save' }}</mat-icon>
-            {{ saving() ? 'Saving…' : draft.active ? 'Publish banner' : 'Save as hidden' }}
+            {{ saving() ? ('Saving…' | t) : draft.active ? ('Publish banner' | t) : ('Save as hidden' | t) }}
           </button>
         </div>
       } @else {
@@ -237,24 +240,23 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
              ===================================================== -->
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
           <p class="text-sm text-gray-600">
-            Banners appear at the top of everyone's dashboard. Members can close them; editing a
-            banner shows it to everyone again.
+            {{ 'Banners appear at the top of everyone\\u0027s dashboard. Members can close them; editing a banner shows it to everyone again.' | t }}
           </p>
 
           <button mat-flat-button type="button" class="!bg-[#007979] !text-white" (click)="startNew()">
             <mat-icon>add</mat-icon>
-            New banner
+            {{ 'New banner' | t }}
           </button>
         </div>
 
         @if (loading()) {
-          <p class="text-sm text-gray-500">Loading banners…</p>
+          <p class="text-sm text-gray-500">{{ 'Loading banners…' | t }}</p>
         } @else if (announcements().length === 0) {
           <div class="rounded-xl border border-dashed border-gray-300 p-6 text-center">
             <mat-icon class="!h-10 !w-10 !text-4xl text-gray-400">campaign</mat-icon>
-            <p class="mt-2 text-sm font-semibold text-gray-900">No banners yet</p>
+            <p class="mt-2 text-sm font-semibold text-gray-900">{{ 'No banners yet' | t }}</p>
             <p class="mt-1 text-sm text-gray-500">
-              Announce an upcoming event, a new cohort, a graduation, or celebrate a top student.
+              {{ 'Announce an upcoming event, a new cohort, a graduation, or celebrate a top student.' | t }}
             </p>
           </div>
         } @else {
@@ -264,14 +266,14 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700">
-                      {{ typeLabel(item.type) }}
+                      {{ typeLabel(item.type) | t }}
                     </span>
 
                     <span
                       class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
                       [class]="stateClass(item)"
                     >
-                      {{ stateLabel(item) }}
+                      {{ stateLabel(item) | t }}
                     </span>
                   </div>
 
@@ -279,8 +281,8 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
 
                   @if (item.startsOn || item.endsOn) {
                     <p class="text-xs text-gray-500">
-                      {{ item.startsOn ? 'From ' + item.startsOn : 'From now' }}
-                      {{ item.endsOn ? ' until ' + item.endsOn : '' }}
+                      {{ item.startsOn ? ('From ' | t) + item.startsOn : ('From now' | t) }}
+                      {{ item.endsOn ? (' until ' | t) + item.endsOn : '' }}
                     </p>
                   }
                 </div>
@@ -288,21 +290,21 @@ type AnnouncementState = 'live' | 'scheduled' | 'ended' | 'hidden';
                 <div class="flex shrink-0 flex-wrap gap-2">
                   <button mat-stroked-button type="button" (click)="edit(item)">
                     <mat-icon>edit</mat-icon>
-                    Edit
+                    {{ 'Edit' | t }}
                   </button>
 
                   <button mat-stroked-button type="button" [disabled]="saving()" (click)="toggleActive(item)">
                     <mat-icon>{{ item.active ? 'visibility_off' : 'visibility' }}</mat-icon>
-                    {{ item.active ? 'Hide' : 'Show' }}
+                    {{ item.active ? ('Hide' | t) : ('Show' | t) }}
                   </button>
 
                   @if (confirmDeleteId() === item.id) {
                     <button mat-flat-button type="button" class="!bg-red-600 !text-white" [disabled]="saving()" (click)="remove(item)">
-                      Confirm delete
+                      {{ 'Confirm delete' | t }}
                     </button>
-                    <button mat-button type="button" (click)="confirmDeleteId.set(null)">Keep</button>
+                    <button mat-button type="button" (click)="confirmDeleteId.set(null)">{{ 'Keep' | t }}</button>
                   } @else {
-                    <button mat-icon-button type="button" aria-label="Delete banner" title="Delete" (click)="confirmDeleteId.set(item.id)">
+                    <button mat-icon-button type="button" [attr.aria-label]="'Delete banner' | t" [title]="'Delete' | t" (click)="confirmDeleteId.set(item.id)">
                       <mat-icon>delete</mat-icon>
                     </button>
                   }

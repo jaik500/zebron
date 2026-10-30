@@ -584,6 +584,38 @@ export const routes: Routes = [
         },
         loadComponent: () => import('./features/community/pages/community-home/community-home.component').then((m) => m.CommunityHomeComponent),
     },
+    {
+        // Organization community topics: managers, admins and owners.
+        path: 'partner/org/:organizationId/community/topics',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            applicationAccessGuard,
+            partnerRoleGuard,
+        ],
+        data: {
+            applicationId: 'community',
+            minimumOrganizationRole: 'org_manager',
+            title: 'Partner | Community Topics',
+        },
+        loadComponent: () => import('./features/admin/pages/community/topics/community-topics-admin').then((m) => m.CommunityTopicsAdminComponent),
+    },
+    {
+        // Organization community moderation: managers, admins and owners.
+        path: 'partner/org/:organizationId/community/moderation',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            applicationAccessGuard,
+            partnerRoleGuard,
+        ],
+        data: {
+            applicationId: 'community',
+            minimumOrganizationRole: 'org_manager',
+            title: 'Partner | Community Moderation',
+        },
+        loadComponent: () => import('./features/community/pages/community-moderation/community-moderation.component').then((m) => m.CommunityModerationComponent),
+    },
     // -----------------------------------------------------
     // ORGANIZATION TEST CENTER — LEARNER EXPERIENCE
     // -----------------------------------------------------
@@ -676,7 +708,37 @@ export const routes: Routes = [
             applicationId: 'knowledge',
             title: 'Partner | Knowledge Center',
         },
-        loadComponent: () => import('./features/admin/pages/knowledge/knowledge-center.component').then((m) => m.KnowledgeCenterComponent),
+        children: [
+            {
+                // Reader: everyone in the organization.
+                path: '',
+                pathMatch: 'full',
+                loadComponent: () => import('./features/partner/knowledge/organization-knowledge.component').then((m) => m.OrganizationKnowledgeComponent),
+            },
+            {
+                path: 'articles/:source/:articleId',
+                loadComponent: () => import('./features/partner/knowledge/organization-knowledge-article.component').then((m) => m.OrganizationKnowledgeArticleComponent),
+            },
+            {
+                // Management (dashboard gear): staff, managers, admins and owners.
+                path: 'manage',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_staff', title: 'Partner | Manage Knowledge Center' },
+                loadComponent: () => import('./features/partner/knowledge/organization-knowledge-manager.component').then((m) => m.OrganizationKnowledgeManagerComponent),
+            },
+            {
+                path: 'manage/new',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_staff', title: 'Partner | New Article' },
+                loadComponent: () => import('./features/partner/knowledge/organization-knowledge-editor.component').then((m) => m.OrganizationKnowledgeEditorComponent),
+            },
+            {
+                path: 'manage/:articleId/edit',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_staff', title: 'Partner | Edit Article' },
+                loadComponent: () => import('./features/partner/knowledge/organization-knowledge-editor.component').then((m) => m.OrganizationKnowledgeEditorComponent),
+            },
+        ],
     },
     // -----------------------------------------------------
     // ORGANIZATION BUSINESS OPERATIONS
@@ -925,6 +987,15 @@ export const routes: Routes = [
         },
         loadComponent: () => import('./features/admin/pages/community/topics/community-topics-admin').then((m) => m.CommunityTopicsAdminComponent),
     },
+    {
+        path: 'admin/community/moderation',
+        canActivate: [adminGuard, featureGuard],
+        data: {
+            featureKey: 'community',
+            title: 'Admin | Community | Moderation',
+        },
+        loadComponent: () => import('./features/community/pages/community-moderation/community-moderation.component').then((m) => m.CommunityModerationComponent),
+    },
     // -----------------------------------------------------
     // ADMIN KNOWLEDGE CENTER
     // -----------------------------------------------------
@@ -943,6 +1014,14 @@ export const routes: Routes = [
             title: 'Admin | New Knowledge Article',
         },
         loadComponent: () => import('./features/admin/pages/knowledge/components/knowledge-article-editor/knowledge-article-editor.component').then((m) => m.KnowledgeArticleEditorComponent),
+    },
+    {
+        path: 'admin/configuration/knowledge/import-guide',
+        canActivate: [adminGuard],
+        data: {
+            title: 'Admin | Import Guide Articles',
+        },
+        loadComponent: () => import('./features/admin/pages/knowledge/guide-import/knowledge-guide-import.component').then((m) => m.KnowledgeGuideImportComponent),
     },
     {
         path: 'admin/configuration/knowledge/:id/edit',

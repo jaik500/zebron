@@ -47,41 +47,44 @@ const STORAGE_KEY = 'zebron:assistant:';
  * Floating help assistant. Answers come from the server, scoped to the
  * organization in the current page and the person's role there.
  */
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-support-assistant',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatButtonModule, MatIconModule],
+  imports: [
+    TranslatePipe,FormsModule, RouterLink, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (!open()) {
       <button
         type="button"
         class="fixed bottom-5 right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-[#007979] px-5 text-white shadow-lg transition hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-[#007979]/30"
-        aria-label="Open the Zebron help assistant"
+        [attr.aria-label]="'Open the Zebron help assistant' | t"
         (click)="open.set(true)"
       >
         <mat-icon>forum</mat-icon>
-        <span class="hidden font-semibold sm:inline">Ask for help</span>
+        <span class="hidden font-semibold sm:inline">{{ 'Ask for help' | t }}</span>
       </button>
     } @else {
       <section
         class="fixed inset-x-0 bottom-0 z-50 flex h-[85vh] flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-2xl sm:inset-x-auto sm:bottom-5 sm:right-5 sm:h-[36rem] sm:w-[24rem] sm:rounded-2xl"
         role="dialog"
-        aria-label="Zebron help assistant"
+        [attr.aria-label]="'Zebron help assistant' | t"
       >
         <!-- Header -->
         <header class="flex items-center justify-between gap-2 bg-gradient-to-r from-[#032D42] to-[#007979] px-4 py-3 text-white">
           <div class="min-w-0">
-            <p class="font-semibold">Zebron Assistant</p>
+            <p class="font-semibold">{{ 'Zebron Assistant' | t }}</p>
             <p class="truncate text-xs text-white/75">
-              {{ scopeLabel() }}
+              {{ scopeLabel() | t }}
             </p>
           </div>
           <div class="flex shrink-0 items-center">
-            <button mat-icon-button type="button" class="!text-white" aria-label="Start over" title="Start over" (click)="reset()">
+            <button mat-icon-button type="button" class="!text-white" [attr.aria-label]="'Start over' | t" [title]="'Start over' | t" (click)="reset()">
               <mat-icon>restart_alt</mat-icon>
             </button>
-            <button mat-icon-button type="button" class="!text-white" aria-label="Close assistant" title="Close" (click)="open.set(false)">
+            <button mat-icon-button type="button" class="!text-white" [attr.aria-label]="'Close assistant' | t" [title]="'Close' | t" (click)="open.set(false)">
               <mat-icon>close</mat-icon>
             </button>
           </div>
@@ -91,12 +94,12 @@ const STORAGE_KEY = 'zebron:assistant:';
         <div #scroller class="flex-1 space-y-3 overflow-y-auto bg-gray-50 px-4 py-4" aria-live="polite">
           @if (messages().length === 0) {
             <div class="rounded-xl bg-white p-4 text-sm text-gray-700 shadow-sm">
-              <p class="font-semibold text-gray-900">Hi{{ firstName() ? ' ' + firstName() : '' }}! How can I help?</p>
-              <p class="mt-1 text-gray-600">I answer from Zebron's help articles{{ organizationId() ? ' and your organization\\'s' : '' }}, based on what your role can do.</p>
+              <p class="font-semibold text-gray-900">{{ 'Hi{0}! How can I help?' | t: [(firstName() ? ' ' + firstName() : '')] }}</p>
+              <p class="mt-1 text-gray-600">{{ (organizationId() ? 'I answer from Zebron\\u0027s and your organization\\u0027s help articles, based on what your role can do.' : 'I answer from Zebron\\u0027s help articles, based on what your role can do.') | t }}</p>
               <div class="mt-3 flex flex-wrap gap-2">
                 @for (suggestion of suggestions; track suggestion) {
                   <button type="button" class="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:border-[#007979] hover:text-[#007979]" (click)="ask(suggestion)">
-                    {{ suggestion }}
+                    {{ suggestion | t }}
                   </button>
                 }
               </div>
@@ -114,7 +117,7 @@ const STORAGE_KEY = 'zebron:assistant:';
 
                 @if (message.reply?.citations?.length) {
                   <div class="mt-2 border-t border-gray-100 pt-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Sources</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{{ 'Sources' | t }}</p>
                     <ul class="mt-1 space-y-1">
                       @for (citation of message.reply!.citations; track citation.id) {
                         <li>
@@ -123,14 +126,14 @@ const STORAGE_KEY = 'zebron:assistant:';
                             (click)="toggle(messageIndex + ':' + citation.id)">
                             <span class="font-semibold">[{{ citation.number }}]</span>
                             <span class="flex-1">{{ citation.title }}</span>
-                            <span class="shrink-0 text-gray-400">{{ kindLabel(citation.kind) }}</span>
+                            <span class="shrink-0 text-gray-400">{{ kindLabel(citation.kind) | t }}</span>
                           </button>
                           @if (expanded() === messageIndex + ':' + citation.id) {
                             <div class="mt-1 max-h-60 overflow-y-auto rounded-lg bg-gray-50 p-2 text-xs leading-5 text-gray-700">
                               <p class="whitespace-pre-wrap">{{ citation.content || citation.excerpt }}</p>
                               @if (citation.link) {
                                 <a [routerLink]="citation.link.split('?')[0]" class="mt-2 inline-flex items-center gap-1 font-semibold text-[#007979] hover:underline" (click)="open.set(false)">
-                                  Open page
+                                  {{ 'Open page' | t }}
                                   <mat-icon class="!h-3.5 !w-3.5 !text-sm">arrow_forward</mat-icon>
                                 </a>
                               }
@@ -145,19 +148,19 @@ const STORAGE_KEY = 'zebron:assistant:';
                 @if (message.reply?.suggestTicket) {
                   <button type="button" class="mt-2 inline-flex items-center gap-1 rounded-lg border border-[#007979]/30 px-2.5 py-1 text-xs font-semibold text-[#007979] hover:bg-teal-50" (click)="openTicket()">
                     <mat-icon class="!h-4 !w-4 !text-base">confirmation_number</mat-icon>
-                    Still stuck? Open a support ticket
+                    {{ 'Still stuck? Open a support ticket' | t }}
                   </button>
                 }
 
                 @if (message.reply?.mode === 'search') {
-                  <p class="mt-2 text-[11px] text-gray-400">Matched from help articles.</p>
+                  <p class="mt-2 text-[11px] text-gray-400">{{ 'Matched from help articles.' | t }}</p>
                 }
               </div>
             }
           }
 
           @if (thinking()) {
-            <div class="inline-flex items-center gap-1 rounded-2xl bg-white px-3 py-2 shadow-sm" aria-label="Thinking">
+            <div class="inline-flex items-center gap-1 rounded-2xl bg-white px-3 py-2 shadow-sm" [attr.aria-label]="'Thinking' | t">
               <span class="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.3s]"></span>
               <span class="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.15s]"></span>
               <span class="h-2 w-2 animate-bounce rounded-full bg-gray-400"></span>
@@ -165,7 +168,7 @@ const STORAGE_KEY = 'zebron:assistant:';
           }
 
           @if (error()) {
-            <p class="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-800" role="alert">{{ error() }}</p>
+            <p class="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-800" role="alert">{{ error() | t }}</p>
           }
         </div>
 
@@ -176,19 +179,19 @@ const STORAGE_KEY = 'zebron:assistant:';
             rows="1"
             maxlength="1000"
             class="max-h-28 min-h-10 flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-base focus:border-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:text-sm"
-            placeholder="Ask a question…"
-            aria-label="Your question"
+            [placeholder]="'Ask a question…' | t"
+            [attr.aria-label]="'Your question' | t"
             [(ngModel)]="draft"
             name="question"
             (keydown.enter)="onEnter($event)"
           ></textarea>
-          <button mat-icon-button type="submit" class="!bg-[#007979] !text-white" aria-label="Send" [disabled]="thinking() || !draft.trim()">
+          <button mat-icon-button type="submit" class="!bg-[#007979] !text-white" [attr.aria-label]="'Send' | t" [disabled]="thinking() || !draft.trim()">
             <mat-icon>send</mat-icon>
           </button>
         </form>
 
         <p class="bg-white px-3 pb-2 text-[10px] text-gray-400">
-          AI answers can be wrong. Check the sources, and open a ticket for anything urgent.
+          {{ 'AI answers can be wrong. Check the sources, and open a ticket for anything urgent.' | t }}
         </p>
       </section>
     }

@@ -7,12 +7,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { TestMode, TestStore } from '../../store/test.store';
 
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-test-setup',
 
   standalone: true,
 
-  imports: [RouterLink, MatIconModule, MatCheckboxModule],
+  imports: [
+    TranslatePipe,RouterLink, MatIconModule, MatCheckboxModule],
 
   template: `
     <main class="min-h-screen bg-gray-50">
@@ -39,7 +42,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
         >
           <a
             routerLink="/"
-            aria-label="Zebron home"
+            [attr.aria-label]="'Zebron home' | t"
             class="flex
                    items-center
                    gap-2
@@ -52,7 +55,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                      font-bold
                      tracking-tight"
             >
-              Zebron
+              {{ 'Zebron' | t }}
             </span>
           </a>
 
@@ -61,7 +64,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                    items-center
                    gap-6
                    md:flex"
-            aria-label="Primary navigation"
+            [attr.aria-label]="'Primary navigation' | t"
           >
             <a
               routerLink="/resources"
@@ -71,7 +74,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                      transition
                      hover:text-[#12BFC3]"
             >
-              Resources
+              {{ 'Resources' | t }}
             </a>
 
             <a
@@ -82,7 +85,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                      transition
                      hover:text-[#12BFC3]"
             >
-              Find Jobs
+              {{ 'Find Jobs' | t }}
             </a>
 
             <a
@@ -92,7 +95,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                      text-[#12BFC3]"
               aria-current="page"
             >
-              Test Center
+              {{ 'Test Center' | t }}
             </a>
 
             <a
@@ -103,7 +106,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                      transition
                      hover:text-[#12BFC3]"
             >
-              About
+              {{ 'About' | t }}
             </a>
 
             <a
@@ -114,7 +117,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                      transition
                      hover:text-[#12BFC3]"
             >
-              Contact
+              {{ 'Contact' | t }}
             </a>
           </nav>
         </div>
@@ -145,7 +148,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                  transition
                  hover:text-[#032D42]"
         >
-          ← Test Center
+          {{ '← Test Center' | t }}
         </a>
 
         @if (!hasCourse()) {
@@ -170,7 +173,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                          font-bold
                          text-gray-900"
                 >
-                  No test selected
+                  {{ 'No test selected' | t }}
                 </h1>
 
                 <p
@@ -178,7 +181,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                          text-sm
                          text-gray-600"
                 >
-                  Choose a course and topics before configuring your practice test.
+                  {{ 'Choose a course and topics before configuring your practice test.' | t }}
                 </p>
 
                 <a
@@ -194,7 +197,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                          text-white
                          hover:bg-[#006666]"
                 >
-                  Browse Test Center
+                  {{ 'Browse Test Center' | t }}
                 </a>
               </div>
             </div>
@@ -219,7 +222,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                      tracking-[0.16em]
                      text-[#7DD3D3]"
             >
-              Test setup
+              {{ 'Test setup' | t }}
             </p>
 
             <h1
@@ -241,13 +244,11 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                      text-blue-100"
             >
               <span>
-                {{ selectedTopicCount() }}
-                topic{{ selectedTopicCount() === 1 ? '' : 's' }}
+                {{ '{0} topic{1}' | t: [selectedTopicCount(), (selectedTopicCount() === 1 ? '' : 's')] }}
               </span>
 
               <span>
-                {{ availableQuestions() }}
-                questions available
+                {{ '{0} questions available' | t: [availableQuestions()] }}
               </span>
             </div>
           </div>
@@ -281,7 +282,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                            font-bold
                            text-[#032D42]"
                   >
-                    Number of questions
+                    {{ 'Number of questions' | t }}
                   </h2>
 
                   <p
@@ -289,7 +290,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                            text-xs
                            text-gray-500"
                   >
-                    Choose how many questions you want in this test.
+                    {{ 'Choose how many questions you want in this test.' | t }}
                   </p>
                 </div>
 
@@ -329,8 +330,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                            text-xs
                            text-amber-600"
                   >
-                    Only {{ availableQuestions() }}
-                    questions are currently available for the selected topics.
+                    {{ 'Only {0} questions are currently available for the selected topics.' | t: [availableQuestions()] }}
                   </p>
                 }
               </section>
@@ -352,7 +352,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                          font-bold
                          text-[#032D42]"
                 >
-                  Difficulty
+                  {{ 'Difficulty' | t }}
                 </h2>
 
                 <p
@@ -360,7 +360,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                          text-xs
                          text-gray-500"
                 >
-                  Choose the difficulty of your questions.
+                  {{ 'Choose the difficulty of your questions.' | t }}
                 </p>
 
                 <div
@@ -391,7 +391,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                                font-semibold
                                text-[#032D42]"
                       >
-                        {{ level.label }}
+                        {{ level.label | t }}
                       </span>
 
                       <span
@@ -401,7 +401,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                                leading-4
                                text-gray-500"
                       >
-                        {{ level.description }}
+                        {{ level.description | t }}
                       </span>
                     </button>
                   }
@@ -425,7 +425,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                          font-bold
                          text-[#032D42]"
                 >
-                  Test mode
+                  {{ 'Test mode' | t }}
                 </h2>
 
                 <p
@@ -433,7 +433,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                          text-xs
                          text-gray-500"
                 >
-                  Choose how you want to take the test.
+                  {{ 'Choose how you want to take the test.' | t }}
                 </p>
 
                 <div
@@ -481,14 +481,14 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                                  font-bold
                                  text-[#032D42]"
                         >
-                          Practice
+                          {{ 'Practice' | t }}
                         </h3>
 
                         <p
                           class="text-[11px]
                                  text-gray-500"
                         >
-                          Learn as you go
+                          {{ 'Learn as you go' | t }}
                         </p>
                       </div>
                     </div>
@@ -499,7 +499,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                              leading-5
                              text-gray-600"
                     >
-                      See whether your answer is correct and review the explanation immediately.
+                      {{ 'See whether your answer is correct and review the explanation immediately.' | t }}
                     </p>
                   </button>
 
@@ -542,14 +542,14 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                                  font-bold
                                  text-[#032D42]"
                         >
-                          Exam simulation
+                          {{ 'Exam simulation' | t }}
                         </h3>
 
                         <p
                           class="text-[11px]
                                  text-gray-500"
                         >
-                          Test yourself
+                          {{ 'Test yourself' | t }}
                         </p>
                       </div>
                     </div>
@@ -560,7 +560,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                              leading-5
                              text-gray-600"
                     >
-                      Complete the test without seeing answers until you finish.
+                      {{ 'Complete the test without seeing answers until you finish.' | t }}
                     </p>
                   </button>
                 </div>
@@ -583,7 +583,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                          font-bold
                          text-[#032D42]"
                 >
-                  Test options
+                  {{ 'Test options' | t }}
                 </h2>
 
                 <div class="mt-4 space-y-3">
@@ -594,8 +594,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                     [checked]="randomizeQuestions()"
                     (change)="setRandomizeQuestions($event.checked)"
                   >
-                    <span class="block text-sm font-semibold text-[#032D42]">Randomize questions</span>
-                    <span class="block text-xs text-gray-500">Change the order each time you start a test.</span>
+                    <span class="block text-sm font-semibold text-[#032D42]">{{ 'Randomize questions' | t }}</span>
+                    <span class="block text-xs text-gray-500">{{ 'Change the order each time you start a test.' | t }}</span>
                   </mat-checkbox>
 
                   <!-- Random answers -->
@@ -605,8 +605,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                     [checked]="randomizeAnswers()"
                     (change)="setRandomizeAnswers($event.checked)"
                   >
-                    <span class="block text-sm font-semibold text-[#032D42]">Randomize answers</span>
-                    <span class="block text-xs text-gray-500">Shuffle the answer choices.</span>
+                    <span class="block text-sm font-semibold text-[#032D42]">{{ 'Randomize answers' | t }}</span>
+                    <span class="block text-xs text-gray-500">{{ 'Shuffle the answer choices.' | t }}</span>
                   </mat-checkbox>
                 </div>
               </section>
@@ -646,7 +646,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                          font-bold
                          text-[#032D42]"
                 >
-                  Ready to practice?
+                  {{ 'Ready to practice?' | t }}
                 </h2>
 
                 <dl
@@ -658,7 +658,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                            justify-between
                            gap-4"
                   >
-                    <dt class="text-xs text-gray-500">Questions</dt>
+                    <dt class="text-xs text-gray-500">{{ 'Questions' | t }}</dt>
 
                     <dd
                       class="text-xs
@@ -674,7 +674,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                            justify-between
                            gap-4"
                   >
-                    <dt class="text-xs text-gray-500">Difficulty</dt>
+                    <dt class="text-xs text-gray-500">{{ 'Difficulty' | t }}</dt>
 
                     <dd
                       class="text-xs
@@ -682,7 +682,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                              capitalize
                              text-[#032D42]"
                     >
-                      {{ difficulty() }}
+                      {{ difficulty() | t }}
                     </dd>
                   </div>
 
@@ -691,14 +691,14 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                            justify-between
                            gap-4"
                   >
-                    <dt class="text-xs text-gray-500">Mode</dt>
+                    <dt class="text-xs text-gray-500">{{ 'Mode' | t }}</dt>
 
                     <dd
                       class="text-xs
                              font-bold
                              text-[#032D42]"
                     >
-                      {{ mode() === 'practice' ? 'Practice' : 'Exam' }}
+                      {{ mode() === 'practice' ? ('Practice' | t) : ('Exam' | t) }}
                     </dd>
                   </div>
                 </dl>
@@ -727,7 +727,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                   [disabled]="!canStart()"
                   (click)="startTest()"
                 >
-                  Start Test →
+                  {{ 'Start Test →' | t }}
                 </button>
 
                 @if (!canStart()) {
@@ -737,7 +737,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                            text-[11px]
                            text-gray-500"
                   >
-                    Select a valid number of questions to continue.
+                    {{ 'Select a valid number of questions to continue.' | t }}
                   </p>
                 }
               </div>

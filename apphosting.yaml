@@ -2,7 +2,10 @@
 # See https://firebase.google.com/docs/app-hosting/configure#cloud-run
 runConfig:
   minInstances: 0
-  # maxInstances: 100
+  # Cost cap: at most 20 server instances (about 1,600 simultaneous
+  # requests at the default concurrency of 80). Raise if real traffic
+  # needs it; see docs/SCALING-AND-SECURITY-RUNBOOK.md.
+  maxInstances: 20
   # concurrency: 80
   # cpu: 1
   # memoryMiB: 512

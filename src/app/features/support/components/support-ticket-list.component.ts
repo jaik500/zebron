@@ -11,15 +11,18 @@ import {
 } from '../support.service';
 
 /** Ticket rows linking to /support/tickets/:id. */
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-support-ticket-list',
   standalone: true,
-  imports: [DatePipe, RouterLink, MatIconModule],
+  imports: [
+    TranslatePipe,DatePipe, RouterLink, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (tickets().length === 0) {
       <section class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-        {{ emptyText() }}
+        {{ emptyText() | t }}
       </section>
     } @else {
       <ul class="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -30,10 +33,10 @@ import {
                 <span class="flex flex-wrap items-center gap-2">
                   <span class="font-mono text-xs text-gray-500">{{ ticket.number }}</span>
                   <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="status(ticket).classes">
-                    {{ staffView() ? status(ticket).label : status(ticket).requesterLabel }}
+                    {{ (staffView() ? status(ticket).label : status(ticket).requesterLabel) | t }}
                   </span>
                   @if (ticket.priority === 'high' || ticket.priority === 'urgent' || staffView()) {
-                    <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="priority(ticket).classes">{{ priority(ticket).label }}</span>
+                    <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="priority(ticket).classes">{{ priority(ticket).label | t }}</span>
                   }
                   @if (showOrganization() && ticket.organizationName) {
                     <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-800">{{ ticket.organizationName }}</span>
@@ -41,19 +44,19 @@ import {
                   @if (staffView() && ticket.lastMessageBy === 'requester' && ticket.status !== 'closed') {
                     <span class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-sky-700">
                       <mat-icon class="!h-3.5 !w-3.5 !text-sm">mark_chat_unread</mat-icon>
-                      Needs reply
+                      {{ 'Needs reply' | t }}
                     </span>
                   }
                 </span>
                 <span class="mt-0.5 block truncate font-medium text-gray-900">{{ ticket.subject }}</span>
                 <span class="block truncate text-xs text-gray-500">
-                  {{ category(ticket.category) }} · {{ ticket.requesterName }}{{ staffView() && ticket.requesterIsGuest ? ' (guest)' : '' }}
+                  {{ category(ticket.category) | t }} · {{ ticket.requesterName }}{{ staffView() && ticket.requesterIsGuest ? (' (guest)' | t) : '' }}
                   @if (staffView()) {
-                    · {{ ticket.assigneeName ? 'Assigned to ' + ticket.assigneeName : 'Unassigned' }}
+                    · {{ ticket.assigneeName ? ('Assigned to ' | t) + ticket.assigneeName : ('Unassigned' | t) }}
                   }
                 </span>
               </span>
-              <span class="shrink-0 text-xs text-gray-500">Updated {{ ticket.updatedAt | date: 'MMM d, h:mm a' }}</span>
+              <span class="shrink-0 text-xs text-gray-500">{{ 'Updated {0}' | t: [(ticket.updatedAt | date: 'MMM d, h:mm a')] }}</span>
             </a>
           </li>
         }

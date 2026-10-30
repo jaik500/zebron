@@ -15,10 +15,13 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { PartnerOrganizationOnboardingService } from '../../services/partner-organization-onboarding.service';
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-organization-invitation-acceptance',
   standalone: true,
-  imports: [RouterLink, MatIconModule],
+  imports: [
+    TranslatePipe,RouterLink, MatIconModule],
   template: `
     <main class="invitation-page mt-8">
       <section class="invitation-shell">
@@ -36,11 +39,11 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
               @if (organizationName()) {
                 {{ organizationName() }}
               } @else {
-                Zebron
+                {{ 'Zebron' | t }}
               }
             </div>
 
-            <div class="brand-subtitle">Organization Invitation</div>
+            <div class="brand-subtitle">{{ 'Organization Invitation' | t }}</div>
           </div>
         </header>
 
@@ -53,9 +56,9 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
             <div class="state-container">
               <div class="spinner"></div>
 
-              <h1>Checking your invitation</h1>
+              <h1>{{ 'Checking your invitation' | t }}</h1>
 
-              <p>Please wait while we verify your invitation and account.</p>
+              <p>{{ 'Please wait while we verify your invitation and account.' | t }}</p>
             </div>
           </section>
         }
@@ -71,16 +74,16 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
                 <mat-icon> link_off </mat-icon>
               </div>
 
-              <h1>Invitation Link Invalid</h1>
+              <h1>{{ 'Invitation Link Invalid' | t }}</h1>
 
               <p>
-                This invitation link is missing the invitation information required to continue.
+                {{ 'This invitation link is missing the invitation information required to continue.' | t }}
               </p>
 
               <a routerLink="/" class="primary-button">
                 <mat-icon> home </mat-icon>
 
-                <span> Go to Zebron </span>
+                <span> {{ 'Go to Zebron' | t }} </span>
               </a>
             </div>
           </section>
@@ -98,29 +101,29 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
               </div>
 
               <div class="header-content">
-                <span class="eyebrow"> ORGANIZATION INVITATION </span>
+                <span class="eyebrow"> {{ 'ORGANIZATION INVITATION' | t }} </span>
 
                 <h1>
-                  You've been invited to join
+                  {{ 'You\\u0027ve been invited to join' | t }}
                   @if (organizationName()) {
                     {{ organizationName() }}
                   } @else {
-                    an organization
+                    {{ 'an organization' | t }}
                   }
                 </h1>
               </div>
             </div>
 
             <p class="description">
-              You have received an invitation to join
+              {{ 'You have received an invitation to join' | t }}
               @if (organizationName()) {
                 <strong>
                   {{ organizationName() }}
                 </strong>
               } @else {
-                an organization
+                {{ 'an organization' | t }}
               }
-              on Zebron.
+              {{ 'on Zebron.' | t }}
             </p>
 
             <!-- Organization -->
@@ -132,7 +135,7 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
                 </div>
 
                 <div class="organization-details">
-                  <span class="organization-label"> ORGANIZATION </span>
+                  <span class="organization-label"> {{ 'ORGANIZATION' | t }} </span>
 
                   <span class="organization-name">
                     {{ organizationName() }}
@@ -147,11 +150,10 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
               <mat-icon> lock </mat-icon>
 
               <div>
-                <strong> Sign in to continue </strong>
+                <strong> {{ 'Sign in to continue' | t }} </strong>
 
                 <p>
-                  Sign in using the email address that received this invitation. If you don't have a
-                  Zebron account yet, you can create one first.
+                  {{ 'Sign in using the email address that received this invitation. If you don\\u0027t have a Zebron account yet, you can create one first.' | t }}
                 </p>
               </div>
             </div>
@@ -168,7 +170,7 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
               >
                 <mat-icon> login </mat-icon>
 
-                <span> Sign In </span>
+                <span> {{ 'Sign In' | t }} </span>
               </a>
 
               <a
@@ -180,7 +182,7 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
               >
                 <mat-icon> person_add </mat-icon>
 
-                <span> Create Account </span>
+                <span> {{ 'Create Account' | t }} </span>
               </a>
             </div>
 
@@ -190,15 +192,14 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
               <p class="security-note">
                 <mat-icon>verified_user</mat-icon>
 
-                <span> Your organization membership has been created securely. </span>
+                <span> {{ 'Your organization membership has been created securely.' | t }} </span>
               </p>
             } @else {
               <p class="security-note">
                 <mat-icon>verified_user</mat-icon>
 
                 <span>
-                  Your organization membership will be created securely when you accept this
-                  invitation.
+                  {{ 'Your organization membership will be created securely when you accept this invitation.' | t }}
                 </span>
               </p>
             }
@@ -217,27 +218,27 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
               </div>
 
               <div class="header-content">
-                <span class="eyebrow"> ORGANIZATION INVITATION </span>
+                <span class="eyebrow"> {{ 'ORGANIZATION INVITATION' | t }} </span>
 
                 <h1>
-                  Accept your invitation
+                  {{ 'Accept your invitation' | t }}
                   @if (organizationName()) {
-                    to join {{ organizationName() }}
+                    {{ 'to join {0}' | t: [organizationName()] }}
                   }
                 </h1>
               </div>
             </div>
 
             <p class="description">
-              You are signed in and ready to accept your invitation to join
+              {{ 'You are signed in and ready to accept your invitation to join' | t }}
               @if (organizationName()) {
                 <strong>
                   {{ organizationName() }}
                 </strong>
               } @else {
-                the organization
+                {{ 'the organization' | t }}
               }
-              on Zebron.
+              {{ 'on Zebron.' | t }}
             </p>
 
             <!-- =================================================
@@ -251,7 +252,7 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
                 </div>
 
                 <div class="organization-details">
-                  <span class="organization-label"> ORGANIZATION </span>
+                  <span class="organization-label"> {{ 'ORGANIZATION' | t }} </span>
 
                   <span class="organization-name">
                     {{ organizationName() }}
@@ -270,10 +271,10 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
               </div>
 
               <div class="account-details">
-                <span class="account-label"> SIGNED IN AS </span>
+                <span class="account-label"> {{ 'SIGNED IN AS' | t }} </span>
 
                 <span class="account-email">
-                  {{ currentUser()?.email || 'Authenticated account' }}
+                  {{ currentUser()?.email || ('Authenticated account' | t) }}
                 </span>
               </div>
             </div>
@@ -287,10 +288,10 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
                 <mat-icon> error </mat-icon>
 
                 <div>
-                  <strong> Unable to accept invitation </strong>
+                  <strong> {{ 'Unable to accept invitation' | t }} </strong>
 
                   <p>
-                    {{ errorMessage() }}
+                    {{ errorMessage() | t }}
                   </p>
                 </div>
               </div>
@@ -305,10 +306,10 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
                 <mat-icon> check_circle </mat-icon>
 
                 <div>
-                  <strong> Invitation accepted </strong>
+                  <strong> {{ 'Invitation accepted' | t }} </strong>
 
                   <p>
-                    {{ successMessage() }}
+                    {{ successMessage() | t }}
                   </p>
                 </div>
               </div>
@@ -329,11 +330,11 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
                   @if (isAccepting()) {
                     <span class="button-spinner"></span>
 
-                    <span> Accepting... </span>
+                    <span> {{ 'Accepting...' | t }} </span>
                   } @else {
                     <mat-icon> how_to_reg </mat-icon>
 
-                    <span> Accept Invitation </span>
+                    <span> {{ 'Accept Invitation' | t }} </span>
                   }
                 </button>
 
@@ -345,13 +346,13 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
                 >
                   <mat-icon> logout </mat-icon>
 
-                  <span> Use Another Account </span>
+                  <span> {{ 'Use Another Account' | t }} </span>
                 </button>
               } @else {
                 <button type="button" class="primary-button" (click)="goToPartnerPortal()">
                   <mat-icon> dashboard </mat-icon>
 
-                  <span> Go to Partner Portal </span>
+                  <span> {{ 'Go to Partner Portal' | t }} </span>
                 </button>
               }
             </div>
@@ -364,8 +365,7 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
               <mat-icon> verified_user </mat-icon>
 
               <span>
-                Your organization membership will be created securely when you accept this
-                invitation.
+                {{ 'Your organization membership will be created securely when you accept this invitation.' | t }}
               </span>
             </p>
           </section>
@@ -376,11 +376,11 @@ import { PartnerOrganizationOnboardingService } from '../../services/partner-org
         ====================================================== -->
 
         <footer class="page-footer">
-          <span> © {{ currentYear }} Zebron </span>
+          <span> {{ '© {0} Zebron' | t: [currentYear] }} </span>
 
           <span class="footer-separator"> • </span>
 
-          <span> Organization Management </span>
+          <span> {{ 'Organization Management' | t }} </span>
         </footer>
       </section>
     </main>
@@ -1398,23 +1398,19 @@ export class OrganizationInvitationAcceptanceComponent implements OnInit {
 
     if (code.includes('not-found') || normalizedMessage.includes('invitation not found')) {
       return (
-        'This invitation could not be found. ' +
-        'It may have been deleted or the invitation link may be invalid.'
+        'This invitation could not be found. It may have been deleted or the invitation link may be invalid.'
       );
     }
 
     if (code.includes('failed-precondition') || normalizedMessage.includes('expired')) {
       return (
-        'This invitation is no longer available. ' +
-        'Please contact the organization administrator and request a new invitation.'
+        'This invitation is no longer available. Please contact the organization administrator and request a new invitation.'
       );
     }
 
     if (code.includes('permission-denied') || normalizedMessage.includes('email')) {
       return (
-        'The signed-in account does not match the email address ' +
-        'that received this invitation. Please sign out and use ' +
-        'the invited email address.'
+        'The signed-in account does not match the email address that received this invitation. Please sign out and use the invited email address.'
       );
     }
 
@@ -1427,8 +1423,7 @@ export class OrganizationInvitationAcceptanceComponent implements OnInit {
     }
 
     return (
-      'We could not process this invitation. ' +
-      'Please try again or contact the organization administrator.'
+      'We could not process this invitation. Please try again or contact the organization administrator.'
     );
   }
 }

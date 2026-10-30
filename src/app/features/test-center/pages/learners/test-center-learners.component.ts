@@ -19,10 +19,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-test-center-learners',
   standalone: true,
   imports: [
+    TranslatePipe,
     CommonModule,
     FormsModule,
     RouterLink,
@@ -37,15 +40,15 @@ import { MatIconModule } from '@angular/material/icon';
       <header class="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
         <div>
           <span class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">
-            Test Center
+            {{ 'Test Center' | t }}
           </span>
 
           <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Learners
+            {{ 'Learners' | t }}
           </h1>
 
           <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Monitor learner activity, assessment performance, and learning progress.
+            {{ 'Monitor learner activity, assessment performance, and learning progress.' | t }}
           </p>
         </div>
 
@@ -53,9 +56,9 @@ import { MatIconModule } from '@angular/material/icon';
           <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500"></span>
 
           <div class="min-w-0">
-            <p class="text-xs text-slate-500">Current organization</p>
+            <p class="text-xs text-slate-500">{{ 'Current organization' | t }}</p>
             <p class="truncate text-sm font-semibold text-slate-800">
-              {{ organizationId() || 'Select an organization' }}
+              {{ organizationId() || ('Select an organization' | t) }}
             </p>
           </div>
         </div>
@@ -67,7 +70,7 @@ import { MatIconModule } from '@angular/material/icon';
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
           <div class="flex items-start justify-between">
             <div>
-              <p class="text-sm font-medium text-slate-500">Total learners</p>
+              <p class="text-sm font-medium text-slate-500">{{ 'Total learners' | t }}</p>
               <p class="mt-3 text-3xl font-bold tracking-tight text-slate-900">
                 {{ learners().length }}
               </p>
@@ -84,14 +87,14 @@ import { MatIconModule } from '@angular/material/icon';
           </div>
 
           <p class="mt-3 text-xs text-slate-400">
-            Active organization memberships
+            {{ 'Active organization memberships' | t }}
           </p>
         </article>
 
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
           <div class="flex items-start justify-between">
             <div>
-              <p class="text-sm font-medium text-slate-500">Started learning</p>
+              <p class="text-sm font-medium text-slate-500">{{ 'Started learning' | t }}</p>
               <p class="mt-3 text-3xl font-bold tracking-tight text-slate-900">
                 {{ startedCount() }}
               </p>
@@ -108,7 +111,7 @@ import { MatIconModule } from '@angular/material/icon';
           </div>
 
           <p class="mt-3 text-xs text-slate-400">
-            Learners with assessment activity
+            {{ 'Learners with assessment activity' | t }}
           </p>
         </article>
 
@@ -116,7 +119,7 @@ import { MatIconModule } from '@angular/material/icon';
           <div class="flex items-start justify-between">
             <div>
               <p class="text-sm font-medium text-slate-500">
-                Average assessment score
+                {{ 'Average assessment score' | t }}
               </p>
 
               <p class="mt-3 text-3xl font-bold tracking-tight text-slate-900">
@@ -139,7 +142,7 @@ import { MatIconModule } from '@angular/material/icon';
           </div>
 
           <p class="mt-3 text-xs text-slate-400">
-            Based on available learner averages
+            {{ 'Based on available learner averages' | t }}
           </p>
         </article>
 
@@ -151,16 +154,16 @@ import { MatIconModule } from '@angular/material/icon';
         <div class="flex flex-col justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:px-6">
           <div>
             <h2 class="text-lg font-bold text-slate-900">
-              Organization members
+              {{ 'Organization members' | t }}
             </h2>
 
             <p class="mt-1 text-sm text-slate-500">
-              Expand a learner to review their assessment overview.
+              {{ 'Expand a learner to review their assessment overview.' | t }}
             </p>
           </div>
 
           <span class="inline-flex w-fit items-center rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
-            {{ filteredLearners().length }} learners
+            {{ '{0} learners' | t: [filteredLearners().length] }}
           </span>
         </div>
 
@@ -168,27 +171,27 @@ import { MatIconModule } from '@angular/material/icon';
         <div class="grid grid-cols-1 gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4 md:grid-cols-[minmax(0,1fr)_220px] md:px-6">
 
           <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-            <mat-label>Search learners</mat-label>
+            <mat-label>{{ 'Search learners' | t }}</mat-label>
             <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
             <input matInput
               type="search"
-              placeholder="Search by name or email..."
+              [placeholder]="'Search by name or email...' | t"
               [ngModel]="search()"
               (ngModelChange)="search.set($event)"
             />
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-            <mat-label>Filter learners</mat-label>
+            <mat-label>{{ 'Filter learners' | t }}</mat-label>
             <mat-select
-            aria-label="Filter learners"
+            [attr.aria-label]="'Filter learners' | t"
             [ngModel]="statusFilter()"
             (ngModelChange)="statusFilter.set($event)"
           >
-            <mat-option value="all">All learners</mat-option>
-            <mat-option value="active">Has assessment activity</mat-option>
-            <mat-option value="not-started">Not started</mat-option>
-            <mat-option value="inactive">Inactive membership</mat-option>
+            <mat-option value="all">{{ 'All learners' | t }}</mat-option>
+            <mat-option value="active">{{ 'Has assessment activity' | t }}</mat-option>
+            <mat-option value="not-started">{{ 'Not started' | t }}</mat-option>
+            <mat-option value="inactive">{{ 'Inactive membership' | t }}</mat-option>
           </mat-select>
           </mat-form-field>
 
@@ -200,7 +203,7 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="h-9 w-9 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600"></div>
 
             <p class="text-sm font-medium text-slate-500">
-              Loading learners...
+              {{ 'Loading learners...' | t }}
             </p>
           </div>
         }
@@ -218,11 +221,11 @@ import { MatIconModule } from '@angular/material/icon';
             </div>
 
             <h3 class="mt-4 font-semibold text-slate-900">
-              Unable to load learners
+              {{ 'Unable to load learners' | t }}
             </h3>
 
             <p class="mt-2 max-w-md text-sm leading-6 text-slate-500">
-              {{ error() }}
+              {{ error() | t }}
             </p>
 
             <button
@@ -230,7 +233,7 @@ import { MatIconModule } from '@angular/material/icon';
               class="mt-5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               (click)="loadLearners()"
             >
-              Try again
+              {{ 'Try again' | t }}
             </button>
           </div>
         }
@@ -248,11 +251,11 @@ import { MatIconModule } from '@angular/material/icon';
             </div>
 
             <h3 class="mt-4 font-semibold text-slate-900">
-              No learners found
+              {{ 'No learners found' | t }}
             </h3>
 
             <p class="mt-2 text-sm text-slate-500">
-              Try another search or change the selected filter.
+              {{ 'Try another search or change the selected filter.' | t }}
             </p>
           </div>
         }
@@ -295,13 +298,13 @@ import { MatIconModule } from '@angular/material/icon';
                     </span>
 
                     <span class="truncate text-xs text-slate-500">
-                      {{ learner.email || 'No email available' }}
+                      {{ learner.email || ('No email available' | t) }}
                     </span>
                   </span>
 
                   <!-- Role -->
                   <span class="hidden rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 md:inline-flex">
-                    {{ formatRole(learner.role) }}
+                    {{ formatRole(learner.role) | t }}
                   </span>
 
                   <!-- Status -->
@@ -321,7 +324,7 @@ import { MatIconModule } from '@angular/material/icon';
                       [class.bg-amber-500]="learner.status === 'not-started'"
                     ></span>
 
-                    {{ statusLabel(learner.status) }}
+                    {{ statusLabel(learner.status) | t }}
                   </span>
 
                   <!-- Latest Score -->
@@ -335,7 +338,7 @@ import { MatIconModule } from '@angular/material/icon';
                     </span>
 
                     <span class="text-[11px] text-slate-400">
-                      Latest score
+                      {{ 'Latest score' | t }}
                     </span>
                   </span>
 
@@ -353,7 +356,7 @@ import { MatIconModule } from '@angular/material/icon';
 
                       <div class="rounded-xl border border-white bg-white p-4 shadow-sm">
                         <p class="text-xs font-medium text-slate-500">
-                          Assessments completed
+                          {{ 'Assessments completed' | t }}
                         </p>
 
                         <p class="mt-2 text-2xl font-bold text-slate-900">
@@ -363,7 +366,7 @@ import { MatIconModule } from '@angular/material/icon';
 
                       <div class="rounded-xl border border-white bg-white p-4 shadow-sm">
                         <p class="text-xs font-medium text-slate-500">
-                          Average score
+                          {{ 'Average score' | t }}
                         </p>
 
                         <p class="mt-2 text-2xl font-bold text-slate-900">
@@ -377,7 +380,7 @@ import { MatIconModule } from '@angular/material/icon';
 
                       <div class="rounded-xl border border-white bg-white p-4 shadow-sm">
                         <p class="text-xs font-medium text-slate-500">
-                          Last assessment
+                          {{ 'Last assessment' | t }}
                         </p>
 
                         <p class="mt-2 text-base font-bold text-slate-900">
@@ -394,11 +397,11 @@ import { MatIconModule } from '@angular/material/icon';
                     <div class="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                       <div>
                         <p class="text-sm font-semibold text-slate-800">
-                          {{ learner.name }}'s learning activity
+                          {{ '{0}\\u0027s learning activity' | t: [learner.name] }}
                         </p>
 
                         <p class="mt-1 text-xs text-slate-500">
-                          Review assessment history and course activity.
+                          {{ 'Review assessment history and course activity.' | t }}
                         </p>
                       </div>
 
@@ -409,7 +412,7 @@ import { MatIconModule } from '@angular/material/icon';
                           learner.userId
                         ]"
                       >
-                        View learning dashboard
+                        {{ 'View learning dashboard' | t }}
                         <svg class="h-4 w-4" fill="none"
                           stroke="currentColor" viewBox="0 0 24 24"
                           aria-hidden="true">
@@ -432,11 +435,11 @@ import { MatIconModule } from '@angular/material/icon';
         @if (!loading() && !error() && filteredLearners().length) {
           <footer class="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <span>
-              Showing {{ filteredLearners().length }} of {{ learners().length }} learners
+              {{ 'Showing {0} of {1} learners' | t: [filteredLearners().length, learners().length] }}
             </span>
 
             <span>
-              Learner information is restricted by organization permissions.
+              {{ 'Learner information is restricted by organization permissions.' | t }}
             </span>
           </footer>
         }

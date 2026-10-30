@@ -36,10 +36,13 @@ import {
  * - Requesters and organization managers: reply, close, reopen.
  * - Zebron staff: also assign, set status and priority, internal notes.
  */
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-support-ticket',
   standalone: true,
   imports: [
+    TranslatePipe,
     DatePipe,
     FormsModule,
     RouterLink,
@@ -56,23 +59,23 @@ import {
       <header class="border-b border-white/10 bg-[#032D42]">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div class="min-w-0">
-            <p class="font-mono text-sm text-white/70">{{ ticket()?.number || 'Ticket' }}</p>
-            <h1 class="break-words text-xl font-bold text-white sm:text-2xl">{{ ticket()?.subject || 'Support ticket' }}</h1>
+            <p class="font-mono text-sm text-white/70">{{ ticket()?.number || ('Ticket' | t) }}</p>
+            <h1 class="break-words text-xl font-bold text-white sm:text-2xl">{{ ticket()?.subject || ('Support ticket' | t) }}</h1>
           </div>
           <a mat-stroked-button class="!border-white/40 !text-white" [routerLink]="backLink()" [queryParams]="backQuery()">
             <mat-icon>arrow_back</mat-icon>
-            {{ access() === 'staff' ? 'Support queue' : 'My tickets' }}
+            {{ access() === 'staff' ? ('Support queue' | t) : ('My tickets' | t) }}
           </a>
         </div>
       </header>
 
       <main class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         @if (error()) {
-          <p class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{{ error() }}</p>
+          <p class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{{ error() | t }}</p>
         }
 
         @if (loading() && !ticket()) {
-          <p class="text-sm text-gray-500">Loading ticket…</p>
+          <p class="text-sm text-gray-500">{{ 'Loading ticket…' | t }}</p>
         } @else if (ticket(); as current) {
           <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
             <!-- ============ CONVERSATION ============ -->
@@ -95,7 +98,7 @@ import {
                           </span>
                           {{ message.authorName }}
                           @if (message.internal) {
-                            <span class="rounded bg-amber-200 px-1.5 text-[10px] font-bold uppercase text-amber-900">Internal note</span>
+                            <span class="rounded bg-amber-200 px-1.5 text-[10px] font-bold uppercase text-amber-900">{{ 'Internal note' | t }}</span>
                           }
                         </span>
                         <span class="text-xs text-gray-500">{{ message.createdAt | date: 'medium' }}</span>
@@ -110,28 +113,28 @@ import {
               @if (current.status !== 'closed' || access() === 'staff') {
                 <div class="mt-5 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                   <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>{{ internal ? 'Internal note (only Zebron staff see this)' : 'Reply' }}</mat-label>
+                    <mat-label>{{ internal ? ('Internal note (only Zebron staff see this)' | t) : ('Reply' | t) }}</mat-label>
                     <textarea matInput rows="4" maxlength="10000" [(ngModel)]="replyText" name="reply"></textarea>
                   </mat-form-field>
 
                   <div class="flex flex-wrap items-center justify-between gap-3">
                     @if (access() === 'staff') {
-                      <mat-slide-toggle [(ngModel)]="internal" name="internal">Internal note</mat-slide-toggle>
+                      <mat-slide-toggle [(ngModel)]="internal" name="internal">{{ 'Internal note' | t }}</mat-slide-toggle>
                     } @else {
-                      <span class="text-xs text-gray-500">Replying to a resolved ticket reopens it.</span>
+                      <span class="text-xs text-gray-500">{{ 'Replying to a resolved ticket reopens it.' | t }}</span>
                     }
 
                     <button mat-flat-button type="button" class="!bg-[#007979] !text-white" [disabled]="busy() || !replyText.trim()" (click)="sendReply()">
                       <mat-icon>{{ internal ? 'lock' : 'send' }}</mat-icon>
-                      {{ busy() ? 'Sending…' : internal ? 'Add note' : 'Send reply' }}
+                      {{ busy() ? ('Sending…' | t) : internal ? ('Add note' | t) : ('Send reply' | t) }}
                     </button>
                   </div>
                 </div>
               } @else {
                 <div class="mt-5 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
-                  This ticket is closed.
-                  <button mat-button type="button" class="!text-[#007979]" [disabled]="busy()" (click)="setStatus('open')">Reopen it</button>
-                  or <a routerLink="/support" class="font-semibold text-[#007979] hover:underline">open a new request</a>.
+                  {{ 'This ticket is closed.' | t }}
+                  <button mat-button type="button" class="!text-[#007979]" [disabled]="busy()" (click)="setStatus('open')">{{ 'Reopen it' | t }}</button>
+                  {{ 'or' | t }} <a routerLink="/support" class="font-semibold text-[#007979] hover:underline">{{ 'open a new request' | t }}</a>.
                 </div>
               }
             </section>
@@ -141,56 +144,56 @@ import {
               <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                 <dl class="space-y-3 text-sm">
                   <div>
-                    <dt class="text-xs text-gray-500">Status</dt>
+                    <dt class="text-xs text-gray-500">{{ 'Status' | t }}</dt>
                     <dd class="mt-1">
                       <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [class]="statusInfo(current.status).classes">
-                        {{ access() === 'staff' ? statusInfo(current.status).label : statusInfo(current.status).requesterLabel }}
+                        {{ (access() === 'staff' ? statusInfo(current.status).label : statusInfo(current.status).requesterLabel) | t }}
                       </span>
                     </dd>
                   </div>
                   <div>
-                    <dt class="text-xs text-gray-500">Priority</dt>
-                    <dd class="mt-1"><span class="rounded-full px-2.5 py-1 text-xs font-semibold" [class]="priorityInfo(current.priority).classes">{{ priorityInfo(current.priority).label }}</span></dd>
+                    <dt class="text-xs text-gray-500">{{ 'Priority' | t }}</dt>
+                    <dd class="mt-1"><span class="rounded-full px-2.5 py-1 text-xs font-semibold" [class]="priorityInfo(current.priority).classes">{{ priorityInfo(current.priority).label | t }}</span></dd>
                   </div>
-                  <div><dt class="text-xs text-gray-500">Category</dt><dd class="text-gray-900">{{ categoryLabel(current.category) }}</dd></div>
+                  <div><dt class="text-xs text-gray-500">{{ 'Category' | t }}</dt><dd class="text-gray-900">{{ categoryLabel(current.category) | t }}</dd></div>
                   <div>
-                    <dt class="text-xs text-gray-500">Requested by</dt>
+                    <dt class="text-xs text-gray-500">{{ 'Requested by' | t }}</dt>
                     <dd class="break-words text-gray-900">
                       {{ current.requesterName }}
                       @if (access() === 'staff' && current.requesterEmail) {
-                        <span class="block break-all text-xs text-gray-500">{{ current.requesterEmail }}{{ current.requesterIsGuest ? ' (guest)' : '' }}</span>
+                        <span class="block break-all text-xs text-gray-500">{{ current.requesterEmail }}{{ current.requesterIsGuest ? (' (guest)' | t) : '' }}</span>
                       }
                     </dd>
                   </div>
                   @if (current.organizationName) {
-                    <div><dt class="text-xs text-gray-500">Organization</dt><dd class="text-gray-900">{{ current.organizationName }}</dd></div>
+                    <div><dt class="text-xs text-gray-500">{{ 'Organization' | t }}</dt><dd class="text-gray-900">{{ current.organizationName }}</dd></div>
                   }
-                  <div><dt class="text-xs text-gray-500">Assigned to</dt><dd class="text-gray-900">{{ current.assigneeName || 'Not assigned yet' }}</dd></div>
-                  <div><dt class="text-xs text-gray-500">Opened</dt><dd class="text-gray-900">{{ current.createdAt | date: 'medium' }}</dd></div>
+                  <div><dt class="text-xs text-gray-500">{{ 'Assigned to' | t }}</dt><dd class="text-gray-900">{{ current.assigneeName || ('Not assigned yet' | t) }}</dd></div>
+                  <div><dt class="text-xs text-gray-500">{{ 'Opened' | t }}</dt><dd class="text-gray-900">{{ current.createdAt | date: 'medium' }}</dd></div>
                   @if (current.pageUrl) {
-                    <div><dt class="text-xs text-gray-500">Page</dt><dd class="break-all text-xs text-gray-700">{{ current.pageUrl }}</dd></div>
+                    <div><dt class="text-xs text-gray-500">{{ 'Page' | t }}</dt><dd class="break-all text-xs text-gray-700">{{ current.pageUrl }}</dd></div>
                   }
                 </dl>
               </section>
 
               @if (access() === 'staff') {
                 <section class="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm">
-                  <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-indigo-800">Zebron staff</p>
+                  <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-indigo-800">{{ 'Zebron staff' | t }}</p>
 
                   <mat-form-field appearance="outline" class="zb-field zb-field--dense">
-                    <mat-label>Status</mat-label>
+                    <mat-label>{{ 'Status' | t }}</mat-label>
                     <mat-select [value]="current.status" (selectionChange)="setStatus($event.value)">
                       @for (status of statuses; track status) {
-                        <mat-option [value]="status">{{ statusInfo(status).label }}</mat-option>
+                        <mat-option [value]="status">{{ statusInfo(status).label | t }}</mat-option>
                       }
                     </mat-select>
                   </mat-form-field>
 
                   <mat-form-field appearance="outline" class="zb-field zb-field--dense">
-                    <mat-label>Priority</mat-label>
+                    <mat-label>{{ 'Priority' | t }}</mat-label>
                     <mat-select [value]="current.priority" (selectionChange)="setPriority($event.value)">
                       @for (priority of priorities; track priority) {
-                        <mat-option [value]="priority">{{ priorityInfo(priority).label }}</mat-option>
+                        <mat-option [value]="priority">{{ priorityInfo(priority).label | t }}</mat-option>
                       }
                     </mat-select>
                   </mat-form-field>
@@ -198,10 +201,10 @@ import {
                   <div class="flex flex-wrap gap-2">
                     <button mat-stroked-button type="button" [disabled]="busy()" (click)="assignToMe()">
                       <mat-icon>person_add</mat-icon>
-                      Assign to me
+                      {{ 'Assign to me' | t }}
                     </button>
                     @if (current.assigneeName) {
-                      <button mat-button type="button" [disabled]="busy()" (click)="unassign()">Unassign</button>
+                      <button mat-button type="button" [disabled]="busy()" (click)="unassign()">{{ 'Unassign' | t }}</button>
                     }
                   </div>
                 </section>
@@ -210,12 +213,12 @@ import {
                   @if (current.status === 'resolved' || current.status === 'closed') {
                     <button mat-stroked-button type="button" class="w-full" [disabled]="busy()" (click)="setStatus('open')">
                       <mat-icon>replay</mat-icon>
-                      Reopen ticket
+                      {{ 'Reopen ticket' | t }}
                     </button>
                   } @else {
                     <button mat-stroked-button type="button" class="w-full" [disabled]="busy()" (click)="setStatus('closed')">
                       <mat-icon>check_circle</mat-icon>
-                      My issue is solved, close it
+                      {{ 'My issue is solved, close it' | t }}
                     </button>
                   }
                 </section>

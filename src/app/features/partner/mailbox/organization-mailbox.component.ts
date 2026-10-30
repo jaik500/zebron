@@ -55,10 +55,13 @@ type Selected =
  *
  * Route: /partner/org/:organizationId/mailbox (manager and above).
  */
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-organization-mailbox',
   standalone: true,
   imports: [
+    TranslatePipe,
     DatePipe,
     FormsModule,
     RouterLink,
@@ -75,13 +78,13 @@ type Selected =
       <header class="border-b border-white/10 bg-[#2a835f]">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div class="min-w-0">
-            <h1 class="text-2xl font-bold text-white">Mailbox</h1>
+            <h1 class="text-2xl font-bold text-white">{{ 'Mailbox' | t }}</h1>
 
             @if (address(); as mailboxAddress) {
               <button
                 type="button"
                 class="mt-0.5 inline-flex max-w-full items-center gap-1 rounded text-sm text-white/85 hover:text-white"
-                title="Copy address"
+                [title]="'Copy address' | t"
                 (click)="copyAddress(mailboxAddress)"
               >
                 <span class="truncate">{{ mailboxAddress }}</span>
@@ -97,12 +100,12 @@ type Selected =
               [routerLink]="['/partner/org', organizationId, 'settings']"
             >
               <mat-icon>arrow_back</mat-icon>
-              Administration
+              {{ 'Administration' | t }}
             </a>
 
             <button mat-flat-button type="button" class="!bg-white !text-[#007979]" (click)="compose()">
               <mat-icon>edit</mat-icon>
-              Compose
+              {{ 'Compose' | t }}
             </button>
           </div>
         </div>
@@ -111,7 +114,7 @@ type Selected =
       <main class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
         @if (error()) {
           <p class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-            {{ error() }}
+            {{ error() | t }}
           </p>
         }
 
@@ -122,25 +125,25 @@ type Selected =
           <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
             <div class="mb-4 flex items-center justify-between gap-3">
               <h2 class="text-lg font-bold text-gray-900">
-                {{ current.inReplyToMessageId ? 'Reply' : 'New email' }}
+                {{ current.inReplyToMessageId ? ('Reply' | t) : ('New email' | t) }}
               </h2>
               <button mat-button type="button" (click)="discard()">
                 <mat-icon>close</mat-icon>
-                Discard
+                {{ 'Discard' | t }}
               </button>
             </div>
 
             <p class="mb-4 rounded-lg bg-teal-50 p-3 text-sm text-teal-900">
-              Sent as <strong>{{ senderLabel() }}</strong>.
+              {{ 'Sent as' | t }} <strong>{{ senderLabel() }}</strong>.
               @if (address()) {
-                Replies come back to this mailbox.
+                {{ 'Replies come back to this mailbox.' | t }}
               }
-              Up to 10 recipients per email.
+              {{ 'Up to 10 recipients per email.' | t }}
             </p>
 
             <div class="grid gap-x-4 md:grid-cols-[1fr_16rem]">
               <mat-form-field appearance="outline" class="zb-field">
-                <mat-label>To</mat-label>
+                <mat-label>{{ 'To' | t }}</mat-label>
                 <input
                   matInput
                   type="text"
@@ -149,27 +152,27 @@ type Selected =
                   [ngModel]="current.to"
                   (ngModelChange)="patchDraft({ to: $event })"
                   name="to"
-                  placeholder="name@example.com, another@example.com"
+                  [placeholder]="'name@example.com, another@example.com' | t"
                 />
-                <mat-hint>Separate addresses with commas.</mat-hint>
+                <mat-hint>{{ 'Separate addresses with commas.' | t }}</mat-hint>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="zb-field">
-                <mat-label>Add a member</mat-label>
+                <mat-label>{{ 'Add a member' | t }}</mat-label>
                 <mat-select [(ngModel)]="memberPick" name="memberPick" (selectionChange)="addRecipient($event.value)">
                   @for (member of directoryWithEmail(); track member.userId) {
                     <mat-option [value]="member.email">
                       {{ member.displayName || member.email }}
                     </mat-option>
                   } @empty {
-                    <mat-option [value]="null" disabled>No members with an email</mat-option>
+                    <mat-option [value]="null" disabled>{{ 'No members with an email' | t }}</mat-option>
                   }
                 </mat-select>
               </mat-form-field>
             </div>
 
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Cc</mat-label>
+              <mat-label>{{ 'Cc' | t }}</mat-label>
               <input
                 matInput
                 type="text"
@@ -182,7 +185,7 @@ type Selected =
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Subject</mat-label>
+              <mat-label>{{ 'Subject' | t }}</mat-label>
               <input
                 matInput
                 maxlength="200"
@@ -193,7 +196,7 @@ type Selected =
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Message</mat-label>
+              <mat-label>{{ 'Message' | t }}</mat-label>
               <textarea
                 matInput
                 rows="10"
@@ -202,11 +205,11 @@ type Selected =
                 (ngModelChange)="patchDraft({ message: $event })"
                 name="message"
               ></textarea>
-              <mat-hint>"The {{ senderName() }} Team" is added at the end automatically.</mat-hint>
+              <mat-hint>{{ '"The {0} Team" is added at the end automatically.' | t: [senderName()] }}</mat-hint>
             </mat-form-field>
 
             <div class="mt-2 flex flex-wrap justify-end gap-2">
-              <button mat-button type="button" (click)="discard()">Cancel</button>
+              <button mat-button type="button" (click)="discard()">{{ 'Cancel' | t }}</button>
               <button
                 mat-flat-button
                 type="button"
@@ -215,7 +218,7 @@ type Selected =
                 (click)="send()"
               >
                 <mat-icon>send</mat-icon>
-                {{ sending() ? 'Sending…' : 'Send' }}
+                {{ sending() ? ('Sending…' | t) : ('Send' | t) }}
               </button>
             </div>
           </section>
@@ -237,20 +240,20 @@ type Selected =
                 (click)="openFolder(item.key)"
               >
                 <mat-icon class="!h-5 !w-5 !text-xl">{{ item.icon }}</mat-icon>
-                {{ item.label }}
+                {{ item.label | t }}
                 @if (item.key === 'inbox' && unreadCount() > 0) {
                   <span class="rounded-full bg-[#007979] px-1.5 text-[11px] font-bold text-white">{{ unreadCount() }}</span>
                 }
               </button>
             }
 
-            <button mat-icon-button type="button" aria-label="Refresh" title="Refresh" [disabled]="loading()" (click)="load()">
+            <button mat-icon-button type="button" [attr.aria-label]="'Refresh' | t" [title]="'Refresh' | t" [disabled]="loading()" (click)="load()">
               <mat-icon>refresh</mat-icon>
             </button>
 
             <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense min-w-0 flex-1 sm:max-w-xs" subscriptSizing="dynamic">
               <mat-icon matPrefix>search</mat-icon>
-              <mat-label>Search</mat-label>
+              <mat-label>{{ 'Search' | t }}</mat-label>
               <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" name="search" />
             </mat-form-field>
           </div>
@@ -262,11 +265,11 @@ type Selected =
               [class]="selected() ? 'hidden lg:block' : ''"
             >
               @if (loading()) {
-                <p class="p-5 text-sm text-gray-500">Loading…</p>
+                <p class="p-5 text-sm text-gray-500">{{ 'Loading…' | t }}</p>
               } @else if (listItems().length === 0) {
                 <div class="p-8 text-center">
                   <mat-icon class="!h-10 !w-10 !text-4xl text-gray-300">inbox</mat-icon>
-                  <p class="mt-2 text-sm text-gray-500">{{ emptyText() }}</p>
+                  <p class="mt-2 text-sm text-gray-500">{{ emptyText() | t }}</p>
                 </div>
               } @else {
                 <ul class="max-h-[70vh] divide-y divide-gray-100 overflow-y-auto">
@@ -287,18 +290,18 @@ type Selected =
                             [class.text-gray-700]="!item.unread"
                           >
                             @if (item.unread) {
-                              <span class="mr-1 inline-block h-2 w-2 rounded-full bg-[#007979]" aria-label="Unread"></span>
+                              <span class="mr-1 inline-block h-2 w-2 rounded-full bg-[#007979]" [attr.aria-label]="'Unread' | t"></span>
                             }
                             {{ item.who }}
                           </span>
                           <span class="shrink-0 text-xs text-gray-500">{{ item.date ? (item.date | date: 'MMM d') : '' }}</span>
                         </div>
                         <p class="mt-0.5 truncate text-sm" [class.font-semibold]="item.unread" [class.text-gray-800]="item.unread" [class.text-gray-600]="!item.unread">
-                          {{ item.subject || '(No subject)' }}
+                          {{ item.subject || ('(No subject)' | t) }}
                         </p>
                         <p class="mt-0.5 flex items-center gap-1 truncate text-xs text-gray-500">
                           @if (item.badge) {
-                            <span class="rounded bg-gray-100 px-1 text-[10px] font-semibold uppercase text-gray-600">{{ item.badge }}</span>
+                            <span class="rounded bg-gray-100 px-1 text-[10px] font-semibold uppercase text-gray-600">{{ item.badge | t }}</span>
                           }
                           <span class="truncate">{{ item.preview }}</span>
                         </p>
@@ -318,45 +321,45 @@ type Selected =
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-2 sm:px-5">
                   <button mat-button type="button" class="lg:!hidden" (click)="selectedId.set(null)">
                     <mat-icon>arrow_back</mat-icon>
-                    Back
+                    {{ 'Back' | t }}
                   </button>
 
                   <div class="ml-auto flex flex-wrap gap-1">
                     @if (current.kind === 'received') {
                       <button mat-stroked-button type="button" (click)="reply(current.message)">
                         <mat-icon>reply</mat-icon>
-                        Reply
+                        {{ 'Reply' | t }}
                       </button>
 
                       @if (!current.message.archived) {
-                        <button mat-icon-button type="button" aria-label="Mark as unread" title="Mark as unread" (click)="markUnread(current.message)">
+                        <button mat-icon-button type="button" [attr.aria-label]="'Mark as unread' | t" [title]="'Mark as unread' | t" (click)="markUnread(current.message)">
                           <mat-icon>mark_email_unread</mat-icon>
                         </button>
-                        <button mat-icon-button type="button" aria-label="Archive" title="Archive" (click)="archive(current.message)">
+                        <button mat-icon-button type="button" [attr.aria-label]="'Archive' | t" [title]="'Archive' | t" (click)="archive(current.message)">
                           <mat-icon>archive</mat-icon>
                         </button>
                       } @else {
                         <button mat-stroked-button type="button" (click)="restore(current.message)">
                           <mat-icon>unarchive</mat-icon>
-                          Move to inbox
+                          {{ 'Move to inbox' | t }}
                         </button>
                       }
                     } @else {
                       <button mat-stroked-button type="button" (click)="forwardSent(current.message)">
                         <mat-icon>forward_to_inbox</mat-icon>
-                        Send again
+                        {{ 'Send again' | t }}
                       </button>
                     }
                   </div>
                 </div>
 
                 <article class="p-4 sm:p-6">
-                  <h2 class="break-words text-xl font-bold text-gray-900">{{ current.message.subject || '(No subject)' }}</h2>
+                  <h2 class="break-words text-xl font-bold text-gray-900">{{ current.message.subject || ('(No subject)' | t) }}</h2>
 
                   @if (current.kind === 'received') {
                     <dl class="mt-3 space-y-1 text-sm">
                       <div class="flex gap-2">
-                        <dt class="w-12 shrink-0 text-gray-500">From</dt>
+                        <dt class="w-12 shrink-0 text-gray-500">{{ 'From' | t }}</dt>
                         <dd class="min-w-0 break-all text-gray-900">
                           <strong>{{ current.message.name }}</strong>
                           @if (current.message.name !== current.message.email) {
@@ -365,17 +368,17 @@ type Selected =
                         </dd>
                       </div>
                       <div class="flex gap-2">
-                        <dt class="w-12 shrink-0 text-gray-500">To</dt>
+                        <dt class="w-12 shrink-0 text-gray-500">{{ 'To' | t }}</dt>
                         <dd class="min-w-0 break-all text-gray-700">{{ current.message.to.join(', ') }}</dd>
                       </div>
                       @if (current.message.cc.length) {
                         <div class="flex gap-2">
-                          <dt class="w-12 shrink-0 text-gray-500">Cc</dt>
+                          <dt class="w-12 shrink-0 text-gray-500">{{ 'Cc' | t }}</dt>
                           <dd class="min-w-0 break-all text-gray-700">{{ current.message.cc.join(', ') }}</dd>
                         </div>
                       }
                       <div class="flex gap-2">
-                        <dt class="w-12 shrink-0 text-gray-500">Date</dt>
+                        <dt class="w-12 shrink-0 text-gray-500">{{ 'Date' | t }}</dt>
                         <dd class="text-gray-700">{{ toDate(current.message.receivedAt) | date: 'medium' }}</dd>
                       </div>
                     </dl>
@@ -383,21 +386,21 @@ type Selected =
                     @if (current.message.repliedAt) {
                       <p class="mt-3 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                         <mat-icon class="!h-4 !w-4 !text-base">reply</mat-icon>
-                        Replied {{ toDate(current.message.repliedAt) | date: 'medium' }}
+                        {{ 'Replied {0}' | t: [(toDate(current.message.repliedAt) | date: 'medium')] }}
                       </p>
                     }
 
                     @if (current.message.html) {
                       <div class="mt-4 flex gap-2 text-sm">
-                        <button mat-button type="button" [class]="showFormatted() ? '!bg-gray-100' : ''" (click)="showFormatted.set(true)">Formatted</button>
-                        <button mat-button type="button" [class]="showFormatted() ? '' : '!bg-gray-100'" (click)="showFormatted.set(false)">Plain text</button>
+                        <button mat-button type="button" [class]="showFormatted() ? '!bg-gray-100' : ''" (click)="showFormatted.set(true)">{{ 'Formatted' | t }}</button>
+                        <button mat-button type="button" [class]="showFormatted() ? '' : '!bg-gray-100'" (click)="showFormatted.set(false)">{{ 'Plain text' | t }}</button>
                       </div>
                     }
 
                     @if (showFormatted() && current.message.html) {
                       <!-- Sandboxed: no scripts, no access to this app. -->
                       <iframe
-                        title="Email content"
+                        [title]="'Email content' | t"
                         sandbox=""
                         referrerpolicy="no-referrer"
                         class="mt-3 h-[60vh] w-full rounded-lg border border-gray-200 bg-white"
@@ -409,36 +412,36 @@ type Selected =
 
                     @if (current.message.attachments.length) {
                       <div class="mt-5 border-t border-gray-100 pt-4">
-                        <p class="text-xs font-medium text-gray-500">Attachments</p>
+                        <p class="text-xs font-medium text-gray-500">{{ 'Attachments' | t }}</p>
                         <ul class="mt-2 flex flex-wrap gap-2">
                           @for (file of current.message.attachments; track $index) {
                             <li class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-700">
                               <mat-icon class="!h-4 !w-4 !text-base">attach_file</mat-icon>
-                              {{ file.filename || 'Attachment' }}
+                              {{ file.filename || ('Attachment' | t) }}
                             </li>
                           }
                         </ul>
-                        <p class="mt-2 text-xs text-gray-500">Attachments are listed but not stored. Ask the sender to share files by link.</p>
+                        <p class="mt-2 text-xs text-gray-500">{{ 'Attachments are listed but not stored. Ask the sender to share files by link.' | t }}</p>
                       </div>
                     }
                   } @else {
                     <dl class="mt-3 space-y-1 text-sm">
                       <div class="flex gap-2">
-                        <dt class="w-12 shrink-0 text-gray-500">To</dt>
+                        <dt class="w-12 shrink-0 text-gray-500">{{ 'To' | t }}</dt>
                         <dd class="min-w-0 break-all text-gray-900">{{ current.message.to.join(', ') }}</dd>
                       </div>
                       @if (current.message.cc.length) {
                         <div class="flex gap-2">
-                          <dt class="w-12 shrink-0 text-gray-500">Cc</dt>
+                          <dt class="w-12 shrink-0 text-gray-500">{{ 'Cc' | t }}</dt>
                           <dd class="min-w-0 break-all text-gray-700">{{ current.message.cc.join(', ') }}</dd>
                         </div>
                       }
                       <div class="flex gap-2">
-                        <dt class="w-12 shrink-0 text-gray-500">By</dt>
-                        <dd class="min-w-0 break-all text-gray-700">{{ current.message.createdByName || current.message.createdByEmail || 'Unknown' }}</dd>
+                        <dt class="w-12 shrink-0 text-gray-500">{{ 'By' | t }}</dt>
+                        <dd class="min-w-0 break-all text-gray-700">{{ current.message.createdByName || current.message.createdByEmail || ('Unknown' | t) }}</dd>
                       </div>
                       <div class="flex gap-2">
-                        <dt class="w-12 shrink-0 text-gray-500">Date</dt>
+                        <dt class="w-12 shrink-0 text-gray-500">{{ 'Date' | t }}</dt>
                         <dd class="text-gray-700">{{ toDate(current.message.createdAt) | date: 'medium' }}</dd>
                       </div>
                     </dl>
@@ -452,16 +455,16 @@ type Selected =
                       [class.bg-gray-100]="current.message.status === 'sending'"
                       [class.text-gray-600]="current.message.status === 'sending'"
                     >
-                      {{ current.message.status === 'sent' ? 'Sent' : current.message.status === 'failed' ? 'Failed to send' : 'Sending' }}
+                      {{ current.message.status === 'sent' ? ('Sent' | t) : current.message.status === 'failed' ? ('Failed to send' | t) : ('Sending' | t) }}
                     </span>
 
-                    <div class="mt-4 whitespace-pre-wrap break-words text-sm leading-6 text-gray-800">{{ current.message.message }}</div>
+                    <div class="mt-4 whitespace-pre-wrap break-words text-sm leading-6 text-gray-800">{{ current.message.message | t }}</div>
                   }
                 </article>
               } @else {
                 <div class="flex h-full min-h-60 flex-col items-center justify-center p-8 text-center">
                   <mat-icon class="!h-10 !w-10 !text-4xl text-gray-300">mail</mat-icon>
-                  <p class="mt-2 text-sm text-gray-500">Select a message to read it.</p>
+                  <p class="mt-2 text-sm text-gray-500">{{ 'Select a message to read it.' | t }}</p>
                 </div>
               }
             </section>

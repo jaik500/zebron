@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 import { getAuth } from "firebase-admin/auth";
+import { randomInt } from "node:crypto";
 import {
   DocumentData,
   FieldValue,
@@ -30,13 +31,36 @@ import { isPlatformAdministrator } from "./platform-admin-authorization";
  * Data (server-only; clients have no direct Firestore access):
  *   supportTickets/{id}
  *   supportTickets/{id}/messages/{id}
- *   counters/supportTickets
+ *
+ * Ticket numbers look like ZB-261030-7K4QXM (date + random code). Older
+ * tickets keep their ZB-1001 style numbers; counters/supportTickets is
+ * no longer written.
  *
  * Status: open -> in_progress -> waiting_on_requester -> resolved -> closed
  * Resolved tickets close automatically after 7 days without a reply.
  */
 
 const REGION = "us-central1";
+
+/** Letters and digits that are hard to confuse (no 0/O, 1/I/L). */
+const TICKET_CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+
+/**
+ * Human-friendly ticket number: ZB-YYMMDD-XXXXXX (about 887 million codes
+ * per day). The ticket's document ID is the real unique key; the number is
+ * for people, and a repeat on the same day is vanishingly rare.
+ *
+ * @param {Date} date Creation date (UTC).
+ * @return {string} Ticket number.
+ */
+export function ticketNumberFor(date: Date): string {
+  const yymmdd = date.toISOString().slice(2, 10).replace(/-/g, "");
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += TICKET_CODE_ALPHABET[randomInt(TICKET_CODE_ALPHABET.length)];
+  }
+  return `ZB-${yymmdd}-${code}`;
+}
 const RESEND_API_URL = "https://api.resend.com/emails";
 const FROM = "Zebron Support <noreply@zebron.org>";
 const SUPPORT_INBOX = "contact@zebron.org";
@@ -273,18 +297,15 @@ export const createSupportTicket = onCall(
       throw new HttpsError("resource-exhausted", "You've opened several tickets today. Please add to an existing ticket, or try again tomorrow.");
     }
 
-    // Ticket number.
-    const counterRef = db().collection("counters").doc("supportTickets");
+    // Ticket number: date + random code (e.g. ZB-261030-7K4QXM). No shared
+    // counter document, so ticket creation never queues behind other
+    // tickets. The document ID stays the unique key; the number is for people.
     const ticketRef = tickets().doc();
+    const number = ticketNumberFor(new Date());
+    const batch = db().batch();
 
-    const ticketNumber = await db().runTransaction(async (transaction) => {
-      const counter = await transaction.get(counterRef);
-      const next = (Number(counter.data()?.value) || 1000) + 1;
-      const number = `ZB-${next}`;
-
-      transaction.set(counterRef, { value: next, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-
-      transaction.set(ticketRef, {
+    {
+      batch.set(ticketRef, {
         id: ticketRef.id,
         number,
         subject,
@@ -309,7 +330,7 @@ export const createSupportTicket = onCall(
         updatedAt: FieldValue.serverTimestamp(),
       });
 
-      transaction.set(ticketRef.collection("messages").doc(), {
+      batch.set(ticketRef.collection("messages").doc(), {
         authorUid: caller.uid,
         authorName: name,
         authorRole: "requester",
@@ -318,9 +339,10 @@ export const createSupportTicket = onCall(
         kind: "message",
         createdAt: FieldValue.serverTimestamp(),
       });
+    }
 
-      return number;
-    });
+    await batch.commit();
+    const ticketNumber = number;
 
     logger.info("Support ticket created.", { ticketId: ticketRef.id, ticketNumber, category, organizationId, guest: !caller.uid });
 

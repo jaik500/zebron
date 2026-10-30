@@ -13,6 +13,7 @@ import {
   onSnapshot,
   query,
   serverTimestamp,
+  Timestamp,
   updateDoc,
   where,
   type DocumentData,
@@ -28,6 +29,9 @@ import {
   ChatCallStatus,
   ChatCallType,
 } from '../models/chat-call.model';
+
+/** How long call signalling records are kept before automatic deletion. */
+const CALL_SIGNALLING_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable({
   providedIn: 'root',
@@ -157,6 +161,9 @@ export class ChatCallService {
           answer: null,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
+          // Call signalling is only needed while a call is set up;
+          // Firestore deletes it automatically after this date (TTL).
+          expireAt: Timestamp.fromMillis(Date.now() + CALL_SIGNALLING_RETENTION_MS),
         },
       );
 
@@ -526,6 +533,7 @@ export class ChatCallService {
             candidate:
               event.candidate.toJSON(),
             createdAt: serverTimestamp(),
+            expireAt: Timestamp.fromMillis(Date.now() + CALL_SIGNALLING_RETENTION_MS),
           },
         );
       } catch (error) {

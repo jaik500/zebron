@@ -39,12 +39,15 @@ interface ProgramForm {
   active: boolean;
 }
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-partner-programs',
 
   standalone: true,
 
-  imports: [FormsModule, RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
+  imports: [
+    TranslatePipe,FormsModule, RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
 
   changeDetection: ChangeDetectionStrategy.OnPush,
 
@@ -63,16 +66,16 @@ interface ProgramForm {
                   [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'dashboard']"
                   class="hover:text-white"
                 >
-                  Partner Dashboard
+                  {{ 'Partner Dashboard' | t }}
                 </a>
 
                 <span>/</span>
 
-                <span class="text-white/90"> Programs </span>
+                <span class="text-white/90"> {{ 'Programs' | t }} </span>
               </div>
 
               <p class=" max-w-2xl text-sm text-white/70">
-                Organize your organization's courses into training programs and learning paths.
+                {{ 'Organize your organization\\u0027s courses into training programs and learning paths.' | t }}
               </p>
             </div>
 
@@ -85,7 +88,7 @@ interface ProgramForm {
               >
                 <mat-icon> arrow_back </mat-icon>
 
-                Dashboard
+                {{ 'Dashboard' | t }}
               </a>
 
               <button
@@ -96,7 +99,7 @@ interface ProgramForm {
               >
                 <mat-icon> add </mat-icon>
 
-                Create Program
+                {{ 'Create Program' | t }}
               </button>
             </div>
 
@@ -108,7 +111,7 @@ interface ProgramForm {
                 mat-icon-button
                 [matMenuTriggerFor]="programMenu"
                 class="!text-white"
-                aria-label="Programs menu"
+                [attr.aria-label]="'Programs menu' | t"
               >
                 <mat-icon> more_vert </mat-icon>
               </button>
@@ -120,7 +123,7 @@ interface ProgramForm {
                 >
                   <mat-icon> dashboard </mat-icon>
 
-                  <span> Dashboard </span>
+                  <span> {{ 'Dashboard' | t }} </span>
                 </a>
 
                 <a
@@ -129,7 +132,7 @@ interface ProgramForm {
                 >
                   <mat-icon> quiz </mat-icon>
 
-                  <span> Test Center </span>
+                  <span> {{ 'Test Center' | t }} </span>
                 </a>
 
                 <button
@@ -140,7 +143,7 @@ interface ProgramForm {
                 >
                   <mat-icon> add </mat-icon>
 
-                  <span> Create Program </span>
+                  <span> {{ 'Create Program' | t }} </span>
                 </button>
               </mat-menu>
             </div>
@@ -161,7 +164,7 @@ interface ProgramForm {
           <section class="rounded-xl border border-gray-200 bg-white p-10 text-center">
             <mat-icon class="!h-8 !w-8 !text-3xl text-gray-400"> sync </mat-icon>
 
-            <p class="mt-3 text-sm text-gray-600">Loading your organization...</p>
+            <p class="mt-3 text-sm text-gray-600">{{ 'Loading your organization...' | t }}</p>
           </section>
         }
 
@@ -175,10 +178,10 @@ interface ProgramForm {
               <mat-icon class="text-red-600"> error_outline </mat-icon>
 
               <div>
-                <h2 class="font-semibold text-red-900">Partner access unavailable</h2>
+                <h2 class="font-semibold text-red-900">{{ 'Partner access unavailable' | t }}</h2>
 
                 <p class="mt-1 text-sm text-red-700">
-                  {{ organizationStore.error() }}
+                  {{ organizationStore.error() | t }}
                 </p>
               </div>
             </div>
@@ -197,16 +200,15 @@ interface ProgramForm {
               <div class="flex items-start justify-between gap-4">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                    {{ editingProgramId() ? 'Edit program' : 'New program' }}
+                    {{ editingProgramId() ? ('Edit program' | t) : ('New program' | t) }}
                   </p>
 
                   <h2 class="mt-1 text-xl font-bold text-gray-900">
-                    {{ editingProgramId() ? form.name || 'Edit program' : 'Create your program' }}
+                    {{ editingProgramId() ? form.name || ('Edit program' | t) : ('Create your program' | t) }}
                   </h2>
 
                   <p class="mt-1 text-sm text-gray-500">
-                    This program belongs exclusively to
-                    {{ organizationName() }}.
+                    {{ 'This program belongs exclusively to {0}.' | t: [organizationName()] }}
                   </p>
                 </div>
 
@@ -214,7 +216,7 @@ interface ProgramForm {
                   type="button"
                   (click)="cancelForm()"
                   class="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100"
-                  aria-label="Close program form"
+                  [attr.aria-label]="'Close program form' | t"
                 >
                   <mat-icon> close </mat-icon>
                 </button>
@@ -226,7 +228,7 @@ interface ProgramForm {
                 <!-- NAME -->
 
                 <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Program name</mat-label>
+                    <mat-label>{{ 'Program name' | t }}</mat-label>
                     <input matInput
                     [(ngModel)]="form.name"
                     (ngModelChange)="onNameChange()"
@@ -237,21 +239,21 @@ interface ProgramForm {
                 <!-- SLUG -->
 
                 <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Slug</mat-label>
+                    <mat-label>{{ 'Slug' | t }}</mat-label>
                     <input matInput
                     [(ngModel)]="form.slug"
                     [disabled]="!!editingProgramId()"
 
                   />
                     @if (editingProgramId()) {
-                      <mat-hint>Program slugs cannot be changed after creation.</mat-hint>
+                      <mat-hint>{{ 'Program slugs cannot be changed after creation.' | t }}</mat-hint>
                     }
                   </mat-form-field>
 
                 <!-- DESCRIPTION -->
 
                 <mat-form-field appearance="outline" class="zb-field md:col-span-2">
-                    <mat-label>Description</mat-label>
+                    <mat-label>{{ 'Description' | t }}</mat-label>
                     <textarea matInput
                     [(ngModel)]="form.description"
                     rows="4"
@@ -260,7 +262,7 @@ interface ProgramForm {
 
                 <!-- ACTIVE -->
 
-                <mat-checkbox [(ngModel)]="form.active">Program is active</mat-checkbox>
+                <mat-checkbox [(ngModel)]="form.active">{{ 'Program is active' | t }}</mat-checkbox>
               </div>
 
               <!-- FORM ACTIONS -->
@@ -271,7 +273,7 @@ interface ProgramForm {
                   (click)="cancelForm()"
                   class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                 >
-                  Cancel
+                  {{ 'Cancel' | t }}
                 </button>
 
                 <button
@@ -281,11 +283,11 @@ interface ProgramForm {
                   class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#007979] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   @if (saving()) {
-                    Saving...
+                    {{ 'Saving...' | t }}
                   } @else {
                     <mat-icon> save </mat-icon>
 
-                    {{ editingProgramId() ? 'Save Changes' : 'Create Program' }}
+                    {{ editingProgramId() ? ('Save Changes' | t) : ('Create Program' | t) }}
                   }
                 </button>
               </div>
@@ -299,15 +301,15 @@ interface ProgramForm {
           <section>
             <div class="mb-4 flex items-end justify-between gap-4">
               <div>
-                <h2 class="text-xl font-bold text-gray-900">Programs</h2>
+                <h2 class="text-xl font-bold text-gray-900">{{ 'Programs' | t }}</h2>
 
                 <p class="mt-1 text-sm text-gray-500">
-                  Organize courses into reusable training paths for your organization.
+                  {{ 'Organize courses into reusable training paths for your organization.' | t }}
                 </p>
               </div>
 
               @if (loadingPrograms()) {
-                <span class="text-sm text-gray-500"> Loading... </span>
+                <span class="text-sm text-gray-500"> {{ 'Loading...' | t }} </span>
               }
             </div>
 
@@ -319,10 +321,10 @@ interface ProgramForm {
               >
                 <mat-icon class="!h-10 !w-10 !text-4xl text-gray-400"> account_tree </mat-icon>
 
-                <h3 class="mt-3 font-semibold text-gray-900">No programs yet</h3>
+                <h3 class="mt-3 font-semibold text-gray-900">{{ 'No programs yet' | t }}</h3>
 
                 <p class="mx-auto mt-1 max-w-md text-sm text-gray-500">
-                  Create your first program and then assign organization courses to it.
+                  {{ 'Create your first program and then assign organization courses to it.' | t }}
                 </p>
 
                 @if (access.canManagePrograms()) {
@@ -333,7 +335,7 @@ interface ProgramForm {
                   >
                     <mat-icon> add </mat-icon>
 
-                    Create Program
+                    {{ 'Create Program' | t }}
                   </button>
                 }
               </div>
@@ -361,12 +363,12 @@ interface ProgramForm {
                             [class.bg-gray-100]="!program.active"
                             [class.text-gray-600]="!program.active"
                           >
-                            {{ program.active ? 'Active' : 'Inactive' }}
+                            {{ program.active ? ('Active' | t) : ('Inactive' | t) }}
                           </span>
                         </div>
 
                         <p class="mt-2 text-sm text-gray-500">
-                          {{ program.description || 'No description.' }}
+                          {{ program.description || ('No description.' | t) }}
                         </p>
                       </div>
 
@@ -375,7 +377,7 @@ interface ProgramForm {
                           type="button"
                           (click)="editProgram(program)"
                           class="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100"
-                          aria-label="Edit program"
+                          [attr.aria-label]="'Edit program' | t"
                         >
                           <mat-icon> edit </mat-icon>
                         </button>
@@ -386,7 +388,7 @@ interface ProgramForm {
 
                     <div class="mt-4 grid grid-cols-2 gap-3">
                       <div class="rounded-lg bg-gray-50 p-3">
-                        <p class="text-xs text-gray-500">Courses</p>
+                        <p class="text-xs text-gray-500">{{ 'Courses' | t }}</p>
 
                         <p class="mt-1 font-semibold text-gray-900">
                           {{ program.courseCount }}
@@ -394,7 +396,7 @@ interface ProgramForm {
                       </div>
 
                       <div class="rounded-lg bg-gray-50 p-3">
-                        <p class="text-xs text-gray-500">Slug</p>
+                        <p class="text-xs text-gray-500">{{ 'Slug' | t }}</p>
 
                         <p class="mt-1 truncate font-medium text-gray-900">
                           {{ program.slug }}
@@ -414,7 +416,7 @@ interface ProgramForm {
                       >
                         <mat-icon> school </mat-icon>
 
-                        View Courses
+                        {{ 'View Courses' | t }}
                       </a>
                     </div>
                   </article>

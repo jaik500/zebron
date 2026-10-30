@@ -90,10 +90,13 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
 // COMPONENT
 // ============================================================
 
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-partner-test-center',
   standalone: true,
   imports: [
+    TranslatePipe,
     FormsModule,
     RouterModule,
     MatButtonModule,
@@ -121,16 +124,16 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
         class="flex translate-y-1 items-center  gap-2 text-sm text-white/60 sm:translate-y-0 sm:justify-start"
       >
         <a routerLink="/partner" class="hover:text-white">
-          Partner Portal
+          {{ 'Partner Portal' | t }}
         </a>
 
         <span>&gt;</span>
 
-        <span class="text-white/90">Test Center</span>
+        <span class="text-white/90">{{ 'Test Center' | t }}</span>
       </div>
 
       <p class="mt-1 hidden max-w-2xl text-sm text-white/70 sm:block">
-        Create and manage custom training and certification courses for your organization.
+        {{ 'Create and manage custom training and certification courses for your organization.' | t }}
       </p>
     </div>
 
@@ -144,7 +147,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/60 bg-transparent px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <mat-icon>upload_file</mat-icon>
-          Import
+          {{ 'Import' | t }}
         </button>
 
         <button
@@ -154,7 +157,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979] shadow-sm transition hover:bg-[#E8F5F5] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <mat-icon>account_tree</mat-icon>
-          Create Program
+          {{ 'Create Program' | t }}
         </button>
 
         <button
@@ -164,7 +167,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979] shadow-sm transition hover:bg-[#E8F5F5] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <mat-icon>topic</mat-icon>
-          Create Topic
+          {{ 'Create Topic' | t }}
         </button>
 
         <button
@@ -174,7 +177,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <mat-icon>add</mat-icon>
-          Create Course
+          {{ 'Create Course' | t }}
         </button>
       </div>
     }
@@ -184,7 +187,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
       type="button"
       mat-icon-button
       [matMenuTriggerFor]="menu"
-      aria-label="Partner portal menu"
+      [attr.aria-label]="'Partner portal menu' | t"
       class="!text-white sm:hidden"
     >
       <mat-icon>more_vert</mat-icon>
@@ -193,7 +196,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
     <mat-menu #menu="matMenu">
       <a mat-menu-item routerLink="/partner">
         <mat-icon>dashboard</mat-icon>
-        <span>Partner Portal</span>
+        <span>{{ 'Partner Portal' | t }}</span>
       </a>
 
       <a
@@ -201,7 +204,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
         [routerLink]="['/partner/org', context.organizationId(), 'test-center']"
       >
         <mat-icon>quiz</mat-icon>
-        <span>Test Center</span>
+        <span>{{ 'Test Center' | t }}</span>
       </a>
 
       @if (context.canManageCourses()) {
@@ -214,7 +217,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           [disabled]="saving()"
         >
           <mat-icon>account_tree</mat-icon>
-          <span>Create Program</span>
+          <span>{{ 'Create Program' | t }}</span>
         </button>
 
         <button
@@ -224,7 +227,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           [disabled]="saving() || courses().length === 0"
         >
           <mat-icon>topic</mat-icon>
-          <span>Create Topic</span>
+          <span>{{ 'Create Topic' | t }}</span>
         </button>
 
         <button
@@ -234,7 +237,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           [disabled]="saving()"
         >
           <mat-icon>add</mat-icon>
-          <span>Create Course</span>
+          <span>{{ 'Create Course' | t }}</span>
         </button>
 
         <button
@@ -244,7 +247,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           [disabled]="saving()"
         >
           <mat-icon>upload_file</mat-icon>
-          <span>Import Questions</span>
+          <span>{{ 'Import Questions' | t }}</span>
         </button>
       }
 
@@ -252,7 +255,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
 
       <a mat-menu-item routerLink="/profile">
         <mat-icon>person</mat-icon>
-        <span>Profile</span>
+        <span>{{ 'Profile' | t }}</span>
       </a>
     </mat-menu>
   </div>
@@ -272,7 +275,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           <section class="rounded-xl border border-gray-200 bg-white p-8 text-center">
             <mat-icon class="!h-8 !w-8 !text-3xl text-gray-500"> sync </mat-icon>
 
-            <p class="mt-3 text-sm text-gray-600">Loading your partner organization...</p>
+            <p class="mt-3 text-sm text-gray-600">{{ 'Loading your partner organization...' | t }}</p>
           </section>
         }
 
@@ -286,10 +289,10 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
               <mat-icon class="text-red-600"> error_outline </mat-icon>
 
               <div>
-                <h2 class="font-semibold text-red-900">Partner access unavailable</h2>
+                <h2 class="font-semibold text-red-900">{{ 'Partner access unavailable' | t }}</h2>
 
                 <p class="mt-1 text-sm text-red-700">
-                  {{ context.error() }}
+                  {{ context.error() | t }}
                 </p>
 
                 <button
@@ -297,7 +300,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                   (click)="initialize()"
                   class="mt-4 rounded-lg bg-[#032D42] px-4 py-2 text-sm font-semibold text-white"
                 >
-                  Try again
+                  {{ 'Try again' | t }}
                 </button>
               </div>
             </div>
@@ -320,16 +323,15 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
               >
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                    {{ editingCourseId() ? 'Edit course' : 'New custom course' }}
+                    {{ editingCourseId() ? ('Edit course' | t) : ('New custom course' | t) }}
                   </p>
 
                   <h2 class="mt-1 text-xl font-bold text-gray-900">
-                    {{ editingCourseId() ? form.name : 'Create your course' }}
+                    {{ editingCourseId() ? form.name : ('Create your course' | t) }}
                   </h2>
 
                   <p class="mt-1 text-sm text-gray-500">
-                    This course belongs exclusively to
-                    {{ organizationName() }}.
+                    {{ 'This course belongs exclusively to {0}.' | t: [organizationName()] }}
                   </p>
                 </div>
 
@@ -337,7 +339,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                   type="button"
                   (click)="cancelForm()"
                   class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-green-100/70 hover:text-gray-700"
-                  aria-label="Close course form"
+                  [attr.aria-label]="'Close course form' | t"
                 >
                   <mat-icon>close</mat-icon>
                 </button>
@@ -350,85 +352,85 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
               <div class="mt-6 grid grid-cols-1 gap-x-5 gap-y-2 md:grid-cols-2">
                 <!-- COURSE NAME -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Course name</mat-label>
+                  <mat-label>{{ 'Course name' | t }}</mat-label>
                   <input
                     matInput
                     [(ngModel)]="form.name"
                     (ngModelChange)="onNameChange()"
-                    placeholder="e.g. ServiceNow CSA Preparation"
+                    [placeholder]="'e.g. ServiceNow CSA Preparation' | t"
                   />
                 </mat-form-field>
 
                 <!-- PROGRAM -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Program</mat-label>
+                  <mat-label>{{ 'Program' | t }}</mat-label>
                   <mat-select [(ngModel)]="form.programId">
-                    <mat-option value="">Select a program</mat-option>
+                    <mat-option value="">{{ 'Select a program' | t }}</mat-option>
                     @for (program of programs(); track program.id) {
                       <mat-option [value]="program.id">{{ program.name }}</mat-option>
                     }
                   </mat-select>
                   @if (loadingPrograms()) {
-                    <mat-hint>Loading programs...</mat-hint>
+                    <mat-hint>{{ 'Loading programs...' | t }}</mat-hint>
                   } @else if (programs().length === 0) {
                     <mat-hint class="!text-amber-700">
-                      Your organization does not have an active program yet. Create a program before creating a course.
+                      {{ 'Your organization does not have an active program yet. Create a program before creating a course.' | t }}
                     </mat-hint>
                   }
                 </mat-form-field>
 
                 <!-- SLUG -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Slug</mat-label>
+                  <mat-label>{{ 'Slug' | t }}</mat-label>
                   <input
                     matInput
                     [(ngModel)]="form.slug"
                     [disabled]="!!editingCourseId()"
-                    placeholder="servicenow-csa-preparation"
+                    [placeholder]="'servicenow-csa-preparation' | t"
                   />
                   @if (editingCourseId()) {
-                    <mat-hint>Slugs cannot be changed after the course is created.</mat-hint>
+                    <mat-hint>{{ 'Slugs cannot be changed after the course is created.' | t }}</mat-hint>
                   }
                 </mat-form-field>
 
                 <!-- PROVIDER -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Provider</mat-label>
-                  <input matInput [(ngModel)]="form.provider" placeholder="Your organization" />
+                  <mat-label>{{ 'Provider' | t }}</mat-label>
+                  <input matInput [(ngModel)]="form.provider" [placeholder]="'Your organization' | t" />
                 </mat-form-field>
 
                 <!-- TYPE -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Course type</mat-label>
+                  <mat-label>{{ 'Course type' | t }}</mat-label>
                   <mat-select [(ngModel)]="form.type">
-                    <mat-option value="certification">Certification</mat-option>
-                    <mat-option value="course">Course</mat-option>
-                    <mat-option value="subject">Subject</mat-option>
-                    <mat-option value="skill">Skill</mat-option>
+                    <mat-option value="certification">{{ 'Certification' | t }}</mat-option>
+                    <mat-option value="course">{{ 'Course' | t }}</mat-option>
+                    <mat-option value="subject">{{ 'Subject' | t }}</mat-option>
+                    <mat-option value="skill">{{ 'Skill' | t }}</mat-option>
                   </mat-select>
                 </mat-form-field>
 
                 <!-- CERTIFICATION CODE -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Certification code</mat-label>
-                  <input matInput [(ngModel)]="form.certificationCode" placeholder="Optional" />
+                  <mat-label>{{ 'Certification code' | t }}</mat-label>
+                  <input matInput [(ngModel)]="form.certificationCode" [placeholder]="'Optional' | t" />
                 </mat-form-field>
 
                 <!-- DESCRIPTION -->
                 <mat-form-field appearance="outline" class="w-full md:col-span-2">
-                  <mat-label>Description</mat-label>
+                  <mat-label>{{ 'Description' | t }}</mat-label>
                   <textarea
                     matInput
                     [(ngModel)]="form.description"
                     rows="4"
-                    placeholder="Describe what learners will learn."
+                    [placeholder]="'Describe what learners will learn.' | t"
                   ></textarea>
                 </mat-form-field>
 
                 <!-- ACTIVE -->
                 <div class="flex items-center gap-3 pb-5 md:col-span-2">
                   <mat-checkbox [(ngModel)]="form.active" color="primary">
-                    Course is active
+                    {{ 'Course is active' | t }}
                   </mat-checkbox>
                 </div>
               </div>
@@ -443,7 +445,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                   (click)="cancelForm()"
                   class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700"
                 >
-                  Cancel
+                  {{ 'Cancel' | t }}
                 </button>
 
                 <button
@@ -453,9 +455,9 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                   class="rounded-lg bg-[#032D42] px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   @if (saving()) {
-                    Saving...
+                    {{ 'Saving...' | t }}
                   } @else {
-                    {{ editingCourseId() ? 'Save Changes' : 'Create Course' }}
+                    {{ editingCourseId() ? ('Save Changes' | t) : ('Create Course' | t) }}
                   }
                 </button>
               </div>
@@ -474,15 +476,15 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
               <div class="flex items-start justify-between gap-4 rounded-lg border border-green-100 bg-green-50/70 p-4">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                    {{ editingTopicId() ? 'Edit topic' : 'New topic' }}
+                    {{ editingTopicId() ? ('Edit topic' | t) : ('New topic' | t) }}
                   </p>
 
                   <h2 class="mt-1 text-xl font-bold text-gray-900">
-                    {{ editingTopicId() ? topicForm.name : 'Create topic' }}
+                    {{ editingTopicId() ? topicForm.name : ('Create topic' | t) }}
                   </h2>
 
                   <p class="mt-1 text-sm text-gray-500">
-                    Topics organize the learning content within a Test Center course.
+                    {{ 'Topics organize the learning content within a Test Center course.' | t }}
                   </p>
                 </div>
 
@@ -490,7 +492,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                   type="button"
                   (click)="cancelTopicForm()"
                   class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-green-100/70 hover:text-gray-700"
-                  aria-label="Close topic form"
+                  [attr.aria-label]="'Close topic form' | t"
                 >
                   <mat-icon>close</mat-icon>
                 </button>
@@ -499,69 +501,69 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
               <div class="mt-6 grid grid-cols-1 gap-x-5 gap-y-2 md:grid-cols-2">
                 <!-- COURSE -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Course</mat-label>
+                  <mat-label>{{ 'Course' | t }}</mat-label>
                   <mat-select
                     [(ngModel)]="topicForm.courseId"
                     (ngModelChange)="onTopicCourseChange()"
                     [disabled]="!!editingTopicId()"
                   >
-                    <mat-option value="">Select a course</mat-option>
+                    <mat-option value="">{{ 'Select a course' | t }}</mat-option>
                     @for (course of activeCourses(); track course.id) {
                       <mat-option [value]="course.id">{{ course.name }}</mat-option>
                     }
                   </mat-select>
                   @if (editingTopicId()) {
-                    <mat-hint>A topic's parent course cannot be changed here.</mat-hint>
+                    <mat-hint>{{ 'A topic\\u0027s parent course cannot be changed here.' | t }}</mat-hint>
                   }
                 </mat-form-field>
 
                 <!-- NAME -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Topic name</mat-label>
+                  <mat-label>{{ 'Topic name' | t }}</mat-label>
                   <input
                     matInput
                     [(ngModel)]="topicForm.name"
                     (ngModelChange)="onTopicNameChange()"
-                    placeholder="e.g. Platform Overview"
+                    [placeholder]="'e.g. Platform Overview' | t"
                   />
                 </mat-form-field>
 
                 <!-- SLUG -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Slug</mat-label>
+                  <mat-label>{{ 'Slug' | t }}</mat-label>
                   <input
                     matInput
                     [(ngModel)]="topicForm.slug"
                     [disabled]="!!editingTopicId()"
-                    placeholder="platform-overview"
+                    [placeholder]="'platform-overview' | t"
                   />
                   @if (editingTopicId()) {
-                    <mat-hint>Slugs cannot be changed after the topic is created.</mat-hint>
+                    <mat-hint>{{ 'Slugs cannot be changed after the topic is created.' | t }}</mat-hint>
                   }
                 </mat-form-field>
 
                 <!-- SORT ORDER -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>Sort order</mat-label>
+                  <mat-label>{{ 'Sort order' | t }}</mat-label>
                   <input matInput type="number" min="0" [(ngModel)]="topicForm.sortOrder" />
-                  <mat-hint>Lower numbers appear first.</mat-hint>
+                  <mat-hint>{{ 'Lower numbers appear first.' | t }}</mat-hint>
                 </mat-form-field>
 
                 <!-- DESCRIPTION -->
                 <mat-form-field appearance="outline" class="w-full md:col-span-2">
-                  <mat-label>Description</mat-label>
+                  <mat-label>{{ 'Description' | t }}</mat-label>
                   <textarea
                     matInput
                     [(ngModel)]="topicForm.description"
                     rows="4"
-                    placeholder="Describe the content covered by this topic."
+                    [placeholder]="'Describe the content covered by this topic.' | t"
                   ></textarea>
                 </mat-form-field>
 
                 <!-- ACTIVE -->
                 <div class="flex items-center gap-3 pb-5 md:col-span-2">
                   <mat-checkbox [(ngModel)]="topicForm.active" color="primary">
-                    Topic is active
+                    {{ 'Topic is active' | t }}
                   </mat-checkbox>
                 </div>
               </div>
@@ -574,7 +576,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                   (click)="cancelTopicForm()"
                   class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700"
                 >
-                  Cancel
+                  {{ 'Cancel' | t }}
                 </button>
 
                 <button
@@ -584,9 +586,9 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                   class="rounded-lg bg-[#032D42] px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   @if (savingTopic()) {
-                    Saving...
+                    {{ 'Saving...' | t }}
                   } @else {
-                    {{ editingTopicId() ? 'Save Changes' : 'Create Topic' }}
+                    {{ editingTopicId() ? ('Save Changes' | t) : ('Create Topic' | t) }}
                   }
                 </button>
               </div>
@@ -600,20 +602,20 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           <section class="mb-6 rounded-xl border border-gray-200 bg-white p-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 class="font-semibold text-gray-900">Test Center</h2>
+                <h2 class="font-semibold text-gray-900">{{ 'Test Center' | t }}</h2>
 
                 <p class="text-sm text-gray-500">
-                  Manage your organization's programs, courses, and topics.
+                  {{ 'Manage your organization\\u0027s programs, courses, and topics.' | t }}
                 </p>
               </div>
 
               <mat-form-field appearance="outline" class="w-full sm:min-w-[240px] sm:max-w-xs">
-                <mat-label>Filter courses by program</mat-label>
+                <mat-label>{{ 'Filter courses by program' | t }}</mat-label>
                 <mat-select
                   [ngModel]="selectedProgramId()"
                   (ngModelChange)="selectedProgramId.set($event)"
                 >
-                  <mat-option value="all">All Programs</mat-option>
+                  <mat-option value="all">{{ 'All Programs' | t }}</mat-option>
                   @for (program of programs(); track program.id) {
                     <mat-option [value]="program.id">{{ program.name }}</mat-option>
                   }
@@ -629,17 +631,15 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           <section class="mb-10">
             <div class="mb-4 flex items-end justify-between gap-4">
               <div>
-                <h2 class="text-xl font-bold text-gray-900">Courses</h2>
+                <h2 class="text-xl font-bold text-gray-900">{{ 'Courses' | t }}</h2>
 
                 <p class="mt-1 text-sm text-gray-500">
-                  {{ filteredCourses().length }}
-                  course{{ filteredCourses().length === 1 ? '' : 's' }}
-                  shown.
+                  {{ '{0} course{1} shown.' | t: [filteredCourses().length, (filteredCourses().length === 1 ? '' : 's')] }}
                 </p>
               </div>
 
               @if (loadingCourses()) {
-                <span class="text-sm text-gray-500"> Loading... </span>
+                <span class="text-sm text-gray-500"> {{ 'Loading...' | t }} </span>
               }
             </div>
 
@@ -649,11 +649,10 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
               >
                 <mat-icon class="!h-10 !w-10 !text-4xl text-gray-400"> menu_book </mat-icon>
 
-                <h3 class="mt-3 font-semibold text-gray-900">No custom courses found</h3>
+                <h3 class="mt-3 font-semibold text-gray-900">{{ 'No custom courses found' | t }}</h3>
 
                 <p class="mx-auto mt-1 max-w-md text-sm text-gray-500">
-                  Create a program first, then create a course and add topics to build the learner
-                  experience.
+                  {{ 'Create a program first, then create a course and add topics to build the learner experience.' | t }}
                 </p>
 
                 @if (context.canManageCourses()) {
@@ -664,7 +663,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                       class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979]"
                     >
                       <mat-icon>account_tree</mat-icon>
-                      Create Program
+                      {{ 'Create Program' | t }}
                     </button>
 
                     <button
@@ -674,7 +673,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                       class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <mat-icon>add</mat-icon>
-                      Create Course
+                      {{ 'Create Course' | t }}
                     </button>
                   </div>
                 }
@@ -715,7 +714,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                             <p
                               class="text-xs font-semibold uppercase tracking-wider text-[#007979]"
                             >
-                              {{ getCourseTypeLabel(course.type) }}
+                              {{ getCourseTypeLabel(course.type) | t }}
                             </p>
 
                             <span
@@ -731,7 +730,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                                 [class.bg-gray-400]="!course.active"
                               ></span>
 
-                              {{ course.active ? 'Active' : 'Inactive' }}
+                              {{ course.active ? ('Active' | t) : ('Inactive' | t) }}
                             </span>
                           </div>
 
@@ -769,7 +768,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
 
                         <!-- PROVIDER -->
                         <div class="flex items-center gap-1.5">
-                          <span class="text-gray-500">Provider:</span>
+                          <span class="text-gray-500">{{ 'Provider:' | t }}</span>
                           <span class="font-medium text-gray-900">
                             {{ course.provider || '—' }}
                           </span>
@@ -777,7 +776,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
 
                         <!-- QUESTION COUNT -->
                         <div class="flex items-center gap-1.5">
-                          <span class="text-gray-500">Questions:</span>
+                          <span class="text-gray-500">{{ 'Questions:' | t }}</span>
                           <span class="font-semibold text-gray-900">
                             {{ course.questionCount }}
                           </span>
@@ -790,7 +789,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                         class="mt-3 line-clamp-2 text-sm leading-6 text-gray-600"
                         [attr.title]="course.description"
                       >
-                        {{ course.description || 'No description.' }}
+                        {{ course.description || ('No description.' | t) }}
                       </p>
 
                       <!-- COURSE TOPICS -->
@@ -799,7 +798,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                         <summary
                           class="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50 [&::-webkit-details-marker]:hidden"
                         >
-                          <span>View topics | {{ topics.length }} </span>
+                          <span>{{ 'View topics | {0}' | t: [topics.length] }} </span>
 
                           <mat-icon
                             class="!h-5 !w-5 !text-xl text-gray-400 transition-transform group-open:rotate-180"
@@ -812,7 +811,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                         <div class="border-t border-gray-100 px-3 py-2">
                           @if (topics.length === 0) {
                             <p class="px-1 py-2 text-xs text-gray-500">
-                              No topics have been created for this course yet.
+                              {{ 'No topics have been created for this course yet.' | t }}
                             </p>
                           } @else {
                             <ul class="space-y-1">
@@ -832,8 +831,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                                     </p>
 
                                     <p class="text-xs text-gray-500">
-                                      {{ topic.questionCount }}
-                                      question{{ topic.questionCount === 1 ? '' : 's' }}
+                                      {{ '{0} question{1}' | t: [topic.questionCount, (topic.questionCount === 1 ? '' : 's')] }}
                                     </p>
                                   </div>
 
@@ -841,7 +839,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                                     <span
                                       class="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-600"
                                     >
-                                      Inactive
+                                      {{ 'Inactive' | t }}
                                     </span>
                                   }
 
@@ -880,7 +878,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                       >
                         <mat-icon class="!h-5 !w-5 !text-xl" aria-hidden="true"> quiz </mat-icon>
 
-                        Manage Questions
+                        {{ 'Manage Questions' | t }}
                       </a>
 
                       <button
@@ -891,7 +889,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                       >
                         <mat-icon class="!h-5 !w-5 !text-xl" aria-hidden="true"> topic </mat-icon>
 
-                        Add Topic
+                        {{ 'Add Topic' | t }}
                       </button>
                     </div>
                   </article>
@@ -907,21 +905,17 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
           <section>
             <div class="mb-4 flex items-end justify-between gap-4">
               <div>
-                <h2 class="text-xl font-bold text-gray-900">Topics</h2>
+                <h2 class="text-xl font-bold text-gray-900">{{ 'Topics' | t }}</h2>
 
                 <p class="mt-1 text-sm text-gray-500">
-                  {{ filteredTopics().length }}
-                  topic{{ filteredTopics().length === 1 ? '' : 's' }}
-                  {{
-                    selectedProgramId() === 'all'
-                      ? "across your organization's courses."
-                      : 'in ' + selectedProgramName() + '.'
-                  }}
+                  {{ selectedProgramId() === 'all'
+                      ? ('{0} topic{1} across your organization\\u0027s courses.' | t: [filteredTopics().length, filteredTopics().length === 1 ? '' : 's'])
+                      : ('{0} topic{1} in {2}.' | t: [filteredTopics().length, filteredTopics().length === 1 ? '' : 's', selectedProgramName()]) }}
                 </p>
               </div>
 
               @if (loadingTopics()) {
-                <span class="text-sm text-gray-500"> Loading... </span>
+                <span class="text-sm text-gray-500"> {{ 'Loading...' | t }} </span>
               }
             </div>
 
@@ -929,10 +923,10 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
               <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center">
                 <mat-icon class="!h-10 !w-10 !text-4xl text-gray-400"> topic </mat-icon>
 
-                <h3 class="mt-3 font-semibold text-gray-900">No topics yet</h3>
+                <h3 class="mt-3 font-semibold text-gray-900">{{ 'No topics yet' | t }}</h3>
 
                 <p class="mx-auto mt-1 max-w-md text-sm text-gray-500">
-                  Create topics inside your courses to organize questions and learning content.
+                  {{ 'Create topics inside your courses to organize questions and learning content.' | t }}
                 </p>
 
                 @if (context.canManageCourses() && activeCourses().length > 0) {
@@ -942,7 +936,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                     class="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-md font-semibold text-white"
                   >
                     <mat-icon>topic</mat-icon>
-                    Create Topic
+                    {{ 'Create Topic' | t }}
                   </button>
                 }
               </div>
@@ -966,7 +960,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                             [class.bg-gray-100]="!topic.active"
                             [class.text-gray-600]="!topic.active"
                           >
-                            {{ topic.active ? 'Active' : 'Inactive' }}
+                            {{ topic.active ? ('Active' | t) : ('Inactive' | t) }}
                           </span>
                         </div>
 
@@ -976,14 +970,14 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
 
                         @if (topic.description) {
                           <p class=" text-sm text-gray-400">
-                            {{ topic.description }}
+                            {{ topic.description | t }}
                           </p>
                         }
                       </div>
 
                       <div class="flex shrink-0 items-center gap-3 sm:gap-4">
                         <div class="shrink-0 text-right">
-                          <p class="text-sm text-gray-500">Questions</p>
+                          <p class="text-sm text-gray-500">{{ 'Questions' | t }}</p>
 
                           <p class="font-semibold text-gray-900">
                             {{ topic.questionCount }}
@@ -995,7 +989,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
                             type="button"
                             (click)="editTopic(topic)"
                             class="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50"
-                            aria-label="Edit topic"
+                            [attr.aria-label]="'Edit topic' | t"
                           >
                             <mat-icon>edit</mat-icon>
                           </button>

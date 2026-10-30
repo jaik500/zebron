@@ -31,10 +31,13 @@ import {
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-organization-application-form',
   standalone: true,
   imports: [
+    TranslatePipe,
     CommonModule,
     ReactiveFormsModule,
     RouterLink, MatFormFieldModule, MatInputModule],
@@ -48,18 +51,18 @@ import { MatInputModule } from '@angular/material/input';
             routerLink="/"
             class="text-sm font-medium text-slate-600 hover:text-slate-900"
           >
-            ← Back to Zebron
+            {{ '← Back to Zebron' | t }}
           </a>
 
           <h1 class="mt-4 text-3xl font-bold text-slate-900">
-            {{ isEditing() ? 'Edit Organization Application' : 'Organization Application' }}
+            {{ isEditing() ? ('Edit Organization Application' | t) : ('Organization Application' | t) }}
           </h1>
 
           <p class="mt-2 text-slate-600">
             {{
               isEditing()
-                ? 'Update your draft organization application before submitting it for review.'
-                : 'Tell us about your organization and the Zebron applications you would like to use.'
+                ? ('Update your draft organization application before submitting it for review.' | t)
+                : ('Tell us about your organization and the Zebron applications you would like to use.' | t)
             }}
           </p>
         </div>
@@ -68,7 +71,7 @@ import { MatInputModule } from '@angular/material/input';
         @if (loadingExistingRequest()) {
           <section class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
             <div class="text-slate-600">
-              Loading your application...
+              {{ 'Loading your application...' | t }}
             </div>
           </section>
         }
@@ -79,11 +82,11 @@ import { MatInputModule } from '@angular/material/input';
           @if (errorMessage()) {
             <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-5">
               <h2 class="font-semibold text-red-900">
-                Unable to continue
+                {{ 'Unable to continue' | t }}
               </h2>
 
               <p class="mt-2 text-sm text-red-700">
-                {{ errorMessage() }}
+                {{ errorMessage() | t }}
               </p>
 
               <div class="mt-4">
@@ -91,7 +94,7 @@ import { MatInputModule } from '@angular/material/input';
                   routerLink="/organizations/application"
                   class="text-sm font-medium text-red-800 underline"
                 >
-                  View application status
+                  {{ 'View application status' | t }}
                 </a>
               </div>
             </div>
@@ -111,11 +114,11 @@ import { MatInputModule } from '@angular/material/input';
   <!-- Full-width section header -->
   <div class="bg-[#007979]/60 px-4 py-2 sm:px-6 sm:py-3 lg:px-8">
     <h2 class="text-lg font-semibold text-[slate-900]">
-      Organization Information
+      {{ 'Organization Information' | t }}
     </h2>
 
     <p class="mt-1 text-md text-white/90">
-      Provide the basic information about your organization.
+      {{ 'Provide the basic information about your organization.' | t }}
     </p>
   </div>
 
@@ -125,7 +128,7 @@ import { MatInputModule } from '@angular/material/input';
                   <div class="sm:col-span-2">
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Organization Name</mat-label>
+                      <mat-label>{{ 'Organization Name' | t }}</mat-label>
                       <input matInput
                       id="organizationName"
                       type="text"
@@ -135,7 +138,7 @@ import { MatInputModule } from '@angular/material/input';
                       form.controls.organizationName.touched &&
                       form.controls.organizationName.invalid
                     ) {
-                        <mat-error>Organization name is required.</mat-error>
+                        <mat-error>{{ 'Organization name is required.' | t }}</mat-error>
                       }
                     </mat-form-field>
                   </div>
@@ -144,12 +147,12 @@ import { MatInputModule } from '@angular/material/input';
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Organization Type</mat-label>
+                      <mat-label>{{ 'Organization Type' | t }}</mat-label>
                       <input matInput
                       id="organizationType"
                       type="text"
                       formControlName="organizationType"
-                      placeholder="Nonprofit, Company, School..."
+                      [placeholder]="'Nonprofit, Company, School...' | t"
                     />
                     </mat-form-field>
                   </div>
@@ -158,7 +161,7 @@ import { MatInputModule } from '@angular/material/input';
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Company / Registration Number</mat-label>
+                      <mat-label>{{ 'Company / Registration Number' | t }}</mat-label>
                       <input matInput
                       id="companyNumber"
                       type="text"
@@ -171,12 +174,12 @@ import { MatInputModule } from '@angular/material/input';
                   <div class="sm:col-span-2">
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Website</mat-label>
+                      <mat-label>{{ 'Website' | t }}</mat-label>
                       <input matInput
                       id="website"
                       type="url"
                       formControlName="website"
-                      placeholder="https://example.org"
+                      [placeholder]="'https://example.org' | t"
                     />
                     </mat-form-field>
                   </div>
@@ -185,12 +188,12 @@ import { MatInputModule } from '@angular/material/input';
                   <div class="sm:col-span-2">
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Organization Description</mat-label>
+                      <mat-label>{{ 'Organization Description' | t }}</mat-label>
                       <textarea matInput
                       id="description"
                       rows="4"
                       formControlName="description"
-                      placeholder="Tell us briefly about your organization."
+                      [placeholder]="'Tell us briefly about your organization.' | t"
                     ></textarea>
                     </mat-form-field>
                   </div>
@@ -205,11 +208,11 @@ import { MatInputModule } from '@angular/material/input';
   <!-- Full-width section header -->
   <div class="bg-[#007979]/60 px-4 py-2 sm:px-6 sm:py-3 lg:px-8">
     <h2 class="text-lg font-semibold text-slate-900">
-                    Primary Contact
+                    {{ 'Primary Contact' | t }}
                   </h2>
 
                   <p class="mt-1 text-sm text-white/90">
-                    Provide the primary contact information for your organization.
+                    {{ 'Provide the primary contact information for your organization.' | t }}
                   </p>
                 </div>
 
@@ -220,7 +223,7 @@ import { MatInputModule } from '@angular/material/input';
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Contact Name</mat-label>
+                      <mat-label>{{ 'Contact Name' | t }}</mat-label>
                       <input matInput
                       id="contactName"
                       type="text"
@@ -230,7 +233,7 @@ import { MatInputModule } from '@angular/material/input';
                       form.controls.contactName.touched &&
                       form.controls.contactName.invalid
                     ) {
-                        <mat-error>Contact name is required.</mat-error>
+                        <mat-error>{{ 'Contact name is required.' | t }}</mat-error>
                       }
                     </mat-form-field>
                   </div>
@@ -239,7 +242,7 @@ import { MatInputModule } from '@angular/material/input';
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Contact Email</mat-label>
+                      <mat-label>{{ 'Contact Email' | t }}</mat-label>
                       <input matInput
                       id="contactEmail"
                       type="email"
@@ -249,7 +252,7 @@ import { MatInputModule } from '@angular/material/input';
                       form.controls.contactEmail.touched &&
                       form.controls.contactEmail.invalid
                     ) {
-                        <mat-error>A valid contact email is required.</mat-error>
+                        <mat-error>{{ 'A valid contact email is required.' | t }}</mat-error>
                       }
                     </mat-form-field>
                   </div>
@@ -258,7 +261,7 @@ import { MatInputModule } from '@angular/material/input';
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Contact Phone</mat-label>
+                      <mat-label>{{ 'Contact Phone' | t }}</mat-label>
                       <input matInput
                       id="contactPhone"
                       type="tel"
@@ -271,7 +274,7 @@ import { MatInputModule } from '@angular/material/input';
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Country</mat-label>
+                      <mat-label>{{ 'Country' | t }}</mat-label>
                       <input matInput
                       id="country"
                       type="text"
@@ -284,7 +287,7 @@ import { MatInputModule } from '@angular/material/input';
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>State / Province</mat-label>
+                      <mat-label>{{ 'State / Province' | t }}</mat-label>
                       <input matInput
                       id="state"
                       type="text"
@@ -297,7 +300,7 @@ import { MatInputModule } from '@angular/material/input';
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>City</mat-label>
+                      <mat-label>{{ 'City' | t }}</mat-label>
                       <input matInput
                       id="city"
                       type="text"
@@ -316,11 +319,11 @@ import { MatInputModule } from '@angular/material/input';
   <!-- Full-width section header -->
   <div class="bg-[#007979]/60 px-4 py-2 sm:px-6 sm:py-3 lg:px-8">
     <h2 class="text-lg font-semibold text-slate-900">
-                    Zebron Applications
+                    {{ 'Zebron Applications' | t }}
                   </h2>
 
                   <p class="mt-1 text-sm text-white/90">
-                    Select the applications your organization would like to use.
+                    {{ 'Select the applications your organization would like to use.' | t }}
                   </p>
                 </div>
 
@@ -339,11 +342,11 @@ import { MatInputModule } from '@angular/material/input';
 
                         <div>
                           <h3 class="font-semibold text-slate-900">
-                            {{ application.name }}
+                            {{ application.name | t }}
                           </h3>
 
                           <p class="mt-1 text-sm text-slate-500">
-                            {{ application.description }}
+                            {{ application.description | t }}
                           </p>
                         </div>
 
@@ -364,7 +367,7 @@ import { MatInputModule } from '@angular/material/input';
                   selectedApplications().size === 0
                 ) {
                   <p class="mt-3 text-sm text-red-600">
-                    Select at least one application before submitting.
+                    {{ 'Select at least one application before submitting.' | t }}
                   </p>
                 }
 
@@ -374,7 +377,7 @@ import { MatInputModule } from '@angular/material/input';
               @if (successMessage()) {
                 <div class="rounded-lg border border-green-200 bg-green-50 p-4">
                   <p class="text-sm text-green-800">
-                    {{ successMessage() }}
+                    {{ successMessage() | t }}
                   </p>
                 </div>
               }
@@ -382,7 +385,7 @@ import { MatInputModule } from '@angular/material/input';
               @if (errorMessage()) {
                 <div class="rounded-lg border border-red-200 bg-red-50 p-4">
                   <p class="text-sm text-red-800">
-                    {{ errorMessage() }}
+                    {{ errorMessage() | t }}
                   </p>
                 </div>
               }
@@ -399,7 +402,7 @@ import { MatInputModule } from '@angular/material/input';
     "
     class="inline-flex min-w-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-2 py-3 text-center text-xs font-medium text-slate-700 hover:bg-slate-50 sm:px-5 sm:py-2.5 sm:text-sm"
   >
-    Cancel
+    {{ 'Cancel' | t }}
   </a>
 
   <button
@@ -408,7 +411,7 @@ import { MatInputModule } from '@angular/material/input';
     [disabled]="saving()"
     class="min-w-0 rounded-lg border border-slate-300 bg-white px-2 py-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-2.5 sm:text-sm"
   >
-    {{ saving() ? 'Saving...' : 'Save Draft' }}
+    {{ saving() ? ('Saving...' | t) : ('Save Draft' | t) }}
   </button>
 
   <button
@@ -417,7 +420,7 @@ import { MatInputModule } from '@angular/material/input';
     [disabled]="saving()"
     class="min-w-0 rounded-lg bg-slate-900 px-2 py-3 text-xs font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-2.5 sm:text-sm"
   >
-    {{ saving() ? 'Submitting...' : 'Submit Application' }}
+    {{ saving() ? ('Submitting...' | t) : ('Submit Application' | t) }}
   </button>
 
 </div>

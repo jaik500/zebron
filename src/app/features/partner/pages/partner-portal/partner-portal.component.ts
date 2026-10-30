@@ -14,10 +14,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { OrganizationContextStore  } from '../../../organizations/stores/organization-context.store';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-partner-portal',
   standalone: true,
   imports: [
+    TranslatePipe,
     RouterLink,
     MatIconModule,
     MatButtonModule,
@@ -31,7 +34,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
         <div class="mx-auto max-w-7xl px-4 py-1 sm:px-6 lg:px-8">
 
           <h1 class="text-2xl font-bold text-white/70">
-            Select an Organization
+            {{ 'Select an Organization' | t }}
           </h1>
         </div>
       </header>
@@ -49,7 +52,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
             </mat-icon>
 
             <p class="mt-4 text-sm text-gray-600">
-              Loading your organizations...
+              {{ 'Loading your organizations...' | t }}
             </p>
           </section>
 
@@ -66,11 +69,11 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
 
               <div>
                 <h2 class="font-semibold text-red-900">
-                  Partner access unavailable
+                  {{ 'Partner access unavailable' | t }}
                 </h2>
 
                 <p class="mt-1 text-sm text-red-700">
-                  {{ organizationStore.error() }}
+                  {{ organizationStore.error() | t }}
                 </p>
 
                 <button
@@ -79,7 +82,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                   class="mt-4"
                   (click)="initialize()"
                 >
-                  Try Again
+                  {{ 'Try Again' | t }}
                 </button>
               </div>
 
@@ -96,12 +99,11 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
             </mat-icon>
 
             <h2 class="mt-4 text-xl font-semibold text-gray-900">
-              No organizations available
+              {{ 'No organizations available' | t }}
             </h2>
 
             <p class="mx-auto mt-2 max-w-md text-sm text-gray-600">
-              Your account is not currently associated with an active
-              partner organization.
+              {{ 'Your account is not currently associated with an active partner organization.' | t }}
             </p>
           </section>
 
@@ -109,11 +111,11 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
 
           <div class="mb-6">
             <h2 class="text-xl font-bold text-gray-900">
-              Your Organizations
+              {{ 'Your Organizations' | t }}
             </h2>
 
             <p class="mt-1 text-sm text-gray-500">
-              Select an organization to enter its partner dashboard.
+              {{ 'Select an organization to enter its partner dashboard.' | t }}
             </p>
           </div>
 
@@ -178,7 +180,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                       </h3>
 
                       <p class="mt-1 text-sm text-gray-500">
-                        Partner organization
+                        {{ 'Partner organization' | t }}
                       </p>
 
                     </div>
@@ -204,7 +206,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                   >
 
                     <span class="text-xs font-medium text-gray-500">
-                      {{ roleFor(organization.id) }}
+                      {{ roleFor(organization.id) | t }}
                     </span>
 
                     <span
@@ -213,7 +215,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                         text-sm font-semibold text-[#2a835f]
                       "
                     >
-                      Enter
+                      {{ 'Enter' | t }}
                       <mat-icon class="!h-4 !w-4 !text-base">
                         login
                       </mat-icon>

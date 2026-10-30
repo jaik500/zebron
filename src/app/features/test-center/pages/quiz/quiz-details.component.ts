@@ -10,12 +10,15 @@ import { TestStore } from '../../store/test.store';
 import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 import { TestQuestionService } from '../../services/test-question.service';
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-quiz-details',
 
   standalone: true,
 
-  imports: [RouterLink, MatIconModule],
+  imports: [
+    TranslatePipe,RouterLink, MatIconModule],
 
   template: `
     <main class="min-h-screen bg-gray-50 mt-16">
@@ -33,10 +36,10 @@ import { TestQuestionService } from '../../services/test-question.service';
         <section class="mx-auto max-w-5xl px-5 py-8 text-center sm:px-6 lg:px-8">
           <div
             class="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[#E5F4F4] border-t-[#007979]"
-            aria-label="Loading"
+            [attr.aria-label]="'Loading' | t"
           ></div>
 
-          <p class="mt-3 text-sm text-gray-500">Loading quiz details...</p>
+          <p class="mt-3 text-sm text-gray-500">{{ 'Loading quiz details...' | t }}</p>
         </section>
       }
 
@@ -53,17 +56,17 @@ import { TestQuestionService } from '../../services/test-question.service';
               <mat-icon aria-hidden="true"> error_outline </mat-icon>
             </div>
 
-            <h1 class="mt-3 text-lg font-bold text-gray-900">Quiz not found</h1>
+            <h1 class="mt-3 text-lg font-bold text-gray-900">{{ 'Quiz not found' | t }}</h1>
 
             <p class="mt-1 text-sm text-gray-600">
-              {{ error() }}
+              {{ error() | t }}
             </p>
 
             <a
               [routerLink]="learnerBaseRoute()"
               class="mt-4 inline-flex rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#006666]"
             >
-              Back to Test Center
+              {{ 'Back to Test Center' | t }}
             </a>
           </div>
         </section>
@@ -88,7 +91,7 @@ import { TestQuestionService } from '../../services/test-question.service';
       [routerLink]="[learnerBaseRoute(), 'quizzes']"
       class="inline-flex items-center gap-1 text-sm font-semibold text-white/75 transition hover:text-white"
     >
-      ← Quiz List
+      {{ '← Quiz List' | t }}
     </a>
 
     <!-- Course Details and Question Count -->
@@ -105,7 +108,7 @@ import { TestQuestionService } from '../../services/test-question.service';
           <span
             class="rounded-full bg-[#12BFC3]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#7DD3D3]"
           >
-            {{ course()!.type }}
+            {{ course()!.type | t }}
           </span>
 
           @if (course()!.certificationCode) {
@@ -139,7 +142,7 @@ import { TestQuestionService } from '../../services/test-question.service';
           <p
             class="mt-2 max-w-2xl break-words text-xs leading-5 text-white/70 sm:mt-3 sm:text-base sm:leading-6"
           >
-            {{ course()!.description }}
+            {{ course()!.description | t }}
           </p>
         }
 
@@ -154,7 +157,7 @@ import { TestQuestionService } from '../../services/test-question.service';
         </p>
 
         <p class="mt-1 text-[10px] text-white/65 sm:text-xs">
-          questions
+          {{ 'questions' | t }}
         </p>
       </div>
 
@@ -174,10 +177,10 @@ import { TestQuestionService } from '../../services/test-question.service';
 
             <div>
               <div>
-                <h2 class="text-xl font-bold text-[#032D42]">Choose quiz topics</h2>
+                <h2 class="text-xl font-bold text-[#032D42]">{{ 'Choose quiz topics' | t }}</h2>
 
                 <p class="mt-1 text-sm text-gray-600">
-                  Choose the topics to include in this quiz. You can select one or several topics.
+                  {{ 'Choose the topics to include in this quiz. You can select one or several topics.' | t }}
                 </p>
               </div>
 
@@ -187,9 +190,9 @@ import { TestQuestionService } from '../../services/test-question.service';
                   class="mt-4 flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white px-4 py-3"
                 >
                   <div>
-                    <p class="text-sm font-semibold text-[#032D42]">Select all topics</p>
+                    <p class="text-sm font-semibold text-[#032D42]">{{ 'Select all topics' | t }}</p>
 
-                    <p class="text-xs text-gray-500">Include every topic in this quiz.</p>
+                    <p class="text-xs text-gray-500">{{ 'Include every topic in this quiz.' | t }}</p>
                   </div>
 
                   <button
@@ -197,7 +200,7 @@ import { TestQuestionService } from '../../services/test-question.service';
                     class="shrink-0 rounded-lg border border-[#007979] px-3 py-1.5 text-xs font-semibold text-[#007979] transition hover:bg-[#E5F4F4]"
                     (click)="toggleAllTopics()"
                   >
-                    {{ allTopicsSelected() ? 'Clear all' : 'Select all' }}
+                    {{ allTopicsSelected() ? ('Clear all' | t) : ('Select all' | t) }}
                   </button>
                 </div>
               }
@@ -207,10 +210,10 @@ import { TestQuestionService } from '../../services/test-question.service';
                 <div class="mt-4 rounded-xl border border-gray-200 bg-white p-8 text-center">
                   <div
                     class="mx-auto h-7 w-7 animate-spin rounded-full border-4 border-[#E5F4F4] border-t-[#007979]"
-                    aria-label="Loading topics"
+                    [attr.aria-label]="'Loading topics' | t"
                   ></div>
 
-                  <p class="mt-2 text-sm text-gray-500">Loading topics...</p>
+                  <p class="mt-2 text-sm text-gray-500">{{ 'Loading topics...' | t }}</p>
                 </div>
               }
 
@@ -219,7 +222,7 @@ import { TestQuestionService } from '../../services/test-question.service';
                 <div
                   class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
                 >
-                  {{ topicsError() }}
+                  {{ topicsError() | t }}
                 </div>
               }
 
@@ -263,15 +266,14 @@ import { TestQuestionService } from '../../services/test-question.service';
 
                         @if (topic.description) {
                           <span class="mt-0.5 block text-xs leading-5 text-gray-600">
-                            {{ topic.description }}
+                            {{ topic.description | t }}
                           </span>
                         }
                       </span>
 
                       <!-- Question count -->
                       <span class="shrink-0 text-xs font-medium text-gray-500">
-                        {{ topicQuestionCountFor(topic) }}
-                        questions
+                        {{ '{0} questions' | t: [topicQuestionCountFor(topic)] }}
                       </span>
                     </button>
                   }
@@ -290,11 +292,11 @@ import { TestQuestionService } from '../../services/test-question.service';
                   </div>
 
                   <h3 class="mt-3 text-sm font-bold text-[#032D42]">
-                    Quiz topics are not available yet
+                    {{ 'Quiz topics are not available yet' | t }}
                   </h3>
 
                   <p class="mt-1 text-xs text-gray-600">
-                    Topics for this quiz haven't been published yet.
+                    {{ 'Topics for this quiz haven\\u0027t been published yet.' | t }}
                   </p>
                 </div>
               }
@@ -312,11 +314,11 @@ import { TestQuestionService } from '../../services/test-question.service';
                   <mat-icon aria-hidden="true"> quiz </mat-icon>
                 </div>
 
-                <h2 class="mt-3 text-base font-bold text-[#032D42]">Quiz setup</h2>
+                <h2 class="mt-3 text-base font-bold text-[#032D42]">{{ 'Quiz setup' | t }}</h2>
 
                 <dl class="mt-4 space-y-3">
                   <div class="flex items-center justify-between gap-4">
-                    <dt class="text-sm text-gray-600">Topics</dt>
+                    <dt class="text-sm text-gray-600">{{ 'Topics' | t }}</dt>
 
                     <dd class="text-sm font-bold text-[#032D42]">
                       {{ selectedTopicCount() }}
@@ -324,7 +326,7 @@ import { TestQuestionService } from '../../services/test-question.service';
                   </div>
 
                   <div class="flex items-center justify-between gap-4">
-                    <dt class="text-sm text-gray-600">Questions</dt>
+                    <dt class="text-sm text-gray-600">{{ 'Questions' | t }}</dt>
 
                     <dd class="text-sm font-bold text-[#032D42]">
                       {{ selectedQuestionCount() }}
@@ -335,8 +337,7 @@ import { TestQuestionService } from '../../services/test-question.service';
                 <div class="my-4 border-t border-gray-100"></div>
 
                 <p class="text-xs leading-5 text-gray-500">
-                  Select the topics you want in this quiz. You can configure the number and
-                  difficulty of questions next.
+                  {{ 'Select the topics you want in this quiz. You can configure the number and difficulty of questions next.' | t }}
                 </p>
 
                 <button
@@ -345,12 +346,12 @@ import { TestQuestionService } from '../../services/test-question.service';
                   [disabled]="selectedTopicCount() === 0"
                   (click)="continueToSetup()"
                 >
-                  Continue →
+                  {{ 'Continue →' | t }}
                 </button>
 
                 @if (selectedTopicCount() === 0) {
                   <p class="mt-2 text-center text-[11px] text-gray-500">
-                    Select at least one topic
+                    {{ 'Select at least one topic' | t }}
                   </p>
                 }
               </div>

@@ -67,51 +67,54 @@ const ROLE_LABELS: Record<string, string> = {
  * by its own people, by Zebron, or automatically. Read-only, recorded by
  * the backend. Shown to admins and owners on the Administration page.
  */
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-organization-audit-log',
   standalone: true,
-  imports: [DatePipe, FormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule],
+  imports: [
+    TranslatePipe,DatePipe, FormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="border-t border-gray-100 p-5 sm:p-6">
       <!-- Filters -->
       <div class="grid gap-x-3 sm:grid-cols-2 lg:grid-cols-5">
         <mat-form-field appearance="outline" class="zb-field zb-field--dense" subscriptSizing="dynamic">
-          <mat-label>Made by</mat-label>
+          <mat-label>{{ 'Made by' | t }}</mat-label>
           <mat-select [value]="source()" (selectionChange)="source.set($event.value); reload()">
-            <mat-option value="all">Everyone</mat-option>
-            <mat-option value="organization">Organization</mat-option>
-            <mat-option value="platform">Zebron</mat-option>
-            <mat-option value="system">System</mat-option>
+            <mat-option value="all">{{ 'Everyone' | t }}</mat-option>
+            <mat-option value="organization">{{ 'Organization' | t }}</mat-option>
+            <mat-option value="platform">{{ 'Zebron' | t }}</mat-option>
+            <mat-option value="system">{{ 'System' | t }}</mat-option>
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="zb-field zb-field--dense" subscriptSizing="dynamic">
-          <mat-label>Area</mat-label>
+          <mat-label>{{ 'Area' | t }}</mat-label>
           <mat-select [value]="entityType()" (selectionChange)="entityType.set($event.value); reload()">
-            <mat-option value="all">All areas</mat-option>
+            <mat-option value="all">{{ 'All areas' | t }}</mat-option>
             @for (area of areas; track area.key) {
-              <mat-option [value]="area.key">{{ area.label }}</mat-option>
+              <mat-option [value]="area.key">{{ area.label | t }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="zb-field zb-field--dense" subscriptSizing="dynamic">
-          <mat-label>From</mat-label>
+          <mat-label>{{ 'From' | t }}</mat-label>
           <input matInput type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event); reload()" name="fromDate" />
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="zb-field zb-field--dense" subscriptSizing="dynamic">
-          <mat-label>To</mat-label>
+          <mat-label>{{ 'To' | t }}</mat-label>
           <input matInput type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event); reload()" name="toDate" />
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="zb-field zb-field--dense" subscriptSizing="dynamic">
-          <mat-label>Importance</mat-label>
+          <mat-label>{{ 'Importance' | t }}</mat-label>
           <mat-select [value]="severity()" (selectionChange)="severity.set($event.value)">
-            <mat-option value="all">All</mat-option>
-            <mat-option value="critical">Critical only</mat-option>
-            <mat-option value="notice">Notice and critical</mat-option>
+            <mat-option value="all">{{ 'All' | t }}</mat-option>
+            <mat-option value="critical">{{ 'Critical only' | t }}</mat-option>
+            <mat-option value="notice">{{ 'Notice and critical' | t }}</mat-option>
           </mat-select>
         </mat-form-field>
       </div>
@@ -119,30 +122,30 @@ const ROLE_LABELS: Record<string, string> = {
       <div class="mt-3 flex flex-wrap items-center gap-2">
         <mat-form-field appearance="outline" class="zb-field zb-field--dense zb-field--flush min-w-0 flex-1" subscriptSizing="dynamic">
           <mat-icon matPrefix>search</mat-icon>
-          <mat-label>Search loaded entries</mat-label>
+          <mat-label>{{ 'Search loaded entries' | t }}</mat-label>
           <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" name="auditSearch" />
         </mat-form-field>
 
-        <button mat-icon-button type="button" aria-label="Refresh" title="Refresh" [disabled]="loading()" (click)="reload()">
+        <button mat-icon-button type="button" [attr.aria-label]="'Refresh' | t" [title]="'Refresh' | t" [disabled]="loading()" (click)="reload()">
           <mat-icon>refresh</mat-icon>
         </button>
 
         <button mat-stroked-button type="button" [disabled]="visible().length === 0" (click)="exportCsv()">
           <mat-icon>download</mat-icon>
-          Export CSV
+          {{ 'Export CSV' | t }}
         </button>
       </div>
 
       @if (error()) {
-        <p class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{{ error() }}</p>
+        <p class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">{{ error() | t }}</p>
       }
 
       <!-- Entries -->
       @if (loading() && entries().length === 0) {
-        <p class="mt-5 text-sm text-gray-500">Loading audit log…</p>
+        <p class="mt-5 text-sm text-gray-500">{{ 'Loading audit log…' | t }}</p>
       } @else if (visible().length === 0) {
         <div class="mt-5 rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
-          No audit entries match these filters.
+          {{ 'No audit entries match these filters.' | t }}
         </div>
       } @else {
         <ul class="mt-5 divide-y divide-gray-100 rounded-xl border border-gray-200">
@@ -161,13 +164,13 @@ const ROLE_LABELS: Record<string, string> = {
                   <span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
                     <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold" [class]="sourceInfo(entry.source).classes">
                       <mat-icon class="!h-3.5 !w-3.5 !text-sm">{{ sourceInfo(entry.source).icon }}</mat-icon>
-                      {{ sourceInfo(entry.source).label }}
+                      {{ sourceInfo(entry.source).label | t }}
                     </span>
-                    <span>{{ entry.actorName || entry.actorEmail || (entry.actorType === 'system' ? 'Zebron system' : 'Unknown user') }}</span>
+                    <span>{{ entry.actorName || entry.actorEmail || (entry.actorType === 'system' ? ('Zebron system' | t) : ('Unknown user' | t)) }}</span>
                     @if (entry.actorRole) {
-                      <span class="rounded bg-gray-100 px-1.5 text-[11px] text-gray-600">{{ roleLabel(entry.actorRole) }}</span>
+                      <span class="rounded bg-gray-100 px-1.5 text-[11px] text-gray-600">{{ roleLabel(entry.actorRole) | t }}</span>
                     }
-                    <span>· {{ areaLabel(entry.entityType) }}</span>
+                    <span>· {{ areaLabel(entry.entityType) | t }}</span>
                   </span>
                 </span>
 
@@ -180,18 +183,18 @@ const ROLE_LABELS: Record<string, string> = {
               @if (expandedId() === entry.id) {
                 <div class="border-t border-gray-100 bg-gray-50 px-4 py-4 text-sm">
                   <dl class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
-                    <div><dt class="text-xs text-gray-500">When</dt><dd class="text-gray-900">{{ entry.occurredAt | date: 'full' }}</dd></div>
-                    <div><dt class="text-xs text-gray-500">Action</dt><dd class="capitalize text-gray-900">{{ entry.action }} · {{ areaLabel(entry.entityType) }}</dd></div>
+                    <div><dt class="text-xs text-gray-500">{{ 'When' | t }}</dt><dd class="text-gray-900">{{ entry.occurredAt | date: 'full' }}</dd></div>
+                    <div><dt class="text-xs text-gray-500">{{ 'Action' | t }}</dt><dd class="capitalize text-gray-900">{{ entry.action | t }} · {{ areaLabel(entry.entityType) | t }}</dd></div>
                     <div>
-                      <dt class="text-xs text-gray-500">Who</dt>
+                      <dt class="text-xs text-gray-500">{{ 'Who' | t }}</dt>
                       <dd class="break-all text-gray-900">
                         {{ entry.actorName || '—' }}
                         @if (entry.actorEmail) { &lt;{{ entry.actorEmail }}&gt; }
                       </dd>
                     </div>
-                    <div><dt class="text-xs text-gray-500">User ID</dt><dd class="break-all font-mono text-xs text-gray-700">{{ entry.actorId || '—' }}</dd></div>
-                    <div><dt class="text-xs text-gray-500">Record</dt><dd class="break-all font-mono text-xs text-gray-700">{{ entry.entityPath }}</dd></div>
-                    <div><dt class="text-xs text-gray-500">Event ID</dt><dd class="break-all font-mono text-xs text-gray-700">{{ entry.eventId }}</dd></div>
+                    <div><dt class="text-xs text-gray-500">{{ 'User ID' | t }}</dt><dd class="break-all font-mono text-xs text-gray-700">{{ entry.actorId || '—' }}</dd></div>
+                    <div><dt class="text-xs text-gray-500">{{ 'Record' | t }}</dt><dd class="break-all font-mono text-xs text-gray-700">{{ entry.entityPath }}</dd></div>
+                    <div><dt class="text-xs text-gray-500">{{ 'Event ID' | t }}</dt><dd class="break-all font-mono text-xs text-gray-700">{{ entry.eventId }}</dd></div>
                   </dl>
 
                   @if (entry.changes.length > 0) {
@@ -199,9 +202,9 @@ const ROLE_LABELS: Record<string, string> = {
                       <table class="w-full min-w-[32rem] text-left text-xs">
                         <thead>
                           <tr class="border-b border-gray-200 text-gray-500">
-                            <th class="py-1.5 pr-3 font-semibold">Field</th>
-                            <th class="py-1.5 pr-3 font-semibold">Before</th>
-                            <th class="py-1.5 font-semibold">After</th>
+                            <th class="py-1.5 pr-3 font-semibold">{{ 'Field' | t }}</th>
+                            <th class="py-1.5 pr-3 font-semibold">{{ 'Before' | t }}</th>
+                            <th class="py-1.5 font-semibold">{{ 'After' | t }}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -225,13 +228,13 @@ const ROLE_LABELS: Record<string, string> = {
         @if (hasMore()) {
           <div class="mt-4 text-center">
             <button mat-stroked-button type="button" [disabled]="loading()" (click)="loadMore()">
-              {{ loading() ? 'Loading…' : 'Load older entries' }}
+              {{ loading() ? ('Loading…' | t) : ('Load older entries' | t) }}
             </button>
           </div>
         }
 
         <p class="mt-3 text-xs text-gray-500">
-          Entries are recorded automatically and cannot be edited or deleted. They are kept for two years.
+          {{ 'Entries are recorded automatically and cannot be edited or deleted. They are kept for two years.' | t }}
         </p>
       }
     </div>

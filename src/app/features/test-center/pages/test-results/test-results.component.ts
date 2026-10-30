@@ -6,12 +6,15 @@ import { Router, RouterLink } from '@angular/router';
 
 import { TestStore } from '../../store/test.store';
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-test-results',
 
   standalone: true,
 
-  imports: [CommonModule, RouterLink],
+  imports: [
+    TranslatePipe,CommonModule, RouterLink],
 
   template: `
     <main class="min-h-screen bg-slate-50">
@@ -30,9 +33,9 @@ import { TestStore } from '../../store/test.store';
              sm:justify-between"
           >
             <div>
-              <p class="text-sm font-medium text-white/70">Test Center</p>
+              <p class="text-sm font-medium text-white/70">{{ 'Test Center' | t }}</p>
 
-              <h1 class="text-2xl font-bold text-white">Test Results</h1>
+              <h1 class="text-2xl font-bold text-white">{{ 'Test Results' | t }}</h1>
             </div>
 
             @if (course(); as selectedCourse) {
@@ -59,13 +62,13 @@ import { TestStore } from '../../store/test.store';
                    border-slate-200 bg-white
                    p-8 text-center shadow-sm"
           >
-            <h2 class="text-xl font-bold text-slate-900">No completed test</h2>
+            <h2 class="text-xl font-bold text-slate-900">{{ 'No completed test' | t }}</h2>
 
             <p
               class="mx-auto mt-2 max-w-md
                      text-sm text-slate-600"
             >
-              There is no completed Test Center session available to display.
+              {{ 'There is no completed Test Center session available to display.' | t }}
             </p>
 
             <a
@@ -75,7 +78,7 @@ import { TestStore } from '../../store/test.store';
                      text-sm font-semibold text-white
                      hover:bg-[#006666]"
             >
-              Back to Test Center
+              {{ 'Back to Test Center' | t }}
             </a>
           </div>
         } @else if (result(); as completedResult) {
@@ -93,7 +96,7 @@ import { TestStore } from '../../store/test.store';
                 class="text-sm font-medium
                        text-slate-500"
               >
-                Your Score
+                {{ 'Your Score' | t }}
               </p>
 
               <p
@@ -107,14 +110,11 @@ import { TestStore } from '../../store/test.store';
                 class="mt-3 text-lg font-semibold
                        text-slate-900"
               >
-                {{ performanceLabel() }}
+                {{ performanceLabel() | t }}
               </p>
 
               <p class="mt-2 text-sm text-slate-600">
-                {{ completedResult.correctAnswers }}
-                of
-                {{ completedResult.totalQuestions }}
-                questions correct.
+                {{ '{0} of {1} questions correct.' | t: [completedResult.correctAnswers, completedResult.totalQuestions] }}
               </p>
             </article>
 
@@ -133,7 +133,7 @@ import { TestStore } from '../../store/test.store';
                     class="text-xs font-medium
                            uppercase text-emerald-700"
                   >
-                    Correct
+                    {{ 'Correct' | t }}
                   </p>
 
                   <p
@@ -149,7 +149,7 @@ import { TestStore } from '../../store/test.store';
                     class="text-xs font-medium
                            uppercase text-red-700"
                   >
-                    Incorrect
+                    {{ 'Incorrect' | t }}
                   </p>
 
                   <p
@@ -165,7 +165,7 @@ import { TestStore } from '../../store/test.store';
                     class="text-xs font-medium
                            uppercase text-amber-700"
                   >
-                    Unanswered
+                    {{ 'Unanswered' | t }}
                   </p>
 
                   <p
@@ -181,7 +181,7 @@ import { TestStore } from '../../store/test.store';
                     class="text-xs font-medium
                            uppercase text-slate-600"
                   >
-                    Answered
+                    {{ 'Answered' | t }}
                   </p>
 
                   <p
@@ -229,11 +229,11 @@ import { TestStore } from '../../store/test.store';
                 class="text-lg font-bold
                        text-slate-900"
               >
-                Performance by Topic
+                {{ 'Performance by Topic' | t }}
               </h2>
 
               <p class="mt-1 text-sm text-slate-600">
-                See how you performed across the topics covered by this test.
+                {{ 'See how you performed across the topics covered by this test.' | t }}
               </p>
 
               <div class="mt-6 space-y-5">
@@ -255,9 +255,7 @@ import { TestStore } from '../../store/test.store';
                           class="mt-1 text-xs
                                  text-slate-500"
                         >
-                          {{ topic.correctAnswers }}
-                          correct of
-                          {{ topic.totalQuestions }}
+                          {{ '{0} correct of {1}' | t: [topic.correctAnswers, topic.totalQuestions] }}
                         </p>
                       </div>
 
@@ -302,14 +300,14 @@ import { TestStore } from '../../store/test.store';
                   class="text-lg font-bold
                          text-slate-900"
                 >
-                  Review Answers
+                  {{ 'Review Answers' | t }}
                 </h2>
 
                 <p
                   class="mt-1 text-sm
                          text-slate-600"
                 >
-                  Review each question and see the correct answer.
+                  {{ 'Review each question and see the correct answer.' | t }}
                 </p>
               </div>
 
@@ -317,7 +315,7 @@ import { TestStore } from '../../store/test.store';
                 class="text-sm font-semibold
                        text-[#007979]"
               >
-                {{ showReview() ? 'Hide' : 'Show' }}
+                {{ showReview() ? ('Hide' | t) : ('Show' | t) }}
               </span>
             </button>
 
@@ -353,7 +351,7 @@ import { TestStore } from '../../store/test.store';
                                  uppercase tracking-wide
                                  text-slate-500"
                         >
-                          Question {{ index + 1 }}
+                          {{ 'Question {0}' | t: [index + 1] }}
                         </p>
 
                         <h3
@@ -371,7 +369,7 @@ import { TestStore } from '../../store/test.store';
                                  text-xs font-bold
                                  text-emerald-700"
                         >
-                          Correct
+                          {{ 'Correct' | t }}
                         </span>
                       } @else if (question.selectedAnswerId === null) {
                         <span
@@ -380,7 +378,7 @@ import { TestStore } from '../../store/test.store';
                                  text-xs font-bold
                                  text-amber-700"
                         >
-                          Unanswered
+                          {{ 'Unanswered' | t }}
                         </span>
                       } @else {
                         <span
@@ -389,7 +387,7 @@ import { TestStore } from '../../store/test.store';
                                  text-xs font-bold
                                  text-red-700"
                         >
-                          Incorrect
+                          {{ 'Incorrect' | t }}
                         </span>
                       }
                     </div>
@@ -406,7 +404,7 @@ import { TestStore } from '../../store/test.store';
                           class="text-xs font-medium
                             text-slate-500"
                         >
-                          Your Answer
+                          {{ 'Your Answer' | t }}
                         </p>
 
                         <p
@@ -425,7 +423,7 @@ import { TestStore } from '../../store/test.store';
                           class="text-xs font-medium
                             text-slate-500"
                         >
-                          Correct Answer
+                          {{ 'Correct Answer' | t }}
                         </p>
 
                         <p
@@ -447,7 +445,7 @@ import { TestStore } from '../../store/test.store';
                                  uppercase tracking-wide
                                  text-slate-500"
                         >
-                          Explanation
+                          {{ 'Explanation' | t }}
                         </p>
 
                         <p
@@ -479,7 +477,7 @@ import { TestStore } from '../../store/test.store';
                      hover:bg-slate-50"
               (click)="takeAnotherTest()"
             >
-              Take Another Test
+              {{ 'Take Another Test' | t }}
             </button>
 
             @if (courseSlug()) {
@@ -490,7 +488,7 @@ import { TestStore } from '../../store/test.store';
                        text-sm font-semibold
                        text-white hover:bg-[#006666]"
               >
-                Back to Course
+                {{ 'Back to Course' | t }}
               </a>
             }
           </div>

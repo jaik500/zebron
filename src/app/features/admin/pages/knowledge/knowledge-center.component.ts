@@ -78,16 +78,28 @@ type KnowledgeStatusFilter = 'all' | KnowledgeArticleStatus;
           </div>
         </div>
 
-        <button
-          mat-flat-button
-          color="primary"
-          type="button"
-          class="shrink-0"
-          (click)="createArticle()"
-        >
-          <mat-icon>add</mat-icon>
-          <span class="ml-2">New Article</span>
-        </button>
+        <div class="flex shrink-0 flex-wrap gap-2">
+          <button
+            mat-stroked-button
+            type="button"
+            class="shrink-0 !bg-white"
+            (click)="importGuide()"
+          >
+            <mat-icon>library_add</mat-icon>
+            <span class="ml-2">Import guide articles</span>
+          </button>
+
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            class="shrink-0"
+            (click)="createArticle()"
+          >
+            <mat-icon>add</mat-icon>
+            <span class="ml-2">New Article</span>
+          </button>
+        </div>
       </header>
 
       <!-- Summary -->
@@ -669,6 +681,12 @@ export class KnowledgeCenterComponent implements OnInit {
   statusLabel(status: KnowledgeArticleStatus): string {
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
+
+importGuide(): void {
+  void this.router.navigate([
+    '/admin/configuration/knowledge/import-guide',
+  ]);
+}
 
 createArticle(): void {
   this.logger.info(

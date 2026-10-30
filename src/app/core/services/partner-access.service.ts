@@ -54,6 +54,12 @@ export const PARTNER_PERMISSIONS = {
   /** Organization mailbox: read and send email for the organization. */
   'mailbox.access': 'org_manager',
 
+  /** Organization Community: hide/remove posts and comments, reports, topics. */
+  'community.moderate': 'org_manager',
+
+  /** Knowledge Center gear: write, publish and archive organization articles. */
+  'knowledge.manage': 'org_staff',
+
   /** Dashboard banners: events, cohorts, graduations, shout-outs. */
   'announcements.manage': 'org_manager',
 

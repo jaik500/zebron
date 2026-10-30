@@ -30,20 +30,23 @@ interface StudyCourse {
   modules: StudyModule[];
 }
 
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+
 @Component({
   selector: 'app-course-details',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [
+    TranslatePipe,CommonModule, RouterLink],
   template: `
     <main class="min-h-screen bg-slate-50 text-slate-800">
       <header class="bg-[#032D42] text-white">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
-          <a routerLink="/" class="flex items-center gap-2 font-bold" aria-label="Zebron home">
+          <a routerLink="/" class="flex items-center gap-2 font-bold" [attr.aria-label]="'Zebron home' | t">
             <img src="/zebron-favicon.svg" alt="" class="h-8 w-8" />
-            <span class="text-lg">Zebron <span class="font-normal text-cyan-200">Learning</span></span>
+            <span class="text-lg">{{ 'Zebron' | t }} <span class="font-normal text-cyan-200">{{ 'Learning' | t }}</span></span>
           </a>
           <a [routerLink]="learnerBaseRoute()" class="rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10">
-            ← All courses
+            {{ '← All courses' | t }}
           </a>
         </div>
       </header>
@@ -52,25 +55,25 @@ interface StudyCourse {
         <div class="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
           <div>
             <div class="mb-4 flex flex-wrap gap-2">
-              <span class="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-bold uppercase tracking-wide text-cyan-100">{{ course().category }}</span>
-              <span class="rounded-full border border-white/20 px-3 py-1 text-xs">{{ course().level }}</span>
-              <span class="rounded-full border border-white/20 px-3 py-1 text-xs">{{ course().duration }}</span>
+              <span class="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-bold uppercase tracking-wide text-cyan-100">{{ course().category | t }}</span>
+              <span class="rounded-full border border-white/20 px-3 py-1 text-xs">{{ course().level | t }}</span>
+              <span class="rounded-full border border-white/20 px-3 py-1 text-xs">{{ course().duration | t }}</span>
             </div>
-            <p class="text-sm font-semibold uppercase tracking-[.18em] text-cyan-200">Course</p>
+            <p class="text-sm font-semibold uppercase tracking-[.18em] text-cyan-200">{{ 'Course' | t }}</p>
             <h1 class="mt-2 max-w-3xl text-3xl font-extrabold tracking-tight sm:text-4xl">{{ course().title }}</h1>
-            <p class="mt-4 max-w-3xl text-base leading-7 text-slate-200">{{ course().description }}</p>
+            <p class="mt-4 max-w-3xl text-base leading-7 text-slate-200">{{ course().description | t }}</p>
             <div class="mt-6 flex flex-wrap gap-3">
               <button type="button" (click)="startLearning()" class="rounded-lg bg-cyan-300 px-5 py-3 text-sm font-bold text-[#032D42] hover:bg-cyan-200">
-                {{ activeLesson() ? 'Continue studying' : 'Start studying' }}
+                {{ activeLesson() ? ('Continue studying' | t) : ('Start studying' | t) }}
               </button>
-              <span class="self-center text-sm text-slate-200">{{ completedCount() }} of {{ totalLessons() }} lessons completed</span>
+              <span class="self-center text-sm text-slate-200">{{ '{0} of {1} lessons completed' | t: [completedCount(), totalLessons()] }}</span>
             </div>
-            <div class="mt-4 h-2 max-w-xl overflow-hidden rounded-full bg-white/20" role="progressbar" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100" aria-label="Course progress">
+            <div class="mt-4 h-2 max-w-xl overflow-hidden rounded-full bg-white/20" role="progressbar" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="'Course progress' | t">
               <div class="h-full rounded-full bg-cyan-300 transition-all" [style.width.%]="progressPercent()"></div>
             </div>
           </div>
           <aside class="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
-            <p class="text-sm font-semibold text-cyan-100">What you'll learn</p>
+            <p class="text-sm font-semibold text-cyan-100">{{ 'What you\\u0027ll learn' | t }}</p>
             <ul class="mt-4 space-y-3">
               @for (outcome of course().outcomes; track outcome) {
                 <li class="flex gap-2 text-sm leading-5 text-white">
@@ -86,12 +89,12 @@ interface StudyCourse {
         <section class="min-w-0">
           <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p class="text-xs font-bold uppercase tracking-[.16em] text-teal-700">Course material</p>
-              <h2 class="mt-1 text-2xl font-bold text-[#032D42]">Study lesson</h2>
+              <p class="text-xs font-bold uppercase tracking-[.16em] text-teal-700">{{ 'Course material' | t }}</p>
+              <h2 class="mt-1 text-2xl font-bold text-[#032D42]">{{ 'Study lesson' | t }}</h2>
             </div>
             @if (activeLesson()) {
               <button type="button" (click)="toggleCompleted(activeLesson()!.id)" class="rounded-lg border px-3 py-2 text-sm font-semibold" [class.border-teal-700]="isCompleted(activeLesson()!.id)" [class.text-teal-800]="isCompleted(activeLesson()!.id)" [class.border-slate-300]="!isCompleted(activeLesson()!.id)">
-                {{ isCompleted(activeLesson()!.id) ? '✓ Completed' : 'Mark as complete' }}
+                {{ isCompleted(activeLesson()!.id) ? ('✓ Completed' | t) : ('Mark as complete' | t) }}
               </button>
             }
           </div>
@@ -113,8 +116,8 @@ interface StudyCourse {
               } @else {
                 <div class="flex aspect-video flex-col items-center justify-center bg-gradient-to-br from-[#032D42] to-[#087C83] p-6 text-center text-white">
                   <span class="mb-3 grid h-14 w-14 place-items-center rounded-full border border-white/30 bg-white/10 text-2xl" aria-hidden="true">▶</span>
-                  <p class="text-lg font-bold">Video lesson slot</p>
-                  <p class="mt-2 max-w-md text-sm text-cyan-50">Add a YouTube/Vimeo embed URL or a hosted MP4 URL to this lesson's <code class="rounded bg-black/20 px-1">videoUrl</code> field.</p>
+                  <p class="text-lg font-bold">{{ 'Video lesson slot' | t }}</p>
+                  <p class="mt-2 max-w-md text-sm text-cyan-50">{{ 'Add a YouTube/Vimeo embed URL or a hosted MP4 URL to this lesson\\u0027s' | t }} <code class="rounded bg-black/20 px-1">videoUrl</code> {{ 'field.' | t }}</p>
                 </div>
               }
               <div class="p-5 sm:p-7">
@@ -130,28 +133,28 @@ interface StudyCourse {
                   }
                 </div>
                 <div class="mt-8 flex flex-wrap justify-between gap-3 border-t border-slate-100 pt-5">
-                  <button type="button" (click)="previousLesson()" [disabled]="!hasPreviousLesson()" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">← Previous lesson</button>
-                  <button type="button" (click)="nextLesson()" [disabled]="!hasNextLesson()" class="rounded-lg bg-[#007979] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-40">Next lesson →</button>
+                  <button type="button" (click)="previousLesson()" [disabled]="!hasPreviousLesson()" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40">{{ '← Previous lesson' | t }}</button>
+                  <button type="button" (click)="nextLesson()" [disabled]="!hasNextLesson()" class="rounded-lg bg-[#007979] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-40">{{ 'Next lesson →' | t }}</button>
                 </div>
               </div>
             </article>
           } @else {
             <div class="rounded-xl border border-slate-200 bg-white p-8 text-center">
-              <p class="font-semibold">Select a lesson from the course outline.</p>
+              <p class="font-semibold">{{ 'Select a lesson from the course outline.' | t }}</p>
             </div>
           }
 
           <section class="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
-            <h2 class="text-xl font-bold text-[#032D42]">Study notes</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-600">Use this area to review key ideas from the current lesson. The content below is starter material and can be replaced with your course's actual notes.</p>
+            <h2 class="text-xl font-bold text-[#032D42]">{{ 'Study notes' | t }}</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-600">{{ 'Use this area to review key ideas from the current lesson. The content below is starter material and can be replaced with your course\\u0027s actual notes.' | t }}</p>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
               <div class="rounded-xl bg-slate-50 p-4">
-                <p class="text-sm font-bold text-[#032D42]">Remember</p>
-                <p class="mt-1 text-sm leading-6 text-slate-600">Study each concept, connect it to a practical example, and summarize it in your own words.</p>
+                <p class="text-sm font-bold text-[#032D42]">{{ 'Remember' | t }}</p>
+                <p class="mt-1 text-sm leading-6 text-slate-600">{{ 'Study each concept, connect it to a practical example, and summarize it in your own words.' | t }}</p>
               </div>
               <div class="rounded-xl bg-slate-50 p-4">
-                <p class="text-sm font-bold text-[#032D42]">Practice</p>
-                <p class="mt-1 text-sm leading-6 text-slate-600">After each lesson, identify one thing you can explain without looking at the material.</p>
+                <p class="text-sm font-bold text-[#032D42]">{{ 'Practice' | t }}</p>
+                <p class="mt-1 text-sm leading-6 text-slate-600">{{ 'After each lesson, identify one thing you can explain without looking at the material.' | t }}</p>
               </div>
             </div>
           </section>
@@ -159,15 +162,15 @@ interface StudyCourse {
 
         <aside class="h-fit overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <div class="border-b border-slate-200 p-5">
-            <p class="text-xs font-bold uppercase tracking-[.16em] text-teal-700">Learning path</p>
-            <h2 class="mt-1 text-xl font-bold text-[#032D42]">Course outline</h2>
-            <p class="mt-1 text-sm text-slate-500">{{ totalLessons() }} lessons · {{ course().modules.length }} modules</p>
+            <p class="text-xs font-bold uppercase tracking-[.16em] text-teal-700">{{ 'Learning path' | t }}</p>
+            <h2 class="mt-1 text-xl font-bold text-[#032D42]">{{ 'Course outline' | t }}</h2>
+            <p class="mt-1 text-sm text-slate-500">{{ '{0} lessons · {1} modules' | t: [totalLessons(), course().modules.length] }}</p>
           </div>
           <div class="divide-y divide-slate-100">
             @for (module of course().modules; track module.id) {
               <div class="p-4">
                 <h3 class="text-sm font-bold text-[#032D42]">{{ module.title }}</h3>
-                <p class="mt-1 text-xs leading-5 text-slate-500">{{ module.description }}</p>
+                <p class="mt-1 text-xs leading-5 text-slate-500">{{ module.description | t }}</p>
                 <div class="mt-3 space-y-1">
                   @for (lesson of module.lessons; track lesson.id) {
                     <button type="button" (click)="selectLesson(module.id, lesson.id)" class="flex w-full items-start gap-3 rounded-lg p-3 text-left transition hover:bg-slate-50" [class.bg-teal-50]="activeLessonId() === lesson.id" [attr.aria-current]="activeLessonId() === lesson.id ? 'true' : null">
@@ -176,7 +179,7 @@ interface StudyCourse {
                       </span>
                       <span class="min-w-0 flex-1">
                         <span class="block text-sm font-semibold" [class.text-teal-800]="activeLessonId() === lesson.id" [class.text-slate-700]="activeLessonId() !== lesson.id">{{ lesson.title }}</span>
-                        <span class="mt-1 block text-xs text-slate-500">{{ lesson.duration }}@if (lesson.videoUrl) { · Video }</span>
+                        <span class="mt-1 block text-xs text-slate-500">{{ lesson.duration }}@if (lesson.videoUrl) { {{ '· Video' | t }} }</span>
                       </span>
                     </button>
                   }
@@ -188,7 +191,7 @@ interface StudyCourse {
       </div>
 
       <footer class="border-t border-slate-200 bg-white px-5 py-6 text-center text-sm text-slate-500">
-        Study at your own pace. Your progress is kept for this page session while this course uses hardcoded sample data.
+        {{ 'Study at your own pace. Your progress is kept for this page session while this course uses hardcoded sample data.' | t }}
       </footer>
     </main>
   `,
