@@ -389,8 +389,8 @@ type Selected =
 
                     @if (current.message.html) {
                       <div class="mt-4 flex gap-2 text-sm">
-                        <button mat-button type="button" [class]="showFormatted() ? '' : '!bg-gray-100'" (click)="showFormatted.set(false)">Plain text</button>
                         <button mat-button type="button" [class]="showFormatted() ? '!bg-gray-100' : ''" (click)="showFormatted.set(true)">Formatted</button>
+                        <button mat-button type="button" [class]="showFormatted() ? '' : '!bg-gray-100'" (click)="showFormatted.set(false)">Plain text</button>
                       </div>
                     }
 
@@ -495,7 +495,8 @@ export class OrganizationMailboxComponent implements OnInit {
   protected readonly sending = signal(false);
   protected readonly error = signal('');
   protected readonly copied = signal(false);
-  protected readonly showFormatted = signal(false);
+  /** Formatted (HTML) view is the default when the email has one. */
+  protected readonly showFormatted = signal(true);
   protected readonly draft = signal<ComposeDraft | null>(null);
 
   /** "Add a member" picker; reset after each pick. */
@@ -642,7 +643,7 @@ export class OrganizationMailboxComponent implements OnInit {
 
   protected async select(id: string): Promise<void> {
     this.selectedId.set(id);
-    this.showFormatted.set(false);
+    this.showFormatted.set(true);
 
     const message = this.received().find((item) => item.id === id);
 

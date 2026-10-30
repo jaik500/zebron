@@ -216,6 +216,14 @@ export const routes: Routes = [
     // ADMIN — ORGANIZATION APPLICATIONS
     // ============================================================
     {
+        path: 'admin/organizations/requests',
+        canActivate: [adminGuard],
+        data: {
+            title: 'Admin | Partner Requests',
+        },
+        loadComponent: () => import('./features/admin/pages/organizations/organization-service-requests.component').then((m) => m.OrganizationServiceRequestsComponent),
+    },
+    {
         path: 'admin/organizations/applications',
         canActivate: [adminGuard],
         data: {
@@ -280,6 +288,19 @@ export const routes: Routes = [
             minimumOrganizationRole: 'org_manager',
         },
         loadComponent: () => import('./features/partner/mailbox/organization-mailbox.component').then((m) => m.OrganizationMailboxComponent),
+    },
+    {
+        path: 'partner/org/:organizationId/contract',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            partnerRoleGuard,
+        ],
+        data: {
+            title: 'Partner | Contract & Billing',
+            minimumOrganizationRole: 'org_manager',
+        },
+        loadComponent: () => import('./features/partner/contract/organization-contract.component').then((m) => m.OrganizationContractComponent),
     },
     // =====================================================
     // COMMUNITY

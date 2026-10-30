@@ -1008,6 +1008,13 @@ export class AdminDashboardComponent {
       actionLabel: 'Manage Knowledge',
       icon: 'menu_book',
     },
+    {
+      title: 'Partner Requests',
+      description: 'Review partner requests for apps, suspensions, terminations and ownership transfers, and edit the partner agreement.',
+      route: '/admin/organizations/requests',
+      actionLabel: 'Review Requests',
+      icon: 'assignment',
+    },
      {
       title: 'Platform Apps Requests',
       description: 'Manage Requests for access to the platform resources and tools',

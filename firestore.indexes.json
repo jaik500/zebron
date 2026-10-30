@@ -169,79 +169,107 @@
       ]
     },
     {
-  "collectionGroup": "testPrograms",
-  "queryScope": "COLLECTION",
-  "fields": [
-    {
-      "fieldPath": "organizationId",
-      "order": "ASCENDING"
+      "collectionGroup": "testPrograms",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "organizationId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
     },
     {
-      "fieldPath": "name",
-      "order": "ASCENDING"
+      "collectionGroup": "testPrograms",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "organizationId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "active",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "testPrograms",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "organizationId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "slug",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "organizationInvitations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "expiresAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "organizationEmailOutbox",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nextAttemptAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "organizationServiceRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "organizationId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "contract",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "termination.effectiveDate",
+          "order": "ASCENDING"
+        }
+      ]
     }
-  ]
-},
-{
-  "collectionGroup": "testPrograms",
-  "queryScope": "COLLECTION",
-  "fields": [
-    {
-      "fieldPath": "organizationId",
-      "order": "ASCENDING"
-    },
-    {
-      "fieldPath": "active",
-      "order": "ASCENDING"
-    },
-    {
-      "fieldPath": "name",
-      "order": "ASCENDING"
-    }
-  ]
-},
-{
-  "collectionGroup": "testPrograms",
-  "queryScope": "COLLECTION",
-  "fields": [
-    {
-      "fieldPath": "organizationId",
-      "order": "ASCENDING"
-    },
-    {
-      "fieldPath": "slug",
-      "order": "ASCENDING"
-    }
-  ]
-},
-{
-  "collectionGroup": "organizationInvitations",
-  "queryScope": "COLLECTION",
-  "fields": [
-    {
-      "fieldPath": "status",
-      "order": "ASCENDING"
-    },
-    {
-      "fieldPath": "expiresAt",
-      "order": "ASCENDING"
-    }
-  ]
-},
-{
-  "collectionGroup": "organizationEmailOutbox",
-  "queryScope": "COLLECTION",
-  "fields": [
-    {
-      "fieldPath": "status",
-      "order": "ASCENDING"
-    },
-    {
-      "fieldPath": "nextAttemptAt",
-      "order": "ASCENDING"
-    }
-  ]
-}
   ],
   "fieldOverrides": []
 }

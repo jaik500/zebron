@@ -245,11 +245,32 @@ interface RoleGroup {
           </div>
           }
 
+          <!-- CONTRACT & BILLING and MAILBOX: side by side on larger screens -->
+          <div class="mb-8 grid gap-5 lg:grid-cols-2">
+          @if (canManageBilling()) {
+            <a
+              [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'contract']"
+              class="flex h-full items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md sm:px-6"
+            >
+              <span class="flex min-w-0 items-center gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
+                  <mat-icon>handshake</mat-icon>
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Zebron partnership</span>
+                  <span class="mt-1 block text-lg font-bold text-gray-900">Contract & Billing</span>
+                  <span class="mt-1 block text-sm text-gray-600">Your agreement, applications, billing contact and requests to Zebron.</span>
+                </span>
+              </span>
+              <mat-icon class="shrink-0 text-[#007979]">arrow_forward</mat-icon>
+            </a>
+          }
+
           <!-- MAILBOX: managers and above -->
           @if (canUseMailbox()) {
             <a
               [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'mailbox']"
-              class="mb-8 flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md sm:px-6"
+              class="flex h-full items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md sm:px-6"
             >
               <span class="flex min-w-0 items-center gap-3">
                 <span class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
@@ -271,6 +292,8 @@ interface RoleGroup {
               <mat-icon class="shrink-0 text-[#007979]">arrow_forward</mat-icon>
             </a>
           }
+
+          </div>
 
           <!-- DASHBOARD BANNERS: managers and above -->
           @if (canManageAnnouncements()) {
@@ -882,6 +905,9 @@ export class OrganizationManagementComponent implements OnInit {
   protected readonly members = signal<OrganizationMembership[]>([]);
   protected readonly accessControlExpanded = signal(false);
   protected readonly announcementsExpanded = signal(false);
+
+  /** Contract & Billing: managers and above. */
+  protected readonly canManageBilling = computed(() => this.access.can('billing.manage'));
 
   /** Organization mailbox: managers and above. */
   protected readonly canUseMailbox = computed(() => this.access.can('mailbox.access'));
