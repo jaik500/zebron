@@ -4187,6 +4187,114 @@ service cloud.firestore {
       }
     }
 
+    // ============================================================
+    // RESOURCES (public directory)
+    // ============================================================
+
+    /*
+     * Anyone, signed in or not, can read published resources.
+     * Drafts, pending and archived resources are visible to platform
+     * administrators only, so every public query must filter on
+     * status == "published". Only platform administrators write.
+     */
+    match /resources/{resourceId} {
+      allow get, list: if resource.data.status == "published"
+        || isPlatformAdmin();
+
+      allow create, update: if isPlatformAdmin()
+        && isValidResource();
+
+      allow delete: if isPlatformAdmin();
+    }
+
+    function isValidResource() {
+      return request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 200
+        && request.resource.data.slug is string
+        && request.resource.data.slug.size() > 0
+        && request.resource.data.status in ["draft", "pending", "published", "archived"];
+    }
+
+    // ============================================================
+    // CATEGORIES AND LOCATIONS (public lookup lists)
+    // ============================================================
+
+    /*
+     * Used by the resource filters and resource pages, including for
+     * people who are not signed in. Only platform administrators write.
+     */
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /locations/{locationId} {
+      allow get, list: if true;
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // RESOURCE SUBMISSIONS ("Submit a resource")
+    // ============================================================
+
+    /*
+     * Signed-in people suggest resources. A submission always starts
+     * as pending, belongs to the person who sent it and cannot carry
+     * review fields. The submitter can read their own submissions;
+     * platform administrators review, approve, reject and delete.
+     */
+    match /submissions/{submissionId} {
+      allow get, list: if isPlatformAdmin()
+        || (
+          isAuthenticated()
+          && resource.data.submittedBy == request.auth.uid
+        );
+
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasOnly([
+          "submittedBy",
+          "resourceName",
+          "description",
+          "website",
+          "categoryId",
+          "organizationName",
+          "location",
+          "submitterEmail",
+          "status",
+          "createdAt"
+        ])
+        && request.resource.data.submittedBy == request.auth.uid
+        && request.resource.data.status == "pending"
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.resourceName is string
+        && request.resource.data.resourceName.size() > 0
+        && request.resource.data.resourceName.size() <= 200
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 5000;
+
+      allow update, delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // JOBS (Job Finder)
+    // ============================================================
+
+    /*
+     * Active jobs are public. A closed job can still be opened from an
+     * old link; drafts are for platform administrators only. Lists must
+     * filter on status == "active". Only platform administrators write.
+     */
+    match /jobs/{jobId} {
+      allow get: if resource.data.status in ["active", "closed"]
+        || isPlatformAdmin();
+
+      allow list: if resource.data.status == "active"
+        || isPlatformAdmin();
+
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
         // ============================================================
     // RESOURCE TYPES (public lookup list)
     // ============================================================

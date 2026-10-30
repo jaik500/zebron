@@ -47,11 +47,17 @@ export class SubmissionService {
       'id' | 'status' | 'createdAt'
     >,
   ): Promise<string> {
+    // Firestore rejects undefined values, and the form leaves optional
+    // fields (website, category, organization) undefined when empty.
+    const fields = Object.fromEntries(
+      Object.entries(submission).filter(([, value]) => value !== undefined),
+    );
+
     const document =
       await addDoc(
         this.submissionsCollection,
         {
-          ...submission,
+          ...fields,
           status: 'pending',
           createdAt: serverTimestamp(),
         },

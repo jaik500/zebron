@@ -251,7 +251,7 @@ export class OrganizationServiceRequestsComponent implements OnInit {
   protected readonly terms = signal<ContractTerms | null>(null);
   protected readonly statusFilter = signal<StatusFilter>('open');
   protected readonly search = signal('');
-  protected readonly notes = signal<Record<string, string>>({});
+  protected readonly notes = signal<Record<string, string | undefined>>({});
   protected readonly loading = signal(true);
   protected readonly busyId = signal<string | null>(null);
   protected readonly savingTerms = signal(false);
