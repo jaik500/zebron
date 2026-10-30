@@ -141,18 +141,28 @@ describe('testCenterOrganizationGuard', () => {
     ).not.toHaveBeenCalled();
   });
 
-  it('redirects users without a selected organization to /partner', async () => {
+  it('opens the platform Test Center for users without an organization', async () => {
     mocks.selectedOrganizationId.mockReturnValue(null);
 
     const result = await executeGuard();
 
-    expect(result).toEqual({
-      commands: ['/partner'],
-    });
+    expect(result).toBe(true);
+    expect(mocks.createUrlTree).not.toHaveBeenCalled();
+  });
 
-    expect(mocks.createUrlTree).toHaveBeenCalledWith([
-      '/partner',
-    ]);
+  it('reads AuthService.firebaseUser when it is a signal', async () => {
+    const user = { uid: 'test-user-123' };
+
+    mocks.firebaseUser = (() => user) as never;
+    mocks.selectedOrganizationId.mockReturnValue(null);
+
+    expect(await executeGuard()).toBe(true);
+
+    mocks.firebaseUser = (() => null) as never;
+
+    expect(await executeGuard()).toEqual({
+      commands: ['/login'],
+    });
   });
 
   it('redirects to the organization dashboard while entitlements are loading', async () => {
@@ -179,33 +189,19 @@ describe('testCenterOrganizationGuard', () => {
     ).not.toHaveBeenCalled();
   });
 
-  it('fails closed when entitlement lookup returns an error', async () => {
+  it('falls back to the platform Test Center when the entitlement lookup fails', async () => {
     mocks.applicationsError.mockReturnValue(
       new Error('Failed to load organization applications'),
     );
 
     const result = await executeGuard();
 
-    const expectedCommands = [
-      '/partner/org',
-      'org-test-123',
-      'dashboard',
-    ];
-
-    expect(result).toEqual({
-      commands: expectedCommands,
-    });
-
-    expect(mocks.createUrlTree).toHaveBeenCalledWith(
-      expectedCommands,
-    );
-
-    expect(
-      mocks.hasActiveApplication,
-    ).not.toHaveBeenCalled();
+    // Platform courses are public; nothing organization-specific opens.
+    expect(result).toBe(true);
+    expect(mocks.createUrlTree).not.toHaveBeenCalled();
   });
 
-  it('redirects to the organization dashboard when Test Center is not active', async () => {
+  it('opens the platform Test Center when the organization has no Test Center', async () => {
     mocks.hasActiveApplication.mockReturnValue(false);
 
     const result = await executeGuard();
@@ -214,16 +210,10 @@ describe('testCenterOrganizationGuard', () => {
       mocks.hasActiveApplication,
     ).toHaveBeenCalledWith('test-center');
 
-    expect(result).toEqual({
-      commands: [
-        '/partner/org',
-        'org-test-123',
-        'dashboard',
-      ],
-    });
+    expect(result).toBe(true);
   });
 
-  it('redirects to organization-scoped Test Center when its entitlement is active', async () => {
+  it('redirects to the organization learner Test Center when its entitlement is active', async () => {
     mocks.hasActiveApplication.mockReturnValue(true);
 
     const result = await executeGuard();
@@ -236,6 +226,7 @@ describe('testCenterOrganizationGuard', () => {
       commands: [
         '/partner/org',
         'org-test-123',
+        'learn',
         'test-center',
       ],
     });
@@ -254,6 +245,7 @@ describe('testCenterOrganizationGuard', () => {
       commands: [
         '/partner/org',
         'org-another-456',
+        'learn',
         'test-center',
       ],
     });

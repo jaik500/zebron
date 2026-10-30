@@ -16,6 +16,9 @@ import { OrganizationContextStore } from '../../../organizations/stores/organiza
 import { PartnerAccessService } from '../../../../core/services/partner-access.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { AnnouncementBannerComponent } from '../../announcements/announcement-banner.component';
+import { OrganizationAnnouncement } from '../../announcements/organization-announcement.model';
+import { OrganizationAnnouncementService } from '../../announcements/organization-announcement.service';
 import { ApplicationRegistryService } from '../../../../core/services/application-registry.service';
 
 import {
@@ -39,7 +42,7 @@ interface DashboardCard {
 @Component({
   selector: 'app-partner-admin',
   standalone: true,
-  imports: [RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule],
+  imports: [RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule, AnnouncementBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-15">
@@ -134,6 +137,19 @@ interface DashboardCard {
               Complete profile
             </a>
           </section>
+        }
+
+        <!-- =======================================================
+             ANNOUNCEMENT BANNERS (closable per person)
+             ======================================================= -->
+
+        @for (announcement of visibleAnnouncements(); track announcement.id) {
+          <div class="mb-4">
+            <app-announcement-banner
+              [announcement]="announcement"
+              (dismissed)="dismissAnnouncement(announcement)"
+            ></app-announcement-banner>
+          </div>
         }
 
         <!-- =======================================================
@@ -602,6 +618,22 @@ export class PartnerAdminComponent implements OnInit {
 
   private readonly authService = inject(AuthService);
 
+  private readonly announcementService = inject(OrganizationAnnouncementService);
+
+  private readonly announcements = signal<OrganizationAnnouncement[]>([]);
+
+  /** Banners this person closed, remembered in this browser. */
+  private readonly dismissedAnnouncements = signal<Set<string>>(new Set());
+
+  /** Live banners this person hasn't closed, newest first, at most three. */
+  protected readonly visibleAnnouncements = computed(() => {
+    const dismissed = this.dismissedAnnouncements();
+
+    return this.announcements()
+      .filter((announcement) => !dismissed.has(this.dismissKey(announcement)))
+      .slice(0, 3);
+  });
+
   /** Shown until the signed-in user's profile has a first and last name. */
   protected readonly profileNameMissing = computed(() => {
     const user = this.authService.user();
@@ -824,6 +856,58 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
     await this.initialize();
   }
 
+  /** Banners are optional; a failure here never blocks the dashboard. */
+  private async loadAnnouncements(organizationId: string): Promise<void> {
+    this.dismissedAnnouncements.set(this.readDismissed(organizationId));
+
+    try {
+      this.announcements.set(
+        await this.announcementService.getLiveAnnouncements(organizationId),
+      );
+    } catch (error) {
+      console.warn('[Dashboard] Announcements unavailable.', error);
+      this.announcements.set([]);
+    }
+  }
+
+  protected dismissAnnouncement(announcement: OrganizationAnnouncement): void {
+    const next = new Set(this.dismissedAnnouncements());
+    next.add(this.dismissKey(announcement));
+    this.dismissedAnnouncements.set(next);
+
+    try {
+      localStorage.setItem(
+        this.dismissStorageKey(announcement.organizationId),
+        JSON.stringify([...next].slice(-50)),
+      );
+    } catch {
+      // Private mode or storage blocked: it stays closed until reload.
+    }
+  }
+
+  /** Editing a banner gives it a new key, so it shows to everyone again. */
+  private dismissKey(announcement: OrganizationAnnouncement): string {
+    const updated = announcement.updatedAt;
+    const millis = updated && typeof updated.toMillis === 'function' ? updated.toMillis() : 0;
+
+    return `${announcement.id}:${millis}`;
+  }
+
+  private dismissStorageKey(organizationId: string): string {
+    return `zebron:dismissed-announcements:${organizationId}`;
+  }
+
+  private readDismissed(organizationId: string): Set<string> {
+    try {
+      const raw = localStorage.getItem(this.dismissStorageKey(organizationId));
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+
+      return new Set(Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : []);
+    } catch {
+      return new Set();
+    }
+  }
+
   protected async initialize(): Promise<void> {
     try {
       const organizationId = this.route.snapshot.paramMap.get('organizationId');
@@ -835,6 +919,8 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
       await this.organizationStore.loadOrganizationContext(organizationId);
 
       this.pageTitleService.setTitle(`${this.organizationName()} Dashboard`);
+
+      void this.loadAnnouncements(organizationId);
     } catch {
       /*
        * OrganizationStore exposes

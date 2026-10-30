@@ -5,66 +5,71 @@ import { AuthService } from '../services/auth.service';
 import { OrganizationContextStore } from '../../features/organizations/stores/organization-context.store';
 
 /**
-
-* Protects legacy/global Test Center routes.
-*
-* Test Center is an organization-scoped application. Users must be
-* authenticated and have an active Test Center entitlement for their
-* selected organization.
-*
-* Organization-specific routes must continue using
-* partnerOrganizationGuard and applicationAccessGuard.
-  */
-  export const testCenterOrganizationGuard: CanActivateFn = async () => {
+ * Entry point for /test-center.
+ *
+ * Test Center has two modes:
+ *
+ * - Platform Test Center (/test-center/...): public Zebron courses,
+ *   open to every signed-in user, including people who don't belong
+ *   to any organization.
+ * - Organization Test Center (/partner/org/:id/learn/test-center):
+ *   the organization's own courses, for members whose organization
+ *   has an active Test Center entitlement.
+ *
+ * Decision:
+ * 1. Not signed in -> /login.
+ * 2. No organization selected -> platform Test Center.
+ * 3. Organization still loading its applications -> its dashboard
+ *    (never guess while the lookup is incomplete).
+ * 4. Organization has Test Center -> its learner Test Center.
+ * 5. Otherwise (no entitlement, or the lookup failed) -> platform
+ *    Test Center. Platform courses are public, so this exposes
+ *    nothing organization-specific.
+ */
+export const testCenterOrganizationGuard: CanActivateFn = async () => {
   const authService = inject(AuthService);
   const organizationStore = inject(OrganizationContextStore);
   const router = inject(Router);
 
-// Authentication is required.
-if (!authService.firebaseUser) {
-return router.createUrlTree(['/login']);
-}
+  if (!currentFirebaseUser(authService)) {
+    return router.createUrlTree(['/login']);
+  }
 
-const organizationId = organizationStore.selectedOrganizationId();
+  const organizationId = organizationStore.selectedOrganizationId();
 
-// No organization is selected.
-if (!organizationId) {
-return router.createUrlTree(['/partner']);
-}
+  if (!organizationId) {
+    return true;
+  }
 
-// Do not grant access while entitlement loading is in progress.
-// The guard must not mistake an incomplete lookup for a denial
-// or redirect prematurely.
-if (organizationStore.applicationsLoading()) {
-return router.createUrlTree([
-'/partner/org',
-organizationId,
-'dashboard',
-]);
-}
+  if (organizationStore.applicationsLoading()) {
+    return router.createUrlTree([
+      '/partner/org',
+      organizationId,
+      'dashboard',
+    ]);
+  }
 
-// Fail closed if entitlement loading failed.
-if (organizationStore.applicationsError()) {
-return router.createUrlTree([
-'/partner/org',
-organizationId,
-'dashboard',
-]);
-}
+  if (
+    !organizationStore.applicationsError() &&
+    organizationStore.hasActiveApplication('test-center')
+  ) {
+    return router.createUrlTree([
+      '/partner/org',
+      organizationId,
+      'learn',
+      'test-center',
+    ]);
+  }
 
-// Only an active entitlement grants access.
-if (!organizationStore.hasActiveApplication('test-center')) {
-return router.createUrlTree([
-'/partner/org',
-organizationId,
-'dashboard',
-]);
-}
-
-// Redirect to the canonical organization-scoped application route.
-return router.createUrlTree([
-'/partner/org',
-organizationId,
-'test-center',
-]);
+  return true;
 };
+
+/**
+ * AuthService.firebaseUser is a signal; read it, while still
+ * accepting a plain value (as used by the unit tests' mock).
+ */
+function currentFirebaseUser(authService: AuthService): unknown {
+  const value = (authService as unknown as { firebaseUser: unknown }).firebaseUser;
+
+  return typeof value === 'function' ? (value as () => unknown)() : value;
+}

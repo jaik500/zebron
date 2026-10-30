@@ -25,6 +25,7 @@ import { firebaseFunctions } from '../../../../core/services/firebase-config';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { AnnouncementManagerComponent } from '../../announcements/announcement-manager.component';
 interface CreateOrganizationInvitationRequest {
   organizationId: string;
   email: string;
@@ -61,7 +62,7 @@ interface RoleGroup {
 @Component({
   selector: 'app-organization-management',
   standalone: true,
-  imports: [RouterLink, FormsModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [RouterLink, FormsModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, AnnouncementManagerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="min-h-screen bg-gray-50 pt-14">
@@ -238,6 +239,38 @@ interface RoleGroup {
                 </div>
               </section>
           </div>
+          }
+
+          <!-- DASHBOARD BANNERS: managers and above -->
+          @if (canManageAnnouncements()) {
+            <section class="mb-8 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              <button
+                type="button"
+                class="flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition hover:bg-gray-50 sm:px-6"
+                [attr.aria-expanded]="announcementsExpanded()"
+                aria-controls="organization-announcements-panel"
+                (click)="announcementsExpanded.set(!announcementsExpanded())"
+              >
+                <span class="flex min-w-0 items-center gap-3">
+                  <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                    <mat-icon>campaign</mat-icon>
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Communication</span>
+                    <span class="mt-1 block text-lg font-bold text-gray-900">Dashboard Banners</span>
+                    <span class="mt-1 block text-sm text-gray-600">Announce events, new cohorts, graduations and student shout-outs.</span>
+                  </span>
+                </span>
+                <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[#007979]">
+                  <span class="hidden sm:inline">{{ announcementsExpanded() ? 'Collapse' : 'Expand' }}</span>
+                  <mat-icon>{{ announcementsExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </span>
+              </button>
+
+              @if (announcementsExpanded() && organizationStore.selectedOrganizationId(); as organizationId) {
+                <app-announcement-manager id="organization-announcements-panel" [organizationId]="organizationId"></app-announcement-manager>
+              }
+            </section>
           }
 
           <!-- ACCESS CONTROL: collapsed by default -->
@@ -816,6 +849,12 @@ export class OrganizationManagementComponent implements OnInit {
 
   protected readonly members = signal<OrganizationMembership[]>([]);
   protected readonly accessControlExpanded = signal(false);
+  protected readonly announcementsExpanded = signal(false);
+
+  /** Dashboard banners: managers and above. */
+  protected readonly canManageAnnouncements = computed(() =>
+    this.access.can('announcements.manage'),
+  );
   protected readonly membersDirectoryExpanded = signal(false);
   protected readonly regularMemberSearch = signal('');
   protected readonly membersLoading = signal(false);

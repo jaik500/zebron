@@ -20,7 +20,15 @@ import { MatDivider } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
+import { MatDialog } from '@angular/material/dialog';
+
 import { HotToastService } from '@ngxpert/hot-toast';
+
+import {
+  TestCenterImportDialogComponent,
+  TestCenterImportDialogData,
+  TestCenterImportDialogResult,
+} from './test-center-import-dialog.component';
 
 import { TestCourse, TestCourseType } from '../../../features/test-center/models/test-course.model';
 
@@ -131,6 +139,16 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
       <div class="hidden flex-wrap items-center justify-end gap-2 sm:flex">
         <button
           type="button"
+          (click)="openImport()"
+          [disabled]="saving()"
+          class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/60 bg-transparent px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <mat-icon>upload_file</mat-icon>
+          Import
+        </button>
+
+        <button
+          type="button"
           (click)="createProgram()"
           [disabled]="saving()"
           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979] shadow-sm transition hover:bg-[#E8F5F5] disabled:cursor-not-allowed disabled:opacity-50"
@@ -217,6 +235,16 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
         >
           <mat-icon>add</mat-icon>
           <span>Create Course</span>
+        </button>
+
+        <button
+          type="button"
+          mat-menu-item
+          (click)="openImport()"
+          [disabled]="saving()"
+        >
+          <mat-icon>upload_file</mat-icon>
+          <span>Import Questions</span>
         </button>
       }
 
@@ -1005,6 +1033,8 @@ export class PartnerTestCenterComponent implements OnInit {
 
   private readonly toast = inject(HotToastService);
 
+  private readonly dialog = inject(MatDialog);
+
   private readonly pageTitleService = inject(PageTitleService);
 
   // ============================================================
@@ -1116,6 +1146,45 @@ export class PartnerTestCenterComponent implements OnInit {
     await this.initialize();
 
     this.pageTitleService.setTitle(`${this.organizationName()} Test Center`);
+  }
+
+  /** Import programs, courses, topics and questions from CSV or JSON. */
+  protected openImport(): void {
+    const organizationId = this.context.organizationId();
+
+    if (!organizationId || !this.context.canManageCourses()) {
+      return;
+    }
+
+    this.dialog
+      .open<
+        TestCenterImportDialogComponent,
+        TestCenterImportDialogData,
+        TestCenterImportDialogResult
+      >(TestCenterImportDialogComponent, {
+        data: {
+          organizationId,
+          programs: this.programs(),
+          courses: this.courses(),
+        },
+        width: '760px',
+        maxWidth: '95vw',
+        autoFocus: false,
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (!result) {
+          return;
+        }
+
+        this.toast.success(
+          `Imported ${result.questionsCreated} new and ${result.questionsUpdated} updated question${
+            result.questionsCreated + result.questionsUpdated === 1 ? '' : 's'
+          }.`,
+        );
+
+        void this.initialize();
+      });
   }
 
   protected async initialize(): Promise<void> {

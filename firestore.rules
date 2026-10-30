@@ -3532,6 +3532,112 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // ORGANIZATION ANNOUNCEMENTS (dashboard banners)
+    // ============================================================
+
+    /*
+     * Banners for upcoming events, new cohorts, graduations and
+     * student shout-outs, shown on the organization dashboard.
+     *
+     * - Every active member can read active banners.
+     * - Managers, admins and owners can read, create, edit and delete.
+     * - Writes are validated: known types/themes/fonts/artwork only,
+     *   length limits, and https-only links.
+     */
+    match /organizations/{organizationId}/announcements/{announcementId} {
+
+      function isOptionalString(data, field, maxSize) {
+        return data.get(field, null) == null
+          || (data[field] is string && data[field].size() <= maxSize);
+      }
+
+      function isOptionalHttpsUrl(data, field) {
+        return data.get(field, null) == null
+          || (
+            data[field] is string
+            && data[field].size() <= 1000
+            && data[field].matches("^https://.+")
+          );
+      }
+
+      function isOptionalDate(data, field) {
+        return data.get(field, null) == null
+          || (
+            data[field] is string
+            && data[field].matches("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+          );
+      }
+
+      function isValidAnnouncement(data) {
+        return data.keys().hasOnly([
+            "organizationId",
+            "type",
+            "title",
+            "message",
+            "ctaLabel",
+            "ctaUrl",
+            "eventDate",
+            "honoreeName",
+            "theme",
+            "font",
+            "artwork",
+            "imageUrl",
+            "startsOn",
+            "endsOn",
+            "active",
+            "createdBy",
+            "createdAt",
+            "updatedAt"
+          ])
+          && data.organizationId == organizationId
+          && data.type in ["event", "cohort", "graduation", "shoutout", "general"]
+          && data.title is string
+          && data.title.size() > 0
+          && data.title.size() <= 120
+          && data.message is string
+          && data.message.size() <= 500
+          && data.theme in ["zebron", "sunrise", "royal", "midnight", "forest", "sky", "confetti", "gold"]
+          && data.font in ["default", "serif", "rounded", "display", "mono"]
+          && data.artwork in ["calendar", "celebration", "graduation", "trophy", "star", "groups", "rocket", "campaign", "school", "none"]
+          && data.active is bool
+          && isOptionalString(data, "ctaLabel", 40)
+          && isOptionalString(data, "honoreeName", 80)
+          && isOptionalHttpsUrl(data, "ctaUrl")
+          && isOptionalHttpsUrl(data, "imageUrl")
+          && isOptionalDate(data, "eventDate")
+          && isOptionalDate(data, "startsOn")
+          && isOptionalDate(data, "endsOn");
+      }
+
+      function canManageAnnouncements() {
+        return isPlatformAdmin()
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationManagerOrAbove(organizationId)
+          );
+      }
+
+      allow get, list: if canManageAnnouncements()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationMember(organizationId)
+          && resource.data.get("active", false) == true
+        );
+
+      allow create: if canManageAnnouncements()
+        && isValidAnnouncement(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid;
+
+      allow update: if canManageAnnouncements()
+        && isValidAnnouncement(request.resource.data)
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.get("createdAt", null)
+          == resource.data.get("createdAt", null);
+
+      allow delete: if canManageAnnouncements();
+    }
+
+    // ============================================================
     // ORGANIZATION INBOUND MESSAGES
     // ============================================================
  

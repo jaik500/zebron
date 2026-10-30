@@ -51,6 +51,9 @@ export const PARTNER_PERMISSIONS = {
   /** Invite people and change roles of anyone below your own role. */
   'members.manage': 'org_manager',
 
+  /** Dashboard banners: events, cohorts, graduations, shout-outs. */
+  'announcements.manage': 'org_manager',
+
   /** Contracts and billing (planned). */
   'billing.manage': 'org_manager',
 

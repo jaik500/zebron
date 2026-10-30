@@ -27,15 +27,17 @@ import { RouterLink } from '@angular/router';
 
         <div
           class="grid
-                 gap-10
-                 sm:grid-cols-2
-                 lg:grid-cols-4"
+                 grid-cols-2
+                 gap-x-6
+                 gap-y-10
+                 sm:gap-10
+                 lg:grid-cols-3"
         >
           <!-- ===================================================
                BRAND
                =================================================== -->
 
-          <div>
+          <div class="col-span-2 sm:col-span-1">
             <a
               routerLink="/"
               aria-label="Zebron home"
@@ -69,7 +71,7 @@ import { RouterLink } from '@angular/router';
               Discover resources, organizations, jobs, training, and opportunities.
             </p>
             <a class="text-white/70 hover:text-white" href="mailto:support@inbound.zebron.org">
-              support@inbound.zebron.org
+              contact@zebron.org
             </a>
           </div>
 
@@ -77,7 +79,7 @@ import { RouterLink } from '@angular/router';
                EXPLORE
                =================================================== -->
 
-          <div>
+          <div class="order-1 sm:order-none">
             <h2
               class="text-sm
                      font-semibold
@@ -92,13 +94,13 @@ import { RouterLink } from '@angular/router';
             >
               <li>
                 <a
-                  routerLink="/resources"
+                  routerLink="/about"
                   class="text-sm
                          text-white/70
                          transition
                          hover:text-white"
                 >
-                  Resources
+                  About Zebron
                 </a>
               </li>
 
@@ -113,16 +115,16 @@ import { RouterLink } from '@angular/router';
                   Find Jobs and opportunities
                 </a>
               </li>
-
               <li>
                 <a
-                  routerLink="/about"
+                  routerLink="/donate"
                   class="text-sm
-                         text-white/70
-                         transition
-                         hover:text-white"
+               font-medium
+               text-[#7ED6D1]
+               transition
+               hover:text-white"
                 >
-                  About Zebron
+                  Donate
                 </a>
               </li>
 
@@ -141,79 +143,10 @@ import { RouterLink } from '@angular/router';
           </div>
 
           <!-- ===================================================
-     PARTICIPATE
-     =================================================== -->
-
-          <div>
-            <h2
-              class="text-sm
-           font-semibold
-           text-white"
-            >
-              Participate
-            </h2>
-
-            <ul
-              class="mt-4
-           space-y-3"
-            >
-              <li>
-                <a
-                  routerLink="/submit"
-                  class="text-sm
-               text-white/70
-               transition
-               hover:text-white"
-                >
-                  Add a Resource
-                </a>
-              </li>
-
-              <li>
-                <a
-                  routerLink="/test-center"
-                  class="text-sm
-                  font-medium
-                  text-white/70
-                  transition
-                  hover:text-[#12BFC3]"
-                >
-                  Test Center
-                </a>
-              </li>
-
-              <li>
-                <a
-                  routerLink="/donate"
-                  class="text-sm
-               font-medium
-               text-[#7ED6D1]
-               transition
-               hover:text-white"
-                >
-                  Donate
-                </a>
-              </li>
-
-              <li>
-                <a
-                  routerLink="/faq"
-                  class="text-sm
-               text-white/70
-               transition
-               hover:text-white"
-                >
-                  FAQ
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          <!-- ===================================================
                LEGAL
                =================================================== -->
 
-          <div>
+          <div class="order-2 sm:order-none">
             <h2
               class="text-sm
                      font-semibold
@@ -261,6 +194,18 @@ import { RouterLink } from '@angular/router';
                   Accessibility
                 </a>
               </li>
+
+              <li>
+                <a
+                  routerLink="/faq"
+                  class="text-sm
+               text-white/70
+               transition
+               hover:text-white"
+                >
+                  FAQ
+                </a>
+              </li>
             </ul>
           </div>
         </div>
@@ -296,7 +241,7 @@ import { RouterLink } from '@angular/router';
                    transition
                    hover:text-white"
           >
-            zebron.org
+            Rondpoint Inc
           </a>
         </div>
       </div>
