@@ -36,6 +36,7 @@ const EN = {
   organizationTitle: 'Organization Application',
   organizationText: 'Apply to bring your organization onto Zebron and request access to the applications and tools your organization needs.',
   organizationLink: 'Apply for an Organization',
+  allAppsLink: 'See all Zebron apps',
 
   howEyebrow: 'How Zebron works',
   howTitle: 'From discovery to opportunity.',
@@ -101,6 +102,7 @@ const FR: HomeText = {
   organizationTitle: 'Inscription d’une organisation',
   organizationText: 'Demandez à intégrer votre organisation à Zebron et à accéder aux applications et aux outils dont elle a besoin.',
   organizationLink: 'Inscrire une organisation',
+  allAppsLink: 'Voir toutes les applications Zebron',
 
   howEyebrow: 'Comment fonctionne Zebron',
   howTitle: 'De la découverte à l’opportunité.',

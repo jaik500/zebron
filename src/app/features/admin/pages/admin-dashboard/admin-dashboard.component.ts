@@ -1009,6 +1009,13 @@ export class AdminDashboardComponent {
       icon: 'menu_book',
     },
     {
+      title: 'Help Assistant',
+      description: 'Switch the Ask for help chat on or off, choose the AI model and limits, edit its welcome text and sources, and try it.',
+      route: '/admin/configuration/help-assistant',
+      actionLabel: 'Configure Assistant',
+      icon: 'forum',
+    },
+    {
       title: 'Support',
       description: 'Answer support tickets from users and partner organizations, assign them and track their status.',
       route: '/admin/support',

@@ -62,6 +62,12 @@ route: '/',
 icon: 'home',
 },
 {
+key: 'apps',
+label: 'All apps',
+route: '/apps',
+icon: 'apps',
+},
+{
 key: 'resources',
 label: 'Resources',
 route: '/resources',

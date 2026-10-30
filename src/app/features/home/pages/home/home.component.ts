@@ -635,6 +635,16 @@ import { homeText } from './home.i18n';
               </span>
             </a>
           </div>
+
+          <div class="mt-8 flex justify-center">
+            <a
+              routerLink="/apps"
+              class="inline-flex items-center gap-2 rounded-xl border border-[#007979]/30 bg-white px-5 py-2.5 text-sm font-bold text-[#007979] shadow-sm transition hover:border-[#007979] hover:bg-[#E5F4F4]"
+            >
+              <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">apps</mat-icon>
+              {{ t().allAppsLink }}
+            </a>
+          </div>
         </div>
       </section>
  

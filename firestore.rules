@@ -4305,6 +4305,52 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // HELP ASSISTANT SETTINGS
+    // ============================================================
+
+    /*
+     * Admin → Configuration → Help assistant. Readable by everyone (the
+     * widget needs the on/off switch, name, welcome text and suggestions;
+     * nothing secret is stored here, the Gemini key is a Functions
+     * secret). Only platform administrators save, with every field
+     * checked. The askSupportAssistant function clamps the values again.
+     */
+    match /platformConfig/{configId} {
+      allow get: if configId == "helpAssistant";
+      allow list: if false;
+
+      allow create, update: if configId == "helpAssistant"
+        && isPlatformAdmin()
+        && isValidHelpAssistantSettings();
+
+      allow delete: if configId == "helpAssistant" && isPlatformAdmin();
+    }
+
+    function isValidHelpAssistantSettings() {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+          "enabled", "aiEnabled", "model", "hourlyLimit", "maxSources",
+          "maxAnswerWords", "assistantName", "welcomeMessage", "suggestions",
+          "extraInstructions", "sources", "updatedAt", "updatedBy"
+        ])
+        && data.keys().hasAll(["enabled", "aiEnabled", "model", "hourlyLimit", "maxSources", "maxAnswerWords", "sources"])
+        && data.enabled is bool
+        && data.aiEnabled is bool
+        && data.model is string
+        && data.model.matches("^gemini-[a-z0-9.-]{1,60}$")
+        && data.hourlyLimit is int && data.hourlyLimit >= 1 && data.hourlyLimit <= 1000
+        && data.maxSources is int && data.maxSources >= 1 && data.maxSources <= 10
+        && data.maxAnswerWords is int && data.maxAnswerWords >= 50 && data.maxAnswerWords <= 500
+        && data.get("assistantName", "") is string && data.get("assistantName", "").size() <= 60
+        && data.get("welcomeMessage", "") is string && data.get("welcomeMessage", "").size() <= 500
+        && data.get("suggestions", []) is list && data.get("suggestions", []).size() <= 6
+        && data.get("extraInstructions", "") is string && data.get("extraInstructions", "").size() <= 2000
+        && data.sources is map
+        && data.sources.keys().hasOnly(["platformArticles", "organizationArticles", "builtInGuides"])
+        && data.get("updatedBy", request.auth.uid) == request.auth.uid;
+    }
+
+    // ============================================================
     // SYSTEM SETTINGS
     // ============================================================
 

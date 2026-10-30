@@ -16,6 +16,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { httpsCallable } from 'firebase/functions';
 
 import { firebaseFunctions } from '../../../core/services/firebase-config';
+import { HelpAssistantSettingsService } from '../../../core/services/help-assistant-settings.service';
+import { DEFAULT_HELP_ASSISTANT_SETTINGS } from '../../../core/models/help-assistant-settings.model';
 
 interface Citation {
   number: number;
@@ -56,6 +58,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
     TranslatePipe,FormsModule, RouterLink, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (settings().enabled) {
     @if (!open()) {
       <button
         type="button"
@@ -75,7 +78,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
         <!-- Header -->
         <header class="flex items-center justify-between gap-2 bg-gradient-to-r from-[#032D42] to-[#007979] px-4 py-3 text-white">
           <div class="min-w-0">
-            <p class="font-semibold">{{ 'Zebron Assistant' | t }}</p>
+            <p class="font-semibold">{{ customName() ?? ('Zebron Assistant' | t) }}</p>
             <p class="truncate text-xs text-white/75">
               {{ scopeLabel() | t }}
             </p>
@@ -95,9 +98,13 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           @if (messages().length === 0) {
             <div class="rounded-xl bg-white p-4 text-sm text-gray-700 shadow-sm">
               <p class="font-semibold text-gray-900">{{ 'Hi{0}! How can I help?' | t: [(firstName() ? ' ' + firstName() : '')] }}</p>
+              @if (settings().welcomeMessage) {
+                <p class="mt-1 whitespace-pre-line text-gray-600">{{ settings().welcomeMessage }}</p>
+              } @else {
               <p class="mt-1 text-gray-600">{{ (organizationId() ? 'I answer from Zebron\\u0027s and your organization\\u0027s help articles, based on what your role can do.' : 'I answer from Zebron\\u0027s help articles, based on what your role can do.') | t }}</p>
+              }
               <div class="mt-3 flex flex-wrap gap-2">
-                @for (suggestion of suggestions; track suggestion) {
+                @for (suggestion of suggestions(); track suggestion) {
                   <button type="button" class="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-700 hover:border-[#007979] hover:text-[#007979]" (click)="ask(suggestion)">
                     {{ suggestion | t }}
                   </button>
@@ -195,6 +202,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
         </p>
       </section>
     }
+    }
   `,
 })
 export class SupportAssistantComponent {
@@ -205,12 +213,18 @@ export class SupportAssistantComponent {
   private readonly router = inject(Router);
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
-  protected readonly suggestions = [
-    'What can my role do?',
-    'How do I invite someone?',
-    'How do I import questions?',
-    'How do I contact Zebron support?',
-  ];
+  private readonly assistantSettings = inject(HelpAssistantSettingsService);
+
+  /** On/off switch, name, welcome text and suggestions from Admin → Configuration → Help assistant. */
+  protected readonly settings = this.assistantSettings.settings;
+
+  protected readonly suggestions = computed(() => this.settings().suggestions);
+
+  /** A name set by Zebron admins; the standard name is translated instead. */
+  protected readonly customName = computed(() => {
+    const name = this.settings().assistantName;
+    return name && name !== DEFAULT_HELP_ASSISTANT_SETTINGS.assistantName ? name : null;
+  });
 
   protected readonly open = signal(false);
   protected readonly messages = signal<ChatMessage[]>([]);
@@ -232,6 +246,11 @@ export class SupportAssistantComponent {
   });
 
   constructor() {
+    // Browser only: settings are public, so this works signed out too.
+    if (typeof window !== 'undefined') {
+      void this.assistantSettings.load();
+    }
+
     // A separate conversation per organization, kept for this browser tab.
     effect(() => {
       const key = STORAGE_KEY + (this.organizationId() ?? 'none');

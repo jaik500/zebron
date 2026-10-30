@@ -42,6 +42,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/auth/pages/register/register.component').then((m) => m.RegisterComponent),
     },
     // -----------------------------------------------------
+    // ALL APPS (public directory of Zebron applications)
+    // -----------------------------------------------------
+    {
+        path: 'apps',
+        data: {
+            title: 'Zebron | All apps',
+        },
+        loadComponent: () => import('./features/apps/pages/apps-directory.component').then((m) => m.AppsDirectoryComponent),
+    },
+    // -----------------------------------------------------
     // RESOURCES
     // -----------------------------------------------------
     {
@@ -1038,6 +1048,17 @@ export const routes: Routes = [
             title: 'Admin | Knowledge Article',
         },
         loadComponent: () => import('./features/admin/pages/knowledge/components/knowledge-article-detail/knowledge-article-detail.component').then((m) => m.KnowledgeArticleDetailComponent),
+    },
+    // -----------------------------------------------------
+    // ADMIN HELP ASSISTANT SETTINGS
+    // -----------------------------------------------------
+    {
+        path: 'admin/configuration/help-assistant',
+        canActivate: [adminGuard],
+        data: {
+            title: 'Admin | Help Assistant',
+        },
+        loadComponent: () => import('./features/admin/pages/help-assistant/help-assistant-settings.component').then((m) => m.HelpAssistantSettingsComponent),
     },
     // -----------------------------------------------------
     // ADMIN CONFIGURATION / CONTROL CENTER
