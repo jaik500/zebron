@@ -2458,6 +2458,34 @@ export {
   updateOrganizationBillingContact,
 } from "./organization-contracts";
 export {
+  auditAnnouncementChanges,
+  auditApplicationChanges,
+  auditContractChanges,
+  auditInvitationChanges,
+  auditLegacySettingsChanges,
+  auditMembershipChanges,
+  auditOnboardingChanges,
+  auditOrganizationChanges,
+  auditOrganizationSettingsChanges,
+  auditReceivedEmailChanges,
+  auditSentEmailChanges,
+  auditServiceRequestChanges,
+  auditTestCourseChanges,
+  auditTestProgramChanges,
+  auditTestQuestionChanges,
+  auditTestTopicChanges,
+} from "./organization-audit";
+export {
+  addSupportTicketMessage,
+  closeResolvedSupportTickets,
+  createSupportTicket,
+  getSupportTicket,
+  listAllSupportTickets,
+  listMySupportTickets,
+  listOrganizationSupportTickets,
+  updateSupportTicket,
+} from "./support-tickets";
+export {
   getOrganizationMemberDirectory,
   getOrganizationMemberProfile,
 } from "./organization-member-directory";

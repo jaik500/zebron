@@ -1249,6 +1249,31 @@ Mobile: Save icon only
 
                   <!-- Account options -->
                   <div class="divide-y divide-gray-200">
+                    <!-- Support tickets -->
+                    <div class="p-6">
+                      <p class="text-sm font-semibold text-gray-900">Support tickets</p>
+                      <p class="mt-1 text-sm leading-6 text-gray-500">
+                        Follow the issues and requests you've sent to Zebron, or open a new one.
+                      </p>
+                      <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+                        <a
+                          routerLink="/support"
+                          [queryParams]="{ tab: 'mine' }"
+                          class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-[#007979]/30"
+                        >
+                          <mat-icon class="!h-5 !w-5 !text-xl">confirmation_number</mat-icon>
+                          My tickets
+                        </a>
+                        <a
+                          routerLink="/support"
+                          class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
+                        >
+                          <mat-icon class="!h-5 !w-5 !text-xl">add</mat-icon>
+                          New request
+                        </a>
+                      </div>
+                    </div>
+
                     <!-- Change password -->
                     <div class="p-6">
                       <p

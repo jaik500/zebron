@@ -60,6 +60,9 @@ export const PARTNER_PERMISSIONS = {
   /** Contracts and billing (planned). */
   'billing.manage': 'org_manager',
 
+  /** Audit log on the Administration page. */
+  'audit.view': 'org_admin',
+
   /** Configuration card on the Administration page. */
   'organization.configure': 'org_admin',
 

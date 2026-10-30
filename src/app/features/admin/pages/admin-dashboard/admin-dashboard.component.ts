@@ -1009,6 +1009,13 @@ export class AdminDashboardComponent {
       icon: 'menu_book',
     },
     {
+      title: 'Support',
+      description: 'Answer support tickets from users and partner organizations, assign them and track their status.',
+      route: '/admin/support',
+      actionLabel: 'Open Support',
+      icon: 'support_agent',
+    },
+    {
       title: 'Partner Requests',
       description: 'Review partner requests for apps, suspensions, terminations and ownership transfers, and edit the partner agreement.',
       route: '/admin/organizations/requests',

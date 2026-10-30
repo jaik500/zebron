@@ -26,6 +26,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { AnnouncementManagerComponent } from '../../announcements/announcement-manager.component';
+import { OrganizationAuditLogComponent } from '../../audit/organization-audit-log.component';
 import {
   OrganizationMailboxService,
   organizationMailboxAddress,
@@ -66,7 +67,7 @@ interface RoleGroup {
 @Component({
   selector: 'app-organization-management',
   standalone: true,
-  imports: [RouterLink, FormsModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, AnnouncementManagerComponent],
+  imports: [RouterLink, FormsModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, AnnouncementManagerComponent, OrganizationAuditLogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="min-h-screen bg-gray-50 pt-14">
@@ -246,7 +247,7 @@ interface RoleGroup {
           }
 
           <!-- CONTRACT & BILLING and MAILBOX: side by side on larger screens -->
-          <div class="mb-8 grid gap-5 lg:grid-cols-2">
+          <div class="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           @if (canManageBilling()) {
             <a
               [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'contract']"
@@ -260,6 +261,26 @@ interface RoleGroup {
                   <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Zebron partnership</span>
                   <span class="mt-1 block text-lg font-bold text-gray-900">Contract & Billing</span>
                   <span class="mt-1 block text-sm text-gray-600">Your agreement, applications, billing contact and requests to Zebron.</span>
+                </span>
+              </span>
+              <mat-icon class="shrink-0 text-[#007979]">arrow_forward</mat-icon>
+            </a>
+          }
+
+          <!-- SUPPORT TICKETS: managers and above -->
+          @if (canManageBilling()) {
+            <a
+              [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'support']"
+              class="flex h-full items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md sm:px-6"
+            >
+              <span class="flex min-w-0 items-center gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-700">
+                  <mat-icon>confirmation_number</mat-icon>
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Zebron support</span>
+                  <span class="mt-1 block text-lg font-bold text-gray-900">Support Tickets</span>
+                  <span class="mt-1 block text-sm text-gray-600">Report issues, request services and track their status.</span>
                 </span>
               </span>
               <mat-icon class="shrink-0 text-[#007979]">arrow_forward</mat-icon>
@@ -887,6 +908,38 @@ interface RoleGroup {
               </div>
             }
           </section>
+
+          <!-- AUDIT LOG: admins and owners -->
+          @if (canViewAudit()) {
+            <section class="mt-8 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              <button
+                type="button"
+                class="flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition hover:bg-gray-50 sm:px-6"
+                [attr.aria-expanded]="auditExpanded()"
+                aria-controls="organization-audit-panel"
+                (click)="auditExpanded.set(!auditExpanded())"
+              >
+                <span class="flex min-w-0 items-center gap-3">
+                  <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                    <mat-icon>history</mat-icon>
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">Security & compliance</span>
+                    <span class="mt-1 block text-lg font-bold text-gray-900">Audit Log</span>
+                    <span class="mt-1 block text-sm text-gray-600">Every change made by your organization, by Zebron, and by the system.</span>
+                  </span>
+                </span>
+                <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[#007979]">
+                  <span class="hidden sm:inline">{{ auditExpanded() ? 'Collapse' : 'Expand' }}</span>
+                  <mat-icon>{{ auditExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </span>
+              </button>
+
+              @if (auditExpanded() && organizationStore.selectedOrganizationId(); as organizationId) {
+                <app-organization-audit-log id="organization-audit-panel" [organizationId]="organizationId"></app-organization-audit-log>
+              }
+            </section>
+          }
         }
       </div>
     </main>
@@ -905,6 +958,10 @@ export class OrganizationManagementComponent implements OnInit {
   protected readonly members = signal<OrganizationMembership[]>([]);
   protected readonly accessControlExpanded = signal(false);
   protected readonly announcementsExpanded = signal(false);
+
+  /** Audit log: admins and owners. */
+  protected readonly canViewAudit = computed(() => this.access.can('audit.view'));
+  protected readonly auditExpanded = signal(false);
 
   /** Contract & Billing: managers and above. */
   protected readonly canManageBilling = computed(() => this.access.can('billing.manage'));

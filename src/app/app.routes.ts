@@ -165,6 +165,24 @@ export const routes: Routes = [
     // -----------------------------------------------------
     // USER PROFILE
     // -----------------------------------------------------
+    // -----------------------------------------------------
+    // HELP & SUPPORT (public form; tickets need sign-in)
+    // -----------------------------------------------------
+    {
+        path: 'support',
+        data: {
+            title: 'Zebron | Help & Support',
+        },
+        loadComponent: () => import('./features/support/pages/support-home.component').then((m) => m.SupportHomeComponent),
+    },
+    {
+        path: 'support/tickets/:ticketId',
+        canActivate: [authGuard],
+        data: {
+            title: 'Zebron | Support Ticket',
+        },
+        loadComponent: () => import('./features/support/pages/support-ticket.component').then((m) => m.SupportTicketComponent),
+    },
     {
         path: 'profile',
         canActivate: [authGuard],
@@ -215,6 +233,14 @@ export const routes: Routes = [
     // ============================================================
     // ADMIN — ORGANIZATION APPLICATIONS
     // ============================================================
+    {
+        path: 'admin/support',
+        canActivate: [adminGuard],
+        data: {
+            title: 'Admin | Support',
+        },
+        loadComponent: () => import('./features/admin/pages/support/support-queue.component').then((m) => m.SupportQueueComponent),
+    },
     {
         path: 'admin/organizations/requests',
         canActivate: [adminGuard],
@@ -288,6 +314,19 @@ export const routes: Routes = [
             minimumOrganizationRole: 'org_manager',
         },
         loadComponent: () => import('./features/partner/mailbox/organization-mailbox.component').then((m) => m.OrganizationMailboxComponent),
+    },
+    {
+        path: 'partner/org/:organizationId/support',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            partnerRoleGuard,
+        ],
+        data: {
+            title: 'Partner | Support Tickets',
+            minimumOrganizationRole: 'org_manager',
+        },
+        loadComponent: () => import('./features/support/pages/organization-support.component').then((m) => m.OrganizationSupportComponent),
     },
     {
         path: 'partner/org/:organizationId/contract',

@@ -3532,6 +3532,58 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // SUPPORT TICKETS AND CONTRACTS (server-only)
+    // ============================================================
+
+    /*
+     * Support tickets, contracts and service requests are read and
+     * written only through Cloud Functions, which check who may see
+     * each record. Browsers have no direct access.
+     */
+    match /supportTickets/{ticketId} {
+      allow read, write: if false;
+
+      match /messages/{messageId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /counters/{counterId} {
+      allow read, write: if false;
+    }
+
+    match /organizationServiceRequests/{requestId} {
+      allow read, write: if false;
+    }
+
+    match /contractTerms/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /organizations/{organizationId}/contract/{contractId} {
+      allow read, write: if false;
+    }
+
+    // ============================================================
+    // ORGANIZATION AUDIT LOG
+    // ============================================================
+
+    /*
+     * Written only by the audit Cloud Function triggers.
+     * Organization admins and owners (and platform admins) can read
+     * their organization's log. Nobody can change or delete entries.
+     */
+    match /organizations/{organizationId}/auditLogs/{eventId} {
+      allow get, list: if isPlatformAdmin()
+        || (
+          isOrganizationConfigurable(organizationId)
+          && isOrganizationAdmin(organizationId)
+        );
+
+      allow create, update, delete: if false;
+    }
+
+    // ============================================================
     // ORGANIZATION ANNOUNCEMENTS (dashboard banners)
     // ============================================================
 
