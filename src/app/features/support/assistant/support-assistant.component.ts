@@ -22,7 +22,7 @@ import { DEFAULT_HELP_ASSISTANT_SETTINGS } from '../../../core/models/help-assis
 interface Citation {
   number: number;
   id: string;
-  kind: 'platform_article' | 'organization_article' | 'guide';
+  kind: 'platform_article' | 'organization_article' | 'guide' | 'profile';
   title: string;
   link: string | null;
   excerpt: string;
@@ -346,6 +346,7 @@ export class SupportAssistantComponent {
   }
 
   protected kindLabel(kind: Citation['kind']): string {
+    if (kind === 'profile') return 'Your account';
     return kind === 'organization_article' ? 'Your org' : kind === 'guide' ? 'Guide' : 'Zebron';
   }
 

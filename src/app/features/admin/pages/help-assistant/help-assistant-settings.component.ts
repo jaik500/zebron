@@ -461,6 +461,7 @@ export class HelpAssistantSettingsComponent implements OnInit {
   protected kindLabel(kind: string): string {
     if (kind === 'organization_article') return 'organization article';
     if (kind === 'guide') return 'built-in guide';
+    if (kind === 'profile') return 'your own account';
     return 'Zebron article';
   }
 

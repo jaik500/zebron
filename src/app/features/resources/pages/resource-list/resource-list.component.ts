@@ -49,7 +49,7 @@ import { MatButtonModule } from '@angular/material/button';
     <!-- =========================================================
          Page Header
          ========================================================= -->
-    <header class="sticky top-0 z-50 border-b border-gray-200 bg-[#032D42]">
+    <header class="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
       <div
         class="relative mx-auto flex max-w-7xl
                items-start justify-between gap-2
@@ -66,7 +66,7 @@ import { MatButtonModule } from '@angular/material/button';
             class="text-md
                    font-semibold uppercase
                    tracking-wider
-                   text-[#7ED6D1]
+                   text-white/80
                    sm:text-xs"
           >
             Resource Directory
@@ -87,7 +87,7 @@ import { MatButtonModule } from '@angular/material/button';
           <p
             class="mt-1 max-w-3xl
                    text-md leading-5
-                   text-blue-100
+                   text-white/85
                    sm:mt-2 sm:text-base
                    sm:leading-6
                    lg:text-lg

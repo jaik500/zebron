@@ -25,35 +25,39 @@ interface AppCard extends PublicApp {
   imports: [RouterLink, MatIconModule, TranslatePipe],
   template: `
     <!-- Hero -->
-    <section class="relative overflow-hidden bg-[#032D42] text-white">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#007979]/40 blur-3xl" aria-hidden="true"></div>
-      <div class="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-[#89D7B7]/20 blur-3xl" aria-hidden="true"></div>
+    <section class="relative overflow-hidden bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+      <div class="pointer-events-none absolute -right-16 -top-24 h-48 w-48 rounded-full bg-white/10 blur-3xl" aria-hidden="true"></div>
+      <div class="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full bg-[#89D7B7]/25 blur-3xl" aria-hidden="true"></div>
 
-      <div class="relative mx-auto max-w-7xl px-5 pb-14 pt-28 sm:px-6 lg:px-8">
-        <p class="text-sm font-bold uppercase tracking-wider text-[#89D7B7]">{{ 'Zebron apps' | t }}</p>
-        <h1 class="mt-2 max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl">{{ 'Everything Zebron offers, in one place.' | t }}</h1>
-        <p class="mt-4 max-w-2xl text-sm leading-6 text-white/80 sm:text-base">
-          {{ 'Find help, look for work or training, practise for exams, connect with others and use our free tools.' | t }}
-        </p>
+      <div class="relative mx-auto max-w-7xl px-5 pb-5 pt-20 sm:px-6 lg:px-8">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div class="min-w-0">
+            <p class="text-xs font-bold uppercase tracking-wider text-white/80">{{ 'Zebron apps' | t }}</p>
+            <h1 class="mt-1 text-xl font-bold tracking-tight sm:text-2xl">{{ 'Everything Zebron offers, in one place.' | t }}</h1>
+            <p class="mt-1 max-w-2xl text-sm text-white/85">
+              {{ 'Find help, look for work or training, practise for exams, connect with others and use our free tools.' | t }}
+            </p>
+          </div>
 
-        <div class="relative mt-8 max-w-xl">
-          <mat-icon class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 !text-slate-400" aria-hidden="true">search</mat-icon>
-          <input
-            type="search"
-            class="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-[15px] text-slate-900 shadow-lg outline-none ring-0 placeholder:text-slate-400 focus:ring-4 focus:ring-[#89D7B7]/50"
-            [placeholder]="'Search apps, for example jobs or tax' | t"
-            [attr.aria-label]="'Search apps' | t"
-            [value]="search()"
-            (input)="onSearch($event)"
-          />
+          <div class="relative w-full shrink-0 lg:w-[26rem]">
+            <mat-icon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 !text-slate-400" aria-hidden="true">search</mat-icon>
+            <input
+              type="search"
+              class="h-10 w-full rounded-lg border-0 bg-white pl-10 pr-3 text-sm text-slate-900 shadow outline-none ring-0 placeholder:text-slate-400 focus:ring-4 focus:ring-[#89D7B7]/50"
+              [placeholder]="'Search apps, for example jobs or tax' | t"
+              [attr.aria-label]="'Search apps' | t"
+              [value]="search()"
+              (input)="onSearch($event)"
+            />
+          </div>
         </div>
 
-        <nav class="mt-6 flex flex-wrap gap-2" [attr.aria-label]="'App groups' | t">
+        <nav class="mt-4 flex flex-wrap gap-1.5" [attr.aria-label]="'App groups' | t">
           @for (group of visibleGroups(); track group.key) {
             <a
               [href]="'#' + group.key"
               (click)="jumpTo($event, group.key)"
-              class="rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-sm text-white/90 transition hover:border-white/40 hover:bg-white/10"
+              class="rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-xs text-white transition hover:border-white/60 hover:bg-white/20"
             >
               {{ group.title | t }}
             </a>
@@ -64,7 +68,7 @@ interface AppCard extends PublicApp {
 
     <!-- Groups -->
     <div class="bg-slate-50">
-      <div class="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8">
         @if (visibleGroups().length === 0) {
           <div class="flex min-h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 text-center">
             <mat-icon class="text-slate-400" aria-hidden="true">search_off</mat-icon>

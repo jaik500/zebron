@@ -300,7 +300,7 @@ interface AdminDashboardCard {
              MANAGE CONTENT
              ======================================================= -->
         <section class="mt-1">
-          <div>
+          <div class="w-full">
             <p
               class="text-xs
                      font-semibold
@@ -311,23 +311,19 @@ interface AdminDashboardCard {
               Zebron Administration
             </p>
 
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <h2
-                class="text-xl
+                class="shrink-0 whitespace-nowrap
+                       text-xl
                        font-semibold
                        text-[#032D42]
                        sm:text-xl"
               >
                 Manage content
               </h2>
-              @if (favoriteRoutes().length) {
-                <p class="text-xs text-gray-500 sm:order-last sm:w-full">
-                  ★ {{ favoriteRoutes().length }} favorite{{ favoriteRoutes().length === 1 ? '' : 's' }} pinned to the top. Click a star to pin or unpin.
-                </p>
-              }
 
               <!-- Search the admin tools -->
-              <div class="relative w-full sm:max-w-sm">
+              <div class="relative w-full sm:w-96 sm:max-w-[50%] sm:shrink-0">
                 <mat-icon
                   class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 !text-gray-400"
                   aria-hidden="true"
@@ -349,6 +345,13 @@ interface AdminDashboardCard {
                 </span>
               </div>
             </div>
+
+            <!-- Favorites hint, below the search box -->
+            @if (favoriteRoutes().length) {
+              <p class="mt-2 text-xs text-gray-500 sm:text-right">
+                ★ {{ favoriteRoutes().length }} favorite{{ favoriteRoutes().length === 1 ? '' : 's' }} pinned to the top. Click a star to pin or unpin.
+              </p>
+            }
           </div>
 
           <!-- =====================================================

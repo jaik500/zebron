@@ -185,4 +185,7 @@ export const FR_COMMON: Readonly<Record<string, string>> = {
   "Select language": "Choisir la langue",
   "Language": "Langue",
   "Soon": "Bientôt",
+  "Your account": "Votre compte",
+  "Your org": "Votre organisation",
+  "Guide": "Guide",
 };
