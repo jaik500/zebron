@@ -1203,7 +1203,7 @@ export const routes: Routes = [
     // ADMIN KNOWLEDGE CENTER
     // -----------------------------------------------------
     {
-        path: 'admin/configuration/knowledge',
+        path: 'admin/knowledge',
         canActivate: [adminGuard],
         data: {
             title: 'Admin | Knowledge Center',
@@ -1211,7 +1211,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/pages/knowledge/knowledge-center.component').then((m) => m.KnowledgeCenterComponent),
     },
     {
-        path: 'admin/configuration/knowledge/new',
+        path: 'admin/knowledge/new',
         canActivate: [adminGuard],
         data: {
             title: 'Admin | New Knowledge Article',
@@ -1219,7 +1219,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/pages/knowledge/components/knowledge-article-editor/knowledge-article-editor.component').then((m) => m.KnowledgeArticleEditorComponent),
     },
     {
-        path: 'admin/configuration/knowledge/import-guide',
+        path: 'admin/knowledge/import-guide',
         canActivate: [adminGuard],
         data: {
             title: 'Admin | Import Guide Articles',
@@ -1227,7 +1227,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/pages/knowledge/guide-import/knowledge-guide-import.component').then((m) => m.KnowledgeGuideImportComponent),
     },
     {
-        path: 'admin/configuration/knowledge/:id/edit',
+        path: 'admin/knowledge/:id/edit',
         canActivate: [adminGuard],
         data: {
             title: 'Admin | Edit Knowledge Article',
@@ -1235,13 +1235,20 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/pages/knowledge/components/knowledge-article-editor/knowledge-article-editor.component').then((m) => m.KnowledgeArticleEditorComponent),
     },
     {
-        path: 'admin/configuration/knowledge/:id',
+        path: 'admin/knowledge/:id',
         canActivate: [adminGuard],
         data: {
             title: 'Admin | Knowledge Article',
+            header: 'Knowledge Center',
         },
-        loadComponent: () => import('./features/admin/pages/knowledge/components/knowledge-article-detail/knowledge-article-detail.component').then((m) => m.KnowledgeArticleDetailComponent),
+        loadComponent: () => import('./features/admin/pages/knowledge/knowledge-article-page.component').then((m) => m.KnowledgeArticlePageComponent),
     },
+    // Old addresses (before the Knowledge Center left Configuration).
+    { path: 'admin/configuration/knowledge', redirectTo: '/admin/knowledge', pathMatch: 'full' },
+    { path: 'admin/configuration/knowledge/new', redirectTo: '/admin/knowledge/new', pathMatch: 'full' },
+    { path: 'admin/configuration/knowledge/import-guide', redirectTo: '/admin/knowledge/import-guide', pathMatch: 'full' },
+    { path: 'admin/configuration/knowledge/:id/edit', redirectTo: '/admin/knowledge/:id/edit', pathMatch: 'full' },
+    { path: 'admin/configuration/knowledge/:id', redirectTo: '/admin/knowledge/:id', pathMatch: 'full' },
     // -----------------------------------------------------
     // ADMIN HELP ASSISTANT SETTINGS
     // -----------------------------------------------------

@@ -39,3 +39,49 @@ body {
   height: 100%;
 }
 /* You can add global styles to this file, and also import other style files */
+
+// Tables in Knowledge Center articles and blog posts (renderKnowledgeContent).
+.kc-table-wrap {
+  margin: 0 0 1rem;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.kc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  line-height: 1.5;
+
+  th,
+  td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background: #f0f7f7;
+    color: #032d42;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  tbody tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+
+  .kc-center {
+    text-align: center;
+  }
+
+  .kc-right {
+    text-align: right;
+  }
+}

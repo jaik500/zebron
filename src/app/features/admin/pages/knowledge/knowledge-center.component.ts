@@ -35,7 +35,7 @@ import { LoggerService } from '../../../../core/services/logger.service';
 import { MatDividerModule } from '@angular/material/divider';
 import { AuthService } from '../../../../core/services/auth.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -54,82 +54,117 @@ type KnowledgeStatusFilter = 'all' | KnowledgeArticleStatus;
     MatMenuModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, KnowledgeReportsPanelComponent],
+    MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, KnowledgeReportsPanelComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto w-full max-w-7xl min-w-0 px-4 pb-12 pt-20 sm:px-6">
-      <!-- Header -->
-      <header class="flex min-w-0 flex-col gap-4 border-b border-slate-200 pb-6 lg:flex-row lg:items-end lg:justify-between">
-        <div class="min-w-0">
-          <nav class="flex items-center gap-1 text-xs font-medium text-slate-500" aria-label="Breadcrumb">
-            <span>Admin</span>
-            <mat-icon class="!h-4 !w-4 !text-[16px] text-slate-400" aria-hidden="true">chevron_right</mat-icon>
-            <span>Configuration</span>
-            <mat-icon class="!h-4 !w-4 !text-[16px] text-slate-400" aria-hidden="true">chevron_right</mat-icon>
-            <span class="text-slate-700">Knowledge Center</span>
-          </nav>
+    <!-- Page header: breadcrumbs, search (phones: toggled by the search icon) and actions -->
+    <header class="mt-16 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+      <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 sm:flex-nowrap sm:px-6">
+        <nav class="flex min-w-0 flex-1 items-center gap-1 text-sm sm:flex-none" aria-label="Breadcrumb">
+          <a routerLink="/admin" class="shrink-0 text-white/80 hover:text-white hover:underline">Admin</a>
+          <mat-icon class="!h-4 !w-4 shrink-0 !text-[16px] text-white/60" aria-hidden="true">chevron_right</mat-icon>
+          <span class="truncate font-semibold" aria-current="page">Knowledge Center</span>
+        </nav>
 
-          <div class="mt-3 flex items-center gap-3">
-            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#2a835f] text-white shadow-sm">
-              <mat-icon aria-hidden="true">menu_book</mat-icon>
-            </div>
-            <div class="min-w-0">
-              <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Knowledge Center</h1>
-              <p class="mt-0.5 text-sm text-slate-500">
-                Documentation, guides, troubleshooting and learning material for partners, Zebron support and the help assistant.
-              </p>
-            </div>
-          </div>
+        <!-- Search: in the header on tablets and desktops; on phones, on its own line when opened -->
+        <div class="order-last w-full sm:order-none sm:mx-auto sm:w-auto sm:max-w-md sm:flex-1" [ngClass]="{ 'max-sm:hidden': !mobileSearchOpen() }">
+          <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-search" subscriptSizing="dynamic">
+            <mat-label>Search</mat-label>
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+            <input
+              matInput
+              id="knowledge-search"
+              type="search"
+              placeholder="Search title, text or tag"
+              autocomplete="off"
+              [value]="searchTerm()"
+              (input)="onSearch($event)"
+            />
+            @if (searchTerm()) {
+              <button
+                matSuffix
+                type="button"
+                (click)="searchTerm.set('')"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Clear search"
+                title="Clear search"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+          </mat-form-field>
         </div>
 
-        <div class="flex shrink-0 flex-wrap gap-2">
-          <button mat-stroked-button type="button" class="!rounded-lg" (click)="importGuide()">
-            <mat-icon>library_add</mat-icon>
-            <span>Import guide articles</span>
+        <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+          <!-- Phones: show or hide the search bar -->
+          <button
+            type="button"
+            (click)="mobileSearchOpen.set(!mobileSearchOpen())"
+            aria-controls="knowledge-search"
+            [attr.aria-expanded]="mobileSearchOpen()"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white sm:hidden"
+            [ngClass]="{ 'bg-white/15': mobileSearchOpen() }"
+            [attr.aria-label]="mobileSearchOpen() ? 'Hide search' : 'Search'"
+            [title]="mobileSearchOpen() ? 'Hide search' : 'Search'"
+          >
+            <mat-icon aria-hidden="true">{{ mobileSearchOpen() ? 'search_off' : 'search' }}</mat-icon>
           </button>
-          <button mat-flat-button color="primary" type="button" class="!rounded-lg" (click)="createArticle()">
-            <mat-icon>add</mat-icon>
-            <span>New article</span>
+
+          <button
+            type="button"
+            (click)="importGuide()"
+            class="inline-flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-white/90 transition hover:bg-white/15 hover:text-white sm:border sm:border-white/30 sm:px-3"
+            aria-label="Import guide articles"
+            title="Import guide articles"
+          >
+            <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">library_add</mat-icon>
+            <span class="hidden lg:inline">Import guide</span>
+          </button>
+
+          <button
+            type="button"
+            (click)="createArticle()"
+            class="inline-flex h-9 items-center gap-1 rounded-lg bg-white px-3 text-sm font-bold text-[#007979] shadow-sm transition hover:bg-teal-50"
+          >
+            <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">add</mat-icon>
+            <span class="hidden sm:inline">New article</span>
+            <span class="sm:hidden">New</span>
           </button>
         </div>
-      </header>
+      </div>
+    </header>
 
+    <section class="mx-auto w-full max-w-7xl min-w-0 px-4 pb-12 pt-4 sm:px-6">
       <!-- Reports from readers on Zebron articles -->
-      <div class="mt-6">
+      <div>
         <app-knowledge-reports-panel [organizationId]="null" />
       </div>
 
       <!-- Summary -->
-      <div class="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
+      <div class="grid min-w-0 grid-cols-4 gap-2 sm:gap-3">
         @for (card of summaryCards(); track card.key) {
           <button
             type="button"
             [class]="statusFilter() === card.key
-              ? 'group min-w-0 rounded-xl border border-[#2a835f] bg-white p-4 text-left shadow-sm ring-2 ring-[#2a835f]/15 transition'
-              : 'group min-w-0 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-slate-300 hover:shadow'"
+              ? 'group min-w-0 rounded-xl border border-[#2a835f] bg-white px-1 py-2.5 text-center shadow-sm ring-2 ring-[#2a835f]/15 transition sm:p-4 sm:text-left'
+              : 'group min-w-0 rounded-xl border border-slate-200 bg-white px-1 py-2.5 text-center shadow-sm transition hover:border-slate-300 hover:shadow sm:p-4 sm:text-left'"
             [attr.aria-pressed]="statusFilter() === card.key"
             (click)="selectStatus(card.key)"
           >
-            <div class="flex items-center justify-between gap-2">
-              <span class="truncate text-xs font-semibold uppercase tracking-wider text-slate-500">{{ card.label }}</span>
-              <span [class]="'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ' + card.tone">
+            <div class="flex items-center justify-center gap-2 sm:justify-between">
+              <span class="truncate text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:text-xs sm:tracking-wider">{{ card.label }}</span>
+              <span [class]="'hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:flex ' + card.tone">
                 <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">{{ card.icon }}</mat-icon>
               </span>
             </div>
-            <div class="mt-2 text-3xl font-semibold tabular-nums text-slate-900">{{ card.value }}</div>
+            <div class="mt-1 text-xl font-semibold tabular-nums text-slate-900 sm:mt-2 sm:text-3xl">{{ card.value }}</div>
           </button>
         }
       </div>
 
       <!-- Toolbar -->
-      <section class="mt-6 min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div class="grid min-w-0 grid-cols-1 gap-x-3 md:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
-          <mat-form-field appearance="outline" class="zb-field zb-search">
-            <mat-label>Search</mat-label>
-            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
-            <input matInput type="search" placeholder="Title, text or tag" [value]="searchTerm()" (input)="onSearch($event)" />
-          </mat-form-field>
-
+      <section class="mt-4 min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="grid min-w-0 grid-cols-1 gap-x-3 md:grid-cols-3">
           <mat-form-field appearance="outline" class="zb-field">
             <mat-label>Application</mat-label>
             <mat-select [value]="applicationKey()" (selectionChange)="onApplicationChange($event.value)">
@@ -405,6 +440,9 @@ export class KnowledgeCenterComponent implements OnInit {
 
   readonly searchTerm = signal('');
 
+  /** Phones only: the search bar is hidden until the search icon is tapped. */
+  readonly mobileSearchOpen = signal(false);
+
   readonly applicationKey = signal('');
 
   readonly contentType = signal<KnowledgeContentType | ''>('');
@@ -579,7 +617,7 @@ export class KnowledgeCenterComponent implements OnInit {
 
 importGuide(): void {
   void this.router.navigate([
-    '/admin/configuration/knowledge/import-guide',
+    '/admin/knowledge/import-guide',
   ]);
 }
 
@@ -590,7 +628,7 @@ createArticle(): void {
   );
 
   void this.router.navigate([
-    '/admin/configuration/knowledge/new',
+    '/admin/knowledge/new',
   ]);
 }
 
@@ -601,7 +639,7 @@ viewArticle(article: KnowledgeArticle): void {
   );
 
   void this.router.navigate([
-    '/admin/configuration/knowledge',
+    '/admin/knowledge',
     article.id,
   ]);
 }
@@ -613,7 +651,7 @@ viewArticle(article: KnowledgeArticle): void {
   );
 
   void this.router.navigate([
-    '/admin/configuration/knowledge',
+    '/admin/knowledge',
     article.id,
     'edit',
   ]);
@@ -655,7 +693,7 @@ viewArticle(article: KnowledgeArticle): void {
     );
 
     await this.router.navigate([
-      '/admin/configuration/knowledge',
+      '/admin/knowledge',
       draft.id,
       'edit',
     ]);

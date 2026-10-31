@@ -12,6 +12,8 @@ import {
   onCall,
 } from "firebase-functions/v2/https";
 
+import { createHash } from "node:crypto";
+
 import { HelpAssistantSettings, getHelpAssistantSettings } from "./help-assistant-settings";
 import { isPlatformAdministrator } from "./platform-admin-authorization";
 
@@ -34,6 +36,17 @@ import { isPlatformAdministrator } from "./platform-admin-authorization";
  * Nothing from another organization is ever retrieved, and the model is
  * told to answer only from the sources provided.
  *
+ * Who can ask, and what they get:
+ * - Guests (not signed in): articles for everyone ("all" audience) and
+ *   the built-in Zebron overview, to learn what Zebron offers. Limited
+ *   per network address, at most GUEST_HOURLY_LIMIT questions an hour.
+ * - Signed-in people outside an organization page: everyone and member
+ *   articles about any Zebron application.
+ * - Organization pages: that organization's articles and its applications'
+ *   Zebron articles, filtered by their role there.
+ * - Zebron platform administrators: everything, including support and
+ *   developer articles.
+ *
  * Setup: create a free key at https://aistudio.google.com/app/apikey and
  *   firebase functions:secrets:set GEMINI_API_KEY
  *
@@ -49,6 +62,7 @@ const MAX_QUESTION = 1000;
 const MAX_HISTORY = 6;
 const MAX_ARTICLES_PER_SOURCE = 300;
 const CACHE_MS = 5 * 60 * 1000;
+const GUEST_HOURLY_LIMIT = 15;
 
 const ROLE_RANK: Record<string, number> = {
   org_member: 1,
@@ -85,7 +99,10 @@ interface MembershipSummary {
 }
 
 interface Scope {
+  /** Firebase uid, or "guest_<hash of the network address>" for guests. */
   uid: string;
+  /** Not signed in. */
+  isGuest: boolean;
   name: string;
   fullName: string;
   email: string;
@@ -114,6 +131,29 @@ interface Guide {
 }
 
 const org = (id: string | null, path: string) => (id ? `/partner/org/${id}/${path}` : null);
+
+/** What Zebron is and offers; available to everyone, including guests. */
+const ZEBRON_OVERVIEW: Source = {
+  id: "guide:zebron-overview",
+  kind: "guide",
+  title: "What Zebron offers",
+  summary: "Zebron connects people with resources, jobs, training and organizations, all in one place.",
+  content:
+    "Zebron helps people discover resources, organizations, jobs, training and opportunities in one place. Most of it is free and open without an account. " +
+    "Resources directory (/resources): services for food, housing, health, legal help, money and more, near you or online. " +
+    "Resource Finder (/find): answer a few questions and get matched to resources, jobs and training. " +
+    "Job Finder (/find/job) and Training Finder (/find/training): job openings, bootcamps, courses and programs. " +
+    "Test Center (/test-center): practice quizzes and exam simulations to prepare for certifications. " +
+    "Community (/community): ask questions and connect with people and organizations (sign in required). " +
+    "Knowledge Center (/knowledge): guides and answers about Zebron. Zebron Blog (/blog): career advice, skills and Zebron news. " +
+    "Tax & Pay Calculator (/tax-calculator): estimate take-home pay. All apps (/apps) lists everything. " +
+    "Creating an account is free: use Register (/register) or Sign in (/login). " +
+    "Organizations such as schools, nonprofits and companies can apply (/organizations/apply) to use Community, Test Center, Knowledge Center and a private blog with their members, with roles from Member to Owner. " +
+    "Questions or partnerships: Contact us (/contact). To support the work: Donate (/donate).",
+  tags: ["zebron", "about", "what is", "help me", "free", "account", "register", "sign up", "resources", "jobs", "training", "organization", "apply", "apps", "start"],
+  applicationKey: "platform",
+  link: "/apps",
+};
 
 const GUIDES: Guide[] = [
   {
@@ -259,14 +299,14 @@ export const askSupportAssistant = onCall(
       throw new HttpsError("failed-precondition", "The help assistant is turned off right now. Open a support ticket and the Zebron team will help.");
     }
 
-    await enforceRateLimit(scope.uid, settings.hourlyLimit);
+    await enforceRateLimit(scope.uid, scope.isGuest ? Math.min(settings.hourlyLimit, GUEST_HOURLY_LIMIT) : settings.hourlyLimit);
 
     const candidates = await loadSources(scope, settings);
     const searchText = [question, ...history.filter((item) => item.role === "user").map((item) => item.text).slice(-2)].join(" ");
 
     // Questions about the person themselves ("what is my role?", "which
     // organizations am I in?") are answered from their own account, first.
-    const aboutMe = isAboutMe(question);
+    const aboutMe = !scope.isGuest && isAboutMe(question);
     const ranked = aboutMe ?
       [profileSource(scope), ...rank(candidates, searchText)].slice(0, settings.maxSources) :
       rank(candidates, searchText).slice(0, settings.maxSources);
@@ -299,6 +339,10 @@ export const askSupportAssistant = onCall(
       answer = profileAnswer(scope);
     }
 
+    if (!answer && scope.isGuest && isAboutMe(question)) {
+      answer = "You're browsing Zebron as a guest. Sign in (or create a free account) to see your own account, roles and organizations.";
+    }
+
     if (!answer) {
       answer = ranked.length > 0 ?
         "Here's what I found that should help. Open a source for the full steps." :
@@ -314,7 +358,7 @@ export const askSupportAssistant = onCall(
       suggestTicket,
       scope: {
         organizationName: scope.organizationName,
-        role: scope.role ? ROLE_LABELS[scope.role] ?? scope.role : scope.isPlatformAdmin ? "Zebron admin" : null,
+        role: scope.role ? ROLE_LABELS[scope.role] ?? scope.role : scope.isPlatformAdmin ? "Zebron admin" : scope.isGuest ? "Guest" : null,
       },
     };
   },
@@ -328,7 +372,7 @@ async function resolveScope(request: CallableRequest<unknown>, organizationId: s
   const uid = request.auth?.uid;
 
   if (!uid) {
-    throw new HttpsError("unauthenticated", "Sign in to use the assistant.");
+    return guestScope(request);
   }
 
   const db = getFirestore();
@@ -395,6 +439,7 @@ async function resolveScope(request: CallableRequest<unknown>, organizationId: s
 
   return {
     uid,
+    isGuest: false,
     name,
     fullName,
     email,
@@ -406,6 +451,29 @@ async function resolveScope(request: CallableRequest<unknown>, organizationId: s
     rank,
     audiences,
     activeApplications,
+  };
+}
+
+/** Visitors who are not signed in: everyone-level content only. */
+function guestScope(request: CallableRequest<unknown>): Scope {
+  const forwarded = clean(request.rawRequest?.headers?.["x-forwarded-for"]?.toString()).split(",")[0];
+  const address = forwarded || clean(request.rawRequest?.ip) || "unknown";
+
+  return {
+    // A hash, so the network address itself is never stored.
+    uid: `guest_${createHash("sha256").update(address).digest("hex").slice(0, 24)}`,
+    isGuest: true,
+    name: "",
+    fullName: "",
+    email: "",
+    memberships: [],
+    isPlatformAdmin: false,
+    organizationId: null,
+    organizationName: null,
+    role: null,
+    rank: 0,
+    audiences: ["all"],
+    activeApplications: new Set<string>(["platform"]),
   };
 }
 
@@ -457,10 +525,13 @@ async function loadSources(scope: Scope, settings: HelpAssistantSettings): Promi
   const allowed = (source: Source & { audience: string[] }) =>
     source.audience.length === 0 || source.audience.some((audience) => scope.audiences.includes(audience));
 
-  // Platform articles about an application only when the organization has it
-  // (or when there is no organization context, platform-level articles only).
+  // On an organization page, Zebron articles about an application only when
+  // the organization has it. Elsewhere (guests, the public site), articles
+  // about any Zebron application, still filtered by audience.
   const platformVisible = platform.filter(
-    (source) => allowed(source) && (scope.isPlatformAdmin || source.applicationKey === "platform" || scope.activeApplications.has(source.applicationKey)),
+    (source) =>
+      allowed(source) &&
+      (scope.isPlatformAdmin || !scope.organizationId || source.applicationKey === "platform" || scope.activeApplications.has(source.applicationKey)),
   );
 
   const organizationVisible = organization.filter(allowed);
@@ -476,7 +547,7 @@ async function loadSources(scope: Scope, settings: HelpAssistantSettings): Promi
       applicationKey: "platform",
       link: guide.link(scope.organizationId),
     })) :
-    GUIDES.filter((guide) => ["tickets", "profile"].includes(guide.id)).map((guide) => ({
+    scope.isGuest ? [] : GUIDES.filter((guide) => ["tickets", "profile"].includes(guide.id)).map((guide) => ({
       id: `guide:${guide.id}`,
       kind: "guide",
       title: guide.title,
@@ -487,7 +558,7 @@ async function loadSources(scope: Scope, settings: HelpAssistantSettings): Promi
       link: guide.link(null),
     }));
 
-  return [...organizationVisible, ...platformVisible, ...guides];
+  return [...organizationVisible, ...platformVisible, ...guides, ZEBRON_OVERVIEW];
 }
 
 async function cachedArticles(
@@ -633,13 +704,17 @@ async function generate(
     .map((source, index) => `[${index + 1}] ${source.title}\n${(source.summary ? `${source.summary}\n` : "") + source.content.slice(0, 3500)}`)
     .join("\n\n---\n\n");
 
-  const who = [
-    scope.organizationName ? `They are in the organization "${scope.organizationName}"` : "They are not in an organization context",
-    scope.role ? `with the role ${ROLE_LABELS[scope.role] ?? scope.role}` : scope.isPlatformAdmin ? "and are a Zebron platform administrator" : "",
-  ].filter(Boolean).join(" ");
+  const who = scope.isGuest ?
+    "They are a visitor who is not signed in. Help them understand what Zebron offers and how it can help them, and point them to the right page. " +
+      "For anything about an account, an organization or a role, invite them to sign in or create a free account; never describe admin or internal tools to them" :
+    [
+      scope.organizationName ? `They are signed in and in the organization "${scope.organizationName}"` : "They are signed in to Zebron, not on an organization page",
+      scope.role ? `with the role ${ROLE_LABELS[scope.role] ?? scope.role}` : "",
+      scope.isPlatformAdmin ? "and are a Zebron platform administrator with access to every organization" : "",
+    ].filter(Boolean).join(" ");
 
   const instructions =
-    "You are the Zebron support assistant inside the Zebron partner portal. " +
+    "You are the Zebron help assistant on the Zebron website and partner portal. " +
     `${who}. ` +
     "Answer ONLY using the numbered sources below. Cite sources inline like [1] or [2]. " +
     "If the sources don't contain the answer, say so briefly and suggest opening a support ticket; do not guess or invent steps, features, prices or policies. " +

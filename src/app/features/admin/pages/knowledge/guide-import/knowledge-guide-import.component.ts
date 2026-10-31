@@ -53,7 +53,7 @@ const OUTCOME_LABELS: Record<ImportOutcome, string> = {
   imports: [RouterLink, MatButtonModule, MatIconModule, MatProgressBarModule],
   template: `
     <div class="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-5 px-4 py-6">
-      <a routerLink="/admin/configuration/knowledge" class="inline-flex items-center gap-1 text-sm text-[#2a835f] hover:underline">
+      <a routerLink="/admin/knowledge" class="inline-flex items-center gap-1 text-sm text-[#2a835f] hover:underline">
         <mat-icon class="!h-4 !w-4 !text-[16px]">arrow_back</mat-icon>
         Knowledge Center
       </a>

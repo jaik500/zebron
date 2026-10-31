@@ -180,7 +180,7 @@ export const CONFIGURATION_FEATURES: ConfigurationFeature[] = [
       'Manage Community documentation, guides, and troubleshooting articles.',
     icon: 'menu_book',
     type: 'knowledge',
-    route: '/admin/configuration/knowledge',
+    route: '/admin/knowledge',
     keywords: [
       'community',
       'knowledge',
@@ -263,7 +263,7 @@ export const CONFIGURATION_FEATURES: ConfigurationFeature[] = [
       'Manage Tax & Pay documentation and troubleshooting guides.',
     icon: 'menu_book',
     type: 'knowledge',
-    route: '/admin/configuration/knowledge',
+    route: '/admin/knowledge',
     keywords: [
       'tax',
       'pay',
@@ -325,7 +325,7 @@ export const CONFIGURATION_FEATURES: ConfigurationFeature[] = [
       'Manage Resource Center documentation and support articles.',
     icon: 'menu_book',
     type: 'knowledge',
-    route: '/admin/configuration/knowledge',
+    route: '/admin/knowledge',
     keywords: [
       'resources',
       'knowledge',
@@ -387,7 +387,7 @@ export const CONFIGURATION_FEATURES: ConfigurationFeature[] = [
       'Manage Content documentation, editorial guides, and troubleshooting articles.',
     icon: 'menu_book',
     type: 'knowledge',
-    route: '/admin/configuration/knowledge',
+    route: '/admin/knowledge',
     keywords: [
       'content',
       'knowledge',

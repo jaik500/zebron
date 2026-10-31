@@ -219,7 +219,7 @@ const CUSTOM_MODEL = '__custom__';
               <div class="flex items-start justify-between gap-4 pb-4">
                 <div class="min-w-0">
                   <p class="font-medium text-slate-800">Zebron Knowledge Center articles</p>
-                  <p class="text-sm text-slate-500">Published articles from <a routerLink="/admin/configuration/knowledge" class="text-[#007979] hover:underline">Admin → Knowledge Center</a>, by audience and the organization's applications.</p>
+                  <p class="text-sm text-slate-500">Published articles from <a routerLink="/admin/knowledge" class="text-[#007979] hover:underline">Admin → Knowledge Center</a>, by audience and the organization's applications.</p>
                 </div>
                 <mat-slide-toggle [(ngModel)]="form.sources.platformArticles" (ngModelChange)="touch()" aria-label="Zebron Knowledge Center articles"></mat-slide-toggle>
               </div>

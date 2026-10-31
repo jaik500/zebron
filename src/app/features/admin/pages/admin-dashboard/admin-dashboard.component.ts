@@ -1172,7 +1172,7 @@ export class AdminDashboardComponent {
     {
       title: 'Knowledge',
       description: 'Create, manage, publish, and maintain Zebron knowledge articles.',
-      route: '/admin/configuration/knowledge',
+      route: '/admin/knowledge',
       actionLabel: 'Manage Knowledge',
       icon: 'menu_book',
     },

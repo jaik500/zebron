@@ -197,7 +197,7 @@ const DEFAULT_FEATURES: FeatureConfig[] = [
     core: false,
     dependencies: ['core'],
     icon: 'menu_book',
-    route: '/admin/configuration/knowledge',
+    route: '/admin/knowledge',
     version: '1.0.0',
   },
 

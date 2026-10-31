@@ -7,6 +7,8 @@
  *   **bold**, *italic*, `code`, [link](https://...)
  *   ``` fenced code blocks ```
  *   > quote
+ *   | Column | Column |   tables: a header row, a separator row
+ *   | ------ | -----: |   (:--- left, :---: centre, ---: right), then rows
  *
  * All text is HTML-escaped first, and only https/mailto links are
  * turned into anchors, so the output is safe to bind with [innerHTML].
@@ -42,6 +44,40 @@ function inline(text: string): string {
   return html.replace(/\u0000(\d+)\u0000/g, (_match, index: string) => codes[Number(index)] ?? '');
 }
 
+/** Splits "| a | b |" into ["a", "b"]; "\\|" stays a literal pipe. */
+function tableCells(row: string): string[] {
+  const body = row.trim().replace(/^\|/, '').replace(/\|$/, '');
+  return body
+    .replace(/\\\|/g, '\u0001')
+    .split('|')
+    .map((cell) => cell.replace(/\u0001/g, '|').trim());
+}
+
+function isTableRow(line: string): boolean {
+  return line.includes('|');
+}
+
+function isTableSeparator(line: string): boolean {
+  return /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?$/.test(line.trim());
+}
+
+function renderTable(header: string[], alignments: string[], rows: string[][]): string {
+  const columns = header.length;
+  const align = (index: number) => {
+    const value = alignments[index] ?? '';
+    return value ? ` class="kc-${value}"` : '';
+  };
+  const cells = (row: string[], tag: 'th' | 'td') =>
+    Array.from({ length: columns }, (_unused, index) => `<${tag}${align(index)}>${inline(row[index] ?? '')}</${tag}>`).join('');
+
+  return (
+    '<div class="kc-table-wrap"><table class="kc-table">' +
+    `<thead><tr>${cells(header, 'th')}</tr></thead>` +
+    `<tbody>${rows.map((row) => `<tr>${cells(row, 'td')}</tr>`).join('')}</tbody>` +
+    '</table></div>'
+  );
+}
+
 export function renderKnowledgeContent(source: string): string {
   const lines = (source ?? '').replace(/\r\n?/g, '\n').split('\n');
   const out: string[] = [];
@@ -62,7 +98,9 @@ export function renderKnowledgeContent(source: string): string {
     }
   };
 
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+
     if (code) {
       if (line.trim().startsWith('```')) {
         out.push(`<pre><code>${escapeHtml(code.join('\n'))}</code></pre>`);
@@ -85,6 +123,28 @@ export function renderKnowledgeContent(source: string): string {
     if (!trimmed) {
       closeParagraph();
       closeList();
+      continue;
+    }
+
+    // Table: a row with pipes followed by a separator row (| --- | --- |).
+    if (isTableRow(trimmed) && index + 1 < lines.length && isTableSeparator(lines[index + 1])) {
+      closeParagraph();
+      closeList();
+
+      const header = tableCells(trimmed);
+      const alignments = tableCells(lines[index + 1]).map((cell) =>
+        cell.startsWith(':') && cell.endsWith(':') ? 'center' : cell.endsWith(':') ? 'right' : '',
+      );
+      const rows: string[][] = [];
+
+      index += 2;
+      while (index < lines.length && lines[index].trim() && isTableRow(lines[index])) {
+        rows.push(tableCells(lines[index]));
+        index++;
+      }
+      index--; // the for loop moves on to the line after the table
+
+      out.push(renderTable(header, alignments, rows));
       continue;
     }
 
@@ -136,7 +196,7 @@ export function renderKnowledgeContent(source: string): string {
 export function knowledgeExcerpt(article: { summary?: string; content: string }, length = 180): string {
   const text = (article.summary?.trim() || article.content)
     .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/[#>*`_[\]()-]/g, ' ')
+    .replace(/[#>*`_[\]()|:-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 

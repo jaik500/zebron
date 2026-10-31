@@ -256,6 +256,7 @@ interface FormatTool {
               <section class="rounded-xl border border-slate-200 bg-white p-4 text-xs leading-5 text-slate-500">
                 <h2 class="mb-2 font-semibold uppercase tracking-wider">{{ 'Formatting' | t }}</h2>
                 <p># {{ 'Section heading' | t }} · **{{ 'bold' | t }}** · *{{ 'italic' | t }}* · - {{ 'list' | t }} · > {{ 'quote' | t }} · [text](https://…)</p>
+                <p class="mt-1">{{ 'Table' | t }}: | A | B | {{ 'then' | t }} | --- | --- | {{ 'then one row per line' | t }}</p>
               </section>
             </aside>
           </div>

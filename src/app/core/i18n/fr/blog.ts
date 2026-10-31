@@ -127,4 +127,7 @@ export const FR_BLOG: Readonly<Record<string, string>> = {
   "This post could not be loaded. Please try again.": "Cet article n’a pas pu être chargé. Veuillez réessayer.",
   "The post could not be saved. Please try again.": "L’article n’a pas pu être enregistré. Veuillez réessayer.",
   "Posts could not be loaded. Please try again.": "Les articles n’ont pas pu être chargés. Veuillez réessayer.",
+  "Table": "Tableau",
+  "then": "puis",
+  "then one row per line": "puis une ligne par rangée",
 };
