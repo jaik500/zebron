@@ -323,7 +323,7 @@ interface AdminDashboardCard {
               </h2>
 
               <!-- Search the admin tools -->
-              <div class="relative w-full sm:w-96 sm:max-w-[50%] sm:shrink-0">
+              <div class="relative w-full sm:w-[36rem] sm:max-w-[65%] sm:shrink-0">
                 <mat-icon
                   class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 !text-gray-400"
                   aria-hidden="true"

@@ -445,7 +445,7 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
       <div class="px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400" (click)="$event.stopPropagation()">Zebron</div>
 
       <!-- Zebron (platform) apps -->
-      @for (item of navigationService.visibleItems(); track item.key) {
+      @for (item of platformMenuItems(); track item.key) {
           <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="navigateTo(item.route)">
             <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">{{ item.icon }}</mat-icon>
             <span class="text-sm">{{ item.label }}</span>
@@ -475,16 +475,17 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
       <mat-divider></mat-divider>
 
       @if (isSignedIn()) {
-        <!-- Account (once) -->
-        <div class="px-4 pb-1 pt-2" (click)="$event.stopPropagation()">
-          <div class="truncate text-sm font-semibold text-[#032D42]">{{ accountName() }}</div>
-          @if (currentOrganization()?.roleLabel; as role) {
-            <div class="text-xs text-gray-500">{{ role }}</div>
-          }
-        </div>
-        <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="navigateTo('/profile')">
+        <!-- Account: the user's name opens their profile -->
+        <button
+          mat-menu-item
+          type="button"
+          class="!h-9 !min-h-9"
+          (click)="navigateTo('/profile')"
+          [attr.aria-label]="'Profile: ' + accountName()"
+          title="View your profile"
+        >
           <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">account_circle</mat-icon>
-          <span class="text-sm">Profile</span>
+          <span class="block max-w-48 truncate text-sm font-semibold">{{ accountName() }}</span>
         </button>
         <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="signOut()">
           <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">logout</mat-icon>
@@ -515,6 +516,16 @@ export class ZebronHeaderComponent {
   // SERVICES
   // =========================================================
  
+  /**
+   * Platform links in the menu. Tax & Pay Calculator and Learning Lab
+   * stay reachable from All apps, not from this menu.
+   */
+  private static readonly HIDDEN_MENU_KEYS = new Set(['tax-calculator', 'learning-lab']);
+
+  protected readonly platformMenuItems = computed(() =>
+    this.navigationService.visibleItems().filter((item) => !ZebronHeaderComponent.HIDDEN_MENU_KEYS.has(item.key)),
+  );
+
   protected readonly navigationService =
     inject(NavigationService);
  

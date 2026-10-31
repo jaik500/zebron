@@ -456,7 +456,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
               <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 @for (card of visibleDashboardCards(); track card.id) {
                   <div
-                    class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm
+                    class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm
          transition-all hover:-translate-y-0.5 hover:border-[#007979]/40
          hover:shadow-md
          focus-within:ring-2 focus-within:ring-[#007979]
@@ -472,9 +472,9 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                         [class.pointer-events-none]="!card.enabled"
                       >
                         <div
-                          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 transition-colors group-hover:bg-[#007979]"
+                          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 text-[#007979] transition-colors group-hover:bg-[#007979] group-hover:text-white"
                         >
-                          <mat-icon class="text-white">{{ card.icon }}</mat-icon>
+                          <mat-icon>{{ card.icon }}</mat-icon>
                         </div>
 
                         <h3 class="min-w-0 flex-1 self-center text-lg font-bold text-gray-900">
@@ -517,7 +517,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                       [routerLink]="card.enabled ? dashboardCardRoute(card) : null"
                       tabindex="-1"
                       aria-hidden="true"
-                      class="mt-4 block text-sm leading-6 text-gray-500 focus:outline-none"
+                      class="mt-3 block text-sm leading-6 text-gray-500 focus:outline-none"
                       [class.pointer-events-none]="!card.enabled"
                     >
                       {{ card.description | t }}
@@ -553,23 +553,22 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
               <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 <a
                   [routerLink]="administrationRoute()"
-                  class="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
+                  class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
                 >
-                  <div class="flex items-start justify-between">
+                  <!-- Icon and title on one row -->
+                  <div class="flex items-center gap-3">
                     <div
-                      class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#007979]/10 transition-colors group-hover:bg-[#007979]"
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 text-[#007979] transition-colors group-hover:bg-[#007979] group-hover:text-white"
                     >
-                      <mat-icon class="text-white"> admin_panel_settings </mat-icon>
+                      <mat-icon>admin_panel_settings</mat-icon>
                     </div>
 
-                    <mat-icon class="text-gray-300 transition-colors group-hover:text-[#007979]">
-                      arrow_forward
-                    </mat-icon>
+                    <h3 class="min-w-0 flex-1 text-lg font-bold text-gray-900">{{ 'Administration' | t }}</h3>
+
+                    <mat-icon class="shrink-0 text-gray-300 transition-colors group-hover:text-[#007979]">arrow_forward</mat-icon>
                   </div>
 
-                  <h3 class="mt-3 text-lg font-bold text-gray-900">{{ 'Administration' | t }}</h3>
-
-                  <p class="mt-2 text-sm leading-6 text-gray-500">
+                  <p class="mt-3 text-sm leading-6 text-gray-500">
                     {{ 'Manage organization courses, members, programs, settings, notifications, and administrative operations.' | t }}
                   </p>
                 </a>

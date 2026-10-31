@@ -26,6 +26,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
+import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popups';
 /**
  * Administrator Sent Emails mailbox.
  *
@@ -46,7 +47,7 @@ import { MatButtonModule } from '@angular/material/button';
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink, MatFormFieldModule, MatInputModule, MatIconModule, MatMenuModule, MatDividerModule, MatButtonModule],
+    RouterLink, MailReaderComponent, MailComposerComponent, MatFormFieldModule, MatInputModule, MatIconModule, MatMenuModule, MatDividerModule, MatButtonModule],
   template: `
     <div class="min-h-screen bg-slate-50 pt-16">
       <!-- =======================================================
@@ -59,7 +60,11 @@ import { MatButtonModule } from '@angular/material/button';
             <p class="hidden truncate text-xs text-white/80 lg:block">Emails sent from the Zebron mailbox</p>
           </div>
 
-          <mat-form-field appearance="outline" class="zb-field zb-search order-last w-full sm:order-none sm:mx-auto sm:max-w-md">
+          <mat-form-field
+            appearance="outline"
+            class="zb-field zb-search order-last w-full sm:order-none sm:mx-auto sm:max-w-md"
+            [ngClass]="{ 'max-sm:!hidden': !mobileSearchOpen() }"
+          >
             <mat-label>Search sent mail</mat-label>
             <mat-icon matPrefix aria-hidden="true">search</mat-icon>
             <input
@@ -77,6 +82,20 @@ import { MatButtonModule } from '@angular/material/button';
               </button>
             }
           </mat-form-field>
+
+          <!-- Phones: show or hide the search bar -->
+          <button
+            type="button"
+            (click)="toggleMobileSearch()"
+            [attr.aria-expanded]="mobileSearchOpen()"
+            aria-controls="sent-search"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white sm:hidden"
+            [ngClass]="{ 'bg-white/15 !text-white': mobileSearchOpen() }"
+            [attr.aria-label]="mobileSearchOpen() ? 'Hide search' : 'Search'"
+            [title]="mobileSearchOpen() ? 'Hide search' : 'Search'"
+          >
+            <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">{{ mobileSearchOpen() ? 'search_off' : 'search' }}</mat-icon>
+          </button>
 
           <button
             type="button"
@@ -144,7 +163,33 @@ import { MatButtonModule } from '@angular/material/button';
 
           <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <!-- Folders -->
-            <div class="flex items-center border-b border-slate-200 px-2 py-1.5 sm:px-3">
+            <div class="flex min-h-11 items-center gap-1 border-b border-slate-200 px-1 py-1.5 sm:gap-2 sm:px-2">
+              <!-- Select all (visible rows) -->
+              <label class="flex h-8 w-5 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-slate-100 sm:w-8" title="Select all">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#007979]"
+                  [checked]="allVisibleChecked()"
+                  [indeterminate]="someVisibleChecked()"
+                  [disabled]="visibleMessages().length === 0"
+                  (change)="toggleAllVisible()"
+                  aria-label="Select all sent emails"
+                />
+              </label>
+
+              @if (checkedMessages().length > 0) {
+                <div class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" role="toolbar" aria-label="Selected emails">
+                  <span class="mr-1 shrink-0 text-sm font-semibold text-slate-900">{{ checkedMessages().length }} selected</span>
+                  <button type="button" (click)="bulkDelete()" [disabled]="bulkBusy()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 hover:!bg-red-50 hover:!text-red-600">
+                    <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
+                    <span class="hidden sm:inline">Delete</span>
+                  </button>
+                  <button type="button" (click)="clearSelection()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 ml-auto" title="Clear selection">
+                    <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">close</mat-icon>
+                    <span class="hidden sm:inline">Clear</span>
+                  </button>
+                </div>
+              } @else {
               <nav class="flex gap-1" aria-label="Mailbox folders">
                 <a
                   routerLink="/admin/contact"
@@ -164,6 +209,7 @@ import { MatButtonModule } from '@angular/material/button';
                   }
                 </span>
               </nav>
+              }
             </div>
 
             <!-- Messages -->
@@ -193,11 +239,26 @@ import { MatButtonModule } from '@angular/material/button';
               <ul class="divide-y divide-slate-100">
                 @for (message of visibleMessages(); track message.id) {
                   <li
-                    class="group relative flex cursor-pointer items-center gap-3 px-3 py-2.5 transition hover:bg-slate-50 hover:shadow-[inset_3px_0_0_#007979] sm:px-4"
+                    class="group relative flex cursor-pointer items-center gap-1 px-1 py-2.5 transition hover:bg-slate-50 hover:shadow-[inset_3px_0_0_#007979] sm:gap-2 sm:px-2"
+                    [ngClass]="{ '!bg-[#007979]/10': isChecked(message) }"
                     (click)="openMessage(message)"
                   >
-                    <div class="min-w-0 flex-1 sm:flex sm:items-center sm:gap-4">
-                      <div class="flex items-center justify-between gap-2 sm:w-52 sm:shrink-0">
+                    <!-- Select -->
+                    <label class="-my-1 flex h-8 w-5 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-slate-200/60 sm:w-8" (click)="$event.stopPropagation()">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#007979]"
+                        [checked]="isChecked(message)"
+                        (change)="toggleChecked(message)"
+                        [attr.aria-label]="'Select email to ' + message.to"
+                      />
+                    </label>
+
+                    <!-- Same spacing as the Inbox's new-message dot -->
+                    <span class="-ml-1 h-1.5 w-1.5 shrink-0 max-sm:hidden" aria-hidden="true"></span>
+
+                    <div class="min-w-0 flex-1 sm:flex sm:items-center sm:gap-3">
+                      <div class="flex items-center justify-between gap-2 sm:w-48 sm:shrink-0">
                         <p class="truncate text-sm text-slate-700" [title]="message.to">
                           <span class="text-slate-400">To:</span> {{ message.to }}
                         </p>
@@ -285,174 +346,36 @@ import { MatButtonModule } from '@angular/material/button';
          MESSAGE READER (matches the Inbox)
          ========================================================= -->
     @if (selectedMessage(); as msg) {
-      <div
-        class="fixed inset-0 z-50 flex items-stretch justify-center bg-slate-900/60 backdrop-blur-[2px] sm:items-center sm:p-6"
-        (click)="closeMessage()"
-      >
-        <section
-          class="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-white shadow-2xl sm:h-[88vh] sm:rounded-2xl"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="sent-message-subject"
-          (click)="$event.stopPropagation()"
-        >
-          <div class="flex items-center gap-1 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-3 py-2 sm:px-5">
-            <button type="button" (click)="closeMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white" aria-label="Back to sent mail" title="Back">
-              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">arrow_back</mat-icon>
-            </button>
-            <span class="mx-1 h-5 w-px bg-white/30" aria-hidden="true"></span>
-            <button type="button" (click)="deleteMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white" aria-label="Delete" title="Delete">
-              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
-            </button>
-            <div class="ml-auto flex items-center gap-1">
-              <button type="button" (click)="printMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white" aria-label="Print" title="Print">
-                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">print</mat-icon>
-              </button>
-              <button type="button" (click)="closeMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white" aria-label="Close" title="Close">
-                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">close</mat-icon>
-              </button>
-            </div>
-          </div>
-
-          <div class="min-h-0 flex-1 overflow-y-auto">
-            <div class="px-5 pb-8 pt-6 sm:px-10">
-              <div class="flex flex-wrap items-start gap-x-3 gap-y-2">
-                <h2 id="sent-message-subject" class="min-w-0 flex-1 break-words text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
-                  {{ msg.subject || '(No subject)' }}
-                </h2>
-                <span class="mt-1 shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                  {{ getMessageTypeLabel(msg) }}
-                </span>
-              </div>
-
-              <div class="mt-6 flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#007979] text-base font-semibold text-white" aria-hidden="true">
-                  {{ (msg.from || 'Z').charAt(0).toUpperCase() }}
-                </span>
-                <div class="min-w-0 flex-1">
-                  <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-                    <p class="min-w-0 truncate text-sm font-semibold text-slate-900">{{ msg.from || 'Zebron' }}</p>
-                    <p class="shrink-0 text-xs text-slate-500">{{ formatDate(msg.createdAt) }}</p>
-                  </div>
-                  <p class="mt-0.5 truncate text-xs text-slate-500">to {{ msg.to }}</p>
-                </div>
-              </div>
-
-              <div class="mt-6 whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-800 sm:pl-[52px]">{{ msg.message }}</div>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2 border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
-            <button type="button" (click)="forwardMessage()" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#006666]">
-              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">forward</mat-icon>
-              Forward
-            </button>
-            <button type="button" (click)="closeMessage()" class="ml-auto inline-flex h-9 items-center rounded-lg px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
-              Close
-            </button>
-          </div>
-        </section>
-      </div>
+      <app-mail-reader
+        [subject]="msg.subject || ''"
+        [fromEmail]="msg.from || 'Zebron'"
+        [to]="msg.to || ''"
+        [date]="formatDate(msg.createdAt)"
+        [body]="msg.message || ''"
+        [badge]="getMessageTypeLabel(msg)"
+        badgeTone="neutral"
+        printLabel="Sent email"
+        (closed)="closeMessage()"
+        (forward)="forwardMessage()"
+        (delete)="deleteMessage()"
+      />
     }
 
     <!-- =========================================================
          COMPOSER
          ========================================================= -->
     @if (composeMode() !== 'none') {
-      <div
-        class="fixed inset-0 z-[70] flex items-stretch justify-center bg-slate-900/60 backdrop-blur-[2px] sm:items-center sm:p-6"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Compose email"
-        (click)="closeComposer()"
-      >
-        <section
-          class="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-white shadow-2xl sm:h-[88vh] sm:rounded-2xl"
-          (click)="$event.stopPropagation()"
-        >
-          <header class="flex items-center justify-between gap-4 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-5 py-3">
-            <h2 class="text-base font-semibold text-white">
-              {{ composeMode() === 'forward' ? 'Forward message' : 'New email' }}
-            </h2>
-            <button
-              type="button"
-              (click)="closeComposer()"
-              [disabled]="sending()"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/80 hover:bg-white/15 hover:text-white disabled:opacity-50"
-              aria-label="Close composer"
-            >
-              <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">close</mat-icon>
-            </button>
-          </header>
-
-          @if (error()) {
-            <div class="mx-5 mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-              {{ error() }}
-            </div>
-          }
-
-          <form class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-5 py-5" (submit)="$event.preventDefault(); sendComposedMessage()">
-            <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>To</mat-label>
-              <input
-                matInput
-                id="sent-compose-to"
-                type="email"
-                [value]="composeTo()"
-                (input)="composeTo.set($any($event.target).value)"
-                required
-                autocomplete="email"
-                [disabled]="sending()"
-                placeholder="recipient@example.com"
-              />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Subject</mat-label>
-              <input
-                matInput
-                id="sent-compose-subject"
-                type="text"
-                [value]="composeSubject()"
-                (input)="composeSubject.set($any($event.target).value)"
-                required
-                [disabled]="sending()"
-              />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Message</mat-label>
-              <textarea
-                matInput
-                id="sent-compose-message"
-                rows="14"
-                [value]="composeMessage()"
-                (input)="composeMessage.set($any($event.target).value)"
-                required
-                [disabled]="sending()"
-                placeholder="Write your message..."
-              ></textarea>
-            </mat-form-field>
-
-            <div class="mt-auto flex justify-end gap-2 border-t border-slate-200 pt-4">
-              <button
-                type="button"
-                (click)="closeComposer()"
-                [disabled]="sending()"
-                class="h-9 rounded-lg px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                [disabled]="sending()"
-                class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]" [class.animate-spin]="sending()">{{ sending() ? 'refresh' : 'send' }}</mat-icon>
-                {{ sending() ? 'Sending...' : composeMode() === 'forward' ? 'Forward' : 'Send' }}
-              </button>
-            </div>
-          </form>
-        </section>
-      </div>
+      <app-mail-composer
+        [heading]="composeMode() === 'forward' ? 'Forward message' : 'New email'"
+        [submitLabel]="composeMode() === 'forward' ? 'Forward' : 'Send'"
+        [sending]="sending()"
+        [error]="error()"
+        [(to)]="composeTo"
+        [(subject)]="composeSubject"
+        [(message)]="composeMessage"
+        (send)="sendComposedMessage()"
+        (cancelled)="closeComposer()"
+      />
     }
 
     @if (toastMessage()) {
@@ -576,15 +499,109 @@ export class SentEmailComponent
     this.visibleCount.update((count) => count + this.pageSize);
   }
 
+  /** Phones: the search bar is hidden until the search button is tapped. */
+  readonly mobileSearchOpen = signal(false);
+
+  toggleMobileSearch(): void {
+    const open = !this.mobileSearchOpen();
+    this.mobileSearchOpen.set(open);
+    if (open) {
+      // Focus the field once it is shown.
+      setTimeout(() => document.getElementById('sent-search')?.focus());
+    } else if (this.searchQuery()) {
+      // Hiding the bar also clears the search, so no hidden filter stays on.
+      this.setSearch('');
+    }
+  }
+
   setSearch(value: string): void {
     this.searchQuery.set(value);
     this.visibleCount.set(this.pageSize);
+    this.clearSelection();
   }
 
   /** Forward a message straight from the list. */
   forwardFrom(message: OutboundMessage): void {
     this.selectedMessage.set(message);
     this.forwardMessage();
+  }
+
+  // ===========================================================
+  // Multi-select (checkboxes) and bulk delete — same as the Inbox
+  // ===========================================================
+
+  readonly selectedIds = signal<ReadonlySet<string>>(new Set());
+
+  readonly checkedMessages = computed(() => {
+    const ids = this.selectedIds();
+    return this.visibleMessages().filter((message) => !!message.id && ids.has(message.id));
+  });
+
+  readonly allVisibleChecked = computed(
+    () => this.visibleMessages().length > 0 && this.checkedMessages().length === this.visibleMessages().length,
+  );
+
+  readonly someVisibleChecked = computed(() => this.checkedMessages().length > 0 && !this.allVisibleChecked());
+
+  readonly bulkBusy = signal(false);
+
+  isChecked(message: OutboundMessage): boolean {
+    return !!message.id && this.selectedIds().has(message.id);
+  }
+
+  toggleChecked(message: OutboundMessage): void {
+    if (!message.id) {
+      return;
+    }
+    const id = message.id;
+    this.selectedIds.update((ids) => {
+      const next = new Set(ids);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  toggleAllVisible(): void {
+    this.selectedIds.set(
+      this.allVisibleChecked()
+        ? new Set()
+        : new Set(this.visibleMessages().map((message) => message.id).filter((id): id is string => !!id)),
+    );
+  }
+
+  clearSelection(): void {
+    if (this.selectedIds().size) {
+      this.selectedIds.set(new Set());
+    }
+  }
+
+  async bulkDelete(): Promise<void> {
+    const messages = this.checkedMessages();
+    const count = messages.length;
+    if (!count || this.bulkBusy() || !window.confirm(`Delete ${count} sent ${count === 1 ? 'email' : 'emails'}? This cannot be undone.`)) {
+      return;
+    }
+    this.bulkBusy.set(true);
+    try {
+      const results = await Promise.allSettled(
+        messages.map((message) => this.outboundMessageService.deleteMessage(message.id!)),
+      );
+      const deleted = new Set(
+        messages.filter((_, index) => results[index].status === 'fulfilled').map((message) => message.id),
+      );
+      this.messages.update((list) => list.filter((message) => !deleted.has(message.id)));
+      this.clearSelection();
+      const failed = count - deleted.size;
+      this.showSuccessToast(
+        failed ? `${deleted.size} deleted, ${failed} failed.` : `${count} sent ${count === 1 ? 'email' : 'emails'} deleted.`,
+      );
+    } finally {
+      this.bulkBusy.set(false);
+    }
   }
 
   /** Delete a message straight from the list. */
@@ -1184,89 +1201,6 @@ getMessageTypeLabel(
   }
 }
 
-/**
- * Print the currently selected sent message.
- *
- * A print-only document is rendered by the component's
- * print stylesheet so the mailbox controls and navigation
- * are excluded from the printed output.
- */
-printMessage(): void {
-  const message = this.selectedMessage();
-  if (!message || typeof document === 'undefined') {
-    return;
-  }
-
-  const escape = (value: string | null | undefined) =>
-    String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-
-  const printed = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
-  const rows = [
-    ['From', message.from || 'Zebron'],
-    ['To', message.to],
-    ['Date', this.formatDate(message.createdAt)],
-    ['Type', this.getMessageTypeLabel(message)],
-  ]
-    .map(([label, value]) => `<tr><th>${label}</th><td>${escape(value)}</td></tr>`)
-    .join('');
-
-  const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<title>${escape(message.subject || 'Sent email')}</title>
-<style>
-  @page { margin: 16mm; }
-  body { margin: 0; font-family: Roboto, Arial, sans-serif; color: #0f172a; font-size: 12pt; }
-  .band { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 6px;
-          background: linear-gradient(90deg, #007979, #00706f, #2a835f); color: #fff;
-          -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .band strong { font-size: 13pt; letter-spacing: .02em; }
-  .band span { font-size: 9pt; opacity: .9; }
-  h1 { margin: 18px 0 10px; font-size: 17pt; line-height: 1.3; }
-  table { border-collapse: collapse; width: 100%; margin-bottom: 14px; }
-  th { width: 70px; padding: 3px 10px 3px 0; text-align: left; vertical-align: top; color: #64748b; font-weight: 600; font-size: 10pt; }
-  td { padding: 3px 0; font-size: 10.5pt; }
-  .body { border-top: 1px solid #e2e8f0; padding-top: 14px; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
-  footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #94a3b8; font-size: 8.5pt; }
-</style>
-</head>
-<body>
-  <div class="band"><strong>ZEBRON</strong><span>Sent email</span></div>
-  <h1>${escape(message.subject || '(No subject)')}</h1>
-  <table>${rows}</table>
-  <div class="body">${escape(message.message)}</div>
-  <footer>Printed ${escape(printed)} from the Zebron Mailbox</footer>
-</body>
-</html>`;
-
-  const frame = document.createElement('iframe');
-  frame.setAttribute('aria-hidden', 'true');
-  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
-  document.body.appendChild(frame);
-
-  const frameDocument = frame.contentDocument;
-  const frameWindow = frame.contentWindow;
-  if (!frameDocument || !frameWindow) {
-    frame.remove();
-    return;
-  }
-
-  frameDocument.open();
-  frameDocument.write(html);
-  frameDocument.close();
-
-  frameWindow.addEventListener('afterprint', () => setTimeout(() => frame.remove(), 500), { once: true });
-  setTimeout(() => {
-    frameWindow.focus();
-    frameWindow.print();
-    setTimeout(() => frame.isConnected && frame.remove(), 60_000);
-  }, 50);
-}
 
 /**
  * Open a blank New Email composer.

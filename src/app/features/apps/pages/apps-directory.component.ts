@@ -91,13 +91,15 @@ interface AppCard extends PublicApp {
               @for (app of group.apps; track app.key) {
                 <a
                   [routerLink]="app.route"
-                  class="group flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007979]/25"
+                  class="group flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007979]/25"
                 >
-                  <div class="flex items-start justify-between gap-3">
-                    <span [class]="'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ' + group.tone">
+                  <!-- Icon and title on one row -->
+                  <div class="flex items-center gap-3">
+                    <span [class]="'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ' + group.tone">
                       <mat-icon aria-hidden="true">{{ app.icon }}</mat-icon>
                     </span>
-                    <div class="flex flex-wrap justify-end gap-1.5">
+                    <h3 class="min-w-0 flex-1 text-lg font-bold leading-tight text-[#032D42] group-hover:text-[#007979]">{{ app.title | t }}</h3>
+                    <div class="flex shrink-0 flex-wrap justify-end gap-1.5">
                       @if (app.maintenance) {
                         <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
                           <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">build</mat-icon>
@@ -113,11 +115,10 @@ interface AppCard extends PublicApp {
                     </div>
                   </div>
 
-                  <h3 class="mt-4 text-lg font-bold text-[#032D42] group-hover:text-[#007979]">{{ app.title | t }}</h3>
-                  <p class="mt-1.5 flex-1 text-sm leading-6 text-slate-600">{{ app.description | t }}</p>
-                  <p class="mt-3 text-xs text-slate-500">{{ app.audience | t }}</p>
+                  <p class="mt-3 flex-1 text-sm leading-6 text-slate-600">{{ app.description | t }}</p>
+                  <p class="mt-2 text-xs text-slate-500">{{ app.audience | t }}</p>
 
-                  <span class="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#007979]">
+                  <span class="mt-3 inline-flex items-center gap-1 text-sm font-bold text-[#007979]">
                     {{ app.action | t }}
                     <mat-icon class="!m-0 !h-5 !w-5 !text-[17px] transition-transform group-hover:translate-x-1" aria-hidden="true">arrow_forward</mat-icon>
                   </span>
