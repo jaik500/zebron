@@ -35,7 +35,7 @@ type TestCenterEntitlementOnboarding = {
   status?: unknown;
 
   firstProgramId?: unknown;
-  firstCourseId?: unknown;
+  firstQuizId?: unknown;
   firstTopicId?: unknown;
   firstQuestionId?: unknown;
 
@@ -57,7 +57,7 @@ type LegacyOrganizationOnboarding = {
   status?: unknown;
 
   firstProgramId?: unknown;
-  firstCourseId?: unknown;
+  firstQuizId?: unknown;
   firstTopicId?: unknown;
   firstQuestionId?: unknown;
 
@@ -183,12 +183,12 @@ function buildTestCenterSetupState(
         legacyState.firstProgramId,
       ),
 
-    firstCourseId:
+    firstQuizId:
       normalizeResourceId(
-        entitlementState.firstCourseId,
+        entitlementState.firstQuizId,
       ) ??
       normalizeResourceId(
-        legacyState.firstCourseId,
+        legacyState.firstQuizId,
       ),
 
     firstTopicId:
@@ -590,7 +590,7 @@ export const completeOrganizationFirstProgram = onCall(
             active:
               true,
 
-            courseCount:
+            quizCount:
               0,
 
             createdBy:
@@ -610,7 +610,7 @@ export const completeOrganizationFirstProgram = onCall(
          * ------------------------------------------------------------------
          *
          * After first_program, the next configured Test Center step
-         * should normally be first_course.
+         * should normally be first_quiz.
          *
          * Only the Test Center entitlement's onboarding state advances.
          * ------------------------------------------------------------------
@@ -693,7 +693,7 @@ export const completeOrganizationFirstProgram = onCall(
           active:
             true,
 
-          courseCount:
+          quizCount:
             0,
 
           firstProgramId:
@@ -742,8 +742,8 @@ export const completeOrganizationFirstProgram = onCall(
         active:
           result.active,
 
-        courseCount:
-          result.courseCount,
+        quizCount:
+          result.quizCount,
       },
 
       onboarding: {

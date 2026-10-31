@@ -10,11 +10,11 @@ import {
 import { firestore } from '../../../core/services/firebase-config';
 import { TestResult } from '../models/test-result.model';
 import { TestAttempt } from '../models/test-attempt.model';
-import { TestCourseScope } from '../models/test-course.model';
+import { QuizScope } from '../models/quiz.model';
 
 export interface SaveTestResultInput {
   result: TestResult;
-  scope: TestCourseScope;
+  scope: QuizScope;
   topicIds: string[];
 }
 
@@ -40,7 +40,7 @@ export class TestResultService {
       throw new Error('A signed-in learner is required to save a result.');
     }
 
-    if (!result.courseId?.trim()) {
+    if (!result.quizId?.trim()) {
       throw new Error('A course is required to save a result.');
     }
 
@@ -63,32 +63,32 @@ export class TestResultService {
     const batch = writeBatch(firestore);
 
     const attemptRef = doc(
-      collection(firestore, 'testAttempts'),
+      collection(firestore, 'quizAttempts'),
       result.attemptId,
     );
 
     const resultRef = doc(
-      collection(firestore, 'testResults'),
+      collection(firestore, 'quizResults'),
       result.id,
     );
 
     const attempt: Omit<TestAttempt, 'startedAt' | 'completedAt'> & {
-      scope: TestCourseScope;
-      courseName: string;
+      scope: QuizScope;
+      quizName: string;
       startedAt: ReturnType<typeof serverTimestamp>;
       completedAt: ReturnType<typeof serverTimestamp>;
     } = {
       id: result.attemptId,
       organizationId: result.organizationId,
       userId: result.userId,
-      courseId: result.courseId,
+      quizId: result.quizId,
       topicIds: [...topicIds],
       questionCount: result.totalQuestions,
       correctCount: result.correctAnswers,
       score: result.scorePercentage,
       mode: result.mode,
       scope,
-      courseName: result.courseName,
+      quizName: result.quizName,
       startedAt: serverTimestamp(),
       completedAt: serverTimestamp(),
     };

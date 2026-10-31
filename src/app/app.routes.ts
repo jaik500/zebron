@@ -52,6 +52,43 @@ export const routes: Routes = [
         loadComponent: () => import('./features/apps/pages/apps-directory.component').then((m) => m.AppsDirectoryComponent),
     },
     // -----------------------------------------------------
+    // BLOG (public; Zebron admins write and manage)
+    // -----------------------------------------------------
+    {
+        path: 'blog',
+        data: {
+            blogSection: 'public',
+            title: 'Zebron | Blog',
+            header: 'Zebron Blog',
+        },
+        children: [
+            {
+                path: '',
+                pathMatch: 'full',
+                loadComponent: () => import('./features/blog/pages/blog-feed.component').then((m) => m.BlogFeedComponent),
+            },
+            {
+                path: 'manage',
+                canActivate: [adminGuard],
+                loadComponent: () => import('./features/blog/pages/blog-manage.component').then((m) => m.BlogManageComponent),
+            },
+            {
+                path: 'write',
+                canActivate: [adminGuard],
+                loadComponent: () => import('./features/blog/pages/blog-editor.component').then((m) => m.BlogEditorComponent),
+            },
+            {
+                path: 'write/:postId',
+                canActivate: [adminGuard],
+                loadComponent: () => import('./features/blog/pages/blog-editor.component').then((m) => m.BlogEditorComponent),
+            },
+            {
+                path: ':postId',
+                loadComponent: () => import('./features/blog/pages/blog-post.component').then((m) => m.BlogPostComponent),
+            },
+        ],
+    },
+    // -----------------------------------------------------
     // PUBLIC KNOWLEDGE CENTER
     // -----------------------------------------------------
     {
@@ -707,6 +744,18 @@ export const routes: Routes = [
                 path: 'quiz-details/:slug',
                 loadComponent: () => import('./features/test-center/pages/quiz/quiz-details.component').then((m) => m.QuizDetailsComponent),
             },
+            {
+                path: 'setup',
+                loadComponent: () => import('./features/test-center/pages/test-setup/test-setup.component').then((m) => m.TestSetupComponent),
+            },
+            {
+                path: 'practice',
+                loadComponent: () => import('./features/test-center/pages/test-practice/test-practice.component').then((m) => m.TestPracticeComponent),
+            },
+            {
+                path: 'results',
+                loadComponent: () => import('./features/test-center/pages/test-results/test-results.component').then((m) => m.TestResultsComponent),
+            },
         ],
     },
     // -----------------------------------------------------
@@ -744,6 +793,50 @@ export const routes: Routes = [
                 canActivate: [partnerRoleGuard],
                 data: { minimumOrganizationRole: 'org_staff' },
                 loadComponent: () => import('./features/test-center/pages/learner-dashboard/test-center-learner-dashboard.component').then((m) => m.TestCenterLearnerDashboardComponent),
+            },
+        ],
+    },
+    // -----------------------------------------------------
+    // ORGANIZATION BLOG (members read; staff write; managers publish)
+    // -----------------------------------------------------
+    {
+        path: 'partner/org/:organizationId/blog',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+        ],
+        data: {
+            blogSection: 'organization',
+            title: 'Partner | Blog',
+            organizationHeader: true,
+        },
+        children: [
+            {
+                path: '',
+                pathMatch: 'full',
+                loadComponent: () => import('./features/blog/pages/blog-feed.component').then((m) => m.BlogFeedComponent),
+            },
+            {
+                path: 'manage',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_manager' },
+                loadComponent: () => import('./features/blog/pages/blog-manage.component').then((m) => m.BlogManageComponent),
+            },
+            {
+                path: 'write',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_staff' },
+                loadComponent: () => import('./features/blog/pages/blog-editor.component').then((m) => m.BlogEditorComponent),
+            },
+            {
+                path: 'write/:postId',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_staff' },
+                loadComponent: () => import('./features/blog/pages/blog-editor.component').then((m) => m.BlogEditorComponent),
+            },
+            {
+                path: ':postId',
+                loadComponent: () => import('./features/blog/pages/blog-post.component').then((m) => m.BlogPostComponent),
             },
         ],
     },
@@ -871,6 +964,41 @@ export const routes: Routes = [
     // =====================================================
     // ADMINISTRATION
     // =====================================================
+    // -----------------------------------------------------
+    // INTERNAL BLOG (Zebron staff)
+    // -----------------------------------------------------
+    {
+        path: 'admin/blog',
+        canActivate: [adminGuard],
+        data: {
+            blogSection: 'internal',
+            title: 'Admin | Internal Blog',
+            header: 'Zebron Internal',
+        },
+        children: [
+            {
+                path: '',
+                pathMatch: 'full',
+                loadComponent: () => import('./features/blog/pages/blog-feed.component').then((m) => m.BlogFeedComponent),
+            },
+            {
+                path: 'manage',
+                loadComponent: () => import('./features/blog/pages/blog-manage.component').then((m) => m.BlogManageComponent),
+            },
+            {
+                path: 'write',
+                loadComponent: () => import('./features/blog/pages/blog-editor.component').then((m) => m.BlogEditorComponent),
+            },
+            {
+                path: 'write/:postId',
+                loadComponent: () => import('./features/blog/pages/blog-editor.component').then((m) => m.BlogEditorComponent),
+            },
+            {
+                path: ':postId',
+                loadComponent: () => import('./features/blog/pages/blog-post.component').then((m) => m.BlogPostComponent),
+            },
+        ],
+    },
     // -----------------------------------------------------
     // ADMIN DASHBOARD
     // -----------------------------------------------------

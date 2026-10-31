@@ -41,9 +41,9 @@ export interface TestResult {
 
   attemptId: string;
 
-  courseId: string;
+  quizId: string;
 
-  courseName: string;
+  quizName: string;
 
   totalQuestions: number;
 

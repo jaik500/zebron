@@ -1,6 +1,6 @@
 import { Component, computed, inject, OnInit } from '@angular/core';
 
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
@@ -8,6 +8,7 @@ import { TestMode, TestStore } from '../../store/test.store';
 
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { learnerBaseRoute, useLearningHeaderTitle } from '../../learner-route';
 
 @Component({
   selector: 'app-test-setup',
@@ -18,139 +19,37 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
     TranslatePipe,RouterLink, MatIconModule, MatCheckboxModule],
 
   template: `
-    <main class="min-h-screen bg-gray-50">
-      <!-- ===================================================
-           HEADER
-           =================================================== -->
-
-      <header
-        class="border-b
-               border-white/10
-               bg-[#032D42]"
-      >
-        <div
-          class="mx-auto
-                 flex
-                 max-w-7xl
-                 items-center
-                 justify-between
-                 gap-4
-                 px-5
-                 py-2
-                 sm:px-6
-                 lg:px-8"
-        >
+    <main class="mt-16 min-h-screen bg-gray-50">
+      <!-- Page header -->
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+        <div class="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
           <a
-            routerLink="/"
-            [attr.aria-label]="'Zebron home' | t"
-            class="flex
-                   items-center
-                   gap-2
-                   text-white"
+            [routerLink]="backLink()"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/85 transition hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+            [attr.aria-label]="'Back to quiz' | t"
+            [title]="'Back to quiz' | t"
           >
-            <img src="/zebron-favicon.svg" alt="" class="h-7 w-7" />
-
-            <span
-              class="text-lg
-                     font-bold
-                     tracking-tight"
-            >
-              {{ 'Zebron' | t }}
-            </span>
+            <mat-icon aria-hidden="true">arrow_back</mat-icon>
           </a>
 
-          <nav
-            class="hidden
-                   items-center
-                   gap-6
-                   md:flex"
-            [attr.aria-label]="'Primary navigation' | t"
-          >
-            <a
-              routerLink="/resources"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              {{ 'Resources' | t }}
-            </a>
-
-            <a
-              routerLink="/find"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              {{ 'Find Jobs' | t }}
-            </a>
-
-            <a
-              routerLink="/test-center"
-              class="text-sm
-                     font-semibold
-                     text-[#12BFC3]"
-              aria-current="page"
-            >
-              {{ 'Test Center' | t }}
-            </a>
-
-            <a
-              routerLink="/about"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              {{ 'About' | t }}
-            </a>
-
-            <a
-              routerLink="/contact"
-              class="text-sm
-                     font-medium
-                     text-white
-                     transition
-                     hover:text-[#12BFC3]"
-            >
-              {{ 'Contact' | t }}
-            </a>
-          </nav>
+          <div class="min-w-0 flex-1">
+            <h1 class="truncate text-base font-semibold leading-tight sm:text-lg">
+              {{ hasCourse() ? courseName() : ('Test setup' | t) }}
+            </h1>
+            @if (hasCourse()) {
+              <p class="mt-0.5 truncate text-xs text-white/80">
+                {{ 'Test setup' | t }}
+                <span aria-hidden="true">·</span>
+                {{ '{0} topic{1}' | t: [selectedTopicCount(), (selectedTopicCount() === 1 ? '' : 's')] }}
+                <span aria-hidden="true">·</span>
+                {{ '{0} questions available' | t: [availableQuestions()] }}
+              </p>
+            }
+          </div>
         </div>
       </header>
 
-      <!-- ===================================================
-           MAIN
-           =================================================== -->
-
-      <section
-        class="mx-auto
-               max-w-5xl
-               px-5
-               py-7
-               sm:px-6
-               lg:px-8"
-      >
-        <!-- Back -->
-
-        <a
-          routerLink="/test-center"
-          class="inline-flex
-                 items-center
-                 gap-1
-                 text-sm
-                 font-semibold
-                 text-[#007979]
-                 transition
-                 hover:text-[#032D42]"
-        >
-          {{ '← Test Center' | t }}
-        </a>
-
+      <section class="mx-auto max-w-5xl px-4 py-5 sm:px-6 lg:px-8">
         @if (!hasCourse()) {
           <div
             class="mt-6
@@ -185,7 +84,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                 </p>
 
                 <a
-                  routerLink="/test-center"
+                  [routerLink]="[baseRoute, 'quizzes']"
                   class="mt-4
                          inline-flex
                          rounded-lg
@@ -204,62 +103,11 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
           </div>
         } @else {
           <!-- ===============================================
-               COURSE SUMMARY
-               =============================================== -->
-
-          <div
-            class="mt-5
-                   rounded-xl
-                   bg-[#032D42]
-                   px-5
-                   py-5
-                   text-white"
-          >
-            <p
-              class="text-xs
-                     font-bold
-                     uppercase
-                     tracking-[0.16em]
-                     text-[#7DD3D3]"
-            >
-              {{ 'Test setup' | t }}
-            </p>
-
-            <h1
-              class="mt-1
-                     text-2xl
-                     font-bold
-                     tracking-tight"
-            >
-              {{ courseName() }}
-            </h1>
-
-            <div
-              class="mt-2
-                     flex
-                     flex-wrap
-                     gap-x-5
-                     gap-y-1
-                     text-xs
-                     text-blue-100"
-            >
-              <span>
-                {{ '{0} topic{1}' | t: [selectedTopicCount(), (selectedTopicCount() === 1 ? '' : 's')] }}
-              </span>
-
-              <span>
-                {{ '{0} questions available' | t: [availableQuestions()] }}
-              </span>
-            </div>
-          </div>
-
-          <!-- ===============================================
                SETUP
                =============================================== -->
 
           <div
-            class="mt-6
-                   grid
+            class="grid
                    gap-6
                    lg:grid-cols-[1fr_280px]"
           >
@@ -753,6 +601,13 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 export class TestSetupComponent implements OnInit {
   private readonly router = inject(Router);
 
+  private readonly route = inject(ActivatedRoute);
+
+  /** '/test-center' or the organization's learner route. */
+  readonly baseRoute = learnerBaseRoute(this.route);
+
+  private readonly headerTitle = useLearningHeaderTitle(this.route);
+
   private readonly testStore = inject(TestStore);
 
   // =====================================================
@@ -813,6 +668,15 @@ export class TestSetupComponent implements OnInit {
   readonly hasCourse = computed(() => this.course() !== null && this.selectedTopicIds().length > 0);
 
   readonly courseName = computed(() => this.course()?.name ?? '');
+
+  /** Back to the quiz the topics were chosen on, or to the quiz list. */
+  readonly backLink = computed(() => {
+    const slug = this.course()?.slug;
+
+    return slug
+      ? [this.baseRoute, 'quiz-details', slug]
+      : [this.baseRoute, 'quizzes'];
+  });
 
   readonly selectedTopicCount = computed(() => this.selectedTopicIds().length);
 
@@ -888,8 +752,6 @@ async startTest(): Promise<void> {
     return;
   }
 
-  this.router.navigate([
-    '/test-center/practice',
-  ]);
+  this.router.navigate([this.baseRoute, 'practice']);
 }
 }

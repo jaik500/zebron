@@ -1677,32 +1677,32 @@ service cloud.firestore {
     // PLATFORM TEST CENTER HELPERS
     // ============================================================
 
-    function isActivePublicPlatformCourse(courseId) {
-      let coursePath =
-        /databases/$(database)/documents/testCourses/$(courseId);
+    function isActivePublicPlatformQuiz(quizId) {
+      let quizPath =
+        /databases/$(database)/documents/quizzes/$(quizId);
 
-      return exists(coursePath)
-        && get(coursePath).data.get("scope", "") == "platform"
-        && get(coursePath).data.get("accessType", "") == "public"
-        && get(coursePath).data.get("organizationId", null) == null
-        && get(coursePath).data.get("active", false) == true;
+      return exists(quizPath)
+        && get(quizPath).data.get("scope", "") == "platform"
+        && get(quizPath).data.get("accessType", "") == "public"
+        && get(quizPath).data.get("organizationId", null) == null
+        && get(quizPath).data.get("active", false) == true;
     }
 
-    function isActivePlatformTopic(topicId, courseId) {
+    function isActivePlatformTopic(topicId, quizId) {
       let topicPath =
-        /databases/$(database)/documents/testTopics/$(topicId);
+        /databases/$(database)/documents/quizTopics/$(topicId);
 
       return exists(topicPath)
         && get(topicPath).data.get("scope", "") == "platform"
         && get(topicPath).data.get("organizationId", null) == null
-        && get(topicPath).data.get("courseId", "") == courseId
+        && get(topicPath).data.get("quizId", "") == quizId
         && get(topicPath).data.get("active", false) == true
-        && isActivePublicPlatformCourse(courseId);
+        && isActivePublicPlatformQuiz(quizId);
     }
 
     function isPublishedPlatformQuestion(questionId) {
       let questionPath =
-        /databases/$(database)/documents/testQuestions/$(questionId);
+        /databases/$(database)/documents/quizQuestions/$(questionId);
 
       return exists(questionPath)
         && get(questionPath).data.get("scope", "") == "platform"
@@ -1710,7 +1710,7 @@ service cloud.firestore {
         && get(questionPath).data.get("status", "") == "published"
         && isActivePlatformTopic(
           get(questionPath).data.get("topicId", ""),
-          get(questionPath).data.get("courseId", "")
+          get(questionPath).data.get("quizId", "")
         );
     }
 
@@ -1789,7 +1789,7 @@ service cloud.firestore {
       ).data.organizationId == organizationId;
     }
 
-    function testCourseProgramBelongsToOrganization(
+    function quizProgramBelongsToOrganization(
       programId,
       organizationId
     ) {
@@ -1835,50 +1835,50 @@ service cloud.firestore {
       );
     }
 
-    function testCenterCourseBelongsToOrganization(
-      courseId,
+    function testCenterQuizBelongsToOrganization(
+      quizId,
       organizationId
     ) {
       return exists(
-        /databases/$(database)/documents/testCourses/$(courseId)
+        /databases/$(database)/documents/quizzes/$(quizId)
       )
       && get(
-        /databases/$(database)/documents/testCourses/$(courseId)
+        /databases/$(database)/documents/quizzes/$(quizId)
       ).data.organizationId == organizationId;
     }
 
     /**
      * Verifies that a topic exists and belongs to the specified
-     * organization and course.
+     * organization and quiz.
      *
      * Uses get() instead of an explicit exists() call.
      */
     function testCenterTopicBelongsToOrganization(
       topicId,
       organizationId,
-      courseId
+      quizId
     ) {
       let topicPath =
-        /databases/$(database)/documents/testTopics/$(topicId);
+        /databases/$(database)/documents/quizTopics/$(topicId);
 
       return topicId is string
         && topicId != ""
         && organizationId is string
         && organizationId != ""
-        && courseId is string
-        && courseId != ""
+        && quizId is string
+        && quizId != ""
         && exists(topicPath)
         && get(topicPath).data.organizationId == organizationId
-        && get(topicPath).data.courseId == courseId;
+        && get(topicPath).data.quizId == quizId;
     }
 
     function canCreateTestCenterTopic(
       organizationId,
-      courseId
+      quizId
     ) {
       return isTestCenterAdmin(organizationId)
-        && testCenterCourseBelongsToOrganization(
-          courseId,
+        && testCenterQuizBelongsToOrganization(
+          quizId,
           organizationId
         );
     }
@@ -1892,24 +1892,24 @@ service cloud.firestore {
      */
     function canCreateTestCenterQuestion(
       organizationId,
-      courseId,
+      quizId,
       topicId
     ) {
       return isTestCenterMember(organizationId)
         && testCenterTopicBelongsToOrganization(
           topicId,
           organizationId,
-          courseId
+          quizId
         );
     }
 
     function canCreateTestCenterAttempt(
       organizationId,
-      courseId
+      quizId
     ) {
       return isTestCenterMember(organizationId)
-        && testCenterCourseBelongsToOrganization(
-          courseId,
+        && testCenterQuizBelongsToOrganization(
+          quizId,
           organizationId
         );
     }
@@ -1917,23 +1917,23 @@ service cloud.firestore {
     function canCreateTestCenterResult(
       organizationId,
       userId,
-      courseId,
+      quizId,
       attemptId
     ) {
       return isTestCenterMember(organizationId)
         && request.auth.uid == userId
-        && testCenterCourseBelongsToOrganization(
-          courseId,
+        && testCenterQuizBelongsToOrganization(
+          quizId,
           organizationId
         )
         && exists(
-          /databases/$(database)/documents/testAttempts/$(attemptId)
+          /databases/$(database)/documents/quizAttempts/$(attemptId)
         )
         && get(
-          /databases/$(database)/documents/testAttempts/$(attemptId)
+          /databases/$(database)/documents/quizAttempts/$(attemptId)
         ).data.organizationId == organizationId
         && get(
-          /databases/$(database)/documents/testAttempts/$(attemptId)
+          /databases/$(database)/documents/quizAttempts/$(attemptId)
         ).data.userId == userId;
     }
 
@@ -1945,30 +1945,30 @@ service cloud.firestore {
       return isAuthenticated()
         && request.resource.data.get("organizationId", "missing") == null
         && request.resource.data.get("userId", "") == request.auth.uid
-        && request.resource.data.get("courseId", "") is string
-        && isActivePublicPlatformCourse(
-          request.resource.data.courseId
+        && request.resource.data.get("quizId", "") is string
+        && isActivePublicPlatformQuiz(
+          request.resource.data.quizId
         );
     }
 
     function canCreatePlatformTestResult() {
       let attemptId = request.resource.data.get("attemptId", "");
-      let courseId = request.resource.data.get("courseId", "");
+      let quizId = request.resource.data.get("quizId", "");
 
       let attemptPath =
-        /databases/$(database)/documents/testAttempts/$(attemptId);
+        /databases/$(database)/documents/quizAttempts/$(attemptId);
 
       return isAuthenticated()
         && request.resource.data.get("organizationId", "missing") == null
         && request.resource.data.get("userId", "") == request.auth.uid
-        && courseId is string
-        && isActivePublicPlatformCourse(courseId)
+        && quizId is string
+        && isActivePublicPlatformQuiz(quizId)
         && attemptId is string
         && attemptId != ""
         && existsAfter(attemptPath)
         && getAfter(attemptPath).data.get("organizationId", "missing") == null
         && getAfter(attemptPath).data.get("userId", "") == request.auth.uid
-        && getAfter(attemptPath).data.get("courseId", "") == courseId;
+        && getAfter(attemptPath).data.get("quizId", "") == quizId;
     }
 
     // ============================================================
@@ -2241,7 +2241,7 @@ service cloud.firestore {
           && isTestCenterAdmin(
             request.resource.data.organizationId
           )
-          && request.resource.data.courseCount == 0
+          && request.resource.data.quizCount == 0
         );
 
       allow update: if isPlatformAdmin()
@@ -2253,22 +2253,22 @@ service cloud.firestore {
           && isTestCenterAdmin(
             resource.data.organizationId
           )
-          && request.resource.data.courseCount
-            == resource.data.courseCount
+          && request.resource.data.quizCount
+            == resource.data.quizCount
         );
 
       /*
-       * Disabled until Program/course reference protection
+       * Disabled until Program/quiz reference protection
        * is implemented as part of the lifecycle.
        */
       allow delete: if false;
     }
 
     // ============================================================
-    // TEST CENTER COURSES
+    // TEST CENTER QUIZZES
     // ============================================================
 
-    match /testCourses/{courseId} {
+    match /quizzes/{quizId} {
 
       allow get: if isPlatformAdmin()
         || (
@@ -2320,7 +2320,7 @@ service cloud.firestore {
         && canCreateTestCenterDocument(
           request.resource.data.organizationId
         )
-        && testCourseProgramBelongsToOrganization(
+        && quizProgramBelongsToOrganization(
           request.resource.data.programId,
           request.resource.data.organizationId
         );
@@ -2345,7 +2345,7 @@ service cloud.firestore {
           && canCreateTestCenterDocument(
             resource.data.organizationId
           )
-          && testCourseProgramBelongsToOrganization(
+          && quizProgramBelongsToOrganization(
             request.resource.data.programId,
             resource.data.organizationId
           )
@@ -2372,14 +2372,14 @@ service cloud.firestore {
      * must query with:
      *
      *   - platform topics:      scope == 'platform', organizationId == null,
-     *                           courseId == X, active == true
-     *   - organization topics:  organizationId == X, courseId == Y,
+     *                           quizId == X, active == true
+     *   - organization topics:  organizationId == X, quizId == Y,
      *                           active == true
      *
      * Test Center managers and above (isTestCenterAdmin) may read all
      * topics for their organization, including inactive ones.
      */
-    match /testTopics/{topicId} {
+    match /quizTopics/{topicId} {
 
       allow get, list: if isPlatformAdmin()
         || (
@@ -2387,8 +2387,8 @@ service cloud.firestore {
           && resource.data.get("scope", "") == "platform"
           && resource.data.get("organizationId", null) == null
           && resource.data.get("active", false) == true
-          && isActivePublicPlatformCourse(
-            resource.data.get("courseId", "")
+          && isActivePublicPlatformQuiz(
+            resource.data.get("quizId", "")
           )
         )
         || (
@@ -2403,18 +2403,18 @@ service cloud.firestore {
 
       allow create: if
         request.resource.data.organizationId is string
-        && request.resource.data.courseId is string
+        && request.resource.data.quizId is string
         && canCreateTestCenterTopic(
           request.resource.data.organizationId,
-          request.resource.data.courseId
+          request.resource.data.quizId
         );
 
       allow update: if
         isTestCenterAdmin(resource.data.organizationId)
         && request.resource.data.organizationId
           == resource.data.organizationId
-        && request.resource.data.courseId
-          == resource.data.courseId;
+        && request.resource.data.quizId
+          == resource.data.quizId;
 
       allow delete: if
         isTestCenterAdmin(resource.data.organizationId);
@@ -2431,7 +2431,7 @@ service cloud.firestore {
      * Test Center managers and above can read every question for their
      * organization.
      */
-    match /testQuestions/{questionId} {
+    match /quizQuestions/{questionId} {
 
       allow get: if isPlatformAdmin()
         || (
@@ -2456,8 +2456,8 @@ service cloud.firestore {
           && resource.data.get("scope", "") == "platform"
           && resource.data.get("organizationId", null) == null
           && resource.data.get("status", "") == "published"
-          && isActivePublicPlatformCourse(
-            resource.data.get("courseId", "")
+          && isActivePublicPlatformQuiz(
+            resource.data.get("quizId", "")
           )
         )
         || (
@@ -2474,11 +2474,11 @@ service cloud.firestore {
 
       allow create: if
         request.resource.data.organizationId is string
-        && request.resource.data.courseId is string
+        && request.resource.data.quizId is string
         && request.resource.data.topicId is string
         && canCreateTestCenterQuestion(
           request.resource.data.organizationId,
-          request.resource.data.courseId,
+          request.resource.data.quizId,
           request.resource.data.topicId
         );
 
@@ -2486,8 +2486,8 @@ service cloud.firestore {
         isTestCenterAdmin(resource.data.organizationId)
         && request.resource.data.organizationId
           == resource.data.organizationId
-        && request.resource.data.courseId
-          == resource.data.courseId
+        && request.resource.data.quizId
+          == resource.data.quizId
         && request.resource.data.topicId
           == resource.data.topicId;
 
@@ -2499,7 +2499,7 @@ service cloud.firestore {
     // TEST CENTER ATTEMPTS
     // ============================================================
 
-    match /testAttempts/{attemptId} {
+    match /quizAttempts/{attemptId} {
 
       allow get: if isPlatformAdmin()
         || (
@@ -2556,7 +2556,7 @@ service cloud.firestore {
     // TEST CENTER RESULTS
     // ============================================================
 
-    match /testResults/{resultId} {
+    match /quizResults/{resultId} {
 
       allow get: if isPlatformAdmin()
         || (
@@ -4496,6 +4496,215 @@ service cloud.firestore {
     match /systemSettings/{settingKey} {
       allow get, list: if true;
       allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // BLOG
+    // ============================================================
+
+    /*
+     * Public and internal posts:   blogPosts/{postId} (section "public" or "internal")
+     * Organization posts:          organizations/{organizationId}/blogPosts/{postId}
+     * Under each post:             comments/{commentId}, reactions/{userId}
+     *
+     * Public: anyone reads published posts; Zebron admins write.
+     * Internal: Zebron admins only.
+     * Organization: members read published posts; staff and above write
+     * drafts and submit for review; managers and above publish.
+     * Scheduled posts are published by the publishScheduledBlogPosts function.
+     */
+    function isValidBlogPost(organizationId) {
+      let data = request.resource.data;
+
+      return data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 160
+        && data.excerpt is string
+        && data.excerpt.size() <= 300
+        && data.content is string
+        && data.content.size() <= 100000
+        && data.topic is string
+        && data.topic.size() <= 60
+        && data.status in ["draft", "in_review", "changes_requested", "scheduled", "published"]
+        && data.section in ["public", "organization", "internal"]
+        && data.organizationId == organizationId
+        && data.authorId is string
+        && data.authorName is string
+        && data.pinned is bool;
+    }
+
+    function isValidBlogComment() {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly(["authorId", "authorName", "text", "createdAt"])
+        && data.authorId == request.auth.uid
+        && data.authorName is string
+        && data.authorName.size() <= 120
+        && data.text is string
+        && data.text.size() > 0
+        && data.text.size() <= 2000
+        && data.createdAt == request.time;
+    }
+
+    function isValidBlogReaction(userId) {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly(["userId", "type", "createdAt"])
+        && data.userId == userId
+        && data.type in ["helpful", "insightful"];
+    }
+
+    /* A published public post, or any published post for a Zebron admin. */
+    function isOpenPlatformBlogPost(postId) {
+      let post = get(/databases/$(database)/documents/blogPosts/$(postId)).data;
+
+      return post.status == "published"
+        && (post.section == "public" || isPlatformAdmin());
+    }
+
+    /* A published organization post the signed-in user can read. */
+    function isOpenOrganizationBlogPost(organizationId, postId) {
+      let post = get(/databases/$(database)/documents/organizations/$(organizationId)/blogPosts/$(postId)).data;
+
+      return post.status == "published"
+        && (
+          isPlatformAdmin()
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationMember(organizationId)
+          )
+        );
+    }
+
+    match /blogPosts/{postId} {
+      allow get, list: if resource.data.section == "public"
+        && resource.data.status == "published";
+
+      allow get, list: if isPlatformAdmin();
+
+      allow create: if isPlatformAdmin()
+        && isValidBlogPost(null)
+        && request.resource.data.section in ["public", "internal"]
+        && request.resource.data.authorId == request.auth.uid;
+
+      allow update: if isPlatformAdmin()
+        && isValidBlogPost(null)
+        && request.resource.data.section == resource.data.section
+        && request.resource.data.authorId == resource.data.authorId;
+
+      allow delete: if isPlatformAdmin();
+
+      match /comments/{commentId} {
+        allow get, list: if isOpenPlatformBlogPost(postId);
+
+        allow create: if isAuthenticated()
+          && isOpenPlatformBlogPost(postId)
+          && isValidBlogComment();
+
+        allow delete: if isPlatformAdmin()
+          || (
+            isAuthenticated()
+            && resource.data.authorId == request.auth.uid
+          );
+      }
+
+      match /reactions/{userId} {
+        allow get, list: if isOpenPlatformBlogPost(postId);
+
+        allow create, update: if isCurrentUser(userId)
+          && isOpenPlatformBlogPost(postId)
+          && isValidBlogReaction(userId);
+
+        allow delete: if isCurrentUser(userId);
+      }
+    }
+
+    match /organizations/{organizationId}/blogPosts/{postId} {
+      allow get, list: if isPlatformAdmin();
+
+      allow get, list: if isAuthenticated()
+        && isOrganizationOperational(organizationId)
+        && isOrganizationMember(organizationId)
+        && resource.data.status == "published";
+
+      allow get, list: if isOrganizationOperational(organizationId)
+        && isOrganizationStaffOrAbove(organizationId);
+
+      allow create: if isValidBlogPost(organizationId)
+        && request.resource.data.section == "organization"
+        && request.resource.data.authorId == request.auth.uid
+        && (
+          isPlatformAdmin()
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationManagerOrAbove(organizationId)
+          )
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationStaffOrAbove(organizationId)
+            && request.resource.data.status in ["draft", "in_review"]
+            && request.resource.data.pinned == false
+          )
+        );
+
+      allow update: if isValidBlogPost(organizationId)
+        && request.resource.data.section == "organization"
+        && request.resource.data.authorId == resource.data.authorId
+        && (
+          isPlatformAdmin()
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationManagerOrAbove(organizationId)
+          )
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationStaffOrAbove(organizationId)
+            && resource.data.authorId == request.auth.uid
+            && resource.data.status in ["draft", "in_review", "changes_requested"]
+            && request.resource.data.status in ["draft", "in_review"]
+            && request.resource.data.pinned == resource.data.pinned
+          )
+        );
+
+      allow delete: if isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+        )
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationStaffOrAbove(organizationId)
+          && resource.data.authorId == request.auth.uid
+          && resource.data.status in ["draft", "changes_requested"]
+        );
+
+      match /comments/{commentId} {
+        allow get, list: if isOpenOrganizationBlogPost(organizationId, postId);
+
+        allow create: if isAuthenticated()
+          && isOpenOrganizationBlogPost(organizationId, postId)
+          && isValidBlogComment();
+
+        allow delete: if isPlatformAdmin()
+          || (
+            isAuthenticated()
+            && resource.data.authorId == request.auth.uid
+          )
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationManagerOrAbove(organizationId)
+          );
+      }
+
+      match /reactions/{userId} {
+        allow get, list: if isOpenOrganizationBlogPost(organizationId, postId);
+
+        allow create, update: if isCurrentUser(userId)
+          && isOpenOrganizationBlogPost(organizationId, postId)
+          && isValidBlogReaction(userId);
+
+        allow delete: if isCurrentUser(userId);
+      }
     }
 
     // ============================================================

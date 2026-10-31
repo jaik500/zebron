@@ -4,7 +4,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { firestore } from '../../../core/services/firebase-config';
 import { ApplicationRegistryService } from '../../../core/services/application-registry.service';
 import { OrganizationContextStore } from '../../organizations/stores/organization-context.store';
-import { TestCourse } from '../../test-center/models/test-course.model';
+import { Quiz } from '../../test-center/models/quiz.model';
 import { PartnerMemberService } from './partner-member.service';
 
 export type PartnerSearchCategory =
@@ -239,8 +239,8 @@ export class PartnerAdminSearchService {
    */
   private async getOrganizationCourses(
     organizationId: string,
-  ): Promise<TestCourse[]> {
-    const courseCollection = collection(firestore, 'testCourses');
+  ): Promise<Quiz[]> {
+    const courseCollection = collection(firestore, 'quizzes');
     const courseQuery = query(
       courseCollection,
       where('organizationId', '==', organizationId),
@@ -253,13 +253,13 @@ export class PartnerAdminSearchService {
           ({
             id: document.id,
             ...document.data(),
-          }) as TestCourse,
+          }) as Quiz,
       )
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   private matchesCourse(
-    course: TestCourse,
+    course: Quiz,
     searchTerm: string,
   ): boolean {
     return this.courseKeywords(course)
@@ -268,7 +268,7 @@ export class PartnerAdminSearchService {
       .includes(searchTerm);
   }
 
-  private courseKeywords(course: TestCourse): string[] {
+  private courseKeywords(course: Quiz): string[] {
     return [
       course.name,
       course.slug,

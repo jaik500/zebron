@@ -15,9 +15,9 @@ export interface TestCenterLearner {
   photoURL: string | null;
   role: string;
   active: boolean;
-  enrolledCourseIds: string[];
+  enrolledQuizIds: string[];
   enrolledCourseNames: string[];
-  completedCourseIds: string[];
+  completedQuizIds: string[];
   assessmentCount: number;
   averageScore: number | null;
   latestScore: number | null;
@@ -26,8 +26,8 @@ export interface TestCenterLearner {
 }
 
 export interface LearnerCourseProgress {
-  courseId: string;
-  courseName: string;
+  quizId: string;
+  quizName: string;
   status: 'not-started' | 'in-progress' | 'completed';
   assessmentCount: number;
   averageScore: number | null;
@@ -38,8 +38,8 @@ export interface LearnerCourseProgress {
 export interface LearnerAssessmentSummary {
   id: string;
   attemptId: string;
-  courseId: string;
-  courseName: string;
+  quizId: string;
+  quizName: string;
   scorePercentage: number;
   correctAnswers: number;
   incorrectAnswers: number;

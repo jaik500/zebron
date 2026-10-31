@@ -26,6 +26,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
+import { TranslatePipe } from '../../../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../../../core/i18n/i18n.service';
 import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popups';
 /**
  * Administrator Sent Emails mailbox.
@@ -47,7 +49,7 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink, MailReaderComponent, MailComposerComponent, MatFormFieldModule, MatInputModule, MatIconModule, MatMenuModule, MatDividerModule, MatButtonModule],
+    RouterLink, TranslatePipe, MailReaderComponent, MailComposerComponent, MatFormFieldModule, MatInputModule, MatIconModule, MatMenuModule, MatDividerModule, MatButtonModule],
   template: `
     <div class="min-h-screen bg-slate-50 pt-16">
       <!-- =======================================================
@@ -56,8 +58,8 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 sm:flex-nowrap sm:px-6 lg:px-8">
           <div class="min-w-0 flex-1 sm:flex-none">
-            <h1 class="truncate text-lg font-semibold">Sent</h1>
-            <p class="hidden truncate text-xs text-white/80 lg:block">Emails sent from the Zebron mailbox</p>
+            <h1 class="truncate text-lg font-semibold">{{ 'Sent' | t }}</h1>
+            <p class="hidden truncate text-xs text-white/80 lg:block">{{ 'Emails sent from the Zebron mailbox' | t }}</p>
           </div>
 
           <mat-form-field
@@ -65,7 +67,7 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
             class="zb-field zb-search order-last w-full sm:order-none sm:mx-auto sm:max-w-md"
             [ngClass]="{ 'max-sm:!hidden': !mobileSearchOpen() }"
           >
-            <mat-label>Search sent mail</mat-label>
+            <mat-label>{{ 'Search sent mail' | t }}</mat-label>
             <mat-icon matPrefix aria-hidden="true">search</mat-icon>
             <input
               matInput
@@ -73,11 +75,11 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
               type="search"
               [value]="searchQuery()"
               (input)="setSearch($any($event.target).value)"
-              placeholder="Search recipient, subject or message"
+              [placeholder]="'Search recipient, subject or message' | t"
               autocomplete="off"
             />
             @if (searchQuery()) {
-              <button matSuffix mat-icon-button type="button" (click)="setSearch('')" aria-label="Clear search" title="Clear search">
+              <button matSuffix mat-icon-button type="button" (click)="setSearch('')" [attr.aria-label]="'Clear search' | t" [title]="'Clear search' | t">
                 <mat-icon>close</mat-icon>
               </button>
             }
@@ -91,8 +93,8 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
             aria-controls="sent-search"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white sm:hidden"
             [ngClass]="{ 'bg-white/15 !text-white': mobileSearchOpen() }"
-            [attr.aria-label]="mobileSearchOpen() ? 'Hide search' : 'Search'"
-            [title]="mobileSearchOpen() ? 'Hide search' : 'Search'"
+            [attr.aria-label]="(mobileSearchOpen() ? 'Hide search' : 'Search') | t"
+            [title]="(mobileSearchOpen() ? 'Hide search' : 'Search') | t"
           >
             <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">{{ mobileSearchOpen() ? 'search_off' : 'search' }}</mat-icon>
           </button>
@@ -103,17 +105,17 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
             class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 text-sm font-semibold text-[#006666] shadow-sm transition hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
             <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">edit</mat-icon>
-            <span class="hidden sm:inline">Compose</span>
+            <span class="hidden sm:inline">{{ 'Compose' | t }}</span>
           </button>
 
           <a
             routerLink="/admin/contact"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-white/90 transition hover:bg-white/15 hover:text-white sm:w-auto sm:px-3"
-            [attr.aria-label]="'Inbox'"
-            title="Inbox"
+            [attr.aria-label]="'Inbox' | t"
+            [title]="'Inbox' | t"
           >
             <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">inbox</mat-icon>
-            <span class="hidden sm:inline">Inbox</span>
+            <span class="hidden sm:inline">{{ 'Inbox' | t }}</span>
           </a>
 
           <button
@@ -121,8 +123,8 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
             (click)="loadMessages()"
             [disabled]="loading()"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white disabled:opacity-50"
-            aria-label="Refresh"
-            title="Refresh"
+            [attr.aria-label]="'Refresh' | t"
+            [title]="'Refresh' | t"
           >
             <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]" [class.animate-spin]="loading()">refresh</mat-icon>
           </button>
@@ -131,8 +133,8 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
             type="button"
             [matMenuTriggerFor]="sentMenu"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white"
-            aria-label="More options"
-            title="More"
+            [attr.aria-label]="'More options' | t"
+            [title]="'More' | t"
           >
             <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">more_vert</mat-icon>
           </button>
@@ -140,11 +142,11 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
           <mat-menu #sentMenu="matMenu" xPosition="before">
             <button mat-menu-item type="button" (click)="generateSentMessagesPdf()" [disabled]="messages().length === 0">
               <mat-icon>picture_as_pdf</mat-icon>
-              <span>Export to PDF</span>
+              <span>{{ 'Export to PDF' | t }}</span>
             </button>
             <a mat-menu-item routerLink="/admin">
               <mat-icon>dashboard</mat-icon>
-              <span>Admin dashboard</span>
+              <span>{{ 'Admin dashboard' | t }}</span>
             </a>
           </mat-menu>
         </div>
@@ -157,15 +159,15 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
         <div class="mx-auto max-w-7xl">
           @if (error() && composeMode() === 'none') {
             <div class="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700" role="alert">
-              {{ error() }}
+              {{ error() | t }}
             </div>
           }
 
           <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <!-- Folders -->
-            <div class="flex min-h-11 items-center gap-1 border-b border-slate-200 px-1 py-1.5 sm:gap-2 sm:px-2">
+            <div class="flex min-h-11 items-center gap-1 border-b border-slate-200 px-1 py-1.5 sm:px-2">
               <!-- Select all (visible rows) -->
-              <label class="flex h-8 w-5 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-slate-100 sm:w-8" title="Select all">
+              <label class="flex h-8 w-5 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-slate-100 sm:w-8" [title]="'Select all' | t">
                 <input
                   type="checkbox"
                   class="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#007979]"
@@ -173,30 +175,30 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
                   [indeterminate]="someVisibleChecked()"
                   [disabled]="visibleMessages().length === 0"
                   (change)="toggleAllVisible()"
-                  aria-label="Select all sent emails"
+                  [attr.aria-label]="'Select all sent emails' | t"
                 />
               </label>
 
               @if (checkedMessages().length > 0) {
-                <div class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" role="toolbar" aria-label="Selected emails">
-                  <span class="mr-1 shrink-0 text-sm font-semibold text-slate-900">{{ checkedMessages().length }} selected</span>
+                <div class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" role="toolbar" [attr.aria-label]="'Selected emails' | t">
+                  <span class="mr-1 shrink-0 text-sm font-semibold text-slate-900">{{ '{0} selected' | t: [checkedMessages().length] }}</span>
                   <button type="button" (click)="bulkDelete()" [disabled]="bulkBusy()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 hover:!bg-red-50 hover:!text-red-600">
                     <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
-                    <span class="hidden sm:inline">Delete</span>
+                    <span class="hidden sm:inline">{{ 'Delete' | t }}</span>
                   </button>
-                  <button type="button" (click)="clearSelection()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 ml-auto" title="Clear selection">
+                  <button type="button" (click)="clearSelection()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 ml-auto" [title]="'Clear selection' | t">
                     <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">close</mat-icon>
-                    <span class="hidden sm:inline">Clear</span>
+                    <span class="hidden sm:inline">{{ 'Clear' | t }}</span>
                   </button>
                 </div>
               } @else {
-              <nav class="flex gap-1" aria-label="Mailbox folders">
+              <nav class="flex gap-1" [attr.aria-label]="'Mailbox folders' | t">
                 <a
                   routerLink="/admin/contact"
                   class="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
                 >
                   <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">inbox</mat-icon>
-                  Inbox
+                  {{ 'Inbox' | t }}
                 </a>
                 <span
                   class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#007979]/10 px-3 text-sm font-semibold text-[#006666]"
@@ -227,19 +229,19 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
               <div class="px-6 py-12 text-center">
                 <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-300">{{ searchQuery() ? 'search_off' : 'send' }}</mat-icon>
                 <p class="mt-2 text-sm font-semibold text-slate-900">
-                  {{ searchQuery() ? 'No sent emails match your search' : 'No sent emails yet' }}
+                  {{ (searchQuery() ? 'No sent emails match your search' : 'No sent emails yet') | t }}
                 </p>
                 @if (searchQuery()) {
-                  <button type="button" (click)="setSearch('')" class="mt-2 text-sm font-medium text-[#007979] hover:underline">Clear search</button>
+                  <button type="button" (click)="setSearch('')" class="mt-2 text-sm font-medium text-[#007979] hover:underline">{{ 'Clear search' | t }}</button>
                 } @else {
-                  <p class="mt-1 text-xs text-slate-500">Replies, forwards and new emails you send appear here.</p>
+                  <p class="mt-1 text-xs text-slate-500">{{ 'Replies, forwards and new emails you send appear here.' | t }}</p>
                 }
               </div>
             } @else {
               <ul class="divide-y divide-slate-100">
                 @for (message of visibleMessages(); track message.id) {
                   <li
-                    class="group relative flex cursor-pointer items-center gap-1 px-1 py-2.5 transition hover:bg-slate-50 hover:shadow-[inset_3px_0_0_#007979] sm:gap-2 sm:px-2"
+                    class="group relative flex cursor-pointer items-center gap-2.5 px-1 py-2.5 transition hover:bg-slate-50 hover:shadow-[inset_3px_0_0_#007979] sm:gap-2 sm:px-2"
                     [ngClass]="{ '!bg-[#007979]/10': isChecked(message) }"
                     (click)="openMessage(message)"
                   >
@@ -250,7 +252,7 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
                         class="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#007979]"
                         [checked]="isChecked(message)"
                         (change)="toggleChecked(message)"
-                        [attr.aria-label]="'Select email to ' + message.to"
+                        [attr.aria-label]="'Select email to {0}' | t: [message.to]"
                       />
                     </label>
 
@@ -260,16 +262,16 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
                     <div class="min-w-0 flex-1 sm:flex sm:items-center sm:gap-3">
                       <div class="flex items-center justify-between gap-2 sm:w-48 sm:shrink-0">
                         <p class="truncate text-sm text-slate-700" [title]="message.to">
-                          <span class="text-slate-400">To:</span> {{ message.to }}
+                          <span class="text-slate-400">{{ 'To:' | t }}</span> {{ message.to }}
                         </p>
                         <span class="shrink-0 text-xs text-slate-500 sm:hidden">{{ shortDate(message) }}</span>
                       </div>
 
                       <p class="mt-0.5 flex min-w-0 flex-1 items-center gap-2 sm:mt-0">
                         <span class="shrink-0 rounded bg-slate-100 px-1.5 text-[11px] font-medium leading-[18px] text-slate-500">
-                          {{ getMessageTypeLabel(message) }}
+                          {{ getMessageTypeLabel(message) | t }}
                         </span>
-                        <span class="truncate text-sm text-slate-700">{{ message.subject || '(No subject)' }}</span>
+                        <span class="truncate text-sm text-slate-700">{{ message.subject || ('(No subject)' | t) }}</span>
                       </p>
                     </div>
 
@@ -284,10 +286,10 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
                       class="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-lg bg-slate-50 pl-2 sm:group-hover:flex sm:group-focus-within:flex"
                       (click)="$event.stopPropagation()"
                     >
-                      <button type="button" (click)="forwardFrom(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" aria-label="Forward" title="Forward">
+                      <button type="button" (click)="forwardFrom(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" [attr.aria-label]="'Forward' | t" [title]="'Forward' | t">
                         <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">forward</mat-icon>
                       </button>
-                      <button type="button" (click)="deleteFrom(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-red-50 hover:text-red-600" aria-label="Delete" title="Delete">
+                      <button type="button" (click)="deleteFrom(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-red-50 hover:text-red-600" [attr.aria-label]="'Delete' | t" [title]="'Delete' | t">
                         <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
                       </button>
                     </div>
@@ -298,7 +300,7 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
                       [matMenuTriggerData]="{ message: message }"
                       (click)="$event.stopPropagation()"
                       class="-mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 sm:hidden"
-                      aria-label="More actions"
+                      [attr.aria-label]="'More actions' | t"
                     >
                       <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">more_vert</mat-icon>
                     </button>
@@ -308,12 +310,11 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
 
               <div class="flex items-center justify-between gap-3 border-t border-slate-200 px-4 py-2 text-xs text-slate-500">
                 <span>
-                  {{ visibleMessages().length }} of {{ filteredMessages().length }}
-                  {{ filteredMessages().length === 1 ? 'email' : 'emails' }}
+                  {{ (filteredMessages().length === 1 ? '{0} of {1} email' : '{0} of {1} emails') | t: [visibleMessages().length, filteredMessages().length] }}
                 </span>
                 @if (visibleMessages().length < filteredMessages().length) {
                   <button type="button" (click)="showMore()" class="rounded-md px-2 py-1 font-semibold text-[#007979] hover:bg-[#007979]/10">
-                    Show more
+                    {{ 'Show more' | t }}
                   </button>
                 }
               </div>
@@ -328,16 +329,16 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
       <ng-template matMenuContent let-message="message">
         <button mat-menu-item type="button" (click)="openMessage(message)">
           <mat-icon>visibility</mat-icon>
-          <span>View</span>
+          <span>{{ 'View' | t }}</span>
         </button>
         <button mat-menu-item type="button" (click)="forwardFrom(message)">
           <mat-icon>forward</mat-icon>
-          <span>Forward</span>
+          <span>{{ 'Forward' | t }}</span>
         </button>
         <mat-divider></mat-divider>
         <button mat-menu-item type="button" (click)="deleteFrom(message)">
           <mat-icon>delete</mat-icon>
-          <span>Delete</span>
+          <span>{{ 'Delete' | t }}</span>
         </button>
       </ng-template>
     </mat-menu>
@@ -385,7 +386,7 @@ import { MailComposerComponent, MailReaderComponent } from '../shared/mail-popup
         aria-live="polite"
       >
         <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">check_circle</mat-icon>
-        {{ toastMessage() }}
+        {{ toastMessage() | t }}
       </div>
     }
   `,
@@ -399,6 +400,8 @@ export class SentEmailComponent
    * Outbound message service used to
    * retrieve administrator sent emails.
    */
+  private readonly i18n = inject(I18nService);
+
   private readonly outboundMessageService =
     inject(
       OutboundMessageService,
@@ -582,7 +585,7 @@ export class SentEmailComponent
   async bulkDelete(): Promise<void> {
     const messages = this.checkedMessages();
     const count = messages.length;
-    if (!count || this.bulkBusy() || !window.confirm(`Delete ${count} sent ${count === 1 ? 'email' : 'emails'}? This cannot be undone.`)) {
+    if (!count || this.bulkBusy() || !window.confirm(this.i18n.t(count === 1 ? 'Delete {0} sent email? This cannot be undone.' : 'Delete {0} sent emails? This cannot be undone.', [count]))) {
       return;
     }
     this.bulkBusy.set(true);
@@ -597,7 +600,9 @@ export class SentEmailComponent
       this.clearSelection();
       const failed = count - deleted.size;
       this.showSuccessToast(
-        failed ? `${deleted.size} deleted, ${failed} failed.` : `${count} sent ${count === 1 ? 'email' : 'emails'} deleted.`,
+        failed
+          ? this.i18n.t('{0} deleted, {1} failed.', [deleted.size, failed])
+          : this.i18n.t(count === 1 ? '{0} sent email deleted.' : '{0} sent emails deleted.', [count]),
       );
     } finally {
       this.bulkBusy.set(false);
@@ -720,7 +725,7 @@ async deleteMessage(): Promise<void> {
 
   const confirmed =
     window.confirm(
-      'Delete this sent email? This action cannot be undone.',
+      this.i18n.t('Delete this sent email? This action cannot be undone.'),
     );
 
   if (!confirmed) {

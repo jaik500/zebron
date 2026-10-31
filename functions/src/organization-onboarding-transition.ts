@@ -62,7 +62,7 @@ export const BASE_ORGANIZATION_ONBOARDING_STEPS:
  * Runtime validation for core organization onboarding steps.
  *
  * Application-specific steps such as first_program,
- * first_course, first_topic, and first_question are
+ * first_quiz, first_topic, and first_question are
  * deliberately excluded.
  */
 export function isOrganizationOnboardingStep(

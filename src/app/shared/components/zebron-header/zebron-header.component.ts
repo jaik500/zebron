@@ -670,6 +670,8 @@ export class ZebronHeaderComponent {
     if (active.includes('knowledge')) {
       apps.push({ key: 'knowledge', label: 'Knowledge Center', icon: 'menu_book', route: `${base}/knowledge` });
     }
+    // Every organization has a members-only blog.
+    apps.push({ key: 'blog', label: 'Blog', icon: 'article', route: `${base}/blog` });
     return apps;
   });
 

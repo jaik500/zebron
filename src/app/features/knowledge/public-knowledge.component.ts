@@ -23,10 +23,9 @@ import { PUBLIC_KNOWLEDGE_TYPE_LABELS, PublicKnowledgeService } from './public-k
       <div class="relative mx-auto max-w-7xl px-5 pb-5 pt-20 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div class="min-w-0">
-            <p class="text-xs font-bold uppercase tracking-wider text-white/80">Zebron</p>
-            <h1 class="mt-1 text-xl font-bold tracking-tight sm:text-2xl">{{ 'Knowledge Center' | t }}</h1>
+            <h1 class="text-xl font-bold tracking-tight sm:text-2xl">{{ 'Find articles, guides and answers' | t }}</h1>
             <p class="mt-1 max-w-2xl text-sm text-white/85">
-              {{ 'Articles, guides and answers from Zebron.' | t }}
+              {{ 'Written by the Zebron team on a wide range of topics.' | t }}
             </p>
           </div>
           <div class="relative w-full shrink-0 lg:w-[26rem]">

@@ -280,7 +280,7 @@ function buildDefaultSubject(
   senderName: string,
   metadata: Record<string, string | number | boolean>,
 ): string {
-  const courseName = cleanSubject(metadata.courseName);
+  const courseName = cleanSubject(metadata.quizName ?? metadata.courseName);
   const quizTitle = cleanSubject(metadata.quizTitle);
   const assignmentTitle = cleanSubject(metadata.assignmentTitle);
  
@@ -715,6 +715,7 @@ function sanitizeMetadata(
     "courseId",
     "courseName",
     "quizId",
+    "quizName",
     "quizTitle",
     "assignmentId",
     "assignmentTitle",
@@ -1139,7 +1140,7 @@ export const sendOrganizationCommunication = onCall(
  *   organizationId: string,
  *   type: "direct" | "announcement" |
  *         "quiz_invitation" | "assignment_notification",
- *   metadata?: { courseName?, quizTitle?, assignmentTitle?, ... }
+ *   metadata?: { quizName?, quizTitle?, assignmentTitle?, ... }
  * }
  *
  * Response:

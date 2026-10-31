@@ -89,6 +89,16 @@ export const FR_APPS: Readonly<Record<string, string>> = {
   "Guides and answers for using Zebron": "Guides et réponses pour utiliser Zebron",
   "Articles, guides and answers from Zebron.": "Articles, guides et réponses de Zebron.",
   "Articles, guides and answers from Zebron on a wide range of topics. Like, share and report articles.": "Articles, guides et réponses de Zebron sur de nombreux sujets. Aimez, partagez et signalez les articles.",
+  "Find articles, guides and answers": "Trouvez des articles, des guides et des réponses",
+  "Written by the Zebron team on a wide range of topics.": "Rédigés par l’équipe Zebron sur de nombreux sujets.",
+  "Popular": "Populaires",
+  "Your favorite apps. Click a star to add or remove one.": "Vos applications favorites. Cliquez sur une étoile pour en ajouter ou en retirer une.",
+  "The apps you open most. Star an app to keep it here.": "Les applications que vous ouvrez le plus. Ajoutez une étoile pour garder une application ici.",
+  "Popular places to start. Star an app to keep it here.": "Pour bien commencer. Ajoutez une étoile pour garder une application ici.",
+  "Add to favorites": "Ajouter aux favoris",
+  "Remove from favorites": "Retirer des favoris",
+  "Add {0} to favorites": "Ajouter {0} aux favoris",
+  "Remove {0} from favorites": "Retirer {0} des favoris",
   "Members of an organization on Zebron also have their organization's own Knowledge Center in the Partner Portal.": "Les membres d’une organisation sur Zebron disposent aussi du centre de connaissances de leur organisation dans le portail partenaire.",
   "How-tos, troubleshooting and FAQs written by the Zebron team.": "Tutoriels, dépannage et FAQ rédigés par l’équipe Zebron.",
   "Categories": "Catégories",
@@ -105,4 +115,10 @@ export const FR_APPS: Readonly<Record<string, string>> = {
   "I still need help": "J’ai encore besoin d’aide",
   "It may have been archived, or you may need to sign in to read it.": "Il a peut-être été archivé, ou vous devez vous connecter pour le lire.",
   "Back to the Knowledge Center": "Retour au Centre de connaissances",
+
+  // Blog
+  "Career advice, skills, employer insights and Zebron news. React to posts and join the conversation.": "Conseils de carrière, compétences, regards d’employeurs et actualités Zebron. Réagissez aux articles et participez à la conversation.",
+  "Read the blog": "Lire le blog",
+  "news": "actualités",
+  "stories": "témoignages",
 };

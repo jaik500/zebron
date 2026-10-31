@@ -829,7 +829,17 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
         (application as typeof application & {
           adminOnly?: boolean;
         }).adminOnly === true,
-    }));
+    }))
+    // Every organization has a members-only blog (not a provisioned application).
+    .concat({
+      id: 'blog',
+      title: 'Blog',
+      description: 'News, stories and announcements for your members.',
+      icon: 'article',
+      route: `/partner/org/${organizationId}/blog`,
+      enabled: true,
+      adminOnly: false,
+    });
 });
 
 
@@ -878,6 +888,11 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
 
     if (card.id === 'knowledge' && this.access.can('knowledge.manage')) {
       return ['/partner/org', this.organizationStore.selectedOrganizationId(), 'knowledge', 'manage'];
+    }
+
+    // Blog: managers and above review and publish posts.
+    if (card.id === 'blog' && this.access.isManagerOrAbove()) {
+      return ['/partner/org', this.organizationStore.selectedOrganizationId(), 'blog', 'manage'];
     }
 
     return null;

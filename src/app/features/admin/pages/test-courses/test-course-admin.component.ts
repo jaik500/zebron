@@ -16,11 +16,11 @@ import {
 import { HotToastService } from '@ngxpert/hot-toast';
 
 import {
-  TestCourse,
-  TestCourseType,
-} from '../../../../features/test-center/models/test-course.model';
+  Quiz,
+  QuizType,
+} from '../../../../features/test-center/models/quiz.model';
 
-import { TestCourseService } from '../../../../features/test-center/services/test-course.service';
+import { QuizService } from '../../../../features/test-center/services/quiz.service';
 
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
@@ -44,7 +44,7 @@ interface CourseForm {
   slug: string;
   description: string;
   provider: string;
-  type: TestCourseType;
+  type: QuizType;
   certificationCode: string;
   active: boolean;
   scope: 'platform' | 'organization';
@@ -340,7 +340,7 @@ interface CourseForm {
                              text-gray-900"
                     >
                       {{
-                        editingCourseId()
+                        editingQuizId()
                           ? 'Edit Course'
                           : 'Create Course'
                       }}
@@ -351,14 +351,14 @@ interface CourseForm {
                              text-gray-500"
                     >
                       {{
-                        editingCourseId()
+                        editingQuizId()
                           ? 'Update the course information below.'
                           : 'Add a new course to the Test Center.'
                       }}
                     </p>
                   </div>
 
-                  @if (editingCourseId()) {
+                  @if (editingQuizId()) {
 
                     <div
                       class="flex
@@ -449,7 +449,7 @@ interface CourseForm {
                         id="courseScope"
                         name="courseScope"
                         [(ngModel)]="form.scope"
-                        [disabled]="!!editingCourseId()"
+                        [disabled]="!!editingQuizId()"
                       >
                         <mat-option value="organization">
                           Organization Course
@@ -486,7 +486,7 @@ interface CourseForm {
                           id="courseOrganization"
                           name="courseOrganization"
                           [(ngModel)]="form.organizationId"
-                          [disabled]="!!editingCourseId() || organizationLoading()"
+                          [disabled]="!!editingQuizId() || organizationLoading()"
                         >
                           <mat-option value="">
                             Select an organization
@@ -546,7 +546,7 @@ interface CourseForm {
                         id="courseProgram"
                         name="courseProgram"
                         [(ngModel)]="form.programId"
-                        [disabled]="!!editingCourseId()"
+                        [disabled]="!!editingQuizId()"
                       >
                         <mat-option value="">
                           Select a program
@@ -622,7 +622,7 @@ interface CourseForm {
                         name="courseSlug"
                         type="text"
                         [(ngModel)]="form.slug"
-                        [readonly]="!!editingCourseId()"
+                        [readonly]="!!editingQuizId()"
                         placeholder="cybersecurity-fundamentals"
                         autocomplete="off"
                       />
@@ -634,7 +634,7 @@ interface CourseForm {
                                text-gray-500"
                       >
                         {{
-                          editingCourseId()
+                          editingQuizId()
                             ? 'The slug cannot be changed after creation.'
                             : 'Used in the course URL and as the course identifier.'
                         }}
@@ -780,7 +780,7 @@ interface CourseForm {
                        QUESTION COUNT
                        ================================================= -->
 
-                  @if (editingCourseId()) {
+                  @if (editingQuizId()) {
 
                     <div
                       class="flex items-center
@@ -871,7 +871,7 @@ interface CourseForm {
                         Saving...
                       } @else {
                         {{
-                          editingCourseId()
+                          editingQuizId()
                             ? 'Update Course'
                             : 'Create Course'
                         }}
@@ -1230,8 +1230,8 @@ export class TestCourseAdminComponent
   // SERVICES
   // ============================================================
 
-  private readonly courseService =
-    inject(TestCourseService);
+  private readonly quizService =
+    inject(QuizService);
 
   private readonly authService =
     inject(AuthService);
@@ -1253,7 +1253,7 @@ export class TestCourseAdminComponent
   // ============================================================
 
   protected readonly courses =
-    signal<TestCourse[]>([]);
+    signal<Quiz[]>([]);
 
   protected readonly organizations =
     this.organizationContext.organizations;
@@ -1274,7 +1274,7 @@ export class TestCourseAdminComponent
   protected readonly showForm =
     signal(false);
 
-  protected readonly editingCourseId =
+  protected readonly editingQuizId =
     signal<string | null>(null);
 
   // ============================================================
@@ -1314,7 +1314,7 @@ export class TestCourseAdminComponent
       this.loadingCourses.set(true);
 
       const courses =
-        await this.courseService.getAllCoursesForAdmin();
+        await this.quizService.getAllQuizzesForAdmin();
 
       this.courses.set(courses);
     } catch (error) {
@@ -1338,7 +1338,7 @@ export class TestCourseAdminComponent
   // ============================================================
 
   protected startNewCourse(): void {
-    this.editingCourseId.set(null);
+    this.editingQuizId.set(null);
 
     this.form =
       this.createEmptyForm();
@@ -1356,9 +1356,9 @@ export class TestCourseAdminComponent
   // ============================================================
 
   protected editCourse(
-    course: TestCourse,
+    course: Quiz,
   ): void {
-    this.editingCourseId.set(
+    this.editingQuizId.set(
       course.id,
     );
 
@@ -1414,7 +1414,7 @@ export class TestCourseAdminComponent
    * has been created.
    */
   protected onNameChange(): void {
-    if (this.editingCourseId()) {
+    if (this.editingQuizId()) {
       return;
     }
 
@@ -1444,7 +1444,7 @@ export class TestCourseAdminComponent
       this.saving.set(true);
 
       const editingId =
-        this.editingCourseId();
+        this.editingQuizId();
 
       // ========================================================
       // UPDATE
@@ -1462,7 +1462,7 @@ export class TestCourseAdminComponent
           return;
         }
 
-        await this.courseService.updateCourse(
+        await this.quizService.updateQuiz(
           organizationId,
           editingId,
           {
@@ -1502,7 +1502,7 @@ export class TestCourseAdminComponent
         this.form.scope ===
         'platform'
       ) {
-        await this.courseService.createPlatformCourse(
+        await this.quizService.createPlatformQuiz(
           {
             name:
               this.form.name,
@@ -1559,7 +1559,7 @@ export class TestCourseAdminComponent
           return;
         }
 
-        await this.courseService.createCourse(
+        await this.quizService.createQuiz(
           organizationId,
           {
             name:
@@ -1669,7 +1669,7 @@ export class TestCourseAdminComponent
   protected cancelForm(): void {
     this.showForm.set(false);
 
-    this.editingCourseId.set(null);
+    this.editingQuizId.set(null);
 
     this.form =
       this.createEmptyForm();
@@ -1680,17 +1680,17 @@ export class TestCourseAdminComponent
   // ============================================================
 
   protected editingCourseQuestionCount(): number {
-    const courseId =
-      this.editingCourseId();
+    const quizId =
+      this.editingQuizId();
 
-    if (!courseId) {
+    if (!quizId) {
       return 0;
     }
 
     const course =
       this.courses().find(
         (item) =>
-          item.id === courseId,
+          item.id === quizId,
       );
 
     return (

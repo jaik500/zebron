@@ -62,6 +62,15 @@
             "ssr": {
               "entry": "src/server.ts"
             },
+            "allowedCommonJsDependencies": [
+              "core-js",
+              "html2canvas",
+              "fflate",
+              "dompurify",
+              "canvg",
+              "raf",
+              "rgbcolor"
+            ],
 
              "externalDependencies": [
      "firebase-admin",

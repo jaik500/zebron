@@ -2,11 +2,12 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 
 import { CommonModule } from '@angular/common';
 
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { TestStore } from '../../store/test.store';
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { learnerBaseRoute, useLearningHeaderTitle } from '../../learner-route';
 
 @Component({
   selector: 'app-test-results',
@@ -17,12 +18,9 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
     TranslatePipe,CommonModule, RouterLink],
 
   template: `
-    <main class="min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen bg-slate-50">
       <!-- HEADER -->
-      <header
-        class="border-b border-[#032D42]
-         bg-[#032D42] text-white"
-      >
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div
           class="mx-auto max-w-6xl px-4 py-2
            sm:px-6 lg:px-8"
@@ -35,7 +33,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             <div>
               <p class="text-sm font-medium text-white/70">{{ 'Test Center' | t }}</p>
 
-              <h1 class="text-2xl font-bold text-white">{{ 'Test Results' | t }}</h1>
+              <h1 class="text-xl font-bold text-white">{{ 'Test Results' | t }}</h1>
             </div>
 
             @if (course(); as selectedCourse) {
@@ -72,7 +70,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             </p>
 
             <a
-              routerLink="/test-center"
+              [routerLink]="[baseRoute, 'quizzes']"
               class="mt-6 inline-flex rounded-lg
                      bg-[#007979] px-5 py-2.5
                      text-sm font-semibold text-white
@@ -482,13 +480,13 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
             @if (courseSlug()) {
               <a
-                [routerLink]="['/test-center/courses', courseSlug()]"
+                [routerLink]="[baseRoute, 'quiz-details', courseSlug()]"
                 class="rounded-lg bg-[#007979]
                        px-5 py-2.5 text-center
                        text-sm font-semibold
                        text-white hover:bg-[#006666]"
               >
-                {{ 'Back to Course' | t }}
+                {{ 'Back to quiz' | t }}
               </a>
             }
           </div>
@@ -509,6 +507,13 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 })
 export class TestResultsComponent {
   private readonly router = inject(Router);
+
+  private readonly route = inject(ActivatedRoute);
+
+  /** '/test-center' or the organization's learner route. */
+  readonly baseRoute = learnerBaseRoute(this.route);
+
+  private readonly headerTitle = useLearningHeaderTitle(this.route);
 
   protected readonly testStore = inject(TestStore);
 
@@ -566,11 +571,11 @@ export class TestResultsComponent {
     const slug = this.courseSlug();
 
     if (!slug) {
-      void this.router.navigate(['/test-center']);
+      void this.router.navigate([this.baseRoute, 'quizzes']);
 
       return;
     }
 
-    void this.router.navigate(['/test-center/courses', slug]);
+    void this.router.navigate([this.baseRoute, 'quiz-details', slug]);
   }
 }

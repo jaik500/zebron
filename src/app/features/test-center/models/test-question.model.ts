@@ -47,7 +47,7 @@ export interface TestQuestion {
    */
   organizationId: string | null;
 
-  courseId: string;
+  quizId: string;
 
   topicId: string;
 

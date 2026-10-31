@@ -132,7 +132,7 @@ export class TestQuestionBankFileService {
    */
   async importFile(
     organizationId: string,
-    courseId: string,
+    quizId: string,
     bank: TestQuestionBankFile,
   ): Promise<TestQuestionImportResult> {
     if (!organizationId?.trim()) {
@@ -141,7 +141,7 @@ export class TestQuestionBankFileService {
       );
     }
 
-    if (!courseId?.trim()) {
+    if (!quizId?.trim()) {
       throw new Error(
         'A Test Center course is required to import a question bank.',
       );
@@ -149,7 +149,7 @@ export class TestQuestionBankFileService {
 
     return this.importService.importQuestionBank(
       organizationId,
-      courseId,
+      quizId,
       bank.topics,
       bank.questions,
     );

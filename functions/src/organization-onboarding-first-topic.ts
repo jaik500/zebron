@@ -23,7 +23,7 @@ type TestCenterEntitlementOnboarding = {
   completedSteps?: unknown;
   status?: unknown;
   firstProgramId?: unknown;
-  firstCourseId?: unknown;
+  firstQuizId?: unknown;
   firstTopicId?: unknown;
   firstQuestionId?: unknown;
   startedAt?: unknown;
@@ -74,7 +74,7 @@ function buildTestCenterSetupState(
       ? state.completedSteps
       : [],
     firstProgramId: normalizeResourceId(state.firstProgramId),
-    firstCourseId: normalizeResourceId(state.firstCourseId),
+    firstQuizId: normalizeResourceId(state.firstQuizId),
     firstTopicId: normalizeResourceId(state.firstTopicId),
     firstQuestionId: normalizeResourceId(state.firstQuestionId),
     ...(state.startedAt !== undefined ? { startedAt: state.startedAt } : {}),
@@ -234,8 +234,8 @@ export const completeOrganizationFirstTopic = onCall(
 
       assertCurrentTestCenterSetupStep(setup, "first_topic");
 
-      const firstCourseId = setup.firstCourseId;
-      if (!firstCourseId) {
+      const firstQuizId = setup.firstQuizId;
+      if (!firstQuizId) {
         throw new HttpsError(
           "failed-precondition",
           "The first course has not been configured.",
@@ -249,7 +249,7 @@ export const completeOrganizationFirstTopic = onCall(
         );
       }
 
-      const courseRef = db.collection("testCourses").doc(firstCourseId);
+      const courseRef = db.collection("quizzes").doc(firstQuizId);
       const courseSnapshot = await transaction.get(courseRef);
 
       if (!courseSnapshot.exists) {
@@ -267,8 +267,8 @@ export const completeOrganizationFirstTopic = onCall(
       }
 
       const duplicateQuery = db
-        .collection("testTopics")
-        .where("courseId", "==", firstCourseId)
+        .collection("quizTopics")
+        .where("quizId", "==", firstQuizId)
         .where("slug", "==", normalizedSlug)
         .limit(1);
 
@@ -282,8 +282,8 @@ export const completeOrganizationFirstTopic = onCall(
       }
 
       const existingTopicsQuery = db
-        .collection("testTopics")
-        .where("courseId", "==", firstCourseId);
+        .collection("quizTopics")
+        .where("quizId", "==", firstQuizId);
 
       const existingTopicsSnapshot = await transaction.get(existingTopicsQuery);
       let nextSortOrder = 0;
@@ -295,7 +295,7 @@ export const completeOrganizationFirstTopic = onCall(
         }
       }
 
-      const topicRef = db.collection("testTopics").doc();
+      const topicRef = db.collection("quizTopics").doc();
       const now = FieldValue.serverTimestamp();
       const cleanDescription =
         typeof description === "string" && description.trim()
@@ -306,7 +306,7 @@ export const completeOrganizationFirstTopic = onCall(
 
       transaction.create(topicRef, {
         organizationId: normalizedOrganizationId,
-        courseId: firstCourseId,
+        quizId: firstQuizId,
         name: name.trim(),
         slug: normalizedSlug,
         description: cleanDescription,
@@ -331,7 +331,7 @@ export const completeOrganizationFirstTopic = onCall(
       return {
         topicId: topicRef.id,
         organizationId: normalizedOrganizationId,
-        courseId: firstCourseId,
+        quizId: firstQuizId,
         name: name.trim(),
         slug: normalizedSlug,
         description: cleanDescription,
@@ -350,7 +350,7 @@ export const completeOrganizationFirstTopic = onCall(
       topic: {
         id: result.topicId,
         organizationId: result.organizationId,
-        courseId: result.courseId,
+        quizId: result.quizId,
         name: result.name,
         slug: result.slug,
         description: result.description,

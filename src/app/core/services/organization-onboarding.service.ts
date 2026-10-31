@@ -51,7 +51,7 @@ export interface OrganizationOnboardingFirstQuestionResponse {
   question: {
     id: string;
     organizationId: string;
-    courseId: string;
+    quizId: string;
     topicId: string;
     question: string;
     type: 'multiple-choice';

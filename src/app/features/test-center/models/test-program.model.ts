@@ -37,7 +37,7 @@ export interface TestProgram {
    * This is a denormalized display value and should not be
    * treated as the authorization source of truth.
    */
-  courseCount: number;
+  quizCount: number;
 
   createdAt: Timestamp;
 

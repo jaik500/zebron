@@ -27,6 +27,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../../core/i18n/i18n.service';
 import { MailComposerComponent, MailReaderComponent } from './shared/mail-popups';
 type MailboxFilter = 'inbox' | 'all' | 'unread' | 'read' | 'archived';
 
@@ -35,7 +37,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
 @Component({
   selector: 'app-contact-mailbox',
   standalone: true,
-  imports: [CommonModule, RouterLink, MailReaderComponent, MailComposerComponent, MatIconModule, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
+  imports: [CommonModule, RouterLink, TranslatePipe, MailReaderComponent, MailComposerComponent, MatIconModule, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
   template: `
     <!-- =========================================================
          PAGE
@@ -48,8 +50,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 sm:flex-nowrap sm:px-6 lg:px-8">
           <div class="min-w-0 flex-1 sm:flex-none">
-            <h1 class="truncate text-lg font-semibold">Mailbox</h1>
-            <p class="hidden truncate text-xs text-white/80 lg:block">Messages sent through the Zebron contact form</p>
+            <h1 class="truncate text-lg font-semibold">{{ 'Mailbox' | t }}</h1>
+            <p class="hidden truncate text-xs text-white/80 lg:block">{{ 'Messages sent through the Zebron contact form' | t }}</p>
           </div>
 
           <!-- Search (full width on phones, on its own line) -->
@@ -58,7 +60,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
             class="zb-field zb-search order-last w-full sm:order-none sm:mx-auto sm:max-w-md"
             [ngClass]="{ 'max-sm:!hidden': !mobileSearchOpen() }"
           >
-            <mat-label>Search mailbox</mat-label>
+            <mat-label>{{ 'Search mailbox' | t }}</mat-label>
             <mat-icon matPrefix aria-hidden="true">search</mat-icon>
             <input
               matInput
@@ -66,11 +68,11 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
               type="search"
               [value]="searchQuery()"
               (input)="setSearch($any($event.target).value)"
-              placeholder="Search sender, subject or message"
+              [placeholder]="'Search sender, subject or message' | t"
               autocomplete="off"
             />
             @if (searchQuery()) {
-              <button matSuffix mat-icon-button type="button" (click)="setSearch('')" aria-label="Clear search" title="Clear search">
+              <button matSuffix mat-icon-button type="button" (click)="setSearch('')" [attr.aria-label]="'Clear search' | t" [title]="'Clear search' | t">
                 <mat-icon>close</mat-icon>
               </button>
             }
@@ -84,8 +86,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
             aria-controls="mailbox-search"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white sm:hidden"
             [ngClass]="{ 'bg-white/15 !text-white': mobileSearchOpen() }"
-            [attr.aria-label]="mobileSearchOpen() ? 'Hide search' : 'Search'"
-            [title]="mobileSearchOpen() ? 'Hide search' : 'Search'"
+            [attr.aria-label]="(mobileSearchOpen() ? 'Hide search' : 'Search') | t"
+            [title]="(mobileSearchOpen() ? 'Hide search' : 'Search') | t"
           >
             <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">{{ mobileSearchOpen() ? 'search_off' : 'search' }}</mat-icon>
           </button>
@@ -96,17 +98,17 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
             class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 text-sm font-semibold text-[#006666] shadow-sm transition hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
             <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">edit</mat-icon>
-            <span class="hidden sm:inline">Compose</span>
+            <span class="hidden sm:inline">{{ 'Compose' | t }}</span>
           </button>
 
           <a
             routerLink="/admin/contact/sent"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-white/90 transition hover:bg-white/15 hover:text-white sm:w-auto sm:px-3"
-            [attr.aria-label]="'Sent'"
-            title="Sent"
+            [attr.aria-label]="'Sent' | t"
+            [title]="'Sent' | t"
           >
             <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">send</mat-icon>
-            <span class="hidden sm:inline">Sent</span>
+            <span class="hidden sm:inline">{{ 'Sent' | t }}</span>
           </a>
 
           <button
@@ -114,8 +116,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
             (click)="loadMessages()"
             [disabled]="loading()"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white disabled:opacity-50"
-            aria-label="Refresh"
-            title="Refresh"
+            [attr.aria-label]="'Refresh' | t"
+            [title]="'Refresh' | t"
           >
             <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]" [class.animate-spin]="loading()">refresh</mat-icon>
           </button>
@@ -124,8 +126,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
             type="button"
             [matMenuTriggerFor]="mailboxMenu"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white"
-            aria-label="More mailbox options"
-            title="More"
+            [attr.aria-label]="'More mailbox options' | t"
+            [title]="'More' | t"
           >
             <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">more_vert</mat-icon>
           </button>
@@ -133,16 +135,16 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
           <mat-menu #mailboxMenu="matMenu" xPosition="before">
             <button mat-menu-item type="button" (click)="generateContactMessagesPdf()" [disabled]="filteredMessages().length === 0">
               <mat-icon>picture_as_pdf</mat-icon>
-              <span>Export to PDF</span>
+              <span>{{ 'Export to PDF' | t }}</span>
             </button>
             <a mat-menu-item routerLink="/admin">
               <mat-icon>dashboard</mat-icon>
-              <span>Admin dashboard</span>
+              <span>{{ 'Admin dashboard' | t }}</span>
             </a>
             <mat-divider></mat-divider>
             <button mat-menu-item type="button" (click)="logout()">
               <mat-icon>logout</mat-icon>
-              <span>Sign out</span>
+              <span>{{ 'Sign out' | t }}</span>
             </button>
           </mat-menu>
         </div>
@@ -155,7 +157,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
         <div class="mx-auto max-w-7xl">
           @if (error()) {
             <div class="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700" role="alert">
-              {{ error() }}
+              {{ error() | t }}
             </div>
           }
 
@@ -163,7 +165,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
             <!-- Toolbar: folders + search -->
             <div class="flex min-h-11 items-center gap-1 border-b border-slate-200 px-1 py-1.5 sm:gap-2 sm:px-2">
               <!-- Select all (visible rows) -->
-              <label class="flex h-8 w-5 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-slate-100 sm:w-8" title="Select all">
+              <label class="flex h-8 w-5 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-slate-100 sm:w-8" [title]="'Select all' | t">
                 <input
                   type="checkbox"
                   class="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#007979]"
@@ -171,40 +173,40 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                   [indeterminate]="someVisibleChecked()"
                   [disabled]="visibleMessages().length === 0"
                   (change)="toggleAllVisible()"
-                  aria-label="Select all messages"
+                  [attr.aria-label]="'Select all messages' | t"
                 />
               </label>
 
               @if (checkedMessages().length > 0) {
                 <!-- Bulk actions -->
-                <div class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" role="toolbar" aria-label="Selected messages">
-                  <span class="mr-1 shrink-0 text-sm font-semibold text-slate-900">{{ checkedMessages().length }} selected</span>
+                <div class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" role="toolbar" [attr.aria-label]="'Selected messages' | t">
+                  <span class="mr-1 shrink-0 text-sm font-semibold text-slate-900">{{ '{0} selected' | t: [checkedMessages().length] }}</span>
                   @if (checkedAllArchived()) {
                     <button type="button" (click)="bulkMoveToInbox()" [disabled]="bulkBusy()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50">
                       <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">unarchive</mat-icon>
-                      <span class="hidden sm:inline">Move to inbox</span>
+                      <span class="hidden sm:inline">{{ 'Move to inbox' | t }}</span>
                     </button>
                   } @else {
                     <button type="button" (click)="bulkArchive()" [disabled]="bulkBusy()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50">
                       <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">archive</mat-icon>
-                      <span class="hidden sm:inline">Archive</span>
+                      <span class="hidden sm:inline">{{ 'Archive' | t }}</span>
                     </button>
                   }
                   <button type="button" (click)="bulkMarkRead()" [disabled]="bulkBusy()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50">
                     <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">drafts</mat-icon>
-                    <span class="hidden sm:inline">Mark read</span>
+                    <span class="hidden sm:inline">{{ 'Mark read' | t }}</span>
                   </button>
                   <button type="button" (click)="bulkDelete()" [disabled]="bulkBusy()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 hover:!bg-red-50 hover:!text-red-600">
                     <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
-                    <span class="hidden sm:inline">Delete</span>
+                    <span class="hidden sm:inline">{{ 'Delete' | t }}</span>
                   </button>
-                  <button type="button" (click)="clearSelection()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 ml-auto" title="Clear selection">
+                  <button type="button" (click)="clearSelection()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 ml-auto" [title]="'Clear selection' | t">
                     <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">close</mat-icon>
-                    <span class="hidden sm:inline">Clear</span>
+                    <span class="hidden sm:inline">{{ 'Clear' | t }}</span>
                   </button>
                 </div>
               } @else {
-              <nav class="-mx-1 flex min-w-0 flex-1 gap-1 overflow-x-auto px-1" aria-label="Mailbox folders">
+              <nav class="-mx-1 flex min-w-0 flex-1 gap-1 overflow-x-auto px-1" [attr.aria-label]="'Mailbox folders' | t">
                 @for (folder of folders(); track folder.key) {
                   <button
                     type="button"
@@ -215,7 +217,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                       : 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900'"
                   >
                     <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">{{ folder.icon }}</mat-icon>
-                    {{ folder.label }}
+                    {{ folder.label | t }}
                     @if (folder.count > 0) {
                       <span
                         [class]="folder.key === 'unread'
@@ -246,17 +248,17 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
               <div class="px-6 py-12 text-center">
                 <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-300">{{ searchQuery() ? 'search_off' : 'inbox' }}</mat-icon>
                 <p class="mt-2 text-sm font-semibold text-slate-900">
-                  {{ searchQuery() ? 'No messages match your search' : filter() === 'unread' || filter() === 'inbox' ? 'You\\u0027re all caught up' : 'No messages here' }}
+                  {{ (searchQuery() ? 'No messages match your search' : filter() === 'unread' || filter() === 'inbox' ? 'You\\u0027re all caught up' : 'No messages here') | t }}
                 </p>
                 @if (searchQuery()) {
-                  <button type="button" (click)="setSearch('')" class="mt-2 text-sm font-medium text-[#007979] hover:underline">Clear search</button>
+                  <button type="button" (click)="setSearch('')" class="mt-2 text-sm font-medium text-[#007979] hover:underline">{{ 'Clear search' | t }}</button>
                 }
               </div>
             } @else {
               <ul class="divide-y divide-slate-100">
                 @for (message of visibleMessages(); track message.id) {
                   <li
-                    class="group relative flex cursor-pointer items-center gap-1 px-1 py-2.5 sm:gap-2 transition hover:bg-slate-50 hover:shadow-[inset_3px_0_0_#007979] sm:px-2"
+                    class="group relative flex cursor-pointer items-center gap-2.5 px-1 py-2.5 sm:gap-2 transition hover:bg-slate-50 hover:shadow-[inset_3px_0_0_#007979] sm:px-2"
                     [ngClass]="{ 'bg-teal-50/40': message.status === 'unread' && !isChecked(message), '!bg-[#007979]/10': isChecked(message) }"
                     (click)="openMessage(message)"
                   >
@@ -267,7 +269,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                         class="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#007979]"
                         [checked]="isChecked(message)"
                         (change)="toggleChecked(message)"
-                        [attr.aria-label]="'Select message from ' + (message.name || message.email)"
+                        [attr.aria-label]="'Select message from {0}' | t: [message.name || message.email]"
                       />
                     </label>
 
@@ -275,7 +277,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                     <span
                       class="-ml-1 h-1.5 w-1.5 shrink-0 rounded-full"
                       [ngClass]="{ 'bg-[#007979]': message.status === 'unread', 'max-sm:hidden': message.status !== 'unread' }"
-                      [attr.aria-label]="message.status === 'unread' ? 'New' : null"
+                      [attr.aria-label]="message.status === 'unread' ? ('New' | t) : null"
                     ></span>
 
                     <!-- Desktop: one line. Mobile: sender + date, then subject. -->
@@ -295,10 +297,10 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                         <span
                           [class]="message.status === 'unread' ? 'truncate text-sm font-semibold text-slate-900' : 'truncate text-sm text-slate-600'"
                         >
-                          {{ message.subject || '(No subject)' }}
+                          {{ message.subject || ('(No subject)' | t) }}
                         </span>
                         @if (message.status === 'archived' && filter() !== 'archived') {
-                          <span class="shrink-0 rounded bg-slate-100 px-1.5 text-[11px] font-medium leading-[18px] text-slate-500">Archived</span>
+                          <span class="shrink-0 rounded bg-slate-100 px-1.5 text-[11px] font-medium leading-[18px] text-slate-500">{{ 'Archived' | t }}</span>
                         }
                       </p>
                     </div>
@@ -316,19 +318,19 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                       class="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-lg bg-slate-50 pl-2 sm:group-hover:flex sm:group-focus-within:flex"
                       (click)="$event.stopPropagation()"
                     >
-                      <button type="button" (click)="replyToMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" aria-label="Reply" title="Reply">
+                      <button type="button" (click)="replyToMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" [attr.aria-label]="'Reply' | t" [title]="'Reply' | t">
                         <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">reply</mat-icon>
                       </button>
                       @if (message.status === 'archived') {
-                        <button type="button" (click)="unarchiveMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" aria-label="Move to inbox" title="Move to inbox">
+                        <button type="button" (click)="unarchiveMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" [attr.aria-label]="'Move to inbox' | t" [title]="'Move to inbox' | t">
                           <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">unarchive</mat-icon>
                         </button>
                       } @else {
-                        <button type="button" (click)="archiveMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" aria-label="Archive" title="Archive">
+                        <button type="button" (click)="archiveMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" [attr.aria-label]="'Archive' | t" [title]="'Archive' | t">
                           <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">archive</mat-icon>
                         </button>
                       }
-                      <button type="button" (click)="deleteMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-red-50 hover:text-red-600" aria-label="Delete" title="Delete">
+                      <button type="button" (click)="deleteMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-red-50 hover:text-red-600" [attr.aria-label]="'Delete' | t" [title]="'Delete' | t">
                         <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
                       </button>
                       <button
@@ -336,8 +338,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                         [matMenuTriggerFor]="messageMenu"
                         [matMenuTriggerData]="{ message: message }"
                         class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900"
-                        aria-label="More actions"
-                        title="More"
+                        [attr.aria-label]="'More actions' | t"
+                        [title]="'More' | t"
                       >
                         <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">more_vert</mat-icon>
                       </button>
@@ -350,7 +352,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                       [matMenuTriggerData]="{ message: message }"
                       (click)="$event.stopPropagation()"
                       class="-mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 sm:hidden"
-                      aria-label="More actions"
+                      [attr.aria-label]="'More actions' | t"
                     >
                       <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">more_vert</mat-icon>
                     </button>
@@ -361,12 +363,11 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
               <!-- Footer -->
               <div class="flex items-center justify-between gap-3 border-t border-slate-200 px-4 py-2 text-xs text-slate-500">
                 <span>
-                  {{ visibleMessages().length }} of {{ filteredMessages().length }}
-                  {{ filteredMessages().length === 1 ? 'message' : 'messages' }}
+                  {{ (filteredMessages().length === 1 ? '{0} of {1} message' : '{0} of {1} messages') | t: [visibleMessages().length, filteredMessages().length] }}
                 </span>
                 @if (visibleMessages().length < filteredMessages().length) {
                   <button type="button" (click)="showMore()" class="rounded-md px-2 py-1 font-semibold text-[#007979] hover:bg-[#007979]/10">
-                    Show more
+                    {{ 'Show more' | t }}
                   </button>
                 }
               </div>
@@ -385,31 +386,31 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
         <!-- View -->
         <button mat-menu-item type="button" (click)="openMessage(message)">
           <mat-icon>visibility</mat-icon>
-          <span>View</span>
+          <span>{{ 'View' | t }}</span>
         </button>
 
         <!-- Reply -->
         <button mat-menu-item type="button" (click)="replyToMessage(message)">
           <mat-icon>reply</mat-icon>
-          <span>Reply</span>
+          <span>{{ 'Reply' | t }}</span>
         </button>
 
         <!-- Forward -->
         <button mat-menu-item type="button" (click)="forwardMessage(message)">
           <mat-icon>forward</mat-icon>
-          <span>Forward</span>
+          <span>{{ 'Forward' | t }}</span>
         </button>
 
         <!-- Archive / Restore -->
         @if (message.status === 'archived') {
           <button mat-menu-item type="button" (click)="unarchiveMessage(message)">
             <mat-icon>unarchive</mat-icon>
-            <span>Restore</span>
+            <span>{{ 'Restore' | t }}</span>
           </button>
         } @else {
           <button mat-menu-item type="button" (click)="archiveMessage(message)">
             <mat-icon>archive</mat-icon>
-            <span>Archive</span>
+            <span>{{ 'Archive' | t }}</span>
           </button>
         }
 
@@ -419,7 +420,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
         <button mat-menu-item type="button" (click)="deleteMessage(message)" class="!text-red-600">
           <mat-icon class="!text-red-600"> delete </mat-icon>
 
-          <span>Delete</span>
+          <span>{{ 'Delete' | t }}</span>
         </button>
       </ng-template>
     </mat-menu>
@@ -495,7 +496,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
           ✓
         </span>
 
-        {{ toastMessage() }}
+        {{ toastMessage() | t }}
       </div>
     }
   `,
@@ -549,6 +550,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
 })
 export class ContactMailboxComponent implements OnInit, OnDestroy {
   private readonly contactStore = inject(ContactStore);
+
+  private readonly i18n = inject(I18nService);
 
   private readonly router = inject(Router);
 
@@ -807,7 +810,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async runBulk(action: (message: ContactMessage) => Promise<void>, done: string): Promise<void> {
+  private async runBulk(action: (message: ContactMessage) => Promise<void>, done: [one: string, many: string]): Promise<void> {
     const messages = this.checkedMessages();
     if (!messages.length || this.bulkBusy()) {
       return;
@@ -818,7 +821,9 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
       const failed = results.filter((result) => result.status === 'rejected').length;
       this.clearSelection();
       this.showSuccessToast(
-        failed ? `${messages.length - failed} ${done}, ${failed} failed.` : `${messages.length} ${messages.length === 1 ? 'message' : 'messages'} ${done}.`,
+        failed
+          ? this.i18n.t('{0} done, {1} failed.', [messages.length - failed, failed])
+          : this.i18n.t(messages.length === 1 ? done[0] : done[1], [messages.length]),
       );
     } finally {
       this.bulkBusy.set(false);
@@ -826,26 +831,26 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   }
 
   bulkArchive(): Promise<void> {
-    return this.runBulk((message) => this.contactStore.archiveMessage(message.id), 'archived');
+    return this.runBulk((message) => this.contactStore.archiveMessage(message.id), ['{0} message archived.', '{0} messages archived.']);
   }
 
   bulkMoveToInbox(): Promise<void> {
-    return this.runBulk((message) => this.contactStore.unarchiveMessage(message.id), 'moved to the inbox');
+    return this.runBulk((message) => this.contactStore.unarchiveMessage(message.id), ['{0} message moved to the inbox.', '{0} messages moved to the inbox.']);
   }
 
   bulkMarkRead(): Promise<void> {
     return this.runBulk(
       (message) => (message.status === 'unread' ? this.contactStore.markAsRead(message.id) : Promise.resolve()),
-      'marked as read',
+      ['{0} message marked as read.', '{0} messages marked as read.'],
     );
   }
 
   async bulkDelete(): Promise<void> {
     const count = this.checkedMessages().length;
-    if (!count || !window.confirm(`Delete ${count} ${count === 1 ? 'message' : 'messages'}? This cannot be undone.`)) {
+    if (!count || !window.confirm(this.i18n.t(count === 1 ? 'Delete {0} message? This cannot be undone.' : 'Delete {0} messages? This cannot be undone.', [count]))) {
       return;
     }
-    await this.runBulk((message) => this.contactStore.deleteMessage(message.id), 'deleted');
+    await this.runBulk((message) => this.contactStore.deleteMessage(message.id), ['{0} message deleted.', '{0} messages deleted.']);
   }
 
   /**
@@ -916,7 +921,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
    */
   async deleteMessage(message: ContactMessage): Promise<void> {
     const confirmed = window.confirm(
-      `Delete the message from ${message.name}? This action cannot be undone.`,
+      this.i18n.t('Delete the message from {0}? This action cannot be undone.', [message.name || message.email]),
     );
 
     if (!confirmed) {

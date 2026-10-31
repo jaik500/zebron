@@ -6,7 +6,7 @@ import { HttpsError } from "firebase-functions/v2/https";
  */
 export const TEST_CENTER_SETUP_STEPS = [
   "first_program",
-  "first_course",
+  "first_quiz",
   "first_topic",
   "first_question",
 ] as const;
@@ -29,7 +29,7 @@ export interface TestCenterSetupState {
   status: TestCenterSetupStatus;
 
   firstProgramId: string | null;
-  firstCourseId: string | null;
+  firstQuizId: string | null;
   firstTopicId: string | null;
   firstQuestionId: string | null;
 
@@ -173,9 +173,9 @@ export function initializeTestCenterSetup(
         ? existingState.firstProgramId
         : null,
 
-    firstCourseId:
-      typeof existingState?.firstCourseId === "string"
-        ? existingState.firstCourseId
+    firstQuizId:
+      typeof existingState?.firstQuizId === "string"
+        ? existingState.firstQuizId
         : null,
 
     firstTopicId:

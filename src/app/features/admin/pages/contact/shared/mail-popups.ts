@@ -1,9 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, model, output } from '@angular/core';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+
+import { I18nService } from '../../../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../../../core/i18n/translate.pipe';
 
 /**
  * Shared mailbox popups for the admin Inbox (contact-mailbox) and Sent
@@ -34,7 +37,7 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'closed.emit()' },
-  imports: [MatIconModule],
+  imports: [MatIconModule, TranslatePipe],
   template: `
     <div
       class="fixed inset-0 z-50 flex items-stretch justify-center bg-slate-900/60 backdrop-blur-[2px] sm:items-center sm:p-6"
@@ -49,7 +52,7 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
       >
         <!-- Toolbar -->
         <div class="flex shrink-0 items-center gap-1 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-3 py-2 sm:px-5">
-          <button type="button" (click)="closed.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Back" title="Back">
+          <button type="button" (click)="closed.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" [attr.aria-label]="'Back' | t" [title]="'Back' | t">
             <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">arrow_back</mat-icon>
           </button>
 
@@ -59,27 +62,27 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
 
           @if (showArchive()) {
             @if (archived()) {
-              <button type="button" (click)="unarchive.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Move to inbox" title="Move to inbox">
+              <button type="button" (click)="unarchive.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" [attr.aria-label]="'Move to inbox' | t" [title]="'Move to inbox' | t">
                 <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">unarchive</mat-icon>
               </button>
             } @else {
-              <button type="button" (click)="archive.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Archive" title="Archive">
+              <button type="button" (click)="archive.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" [attr.aria-label]="'Archive' | t" [title]="'Archive' | t">
                 <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">archive</mat-icon>
               </button>
             }
           }
 
           @if (showDelete()) {
-            <button type="button" (click)="delete.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Delete" title="Delete">
+            <button type="button" (click)="delete.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" [attr.aria-label]="'Delete' | t" [title]="'Delete' | t">
               <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
             </button>
           }
 
           <div class="ml-auto flex items-center gap-1">
-            <button type="button" (click)="print()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Print" title="Print">
+            <button type="button" (click)="print()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" [attr.aria-label]="'Print' | t" [title]="'Print' | t">
               <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">print</mat-icon>
             </button>
-            <button type="button" (click)="closed.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Close" title="Close">
+            <button type="button" (click)="closed.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" [attr.aria-label]="'Close' | t" [title]="'Close' | t">
               <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">close</mat-icon>
             </button>
           </div>
@@ -90,11 +93,11 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
           <div class="px-5 pb-8 pt-6 sm:px-10">
             <div class="flex flex-wrap items-start gap-x-3 gap-y-2">
               <h2 id="mail-reader-subject" class="min-w-0 flex-1 break-words text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
-                {{ subject() || '(No subject)' }}
+                {{ subject() || ('(No subject)' | t) }}
               </h2>
               @if (badge()) {
                 <span [class]="'mt-1 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ' + badgeClass()">
-                  {{ badge() }}
+                  {{ badge()! | t }}
                 </span>
               }
             </div>
@@ -113,7 +116,7 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
                   </p>
                   <p class="shrink-0 text-xs text-slate-500">{{ date() }}</p>
                 </div>
-                <p class="mt-0.5 truncate text-xs text-slate-500">to {{ to() }}</p>
+                <p class="mt-0.5 truncate text-xs text-slate-500">{{ 'to {0}' | t: [to()] }}</p>
               </div>
             </div>
 
@@ -126,7 +129,7 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
           @if (showReply()) {
             <button type="button" (click)="reply.emit()" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#006666]">
               <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">reply</mat-icon>
-              Reply
+              {{ 'Reply' | t }}
             </button>
           }
           <button
@@ -137,10 +140,10 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
               : 'inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#006666]'"
           >
             <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">forward</mat-icon>
-            Forward
+            {{ 'Forward' | t }}
           </button>
           <button type="button" (click)="closed.emit()" class="ml-auto inline-flex h-9 items-center rounded-lg px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
-            Close
+            {{ 'Close' | t }}
           </button>
         </div>
       </section>
@@ -174,6 +177,8 @@ export class MailReaderComponent {
   readonly unarchive = output<void>();
   readonly delete = output<void>();
 
+  private readonly i18n = inject(I18nService);
+
   protected readonly badgeClass = computed(() => BADGE_CLASSES[this.badgeTone()]);
 
   protected readonly initial = computed(() => (this.fromName() || this.fromEmail() || 'Z').charAt(0).toUpperCase());
@@ -195,21 +200,22 @@ export class MailReaderComponent {
       this.fromName() && this.fromEmail() && this.fromName() !== this.fromEmail()
         ? `${this.fromName()} <${this.fromEmail()}>`
         : this.fromName() || this.fromEmail();
+    const t = (text: string, params?: Array<string | number>) => this.i18n.t(text, params);
     const rows = [
-      ['From', from],
-      ['To', this.to()],
-      ['Date', this.date()],
-      ...(this.badge() ? [['Status', this.badge()!]] : []),
+      [t('From'), from],
+      [t('To'), this.to()],
+      [t('Date'), this.date()],
+      ...(this.badge() ? [[t('Status'), t(this.badge()!)]] : []),
     ]
       .map(([label, value]) => `<tr><th>${label}</th><td>${escape(value)}</td></tr>`)
       .join('');
     const printed = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
 
     const html = `<!doctype html>
-<html lang="en">
+<html lang="${this.i18n.language()}">
 <head>
 <meta charset="utf-8" />
-<title>${escape(this.subject() || 'Email')}</title>
+<title>${escape(this.subject() || t('Email'))}</title>
 <style>
   @page { margin: 16mm; }
   body { margin: 0; font-family: Roboto, Arial, sans-serif; color: #0f172a; font-size: 12pt; }
@@ -227,11 +233,11 @@ export class MailReaderComponent {
 </style>
 </head>
 <body>
-  <div class="band"><strong>ZEBRON</strong><span>${escape(this.printLabel())}</span></div>
-  <h1>${escape(this.subject() || '(No subject)')}</h1>
+  <div class="band"><strong>ZEBRON</strong><span>${escape(t(this.printLabel()))}</span></div>
+  <h1>${escape(this.subject() || t('(No subject)'))}</h1>
   <table>${rows}</table>
   <div class="body">${escape(this.body())}</div>
-  <footer>Printed ${escape(printed)} from the Zebron Mailbox</footer>
+  <footer>${escape(t('Printed {0} from the Zebron Mailbox', [printed]))}</footer>
 </body>
 </html>`;
 
@@ -276,7 +282,7 @@ export interface MailDraft {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'cancel()' },
-  imports: [MatIconModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [MatIconModule, MatButtonModule, MatFormFieldModule, MatInputModule, TranslatePipe],
   template: `
     <div
       class="fixed inset-0 z-[60] flex items-stretch justify-center bg-slate-900/60 backdrop-blur-[2px] sm:items-center sm:p-6"
@@ -291,16 +297,16 @@ export interface MailDraft {
       >
         <header class="flex shrink-0 items-center justify-between gap-3 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-4 py-3 sm:px-6">
           <div class="min-w-0">
-            <h2 id="mail-composer-title" class="truncate text-lg font-semibold text-white">{{ heading() }}</h2>
-            <p class="truncate text-xs text-white/80">Send an email from Zebron.</p>
+            <h2 id="mail-composer-title" class="truncate text-lg font-semibold text-white">{{ heading() | t }}</h2>
+            <p class="truncate text-xs text-white/80">{{ 'Send an email from Zebron.' | t }}</p>
           </div>
           <button
             type="button"
             (click)="cancel()"
             [disabled]="sending()"
             class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:opacity-50"
-            aria-label="Close"
-            title="Close"
+            [attr.aria-label]="'Close' | t"
+            [title]="'Close' | t"
           >
             <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">close</mat-icon>
           </button>
@@ -311,18 +317,18 @@ export interface MailDraft {
           <div class="min-h-0 flex-1 overflow-y-auto px-4 pt-4 sm:px-6">
             @if (error()) {
               <div class="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-                {{ error() }}
+                {{ error() | t }}
               </div>
             }
 
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>To</mat-label>
+              <mat-label>{{ 'To' | t }}</mat-label>
               <input
                 matInput
                 type="email"
                 [value]="to()"
                 (input)="to.set($any($event.target).value)"
-                placeholder="recipient@example.com"
+                [placeholder]="'recipient@example.com' | t"
                 autocomplete="email"
                 required
                 [disabled]="sending()"
@@ -330,26 +336,26 @@ export interface MailDraft {
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Subject</mat-label>
+              <mat-label>{{ 'Subject' | t }}</mat-label>
               <input
                 matInput
                 type="text"
                 [value]="subject()"
                 (input)="subject.set($any($event.target).value)"
-                placeholder="Message subject"
+                [placeholder]="'Message subject' | t"
                 required
                 [disabled]="sending()"
               />
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Message</mat-label>
+              <mat-label>{{ 'Message' | t }}</mat-label>
               <textarea
                 matInput
                 rows="10"
                 [value]="message()"
                 (input)="message.set($any($event.target).value)"
-                placeholder="Write your message..."
+                [placeholder]="'Write your message...' | t"
                 required
                 [disabled]="sending()"
               ></textarea>
@@ -364,7 +370,7 @@ export interface MailDraft {
               [disabled]="sending()"
               class="h-9 rounded-lg px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
             >
-              Cancel
+              {{ 'Cancel' | t }}
             </button>
             <button
               type="submit"
@@ -372,7 +378,7 @@ export interface MailDraft {
               class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]" [class.animate-spin]="sending()">{{ sending() ? 'refresh' : 'send' }}</mat-icon>
-              {{ sending() ? 'Sending...' : submitLabel() }}
+              {{ (sending() ? 'Sending...' : submitLabel()) | t }}
             </button>
           </div>
         </form>

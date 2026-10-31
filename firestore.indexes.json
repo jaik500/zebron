@@ -831,7 +831,7 @@
       ]
     },
     {
-      "collectionGroup": "testQuestions",
+      "collectionGroup": "quizQuestions",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -839,7 +839,7 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "courseId",
+          "fieldPath": "quizId",
           "order": "ASCENDING"
         },
         {
@@ -853,7 +853,7 @@
       ]
     },
     {
-      "collectionGroup": "testQuestions",
+      "collectionGroup": "quizQuestions",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -861,7 +861,7 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "courseId",
+          "fieldPath": "quizId",
           "order": "ASCENDING"
         },
         {
@@ -874,6 +874,180 @@
         },
         {
           "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "knowledgeArticles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "applicationKey",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "knowledgeArticles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "contentType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "knowledgeArticles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "applicationKey",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "contentType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "operationalEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "operationalEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "severity",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "operationalEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "operationalEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "feature",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "blogPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "section",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "publishedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "blogPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "publishedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "blogPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "section",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "blogPosts",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "publishAt",
           "order": "ASCENDING"
         }
       ]
@@ -1003,17 +1177,17 @@
       "indexes": []
     },
     {
-      "collectionGroup": "testQuestions",
+      "collectionGroup": "quizQuestions",
       "fieldPath": "explanation",
       "indexes": []
     },
     {
-      "collectionGroup": "testQuestions",
+      "collectionGroup": "quizQuestions",
       "fieldPath": "hint",
       "indexes": []
     },
     {
-      "collectionGroup": "testQuestions",
+      "collectionGroup": "quizQuestions",
       "fieldPath": "options",
       "indexes": []
     },
@@ -1039,6 +1213,11 @@
       "collectionGroup": "communityNotifications",
       "fieldPath": "expireAt",
       "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "blogPosts",
+      "fieldPath": "content",
       "indexes": []
     }
   ]

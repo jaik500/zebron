@@ -4,7 +4,7 @@ import {
   TestQuestionStatus,
   TestQuestionType,
 } from '../models/test-question.model';
-import { TestCourse } from '../models/test-course.model';
+import { Quiz } from '../models/quiz.model';
 import { TestProgram } from '../models/test-program.model';
 import { TestTopic } from '../models/test-topic.model';
 
@@ -50,7 +50,7 @@ export interface ImportDefaults {
   /** Existing program ID, used for new courses that name no program. */
   programId: string | null;
   /** Existing course ID, used for rows that name no course. */
-  courseId: string | null;
+  quizId: string | null;
   /** Topic name used for rows that name no topic. */
   topicName: string;
   /** Status given to new and updated questions. */
@@ -70,7 +70,7 @@ export interface PlannedCourse {
   description: string;
   provider: string;
   programKey: string | null;
-  existing: TestCourse | null;
+  existing: Quiz | null;
 }
 
 export interface PlannedTopic {

@@ -11,12 +11,12 @@ import {
 
 import { firestore } from '../../../core/services/firebase-config';
 
-import { TestCourse } from '../models/test-course.model';
+import { Quiz } from '../models/quiz.model';
 import { TestProgram } from '../models/test-program.model';
 import { TestQuestion } from '../models/test-question.model';
 import { TestTopic } from '../models/test-topic.model';
 
-import { TestCourseService } from './test-course.service';
+import { QuizService } from './quiz.service';
 import { TestProgramService } from './test-program.service';
 import { TestQuestionService } from './test-question.service';
 import { TestTopicService } from './test-topic.service';
@@ -75,7 +75,7 @@ const WRITE_CONCURRENCY = 8;
 })
 export class TestCenterImportService {
   private readonly programService = inject(TestProgramService);
-  private readonly courseService = inject(TestCourseService);
+  private readonly quizService = inject(QuizService);
   private readonly topicService = inject(TestTopicService);
   private readonly questionService = inject(TestQuestionService);
 
@@ -370,7 +370,7 @@ export class TestCenterImportService {
   ): Promise<ImportPlan> {
     const [programs, courses] = await Promise.all([
       this.programService.getOrganizationPrograms(organizationId),
-      this.courseService.getAllCourses(organizationId),
+      this.quizService.getAllQuizzes(organizationId),
     ]);
 
     const errors: ImportRowError[] = [...parseErrors];
@@ -384,13 +384,13 @@ export class TestCenterImportService {
         (program) => keyOf(program.name) === keyOf(name) || program.slug === slugify(name),
       ) ?? null;
 
-    const findCourse = (name: string): TestCourse | null =>
+    const findCourse = (name: string): Quiz | null =>
       courses.find(
         (course) => keyOf(course.name) === keyOf(name) || course.slug === slugify(name),
       ) ?? null;
 
-    const defaultCourse = defaults.courseId
-      ? courses.find((course) => course.id === defaults.courseId) ?? null
+    const defaultCourse = defaults.quizId
+      ? courses.find((course) => course.id === defaults.quizId) ?? null
       : null;
 
     const defaultProgram = defaults.programId
@@ -490,10 +490,10 @@ export class TestCenterImportService {
 
     await Promise.all(
       existingCourses.map(async (course) => {
-        const courseId = course.existing!.id;
+        const quizId = course.existing!.id;
         const [topics, questions] = await Promise.all([
-          this.topicService.getAllTopics(organizationId, courseId),
-          this.questionService.getAllQuestionsForCourse(organizationId, courseId),
+          this.topicService.getAllTopics(organizationId, quizId),
+          this.questionService.getAllQuestionsForCourse(organizationId, quizId),
         ]);
 
         existingByCourse.set(course.key, { topics, questions });
@@ -599,7 +599,7 @@ export class TestCenterImportService {
     };
 
     const programIds = new Map<string, string>();
-    const courseIds = new Map<string, string>();
+    const quizIds = new Map<string, string>();
     const topicIds = new Map<string, string>();
 
     // ---------------- Programs ----------------
@@ -627,7 +627,7 @@ export class TestCenterImportService {
 
     for (const course of plan.courses) {
       if (course.existing) {
-        courseIds.set(course.key, course.existing.id);
+        quizIds.set(course.key, course.existing.id);
       }
     }
 
@@ -642,7 +642,7 @@ export class TestCenterImportService {
       }
 
       try {
-        const id = await this.courseService.createCourse(organizationId, {
+        const id = await this.quizService.createQuiz(organizationId, {
           name: course.name,
           slug: slugify(course.name),
           description: course.description,
@@ -652,7 +652,7 @@ export class TestCenterImportService {
           programId,
         });
 
-        courseIds.set(course.key, id);
+        quizIds.set(course.key, id);
         result.coursesCreated++;
       } catch (error) {
         result.errors.push(`Course "${course.name}": ${message(error)}`);
@@ -677,9 +677,9 @@ export class TestCenterImportService {
     for (const [index, topic] of newTopics.entries()) {
       onProgress({ stage: 'topics', done: index, total: newTopics.length });
 
-      const courseId = courseIds.get(topic.courseKey);
+      const quizId = quizIds.get(topic.courseKey);
 
-      if (!courseId) {
+      if (!quizId) {
         result.errors.push(`Topic "${topic.name}": its course could not be created.`);
         continue;
       }
@@ -691,7 +691,7 @@ export class TestCenterImportService {
         const id = await this.topicService.createTopic(organizationId, {
           scope: 'organization',
           organizationId,
-          courseId,
+          quizId,
           name: topic.name,
           slug: slugify(topic.name),
           description: topic.description,
@@ -708,22 +708,22 @@ export class TestCenterImportService {
     }
 
     // ---------------- Questions ----------------
-    const questionsCollection = collection(firestore, 'testQuestions');
+    const questionsCollection = collection(firestore, 'quizQuestions');
     let done = 0;
 
     await runWithConcurrency(plan.questions, WRITE_CONCURRENCY, async (item) => {
-      const courseId = courseIds.get(item.courseKey);
+      const quizId = quizIds.get(item.courseKey);
       const topicId = topicIds.get(item.topicKey);
 
       try {
-        if (!courseId || !topicId) {
+        if (!quizId || !topicId) {
           throw new Error('its course or topic could not be created.');
         }
 
         const payload = {
           scope: 'organization',
           organizationId,
-          courseId,
+          quizId,
           topicId,
           question: item.row.question,
           type: item.row.type,
@@ -757,14 +757,14 @@ export class TestCenterImportService {
     });
 
     // ---------------- Published question counts ----------------
-    const touchedCourses = [...new Set(plan.questions.map((item) => courseIds.get(item.courseKey)))]
+    const touchedCourses = [...new Set(plan.questions.map((item) => quizIds.get(item.courseKey)))]
       .filter((id): id is string => Boolean(id));
 
-    for (const [index, courseId] of touchedCourses.entries()) {
+    for (const [index, quizId] of touchedCourses.entries()) {
       onProgress({ stage: 'counts', done: index, total: touchedCourses.length });
 
       try {
-        await this.refreshCounts(organizationId, courseId);
+        await this.refreshCounts(organizationId, quizId);
       } catch (error) {
         // Counts are display values; the questions are already saved.
         console.warn('[TestCenterImport] Could not refresh question counts.', error);
@@ -802,10 +802,10 @@ export class TestCenterImportService {
     }
   }
 
-  private async refreshCounts(organizationId: string, courseId: string): Promise<void> {
+  private async refreshCounts(organizationId: string, quizId: string): Promise<void> {
     const [topics, questions] = await Promise.all([
-      this.topicService.getAllTopics(organizationId, courseId),
-      this.questionService.getAllQuestionsForCourse(organizationId, courseId),
+      this.topicService.getAllTopics(organizationId, quizId),
+      this.questionService.getAllQuestionsForCourse(organizationId, quizId),
     ]);
 
     const published = questions.filter((question) => question.status === 'published');
@@ -817,14 +817,14 @@ export class TestCenterImportService {
 
     await Promise.all(
       topics.map((topic) =>
-        updateDoc(doc(firestore, 'testTopics', topic.id), {
+        updateDoc(doc(firestore, 'quizTopics', topic.id), {
           questionCount: byTopic.get(topic.id) ?? 0,
           updatedAt: serverTimestamp(),
         }),
       ),
     );
 
-    await updateDoc(doc(firestore, 'testCourses', courseId), {
+    await updateDoc(doc(firestore, 'quizzes', quizId), {
       questionCount: published.length,
       updatedAt: serverTimestamp(),
     });

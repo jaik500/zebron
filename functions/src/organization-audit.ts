@@ -45,7 +45,7 @@ const NOISE_FIELDS = new Set([
   "updatedAt",
   "lastActivityAt",
   "questionCount",
-  "courseCount",
+  "quizCount",
   "viewCount",
   "trendingScore",
 ]);
@@ -181,21 +181,21 @@ const WATCHED: WatchedCollection[] = [
     label: (data) => text(data.name) || "Program",
   },
   {
-    path: "testCourses/{courseId}",
+    path: "quizzes/{quizId}",
     entityType: "test_course",
     organizationId: fromField,
-    label: (data) => text(data.name) || "Course",
+    label: (data) => text(data.name) || "Quiz",
     skip: (data) => data.scope === "platform",
   },
   {
-    path: "testTopics/{topicId}",
+    path: "quizTopics/{topicId}",
     entityType: "test_topic",
     organizationId: fromField,
     label: (data) => text(data.name) || "Topic",
     skip: (data) => data.scope === "platform",
   },
   {
-    path: "testQuestions/{questionId}",
+    path: "quizQuestions/{questionId}",
     entityType: "test_question",
     organizationId: fromField,
     label: (data) => shorten(text(data.question), 120) || "Question",
@@ -233,9 +233,9 @@ export const auditOrganizationSettingsChanges = triggerFor(WATCHED[9]);
 export const auditLegacySettingsChanges = triggerFor(WATCHED[10]);
 export const auditOnboardingChanges = triggerFor(WATCHED[11]);
 export const auditTestProgramChanges = triggerFor(WATCHED[12]);
-export const auditTestCourseChanges = triggerFor(WATCHED[13]);
-export const auditTestTopicChanges = triggerFor(WATCHED[14]);
-export const auditTestQuestionChanges = triggerFor(WATCHED[15]);
+export const auditQuizChanges = triggerFor(WATCHED[13]);
+export const auditQuizTopicChanges = triggerFor(WATCHED[14]);
+export const auditQuizQuestionChanges = triggerFor(WATCHED[15]);
 
 // ============================================================
 // RECORDING
@@ -532,7 +532,7 @@ const ENTITY_LABELS: Record<string, string> = {
   settings: "Settings",
   onboarding: "Onboarding",
   test_program: "Program",
-  test_course: "Course",
+  test_course: "Quiz",
   test_topic: "Topic",
   test_question: "Question",
 };

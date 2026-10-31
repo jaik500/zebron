@@ -192,7 +192,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                     <p class="text-sm font-medium text-slate-500">{{ 'Courses Enrolled' | t }}</p>
 
                     <p class="mt-3 text-3xl font-bold text-slate-900">
-                      {{ dashboard.learner.enrolledCourseIds.length }}
+                      {{ dashboard.learner.enrolledQuizIds.length }}
                     </p>
                   </div>
 
@@ -212,7 +212,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                     <p class="text-sm font-medium text-slate-500">{{ 'Courses Completed' | t }}</p>
 
                     <p class="mt-3 text-3xl font-bold text-slate-900">
-                      {{ dashboard.learner.completedCourseIds.length }}
+                      {{ dashboard.learner.completedQuizIds.length }}
                     </p>
                   </div>
 
@@ -279,7 +279,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
                       <div class="min-w-0">
                         <h3 class="break-words font-semibold text-slate-900">
-                          {{ assessment.courseName || ('Assessment' | t) }}
+                          {{ assessment.quizName || ('Assessment' | t) }}
                         </h3>
 
                         <p class="mt-1 text-sm text-slate-500">
@@ -290,8 +290,8 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                           }}
                         </p>
 
-                        <p *ngIf="assessment.courseName" class="mt-1 text-xs text-slate-500">
-                          {{ 'Course: {0}' | t: [assessment.courseName] }}
+                        <p *ngIf="assessment.quizName" class="mt-1 text-xs text-slate-500">
+                          {{ 'Course: {0}' | t: [assessment.quizName] }}
                         </p>
                       </div>
                     </div>
@@ -456,7 +456,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                   </div>
 
                   <h3 class="mt-4 break-words font-bold text-slate-900">
-                    {{ course.courseName }}
+                    {{ course.quizName }}
                   </h3>
 
                   <p class="mt-2 text-sm text-slate-500">
@@ -659,6 +659,6 @@ export class TestCenterLearnerDashboardComponent implements OnInit {
   }
 
   trackCourse(index: number, course: LearnerCourseProgress): string {
-    return course.courseId || String(index);
+    return course.quizId || String(index);
   }
 }

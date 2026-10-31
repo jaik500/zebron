@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
  
-import { TestCourse } from '../models/test-course.model';
+import { Quiz } from '../models/quiz.model';
 import { TestTopic } from '../models/test-topic.model';
 import { TestQuestion } from '../models/test-question.model';
 import { TestQuestionResult, TestResult, TestTopicPerformance } from '../models/test-result.model';
@@ -86,7 +86,7 @@ export class TestStore {
   /**
    * Currently selected Test Center course.
    */
-  readonly course = signal<TestCourse | null>(null);
+  readonly course = signal<Quiz | null>(null);
  
   // =====================================================
   // TOPICS
@@ -106,7 +106,7 @@ export class TestStore {
    * Actual number of published questions available
    * for the currently selected topics.
    *
-   * This is calculated from testQuestions rather than
+   * This is calculated from quizQuestions rather than
    * relying on the cached questionCount fields.
    */
   readonly availableQuestionCount = signal(0);
@@ -247,7 +247,7 @@ export class TestStore {
   /**
    * Set the active course.
    */
-  setCourse(course: TestCourse): void {
+  setCourse(course: Quiz): void {
     this.course.set(course);
   }
  
@@ -264,7 +264,7 @@ export class TestStore {
    * setCourse() must be called before this so the course scope is known.
    */
   async loadTopics(
-    courseId: string,
+    quizId: string,
     organizationIdOverride?: string | null,
   ): Promise<void> {
     try {
@@ -288,7 +288,7 @@ export class TestStore {
  
       const topics = await this.topicService.getActiveTopics(
         organizationId,
-        courseId,
+        quizId,
       );
  
       this.topics.set(topics);
@@ -592,8 +592,8 @@ export class TestStore {
       organizationId: course.scope === 'platform' ? null : organizationId,
       userId: currentUser.id,
       attemptId,
-      courseId: course.id,
-      courseName: course.name,
+      quizId: course.id,
+      quizName: course.name,
       totalQuestions,
       answeredQuestions,
       correctAnswers,

@@ -96,6 +96,12 @@ route: '/knowledge',
 icon: 'menu_book',
 },
 {
+key: 'blog',
+label: 'Blog',
+route: '/blog',
+icon: 'article',
+},
+{
 key: 'tax-calculator',
 label: 'Tax & Pay Calculator',
 route: '/tax-calculator',

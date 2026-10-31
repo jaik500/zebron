@@ -2,14 +2,15 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
+  effect,
   inject,
   OnInit,
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PartnerOrganizationContextService } from '../../../../core/services/partner-organization-context.service';
-import { TestCourseService } from '../../services/test-course.service';
-import { TestCourse } from '../../models/test-course.model';
+import { QuizService } from '../../services/quiz.service';
+import { Quiz } from '../../models/quiz.model';
 import { TestTopicService } from '../../services/test-topic.service';
 import { TestQuestionService } from '../../services/test-question.service';
 
@@ -40,6 +41,7 @@ interface QuizListItem {
 }
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { PageTitleService } from '../../../../core/services/page-title.service';
 
 @Component({
   selector: 'app-quiz-list',
@@ -47,38 +49,134 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
   imports: [
     TranslatePipe,CommonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
   template: `
-    <main class="mt-14 min-h-screen bg-slate-50 px-4 py-4 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-7xl">
+    <main class="mt-14 min-h-screen bg-slate-50">
 
-        <!-- Page heading -->
-        <header class="mb-4">
-
-               <!-- Overall progress -->
-          <section
-            class="mb-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-1"
-            [attr.aria-label]="'Overall quiz progress' | t"
-          >
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                  <p class="text-sm font-semibold uppercase tracking-wider text-[#007979]">
-            {{ organizationName() }}
-          </p>
-
-          <p class="mt-1 text-sm leading-6 text-slate-600">
-            {{ 'Explore courses and practice questions available in your Test Center.' | t }}
-          </p>
-
-              </div>
-
-              <span class="text-2xl font-bold text-blue-900">
-                <p class="text-sm font-semibold text-blue-900">
-                  {{ 'Your quiz library' | t }}
-                </p>
-                {{ quizzes().length }} 
-              </span>
+      <!-- Page header: search and filters -->
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+        <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
+            <div class="min-w-0 lg:shrink-0">
+              <h1 class="truncate text-lg font-semibold">{{ 'Quiz library' | t }}</h1>
+              <p class="hidden truncate text-xs text-white/80 sm:block">
+                {{ 'Practice by topic and track your progress.' | t }}
+              </p>
             </div>
-          </section>
-        </header>
+
+            <div
+              class="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_160px_160px_auto] lg:ml-auto lg:max-w-4xl"
+            >
+              <!-- Search -->
+              <mat-form-field
+                appearance="outline"
+                class="zb-field zb-field--flush zb-search col-span-2 sm:col-span-1"
+                subscriptSizing="dynamic"
+              >
+                <mat-label>{{ 'Search quizzes' | t }}</mat-label>
+                <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+                <input
+                  matInput
+                  type="search"
+                  autocomplete="off"
+                  [value]="searchTerm()"
+                  (input)="setSearchTerm($any($event.target).value)"
+                  [placeholder]="'Search quizzes...' | t"
+                />
+                @if (searchTerm()) {
+                  <button
+                    matSuffix
+                    type="button"
+                    (click)="setSearchTerm('')"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    [attr.aria-label]="'Clear search' | t"
+                    [title]="'Clear search' | t"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+              </mat-form-field>
+
+              <!-- Difficulty -->
+              <mat-form-field
+                appearance="outline"
+                class="zb-field zb-field--flush zb-search"
+                subscriptSizing="dynamic"
+              >
+                <mat-label>{{ 'Difficulty' | t }}</mat-label>
+                <mat-select
+                  [value]="difficultyFilter()"
+                  (selectionChange)="setDifficultyFilter($event.value)"
+                >
+                  <mat-option value="All">{{ 'All difficulties' | t }}</mat-option>
+                  @for (difficulty of availableDifficulties(); track difficulty) {
+                    <mat-option [value]="difficulty">{{ difficulty | t }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <!-- Status -->
+              <mat-form-field
+                appearance="outline"
+                class="zb-field zb-field--flush zb-search"
+                subscriptSizing="dynamic"
+              >
+                <mat-label>{{ 'Status' | t }}</mat-label>
+                <mat-select
+                  [value]="statusFilter()"
+                  (selectionChange)="setStatusFilter($event.value)"
+                >
+                  <mat-option value="All">{{ 'All statuses' | t }}</mat-option>
+                  <mat-option value="Available">{{ 'Available' | t }}</mat-option>
+                  <mat-option value="In progress">{{ 'In progress' | t }}</mat-option>
+                  <mat-option value="Completed">{{ 'Completed' | t }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <button
+                type="button"
+                (click)="clearFilters()"
+                [disabled]="!hasActiveFilters()"
+                class="col-span-2 h-10 rounded-lg border border-white/30 px-4 text-sm font-semibold text-white transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent sm:col-span-1"
+              >
+                {{ 'Clear' | t }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Categories and result count -->
+          <div class="mt-3 flex items-center gap-3 border-t border-white/15 pt-2.5">
+            <div
+              class="-mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible"
+              role="group"
+              [attr.aria-label]="'Filter by category' | t"
+            >
+              @for (category of categories(); track category) {
+                <button
+                  type="button"
+                  (click)="setCategoryFilter(category)"
+                  class="shrink-0 cursor-pointer rounded-full px-3 py-1 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-white/60"
+                  [ngClass]="
+                    categoryFilter() === category
+                      ? 'bg-white text-[#007979] shadow-sm'
+                      : 'bg-white/10 text-white/90 hover:bg-white/20 hover:text-white'
+                  "
+                  [attr.aria-pressed]="categoryFilter() === category"
+                >
+                  {{ category | t }}
+                </button>
+              }
+            </div>
+
+            @if (!loading() && !error()) {
+              <p class="shrink-0 text-xs text-white/80" aria-live="polite">
+                <span class="font-semibold text-white">{{ filteredQuizzes().length }}</span>
+                {{ filteredQuizzes().length === 1 ? ('quiz' | t) : ('quizzes' | t) }}
+              </p>
+            }
+          </div>
+        </div>
+      </header>
+
+      <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
 
         <!-- Loading state -->
         @if (loading()) {
@@ -127,97 +225,6 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
         }
 
         @if (!loading() && !error()) {
-
-          <!-- Search and filters -->
-          <section
-            class="mb-5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4"
-          >
-            <div
-              class="grid grid-cols-1 items-center gap-3 sm:grid-cols-[minmax(0,1fr)_160px_160px_auto]"
-            >
-
-              <!-- Search -->
-              <mat-form-field appearance="outline" class="zb-field zb-field--flush w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
-                <mat-label>{{ 'Search quizzes' | t }}</mat-label>
-                <mat-icon matPrefix aria-hidden="true">search</mat-icon>
-                <input matInput
-                    type="search"
-                    autocomplete="off"
-                    [value]="searchTerm()"
-                    (input)="setSearchTerm($any($event.target).value)"
-                    [placeholder]="'Search courses and quizzes...' | t"
-                  />
-              </mat-form-field>
-
-              <!-- Difficulty -->
-              <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                  <mat-label>{{ 'Difficulty' | t }}</mat-label>
-                  <mat-select
-                  [value]="difficultyFilter()"
-                  (selectionChange)="setDifficultyFilter($event.value)"
-                >
-                  <mat-option value="All">{{ 'All difficulties' | t }}</mat-option>
-                  @for (difficulty of availableDifficulties(); track difficulty) {
-                    <mat-option [value]="difficulty">{{ difficulty | t }}</mat-option>
-                  }
-                </mat-select>
-                </mat-form-field>
-
-              <!-- Status -->
-              <div class="hidden min-w-0 sm:block">
-                <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                  <mat-label>{{ 'Status' | t }}</mat-label>
-                  <mat-select
-                  [value]="statusFilter()"
-                  (selectionChange)="setStatusFilter($event.value)"
-                >
-                  <mat-option value="All">{{ 'All statuses' | t }}</mat-option>
-                  <mat-option value="Available">{{ 'Available' | t }}</mat-option>
-                  <mat-option value="In progress">{{ 'In progress' | t }}</mat-option>
-                  <mat-option value="Completed">{{ 'Completed' | t }}</mat-option>
-                </mat-select>
-                </mat-form-field>
-              </div>
-
-              <button
-                type="button"
-                (click)="clearFilters()"
-                class="h-11 rounded-xl border border-gray-300 px-4 text-sm font-semibold text-gray-700 transition-colors hover:border-[#007979] hover:bg-teal-50 hover:text-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
-              >
-                {{ 'Clear' | t }}
-              </button>
-            </div>
-
-            <!-- Results count and categories -->
-            <div
-              class="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <p class="text-md text-slate-500">
-                {{ 'Showing' | t }}
-                <span class="font-semibold text-slate-800">
-                  {{ filteredQuizzes().length }}
-                </span>
-                {{ filteredQuizzes().length === 1 ? ('quiz' | t) : ('quizzes' | t) }}
-              </p>
-
-              <div class="flex flex-wrap gap-2">
-                @for (category of categories(); track category) {
-                  <button
-                    type="button"
-                    (click)="setCategoryFilter(category)"
-                    class="cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#007979]/30"
-                    [class.bg-[#007979]]="categoryFilter() === category"
-                    [class.text-white]="categoryFilter() === category"
-                    [class.bg-slate-100]="categoryFilter() !== category"
-                    [class.text-slate-600]="categoryFilter() !== category"
-                    [attr.aria-pressed]="categoryFilter() === category"
-                  >
-                    {{ category | t }}
-                  </button>
-                }
-              </div>
-            </div>
-          </section>
 
           <!-- Summary cards -->
           <section
@@ -491,25 +498,42 @@ export class QuizListComponent implements OnInit {
     PartnerOrganizationContextService,
   );
 
-  private readonly courseService = inject(TestCourseService);
+  private readonly quizService = inject(QuizService);
   private readonly topicService = inject(TestTopicService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-private readonly questionService = inject(TestQuestionService); // add
+  private readonly questionService = inject(TestQuestionService);
+  private readonly pageTitleService = inject(PageTitleService);
 
-  readonly organizationName = computed(
-    () =>
-      this.organizationContext.organization()?.name?.trim() ||
-      'Organization',
+  /**
+   * Platform pages (/test-center/quizzes) have no organizationId in the
+   * route; they show Zebron, not the organization selected elsewhere.
+   */
+  private readonly isOrganizationRoute = this.route.snapshot.pathFromRoot.some(
+    (snapshot) => snapshot.paramMap.has('organizationId'),
   );
+
+  readonly organizationName = computed(() =>
+    this.isOrganizationRoute
+      ? this.organizationContext.organization()?.name?.trim() || 'Organization'
+      : 'Zebron',
+  );
+
+  /**
+   * Header title: "<Organization> Learning". An effect, so the title
+   * updates when the organization finishes loading or changes.
+   */
+  private readonly headerTitle = effect(() => {
+    this.pageTitleService.setTitle(`${this.organizationName()} Learning`);
+  });
 
   readonly searchTerm = signal('');
   readonly difficultyFilter = signal('All');
   readonly statusFilter = signal('All');
   readonly categoryFilter = signal('All');
 
-  readonly courses = signal<TestCourse[]>([]);
-  readonly favoriteCourseIds = signal<string[]>([]);
+  readonly courses = signal<Quiz[]>([]);
+  readonly favoriteQuizIds = signal<string[]>([]);
   readonly topicCounts = signal<Record<string, number>>({});
   readonly loading = signal(true);
   readonly error = signal('');
@@ -523,7 +547,7 @@ private readonly questionService = inject(TestQuestionService); // add
    */
   readonly quizzes = computed<QuizListItem[]>(() =>
     this.courses().map((course) => {
-      const record = course as TestCourse & Record<string, unknown>;
+      const record = course as Quiz & Record<string, unknown>;
 
       const category =
         this.readString(record, 'category') ||
@@ -557,12 +581,20 @@ private readonly questionService = inject(TestQuestionService); // add
         topicCount: this.topicCounts()[String(record.id ?? '')] ?? this.getEmbeddedTopicCount(record),
         timeLimitMinutes,
         status: 'Available' as QuizStatus,
-        isFavorite: this.favoriteCourseIds().includes(String(record.id ?? '')),
+        isFavorite: this.favoriteQuizIds().includes(String(record.id ?? '')),
         tags,
         provider: this.readString(record, 'provider'),
         type: this.readString(record, 'type'),
       };
     }).filter((quiz) => quiz.id.length > 0),
+  );
+
+  readonly hasActiveFilters = computed(
+    () =>
+      this.searchTerm().trim() !== '' ||
+      this.difficultyFilter() !== 'All' ||
+      this.statusFilter() !== 'All' ||
+      this.categoryFilter() !== 'All',
   );
 
   readonly categories = computed(() => [
@@ -631,7 +663,7 @@ private readonly questionService = inject(TestQuestionService); // add
 
   /**
    * Load the available courses for the current organization.
-   * TestCourseService remains responsible for the Firebase query and access scope.
+   * QuizService remains responsible for the Firebase query and access scope.
    */
   async loadQuizzes(): Promise<void> {
     this.loading.set(true);
@@ -641,29 +673,29 @@ private readonly questionService = inject(TestQuestionService); // add
       const organizationId =
         this.route.snapshot.paramMap.get('organizationId');
 
-      this.loadFavoriteCourseIds(organizationId);
+      this.loadFavoriteQuizIds(organizationId);
 
       const courses =
-        await this.courseService.getAvailableCourses(organizationId);
+        await this.quizService.getAvailableQuizzes(organizationId);
 
       const availableCourses = courses ?? [];
       this.courses.set(availableCourses);
 
-      // Topics live in the separate `testTopics` collection, so the count
+      // Topics live in the separate `quizTopics` collection, so the count
       // must be loaded by course ID instead of relying on a missing field
-      // in the `testCourses` document.
+      // in the `quizzes` document.
       const resolvedTopicCounts: Record<string, number> = {};
 const resolvedQuestionCounts: Record<string, number> = {};
 
 await Promise.all(
   availableCourses.map(async (course) => {
-    const courseId = String(course.id ?? '').trim();
+    const quizId = String(course.id ?? '').trim();
 
-    if (!courseId) {
+    if (!quizId) {
       return;
     }
 
-    const record = course as TestCourse & Record<string, unknown>;
+    const record = course as Quiz & Record<string, unknown>;
     const isPlatform = course.scope === 'platform';
 
     // Platform content is owned by null; organization content by the org.
@@ -674,29 +706,29 @@ await Promise.all(
     const [topicCount, questionCount] = await Promise.all([
       canQuery
         ? this.topicService
-            .getActiveTopics(ownerId, courseId)
+            .getActiveTopics(ownerId, quizId)
             .then((topics) => topics.length)
             .catch((topicError) => {
-              console.warn(`Unable to load topic count for "${courseId}".`, topicError);
+              console.warn(`Unable to load topic count for "${quizId}".`, topicError);
               return null;
             })
         : Promise.resolve(null),
 
       canQuery
         ? this.questionService
-            .getPublishedQuestionCount(ownerId, courseId, [], scope)
+            .getPublishedQuestionCount(ownerId, quizId, [], scope)
             .catch((questionError) => {
-              console.warn(`Unable to load question count for "${courseId}".`, questionError);
+              console.warn(`Unable to load question count for "${quizId}".`, questionError);
               return null;
             })
         : Promise.resolve(null),
     ]);
 
-    resolvedTopicCounts[courseId] =
+    resolvedTopicCounts[quizId] =
       topicCount ?? this.getEmbeddedTopicCount(record);
 
     if (questionCount !== null) {
-      resolvedQuestionCounts[courseId] = questionCount;
+      resolvedQuestionCounts[quizId] = questionCount;
     }
   }),
 );
@@ -722,7 +754,7 @@ this.questionCounts.set(resolvedQuestionCounts);
    * list and Learning & Assessment dashboard can read the same selection.
    */
   toggleFavorite(quiz: QuizListItem): void {
-    const favorites = new Set(this.favoriteCourseIds());
+    const favorites = new Set(this.favoriteQuizIds());
 
     if (favorites.has(quiz.id)) {
       favorites.delete(quiz.id);
@@ -731,17 +763,17 @@ this.questionCounts.set(resolvedQuestionCounts);
     }
 
     const nextFavorites = [...favorites];
-    this.favoriteCourseIds.set(nextFavorites);
-    this.persistFavoriteCourseIds(nextFavorites);
+    this.favoriteQuizIds.set(nextFavorites);
+    this.persistFavoriteQuizIds(nextFavorites);
   }
 
   private favoriteStorageKey(organizationId: string | null): string {
     return `zebron:test-center:favorites:${organizationId?.trim() || 'platform'}`;
   }
 
-  private loadFavoriteCourseIds(organizationId: string | null): void {
+  private loadFavoriteQuizIds(organizationId: string | null): void {
     if (typeof localStorage === 'undefined') {
-      this.favoriteCourseIds.set([]);
+      this.favoriteQuizIds.set([]);
       return;
     }
 
@@ -749,18 +781,18 @@ this.questionCounts.set(resolvedQuestionCounts);
       const stored = localStorage.getItem(this.favoriteStorageKey(organizationId));
       const parsed: unknown = stored ? JSON.parse(stored) : [];
 
-      this.favoriteCourseIds.set(
+      this.favoriteQuizIds.set(
         Array.isArray(parsed)
           ? parsed.filter((id): id is string => typeof id === 'string')
           : [],
       );
     } catch (error) {
       console.warn('Unable to read Popular Practice favorites:', error);
-      this.favoriteCourseIds.set([]);
+      this.favoriteQuizIds.set([]);
     }
   }
 
-  private persistFavoriteCourseIds(courseIds: string[]): void {
+  private persistFavoriteQuizIds(quizIds: string[]): void {
     if (typeof localStorage === 'undefined') {
       return;
     }
@@ -768,7 +800,7 @@ this.questionCounts.set(resolvedQuestionCounts);
     try {
       localStorage.setItem(
         this.favoriteStorageKey(this.route.snapshot.paramMap.get('organizationId')),
-        JSON.stringify(courseIds),
+        JSON.stringify(quizIds),
       );
     } catch (error) {
       console.warn('Unable to save Popular Practice favorites:', error);
@@ -855,7 +887,7 @@ this.questionCounts.set(resolvedQuestionCounts);
   /**
    * Fallback for platform courses or when topic metadata is already
    * embedded in a course document. Organization course counts are
-   * normally retrieved from the `testTopics` collection.
+   * normally retrieved from the `quizTopics` collection.
    */
   private getEmbeddedTopicCount(
     record: Record<string, unknown>,

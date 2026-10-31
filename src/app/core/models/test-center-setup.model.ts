@@ -6,7 +6,7 @@
  */
 export const TEST_CENTER_SETUP_STEPS = [
   'first_program',
-  'first_course',
+  'first_quiz',
   'first_topic',
   'first_question',
 ] as const;
@@ -63,7 +63,7 @@ export interface TestCenterSetupState {
    * IDs of the resources created during setup.
    */
   firstProgramId: string | null;
-  firstCourseId: string | null;
+  firstQuizId: string | null;
   firstTopicId: string | null;
   firstQuestionId: string | null;
 

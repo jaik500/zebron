@@ -4,8 +4,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
-import { TestCourse } from '../../models/test-course.model';
-import { TestCourseService } from '../../services/test-course.service';
+import { Quiz } from '../../models/quiz.model';
+import { QuizService } from '../../services/quiz.service';
 import { TestQuestionService } from '../../services/test-question.service';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -395,13 +395,13 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
   styles: [],
 })
 export class TestCenterHomeComponent implements OnInit {
-  private readonly courseService = inject(TestCourseService);
+  private readonly quizService = inject(QuizService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 private readonly questionService = inject(TestQuestionService); // add
 
-  readonly courses = signal<TestCourse[]>([]);
-  readonly favoriteCourseIds = signal<string[]>([]);
+  readonly courses = signal<Quiz[]>([]);
+  readonly favoriteQuizIds = signal<string[]>([]);
   readonly favoriteCertificationIds = signal<string[]>([]);
   readonly favoriteQuizzes = signal<FavoriteQuiz[]>([]);
   readonly questionCounts = signal<Record<string, number>>({}); // add
@@ -438,7 +438,7 @@ private readonly questionService = inject(TestQuestionService); // add
   });
 
   readonly popularCourses = computed(() => {
-    const courseFavorites = new Set(this.favoriteCourseIds());
+    const courseFavorites = new Set(this.favoriteQuizIds());
     const certificationFavorites = new Set(this.favoriteCertificationIds());
     const filtered = this.filteredCourses();
 
@@ -469,7 +469,7 @@ private readonly questionService = inject(TestQuestionService); // add
   }
 
   private loadFavorites(organizationId: string | null): void {
-    this.favoriteCourseIds.set([]);
+    this.favoriteQuizIds.set([]);
     this.favoriteCertificationIds.set([]);
     this.favoriteQuizzes.set([]);
 
@@ -481,10 +481,10 @@ private readonly questionService = inject(TestQuestionService); // add
 
       // Backward compatibility: the original favorites value was string[].
       if (Array.isArray(parsed)) {
-        this.favoriteCourseIds.set(this.parseStringIds(parsed));
+        this.favoriteQuizIds.set(this.parseStringIds(parsed));
       } else if (parsed && typeof parsed === 'object') {
         const favorites = parsed as StoredPracticeFavorites;
-        this.favoriteCourseIds.set(this.parseStringIds(favorites.courses));
+        this.favoriteQuizIds.set(this.parseStringIds(favorites.courses));
         this.favoriteCertificationIds.set(
           this.parseStringIds(favorites.certifications),
         );
@@ -530,7 +530,7 @@ private readonly questionService = inject(TestQuestionService); // add
       }));
   }
 
- practiceRoute(course: TestCourse): string[] {
+ practiceRoute(course: Quiz): string[] {
   return this.quizDetailsRoute(course.slug);
 }
 
@@ -561,7 +561,7 @@ private readonly questionService = inject(TestQuestionService); // add
       const organizationId = this.organizationId();
       this.loadFavorites(organizationId);
 
-      const courses = await this.courseService.getAvailableCourses(organizationId);
+      const courses = await this.quizService.getAvailableQuizzes(organizationId);
       this.courses.set(courses);
       await this.loadQuestionCounts(courses, organizationId); // add
 
@@ -574,7 +574,7 @@ private readonly questionService = inject(TestQuestionService); // add
   }
 
   /** Live count when available, cached field as a fallback. */
-courseQuestionCount(course: TestCourse): number {
+courseQuestionCount(course: Quiz): number {
   return this.questionCounts()[course.id] ?? course.questionCount ?? 0;
 }
 
@@ -590,7 +590,7 @@ quizQuestionCount(quiz: FavoriteQuiz): number {
 }
 
 private async loadQuestionCounts(
-  courses: TestCourse[],
+  courses: Quiz[],
   organizationId: string | null,
 ): Promise<void> {
   const entries = await Promise.all(

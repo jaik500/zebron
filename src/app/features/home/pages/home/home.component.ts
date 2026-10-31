@@ -1,4 +1,4 @@
-import { Component, DOCUMENT, computed, effect, inject } from '@angular/core';
+import { Component, DOCUMENT, afterNextRender, computed, effect, inject, signal } from '@angular/core';
  
 import { Meta, Title } from '@angular/platform-browser';
  
@@ -10,6 +10,11 @@ import { LocalizationService } from '../../../../core/services/localization.serv
 import { AuthService } from '../../../../core/services/auth.service';
 
 import { homeText } from './home.i18n';
+import { BlogService } from '../../../blog/blog.service';
+import { BLOG_COVERS, BlogCover, BlogPost, blogDate } from '../../../blog/blog.model';
+
+/** How many blog posts the home page shows. */
+const HOME_BLOG_POSTS = 3;
  
 @Component({
   selector: 'app-home',
@@ -889,30 +894,33 @@ import { homeText } from './home.i18n';
               ></div>
  
               <div class="relative grid gap-3">
-                <div
-                  class="rounded-xl
+                <a
+                  routerLink="/resources"
+                  class="group block rounded-xl
                          border border-white/10
                          bg-white/10
-                         p-4"
+                         p-4 transition
+                         hover:border-[#12BFC3]/60 hover:bg-white/15
+                         focus:outline-none focus:ring-2 focus:ring-[#12BFC3]"
                 >
                   <div class="flex items-center gap-3">
                     <div
-                      class="flex h-9 w-9
+                      class="flex h-9 w-9 shrink-0
                              items-center justify-center
                              rounded-lg
                              bg-[#007979]"
                     >
                       <mat-icon aria-hidden="true" class="!text-white"> explore </mat-icon>
                     </div>
- 
-                    <div>
+
+                    <div class="min-w-0 flex-1">
                       <p
                         class="text-xs
                                text-white/50"
                       >
                         {{ t().discover }}
                       </p>
- 
+
                       <p
                         class="text-sm font-semibold
                                text-white"
@@ -920,33 +928,43 @@ import { homeText } from './home.i18n';
                         {{ t().resourcesServices }}
                       </p>
                     </div>
+
+                    <mat-icon
+                      aria-hidden="true"
+                      class="!text-white/40 transition group-hover:translate-x-0.5 group-hover:!text-white"
+                    >
+                      arrow_forward
+                    </mat-icon>
                   </div>
-                </div>
+                </a>
  
-                <div
-                  class="ml-8 rounded-xl
+                <a
+                  routerLink="/find/training"
+                  class="ml-8 group block rounded-xl
                          border border-white/10
                          bg-white/10
-                         p-4"
+                         p-4 transition
+                         hover:border-[#12BFC3]/60 hover:bg-white/15
+                         focus:outline-none focus:ring-2 focus:ring-[#12BFC3]"
                 >
                   <div class="flex items-center gap-3">
                     <div
-                      class="flex h-9 w-9
+                      class="flex h-9 w-9 shrink-0
                              items-center justify-center
                              rounded-lg
                              bg-[#007979]"
                     >
                       <mat-icon aria-hidden="true" class="!text-white"> school </mat-icon>
                     </div>
- 
-                    <div>
+
+                    <div class="min-w-0 flex-1">
                       <p
                         class="text-xs
                                text-white/50"
                       >
                         {{ t().explore }}
                       </p>
- 
+
                       <p
                         class="text-sm font-semibold
                                text-white"
@@ -954,33 +972,43 @@ import { homeText } from './home.i18n';
                         {{ t().trainingEducation }}
                       </p>
                     </div>
+
+                    <mat-icon
+                      aria-hidden="true"
+                      class="!text-white/40 transition group-hover:translate-x-0.5 group-hover:!text-white"
+                    >
+                      arrow_forward
+                    </mat-icon>
                   </div>
-                </div>
+                </a>
  
-                <div
-                  class="ml-16 rounded-xl
+                <a
+                  routerLink="/find/job"
+                  class="ml-16 group block rounded-xl
                          border border-white/10
                          bg-white/10
-                         p-4"
+                         p-4 transition
+                         hover:border-[#12BFC3]/60 hover:bg-white/15
+                         focus:outline-none focus:ring-2 focus:ring-[#12BFC3]"
                 >
                   <div class="flex items-center gap-3">
                     <div
-                      class="flex h-9 w-9
+                      class="flex h-9 w-9 shrink-0
                              items-center justify-center
                              rounded-lg
                              bg-[#007979]"
                     >
                       <mat-icon aria-hidden="true" class="!text-white"> work_outline </mat-icon>
                     </div>
- 
-                    <div>
+
+                    <div class="min-w-0 flex-1">
                       <p
                         class="text-xs
                                text-white/50"
                       >
                         {{ t().connect }}
                       </p>
- 
+
                       <p
                         class="text-sm font-semibold
                                text-white"
@@ -988,14 +1016,76 @@ import { homeText } from './home.i18n';
                         {{ t().jobsOpportunities }}
                       </p>
                     </div>
+
+                    <mat-icon
+                      aria-hidden="true"
+                      class="!text-white/40 transition group-hover:translate-x-0.5 group-hover:!text-white"
+                    >
+                      arrow_forward
+                    </mat-icon>
                   </div>
-                </div>
+                </a>
               </div>
             </div>
           </div>
         </div>
       </section>
  
+      <!-- =======================================================
+           FROM THE BLOG (latest public posts, loaded in the browser)
+           ======================================================= -->
+
+      @if (blogLoading() || blogPosts().length) {
+        <section class="bg-gray-50" aria-labelledby="home-blog-title">
+          <div class="mx-auto max-w-7xl px-5 py-16 sm:px-6 sm:py-10 lg:px-8">
+            <div class="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p class="text-sm font-bold uppercase tracking-wider text-[#007979]">{{ t().blogEyebrow }}</p>
+                <h2 id="home-blog-title" class="mt-2 text-3xl font-bold tracking-tight text-[#032D42]">{{ t().blogTitle }}</h2>
+                <p class="mt-2 text-sm text-gray-600">{{ t().blogText }}</p>
+              </div>
+              <a routerLink="/blog" class="inline-flex items-center gap-2 text-sm font-bold text-[#007979] hover:underline">
+                {{ t().blogViewAll }}
+                <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">arrow_forward</mat-icon>
+              </a>
+            </div>
+
+            <div class="mt-8 grid gap-5 md:grid-cols-3">
+              @if (blogLoading()) {
+                @for (item of [1, 2, 3]; track item) {
+                  <div class="h-72 animate-pulse rounded-2xl border border-gray-200 bg-white"></div>
+                }
+              } @else {
+                @for (post of blogPosts(); track post.id) {
+                  <a
+                    [routerLink]="['/blog', post.id]"
+                    class="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#007979]/40"
+                  >
+                    <div class="relative h-32" [style.background]="cover(post.cover)" aria-hidden="true">
+                      @if (post.pinned) {
+                        <span class="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-[#007979]">
+                          {{ t().blogPinned }}
+                        </span>
+                      }
+                    </div>
+                    <div class="flex flex-1 flex-col gap-2 p-5">
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#007979]">{{ post.topic }}</span>
+                      <h3 class="text-lg font-bold leading-snug text-[#032D42] group-hover:text-[#007979]">{{ post.title }}</h3>
+                      @if (post.excerpt) {
+                        <p class="line-clamp-2 text-sm text-gray-600">{{ post.excerpt }}</p>
+                      }
+                      <p class="mt-auto pt-2 text-xs text-gray-500">
+                        {{ post.authorName }} · {{ postDate(post) }} · {{ post.readingMinutes }} {{ t().minRead }}
+                      </p>
+                    </div>
+                  </a>
+                }
+              }
+            </div>
+          </div>
+        </section>
+      }
+
       <!-- =======================================================
            ORGANIZATION CTA
            ======================================================= -->
@@ -1167,9 +1257,46 @@ export class HomeComponent {
   /** Page text in the selected language (English fallback). */
   protected readonly t = computed(() => homeText(this.localization.language()));
 
+  // =========================================================
+  // FROM THE BLOG
+  // =========================================================
+
+  private readonly blog = inject(BlogService);
+
+  protected readonly blogPosts = signal<BlogPost[]>([]);
+
+  protected readonly blogLoading = signal(true);
+
   constructor() {
     // Re-applies the title and description when the language changes.
     effect(() => this.updateSeoMetadata());
+
+    // Loaded in the browser only, so server rendering never waits on it.
+    afterNextRender(() => void this.loadBlogPosts());
+  }
+
+  /** Pinned posts first, then the newest public posts. */
+  private async loadBlogPosts(): Promise<void> {
+    try {
+      const posts = await this.blog.listPublished({ section: 'public', organizationId: null, basePath: '/blog' });
+
+      this.blogPosts.set(
+        [...posts.filter((post) => post.pinned), ...posts.filter((post) => !post.pinned)].slice(0, HOME_BLOG_POSTS),
+      );
+    } catch {
+      // The section stays hidden if the blog can't be reached.
+      this.blogPosts.set([]);
+    } finally {
+      this.blogLoading.set(false);
+    }
+  }
+
+  protected cover(cover: BlogCover): string {
+    return BLOG_COVERS[cover] ?? BLOG_COVERS.teal;
+  }
+
+  protected postDate(post: BlogPost): string {
+    return blogDate(post.publishedAt, this.localization.language() === 'fr' ? 'fr-FR' : 'en-US');
   }
  
   // =========================================================

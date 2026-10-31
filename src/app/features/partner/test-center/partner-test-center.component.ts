@@ -30,9 +30,9 @@ import {
   TestCenterImportDialogResult,
 } from './test-center-import-dialog.component';
 
-import { TestCourse, TestCourseType } from '../../../features/test-center/models/test-course.model';
+import { Quiz, QuizType } from '../../../features/test-center/models/quiz.model';
 
-import { TestCourseService } from '../../../features/test-center/services/test-course.service';
+import { QuizService } from '../../../features/test-center/services/quiz.service';
 
 import { TestProgram } from '../../../features/test-center/models/test-program.model';
 
@@ -59,14 +59,14 @@ interface CourseForm {
   slug: string;
   description: string;
   provider: string;
-  type: TestCourseType;
+  type: QuizType;
   certificationCode: string;
   programId: string;
   active: boolean;
 }
 
 interface TopicForm {
-  courseId: string;
+  quizId: string;
   name: string;
   slug: string;
   description: string;
@@ -323,11 +323,11 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               >
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                    {{ editingCourseId() ? ('Edit course' | t) : ('New custom course' | t) }}
+                    {{ editingQuizId() ? ('Edit course' | t) : ('New custom course' | t) }}
                   </p>
 
                   <h2 class="mt-1 text-xl font-bold text-gray-900">
-                    {{ editingCourseId() ? form.name : ('Create your course' | t) }}
+                    {{ editingQuizId() ? form.name : ('Create your course' | t) }}
                   </h2>
 
                   <p class="mt-1 text-sm text-gray-500">
@@ -385,10 +385,10 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                   <input
                     matInput
                     [(ngModel)]="form.slug"
-                    [disabled]="!!editingCourseId()"
+                    [disabled]="!!editingQuizId()"
                     [placeholder]="'servicenow-csa-preparation' | t"
                   />
-                  @if (editingCourseId()) {
+                  @if (editingQuizId()) {
                     <mat-hint>{{ 'Slugs cannot be changed after the course is created.' | t }}</mat-hint>
                   }
                 </mat-form-field>
@@ -457,7 +457,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                   @if (saving()) {
                     {{ 'Saving...' | t }}
                   } @else {
-                    {{ editingCourseId() ? ('Save Changes' | t) : ('Create Course' | t) }}
+                    {{ editingQuizId() ? ('Save Changes' | t) : ('Create Course' | t) }}
                   }
                 </button>
               </div>
@@ -503,7 +503,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 <mat-form-field appearance="outline" class="w-full">
                   <mat-label>{{ 'Course' | t }}</mat-label>
                   <mat-select
-                    [(ngModel)]="topicForm.courseId"
+                    [(ngModel)]="topicForm.quizId"
                     (ngModelChange)="onTopicCourseChange()"
                     [disabled]="!!editingTopicId()"
                   >
@@ -873,7 +873,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                           'test-center',
                           'questions',
                         ]"
-                        [queryParams]="{ courseId: course.id }"
+                        [queryParams]="{ quizId: course.id }"
                         class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
                       >
                         <mat-icon class="!h-5 !w-5 !text-xl" aria-hidden="true"> quiz </mat-icon>
@@ -965,7 +965,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                         </div>
 
                         <p class="mt-1 text-sm text-gray-500">
-                          {{ getCourseName(topic.courseId) }}
+                          {{ getCourseName(topic.quizId) }}
                         </p>
 
                         @if (topic.description) {
@@ -1015,7 +1015,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
   private readonly access = inject(PartnerAccessService);
 
-  private readonly courseService = inject(TestCourseService);
+  private readonly quizService = inject(QuizService);
 
   private readonly testProgramService = inject(TestProgramService);
 
@@ -1035,7 +1035,7 @@ export class PartnerTestCenterComponent implements OnInit {
   // COURSE STATE
   // ============================================================
 
-  protected readonly courses = signal<TestCourse[]>([]);
+  protected readonly courses = signal<Quiz[]>([]);
 
   protected readonly loadingCourses = signal(false);
 
@@ -1043,7 +1043,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
   protected readonly showForm = signal(false);
 
-  protected readonly editingCourseId = signal<string | null>(null);
+  protected readonly editingQuizId = signal<string | null>(null);
 
   // ============================================================
   // PROGRAM STATE
@@ -1105,13 +1105,13 @@ export class PartnerTestCenterComponent implements OnInit {
       return this.topics();
     }
 
-    const matchingCourseIds = new Set(
+    const matchingQuizIds = new Set(
       this.courses()
         .filter((course) => course.programId === selectedProgramId)
         .map((course) => course.id),
     );
 
-    return this.topics().filter((topic) => matchingCourseIds.has(topic.courseId));
+    return this.topics().filter((topic) => matchingQuizIds.has(topic.quizId));
   });
 
   protected readonly selectedProgramName = computed(() => {
@@ -1225,7 +1225,7 @@ export class PartnerTestCenterComponent implements OnInit {
     try {
       this.loadingCourses.set(true);
 
-      const organizationCourses = await this.courseService.getAllCourses(organizationId);
+      const organizationCourses = await this.quizService.getAllQuizzes(organizationId);
 
       const courses = organizationCourses.filter(
         (course) => course.scope === 'organization' && course.organizationId === organizationId,
@@ -1313,7 +1313,7 @@ export class PartnerTestCenterComponent implements OnInit {
         topics.map(async (topic) => {
           const questionCount = await this.questionService.getQuestionCountForTopic(
             organizationId,
-            topic.courseId,
+            topic.quizId,
             topic.id,
           );
 
@@ -1360,7 +1360,7 @@ export class PartnerTestCenterComponent implements OnInit {
       return;
     }
 
-    this.editingCourseId.set(null);
+    this.editingQuizId.set(null);
 
     this.form = this.createEmptyForm();
 
@@ -1426,13 +1426,13 @@ export class PartnerTestCenterComponent implements OnInit {
 
     const firstCourse = activeCourses[0];
 
-    this.topicForm.courseId = firstCourse.id;
+    this.topicForm.quizId = firstCourse.id;
 
     this.topicForm.sortOrder = this.getNextSortOrder(firstCourse.id);
 
     // Close the course form before opening the topic form.
     this.showForm.set(false);
-    this.editingCourseId.set(null);
+    this.editingQuizId.set(null);
 
     this.showTopicForm.set(true);
 
@@ -1444,7 +1444,7 @@ export class PartnerTestCenterComponent implements OnInit {
     });
   }
 
-  protected createTopicForCourse(course: TestCourse): void {
+  protected createTopicForCourse(course: Quiz): void {
     if (!this.context.canManageCourses()) {
       this.toast.error('You do not have permission to manage Test Center topics.');
 
@@ -1461,13 +1461,13 @@ export class PartnerTestCenterComponent implements OnInit {
 
     this.topicForm = this.createEmptyTopicForm();
 
-    this.topicForm.courseId = course.id;
+    this.topicForm.quizId = course.id;
 
     this.topicForm.sortOrder = this.getNextSortOrder(course.id);
 
     // Close the course form before opening the topic form.
     this.showForm.set(false);
-    this.editingCourseId.set(null);
+    this.editingQuizId.set(null);
 
     this.showTopicForm.set(true);
 
@@ -1483,14 +1483,14 @@ export class PartnerTestCenterComponent implements OnInit {
   // EDIT COURSE
   // ============================================================
 
-  protected editCourse(course: TestCourse): void {
+  protected editCourse(course: Quiz): void {
     if (!this.context.canManageCourses()) {
       this.toast.error('You do not have permission to edit organization courses.');
 
       return;
     }
 
-    this.editingCourseId.set(course.id);
+    this.editingQuizId.set(course.id);
 
     this.form = {
       name: course.name ?? '',
@@ -1535,7 +1535,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
     // Populate the existing form before opening it so the form is ready to edit.
     this.topicForm = {
-      courseId: topic.courseId ?? '',
+      quizId: topic.quizId ?? '',
       name: topic.name ?? '',
       slug: topic.slug ?? '',
       description: topic.description ?? '',
@@ -1546,7 +1546,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
     // Close the course form before editing a topic.
     this.showForm.set(false);
-    this.editingCourseId.set(null);
+    this.editingQuizId.set(null);
 
     this.editingTopicId.set(topic.id);
     this.showTopicForm.set(true);
@@ -1571,7 +1571,7 @@ export class PartnerTestCenterComponent implements OnInit {
   // ============================================================
 
   protected onNameChange(): void {
-    if (this.editingCourseId()) {
+    if (this.editingQuizId()) {
       return;
     }
 
@@ -1599,7 +1599,7 @@ export class PartnerTestCenterComponent implements OnInit {
       return;
     }
 
-    this.topicForm.sortOrder = this.getNextSortOrder(this.topicForm.courseId);
+    this.topicForm.sortOrder = this.getNextSortOrder(this.topicForm.quizId);
   }
 
   // ============================================================
@@ -1636,10 +1636,10 @@ export class PartnerTestCenterComponent implements OnInit {
     try {
       this.saving.set(true);
 
-      const editingId = this.editingCourseId();
+      const editingId = this.editingQuizId();
 
       if (editingId) {
-        await this.courseService.updateCourse(organizationId, editingId, {
+        await this.quizService.updateQuiz(organizationId, editingId, {
           programId: this.form.programId.trim(),
 
           name: this.form.name.trim(),
@@ -1657,7 +1657,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
         this.toast.success('Course updated successfully.');
       } else {
-        await this.courseService.createCourse(organizationId, {
+        await this.quizService.createQuiz(organizationId, {
           name: this.form.name.trim(),
 
           slug: this.form.slug.trim(),
@@ -1715,7 +1715,7 @@ export class PartnerTestCenterComponent implements OnInit {
       return;
     }
 
-    const courseId = this.topicForm.courseId.trim();
+    const quizId = this.topicForm.quizId.trim();
 
     const name = this.topicForm.name.trim();
 
@@ -1729,13 +1729,13 @@ export class PartnerTestCenterComponent implements OnInit {
     // VALIDATION
     // --------------------------------------------------------
 
-    if (!courseId) {
+    if (!quizId) {
       this.toast.error('Course is required.');
 
       return;
     }
 
-    const selectedCourse = this.courses().find((course) => course.id === courseId);
+    const selectedCourse = this.courses().find((course) => course.id === quizId);
 
     if (!selectedCourse) {
       this.toast.error('The selected course does not belong to your organization.');
@@ -1780,7 +1780,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
       if (editingId) {
         await this.topicService.updateTopic(organizationId, editingId, {
-          courseId,
+          quizId,
           name,
           slug,
           description,
@@ -1792,7 +1792,7 @@ export class PartnerTestCenterComponent implements OnInit {
       } else {
         await this.topicService.createTopic(organizationId, {
           organizationId,
-          courseId,
+          quizId,
           name,
           slug,
           description,
@@ -1823,7 +1823,7 @@ export class PartnerTestCenterComponent implements OnInit {
   protected cancelForm(): void {
     this.showForm.set(false);
 
-    this.editingCourseId.set(null);
+    this.editingQuizId.set(null);
 
     this.form = this.createEmptyForm();
   }
@@ -1906,7 +1906,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
   private createEmptyTopicForm(): TopicForm {
     return {
-      courseId: '',
+      quizId: '',
 
       name: '',
 
@@ -1926,8 +1926,8 @@ export class PartnerTestCenterComponent implements OnInit {
   // GET NEXT TOPIC SORT ORDER
   // ============================================================
 
-  private getNextSortOrder(courseId: string): number {
-    const courseTopics = this.topics().filter((topic) => topic.courseId === courseId);
+  private getNextSortOrder(quizId: string): number {
+    const courseTopics = this.topics().filter((topic) => topic.quizId === quizId);
 
     if (courseTopics.length === 0) {
       return 0;
@@ -1956,17 +1956,17 @@ export class PartnerTestCenterComponent implements OnInit {
   // GET COURSE NAME
   // ============================================================
 
-  protected getCourseName(courseId: string): string {
-    return this.courses().find((course) => course.id === courseId)?.name ?? 'Unknown course';
+  protected getCourseName(quizId: string): string {
+    return this.courses().find((course) => course.id === quizId)?.name ?? 'Unknown course';
   }
 
   // ============================================================
   // GET TOPICS FOR COURSE
   // ============================================================
 
-  protected getTopicsForCourse(courseId: string): TestTopic[] {
+  protected getTopicsForCourse(quizId: string): TestTopic[] {
     return this.topics()
-      .filter((topic) => topic.courseId === courseId)
+      .filter((topic) => topic.quizId === quizId)
       .sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
@@ -1974,11 +1974,11 @@ export class PartnerTestCenterComponent implements OnInit {
   // COURSE TYPE LABEL / ICON
   // ============================================================
 
-  protected getCourseTypeLabel(type: TestCourseType | undefined): string {
+  protected getCourseTypeLabel(type: QuizType | undefined): string {
     return (COURSE_TYPE_META[type ?? 'course'] ?? COURSE_TYPE_META['course']).label;
   }
 
-  protected getCourseTypeIcon(type: TestCourseType | undefined): string {
+  protected getCourseTypeIcon(type: QuizType | undefined): string {
     return (COURSE_TYPE_META[type ?? 'course'] ?? COURSE_TYPE_META['course']).icon;
   }
 

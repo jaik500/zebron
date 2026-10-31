@@ -38,7 +38,7 @@ export class TestQuestionImportService {
 
   async importQuestionBank(
     organizationId: string,
-    courseId: string,
+    quizId: string,
     topicDefinitions:
       readonly TestQuestionImportTopic[],
     records:
@@ -48,7 +48,7 @@ export class TestQuestionImportService {
       organizationId,
     );
 
-    if (!courseId?.trim()) {
+    if (!quizId?.trim()) {
       throw new Error(
         'A Test Center course is required before importing questions.',
       );
@@ -75,7 +75,7 @@ export class TestQuestionImportService {
 
     await this.validateCourse(
       organizationId,
-      courseId,
+      quizId,
     );
 
     // ==========================================================
@@ -128,7 +128,7 @@ export class TestQuestionImportService {
     const existingTopics =
       await this.loadCourseTopics(
         organizationId,
-        courseId,
+        quizId,
       );
 
     // ==========================================================
@@ -138,7 +138,7 @@ export class TestQuestionImportService {
     const resolvedTopics =
       await this.resolveOrCreateTopics(
         organizationId,
-        courseId,
+        quizId,
         existingTopics,
         topicDefinitions,
         records,
@@ -152,7 +152,7 @@ export class TestQuestionImportService {
     const questionsCollection =
       collection(
         firestore,
-        'testQuestions',
+        'quizQuestions',
       );
 
     const existingSnapshot =
@@ -167,9 +167,9 @@ export class TestQuestionImportService {
           ),
 
           where(
-            'courseId',
+            'quizId',
             '==',
-            courseId,
+            quizId,
           ),
         ),
       );
@@ -247,7 +247,7 @@ export class TestQuestionImportService {
           Record<string, unknown> = {
           organizationId,
 
-          courseId,
+          quizId,
 
           topicId:
             topic.id,
@@ -344,7 +344,7 @@ export class TestQuestionImportService {
         const reference =
           doc(
             firestore,
-            'testQuestions',
+            'quizQuestions',
             operation.id,
           );
 
@@ -375,12 +375,12 @@ export class TestQuestionImportService {
     const refreshedTopics =
       await this.loadCourseTopics(
         organizationId,
-        courseId,
+        quizId,
       );
 
     await this.refreshQuestionCounts(
       organizationId,
-      courseId,
+      quizId,
       refreshedTopics,
     );
 
@@ -393,14 +393,14 @@ export class TestQuestionImportService {
 
   private async loadCourseTopics(
     organizationId: string,
-    courseId: string,
+    quizId: string,
   ): Promise<TestTopic[]> {
     const snapshot =
       await getDocs(
         query(
           collection(
             firestore,
-            'testTopics',
+            'quizTopics',
           ),
 
           where(
@@ -410,9 +410,9 @@ export class TestQuestionImportService {
           ),
 
           where(
-            'courseId',
+            'quizId',
             '==',
-            courseId,
+            quizId,
           ),
         ),
       );
@@ -420,10 +420,7 @@ export class TestQuestionImportService {
     return snapshot.docs
       .map(
         (document) =>
-          ({
-            id: document.id,
-            ...document.data(),
-          }) as TestTopic,
+          ({ id: document.id, ...document.data() } as TestTopic),
       )
       .sort(
         (a, b) =>
@@ -437,7 +434,7 @@ export class TestQuestionImportService {
 
   private async resolveOrCreateTopics(
     organizationId: string,
-    courseId: string,
+    quizId: string,
     existingTopics: TestTopic[],
     definitions:
       readonly TestQuestionImportTopic[],
@@ -520,12 +517,12 @@ export class TestQuestionImportService {
         await addDoc(
           collection(
             firestore,
-            'testTopics',
+            'quizTopics',
           ),
           {
             organizationId,
 
-            courseId,
+            quizId,
 
             name:
               definition.name.trim(),
@@ -562,7 +559,7 @@ export class TestQuestionImportService {
 
           organizationId,
 
-          courseId,
+          quizId,
 
           name:
             definition.name.trim(),
@@ -674,7 +671,7 @@ export class TestQuestionImportService {
 
   private async refreshQuestionCounts(
     organizationId: string,
-    courseId: string,
+    quizId: string,
     topics: TestTopic[],
   ): Promise<void> {
     const snapshot =
@@ -682,7 +679,7 @@ export class TestQuestionImportService {
         query(
           collection(
             firestore,
-            'testQuestions',
+            'quizQuestions',
           ),
 
           where(
@@ -692,9 +689,9 @@ export class TestQuestionImportService {
           ),
 
           where(
-            'courseId',
+            'quizId',
             '==',
-            courseId,
+            quizId,
           ),
         ),
       );
@@ -741,7 +738,7 @@ export class TestQuestionImportService {
       batch.update(
         doc(
           firestore,
-          'testTopics',
+          'quizTopics',
           topic.id,
         ),
         {
@@ -759,8 +756,8 @@ export class TestQuestionImportService {
     batch.update(
       doc(
         firestore,
-        'testCourses',
-        courseId,
+        'quizzes',
+        quizId,
       ),
       {
         questionCount:
@@ -1012,7 +1009,7 @@ export class TestQuestionImportService {
 
   private async validateCourse(
     organizationId: string,
-    courseId: string,
+    quizId: string,
   ): Promise<void> {
     const snapshot =
       await import(
@@ -1021,8 +1018,8 @@ export class TestQuestionImportService {
         getDoc(
           doc(
             firestore,
-            'testCourses',
-            courseId,
+            'quizzes',
+            quizId,
           ),
         ),
       );

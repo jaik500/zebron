@@ -391,7 +391,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                         <p class="text-xs text-gray-500">{{ 'Courses' | t }}</p>
 
                         <p class="mt-1 font-semibold text-gray-900">
-                          {{ program.courseCount }}
+                          {{ program.quizCount }}
                         </p>
                       </div>
 

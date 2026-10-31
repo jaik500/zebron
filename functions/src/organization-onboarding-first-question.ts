@@ -19,7 +19,7 @@ type FirstQuestionOption = {
 
 type FirstQuestionInput = {
   organizationId: string;
-  courseId?: string;
+  quizId?: string;
   topicId?: string;
   question: string;
   explanation?: string;
@@ -33,7 +33,7 @@ type TestCenterEntitlementOnboarding = {
   completedSteps?: unknown;
   status?: unknown;
   firstProgramId?: unknown;
-  firstCourseId?: unknown;
+  firstQuizId?: unknown;
   firstTopicId?: unknown;
   firstQuestionId?: unknown;
   startedAt?: unknown;
@@ -92,7 +92,7 @@ function buildTestCenterSetupState(
       ? state.completedSteps
       : [],
     firstProgramId: normalizeResourceId(state.firstProgramId),
-    firstCourseId: normalizeResourceId(state.firstCourseId),
+    firstQuizId: normalizeResourceId(state.firstQuizId),
     firstTopicId: normalizeResourceId(state.firstTopicId),
     firstQuestionId: normalizeResourceId(state.firstQuestionId),
     ...(state.startedAt !== undefined ? { startedAt: state.startedAt } : {}),
@@ -125,7 +125,7 @@ export const completeOrganizationFirstQuestion = onCall(
     const callerUid = request.auth.uid;
     const data = request.data as Partial<FirstQuestionInput>;
     const organizationId = data.organizationId;
-    const courseId = data.courseId;
+    const quizId = data.quizId;
     const topicId = data.topicId;
     const question = data.question;
     const explanation = data.explanation;
@@ -136,8 +136,8 @@ export const completeOrganizationFirstQuestion = onCall(
       throw new HttpsError("invalid-argument", "organizationId is required.");
     }
 
-    if (courseId !== undefined && !isValidString(courseId, 1, 128)) {
-      throw new HttpsError("invalid-argument", "courseId must be a valid string.");
+    if (quizId !== undefined && !isValidString(quizId, 1, 128)) {
+      throw new HttpsError("invalid-argument", "quizId must be a valid string.");
     }
 
     if (topicId !== undefined && !isValidString(topicId, 1, 128)) {
@@ -268,10 +268,10 @@ export const completeOrganizationFirstQuestion = onCall(
       const setup = buildTestCenterSetupState(persistedOnboarding);
       assertCurrentTestCenterSetupStep(setup, "first_question");
 
-      const firstCourseId = setup.firstCourseId;
+      const firstQuizId = setup.firstQuizId;
       const firstTopicId = setup.firstTopicId;
 
-      if (!firstCourseId) {
+      if (!firstQuizId) {
         throw new HttpsError(
           "failed-precondition",
           "The first course has not been configured.",
@@ -292,10 +292,10 @@ export const completeOrganizationFirstQuestion = onCall(
         );
       }
 
-      if (courseId !== undefined && courseId.trim() !== firstCourseId) {
+      if (quizId !== undefined && quizId.trim() !== firstQuizId) {
         throw new HttpsError(
           "failed-precondition",
-          "The supplied courseId does not match the configured first course.",
+          "The supplied quizId does not match the configured first course.",
         );
       }
 
@@ -306,8 +306,8 @@ export const completeOrganizationFirstQuestion = onCall(
         );
       }
 
-      const courseRef = db.collection("testCourses").doc(firstCourseId);
-      const topicRef = db.collection("testTopics").doc(firstTopicId);
+      const courseRef = db.collection("quizzes").doc(firstQuizId);
+      const topicRef = db.collection("quizTopics").doc(firstTopicId);
 
       const courseSnapshot = await transaction.get(courseRef);
       if (!courseSnapshot.exists) {
@@ -336,19 +336,19 @@ export const completeOrganizationFirstQuestion = onCall(
         );
       }
 
-      if (topic?.courseId !== firstCourseId) {
+      if (topic?.quizId !== firstQuizId) {
         throw new HttpsError(
           "failed-precondition",
           "The first topic does not belong to the first course.",
         );
       }
 
-      const questionRef = db.collection("testQuestions").doc();
+      const questionRef = db.collection("quizQuestions").doc();
       const now = FieldValue.serverTimestamp();
 
       transaction.create(questionRef, {
         organizationId: normalizedOrganizationId,
-        courseId: firstCourseId,
+        quizId: firstQuizId,
         topicId: firstTopicId,
         question: normalizedQuestion,
         explanation: normalizedExplanation,
@@ -391,7 +391,7 @@ export const completeOrganizationFirstQuestion = onCall(
       return {
         questionId: questionRef.id,
         organizationId: normalizedOrganizationId,
-        courseId: firstCourseId,
+        quizId: firstQuizId,
         topicId: firstTopicId,
         question: normalizedQuestion,
         explanation: normalizedExplanation,
@@ -410,7 +410,7 @@ export const completeOrganizationFirstQuestion = onCall(
       question: {
         id: result.questionId,
         organizationId: result.organizationId,
-        courseId: result.courseId,
+        quizId: result.quizId,
         topicId: result.topicId,
         question: result.question,
         explanation: result.explanation,

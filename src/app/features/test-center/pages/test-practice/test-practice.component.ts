@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 
 import { CommonModule } from '@angular/common';
 
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { TestQuestionOption } from '../../models/test-question.model';
 
 import { TestStore } from '../../store/test.store';
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { learnerBaseRoute, useLearningHeaderTitle } from '../../learner-route';
 
 @Component({
   selector: 'app-test-practice',
@@ -19,23 +20,10 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
     TranslatePipe,CommonModule, RouterLink],
 
   template: `
-    <main class="min-h-screen bg-gray-50">
-      <!-- =====================================================
-           HEADER
-           ===================================================== -->
-
-      <!-- =====================================================
-     HEADER
-     ===================================================== -->
-
-      <header
-        class="border-b border-[#0D343A]
-         bg-[#123F46] text-white"
-      >
-        <div
-          class="mx-auto max-w-5xl px-3 py-3
-           sm:px-4 sm:py-3"
-        >
+    <main class="mt-16 min-h-screen bg-gray-50">
+      <!-- Page header -->
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+        <div class="mx-auto max-w-5xl px-4 py-2.5 sm:px-6 lg:px-8">
           <div
             class="flex items-center
              justify-between gap-3"
@@ -44,7 +32,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             <div class="min-w-0">
               <p
                 class="text-[11px] font-medium uppercase
-                 tracking-wide text-[#B8D5D7]"
+                 tracking-wide text-white/75"
               >
                 {{ 'Test Center' | t }}
               </p>
@@ -69,11 +57,11 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             <!-- Test mode -->
             <div
               class="shrink-0 rounded-full
-               border border-white/10
-               bg-white/10
+               border border-white/20
+               bg-white/15
                px-2.5 py-1
                text-[11px] font-semibold
-               text-[#E5F3F4]"
+               text-white"
             >
               {{ modeLabel() | t }}
             </div>
@@ -123,7 +111,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             </p>
 
             <a
-              routerLink="/test-center"
+              [routerLink]="[baseRoute, 'quizzes']"
               class="mt-5 inline-flex items-center
                      rounded-lg bg-gray-900
                      px-4 py-2 text-sm
@@ -479,6 +467,13 @@ export class TestPracticeComponent {
 
   private readonly router = inject(Router);
 
+  private readonly route = inject(ActivatedRoute);
+
+  /** '/test-center' or the organization's learner route. */
+  readonly baseRoute = learnerBaseRoute(this.route);
+
+  private readonly headerTitle = useLearningHeaderTitle(this.route);
+
   readonly testStore = inject(TestStore);
 
   // =====================================================
@@ -633,7 +628,7 @@ private async finishTest(): Promise<void> {
   try {
     await this.testStore.saveCompletedTest(result);
 
-    await this.router.navigate(['/test-center/results']);
+    await this.router.navigate([this.baseRoute, 'results']);
   } catch (error) {
     console.error('Failed to save Test Center result:', error);
 

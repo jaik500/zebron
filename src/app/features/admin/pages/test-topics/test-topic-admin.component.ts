@@ -8,10 +8,10 @@ import { OrganizationContextService } from '../../../../core/services/organizati
 import { HotToastService } from '@ngxpert/hot-toast';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
-import { TestCourse } from '../../../../features/test-center/models/test-course.model';
+import { Quiz } from '../../../../features/test-center/models/quiz.model';
 import { TestTopic } from '../../../../features/test-center/models/test-topic.model';
 
-import { TestCourseService } from '../../../../features/test-center/services/test-course.service';
+import { QuizService } from '../../../../features/test-center/services/quiz.service';
 import { TestTopicService } from '../../../../features/test-center/services/test-topic.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -370,8 +370,8 @@ import { MatButtonModule } from '@angular/material/button';
                       <mat-label>Course</mat-label>
                       <mat-select
                       id="course"
-                      name="courseId"
-                      [(ngModel)]="form.courseId"
+                      name="quizId"
+                      [(ngModel)]="form.quizId"
                       [disabled]="!!editingId()"
                     >
                       <mat-option value="">Select a course</mat-option>
@@ -811,7 +811,7 @@ import { MatButtonModule } from '@angular/material/button';
                              font-medium
                              text-gray-500"
                           >
-                            {{ getCourseName(topic.courseId) }}
+                            {{ getCourseName(topic.quizId) }}
                           </p>
 
                           <!-- Slug -->
@@ -898,7 +898,7 @@ export class TestTopicAdminComponent implements OnInit {
   // SERVICES
   // =========================================================
 
-  private readonly courseService = inject(TestCourseService);
+  private readonly quizService = inject(QuizService);
 
   private readonly organizationContext =
     inject(OrganizationContextService);
@@ -915,7 +915,7 @@ export class TestTopicAdminComponent implements OnInit {
   // STATE
   // =========================================================
 
-  protected readonly courses = signal<TestCourse[]>([]);
+  protected readonly courses = signal<Quiz[]>([]);
 
   protected readonly topics = signal<TestTopic[]>([]);
 
@@ -932,7 +932,7 @@ export class TestTopicAdminComponent implements OnInit {
   // =========================================================
 
   protected form: {
-    courseId: string;
+    quizId: string;
     name: string;
     slug: string;
     description: string;
@@ -972,7 +972,7 @@ export class TestTopicAdminComponent implements OnInit {
 
     try {
       const courses =
-        await this.courseService.getActiveCourses(
+        await this.quizService.getActiveQuizzes(
           organizationId,
         );
 
@@ -1062,7 +1062,7 @@ export class TestTopicAdminComponent implements OnInit {
 
   protected editTopic(topic: TestTopic): void {
     this.form = {
-      courseId: topic.courseId,
+      quizId: topic.quizId,
 
       name: topic.name,
 
@@ -1129,7 +1129,7 @@ export class TestTopicAdminComponent implements OnInit {
       return;
     }
 
-    const courseId = this.form.courseId.trim();
+    const quizId = this.form.quizId.trim();
 
     const name = this.form.name.trim();
 
@@ -1143,7 +1143,7 @@ export class TestTopicAdminComponent implements OnInit {
     // Required validation
     // -------------------------------------------------------
 
-    if (!courseId) {
+    if (!quizId) {
       this.toast.error('Course is required.');
 
       return;
@@ -1211,7 +1211,7 @@ export class TestTopicAdminComponent implements OnInit {
           organizationId,
           {
             organizationId,
-            courseId,
+            quizId,
             name,
             slug,
             description,
@@ -1277,8 +1277,8 @@ export class TestTopicAdminComponent implements OnInit {
   // COURSE NAME
   // =========================================================
 
-  protected getCourseName(courseId: string): string {
-    return this.courses().find((course) => course.id === courseId)?.name ?? 'Unknown course';
+  protected getCourseName(quizId: string): string {
+    return this.courses().find((course) => course.id === quizId)?.name ?? 'Unknown course';
   }
 
   // =========================================================
@@ -1299,7 +1299,7 @@ export class TestTopicAdminComponent implements OnInit {
 
   private emptyForm() {
     return {
-      courseId: '',
+      quizId: '',
 
       name: '',
 

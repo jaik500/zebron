@@ -1477,6 +1477,10 @@ export {
   refreshCommunityTrendingScores,
 } from "./community-ranking-scheduler";
 
+export {
+  publishScheduledBlogPosts,
+} from "./blog-scheduler";
+
 /**
  * Create a persistent audit record inside the current Firestore transaction.
  *
@@ -2475,10 +2479,10 @@ export {
   auditReceivedEmailChanges,
   auditSentEmailChanges,
   auditServiceRequestChanges,
-  auditTestCourseChanges,
+  auditQuizChanges,
   auditTestProgramChanges,
-  auditTestQuestionChanges,
-  auditTestTopicChanges,
+  auditQuizQuestionChanges,
+  auditQuizTopicChanges,
 } from "./organization-audit";
 export {
   addSupportTicketMessage,

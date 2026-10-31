@@ -208,7 +208,7 @@ export class TestCenterLearnersService {
               assessments,
               totalAssessments: assessments.length,
               averageScore,
-              completedCourses: learner.completedCourseIds.length,
+              completedCourses: learner.completedQuizIds.length,
               lastActivityAt
             };
           })
@@ -224,7 +224,7 @@ export class TestCenterLearnersService {
     const resultsQuery = query(
       collection(
         this.firestore,
-        'testResults'
+        'quizResults'
       ),
       where('organizationId', '==', organizationId),
       where('userId', '==', userId)
@@ -232,10 +232,7 @@ export class TestCenterLearnersService {
 
     return from(getDocs(resultsQuery)).pipe(
       map(snapshot =>
-        snapshot.docs.map(result => ({
-          id: result.id,
-          ...result.data()
-        }) as TestResult)
+        snapshot.docs.map(result => ({ id: result.id, ...result.data() } as TestResult))
       )
     );
   }
@@ -278,9 +275,9 @@ export class TestCenterLearnersService {
       active: membership.active ?? true,
 
       // Membership and results alone do not establish course enrollment.
-      enrolledCourseIds: [],
+      enrolledQuizIds: [],
       enrolledCourseNames: [],
-      completedCourseIds: [],
+      completedQuizIds: [],
 
       assessmentCount: results.length,
 
@@ -312,8 +309,8 @@ export class TestCenterLearnersService {
     return {
       id: result.id,
       attemptId: result.attemptId,
-      courseId: result.courseId,
-      courseName: result.courseName,
+      quizId: result.quizId,
+      quizName: result.quizName,
       scorePercentage: result.scorePercentage,
       correctAnswers: result.correctAnswers,
       incorrectAnswers: result.incorrectAnswers,
@@ -351,15 +348,15 @@ export class TestCenterLearnersService {
     const grouped = new Map<string, TestResult[]>();
 
     for (const result of results) {
-      const existing = grouped.get(result.courseId) ?? [];
+      const existing = grouped.get(result.quizId) ?? [];
 
       existing.push(result);
 
-      grouped.set(result.courseId, existing);
+      grouped.set(result.quizId, existing);
     }
 
     return Array.from(grouped.entries()).map(
-      ([courseId, courseResults]) => {
+      ([quizId, courseResults]) => {
         const sorted = [...courseResults].sort(
           (a, b) =>
             (timestampToDate(b.completedAt)?.getTime() ?? 0) -
@@ -378,8 +375,8 @@ export class TestCenterLearnersService {
           : null;
 
         return {
-          courseId,
-          courseName: sorted[0].courseName,
+          quizId,
+          quizName: sorted[0].quizName,
           status: 'in-progress',
           assessmentCount: courseResults.length,
           averageScore,

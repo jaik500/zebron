@@ -185,7 +185,7 @@ export class TestProgramService {
         description,
         active:
           program.active === true,
-        courseCount: 0,
+        quizCount: 0,
         createdAt:
           serverTimestamp(),
         updatedAt:
@@ -353,13 +353,13 @@ export class TestProgramService {
       );
     }
 
-    const courseCount =
+    const quizCount =
       Number(
-        existingData['courseCount'] ??
+        existingData['quizCount'] ??
           0,
       );
 
-    if (courseCount > 0) {
+    if (quizCount > 0) {
       throw new Error(
         'Programs with courses cannot be deleted. Remove or move the courses first.',
       );

@@ -22,7 +22,7 @@ import { TestTopic } from '../models/test-topic.model';
 export class TestTopicService {
   private readonly topicsCollection = collection(
     firestore,
-    'testTopics',
+    'quizTopics',
   );
 
   // ============================================================
@@ -39,10 +39,10 @@ export class TestTopicService {
     }
   }
 
-  private requireCourseId(
-    courseId: string,
+  private requireQuizId(
+    quizId: string,
   ): void {
-    if (!courseId.trim()) {
+    if (!quizId.trim()) {
       throw new Error(
         'A course is required for Test Center topics.',
       );
@@ -62,23 +62,23 @@ export class TestTopicService {
  */
 async getActiveTopics(
   organizationId: string | null,
-  courseId: string,
+  quizId: string,
 ): Promise<TestTopic[]> {
-  this.requireCourseId(courseId);
+  this.requireQuizId(quizId);
 
   if (organizationId === null) {
     const platformQuery = query(
       this.topicsCollection,
       where('scope', '==', 'platform'),
       where('organizationId', '==', null),
-      where('courseId', '==', courseId),
+      where('quizId', '==', quizId),
       where('active', '==', true), // added
     );
 
     const snapshot = await getDocs(platformQuery);
 
     return snapshot.docs
-      .map((document) => ({ id: document.id, ...document.data() }) as TestTopic)
+      .map((document) => ({ id: document.id, ...document.data() } as TestTopic))
       .sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
@@ -87,14 +87,14 @@ async getActiveTopics(
   const organizationQuery = query(
     this.topicsCollection,
     where('organizationId', '==', organizationId),
-    where('courseId', '==', courseId),
+    where('quizId', '==', quizId),
     where('active', '==', true), // added
   );
 
   const snapshot = await getDocs(organizationQuery);
 
   return snapshot.docs
-    .map((document) => ({ id: document.id, ...document.data() }) as TestTopic)
+    .map((document) => ({ id: document.id, ...document.data() } as TestTopic))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
@@ -106,15 +106,15 @@ async getActiveTopics(
 
   async getAllTopics(
     organizationId: string,
-    courseId: string,
+    quizId: string,
   ): Promise<TestTopic[]> {
     this.requireOrganizationId(organizationId);
-    this.requireCourseId(courseId);
+    this.requireQuizId(quizId);
 
    const topicsQuery = query(
   this.topicsCollection,
   where('organizationId', '==', organizationId),
-  where('courseId', '==', courseId),
+  where('quizId', '==', quizId),
   where('active', '==', true),
 );
 
@@ -125,10 +125,7 @@ async getActiveTopics(
     return snapshot.docs
       .map(
         (document) =>
-          ({
-            id: document.id,
-            ...document.data(),
-          }) as TestTopic,
+          ({ id: document.id, ...document.data() } as TestTopic),
       )
       .sort(
         (a, b) =>
@@ -151,8 +148,8 @@ async getActiveTopics(
       organizationId,
     );
 
-    this.requireCourseId(
-      topic.courseId,
+    this.requireQuizId(
+      topic.quizId,
     );
 
     if (
@@ -168,7 +165,7 @@ async getActiveTopics(
       this.topicsCollection,
       {
         organizationId,
-        courseId: topic.courseId,
+        quizId: topic.quizId,
         name: topic.name.trim(),
         slug: topic.slug.trim(),
         description:
@@ -215,7 +212,7 @@ async getActiveTopics(
 
     const topicReference = doc(
       firestore,
-      'testTopics',
+      'quizTopics',
       topicId,
     );
 
@@ -249,7 +246,7 @@ async getActiveTopics(
 
     const topicReference = doc(
       firestore,
-      'testTopics',
+      'quizTopics',
       topicId,
     );
 

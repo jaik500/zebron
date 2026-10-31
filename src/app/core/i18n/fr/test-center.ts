@@ -594,4 +594,21 @@ export const FR_TEST_CENTER: Readonly<Record<string, string>> = {
   "mixed": "mixte",
   "certification": "certification",
   "skill": "compétence",
+
+  // Quiz library page header
+  "Quiz library": "Bibliothèque de quiz",
+  "Practice by topic and track your progress.": "Entraînez-vous par thème et suivez vos progrès.",
+  "Search quizzes...": "Rechercher des quiz…",
+  "Filter by category": "Filtrer par catégorie",
+  "Back to quiz list": "Retour à la liste des quiz",
+  "Back to quiz": "Retour au quiz",
+
+  // Quiz details: setup card
+  "All ({0})": "Toutes ({0})",
+  "Available questions": "Questions disponibles",
+  "Start exam": "Commencer l’examen",
+  "Instant feedback": "Correction immédiate",
+  "Feedback at the end": "Correction à la fin",
+  "Randomize questions and answers": "Questions et réponses dans un ordre aléatoire",
+  "In order": "Dans l’ordre",
 };

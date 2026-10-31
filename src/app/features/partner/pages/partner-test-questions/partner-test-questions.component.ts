@@ -24,7 +24,7 @@ import { PartnerAccessService } from '../../../../core/services/partner-access.s
 import { PartnerOrganizationContextService } from '../../../../core/services/partner-organization-context.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
  
-import { TestCourse } from '../../../test-center/models/test-course.model';
+import { Quiz } from '../../../test-center/models/quiz.model';
 import { httpsCallable } from 'firebase/functions';
 import { firebaseAuth, firebaseFunctions } from '../../../../core/services/firebase-config';
  
@@ -38,7 +38,7 @@ import {
  
 import { TestTopic } from '../../../test-center/models/test-topic.model';
  
-import { TestCourseService } from '../../../test-center/services/test-course.service';
+import { QuizService } from '../../../test-center/services/quiz.service';
 import { TestQuestionService } from '../../../test-center/services/test-question.service';
 import { TestTopicService } from '../../../test-center/services/test-topic.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -48,7 +48,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 // ============================================================
  
 interface QuestionForm {
-  courseId: string;
+  quizId: string;
   topicId: string;
   question: string;
   type: TestQuestionType;
@@ -182,7 +182,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                 <mat-label>{{ 'Course' | t }}</mat-label>
  
                 <mat-select
-                  [ngModel]="selectedCourseId()"
+                  [ngModel]="selectedQuizId()"
                   (ngModelChange)="onCourseChange($event)"
                 >
                   <mat-option value="">{{ 'Select a course' | t }}</mat-option>
@@ -202,7 +202,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                 <mat-select
                   [ngModel]="selectedTopicId()"
                   (ngModelChange)="onTopicChange($event)"
-                  [disabled]="!selectedCourseId() || loadingTopics()"
+                  [disabled]="!selectedQuizId() || loadingTopics()"
                 >
                   <mat-option value="">{{ 'Select a topic' | t }}</mat-option>
  
@@ -947,7 +947,7 @@ export class PartnerTestQuestionsComponent implements OnInit {
  
   private readonly router = inject(Router);
  
-  private readonly courseService = inject(TestCourseService);
+  private readonly quizService = inject(QuizService);
  
   private readonly topicService = inject(TestTopicService);
  
@@ -961,7 +961,7 @@ export class PartnerTestQuestionsComponent implements OnInit {
   // STATE
   // ============================================================
  
-  protected readonly courses = signal<TestCourse[]>([]);
+  protected readonly courses = signal<Quiz[]>([]);
  
   protected readonly topics = signal<TestTopic[]>([]);
  
@@ -977,7 +977,7 @@ export class PartnerTestQuestionsComponent implements OnInit {
  
   protected readonly editingQuestionId = signal<string | null>(null);
  
-  protected readonly selectedCourseId = signal('');
+  protected readonly selectedQuizId = signal('');
  
   protected readonly selectedTopicId = signal('');
  
@@ -1044,7 +1044,7 @@ protected quizRecipientEmail = '';
   // ============================================================
  
   protected readonly selectedCourse = computed(
-    () => this.courses().find((course) => course.id === this.selectedCourseId()) ?? null,
+    () => this.courses().find((course) => course.id === this.selectedQuizId()) ?? null,
   );
  
   protected readonly selectedTopic = computed(
@@ -1069,7 +1069,7 @@ protected quizRecipientEmail = '';
         return;
       }
  
-      const courses = await this.courseService.getAllCourses(organizationId);
+      const courses = await this.quizService.getAllQuizzes(organizationId);
  
       this.courses.set(
         courses.filter(
@@ -1080,10 +1080,10 @@ protected quizRecipientEmail = '';
         ),
       );
  
-      const courseId = this.route.snapshot.queryParamMap.get('courseId') ?? '';
+      const quizId = this.route.snapshot.queryParamMap.get('quizId') ?? this.route.snapshot.queryParamMap.get('courseId') ?? '';
  
-      if (courseId && this.courses().some((course) => course.id === courseId)) {
-        await this.onCourseChange(courseId);
+      if (quizId && this.courses().some((course) => course.id === quizId)) {
+        await this.onCourseChange(quizId);
       }
     } catch (error) {
       const message =
@@ -1099,8 +1099,8 @@ protected quizRecipientEmail = '';
   // COURSE CHANGE
   // ============================================================
  
-  protected async onCourseChange(courseId: string): Promise<void> {
-    this.selectedCourseId.set(courseId);
+  protected async onCourseChange(quizId: string): Promise<void> {
+    this.selectedQuizId.set(quizId);
  
     this.selectedTopicId.set('');
  
@@ -1110,11 +1110,12 @@ protected quizRecipientEmail = '';
  
     this.cancelForm();
  
-    if (!courseId) {
+    if (!quizId) {
       await this.router.navigate([], {
         relativeTo: this.route,
         queryParams: {
-          courseId: null,
+          quizId: null,
+          courseId: null, // old links used ?courseId=
           topicId: null,
         },
         queryParamsHandling: 'merge',
@@ -1132,7 +1133,7 @@ protected quizRecipientEmail = '';
     try {
       this.loadingTopics.set(true);
  
-      const topics = await this.topicService.getAllTopics(organizationId, courseId);
+      const topics = await this.topicService.getAllTopics(organizationId, quizId);
  
       this.topics.set(topics.filter((topic) => topic.active === true));
  
@@ -1164,7 +1165,8 @@ protected quizRecipientEmail = '';
     await this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
-        courseId: this.selectedCourseId(),
+        quizId: this.selectedQuizId(),
+        courseId: null, // old links used ?courseId=
         topicId: topicId || null,
       },
       queryParamsHandling: 'merge',
@@ -1226,11 +1228,11 @@ protected quizRecipientEmail = '';
       return;
     }
  
-    const courseId = this.selectedCourseId();
+    const quizId = this.selectedQuizId();
  
     const topicId = this.selectedTopicId();
  
-    if (!courseId) {
+    if (!quizId) {
       this.toast.error('Select a course first.');
  
       return;
@@ -1246,7 +1248,7 @@ protected quizRecipientEmail = '';
  
     this.form = this.createEmptyForm();
  
-    this.form.courseId = courseId;
+    this.form.quizId = quizId;
  
     this.form.topicId = topicId;
  
@@ -1274,7 +1276,7 @@ protected quizRecipientEmail = '';
     this.editingQuestionId.set(question.id);
  
     this.form = {
-      courseId: question.courseId,
+      quizId: question.quizId,
  
       topicId: question.topicId,
  
@@ -1377,7 +1379,7 @@ protected quizRecipientEmail = '';
       const payload: Omit<TestQuestion, 'id' | 'createdAt' | 'updatedAt'> = {
         organizationId,
  
-        courseId: this.form.courseId,
+        quizId: this.form.quizId,
  
         topicId: this.form.topicId,
  
@@ -1411,7 +1413,7 @@ protected quizRecipientEmail = '';
  
       if (questionId) {
         await this.questionService.updateQuestion(organizationId, questionId, {
-          courseId: payload.courseId,
+          quizId: payload.quizId,
  
           topicId: payload.topicId,
  
@@ -1783,7 +1785,7 @@ protected quizRecipientEmail = '';
   // ============================================================
  
   private validateForm(): string | null {
-    if (!this.form.courseId) {
+    if (!this.form.quizId) {
       return 'Course is required.';
     }
  
@@ -1835,7 +1837,7 @@ protected quizRecipientEmail = '';
  
   private createEmptyForm(): QuestionForm {
     return {
-      courseId: '',
+      quizId: '',
       topicId: '',
  
       question: '',
@@ -1994,10 +1996,10 @@ protected async prepareQuizEmail(): Promise<void> {
  */
 private async loadQuizEmailDefaults(
   organizationId: string,
-  courseName: string,
+  quizName: string,
   topicName: string,
 ): Promise<void> {
-  const fallbackSubject = `Practice quiz invitation: ${courseName}`;
+  const fallbackSubject = `Practice quiz invitation: ${quizName}`;
  
   this.loadingQuizDefaults.set(true);
   this.quizEmailSubject.set('');
@@ -2010,7 +2012,7 @@ private async loadQuizEmailDefaults(
       {
         organizationId: string;
         type: 'quiz_invitation';
-        metadata: { courseName: string; quizTitle: string };
+        metadata: { quizName: string; quizTitle: string };
       },
       { subject: string; senderName: string; signature: string }
     >(firebaseFunctions, 'getCommunicationDefaults');
@@ -2019,7 +2021,7 @@ private async loadQuizEmailDefaults(
       organizationId,
       type: 'quiz_invitation',
       metadata: {
-        courseName,
+        quizName,
         quizTitle: topicName,
       },
     });
@@ -2213,7 +2215,7 @@ protected async sendQuizEmail(): Promise<void> {
         message: string;
         recipientIds: string[];
         metadata: {
-          courseName: string;
+          quizName: string;
           quizTitle: string;
         };
       },
@@ -2242,7 +2244,7 @@ protected async sendQuizEmail(): Promise<void> {
       ].join('\n'),
       recipientIds,
       metadata: {
-        courseName: course.name,
+        quizName: course.name,
         quizTitle: topic.name,
       },
     });

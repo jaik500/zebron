@@ -57,6 +57,13 @@ const EN = {
   trainingEducation: 'Training & Education',
   jobsOpportunities: 'Jobs & Opportunities',
 
+  blogEyebrow: 'From the Zebron Blog',
+  blogTitle: 'Latest news and stories',
+  blogText: 'Career advice, skills, employer insights and Zebron news.',
+  blogViewAll: 'Visit the blog',
+  blogPinned: 'Featured',
+  minRead: 'min read',
+
   forOrganizations: 'For organizations',
   forOrganizationsTitle: 'Share what your organization provides.',
   forOrganizationsText: 'Help people discover your resources, programs, services, and opportunities through Zebron.',
@@ -124,6 +131,13 @@ const FR: HomeText = {
   resourcesServices: 'Ressources et services',
   trainingEducation: 'Formation et éducation',
   jobsOpportunities: 'Emplois et opportunités',
+
+  blogEyebrow: 'Sur le blog Zebron',
+  blogTitle: 'Actualités et témoignages',
+  blogText: 'Conseils de carrière, compétences, regards d’employeurs et actualités Zebron.',
+  blogViewAll: 'Voir le blog',
+  blogPinned: 'À la une',
+  minRead: 'min de lecture',
 
   forOrganizations: 'Pour les organisations',
   forOrganizationsTitle: 'Faites connaître ce que propose votre organisation.',

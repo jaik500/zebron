@@ -33,7 +33,7 @@ export interface TestTopic {
   /**
    * Parent Test Center course.
    */
-  courseId: string;
+  quizId: string;
 
   name: string;
 

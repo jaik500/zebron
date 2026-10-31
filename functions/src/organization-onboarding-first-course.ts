@@ -308,7 +308,7 @@ export const completeOrganizationFirstCourse = onCall(
 
       assertCurrentTestCenterSetupStep(
         setup,
-        "first_course",
+        "first_quiz",
       );
 
       // -------------------------------------------------------
@@ -357,8 +357,8 @@ export const completeOrganizationFirstCourse = onCall(
       // -------------------------------------------------------
 
       if (
-        typeof setup.firstCourseId === "string" &&
-        setup.firstCourseId.trim()
+        typeof setup.firstQuizId === "string" &&
+        setup.firstQuizId.trim()
       ) {
         throw new HttpsError(
           "already-exists",
@@ -371,7 +371,7 @@ export const completeOrganizationFirstCourse = onCall(
       // -------------------------------------------------------
 
       const existingCourseQuery = db
-        .collection("testCourses")
+        .collection("quizzes")
         .where("organizationId", "==", normalizedOrganizationId)
         .where("slug", "==", normalizedSlug)
         .limit(1);
@@ -391,7 +391,7 @@ export const completeOrganizationFirstCourse = onCall(
       // -------------------------------------------------------
 
       const courseRef = db
-        .collection("testCourses")
+        .collection("quizzes")
         .doc();
 
       const now = FieldValue.serverTimestamp();
@@ -431,13 +431,13 @@ export const completeOrganizationFirstCourse = onCall(
 
       const transition = advanceTestCenterSetup(
         setup,
-        "first_course",
+        "first_quiz",
       );
 
       const updatedOnboarding = {
         ...setup,
         steps: [...setup.steps],
-        firstCourseId: courseRef.id,
+        firstQuizId: courseRef.id,
         completedSteps: transition.completedSteps,
         currentStep: transition.currentStep,
         status: transition.status,
@@ -455,7 +455,7 @@ export const completeOrganizationFirstCourse = onCall(
       });
 
       return {
-        courseId: courseRef.id,
+        quizId: courseRef.id,
         organizationId: normalizedOrganizationId,
         programId: firstProgramId,
         name: name.trim(),
@@ -480,7 +480,7 @@ export const completeOrganizationFirstCourse = onCall(
     return {
       success: true,
       course: {
-        id: result.courseId,
+        id: result.quizId,
         organizationId: result.organizationId,
         programId: result.programId,
         name: result.name,
@@ -492,7 +492,7 @@ export const completeOrganizationFirstCourse = onCall(
         questionCount: result.questionCount,
       },
       onboarding: {
-        firstCourseId: result.courseId,
+        firstQuizId: result.quizId,
         currentStep: result.onboarding.currentStep,
         completedSteps: result.onboarding.completedSteps,
         status: result.onboarding.status,

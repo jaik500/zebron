@@ -1177,6 +1177,20 @@ export class AdminDashboardComponent {
       icon: 'menu_book',
     },
     {
+      title: 'Blog',
+      description: 'Write, review, schedule and pin posts on the public Zebron blog.',
+      route: '/blog/manage',
+      actionLabel: 'Manage Blog',
+      icon: 'article',
+    },
+    {
+      title: 'Internal Blog',
+      description: 'Release notes, runbooks and updates for Zebron staff and platform administrators only.',
+      route: '/admin/blog',
+      actionLabel: 'Open Internal Blog',
+      icon: 'shield_person',
+    },
+    {
       title: 'Help Assistant',
       description: 'Switch the Ask for help chat on or off, choose the AI model and limits, edit its welcome text and sources, and try it.',
       route: '/admin/configuration/help-assistant',

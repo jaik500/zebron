@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
-import { TestCourse } from '../../../../features/test-center/models/test-course.model';
+import { Quiz } from '../../../../features/test-center/models/quiz.model';
 
 import {
   TestQuestion,
@@ -16,7 +16,7 @@ import {
 
 import { TestTopic } from '../../../../features/test-center/models/test-topic.model';
 
-import { TestCourseService } from '../../../../features/test-center/services/test-course.service';
+import { QuizService } from '../../../../features/test-center/services/quiz.service';
 import { TestQuestionService } from '../../../../features/test-center/services/test-question.service';
 import { TestTopicService } from '../../../../features/test-center/services/test-topic.service';
 
@@ -112,7 +112,7 @@ import { MatRadioModule } from '@angular/material/radio';
             <button
               type="button"
               (click)="questionBankFileInput.click()"
-              [disabled]="!selectedCourseId() || importing()"
+              [disabled]="!selectedQuizId() || importing()"
               class="inline-flex items-center justify-center
                      rounded-lg border border-teal-200
                      bg-teal-50 px-4 py-2.5
@@ -135,7 +135,7 @@ import { MatRadioModule } from '@angular/material/radio';
             <button
               type="button"
               (click)="startNewQuestion()"
-              [disabled]="!selectedCourseId() || !selectedTopicId()"
+              [disabled]="!selectedQuizId() || !selectedTopicId()"
               class="inline-flex items-center justify-center
                      rounded-lg bg-teal-600
                      px-4 py-2.5
@@ -209,7 +209,7 @@ import { MatRadioModule } from '@angular/material/radio';
                 <button
                   type="button"
                   (click)="importQuestionBank()"
-                  [disabled]="!selectedCourseId() || importing()"
+                  [disabled]="!selectedQuizId() || importing()"
                   class="inline-flex w-full items-center
                          justify-center rounded-lg
                          border border-teal-200
@@ -388,7 +388,7 @@ import { MatRadioModule } from '@angular/material/radio';
               <button
                 type="button"
                 (click)="confirmUploadedQuestionBank()"
-                [disabled]="importing() || !selectedCourseId()"
+                [disabled]="importing() || !selectedQuizId()"
                 class="rounded-lg bg-teal-600
                        px-5 py-2.5
                        text-sm font-semibold text-white
@@ -432,7 +432,7 @@ import { MatRadioModule } from '@angular/material/radio';
                 <mat-select
                 id="course"
                 name="course"
-                [ngModel]="selectedCourseId()"
+                [ngModel]="selectedQuizId()"
                 (ngModelChange)="onCourseChange($event)"
               >
                 <mat-option value="">Select a course</mat-option>
@@ -457,12 +457,12 @@ import { MatRadioModule } from '@angular/material/radio';
                 name="topic"
                 [ngModel]="selectedTopicId()"
                 (ngModelChange)="onTopicChange($event)"
-                [disabled]="!selectedCourseId() || loadingTopics()"
+                [disabled]="!selectedQuizId() || loadingTopics()"
               >
                 <mat-option value="">
                   @if (loadingTopics()) {
                     Loading topics...
-                  } @else if (!selectedCourseId()) {
+                  } @else if (!selectedQuizId()) {
                     Select a course first
                   } @else {
                     Select a topic
@@ -481,7 +481,7 @@ import { MatRadioModule } from '@angular/material/radio';
 
           <!-- Selection summary -->
 
-          @if (selectedCourseId() && selectedTopicId()) {
+          @if (selectedQuizId() && selectedTopicId()) {
             <div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
               <span
                 class="rounded-full bg-teal-50 px-3 py-1
@@ -530,7 +530,7 @@ import { MatRadioModule } from '@angular/material/radio';
              EMPTY SELECTION
              ============================================================ -->
 
-        @else if (!selectedCourseId() || !selectedTopicId()) {
+        @else if (!selectedQuizId() || !selectedTopicId()) {
           <div
             class="rounded-xl border border-dashed
                    border-gray-300 bg-white p-10 text-center"
@@ -1143,7 +1143,7 @@ export class TestQuestionAdminComponent implements OnInit {
   // SERVICES
   // ============================================================
 
-  private readonly courseService = inject(TestCourseService);
+  private readonly quizService = inject(QuizService);
 
   private readonly topicService = inject(TestTopicService);
 
@@ -1159,7 +1159,7 @@ export class TestQuestionAdminComponent implements OnInit {
   // DATA
   // ============================================================
 
-  protected readonly courses = signal<TestCourse[]>([]);
+  protected readonly courses = signal<Quiz[]>([]);
 
   protected readonly topics = signal<TestTopic[]>([]);
 
@@ -1185,7 +1185,7 @@ export class TestQuestionAdminComponent implements OnInit {
   // SELECTION
   // ============================================================
 
-  protected readonly selectedCourseId = signal('');
+  protected readonly selectedQuizId = signal('');
 
   protected readonly selectedTopicId = signal('');
 
@@ -1243,7 +1243,7 @@ export class TestQuestionAdminComponent implements OnInit {
   // ============================================================
 
   protected selectedCourseName(): string {
-    const course = this.courses().find((item) => item.id === this.selectedCourseId());
+    const course = this.courses().find((item) => item.id === this.selectedQuizId());
 
     return course?.name ?? '';
   }
@@ -1325,7 +1325,7 @@ export class TestQuestionAdminComponent implements OnInit {
     try {
       this.loadingCourses.set(true);
 
-      const courses = await this.courseService.getActiveCourses(organizationId);
+      const courses = await this.quizService.getActiveQuizzes(organizationId);
 
       this.courses.set(courses);
     } catch (error) {
@@ -1341,8 +1341,8 @@ export class TestQuestionAdminComponent implements OnInit {
   // COURSE CHANGE
   // ============================================================
 
-  async onCourseChange(courseId: string): Promise<void> {
-    this.selectedCourseId.set(courseId);
+  async onCourseChange(quizId: string): Promise<void> {
+    this.selectedQuizId.set(quizId);
 
     this.selectedTopicId.set('');
 
@@ -1365,7 +1365,7 @@ export class TestQuestionAdminComponent implements OnInit {
      */
     this.pendingQuestionBank.set(null);
 
-    if (!courseId) {
+    if (!quizId) {
       return;
     }
 
@@ -1379,7 +1379,7 @@ export class TestQuestionAdminComponent implements OnInit {
     try {
       this.loadingTopics.set(true);
 
-      const topics = await this.topicService.getAllTopics(organizationId, courseId);
+      const topics = await this.topicService.getAllTopics(organizationId, quizId);
 
       this.topics.set(topics);
     } catch (error) {
@@ -1448,15 +1448,15 @@ export class TestQuestionAdminComponent implements OnInit {
   // REFRESH TOPICS
   // ============================================================
 
-  private async refreshTopics(courseId: string): Promise<void> {
+  private async refreshTopics(quizId: string): Promise<void> {
     const organizationId = this.organizationContext.organizationId();
 
-    if (!organizationId || !courseId) {
+    if (!organizationId || !quizId) {
       return;
     }
 
     try {
-      const topics = await this.topicService.getAllTopics(organizationId, courseId);
+      const topics = await this.topicService.getAllTopics(organizationId, quizId);
 
       this.topics.set(topics);
     } catch (error) {
@@ -1469,7 +1469,7 @@ export class TestQuestionAdminComponent implements OnInit {
   // ============================================================
 
   startNewQuestion(): void {
-    if (!this.selectedCourseId() || !this.selectedTopicId()) {
+    if (!this.selectedQuizId() || !this.selectedTopicId()) {
       this.toast.error('Select a course and topic first.');
 
       return;
@@ -1649,10 +1649,10 @@ export class TestQuestionAdminComponent implements OnInit {
       return;
     }
 
-    const courseId = this.selectedCourseId();
+    const quizId = this.selectedQuizId();
     const topicId = this.selectedTopicId();
 
-    if (!courseId || !topicId) {
+    if (!quizId || !topicId) {
       this.toast.error('Select a course and topic first.');
       return;
     }
@@ -1662,7 +1662,7 @@ export class TestQuestionAdminComponent implements OnInit {
 
       const payload: Omit<TestQuestion, 'id' | 'createdAt' | 'updatedAt'> = {
         organizationId,
-        courseId,
+        quizId,
         topicId,
         question: this.form.question.trim(),
         type: this.form.type,
@@ -2340,7 +2340,7 @@ export class TestQuestionAdminComponent implements OnInit {
   protected async confirmUploadedQuestionBank(): Promise<void> {
     const pending = this.pendingQuestionBank();
 
-    const courseId = this.selectedCourseId();
+    const quizId = this.selectedQuizId();
 
     if (!pending) {
       this.toast.error('There is no uploaded question bank waiting for import.');
@@ -2348,7 +2348,7 @@ export class TestQuestionAdminComponent implements OnInit {
       return;
     }
 
-    if (!courseId) {
+    if (!quizId) {
       this.toast.error('Please select a course before importing the question bank.');
 
       return;
@@ -2394,7 +2394,7 @@ export class TestQuestionAdminComponent implements OnInit {
 
       const result = await this.questionImportService.importQuestionBank(
         organizationId,
-        courseId,
+        quizId,
         pending.topics,
         pending.records,
       );
@@ -2418,7 +2418,7 @@ export class TestQuestionAdminComponent implements OnInit {
        * new topics.
        */
 
-      await this.refreshTopics(courseId);
+      await this.refreshTopics(quizId);
 
       /*
        * Refresh the currently selected topic if one exists.
@@ -2465,9 +2465,9 @@ export class TestQuestionAdminComponent implements OnInit {
   // ============================================================
 
   protected async importQuestionBank(): Promise<void> {
-    const courseId = this.selectedCourseId();
+    const quizId = this.selectedQuizId();
 
-    if (!courseId) {
+    if (!quizId) {
       this.toast.error('Please select a course before importing a question bank.');
 
       return;
@@ -2515,7 +2515,7 @@ export class TestQuestionAdminComponent implements OnInit {
 
       const result = await this.questionImportService.importQuestionBank(
         organizationId,
-        courseId,
+        quizId,
         bank.topics,
         bank.questions,
       );
@@ -2539,7 +2539,7 @@ export class TestQuestionAdminComponent implements OnInit {
        * created new topics.
        */
 
-      await this.refreshTopics(courseId);
+      await this.refreshTopics(quizId);
 
       /*
        * Refresh the current topic if one is selected.

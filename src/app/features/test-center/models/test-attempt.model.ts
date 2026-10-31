@@ -23,7 +23,7 @@ export interface TestAttempt {
    */
   userId: string;
 
-  courseId: string;
+  quizId: string;
 
   topicIds: string[];
 

@@ -29,28 +29,25 @@ import {
 })
 export class TestQuestionService {
   private readonly questionsCollection =
-    collection(firestore, 'testQuestions');
+    collection(firestore, 'quizQuestions');
 
   async getAllQuestionsForCourse(
     organizationId: string,
-    courseId: string,
+    quizId: string,
   ): Promise<TestQuestion[]> {
     this.requireOrganizationId(organizationId);
-    this.requireCourseId(courseId);
+    this.requireQuizId(quizId);
 
     const snapshot = await getDocs(
       query(
         this.questionsCollection,
         where('organizationId', '==', organizationId),
-        where('courseId', '==', courseId),
+        where('quizId', '==', quizId),
       ),
     );
 
     return snapshot.docs
-      .map((document) => ({
-        id: document.id,
-        ...document.data(),
-      }) as TestQuestion)
+      .map((document) => ({ id: document.id, ...document.data() } as TestQuestion))
       .sort((a, b) => this.toMillis(a.createdAt) - this.toMillis(b.createdAt));
   }
 
@@ -73,10 +70,7 @@ export class TestQuestionService {
     );
 
     return snapshot.docs
-      .map((document) => ({
-        id: document.id,
-        ...document.data(),
-      }) as TestQuestion)
+      .map((document) => ({ id: document.id, ...document.data() } as TestQuestion))
       .sort((a, b) => this.toMillis(a.createdAt) - this.toMillis(b.createdAt));
   }
 
@@ -91,7 +85,7 @@ export class TestQuestionService {
     }
 
     const snapshot = await getDoc(
-      doc(firestore, 'testQuestions', questionId),
+      doc(firestore, 'quizQuestions', questionId),
     );
 
     if (!snapshot.exists()) {
@@ -104,46 +98,40 @@ export class TestQuestionService {
       return null;
     }
 
-    return {
-      id: snapshot.id,
-      ...data,
-    } as TestQuestion;
+    return ({ id: snapshot.id, ...data } as TestQuestion);
   }
 
   async getPublishedQuestionsForCourse(
     organizationId: string,
-    courseId: string,
+    quizId: string,
   ): Promise<TestQuestion[]> {
     this.requireOrganizationId(organizationId);
-    this.requireCourseId(courseId);
+    this.requireQuizId(quizId);
 
     const snapshot = await getDocs(
       query(
         this.questionsCollection,
         where('organizationId', '==', organizationId),
-        where('courseId', '==', courseId),
+        where('quizId', '==', quizId),
         where('status', '==', 'published'),
         orderBy('createdAt', 'asc'),
       ),
     );
 
-    return snapshot.docs.map((document) => ({
-      id: document.id,
-      ...document.data(),
-    }) as TestQuestion);
+    return snapshot.docs.map((document) => ({ id: document.id, ...document.data() } as TestQuestion));
   }
 
   async getPublishedQuestions(
     organizationId: string,
-    courseId: string,
+    quizId: string,
     topicIds: string[] = [],
   ): Promise<TestQuestion[]> {
     this.requireOrganizationId(organizationId);
-    this.requireCourseId(courseId);
+    this.requireQuizId(quizId);
 
     const constraints: QueryConstraint[] = [
       where('organizationId', '==', organizationId),
-      where('courseId', '==', courseId),
+      where('quizId', '==', quizId),
       where('status', '==', 'published'),
     ];
 
@@ -159,10 +147,7 @@ export class TestQuestionService {
       ),
     );
 
-    let questions = snapshot.docs.map((document) => ({
-      id: document.id,
-      ...document.data(),
-    }) as TestQuestion);
+    let questions = snapshot.docs.map((document) => ({ id: document.id, ...document.data() } as TestQuestion));
 
     if (topicIds.length > 1) {
       const selectedTopics = new Set(topicIds);
@@ -187,12 +172,12 @@ export class TestQuestionService {
  */
 async getQuestionsForTest(
   organizationId: string | null,
-  courseId: string,
+  quizId: string,
   topicIds: string[],
   difficulty: TestQuestionDifficulty | 'mixed',
   scope: 'platform' | 'organization' = 'organization',
 ): Promise<TestQuestion[]> {
-  this.requireCourseId(courseId);
+  this.requireQuizId(quizId);
 
   if (scope === 'organization') {
     this.requireOrganizationId(organizationId ?? '');
@@ -218,7 +203,7 @@ async getQuestionsForTest(
   query(
     this.questionsCollection,
     ...ownershipConstraints,
-    where('courseId', '==', courseId),
+    where('quizId', '==', quizId),
     where('status', '==', 'published'), // added
   ),
 );
@@ -226,10 +211,7 @@ async getQuestionsForTest(
   const selectedTopics = new Set(topicIds);
 
   return snapshot.docs
-    .map((document) => ({
-      id: document.id,
-      ...document.data(),
-    }) as TestQuestion)
+    .map((document) => ({ id: document.id, ...document.data() } as TestQuestion))
     .filter((question) => question.status === 'published')
     .filter(
       (question) =>
@@ -249,14 +231,14 @@ async getQuestionsForTest(
 
   async getPublishedQuestionCount(
   organizationId: string | null,
-  courseId: string,
+  quizId: string,
   topicIds: string[] = [],
   scope: 'platform' | 'organization' = 'organization',
 ): Promise<number> {
   return (
     await this.getQuestionsForTest(
       organizationId,
-      courseId,
+      quizId,
       topicIds,
       'mixed',
       scope,
@@ -269,7 +251,7 @@ async getQuestionsForTest(
     question: Omit<TestQuestion, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<string> {
     this.requireOrganizationId(organizationId);
-    this.requireCourseId(question.courseId);
+    this.requireQuizId(question.quizId);
 
     if (!question.topicId?.trim()) {
       throw new Error('A Test Center topic is required.');
@@ -277,13 +259,13 @@ async getQuestionsForTest(
 
     await this.verifyCourseOwnership(
       organizationId,
-      question.courseId,
+      question.quizId,
     );
 
     await this.verifyTopicOwnership(
       organizationId,
       question.topicId,
-      question.courseId,
+      question.quizId,
     );
 
     // Log the exact identifiers and status being submitted so a Firestore
@@ -291,7 +273,7 @@ async getQuestionsForTest(
     // checks above. Do not log question text, answer options, or other content.
     console.log('[TestQuestionService] Creating question', {
       organizationId,
-      courseId: question.courseId,
+      quizId: question.quizId,
       topicId: question.topicId,
       status: question.status,
       type: question.type,
@@ -311,7 +293,7 @@ async getQuestionsForTest(
       console.log('[TestQuestionService] Question created successfully', {
         questionId: reference.id,
         organizationId,
-        courseId: question.courseId,
+        quizId: question.quizId,
         topicId: question.topicId,
         status: question.status,
       });
@@ -322,7 +304,7 @@ async getQuestionsForTest(
         '[TestQuestionService] Question creation failed',
         {
           organizationId,
-          courseId: question.courseId,
+          quizId: question.quizId,
           topicId: question.topicId,
           status: question.status,
           error,
@@ -358,10 +340,10 @@ async getQuestionsForTest(
       );
     }
 
-    if (changes.courseId) {
+    if (changes.quizId) {
       await this.verifyCourseOwnership(
         organizationId,
-        changes.courseId,
+        changes.quizId,
       );
     }
 
@@ -369,7 +351,7 @@ async getQuestionsForTest(
       await this.verifyTopicOwnership(
         organizationId,
         changes.topicId,
-        changes.courseId ?? existing.courseId,
+        changes.quizId ?? existing.quizId,
       );
     }
 
@@ -382,7 +364,7 @@ async getQuestionsForTest(
     delete updatePayload['id'];
 
     await updateDoc(
-      doc(firestore, 'testQuestions', questionId),
+      doc(firestore, 'quizQuestions', questionId),
       updatePayload,
     );
   }
@@ -405,7 +387,7 @@ async getQuestionsForTest(
     }
 
     await deleteDoc(
-      doc(firestore, 'testQuestions', questionId),
+      doc(firestore, 'quizQuestions', questionId),
     );
   }
 
@@ -493,7 +475,7 @@ async getQuestionsForTest(
     }
 
     await updateDoc(
-      doc(firestore, 'testQuestions', questionId),
+      doc(firestore, 'quizQuestions', questionId),
       {
         status: nextStatus,
         updatedAt: serverTimestamp(),
@@ -504,25 +486,25 @@ async getQuestionsForTest(
 
 private async verifyCourseOwnership(
   organizationId: string,
-  courseId: string,
+  quizId: string,
 ): Promise<void> {
   console.log('[TestQuestionService] Verifying course ownership', {
     organizationId,
-    courseId,
+    quizId,
   });
 
   let snapshot;
 
   try {
     snapshot = await getDoc(
-      doc(firestore, 'testCourses', courseId),
+      doc(firestore, 'quizzes', quizId),
     );
   } catch (error) {
     console.error(
       '[TestQuestionService] Course ownership read failed',
       {
         organizationId,
-        courseId,
+        quizId,
         error,
       },
     );
@@ -556,19 +538,19 @@ private async verifyCourseOwnership(
 private async verifyTopicOwnership(
   organizationId: string,
   topicId: string,
-  courseId: string,
+  quizId: string,
 ): Promise<void> {
   console.log('[TestQuestionService] Verifying topic ownership', {
     organizationId,
     topicId,
-    courseId,
+    quizId,
   });
 
   let snapshot;
 
   try {
     snapshot = await getDoc(
-      doc(firestore, 'testTopics', topicId),
+      doc(firestore, 'quizTopics', topicId),
     );
   } catch (error) {
     console.error(
@@ -576,7 +558,7 @@ private async verifyTopicOwnership(
       {
         organizationId,
         topicId,
-        courseId,
+        quizId,
         error,
       },
     );
@@ -595,13 +577,13 @@ private async verifyTopicOwnership(
   console.log('[TestQuestionService] Topic ownership result', {
     documentId: snapshot.id,
     organizationId: data['organizationId'],
-    courseId: data['courseId'],
+    quizId: data['quizId'],
     active: data['active'],
   });
 
   if (
     data['organizationId'] !== organizationId ||
-    data['courseId'] !== courseId
+    data['quizId'] !== quizId
   ) {
     throw new Error(
       'The selected topic does not belong to the current organization and course.',
@@ -619,8 +601,8 @@ private async verifyTopicOwnership(
     }
   }
 
-  private requireCourseId(courseId: string): void {
-    if (!courseId?.trim()) {
+  private requireQuizId(quizId: string): void {
+    if (!quizId?.trim()) {
       throw new Error('A Test Center course is required.');
     }
   }
@@ -644,7 +626,7 @@ private async verifyTopicOwnership(
 
   async getQuestionCountForCourse(
   organizationId: string,
-  courseId: string,
+  quizId: string,
 ): Promise<number> {
   if (!organizationId.trim()) {
     throw new Error(
@@ -652,7 +634,7 @@ private async verifyTopicOwnership(
     );
   }
 
-  if (!courseId.trim()) {
+  if (!quizId.trim()) {
     throw new Error(
       'Course ID is required.',
     );
@@ -666,9 +648,9 @@ private async verifyTopicOwnership(
       organizationId,
     ),
     where(
-      'courseId',
+      'quizId',
       '==',
-      courseId,
+      quizId,
     ),
   );
 
@@ -682,7 +664,7 @@ private async verifyTopicOwnership(
 
 async getQuestionCountForTopic(
   organizationId: string,
-  courseId: string,
+  quizId: string,
   topicId: string,
 ): Promise<number> {
   if (!organizationId.trim()) {
@@ -691,7 +673,7 @@ async getQuestionCountForTopic(
     );
   }
 
-  if (!courseId.trim()) {
+  if (!quizId.trim()) {
     throw new Error(
       'Course ID is required.',
     );
@@ -711,9 +693,9 @@ async getQuestionCountForTopic(
       organizationId,
     ),
     where(
-      'courseId',
+      'quizId',
       '==',
-      courseId,
+      quizId,
     ),
     where(
       'topicId',

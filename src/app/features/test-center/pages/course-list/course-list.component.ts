@@ -7,8 +7,8 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TestCourseService } from '../../services/test-course.service';
-import { TestCourse } from '../../models/test-course.model';
+import { QuizService } from '../../services/quiz.service';
+import { Quiz } from '../../models/quiz.model';
 import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
@@ -112,7 +112,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                     </p>
                   }
 
-                  @if (expandedCourseId() === course.id) {
+                  @if (expandedQuizId() === course.id) {
                     <div class="mt-4 rounded-xl border border-[#007979]/15 bg-[#007979]/5 p-4">
                       <h3 class="text-sm font-semibold text-[#032D42]">{{ 'About this course' | t }}</h3>
                       <p class="mt-2 whitespace-pre-line text-sm leading-6 text-gray-700">
@@ -135,12 +135,12 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                   <button
                     type="button"
                     (click)="toggleExpanded(course.id)"
-                    [attr.aria-expanded]="expandedCourseId() === course.id"
+                    [attr.aria-expanded]="expandedQuizId() === course.id"
                     class="inline-flex items-center gap-2 rounded-lg px-1 py-2 text-sm font-semibold text-[#007979] hover:text-[#005f5f] focus:outline-none focus:ring-2 focus:ring-[#007979]/30"
                   >
-                    {{ expandedCourseId() === course.id ? ('Show less' | t) : ('View details' | t) }}
+                    {{ expandedQuizId() === course.id ? ('Show less' | t) : ('View details' | t) }}
                     <span class="text-base" aria-hidden="true">
-                      {{ expandedCourseId() === course.id ? '⌃' : '⌄' }}
+                      {{ expandedQuizId() === course.id ? '⌃' : '⌄' }}
                     </span>
                   </button>
 
@@ -162,13 +162,13 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CourseListComponent implements OnInit {
-  private readonly courseService = inject(TestCourseService);
+  private readonly quizService = inject(QuizService);
   private readonly organizationContext = inject(OrganizationContextService);
 
-  protected readonly courses = signal<TestCourse[]>([]);
+  protected readonly courses = signal<Quiz[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly expandedCourseId = signal<string | null>(null);
+  protected readonly expandedQuizId = signal<string | null>(null);
 
   ngOnInit(): void {
     void this.loadCourses();
@@ -180,7 +180,7 @@ export class CourseListComponent implements OnInit {
 
     try {
       const organizationId = this.organizationContext.organizationId();
-      const courses = await this.courseService.getAvailableCourses(organizationId);
+      const courses = await this.quizService.getAvailableQuizzes(organizationId);
       this.courses.set(courses);
     } catch (error) {
       console.error('Failed to load Test Center courses:', error);
@@ -191,16 +191,16 @@ export class CourseListComponent implements OnInit {
     }
   }
 
-  protected toggleExpanded(courseId: string): void {
-    this.expandedCourseId.update((current) => current === courseId ? null : courseId);
+  protected toggleExpanded(quizId: string): void {
+    this.expandedQuizId.update((current) => current === quizId ? null : quizId);
   }
 
   /**
    * Supports duration fields on existing or future course records without
    * requiring every older Firestore document to have one.
    */
-  protected estimatedDuration(course: TestCourse): string {
-    const record = course as TestCourse & {
+  protected estimatedDuration(course: Quiz): string {
+    const record = course as Quiz & {
       estimatedDuration?: string | number;
       estimatedDurationMinutes?: number;
       durationMinutes?: number;
@@ -226,8 +226,8 @@ export class CourseListComponent implements OnInit {
     return 'Time varies';
   }
 
-  protected detailedDescription(course: TestCourse): string {
-    const record = course as TestCourse & {
+  protected detailedDescription(course: Quiz): string {
+    const record = course as Quiz & {
       detailedDescription?: string;
       longDescription?: string;
       learningObjectives?: string[];
@@ -257,7 +257,7 @@ export class CourseListComponent implements OnInit {
       : '/test-center';
   }
 
-  protected courseDetailRoute(course: TestCourse): string[] {
+  protected courseDetailRoute(course: Quiz): string[] {
     const organizationId = this.organizationContext.organizationId();
     return organizationId
       ? ['/partner', 'org', organizationId, 'learn', 'test-center', 'courses', course.slug]

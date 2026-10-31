@@ -20,7 +20,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 
-import { TestCourse } from '../../../features/test-center/models/test-course.model';
+import { Quiz } from '../../../features/test-center/models/quiz.model';
 import { TestProgram } from '../../../features/test-center/models/test-program.model';
 import {
   IMPORT_MAX_ROWS,
@@ -34,9 +34,9 @@ import {
 export interface TestCenterImportDialogData {
   organizationId: string;
   programs: TestProgram[];
-  courses: TestCourse[];
+  courses: Quiz[];
   /** Pre-selects this course as the import target. */
-  courseId?: string | null;
+  quizId?: string | null;
 }
 
 /** Closes with the result when something was imported, otherwise undefined. */
@@ -139,7 +139,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           <div class="grid gap-x-4 sm:grid-cols-2">
             <mat-form-field appearance="outline" class="zb-field">
               <mat-label>{{ 'Course' | t }}</mat-label>
-              <mat-select [(ngModel)]="defaultCourseId" name="defaultCourseId">
+              <mat-select [(ngModel)]="defaultQuizId" name="defaultQuizId">
                 <mat-option [value]="null">{{ 'Use the file\\u0027s "course" column' | t }}</mat-option>
                 @for (course of data.courses; track course.id) {
                   <mat-option [value]="course.id">{{ course.name }}</mat-option>
@@ -351,7 +351,7 @@ export class TestCenterImportDialogComponent {
   protected readonly progress = signal<ImportProgress | null>(null);
   protected readonly result = signal<ImportResult | null>(null);
 
-  protected defaultCourseId: string | null = this.data.courseId ?? null;
+  protected defaultQuizId: string | null = this.data.quizId ?? null;
   protected defaultProgramId: string | null = null;
   protected defaultTopicName = 'General';
   protected status: ImportDefaults['status'] = 'published';
@@ -495,7 +495,7 @@ export class TestCenterImportDialogComponent {
         rows,
         errors,
         {
-          courseId: this.defaultCourseId,
+          quizId: this.defaultQuizId,
           programId: this.defaultProgramId,
           topicName: this.defaultTopicName,
           status: this.status,
