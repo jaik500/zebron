@@ -1271,6 +1271,9 @@ export class CommunityHomeComponent
     void this.store.loadInitialData();
 
 
+    this.openSharedContent();
+
+
     this.loadNotifications();
 
 
@@ -1734,11 +1737,44 @@ export class CommunityHomeComponent
   // POST COMPOSER
   // =============================================================
 
-  openPostComposer(): void {
+  /**
+   * Opened from "Share in Community" elsewhere in Zebron (for example a
+   * Knowledge Center article): ?shareTitle=…&shareText=… prefills a new
+   * post, which the person reviews, picks a topic for, and publishes.
+   */
+  private openSharedContent(): void {
+
+    const params =
+      this.router.parseUrl(this.router.url).queryParams;
+
+    const title =
+      typeof params['shareTitle'] === 'string' ? params['shareTitle'] : '';
+
+    const content =
+      typeof params['shareText'] === 'string' ? params['shareText'] : '';
+
+    if (!title && !content) {
+      return;
+    }
+
+    // Remove the parameters so a refresh doesn't open it again.
+    void this.router.navigate([], {
+      queryParams: { shareTitle: null, shareText: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+
+    this.openPostComposer({ title, content, tags: ['knowledge'] });
+  }
+
+
+  openPostComposer(data?: { title?: string; content?: string; tags?: string[] }): void {
 
     this.dialog.open(
       CommunityPostComposerComponent,
       {
+        data: data ?? null,
+
         width: '100%',
 
         maxWidth: '680px',

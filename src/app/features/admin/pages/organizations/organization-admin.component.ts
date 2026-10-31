@@ -493,7 +493,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                 <!-- Search, status filter and display preference -->
 
                 <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <div class="relative min-w-0 flex-1">
+                  <div class="relative w-full min-w-0 sm:max-w-56">
                     <mat-icon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 !text-gray-400" aria-hidden="true">search</mat-icon>
                     <input
                       #orgSearch
@@ -520,7 +520,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                   </select>
 
                   <!-- Display preference (saved per admin) -->
-                  <div class="inline-flex shrink-0 rounded-lg bg-gray-100 p-1" role="radiogroup" aria-label="Display preference">
+                  <div class="inline-flex shrink-0 rounded-lg bg-gray-100 p-1 sm:ml-auto" role="radiogroup" aria-label="Display preference">
                     @for (option of layoutOptions; track option.key) {
                       <button
                         type="button"

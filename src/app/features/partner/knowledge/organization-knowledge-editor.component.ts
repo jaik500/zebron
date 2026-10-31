@@ -78,17 +78,20 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      .knowledge-body h2 { font-size: 1.25rem; font-weight: 700; margin: 1.2rem 0 0.5rem; }
-      .knowledge-body h3 { font-size: 1.1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
-      .knowledge-body h4 { font-weight: 700; margin: 0.8rem 0 0.3rem; }
-      .knowledge-body p { margin: 0 0 0.8rem; line-height: 1.7; }
-      .knowledge-body ul { list-style: disc; margin: 0 0 0.8rem 1.3rem; }
-      .knowledge-body ol { list-style: decimal; margin: 0 0 0.8rem 1.3rem; }
-      .knowledge-body a { color: #007979; text-decoration: underline; }
-      .knowledge-body code { background: #f3f4f6; border-radius: 4px; padding: 0.1rem 0.3rem; font-size: 0.875em; }
-      .knowledge-body pre { background: #111827; color: #f9fafb; border-radius: 8px; padding: 0.8rem; overflow-x: auto; margin: 0 0 0.8rem; }
-      .knowledge-body pre code { background: transparent; color: inherit; padding: 0; }
-      .knowledge-body blockquote { border-left: 4px solid #007979; background: #f0fdfa; padding: 0.5rem 0.9rem; margin: 0 0 0.8rem; }
+      :host ::ng-deep .knowledge-body h2 { font-size: 1.25rem; font-weight: 700; margin: 1.2rem 0 0.5rem; }
+      :host ::ng-deep .knowledge-body h3 { font-size: 1.1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+      :host ::ng-deep .knowledge-body h4 { font-weight: 700; margin: 0.8rem 0 0.3rem; }
+      :host ::ng-deep .knowledge-body p { margin: 0 0 0.8rem; line-height: 1.7; }
+      :host ::ng-deep .knowledge-body ul { list-style: disc; margin: 0 0 0.8rem 1.3rem; }
+      :host ::ng-deep .knowledge-body ol { list-style: decimal; margin: 0 0 0.8rem 1.3rem; }
+      :host ::ng-deep .knowledge-body a { color: #007979; text-decoration: underline; }
+      :host ::ng-deep .knowledge-body code { background: #f3f4f6; border-radius: 4px; padding: 0.1rem 0.3rem; font-size: 0.875em; }
+      :host ::ng-deep .knowledge-body pre { background: #111827; color: #f9fafb; border-radius: 8px; padding: 0.8rem; overflow-x: auto; margin: 0 0 0.8rem; }
+      :host ::ng-deep .knowledge-body pre code { background: transparent; color: inherit; padding: 0; }
+      :host ::ng-deep .knowledge-body blockquote { border-left: 4px solid #007979; background: #f0fdfa; padding: 0.5rem 0.9rem; margin: 0 0 0.8rem; }
+      :host ::ng-deep .knowledge-body > :first-child { margin-top: 0; }
+      :host ::ng-deep .knowledge-body li > p { margin: 0; }
+      :host ::ng-deep .knowledge-body :is(p, ul, ol, pre, blockquote) + :is(h2, h3, h4) { margin-top: 1.75rem; }
     `,
   ],
   template: `

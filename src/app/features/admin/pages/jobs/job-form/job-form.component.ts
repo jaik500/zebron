@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, input, output, signal } from '@angular/core';
 
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
@@ -39,13 +39,11 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     <!-- =====================================================
          Main Page Wrapper
          ===================================================== -->
-    <main
-      class="min-h-screen
-             bg-gray-50"
-    >
+    <main [class]="embedded() ? 'bg-transparent' : 'min-h-screen bg-gray-50'">
       <!-- =====================================================
            Page Header
            ===================================================== -->
+      @if (!embedded()) {
       <header
         class="border-b
                border-gray-200
@@ -145,6 +143,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
           </div>
         </div>
       </header>
+      }
 
       <!-- =====================================================
            Loading Existing Job
@@ -219,6 +218,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 
             <a
               routerLink="/admin/jobs"
+              (click)="onCancel($event)"
               class="mt-4
                      inline-flex
                      rounded-lg
@@ -1099,6 +1099,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
             >
               <a
                 routerLink="/admin/jobs"
+                (click)="onCancel($event)"
                 class="inline-flex
                        items-center
                        justify-center
@@ -1189,6 +1190,38 @@ export class JobFormComponent implements OnInit {
   private readonly toast = inject(HotToastService);
 
   // =========================================================
+  // Embedded use (Admin → Jobs list/form views)
+  // =========================================================
+
+  /** Shown inside the Jobs admin page instead of on its own page. */
+  readonly embedded = input(false);
+
+  /** Job to edit when embedded (null or empty = new job). */
+  readonly editJobId = input<string | null>(null);
+
+  /** Emitted after a successful save when embedded. */
+  readonly saved = output<void>();
+
+  /** Emitted when Cancel is pressed when embedded. */
+  readonly cancelled = output<void>();
+
+  protected onCancel(event: Event): void {
+    if (this.embedded()) {
+      event.preventDefault();
+      this.cancelled.emit();
+    }
+  }
+
+  /** Back to the Jobs list: the parent view when embedded, else the page. */
+  private async finish(): Promise<void> {
+    if (this.embedded()) {
+      this.saved.emit();
+      return;
+    }
+    await this.router.navigate(['/admin/jobs']);
+  }
+
+  // =========================================================
   // Edit State
   // =========================================================
 
@@ -1277,7 +1310,7 @@ export class JobFormComponent implements OnInit {
   // =========================================================
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
+    const id = this.embedded() ? this.editJobId() : this.route.snapshot.paramMap.get('id');
 
     if (!id) {
       /*
@@ -1677,7 +1710,7 @@ export class JobFormComponent implements OnInit {
 
         console.log('Job updated successfully:', id);
 
-        await this.router.navigate(['/admin/jobs']);
+        await this.finish();
 
         return;
       }
@@ -1759,7 +1792,7 @@ const organization =
 
       this.toast.success('Job created successfully.');
 
-      await this.router.navigate(['/admin/jobs']);
+      await this.finish();
     } catch (error) {
       console.error(this.isEditMode() ? 'Failed to update job:' : 'Failed to create job:', error);
 

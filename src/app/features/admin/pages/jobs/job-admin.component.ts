@@ -1,6 +1,8 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
 import { Router, RouterLink } from '@angular/router';
+import { AdminBackLinkComponent, AdminLayoutSwitchComponent, adminViewState } from '../../shared/admin-view';
+import { JobFormComponent } from './job-form/job-form.component';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
@@ -23,7 +25,7 @@ import { MatButtonModule } from '@angular/material/button';
 
   standalone: true,
 
-  imports: [RouterLink, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
+  imports: [AdminLayoutSwitchComponent, AdminBackLinkComponent, JobFormComponent, RouterLink, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
 
   template: `
     <main
@@ -123,7 +125,7 @@ import { MatButtonModule } from '@angular/material/button';
 
             <!-- Add Job -->
             <a
-              routerLink="/admin/jobs/new"
+              href="/admin/jobs/new" (click)="startCreate($event)"
               class="hidden
                      items-center
                      rounded-lg
@@ -188,7 +190,7 @@ import { MatButtonModule } from '@angular/material/button';
               </a>
 
               <!-- Add Jobs -->
-              <a mat-menu-item routerLink="/admin/jobs/new">
+              <a mat-menu-item href="/admin/jobs/new" (click)="startCreate($event)">
                 <span> Add Jobs </span>
               </a>
 
@@ -213,6 +215,34 @@ import { MatButtonModule } from '@angular/material/button';
                sm:px-6
                lg:px-8"
       >
+        <div [class]="viewState.layout() === 'split' ? 'grid items-start gap-6 lg:grid-cols-3' : ''">
+        <!-- ===================================================
+             Job form (Create / Edit), shown on this page
+             =================================================== -->
+        @if (viewState.showForm()) {
+          <div [class]="viewState.layout() === 'split' ? 'min-w-0 lg:col-span-2' : 'min-w-0'">
+            @if (viewState.layout() !== 'split') {
+              <app-admin-back-link label="Back to jobs" (back)="closeForm()" />
+            }
+            <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              @for (key of formKeys(); track key) {
+                <app-job-form
+                  [embedded]="true"
+                  [editJobId]="editingJobId()"
+                  (saved)="onFormSaved()"
+                  (cancelled)="closeForm()"
+                />
+              }
+            </div>
+          </div>
+        }
+
+        @if (viewState.showList()) {
+        <div
+          [class]="viewState.layout() === 'split'
+            ? 'min-w-0 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto'
+            : 'min-w-0'"
+        >
         <!-- ===================================================
              Loading
              =================================================== -->
@@ -329,7 +359,7 @@ import { MatButtonModule } from '@angular/material/button';
             </p>
 
             <a
-              routerLink="/admin/jobs/new"
+              href="/admin/jobs/new" (click)="startCreate($event)"
               class="mt-6
                      inline-flex
                      items-center
@@ -376,8 +406,9 @@ import { MatButtonModule } from '@angular/material/button';
               <!-- Search -->
               <div
                 class="relative
+                       w-full
                        min-w-0
-                       flex-1"
+                       lg:max-w-64"
               >
                 <mat-form-field appearance="outline" class="zb-field">
                   <mat-label>Search jobs</mat-label>
@@ -645,8 +676,12 @@ import { MatButtonModule } from '@angular/material/button';
             <div
               class="flex
                      flex-wrap
+                     items-center
                      gap-2"
             >
+              <!-- Display preference: table or cards (saved per admin) -->
+              <app-admin-layout-switch [state]="viewState" />
+
               <span
                 class="rounded-full
                        bg-green-100
@@ -757,14 +792,9 @@ import { MatButtonModule } from '@angular/material/button';
                  Desktop Table
                  ================================================= -->
             <div
-              class="hidden
-                     overflow-hidden
-                     rounded-xl
-                     border
-                     border-gray-200
-                     bg-white
-                     shadow-sm
-                     md:block"
+              [class]="viewState.layout() !== 'list'
+                ? 'hidden'
+                : 'hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block'"
             >
               <div class="overflow-x-auto">
                 <table
@@ -1103,7 +1133,7 @@ import { MatButtonModule } from '@angular/material/button';
                                    gap-3"
                           >
                             <a
-                              [routerLink]="['/admin/jobs', job.id, 'edit']"
+                              [href]="'/admin/jobs/' + job.id + '/edit'" (click)="openEdit($event, job.id)"
                               class="text-sm
                                      font-semibold
                                      text-[#007979]
@@ -1135,8 +1165,9 @@ import { MatButtonModule } from '@angular/material/button';
                  Mobile Cards
                  ================================================= -->
             <div
-              class="space-y-3
-                     md:hidden"
+              [class]="viewState.layout() === 'cards'
+                ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
+                : viewState.layout() === 'split' ? 'space-y-3' : 'space-y-3 md:hidden'"
             >
               @for (job of filteredJobs(); track job.id) {
                 <article
@@ -1234,6 +1265,39 @@ import { MatButtonModule } from '@angular/material/button';
                       </p>
                     </div>
 
+                    <div>
+                      <p class="text-xs text-gray-400">Work arrangement</p>
+                      <p class="mt-0.5 text-gray-700">{{ formatWorkArrangement(job.workArrangement) }}</p>
+                    </div>
+
+                    <div>
+                      <p class="text-xs text-gray-400">Pay</p>
+                      <p class="mt-0.5 text-gray-700">{{ formatPay(job) }}</p>
+                    </div>
+
+                    @if (job.categoryName) {
+                      <div>
+                        <p class="text-xs text-gray-400">Category</p>
+                        <p class="mt-0.5 text-gray-700">{{ job.categoryName }}</p>
+                      </div>
+                    }
+
+                    <div>
+                      <p class="text-xs text-gray-400">Apply by</p>
+                      <p class="mt-0.5 text-gray-700">{{ formatDeadline(job) }}</p>
+                    </div>
+
+                    @if (skillsOf(job).length) {
+                      <div class="col-span-2">
+                        <p class="text-xs text-gray-400">Skills</p>
+                        <div class="mt-1 flex flex-wrap gap-1">
+                          @for (skill of skillsOf(job).slice(0, 6); track skill) {
+                            <span class="rounded-full bg-[#007979]/10 px-2 py-0.5 text-xs text-[#006666]">{{ skill }}</span>
+                          }
+                        </div>
+                      </div>
+                    }
+
                     <div class="col-span-2">
                       <p
                         class="text-xs
@@ -1263,7 +1327,7 @@ import { MatButtonModule } from '@angular/material/button';
                            pt-3"
                   >
                     <a
-                      [routerLink]="['/admin/jobs', job.id, 'edit']"
+                      [href]="'/admin/jobs/' + job.id + '/edit'" (click)="openEdit($event, job.id)"
                       class="text-sm
                              font-semibold
                              text-[#007979]"
@@ -1286,6 +1350,9 @@ import { MatButtonModule } from '@angular/material/button';
             </div>
           }
         }
+        </div>
+        }
+        </div>
       </div>
     </main>
   `,
@@ -1320,6 +1387,93 @@ protected readonly error =
   // =========================================================
 
   protected readonly searchTerm = signal('');
+
+  /** Table, cards or split (form beside the list), saved per admin. */
+  protected readonly viewState = adminViewState('jobs');
+
+  // =========================================================
+  // Create / edit on this page (list and form views)
+  // =========================================================
+
+  /** Job open in the form (null = new job). */
+  protected readonly editingJobId = signal<string | null>(null);
+
+  /** Changes whenever a different job is opened, so the form starts fresh. */
+  private readonly formKey = signal(0);
+
+  protected readonly formKeys = computed(() => [this.formKey()]);
+
+  protected startCreate(event?: Event): void {
+    event?.preventDefault();
+    this.editingJobId.set(null);
+    this.formKey.update((key) => key + 1);
+    this.viewState.openForm();
+  }
+
+  protected openEdit(event: Event, jobId: string | undefined): void {
+    event.preventDefault();
+    if (!jobId) {
+      return;
+    }
+    this.editingJobId.set(jobId);
+    this.formKey.update((key) => key + 1);
+    this.viewState.openForm();
+  }
+
+  protected closeForm(): void {
+    this.editingJobId.set(null);
+    this.formKey.update((key) => key + 1);
+    this.viewState.backToList();
+  }
+
+  protected async onFormSaved(): Promise<void> {
+    this.closeForm();
+    await this.loadJobs();
+  }
+
+  protected skillsOf(job: Job): string[] {
+    return Array.isArray(job.skills) ? job.skills : [];
+  }
+
+  protected formatWorkArrangement(value: Job['workArrangement'] | undefined): string {
+    switch (value) {
+      case 'on-site':
+        return 'On-site';
+      case 'hybrid':
+        return 'Hybrid';
+      case 'remote':
+        return 'Remote';
+      default:
+        return 'Not specified';
+    }
+  }
+
+  protected formatPay(job: Job): string {
+    const pay = job.compensation;
+    if (!pay || (pay.min == null && pay.max == null)) {
+      return 'Not listed';
+    }
+    const money = (value: number) =>
+      new Intl.NumberFormat('en-US', { style: 'currency', currency: pay.currency || 'USD', maximumFractionDigits: 0 }).format(value);
+    const range =
+      pay.min != null && pay.max != null
+        ? `${money(pay.min)} – ${money(pay.max)}`
+        : money((pay.min ?? pay.max) as number);
+    return pay.period ? `${range} / ${pay.period}` : range;
+  }
+
+  protected formatDeadline(job: Job): string {
+    const deadline = job.applicationDeadline;
+    if (!deadline) {
+      return 'Open';
+    }
+    const date = typeof (deadline as { toDate?: () => Date }).toDate === 'function'
+      ? (deadline as { toDate: () => Date }).toDate()
+      : new Date(deadline as unknown as string);
+    return Number.isNaN(date.getTime())
+      ? 'Open'
+      : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
 
   protected readonly jobFilter = signal('');
 

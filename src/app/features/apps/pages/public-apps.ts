@@ -128,6 +128,18 @@ export const PUBLIC_APPS: PublicApp[] = [
     keywords: ["lessons", "learn", "course"],
   },
   {
+    key: "knowledge",
+    group: "connect",
+    title: "Knowledge Center",
+    description: "Guides, how-tos, troubleshooting and answers about using Zebron. Like, share and report articles.",
+    audience: "For everyone",
+    action: "Read articles",
+    icon: "menu_book",
+    route: "/knowledge",
+    requiresSignIn: false,
+    keywords: ["help", "guide", "how to", "faq", "articles", "documentation", "troubleshooting"],
+  },
+  {
     key: "community",
     group: "connect",
     title: "Community",

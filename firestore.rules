@@ -2061,6 +2061,11 @@ service cloud.firestore {
 
     match /knowledgeArticles/{articleId} {
 
+      // Public Knowledge Center (/knowledge): published articles for
+      // everyone ("all" audience), including visitors not signed in.
+      allow get, list: if resource.data.status == "published"
+        && "all" in resource.data.audience;
+
       allow get: if isAuthenticated()
         && resource.data.status == "published";
 
@@ -2080,6 +2085,109 @@ service cloud.firestore {
         && isValidKnowledgeArticle()
         && request.resource.data.id == resource.data.id
         && request.resource.data.id == articleId;
+
+      allow delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // KNOWLEDGE ARTICLE LIKES AND REPORTS
+    // ============================================================
+
+    /*
+     * Likes: knowledgeLikes/{articleKey}_{uid}. Anyone signed in can like
+     * Zebron articles (organizationId null); organization articles only by
+     * that organization's members. Queries must filter on organizationId.
+     */
+    match /knowledgeLikes/{likeId} {
+      allow get, list: if isAuthenticated()
+        && (
+          resource.data.organizationId == null
+          || isOrganizationMember(resource.data.organizationId)
+        );
+
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasOnly([
+          "articleKey", "articleId", "source", "organizationId", "userId", "createdAt"
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && likeId == request.resource.data.articleKey + "_" + request.auth.uid
+        && request.resource.data.articleKey is string
+        && request.resource.data.articleId is string
+        && request.resource.data.createdAt == request.time
+        && (
+          (
+            request.resource.data.source == "zebron"
+            && request.resource.data.organizationId == null
+            && request.resource.data.articleKey == "zebron_" + request.resource.data.articleId
+          )
+          || (
+            request.resource.data.source == "organization"
+            && request.resource.data.organizationId is string
+            && request.resource.data.articleKey
+              == "org_" + request.resource.data.organizationId + "_" + request.resource.data.articleId
+            && isOrganizationMember(request.resource.data.organizationId)
+          )
+        );
+
+      allow update: if false;
+
+      allow delete: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    /*
+     * Reports: knowledgeReports/{uid}_{articleKey}, one per person per
+     * article. Reviewed by the owning organization's staff and above
+     * (organization articles) or Zebron platform administrators.
+     */
+    match /knowledgeReports/{reportId} {
+      allow get: if isAuthenticated()
+        && resource.data.reporterId == request.auth.uid;
+
+      allow get, list: if isPlatformAdmin()
+        || (
+          isAuthenticated()
+          && resource.data.organizationId is string
+          && isOrganizationStaffOrAbove(resource.data.organizationId)
+        );
+
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasOnly([
+          "articleKey", "articleId", "articleTitle", "source", "organizationId",
+          "reason", "details", "reporterId", "reporterName", "status", "createdAt"
+        ])
+        && request.resource.data.reporterId == request.auth.uid
+        && reportId == request.auth.uid + "_" + request.resource.data.articleKey
+        && request.resource.data.status == "open"
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.reason in ["incorrect", "outdated", "inappropriate", "spam", "broken", "other"]
+        && request.resource.data.details is string
+        && request.resource.data.details.size() <= 1000
+        && request.resource.data.articleTitle is string
+        && request.resource.data.articleTitle.size() <= 200
+        && (
+          (
+            request.resource.data.source == "zebron"
+            && request.resource.data.organizationId == null
+          )
+          || (
+            request.resource.data.source == "organization"
+            && request.resource.data.organizationId is string
+            && isOrganizationMember(request.resource.data.organizationId)
+          )
+        );
+
+      // Reviewers mark reports resolved; nothing else changes.
+      allow update: if (
+          isPlatformAdmin()
+          || (
+            resource.data.organizationId is string
+            && isOrganizationStaffOrAbove(resource.data.organizationId)
+          )
+        )
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "resolvedBy", "resolvedAt"])
+        && request.resource.data.status == "resolved"
+        && request.resource.data.resolvedBy == request.auth.uid;
 
       allow delete: if isPlatformAdmin();
     }

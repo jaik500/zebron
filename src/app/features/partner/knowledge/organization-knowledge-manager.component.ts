@@ -30,12 +30,13 @@ type StatusFilter = 'all' | KnowledgeArticleStatus;
  * Route: /partner/org/:organizationId/knowledge/manage (staff and above)
  */
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { KnowledgeReportsPanelComponent } from './knowledge-reports-panel.component';
 
 @Component({
   selector: 'app-organization-knowledge-manager',
   standalone: true,
   imports: [
-    TranslatePipe,DatePipe, FormsModule, RouterLink, MatButtonModule, MatIconModule, MatMenuModule],
+    TranslatePipe, KnowledgeReportsPanelComponent, DatePipe, FormsModule, RouterLink, MatButtonModule, MatIconModule, MatMenuModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
@@ -59,6 +60,9 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
       </header>
 
       <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <!-- Reports from readers -->
+        <app-knowledge-reports-panel [organizationId]="organizationId" />
+
         <!-- Counts -->
         <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
           @for (item of counters(); track item.value) {

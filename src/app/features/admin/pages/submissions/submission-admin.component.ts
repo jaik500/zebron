@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AdminLayoutSwitchComponent, adminViewState } from '../../shared/admin-view';
 import { RouterLink } from '@angular/router';
 import { getAuth } from 'firebase/auth';
 
@@ -16,7 +17,7 @@ import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-submission-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [AdminLayoutSwitchComponent, CommonModule, FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- <div class="m-1">
@@ -123,17 +124,22 @@ import { MatSelectModule } from '@angular/material/select';
               submissions
             </p>
 
-            @if (searchTerm || statusFilter !== 'all') {
-              <button
-                type="button"
-                (click)="clearFilters()"
-                class="text-sm font-semibold
-                       text-[#007979]
-                       hover:underline"
-              >
-                Clear filters
-              </button>
-            }
+            <div class="flex items-center gap-3">
+              @if (searchTerm || statusFilter !== 'all') {
+                <button
+                  type="button"
+                  (click)="clearFilters()"
+                  class="text-sm font-semibold
+                         text-[#007979]
+                         hover:underline"
+                >
+                  Clear filters
+                </button>
+              }
+
+              <!-- Display preference: list or cards (saved per admin) -->
+              <app-admin-layout-switch [state]="viewState" [allowSplit]="false" />
+            </div>
           </div>
         </section>
 
@@ -223,7 +229,7 @@ import { MatSelectModule } from '@angular/material/select';
 
         <!-- Submission list -->
         @else {
-          <div class="space-y-4">
+          <div [class]="viewState.layout() === 'cards' ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-4'">
             @for (submission of filteredSubmissions(); track submission.id) {
              <article
   class="rounded-lg border
@@ -668,6 +674,9 @@ export class SubmissionAdminComponent implements OnInit {
   searchTerm = '';
 
   statusFilter: 'all' | SubmissionStatus = 'all';
+
+  /** List or cards, saved per admin (details open in a dialog). */
+  protected readonly viewState = adminViewState('submissions');
 
   /**
    * Apply search and status filters.

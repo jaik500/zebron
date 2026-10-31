@@ -40,6 +40,7 @@ import { Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { KnowledgeReportsPanelComponent } from '../../../partner/knowledge/knowledge-reports-panel.component';
 type KnowledgeStatusFilter = 'all' | KnowledgeArticleStatus;
 
 @Component({
@@ -53,7 +54,7 @@ type KnowledgeStatusFilter = 'all' | KnowledgeArticleStatus;
     MatMenuModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule],
+    MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, KnowledgeReportsPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto w-full max-w-7xl min-w-0 px-4 pb-12 pt-20 sm:px-6">
@@ -93,8 +94,13 @@ type KnowledgeStatusFilter = 'all' | KnowledgeArticleStatus;
         </div>
       </header>
 
+      <!-- Reports from readers on Zebron articles -->
+      <div class="mt-6">
+        <app-knowledge-reports-panel [organizationId]="null" />
+      </div>
+
       <!-- Summary -->
-      <div class="mt-6 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
+      <div class="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
         @for (card of summaryCards(); track card.key) {
           <button
             type="button"

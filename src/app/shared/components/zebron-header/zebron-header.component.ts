@@ -64,6 +64,9 @@ import {
 import {
   LanguageSwitcherComponent,
 } from '../language-switcher/language-switcher.component';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { firestore } from '../../../core/services/firebase-config';
+import { PartnerOrganizationContextService } from '../../../core/services/partner-organization-context.service';
  
 @Component({
   selector: 'app-zebron-header',
@@ -392,6 +395,8 @@ import {
                  visible at the far right of the header.
                  ================================================= -->
  
+            <!-- Hamburger menu: signed-in users only. Visitors get Sign in. -->
+            @if (isSignedIn()) {
             <button
               mat-icon-button
               type="button"
@@ -410,6 +415,16 @@ import {
                 menu
               </mat-icon>
             </button>
+            } @else if (showSignIn()) {
+              <a
+                routerLink="/login"
+                aria-label="Sign in"
+                class="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-2 text-sm font-semibold text-white transition hover:bg-white/10 lg:hidden"
+              >
+                <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">login</mat-icon>
+                <span class="hidden sm:inline">Sign in</span>
+              </a>
+            }
  
           </div>
  
@@ -427,184 +442,70 @@ import {
       class="!min-w-[210px]"
     >
  
-      <!-- =================================================
-           MENU HEADER
-           ================================================= -->
- 
-      <div
-        class="px-3 py-2"
-        (click)="$event.stopPropagation()"
-      >
-        <div
-          class="
-            text-[10px]
-            font-bold
-            uppercase
-            tracking-wider
-            text-gray-400
-          "
-        >
-          Zebron
-        </div>
- 
-        <div
-          class="
-            mt-0.5
-            truncate
-            text-sm
-            font-semibold
-            text-[#032D42]
-          "
-          [attr.title]="currentTitle()"
-        >
-          {{ currentTitle() }}
-        </div>
-      </div>
- 
- 
-      <mat-divider></mat-divider>
- 
- 
-      <!-- =================================================
-           ALL AUTHORIZED NAVIGATION
-           ================================================= -->
- 
-      @for (
-        item of navigationService.visibleItems();
-        track item.key
-      ) {
-        <button
-          mat-menu-item
-          type="button"
-          class="
-            !min-h-9
-            !h-9
-          "
-          (click)="navigateTo(item.route)"
-        >
-          <mat-icon
-            class="
-              !mr-2
-              !h-[18px]
-              !w-[18px]
-              !text-[18px]
-            "
-          >
-            {{ item.icon }}
-          </mat-icon>
- 
-          <span
-            class="text-sm"
-          >
-            {{ item.label }}
-          </span>
-        </button>
+      <div class="px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400" (click)="$event.stopPropagation()">Zebron</div>
+
+      <!-- Zebron (platform) apps -->
+      @for (item of navigationService.visibleItems(); track item.key) {
+          <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="navigateTo(item.route)">
+            <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">{{ item.icon }}</mat-icon>
+            <span class="text-sm">{{ item.label }}</span>
+          </button>
       }
- 
- 
+
+      <!-- Your organization's apps -->
+      @if (currentOrganization(); as org) {
+        <mat-divider></mat-divider>
+        <div class="truncate px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400" [attr.title]="org.name" (click)="$event.stopPropagation()">
+          {{ org.name }}
+        </div>
+        @for (app of organizationApps(); track app.key) {
+          <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="navigateTo(app.route)">
+            <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">{{ app.icon }}</mat-icon>
+            <span class="text-sm">{{ app.label }}</span>
+          </button>
+        }
+        @if (organizationChoices().length > 1) {
+          <button mat-menu-item type="button" class="!h-9 !min-h-9" [matMenuTriggerFor]="switchOrganizationMenu">
+            <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">swap_horiz</mat-icon>
+            <span class="text-sm">Switch organization</span>
+          </button>
+        }
+      }
+
       <mat-divider></mat-divider>
- 
- 
+
       @if (isSignedIn()) {
- 
-        <!-- =================================================
-             PROFILE
-             ================================================= -->
- 
-        <button
-          mat-menu-item
-          type="button"
-          class="
-            !min-h-9
-            !h-9
-          "
-          (click)="navigateTo('/profile')"
-        >
-          <mat-icon
-            class="
-              !mr-2
-              !h-[18px]
-              !w-[18px]
-              !text-[18px]
-            "
-          >
-            account_circle
-          </mat-icon>
- 
-          <span
-            class="text-sm"
-          >
-            Profile
-          </span>
+        <!-- Account (once) -->
+        <div class="px-4 pb-1 pt-2" (click)="$event.stopPropagation()">
+          <div class="truncate text-sm font-semibold text-[#032D42]">{{ accountName() }}</div>
+          @if (currentOrganization()?.roleLabel; as role) {
+            <div class="text-xs text-gray-500">{{ role }}</div>
+          }
+        </div>
+        <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="navigateTo('/profile')">
+          <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">account_circle</mat-icon>
+          <span class="text-sm">Profile</span>
         </button>
- 
- 
-        <!-- =================================================
-             SIGN OUT
-             ================================================= -->
- 
-        <button
-          mat-menu-item
-          type="button"
-          class="
-            !min-h-9
-            !h-9
-          "
-          (click)="signOut()"
-        >
-          <mat-icon
-            class="
-              !mr-2
-              !h-[18px]
-              !w-[18px]
-              !text-[18px]
-            "
-          >
-            logout
-          </mat-icon>
- 
-          <span
-            class="text-sm"
-          >
-            Sign out
-          </span>
+        <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="signOut()">
+          <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">logout</mat-icon>
+          <span class="text-sm">Sign out</span>
         </button>
- 
       } @else if (showSignIn()) {
- 
-        <!-- =================================================
-             SIGN IN
-             ================================================= -->
- 
-        <button
-          mat-menu-item
-          type="button"
-          class="
-            !min-h-9
-            !h-9
-          "
-          (click)="navigateTo('/login')"
-        >
-          <mat-icon
-            class="
-              !mr-2
-              !h-[18px]
-              !w-[18px]
-              !text-[18px]
-            "
-          >
-            login
-          </mat-icon>
- 
-          <span
-            class="text-sm"
-          >
-            Sign in
-          </span>
+        <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="navigateTo('/login')">
+          <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">login</mat-icon>
+          <span class="text-sm">Sign in</span>
         </button>
- 
       }
- 
+    </mat-menu>
+
+    <!-- Switch organization -->
+    <mat-menu #switchOrganizationMenu="matMenu">
+      @for (choice of organizationChoices(); track choice.id) {
+        <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="switchOrganization(choice.id)">
+          <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">{{ choice.id === currentOrganization()?.id ? 'check' : 'domain' }}</mat-icon>
+          <span class="text-sm">{{ choice.name }}</span>
+        </button>
+      }
     </mat-menu>
   `,
 })
@@ -690,6 +591,118 @@ export class ZebronHeaderComponent {
    */
   protected readonly currentTitle =
     this.pageTitleService.title;
+
+  // =========================================================
+  // ORGANIZATION SECTION OF THE MENU
+  // =========================================================
+
+  private readonly partnerContext =
+    inject(PartnerOrganizationContextService);
+
+  private static readonly LAST_ORGANIZATION_KEY = 'zebron:last-organization';
+
+  private static readonly ROLE_LABELS: Record<string, string> = {
+    org_owner: 'Owner',
+    org_admin: 'Administrator',
+    org_manager: 'Manager',
+    org_staff: 'Staff',
+    org_member: 'Member',
+  };
+
+  /** Organization chosen in the menu (or seen in the URL). */
+  private readonly chosenOrganizationId = signal<string | null>(this.readLastOrganization());
+
+  /** Active application keys of the current organization. */
+  private readonly activeApplications = signal<string[]>([]);
+
+  /** Organizations the person is an active member of. */
+  protected readonly organizationChoices = computed(() => {
+    const organizations = this.partnerContext.organizations();
+    return this.partnerContext
+      .memberships()
+      .filter((membership) => membership.active !== false)
+      .map((membership) => ({
+        id: membership.organizationId,
+        name: organizations.find((organization) => organization.id === membership.organizationId)?.name ?? 'Organization',
+        role: membership.role as string,
+      }));
+  });
+
+  protected readonly currentOrganization = computed(() => {
+    const choices = this.organizationChoices();
+    const fromUrl = /^\/partner\/org\/([^/?#]+)/.exec(this.currentUrl())?.[1] ?? null;
+    const id = fromUrl ?? this.chosenOrganizationId();
+    const match = choices.find((choice) => choice.id === id) ?? choices[0] ?? null;
+    if (match) {
+      return { ...match, roleLabel: ZebronHeaderComponent.ROLE_LABELS[match.role] ?? '' };
+    }
+    // Platform admins viewing an organization they don't belong to.
+    const viewed = this.partnerContext.organization();
+    return fromUrl && viewed?.id === fromUrl ? { id: viewed.id, name: viewed.name, role: '', roleLabel: '' } : null;
+  });
+
+  /** Links for the current organization: its dashboard plus the apps it has. */
+  protected readonly organizationApps = computed(() => {
+    const org = this.currentOrganization();
+    if (!org) {
+      return [];
+    }
+    const base = `/partner/org/${encodeURIComponent(org.id)}`;
+    const active = this.activeApplications();
+    const apps = [{ key: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: `${base}/dashboard` }];
+    if (active.includes('test-center')) {
+      apps.push({ key: 'test-center', label: 'Test Center', icon: 'quiz', route: `${base}/learn/test-center` });
+    }
+    if (active.includes('community')) {
+      apps.push({ key: 'community', label: 'Community', icon: 'forum', route: `${base}/community` });
+    }
+    if (active.includes('knowledge')) {
+      apps.push({ key: 'knowledge', label: 'Knowledge Center', icon: 'menu_book', route: `${base}/knowledge` });
+    }
+    return apps;
+  });
+
+  /** Name shown once in the account section. */
+  protected readonly accountName = computed(() => {
+    const user = this.authService.user();
+    return user?.displayName || this.authService.firebaseUser()?.email || 'Your account';
+  });
+
+  protected switchOrganization(organizationId: string): void {
+    this.rememberOrganization(organizationId);
+    void this.router.navigate(['/partner/org', organizationId, 'dashboard']);
+  }
+
+  private rememberOrganization(organizationId: string): void {
+    this.chosenOrganizationId.set(organizationId);
+    try {
+      localStorage.setItem(ZebronHeaderComponent.LAST_ORGANIZATION_KEY, organizationId);
+    } catch {
+      // Storage unavailable.
+    }
+  }
+
+  private readLastOrganization(): string | null {
+    try {
+      return typeof localStorage === 'undefined' ? null : localStorage.getItem(ZebronHeaderComponent.LAST_ORGANIZATION_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  private async loadActiveApplications(organizationId: string): Promise<void> {
+    try {
+      const snapshot = await getDocs(
+        query(
+          collection(firestore, 'organizations', organizationId, 'applications'),
+          where('status', '==', 'active'),
+        ),
+      );
+      this.activeApplications.set(snapshot.docs.map((document) => document.id));
+    } catch {
+      this.activeApplications.set([]);
+    }
+  }
  
  
   // =========================================================
@@ -878,6 +891,40 @@ export class ZebronHeaderComponent {
         },
       );
  
+    /**
+     * Organization section of the menu: load the person's
+     * organizations once they are signed in, then the apps of
+     * the current organization whenever it changes.
+     */
+    let organizationsRequested = false;
+
+    effect(() => {
+      const signedIn = this.isSignedIn();
+      untracked(() => {
+        if (signedIn && !organizationsRequested) {
+          organizationsRequested = true;
+          void this.partnerContext.initialize().catch(() => undefined);
+        }
+        if (!signedIn) {
+          organizationsRequested = false;
+        }
+      });
+    });
+
+    effect(() => {
+      const organizationId = this.currentOrganization()?.id ?? null;
+      untracked(() => {
+        if (!organizationId) {
+          this.activeApplications.set([]);
+          return;
+        }
+        if (this.currentUrl().startsWith('/partner/org/')) {
+          this.rememberOrganization(organizationId);
+        }
+        void this.loadActiveApplications(organizationId);
+      });
+    });
+
     /**
      * Reset the header title to the default whenever the
      * user goes from signed in to signed out. Watching the

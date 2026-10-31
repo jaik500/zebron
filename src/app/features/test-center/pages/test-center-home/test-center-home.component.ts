@@ -69,33 +69,30 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             </span>
           </div>
 
-          <!-- Right: Search bar -->
+          <!-- Right: Search bar (white, compact) -->
           <div class="min-w-0 flex-1 md:ml-8">
-            <div class="ml-auto max-w-2xl">
-              <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                <mat-label>{{ 'Search Test Center' | t }}</mat-label>
-                <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
-                <input matInput
-                  id="test-center-search"
-                  type="search"
-                  autocomplete="off"
-                  [value]="searchTerm()"
-                  (input)="searchTerm.set($any($event.target).value)"
-                  [placeholder]="'Search courses, certifications, quizzes...' | t"
-                  [attr.aria-label]="'Search Test Center' | t"
-                />
-                @if (searchTerm()) {
-                  <button
-                    mat-icon-button
-                    matSuffix
-                    type="button"
-                    [attr.aria-label]="'Clear search' | t"
-                    (click)="searchTerm.set('')"
-                  >
-                    <mat-icon>close</mat-icon>
-                  </button>
-                }
-              </mat-form-field>
+            <div class="relative ml-auto w-full max-w-xs">
+              <mat-icon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 !h-5 !w-5 !text-[20px] !text-[#007979]" aria-hidden="true">search</mat-icon>
+              <input
+                id="test-center-search"
+                type="search"
+                autocomplete="off"
+                class="h-10 w-full rounded-lg border-0 bg-white pl-10 pr-9 text-sm text-slate-900 shadow-sm outline-none placeholder:text-slate-400 focus:ring-4 focus:ring-white/40"
+                [value]="searchTerm()"
+                (input)="searchTerm.set($any($event.target).value)"
+                [placeholder]="'Search Test Center' | t"
+                [attr.aria-label]="'Search Test Center' | t"
+              />
+              @if (searchTerm()) {
+                <button
+                  type="button"
+                  class="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+                  [attr.aria-label]="'Clear search' | t"
+                  (click)="searchTerm.set('')"
+                >
+                  <mat-icon class="!h-4 !w-4 !text-[16px]">close</mat-icon>
+                </button>
+              }
             </div>
           </div>
         </div>

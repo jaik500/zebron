@@ -52,6 +52,23 @@ export const routes: Routes = [
         loadComponent: () => import('./features/apps/pages/apps-directory.component').then((m) => m.AppsDirectoryComponent),
     },
     // -----------------------------------------------------
+    // PUBLIC KNOWLEDGE CENTER
+    // -----------------------------------------------------
+    {
+        path: 'knowledge',
+        data: {
+            title: 'Zebron | Knowledge Center',
+        },
+        loadComponent: () => import('./features/knowledge/public-knowledge.component').then((m) => m.PublicKnowledgeComponent),
+    },
+    {
+        path: 'knowledge/:articleId',
+        data: {
+            title: 'Zebron | Knowledge Center',
+        },
+        loadComponent: () => import('./features/knowledge/public-knowledge-article.component').then((m) => m.PublicKnowledgeArticleComponent),
+    },
+    // -----------------------------------------------------
     // RESOURCES
     // -----------------------------------------------------
     {

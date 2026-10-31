@@ -12,9 +12,17 @@ import {
 } from '@angular/material/button';
 
 import {
+  MAT_DIALOG_DATA,
   MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
+
+/** Optional starting text, e.g. when sharing a Knowledge Center article. */
+export interface CommunityPostComposerData {
+  title?: string;
+  content?: string;
+  tags?: string[];
+}
 
 import {
   MatFormFieldModule,
@@ -615,13 +623,16 @@ export class CommunityPostComposerComponent {
   // FORM STATE
   // ============================================================
 
-  title = '';
+  private readonly startingText =
+    inject<CommunityPostComposerData | null>(MAT_DIALOG_DATA, { optional: true });
 
-  content = '';
+  title = (this.startingText?.title ?? '').slice(0, 200);
+
+  content = (this.startingText?.content ?? '').slice(0, 10000);
 
   topicId = '';
 
-  tagsText = '';
+  tagsText = (this.startingText?.tags ?? []).join(', ');
 
 
   // ============================================================
