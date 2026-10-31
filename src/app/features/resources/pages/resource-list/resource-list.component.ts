@@ -769,9 +769,9 @@ import { MatButtonModule } from '@angular/material/button';
                        sm:block"
               >
 
-                <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense zb-field--on-dark" subscriptSizing="dynamic">
+                <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--on-dark zb-search" subscriptSizing="dynamic">
                     <mat-label>Search</mat-label>
-                    <mat-icon matPrefix class="ml-2 !text-[18px]" aria-hidden="true">search</mat-icon>
+                    <mat-icon matPrefix aria-hidden="true">search</mat-icon>
                     <input matInput
                     id="search"
                     type="search"

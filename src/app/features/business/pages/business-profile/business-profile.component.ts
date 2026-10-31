@@ -65,7 +65,7 @@ import { LocationService } from '../../../../core/services/location.service';
            HEADER
            ========================================================= -->
 
-      <header class="bg-[#032D42] text-white">
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div
           class="mx-auto max-w-5xl
                  px-4 py-6

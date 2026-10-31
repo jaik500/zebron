@@ -120,10 +120,10 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
       </div>
 
       <div class="mt-3 flex flex-wrap items-center gap-2">
-        <mat-form-field appearance="outline" class="zb-field zb-field--dense zb-field--flush min-w-0 flex-1" subscriptSizing="dynamic">
-          <mat-icon matPrefix>search</mat-icon>
+        <mat-form-field appearance="outline" class="zb-field zb-field--flush min-w-0 w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
+          <mat-icon matPrefix aria-hidden="true">search</mat-icon>
           <mat-label>{{ 'Search loaded entries' | t }}</mat-label>
-          <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" name="auditSearch" />
+          <input [placeholder]="'Search loaded entries' | t" matInput [ngModel]="search()" (ngModelChange)="search.set($event)" name="auditSearch" />
         </mat-form-field>
 
         <button mat-icon-button type="button" [attr.aria-label]="'Refresh' | t" [title]="'Refresh' | t" [disabled]="loading()" (click)="reload()">

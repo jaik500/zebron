@@ -18,12 +18,13 @@ import { JobStore } from '../../../jobs/stores/job.store';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-find',
   standalone: true,
 
-  imports: [
+  imports: [MatIconModule, 
     CommonModule,
     RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule],
 
@@ -377,9 +378,9 @@ import { MatSelectModule } from '@angular/material/select';
                 class="relative"
               >
 
-                <mat-form-field appearance="outline" class="zb-field">
+                <mat-form-field appearance="outline" class="zb-field w-full sm:max-w-xs zb-search">
                   <mat-label>Search jobs</mat-label>
-                  <span matPrefix class="pl-3 pr-1" aria-hidden="true">🔎</span>
+                  <mat-icon matPrefix aria-hidden="true">search</mat-icon>
                   <input matInput
                   id="jobSearch"
                   type="search"

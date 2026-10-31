@@ -56,7 +56,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
-      <header class="border-b border-white/10 bg-[#032D42]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div class="min-w-0">
             <p class="font-mono text-sm text-white/70">{{ ticket()?.number || ('Ticket' | t) }}</p>
@@ -265,7 +265,7 @@ export class SupportTicketComponent implements OnInit {
       this.ticket.set(result.ticket);
       this.messages.set(result.messages);
       this.access.set(result.access);
-      this.pageTitleService.setTitle(`${result.ticket.number} · ${result.ticket.subject}`);
+      this.pageTitleService.setDocumentTitle(`${result.ticket.number} · ${result.ticket.subject}`);
     } catch (error) {
       this.error.set(supportErrorMessage(error));
     } finally {

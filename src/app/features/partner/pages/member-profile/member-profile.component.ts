@@ -66,7 +66,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
-      <header class="border-b border-white/10 bg-[#2a835f]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div
           class="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8"
         >
@@ -282,7 +282,7 @@ export class MemberProfileComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    this.pageTitleService.setTitle('Member Profile');
+    this.pageTitleService.setDocumentTitle('Member Profile');
 
     if (!this.organizationId || !this.userId) {
       this.error.set('This member link is incomplete.');
@@ -306,7 +306,7 @@ export class MemberProfileComponent implements OnInit {
       const name = result.data.displayName || result.data.email;
 
       if (name) {
-        this.pageTitleService.setTitle(`${name} | Member Profile`);
+        this.pageTitleService.setDocumentTitle(`${name} | Member Profile`);
       }
     } catch (error: unknown) {
       console.error('Failed to load member profile.', error);

@@ -13,7 +13,7 @@ import { MatInputModule } from '@angular/material/input';
       class="min-h-screen bg-gray-50">
 
         <!-- Header -->
-<header class="border-b border-gray-200 bg-[#032D42]">
+<header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
   <div
     class="mx-auto flex max-w-7xl items-center
            justify-between gap-4

@@ -32,10 +32,10 @@ import { CommunityScopeService } from '../../services/community-scope.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
-      <header class="border-b border-white/10 bg-[#2a835f]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <div>
-            <h1 class="text-2xl font-bold text-white">Community moderation</h1>
+            <h1 class="text-2xl font-bold text-white">Moderation</h1>
             <p class="text-sm text-white/85">
               {{ isOrganization ? 'Your organization’s private community' : 'Public Zebron Community' }}
             </p>
@@ -189,7 +189,7 @@ export class CommunityModerationComponent implements OnInit {
   );
 
   async ngOnInit(): Promise<void> {
-    this.pageTitle.setTitle('Community moderation');
+    this.pageTitle.setDocumentTitle('Community moderation');
     await this.load();
   }
 

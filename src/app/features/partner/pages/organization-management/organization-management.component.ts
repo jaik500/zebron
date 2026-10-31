@@ -74,7 +74,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="min-h-screen bg-gray-50 pt-14">
-      <header class="border-b border-white/10 bg-[#2a835f]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto max-w-7xl px-4 py-1 sm:px-6 lg:px-8">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <!-- Page title and description -->
@@ -583,9 +583,9 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                 <div class="grid gap-x-4 md:grid-cols-[1fr_220px]">
                   <div>
 
-                    <mat-form-field appearance="outline" class="zb-field">
+                    <mat-form-field appearance="outline" class="zb-field w-full sm:max-w-xs zb-search">
                       <mat-label>{{ 'Search memberships' | t }}</mat-label>
-                      <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+                      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
                       <input matInput
                         id="memberSearch"
                         type="search"
@@ -836,9 +836,10 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                 <div class="mb-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
                   <div>
 
-                    <mat-form-field appearance="outline" class="zb-field">
+                    <mat-form-field appearance="outline" class="zb-field w-full sm:max-w-xs zb-search">
                       <mat-label>{{ 'Search regular members' | t }}</mat-label>
-                      <input matInput
+                      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+          <input matInput
                       id="regularMemberSearch"
                       type="search"
                       [value]="regularMemberSearch()"

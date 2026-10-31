@@ -75,7 +75,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
       <!-- HEADER -->
-      <header class="border-b border-white/10 bg-[#2a835f]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div class="min-w-0">
             <h1 class="text-2xl font-bold text-white">{{ 'Mailbox' | t }}</h1>
@@ -251,10 +251,10 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               <mat-icon>refresh</mat-icon>
             </button>
 
-            <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense min-w-0 flex-1 sm:max-w-xs" subscriptSizing="dynamic">
-              <mat-icon matPrefix>search</mat-icon>
+            <mat-form-field appearance="outline" class="zb-field zb-field--flush min-w-0 flex-1 sm:max-w-xs zb-search" subscriptSizing="dynamic">
+              <mat-icon matPrefix aria-hidden="true">search</mat-icon>
               <mat-label>{{ 'Search' | t }}</mat-label>
-              <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" name="search" />
+              <input [placeholder]="'Search' | t" matInput [ngModel]="search()" (ngModelChange)="search.set($event)" name="search" />
             </mat-form-field>
           </div>
 
@@ -590,7 +590,7 @@ export class OrganizationMailboxComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    this.pageTitleService.setTitle('Mailbox');
+    this.pageTitleService.setDocumentTitle('Mailbox');
 
     try {
       await this.organizationStore.loadOrganizationContext(this.organizationId);

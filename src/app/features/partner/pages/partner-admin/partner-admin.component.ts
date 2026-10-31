@@ -53,7 +53,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
            HEADER
            ========================================================= -->
 
-      <header class="border-b border-white/10 bg-[#2a835f]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto max-w-7xl px-4 py-0 sm:px-6 lg:px-8">
           <div class="flex items-center justify-between gap-4">
             <div class="min-w-0">
@@ -256,9 +256,9 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
               @if (canShowOperationalWorkspace()) {
 
 <div class="relative mt-4">
-  <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+  <mat-form-field appearance="outline" class="zb-field zb-field--flush w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
     <mat-label>{{ 'Search partner resources' | t }}</mat-label>
-    <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+    <mat-icon matPrefix aria-hidden="true">search</mat-icon>
     <input matInput
       id="partner-search"
       type="search"

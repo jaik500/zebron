@@ -24,6 +24,7 @@ import {
 } from '@angular/common/http';
 
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
+import { MAT_DIALOG_DEFAULT_OPTIONS, MatDialogConfig } from '@angular/material/dialog';
 import { provideNativeDateAdapter } from '@angular/material/core';
 
 import { provideHotToastConfig } from '@ngxpert/hot-toast';
@@ -107,6 +108,19 @@ export const appConfig: ApplicationConfig = {
         subscriptSizing: 'dynamic',
         floatLabel: 'never',
       },
+    },
+
+    // Zebron dialog look and behaviour for every MatDialog
+    // (see src/styles/_zebron-material.scss).
+    {
+      provide: MAT_DIALOG_DEFAULT_OPTIONS,
+      useValue: {
+        panelClass: 'zb-dialog',
+        autoFocus: 'first-tabbable',
+        restoreFocus: true,
+        hasBackdrop: true,
+        maxWidth: 'calc(100vw - 32px)',
+      } satisfies MatDialogConfig,
     },
 
     // ─────────────────────────────────────────────

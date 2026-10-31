@@ -65,6 +65,7 @@ export const routes: Routes = [
         path: 'knowledge/:articleId',
         data: {
             title: 'Zebron | Knowledge Center',
+            header: 'Knowledge Center',
         },
         loadComponent: () => import('./features/knowledge/public-knowledge-article.component').then((m) => m.PublicKnowledgeArticleComponent),
     },
@@ -77,6 +78,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'resources',
             title: 'Find the help you need',
+            header: 'Resources',
         },
         loadComponent: () => import('./features/resources/pages/resource-list/resource-list.component').then((m) => m.ResourceListComponent),
     },
@@ -99,6 +101,7 @@ export const routes: Routes = [
         path: 'find',
         data: {
             title: 'Find your next opportunity',
+            header: 'Find jobs & training',
         },
         loadComponent: () => import('./features/resource-finder/pages/find/find.component').then((m) => m.FindComponent),
     },
@@ -109,6 +112,7 @@ export const routes: Routes = [
         path: 'find/job',
         data: {
             title: 'Find a job',
+            header: 'Find jobs & training',
         },
         loadComponent: () => import('./features/resource-finder/pages/job/job-finder.component').then((m) => m.JobFinderComponent),
     },
@@ -126,6 +130,7 @@ export const routes: Routes = [
         path: 'find/training',
         data: {
             title: 'Find a training',
+            header: 'Find jobs & training',
         },
         loadComponent: () => import('./features/resource-finder/pages/training/training-finder.component').then((m) => m.TrainingFinderComponent),
     },
@@ -207,6 +212,7 @@ export const routes: Routes = [
         canActivate: [authGuard],
         data: {
             title: 'Zebron | Support Ticket',
+            header: 'Help & Support',
         },
         loadComponent: () => import('./features/support/pages/support-ticket.component').then((m) => m.SupportTicketComponent),
     },
@@ -227,6 +233,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'resources',
             title: 'Submit a resource',
+            header: 'Resources',
         },
         loadComponent: () => import('./features/submissions/pages/submit-resource/submit-resource.component').then((m) => m.SubmitResourceComponent),
     },
@@ -238,6 +245,7 @@ export const routes: Routes = [
         canActivate: [authGuard],
         data: {
             title: 'Organization Application',
+            header: 'For organizations',
         },
         loadComponent: () => import('./features/organizations/application/organization-application-form.component').then((m) => m.OrganizationApplicationFormComponent),
     },
@@ -246,6 +254,7 @@ export const routes: Routes = [
         canActivate: [authGuard],
         data: {
             title: 'Edit Organization Application',
+            header: 'For organizations',
         },
         loadComponent: () => import('./features/organizations/application/organization-application-form.component').then((m) => m.OrganizationApplicationFormComponent),
     },
@@ -254,6 +263,7 @@ export const routes: Routes = [
         canActivate: [authGuard],
         data: {
             title: 'Organization Application Status',
+            header: 'For organizations',
         },
         loadComponent: () => import('./features/organizations/application/organization-application-status.component').then((m) => m.OrganizationApplicationStatusComponent),
     },
@@ -312,6 +322,7 @@ export const routes: Routes = [
         ],
         data: {
             title: 'Partner | Organization Management',
+            organizationHeader: true,
             minimumOrganizationRole: 'org_manager',
         },
         loadComponent: () => import('./features/partner/pages/organization-management/organization-management.component').then((m) => m.OrganizationManagementComponent),
@@ -325,6 +336,7 @@ export const routes: Routes = [
         ],
         data: {
             title: 'Partner | Member Profile',
+            organizationHeader: true,
             minimumOrganizationRole: 'org_manager',
         },
         loadComponent: () => import('./features/partner/pages/member-profile/member-profile.component').then((m) => m.MemberProfileComponent),
@@ -338,6 +350,7 @@ export const routes: Routes = [
         ],
         data: {
             title: 'Partner | Mailbox',
+            organizationHeader: true,
             minimumOrganizationRole: 'org_manager',
         },
         loadComponent: () => import('./features/partner/mailbox/organization-mailbox.component').then((m) => m.OrganizationMailboxComponent),
@@ -351,6 +364,7 @@ export const routes: Routes = [
         ],
         data: {
             title: 'Partner | Support Tickets',
+            organizationHeader: true,
             minimumOrganizationRole: 'org_manager',
         },
         loadComponent: () => import('./features/support/pages/organization-support.component').then((m) => m.OrganizationSupportComponent),
@@ -364,6 +378,7 @@ export const routes: Routes = [
         ],
         data: {
             title: 'Partner | Contract & Billing',
+            organizationHeader: true,
             minimumOrganizationRole: 'org_manager',
         },
         loadComponent: () => import('./features/partner/contract/organization-contract.component').then((m) => m.OrganizationContractComponent),
@@ -429,6 +444,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'community',
             title: 'Zebron | Community members',
+            header: 'Community',
         },
         loadComponent: () => import('./features/community/pages/community-members/community-members.component').then((m) => m.CommunityMembersComponent),
     },
@@ -441,6 +457,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'community',
             title: 'Zebron | Community notifications',
+            header: 'Community',
         },
         loadComponent: () => import('./features/community/pages/community-notifications/community-notifications.component').then((m) => m.CommunityNotificationsComponent),
     },
@@ -453,6 +470,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'community',
             title: 'Zebron | Community chat',
+            header: 'Community',
         },
         loadComponent: () => import('./features/community/chat/pages/community-chat/community-chat.component').then((m) => m.CommunityChatComponent),
     },
@@ -480,6 +498,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'test-center',
             title: 'Test Center | Courses',
+            header: 'Test Center',
         },
         loadComponent: () => import('./features/test-center/pages/course-list/course-list.component').then((m) => m.CourseListComponent),
     },
@@ -492,6 +511,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'test-center',
             title: 'Test Center | Course detail',
+            header: 'Test Center',
         },
         loadComponent: () => import('./features/test-center/pages/course-detail/course-detail.component').then((m) => m.CourseDetailsComponent),
     },
@@ -504,6 +524,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'test-center',
             title: 'Test Center | Quizzes',
+            header: 'Test Center',
         },
         loadComponent: () => import('./features/test-center/pages/quiz/quiz-list.component').then((m) => m.QuizListComponent),
     },
@@ -516,6 +537,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'test-center',
             title: 'Test Center | Quiz Details',
+            header: 'Test Center',
         },
         loadComponent: () => import('./features/test-center/pages/quiz/quiz-details.component').then((m) => m.QuizDetailsComponent),
     },
@@ -528,6 +550,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'test-center',
             title: 'Test Center | Setup',
+            header: 'Test Center',
         },
         loadComponent: () => import('./features/test-center/pages/test-setup/test-setup.component').then((m) => m.TestSetupComponent),
     },
@@ -540,6 +563,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'test-center',
             title: 'Test Center | Practice',
+            header: 'Test Center',
         },
         loadComponent: () => import('./features/test-center/pages/test-practice/test-practice.component').then((m) => m.TestPracticeComponent),
     },
@@ -552,6 +576,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'test-center',
             title: 'Test Center | Results',
+            header: 'Test Center',
         },
         loadComponent: () => import('./features/test-center/pages/test-results/test-results.component').then((m) => m.TestResultsComponent),
     },
@@ -640,6 +665,7 @@ export const routes: Routes = [
             applicationId: 'community',
             minimumOrganizationRole: 'org_manager',
             title: 'Partner | Community Moderation',
+            organizationHeader: true,
         },
         loadComponent: () => import('./features/community/pages/community-moderation/community-moderation.component').then((m) => m.CommunityModerationComponent),
     },
@@ -734,6 +760,7 @@ export const routes: Routes = [
         data: {
             applicationId: 'knowledge',
             title: 'Partner | Knowledge Center',
+            organizationHeader: true,
         },
         children: [
             {
@@ -1040,6 +1067,7 @@ export const routes: Routes = [
         data: {
             featureKey: 'community',
             title: 'Admin | Community | Moderation',
+            header: 'Community',
         },
         loadComponent: () => import('./features/community/pages/community-moderation/community-moderation.component').then((m) => m.CommunityModerationComponent),
     },

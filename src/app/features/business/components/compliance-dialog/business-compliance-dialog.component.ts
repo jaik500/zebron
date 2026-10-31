@@ -57,19 +57,19 @@ export interface BusinessComplianceDialogData {
 
     <div
       class="flex items-center justify-between
-         bg-[#032D42]
+         border-b border-[#007979]/20 bg-gradient-to-r from-[#007979]/15 via-[#00706f]/10 to-[#2a835f]/15
          px-6 py-4
-         text-white"
+         text-slate-900"
     >
       <div>
         <div
           class="text-xs font-semibold uppercase
-             tracking-wider text-[#7ED6D1]"
+             tracking-wider text-[#007979]"
         >
           Zebron Business Operations
         </div>
 
-        <h2 class="mt-1 m-0 text-xl font-semibold text-white">
+        <h2 class="mt-1 m-0 text-xl font-semibold text-slate-900">
           {{ data.requirement ? 'Edit Compliance Requirement' : 'Add Compliance Requirement' }}
         </h2>
       </div>
@@ -81,7 +81,7 @@ export interface BusinessComplianceDialogData {
         aria-label="Close"
         matTooltip="Close"
         (click)="cancel()"
-        class="!text-white hover:!bg-white/10"
+        class="!text-slate-500 hover:!bg-white/60"
       >
         <mat-icon>close</mat-icon>
       </button>

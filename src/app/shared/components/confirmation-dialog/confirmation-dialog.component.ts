@@ -86,8 +86,8 @@ export interface ConfirmationDialogData {
                  items-center
                  justify-center
                  rounded-full
-                 bg-[#032D42]/10
-                 text-[#032D42]"
+                 bg-[#007979]/10
+                 text-[#007979]"
         >
           <mat-icon>
             {{ data.icon || 'help_outline' }}
@@ -101,7 +101,7 @@ export interface ConfirmationDialogData {
                    !p-0
                    text-lg
                    font-semibold
-                   text-[#032D42]"
+                   text-slate-900"
           >
             {{ data.title | t }}
           </h2>
@@ -173,7 +173,6 @@ export interface ConfirmationDialogData {
           type="button"
           (click)="confirm()"
           [class.!bg-red-600]="data.destructive"
-          [class.!bg-[#032D42]]="!data.destructive"
           class="!text-white"
         >
           {{ (data.confirmText || 'Confirm') | t }}

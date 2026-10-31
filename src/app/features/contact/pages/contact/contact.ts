@@ -65,7 +65,7 @@ import { MatInputModule } from '@angular/material/input';
                  text-white
                  sm:text-3xl"
               >
-                Contact Zebron
+                We'd love to hear from you
               </h1>
             </div>
 

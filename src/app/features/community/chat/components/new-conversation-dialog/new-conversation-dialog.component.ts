@@ -61,7 +61,7 @@ import {
 
       <!-- HEADER -->
       <div
-        class="flex items-center justify-between border-b px-5 py-4"
+        class="flex items-center justify-between border-b border-[#007979]/20 bg-gradient-to-r from-[#007979]/15 via-[#00706f]/10 to-[#2a835f]/15 px-5 py-4"
       >
         <div>
           <h2
@@ -91,7 +91,7 @@ import {
       <div class="border-b px-5 py-4">
         <mat-form-field
           appearance="outline"
-          class="w-full"
+          class="w-full zb-search"
         >
           <mat-label>Search community members</mat-label>
 

@@ -87,7 +87,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
            HEADER
            ======================================================= -->
 
-      <header hidden sm:block class="bg-[#2a835f] text-white">
+      <header hidden sm:block class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div
           class="mx-auto max-w-7xl
                  px-4
@@ -1250,10 +1250,10 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                              sm:flex-row
                              sm:items-center"
                     >
-                      <mat-form-field appearance="outline" class="w-full sm:w-72">
+                      <mat-form-field appearance="outline" class="w-full sm:w-72 zb-search">
                         <mat-label> Search transactions </mat-label>
 
-                        <mat-icon matPrefix> search </mat-icon>
+                        <mat-icon matPrefix aria-hidden="true">search</mat-icon>
 
                         <input
                           matInput
@@ -1527,10 +1527,10 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                              sm:items-center"
                     >
                       <!-- Activity Search -->
-                      <mat-form-field appearance="outline" class="w-full sm:w-80">
+                      <mat-form-field appearance="outline" class="w-full sm:w-80 zb-search">
                         <mat-label>Search activities</mat-label>
 
-                        <mat-icon matPrefix>search</mat-icon>
+                        <mat-icon matPrefix aria-hidden="true">search</mat-icon>
 
                         <input
                           matInput
@@ -1791,10 +1791,10 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                     >
                       <!-- Compliance Search -->
 
-                      <mat-form-field appearance="outline" class="w-full sm:w-80">
+                      <mat-form-field appearance="outline" class="w-full sm:w-80 zb-search">
                         <mat-label>Search compliance</mat-label>
 
-                        <mat-icon matPrefix>search</mat-icon>
+                        <mat-icon matPrefix aria-hidden="true">search</mat-icon>
 
                         <input
                           matInput

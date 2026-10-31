@@ -67,7 +67,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   ],
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
-      <header class="border-b border-white/10 bg-[#2a835f]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <a mat-stroked-button class="!border-white/40 !text-white" [routerLink]="['/partner/org', organizationId, 'knowledge']">
             <mat-icon>arrow_back</mat-icon>
@@ -157,8 +157,13 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
         } @else if (article(); as current) {
           <article class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
             <div class="flex flex-wrap items-center gap-2 text-xs">
-              <span [class]="current.source === 'organization' ? 'rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-800' : 'rounded-full bg-sky-50 px-2 py-0.5 font-semibold text-sky-800'">
-                {{ current.source === 'organization' ? organizationName() : ('Zebron' | t) }}
+              <span [class]="current.source === 'organization' ? 'inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-800' : 'rounded-full bg-sky-50 px-2 py-0.5 font-semibold text-sky-800'">
+                @if (current.source === 'organization') {
+                  <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">lock</mat-icon>
+                  {{ organizationName() }} · {{ 'Internal' | t }}
+                } @else {
+                  {{ 'Zebron' | t }}
+                }
               </span>
               <span class="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">{{ typeLabel() | t }}</span>
               <span class="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">{{ current.category }}</span>
@@ -308,7 +313,7 @@ export class OrganizationKnowledgeArticleComponent implements OnInit {
       if (article) {
         void this.loadFeedback();
       }
-      this.pageTitle.setTitle(article?.title ?? 'Knowledge Center');
+      this.pageTitle.setDocumentTitle(article?.title ?? 'Knowledge Center');
     } catch (error) {
       // Members are denied drafts and archived articles by the rules.
       console.info('[Knowledge Center] Article not available.', error);

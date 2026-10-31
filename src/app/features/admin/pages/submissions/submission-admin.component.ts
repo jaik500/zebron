@@ -13,11 +13,12 @@ import { SubmissionStore } from '../../../submissions/stores/submission.store';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-submission-admin',
   standalone: true,
-  imports: [AdminLayoutSwitchComponent, CommonModule, FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [MatIconModule, AdminLayoutSwitchComponent, CommonModule, FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- <div class="m-1">
@@ -26,7 +27,7 @@ import { MatSelectModule } from '@angular/material/select';
         </a>
       </div> -->
       <!-- Header -->
-      <header class="sticky top-0 z-50 border-b border-gray-200 bg-[#032D42]">
+      <header class="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div
           class="mx-auto flex max-w-7xl items-center
                  justify-between gap-4 px-4 py-4
@@ -76,9 +77,10 @@ import { MatSelectModule } from '@angular/material/select';
           <div class="grid gap-4 md:grid-cols-2">
             <div>
 
-              <mat-form-field appearance="outline" class="zb-field">
+              <mat-form-field appearance="outline" class="zb-field w-full sm:max-w-xs zb-search">
                 <mat-label>Search submissions</mat-label>
-                <input matInput
+                <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+          <input matInput
                 id="search"
                 type="search"
                 [(ngModel)]="searchTerm"

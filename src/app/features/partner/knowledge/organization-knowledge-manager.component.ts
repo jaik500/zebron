@@ -40,10 +40,16 @@ import { KnowledgeReportsPanelComponent } from './knowledge-reports-panel.compon
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
-      <header class="border-b border-white/10 bg-[#2a835f]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div class="min-w-0">
-            <h1 class="text-2xl font-bold text-white">{{ 'Manage Knowledge Center' | t }}</h1>
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-2xl font-bold text-white">{{ 'Manage Knowledge Center' | t }}</h1>
+              <span class="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-white ring-1 ring-inset ring-white/30" [title]="'Only members of {0} can see these articles.' | t: [organizationName()]">
+                <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">lock</mat-icon>
+                {{ 'Internal' | t }}
+              </span>
+            </div>
             <p class="text-sm text-white/85">{{ 'Write, publish and archive {0} articles' | t: [organizationName()] }}</p>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -204,7 +210,7 @@ export class OrganizationKnowledgeManagerComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    this.pageTitle.setTitle('Manage Knowledge Center');
+    this.pageTitle.setDocumentTitle('Manage Knowledge Center');
     try {
       await this.organizationStore.loadOrganizationContext(this.organizationId);
     } catch {

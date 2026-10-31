@@ -36,7 +36,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
           ← Admin Dashboard
         </a>
       </div> -->
-      <header class="border-b border-gray-200 bg-[#032D42]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div
           class="mx-auto flex max-w-7xl items-center
                  justify-between gap-4 px-4 py-4

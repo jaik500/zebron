@@ -47,9 +47,9 @@ type Tab = 'new' | 'mine';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
-      <header class="bg-gradient-to-r from-[#032D42] to-[#007979]">
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-          <h1 class="text-3xl font-bold text-white">Help & Support</h1>
+          <h1 class="text-3xl font-bold text-white">How can we help?</h1>
           <p class="mt-2 max-w-2xl text-white/85">
             Report a problem, ask a question or request a service. We'll reply by email, and you can follow
             your request here.

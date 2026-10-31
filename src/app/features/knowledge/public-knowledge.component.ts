@@ -23,10 +23,10 @@ import { PUBLIC_KNOWLEDGE_TYPE_LABELS, PublicKnowledgeService } from './public-k
       <div class="relative mx-auto max-w-7xl px-5 pb-5 pt-20 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div class="min-w-0">
-            <p class="text-xs font-bold uppercase tracking-wider text-white/80">{{ 'Knowledge Center' | t }}</p>
-            <h1 class="mt-1 text-xl font-bold tracking-tight sm:text-2xl">{{ 'Guides and answers for using Zebron' | t }}</h1>
+            <p class="text-xs font-bold uppercase tracking-wider text-white/80">Zebron</p>
+            <h1 class="mt-1 text-xl font-bold tracking-tight sm:text-2xl">{{ 'Knowledge Center' | t }}</h1>
             <p class="mt-1 max-w-2xl text-sm text-white/85">
-              {{ 'How-tos, troubleshooting and FAQs written by the Zebron team.' | t }}
+              {{ 'Articles, guides and answers from Zebron.' | t }}
             </p>
           </div>
           <div class="relative w-full shrink-0 lg:w-[26rem]">
@@ -44,28 +44,45 @@ import { PUBLIC_KNOWLEDGE_TYPE_LABELS, PublicKnowledgeService } from './public-k
         </div>
 
         @if (categories().length) {
-          <nav class="mt-4 flex flex-wrap gap-1.5" [attr.aria-label]="'Categories' | t">
-            <button
-              type="button"
-              (click)="category.set('')"
-              [class]="!category()
-                ? 'rounded-full border border-white bg-white px-2.5 py-1 text-xs font-semibold text-[#006666]'
-                : 'rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-xs text-white hover:bg-white/20'"
+          <!--
+            Mobile: one line of chips, most popular first; chips that don't
+            fit wrap onto a hidden second line. "More" shows them all.
+            Desktop: every category, alphabetical.
+          -->
+          <div class="mt-4 flex items-start gap-1.5">
+            <nav
+              [class]="'flex min-w-0 flex-1 flex-wrap gap-1.5' + (showAllCategories() ? '' : ' max-sm:h-[26px] max-sm:overflow-hidden')"
+              [attr.aria-label]="'Categories' | t"
             >
-              {{ 'All' | t }}
-            </button>
-            @for (item of categories(); track item) {
               <button
                 type="button"
-                (click)="category.set(item)"
-                [class]="category() === item
-                  ? 'rounded-full border border-white bg-white px-2.5 py-1 text-xs font-semibold text-[#006666]'
-                  : 'rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-xs text-white hover:bg-white/20'"
+                (click)="category.set('')"
+                [class]="chipClass(!category())"
               >
-                {{ item | t }}
+                {{ 'All' | t }}
+              </button>
+              @for (item of categories(); track item) {
+                <button
+                  type="button"
+                  (click)="category.set(item)"
+                  [style.--rank]="rankOf(item)"
+                  [class]="chipClass(category() === item) + ' max-sm:[order:var(--rank)]'"
+                >
+                  {{ item | t }}
+                </button>
+              }
+            </nav>
+            @if (categories().length > 2) {
+              <button
+                type="button"
+                (click)="showAllCategories.set(!showAllCategories())"
+                [attr.aria-expanded]="showAllCategories()"
+                class="inline-flex shrink-0 items-center rounded-full border border-white/40 px-2.5 py-1 text-xs leading-4 text-white hover:bg-white/15 sm:hidden"
+              >
+                {{ (showAllCategories() ? 'Less' : 'More') | t }}
               </button>
             }
-          </nav>
+          </div>
         }
       </div>
     </section>
@@ -113,7 +130,7 @@ import { PUBLIC_KNOWLEDGE_TYPE_LABELS, PublicKnowledgeService } from './public-k
 
         @if (!signedIn()) {
           <p class="mt-8 text-center text-sm text-slate-500">
-            {{ 'Members of a partner organization also find their organization\\u0027s articles in the Partner Portal.' | t }}
+            {{ 'Members of an organization on Zebron also have their organization\\u0027s own Knowledge Center in the Partner Portal.' | t }}
           </p>
         }
       </div>
@@ -131,6 +148,29 @@ export class PublicKnowledgeComponent {
   protected readonly category = signal('');
 
   protected readonly signedIn = computed(() => !!this.auth.firebaseUser());
+
+  /** Mobile: show every category chip instead of one line. */
+  protected readonly showAllCategories = signal(false);
+
+  /**
+   * Mobile order of the category chips: the selected category first,
+   * then by number of articles (most popular), then alphabetical.
+   */
+  private readonly categoryRanks = computed(() => {
+    const counts = new Map<string, number>();
+    for (const article of this.articles()) {
+      if (article.category) {
+        counts.set(article.category, (counts.get(article.category) ?? 0) + 1);
+      }
+    }
+    const selected = this.category();
+    const ordered = [...counts.keys()].sort((a, b) =>
+      (b === selected ? 1 : 0) - (a === selected ? 1 : 0) ||
+      (counts.get(b) ?? 0) - (counts.get(a) ?? 0) ||
+      a.localeCompare(b),
+    );
+    return new Map(ordered.map((category, index) => [category, index + 1]));
+  });
 
   protected readonly categories = computed(() =>
     [...new Set(this.articles().map((article) => article.category).filter(Boolean))].sort(),
@@ -174,6 +214,16 @@ export class PublicKnowledgeComponent {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  protected rankOf(category: string): number {
+    return this.categoryRanks().get(category) ?? 999;
+  }
+
+  protected chipClass(active: boolean): string {
+    return active
+      ? 'shrink-0 rounded-full border border-white bg-white px-2.5 py-1 text-xs font-semibold leading-4 text-[#006666]'
+      : 'shrink-0 rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-xs leading-4 text-white hover:bg-white/20';
   }
 
   protected typeLabel(article: KnowledgeArticle): string {

@@ -27,7 +27,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
-type MailboxFilter = 'all' | 'unread' | 'read' | 'archived';
+type MailboxFilter = 'inbox' | 'all' | 'unread' | 'read' | 'archived';
 
 type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
 
@@ -40,1066 +40,316 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
          PAGE
          ========================================================= -->
 
-    <div class="contact-mailbox-page min-h-screen bg-gray-50">
+    <div class="contact-mailbox-page min-h-screen bg-slate-50 pt-16">
       <!-- =======================================================
-           HEADER
+           HEADER (one compact row)
            ======================================================= -->
-
-      <header
-        class="bg-[#032D42] px-4 py-5 text-white
-               sm:px-6 sm:py-6"
-      >
-        <div
-          class="mx-auto flex max-w-7xl
-                 items-center justify-between gap-4"
-        >
-          <!-- Header title -->
-          <div class="min-w-0">
-            <h1
-              class="truncate text-3xl font-bold
-                     tracking-tight sm:text-2xl"
-            >
-              Zebron Mailbox
-            </h1>
-
-            <p
-              class="mt-1 text-md text-white/80
-                     sm:text-md"
-            >
-              Manage messages submitted through the Zebron contact form.
-            </p>
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 sm:flex-nowrap sm:px-6 lg:px-8">
+          <div class="min-w-0 flex-1 sm:flex-none">
+            <h1 class="truncate text-lg font-semibold">Mailbox</h1>
+            <p class="hidden truncate text-xs text-white/80 lg:block">Messages sent through the Zebron contact form</p>
           </div>
 
-          <!-- Header actions -->
-          <div
-            class="flex shrink-0 items-center gap-2
-                   sm:gap-3"
+          <!-- Search (full width on phones, on its own line) -->
+          <mat-form-field appearance="outline" class="zb-field zb-search order-last w-full sm:order-none sm:mx-auto sm:max-w-md">
+            <mat-label>Search mailbox</mat-label>
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+            <input
+              matInput
+              id="mailbox-search"
+              type="search"
+              [value]="searchQuery()"
+              (input)="setSearch($any($event.target).value)"
+              placeholder="Search sender, subject or message"
+              autocomplete="off"
+            />
+            @if (searchQuery()) {
+              <button matSuffix mat-icon-button type="button" (click)="setSearch('')" aria-label="Clear search" title="Clear search">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+          </mat-form-field>
+
+          <button
+            type="button"
+            (click)="newMessage()"
+            class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 text-sm font-semibold text-[#006666] shadow-sm transition hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
-            <!-- Admin dashboard -->
-            <a
-              routerLink="/admin"
-              class="hidden min-h-10 items-center
-                     justify-center rounded-lg
-                     bg-white px-4 py-2
-                     text-sm font-medium
-                     text-gray-700
-                     transition hover:bg-gray-100
-                     sm:inline-flex"
-            >
-              <mat-icon class="mr-1 !h-5 !w-5 !text-[20px]"> arrow_back </mat-icon>
+            <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">edit</mat-icon>
+            <span class="hidden sm:inline">Compose</span>
+          </button>
 
-              Admin Dashboard
+          <a
+            routerLink="/admin/contact/sent"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-white/90 transition hover:bg-white/15 hover:text-white sm:w-auto sm:px-3"
+            [attr.aria-label]="'Sent'"
+            title="Sent"
+          >
+            <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">send</mat-icon>
+            <span class="hidden sm:inline">Sent</span>
+          </a>
+
+          <button
+            type="button"
+            (click)="loadMessages()"
+            [disabled]="loading()"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white disabled:opacity-50"
+            aria-label="Refresh"
+            title="Refresh"
+          >
+            <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]" [class.animate-spin]="loading()">refresh</mat-icon>
+          </button>
+
+          <button
+            type="button"
+            [matMenuTriggerFor]="mailboxMenu"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white"
+            aria-label="More mailbox options"
+            title="More"
+          >
+            <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">more_vert</mat-icon>
+          </button>
+
+          <mat-menu #mailboxMenu="matMenu" xPosition="before">
+            <button mat-menu-item type="button" (click)="generateContactMessagesPdf()" [disabled]="filteredMessages().length === 0">
+              <mat-icon>picture_as_pdf</mat-icon>
+              <span>Export to PDF</span>
+            </button>
+            <a mat-menu-item routerLink="/admin">
+              <mat-icon>dashboard</mat-icon>
+              <span>Admin dashboard</span>
             </a>
-
-            <!-- New message -->
-            <button
-              type="button"
-              (click)="newMessage()"
-              class="hidden min-h-10 items-center
-                     justify-center rounded-lg
-                     bg-white px-4 py-2
-                     text-sm font-semibold
-                     text-[#032D42]
-                     transition hover:bg-gray-100
-                     sm:inline-flex"
-            >
-              <mat-icon class="mr-1 !h-5 !w-5 !text-[20px]"> add </mat-icon>
-
-              New Message
+            <mat-divider></mat-divider>
+            <button mat-menu-item type="button" (click)="logout()">
+              <mat-icon>logout</mat-icon>
+              <span>Sign out</span>
             </button>
-
-            <!-- Refresh -->
-            <button
-              type="button"
-              (click)="loadMessages()"
-              [disabled]="loading()"
-              class="hidden min-h-10
-         items-center justify-center
-         rounded-lg border
-         border-white/30
-         bg-white/5 px-3 py-2
-         text-sm font-medium
-         text-white
-         transition
-         hover:bg-white/10
-         disabled:cursor-not-allowed
-         disabled:opacity-50
-         sm:inline-flex"
-              aria-label="Refresh mailbox"
-            >
-              <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]" [class.animate-spin]="loading()">
-                refresh
-              </mat-icon>
-
-              <span class="ml-1">
-                {{ loading() ? 'Refreshing...' : 'Refresh' }}
-              </span>
-            </button>
-
-            <!-- Header overflow -->
-            <button
-              mat-icon-button
-              [matMenuTriggerFor]="mailboxMenu"
-              aria-label="More mailbox options"
-              class="!flex !h-10 !w-10
-                     !items-center !justify-center
-                     !rounded-lg
-                     !border !border-white/20
-                     !bg-white/5
-                     !text-white
-                     hover:!bg-white/10"
-            >
-              <mat-icon>more_vert</mat-icon>
-            </button>
-
-            <mat-menu #mailboxMenu="matMenu" xPosition="before">
-              <a mat-menu-item routerLink="/admin">
-                <mat-icon>dashboard</mat-icon>
-                <span>Admin Dashboard</span>
-              </a>
-
-              <button mat-menu-item type="button" (click)="newMessage()">
-                <mat-icon>mail</mat-icon>
-                <span>New Message</span>
-              </button>
-
-              <a mat-menu-item routerLink="/admin/contact/sent">
-                <mat-icon>send</mat-icon>
-                <span>Sent</span>
-              </a>
-              <!-- Generate PDF -->
-              <button
-                mat-menu-item
-                type="button"
-                (click)="generateContactMessagesPdf()"
-                [disabled]="filteredMessages().length === 0"
-              >
-                <mat-icon>picture_as_pdf</mat-icon>
-
-                <span> Generate PDF </span>
-              </button>
-
-              <mat-divider></mat-divider>
-
-              <!-- Divider -->
-              <div class="border-t border-gray-100"></div>
-
-              <button mat-menu-item type="button" (click)="loadMessages()">
-                <mat-icon>refresh</mat-icon>
-                <span>Refresh</span>
-              </button>
-              <div class="my-1 border-t border-gray-100"></div>
-              <!-- Logout -->
-              <button
-                type="button"
-                (click)="logout()"
-                class="flex w-full
-         items-center gap-3
-         px-4 py-2.5
-         text-left text-sm
-         font-medium
-         text-red-600
-         transition
-         hover:bg-red-50"
-              >
-                <mat-icon
-                  class="!m-0 !h-5
-           !w-5 !text-[20px]"
-                >
-                  logout
-                </mat-icon>
-
-                <span>Logout</span>
-              </button>
-            </mat-menu>
-          </div>
+          </mat-menu>
         </div>
       </header>
 
       <!-- =======================================================
-           MAIN CONTENT
+           MAIN
            ======================================================= -->
-
-      <main class="px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <main class="px-3 py-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-7xl">
-          <!-- Error -->
           @if (error()) {
-            <div
-              class="mb-4 rounded-lg
-                     border border-red-200
-                     bg-red-50 px-4 py-3
-                     text-sm text-red-700"
-              role="alert"
-            >
+            <div class="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700" role="alert">
               {{ error() }}
             </div>
           }
 
-          <!-- =====================================================
-               SEARCH
-               ===================================================== -->
+          <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <!-- Toolbar: folders + search -->
+            <div class="flex min-h-11 items-center gap-2 border-b border-slate-200 px-2 py-1.5 sm:px-3">
+              <!-- Select all (visible rows) -->
+              <label class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-slate-100" title="Select all">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#007979]"
+                  [checked]="allVisibleChecked()"
+                  [indeterminate]="someVisibleChecked()"
+                  [disabled]="visibleMessages().length === 0"
+                  (change)="toggleAllVisible()"
+                  aria-label="Select all messages"
+                />
+              </label>
 
-          <section class="mb-4">
-
-            <div class="relative">
-              <!-- Search icon -->
-              <mat-icon
-                class="pointer-events-none
-                       absolute left-4 top-1/2
-                       !h-5 !w-5
-                       -translate-y-1/2
-                       !text-[20px]
-                       text-gray-400"
-              >
-                search
-              </mat-icon>
-
-              <mat-form-field appearance="outline" class="zb-field">
-                <mat-label>Search mailbox</mat-label>
-                <input matInput
-                id="mailbox-search"
-                type="search"
-                [value]="searchQuery()"
-                (input)="searchQuery.set($any($event.target).value)"
-                placeholder="Search sender, email, subject, or message..."
-                autocomplete="off"
-              />
-              </mat-form-field>
-
-              <!-- ONE clear button -->
-              @if (searchQuery()) {
-                <button
-                  type="button"
-                  (click)="searchQuery.set('')"
-                  class="absolute right-3 top-1/2
-                         flex h-8 w-8
-                         -translate-y-1/2
-                         items-center justify-center
-                         rounded-md
-                         text-gray-400
-                         transition
-                         hover:bg-gray-100
-                         hover:text-gray-700"
-                  aria-label="Clear search"
-                  title="Clear search"
-                >
-                  <mat-icon
-                    class="!m-0 !h-5 !w-5
-                           !text-[20px]"
+              @if (checkedMessages().length > 0) {
+                <!-- Bulk actions -->
+                <div class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto" role="toolbar" aria-label="Selected messages">
+                  <span class="mr-1 shrink-0 text-sm font-semibold text-slate-900">{{ checkedMessages().length }} selected</span>
+                  @if (checkedAllArchived()) {
+                    <button type="button" (click)="bulkMoveToInbox()" [disabled]="bulkBusy()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50">
+                      <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">unarchive</mat-icon>
+                      <span class="hidden sm:inline">Move to inbox</span>
+                    </button>
+                  } @else {
+                    <button type="button" (click)="bulkArchive()" [disabled]="bulkBusy()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50">
+                      <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">archive</mat-icon>
+                      <span class="hidden sm:inline">Archive</span>
+                    </button>
+                  }
+                  <button type="button" (click)="bulkMarkRead()" [disabled]="bulkBusy()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50">
+                    <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">drafts</mat-icon>
+                    <span class="hidden sm:inline">Mark read</span>
+                  </button>
+                  <button type="button" (click)="bulkDelete()" [disabled]="bulkBusy()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 hover:!bg-red-50 hover:!text-red-600">
+                    <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
+                    <span class="hidden sm:inline">Delete</span>
+                  </button>
+                  <button type="button" (click)="clearSelection()" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 ml-auto" title="Clear selection">
+                    <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">close</mat-icon>
+                    <span class="hidden sm:inline">Clear</span>
+                  </button>
+                </div>
+              } @else {
+              <nav class="-mx-1 flex min-w-0 flex-1 gap-1 overflow-x-auto px-1" aria-label="Mailbox folders">
+                @for (folder of folders(); track folder.key) {
+                  <button
+                    type="button"
+                    (click)="setFilter(folder.key)"
+                    [attr.aria-pressed]="filter() === folder.key"
+                    [class]="filter() === folder.key
+                      ? 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-[#007979]/10 px-3 text-sm font-semibold text-[#006666]'
+                      : 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900'"
                   >
-                    close
-                  </mat-icon>
-                </button>
+                    <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">{{ folder.icon }}</mat-icon>
+                    {{ folder.label }}
+                    @if (folder.count > 0) {
+                      <span
+                        [class]="folder.key === 'unread'
+                          ? 'rounded-full bg-[#007979] px-1.5 text-[11px] font-semibold leading-[18px] text-white'
+                          : 'rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold leading-[18px] text-slate-600'"
+                      >
+                        {{ folder.count }}
+                      </span>
+                    }
+                  </button>
+                }
+              </nav>
               }
             </div>
 
-            @if (searchQuery()) {
-              <p class="mt-2 text-xs text-gray-500">
-                Showing
-                <span class="font-semibold text-gray-700">
-                  {{ filteredMessages().length }}
-                </span>
-                matching
-                {{ filteredMessages().length === 1 ? 'message' : 'messages' }}
-              </p>
-            }
-          </section>
-
-          <!-- =====================================================
-               SUMMARY CARDS
-               ===================================================== -->
-
-          <section
-            class="mb-3 grid grid-cols-4
-         gap-2 sm:gap-3"
-          >
-            <!-- All -->
-            <button
-              type="button"
-              (click)="setFilter('all')"
-              class="rounded-xl border
-                     bg-white px-4 py-4
-                     text-left shadow-sm
-                     transition hover:shadow-md"
-              [class.border-[#032D42]]="filter() === 'all'"
-              [class.ring-2]="filter() === 'all'"
-              [class.ring-[#032D42]/10]="filter() === 'all'"
-            >
-              <div
-                class="flex items-center
-                       justify-between gap-2"
-              >
-                <p
-                  class="text-sm font-medium
-                         text-gray-500"
-                >
-                  All
-                </p>
-
-                <span
-                  class="hidden h-10 w-10
-                         items-center justify-center
-                         rounded-full bg-blue-50
-                         text-blue-600
-                         sm:flex"
-                >
-                  <mat-icon>mail</mat-icon>
-                </span>
-              </div>
-
-              <p
-                class="mt-1 text-3xl font-bold
-                       leading-none text-gray-900"
-              >
-                {{ messages().length }}
-              </p>
-            </button>
-
-            <!-- New -->
-            <button
-              type="button"
-              (click)="setFilter('unread')"
-              class="rounded-xl border
-                     border-gray-200 bg-white
-                     px-4 py-4 text-left
-                     shadow-sm transition
-                     hover:shadow-md"
-              [class.ring-2]="filter() === 'unread'"
-              [class.ring-blue-500/20]="filter() === 'unread'"
-            >
-              <div
-                class="flex items-center
-                       justify-between gap-2"
-              >
-                <p
-                  class="text-sm font-medium
-                         text-gray-500"
-                >
-                  New
-                </p>
-
-                <span
-                  class="hidden h-10 w-10
-                         items-center justify-center
-                         rounded-full bg-blue-50
-                         text-blue-600
-                         sm:flex"
-                >
-                  <mat-icon>mail_outline</mat-icon>
-                </span>
-              </div>
-
-              <p
-                class="mt-2 text-3xl font-bold
-                       leading-none text-blue-600"
-              >
-                {{ newCount() }}
-              </p>
-            </button>
-
-            <!-- Read -->
-            <button
-              type="button"
-              (click)="setFilter('read')"
-              class="rounded-xl border
-                     border-gray-200 bg-white
-                     px-4 py-4 text-left
-                     shadow-sm transition
-                     hover:shadow-md"
-              [class.ring-2]="filter() === 'read'"
-              [class.ring-green-500/20]="filter() === 'read'"
-            >
-              <div
-                class="flex items-center
-                       justify-between gap-2"
-              >
-                <p
-                  class="text-sm font-medium
-                         text-gray-500"
-                >
-                  Read
-                </p>
-
-                <span
-                  class="hidden h-10 w-10
-                         items-center justify-center
-                         rounded-full bg-green-50
-                         text-green-600
-                         sm:flex"
-                >
-                  <mat-icon>drafts</mat-icon>
-                </span>
-              </div>
-
-              <p
-                class="mt-2 text-3xl font-bold
-                       leading-none text-green-600"
-              >
-                {{ readCount() }}
-              </p>
-            </button>
-
-            <!-- Archived -->
-            <button
-              type="button"
-              (click)="setFilter('archived')"
-              class="rounded-xl border
-                     border-gray-200 bg-white
-                     px-4 py-4 text-left
-                     shadow-sm transition
-                     hover:shadow-md"
-              [class.ring-2]="filter() === 'archived'"
-              [class.ring-gray-400/20]="filter() === 'archived'"
-            >
-              <div
-                class="flex items-center
-                       justify-between gap-2"
-              >
-                <p
-                  class="text-sm font-medium
-                         text-gray-500"
-                >
-                  Archived
-                </p>
-
-                <span
-                  class="hidden h-10 w-10
-                         items-center justify-center
-                         rounded-full bg-gray-100
-                         text-gray-700
-                         sm:flex"
-                >
-                  <mat-icon>inventory_2</mat-icon>
-                </span>
-              </div>
-
-              <p
-                class="mt-2 text-3xl font-bold
-                       leading-none text-gray-500"
-              >
-                {{ archivedCount() }}
-              </p>
-            </button>
-          </section>
-
-          <!-- =====================================================
-               MESSAGE TABLE
-               ===================================================== -->
-
-          <section
-            class="overflow-hidden rounded-xl
-         border border-gray-200
-         bg-[#007979]/30
-         shadow-sm
-         md:bg-white"
-          >
-            @if (loading()) {
-              <div
-                class="px-6 py-12 text-center
-                       text-sm text-gray-500"
-              >
-                <mat-icon
-                  class="mb-2 animate-spin
-                         !h-6 !w-6
-                         !text-[24px]"
-                >
-                  refresh
-                </mat-icon>
-
-                <p>Loading messages...</p>
-              </div>
-            } @else if (filteredMessages().length === 0) {
-              <div class="px-6 py-14 text-center">
-                <mat-icon
-                  class="!h-12 !w-12
-                         !text-[48px]
-                         text-gray-300"
-                >
-                  mail_outline
-                </mat-icon>
-
-                <h2
-                  class="mt-3 text-base
-                         font-semibold text-gray-900"
-                >
-                  No messages
-                </h2>
-
-                <p
-                  class="mt-1 text-sm
-                         text-gray-500"
-                >
-                  There are no messages in this mailbox view.
-                </p>
-              </div>
-            } @else {
-              <!-- Desktop -->
-              <div
-                class="hidden overflow-x-auto
-                       sm:block"
-              >
-                <table class="w-full table-fixed">
-                  <thead
-                    class="border-b
-                           border-gray-200
-                           bg-gray-50"
-                  >
-                    <tr>
-                      <th
-                        class="w-[20%]
-                               px-5 py-3
-                               text-left text-xs
-                               font-semibold uppercase
-                               tracking-wide
-                               text-gray-500"
-                      >
-                        Sender
-                      </th>
-
-                      <th
-                        class="w-[30%]
-                               px-5 py-3
-                               text-left text-xs
-                               font-semibold uppercase
-                               tracking-wide
-                               text-gray-500"
-                      >
-                        Subject
-                      </th>
-
-                      <th
-                        class="w-[18%]
-                               px-5 py-3
-                               text-left text-xs
-                               font-semibold uppercase
-                               tracking-wide
-                               text-gray-500"
-                      >
-                        Date
-                      </th>
-
-                      <th
-                        class="w-[12%]
-                               px-5 py-3
-                               text-left text-xs
-                               font-semibold uppercase
-                               tracking-wide
-                               text-gray-500"
-                      >
-                        Status
-                      </th>
-
-                      <th
-                        class="w-[20%]
-                               px-5 py-3
-                               text-right text-xs
-                               font-semibold uppercase
-                               tracking-wide
-                               text-gray-500"
-                      >
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody
-                    class="divide-y
-                           divide-gray-100"
-                  >
-                    @for (message of filteredMessages(); track message.id) {
-                      <tr
-                        class="transition
-                               hover:bg-gray-50"
-                        [class.bg-blue-50]="message.status === 'unread'"
-                      >
-                        <!-- Sender -->
-                        <td class="px-5 py-2 align-middle">
-                          <div class="min-w-0">
-                            <div
-                              class="flex items-center
-                                     gap-2"
-                            >
-                              @if (message.status === 'unread') {
-                                <span
-                                  class="h-2 w-2
-                                         shrink-0
-                                         rounded-full
-                                         bg-blue-600"
-                                  title="New message"
-                                ></span>
-                              }
-
-                              <p
-                                class="truncate
-                                       text-sm
-                                       font-semibold
-                                       text-gray-900"
-                              >
-                                {{ message.name }}
-                              </p>
-                            </div>
-
-                            <p
-                              class="mt-0.5 truncate
-                                     text-xs
-                                     text-gray-500"
-                            >
-                              {{ message.email }}
-                            </p>
-                          </div>
-                        </td>
-
-                        <!-- Subject -->
-                        <td
-                          class="px-5 py-4
-                                 align-middle"
-                        >
-                          <button
-                            type="button"
-                            (click)="openMessage(message)"
-                            class="block w-full
-                                   min-w-0
-                                   text-left
-                                   cursor-pointer"
-                          >
-                            <p
-                              class="break-words
-                                     text-sm
-                                     font-semibold
-                                     leading-5
-                                     text-gray-900
-                                     hover:text-blue-600"
-                              [class.font-bold]="message.status === 'unread'"
-                            >
-                              {{ message.subject }}
-                            </p>
-
-                            <p
-                              class="mt-1
-                                     break-words
-                                     text-xs
-                                     leading-5
-                                     text-gray-500"
-                            >
-                              {{ message.message }}
-                            </p>
-                          </button>
-                        </td>
-
-                        <!-- Date -->
-                        <td
-                          class="whitespace-nowrap
-                                 px-5 py-4
-                                 align-middle
-                                 text-sm
-                                 text-gray-500"
-                        >
-                          {{ formatDate(message) }}
-                        </td>
-
-                        <!-- Status -->
-                        <td
-                          class="px-5 py-4
-                                 align-middle"
-                        >
-                          <span
-                            class="inline-flex
-                                   rounded-full
-                                   px-2.5 py-1
-                                   text-xs
-                                   font-medium
-                                   capitalize"
-                            [class.bg-blue-100]="message.status === 'unread'"
-                            [class.text-blue-700]="message.status === 'unread'"
-                            [class.bg-green-100]="message.status === 'read'"
-                            [class.text-green-700]="message.status === 'read'"
-                            [class.bg-gray-100]="message.status === 'archived'"
-                            [class.text-gray-700]="message.status === 'archived'"
-                          >
-                            {{ message.status }}
-                          </span>
-                        </td>
-
-                        <!-- Actions -->
-                        <td
-                          class="px-4 py-4
-                                 align-middle"
-                        >
-                          <div
-                            class="flex items-center
-                                   justify-end gap-1"
-                          >
-                            <!-- View -->
-                            <button
-                              type="button"
-                              (click)="openMessage(message)"
-                              class="inline-flex h-8
-                                     items-center
-                                     gap-1 rounded-md
-                                     bg-blue-50
-                                     px-2.5
-                                     text-xs
-                                     font-semibold
-                                     text-blue-700
-                                     transition
-                                     hover:bg-blue-100"
-                            >
-                              <mat-icon
-                                class="!m-0 !h-4
-                                       !w-4
-                                       !text-[17px]"
-                              >
-                                visibility
-                              </mat-icon>
-
-                              View
-                            </button>
-
-                            <!-- Reply -->
-                            <button
-                              type="button"
-                              (click)="replyToMessage(message)"
-                              class="inline-flex h-8
-                                     items-center
-                                     gap-1 rounded-md
-                                     bg-blue-50
-                                     px-2.5
-                                     text-xs
-                                     font-semibold
-                                     text-blue-700
-                                     transition
-                                     hover:bg-blue-100"
-                            >
-                              <mat-icon
-                                class="!m-0 !h-4
-                                       !w-4
-                                       !text-[17px]"
-                              >
-                                reply
-                              </mat-icon>
-
-                              Reply
-                            </button>
-
-                            <!-- Delete -->
-                            <button
-                              type="button"
-                              (click)="deleteMessage(message)"
-                              class="inline-flex h-8
-                                     items-center
-                                     gap-1 rounded-md
-                                     bg-red-50
-                                     px-2.5
-                                     text-xs
-                                     font-semibold
-                                     text-red-700
-                                     transition
-                                     hover:bg-red-100"
-                            >
-                              <mat-icon
-                                class="!m-0 !h-4
-                                       !w-4
-                                       !text-[17px]"
-                              >
-                                delete
-                              </mat-icon>
-
-                              Delete
-                            </button>
-
-                            <!-- More -->
-                            <button
-                              mat-icon-button
-                              [matMenuTriggerFor]="messageMenu"
-                              [matMenuTriggerData]="{
-                                message: message,
-                              }"
-                              aria-label="More message actions"
-                              class="!ml-1 !flex !h-8
-                                     !w-8 !items-center
-                                     !justify-center
-                                     !rounded-md
-                                     !border
-                                     !border-gray-200
-                                     !text-gray-600
-                                     hover:!bg-gray-100"
-                            >
-                              <mat-icon
-                                class="!m-0
-                                       !text-[20px]"
-                              >
-                                more_vert
-                              </mat-icon>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-
-              <!-- =================================================
-                   MOBILE CARDS
-                   ================================================= -->
-
-              <div class="space-y-2 p-3 sm:hidden">
-                @for (message of filteredMessages(); track message.id) {
-                  <article
-                    class="rounded-xl
-                           border border-gray-200
-                           bg-white p-3
-                           shadow-sm"
-                    [class.border-blue-200]="message.status === 'unread'"
-                    [class.bg-blue-50]="message.status === 'unread'"
-                  >
-                    <div
-                      class="flex items-start
-                             justify-between gap-3"
-                    >
-                      <div class="min-w-0">
-                        <p
-                          class="truncate
-                                 text-sm
-                                 font-semibold
-                                 text-gray-900"
-                        >
-                          {{ message.name }}
-                        </p>
-
-                        <p
-                          class="mt-0.5 truncate
-                                 text-xs
-                                 text-gray-500"
-                        >
-                          {{ message.email }}
-                        </p>
-                      </div>
-
-                      <span
-                        class="shrink-0
-                               rounded-full
-                               px-2 py-0.5
-                               text-[10px]
-                               font-semibold
-                               capitalize"
-                        [class.bg-blue-100]="message.status === 'unread'"
-                        [class.text-blue-700]="message.status === 'unread'"
-                        [class.bg-green-100]="message.status === 'read'"
-                        [class.text-green-700]="message.status === 'read'"
-                        [class.bg-gray-100]="message.status === 'archived'"
-                        [class.text-gray-700]="message.status === 'archived'"
-                      >
-                        {{ message.status }}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      (click)="openMessage(message)"
-                      class="mt-3 block w-full
-                             text-left"
-                    >
-                      <p
-                        class="break-words
-                               text-sm
-                               font-semibold
-                               text-gray-900"
-                      >
-                        {{ message.subject }}
-                      </p>
-
-                      <p
-                        class="mt-1
-                               line-clamp-2
-                               break-words
-                               text-xs
-                               leading-5
-                               text-gray-500"
-                      >
-                        {{ message.message }}
-                      </p>
-                    </button>
-
-                    <div
-                      class="mt-3 flex items-center
-                             justify-between gap-2
-                             border-t
-                             border-gray-100 pt-3"
-                    >
-                      <span
-                        class="shrink-0
-                               text-[11px]
-                               text-gray-500"
-                      >
-                        {{ formatDate(message) }}
-                      </span>
-
-                      <div
-                        class="flex items-center
-                               gap-1"
-                      >
-                        <button
-                          type="button"
-                          (click)="openMessage(message)"
-                          class="inline-flex h-8
-                                 items-center
-                                 justify-center
-                                 rounded-md
-                                 bg-blue-50
-                                 px-2
-                                 text-[11px]
-                                 font-semibold
-                                 text-blue-700"
-                        >
-                          View
-                        </button>
-
-                        <button
-                          type="button"
-                          (click)="replyToMessage(message)"
-                          class="inline-flex h-8
-                                 items-center
-                                 justify-center
-                                 rounded-md
-                                 bg-blue-50
-                                 px-2
-                                 text-[11px]
-                                 font-semibold
-                                 text-blue-700"
-                        >
-                          Reply
-                        </button>
-
-                        <button
-                          type="button"
-                          (click)="deleteMessage(message)"
-                          class="inline-flex h-8
-                                 items-center
-                                 justify-center
-                                 rounded-md
-                                 bg-red-50
-                                 px-2
-                                 text-[11px]
-                                 font-semibold
-                                 text-red-700"
-                        >
-                          Delete
-                        </button>
-
-                        <button
-                          mat-icon-button
-                          [matMenuTriggerFor]="messageMenu"
-                          [matMenuTriggerData]="{
-                            message: message,
-                          }"
-                          aria-label="More message actions"
-                          class="!flex !h-8 !w-8
-                                 !items-center
-                                 !justify-center
-                                 !rounded-md
-                                 !border
-                                 !border-gray-200"
-                        >
-                          <mat-icon
-                            class="!m-0
-                                   !text-[19px]"
-                          >
-                            more_vert
-                          </mat-icon>
-                        </button>
-                      </div>
-                    </div>
-                  </article>
+            <!-- Messages -->
+            @if (loading() && messages().length === 0) {
+              <div class="divide-y divide-slate-100" aria-busy="true">
+                @for (row of [1, 2, 3, 4, 5]; track row) {
+                  <div class="flex items-center gap-4 px-4 py-3">
+                    <div class="h-3 w-32 animate-pulse rounded bg-slate-200"></div>
+                    <div class="h-3 flex-1 animate-pulse rounded bg-slate-100"></div>
+                    <div class="h-3 w-16 animate-pulse rounded bg-slate-100"></div>
+                  </div>
                 }
               </div>
-
-              <!-- =================================================
-                   PAGINATION / FOOTER
-                   ================================================= -->
-
-              <div
-                class="flex flex-col gap-3
-                       border-t border-gray-200
-                       px-4 py-4
-                       sm:flex-row
-                       sm:items-center
-                       sm:justify-between"
-              >
-                <p
-                  class="text-xs
-                         text-gray-500 sm:text-sm"
-                >
-                  Showing
-                  <span class="font-medium text-gray-700">
-                    {{ filteredMessages().length }}
-                  </span>
-                  {{ filteredMessages().length === 1 ? 'message' : 'messages' }}
+            } @else if (filteredMessages().length === 0) {
+              <div class="px-6 py-12 text-center">
+                <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-300">{{ searchQuery() ? 'search_off' : 'inbox' }}</mat-icon>
+                <p class="mt-2 text-sm font-semibold text-slate-900">
+                  {{ searchQuery() ? 'No messages match your search' : filter() === 'unread' || filter() === 'inbox' ? 'You\\u0027re all caught up' : 'No messages here' }}
                 </p>
-
-                <div
-                  class="flex items-center
-                         justify-between gap-3
-                         sm:justify-end"
-                >
-                  <div
-                    class="flex items-center
-                           gap-1"
+                @if (searchQuery()) {
+                  <button type="button" (click)="setSearch('')" class="mt-2 text-sm font-medium text-[#007979] hover:underline">Clear search</button>
+                }
+              </div>
+            } @else {
+              <ul class="divide-y divide-slate-100">
+                @for (message of visibleMessages(); track message.id) {
+                  <li
+                    class="group relative flex cursor-pointer items-center gap-3 px-3 py-2.5 transition hover:bg-slate-50 hover:shadow-[inset_3px_0_0_#007979] sm:px-4"
+                    [ngClass]="{ 'bg-teal-50/40': message.status === 'unread' && !isChecked(message), '!bg-[#007979]/10': isChecked(message) }"
+                    (click)="openMessage(message)"
                   >
-                    <button
-                      type="button"
-                      disabled
-                      class="flex h-9 w-9
-                             items-center
-                             justify-center
-                             rounded-lg
-                             border
-                             border-gray-200
-                             text-gray-300"
-                      aria-label="Previous page"
-                    >
-                      <mat-icon>chevron_left</mat-icon>
-                    </button>
+                    <!-- Select -->
+                    <label class="-my-1 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-slate-200/60" (click)="$event.stopPropagation()">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#007979]"
+                        [checked]="isChecked(message)"
+                        (change)="toggleChecked(message)"
+                        [attr.aria-label]="'Select message from ' + (message.name || message.email)"
+                      />
+                    </label>
 
+                    <!-- Unread marker -->
                     <span
-                      class="flex h-9 w-9
-                             items-center
-                             justify-center
-                             rounded-lg
-                             bg-[#032D42]
-                             text-sm font-semibold
-                             text-white"
+                      class="h-2 w-2 shrink-0 rounded-full"
+                      [ngClass]="{ 'bg-[#007979]': message.status === 'unread' }"
+                      [attr.aria-label]="message.status === 'unread' ? 'New' : null"
+                    ></span>
+
+                    <!-- Desktop: one line. Mobile: sender + date, then subject. -->
+                    <div class="min-w-0 flex-1 sm:flex sm:items-center sm:gap-4">
+                      <div class="flex items-center justify-between gap-2 sm:w-52 sm:shrink-0">
+                        <p
+                          class="truncate text-sm"
+                          [class]="message.status === 'unread' ? 'truncate text-sm font-semibold text-slate-900' : 'truncate text-sm text-slate-700'"
+                          [title]="message.email"
+                        >
+                          {{ message.name || message.email }}
+                        </p>
+                        <span class="shrink-0 text-xs text-slate-500 sm:hidden">{{ shortDate(message) }}</span>
+                      </div>
+
+                      <p class="mt-0.5 flex min-w-0 flex-1 items-center gap-2 sm:mt-0">
+                        <span
+                          [class]="message.status === 'unread' ? 'truncate text-sm font-semibold text-slate-900' : 'truncate text-sm text-slate-600'"
+                        >
+                          {{ message.subject || '(No subject)' }}
+                        </span>
+                        @if (message.status === 'archived' && filter() !== 'archived') {
+                          <span class="shrink-0 rounded bg-slate-100 px-1.5 text-[11px] font-medium leading-[18px] text-slate-500">Archived</span>
+                        }
+                      </p>
+                    </div>
+
+                    <!-- Date (desktop), swapped for quick actions on hover -->
+                    <span
+                      class="hidden w-20 shrink-0 text-right text-xs sm:block sm:group-hover:invisible sm:group-focus-within:invisible"
+                      [class]="message.status === 'unread' ? 'hidden w-20 shrink-0 text-right text-xs font-semibold text-slate-900 sm:block sm:group-hover:invisible sm:group-focus-within:invisible' : 'hidden w-20 shrink-0 text-right text-xs text-slate-500 sm:block sm:group-hover:invisible sm:group-focus-within:invisible'"
+                      [title]="formatDate(message)"
                     >
-                      1
+                      {{ shortDate(message) }}
                     </span>
 
+                    <div
+                      class="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-lg bg-slate-50 pl-2 sm:group-hover:flex sm:group-focus-within:flex"
+                      (click)="$event.stopPropagation()"
+                    >
+                      <button type="button" (click)="replyToMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" aria-label="Reply" title="Reply">
+                        <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">reply</mat-icon>
+                      </button>
+                      @if (message.status === 'archived') {
+                        <button type="button" (click)="unarchiveMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" aria-label="Move to inbox" title="Move to inbox">
+                          <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">unarchive</mat-icon>
+                        </button>
+                      } @else {
+                        <button type="button" (click)="archiveMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" aria-label="Archive" title="Archive">
+                          <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">archive</mat-icon>
+                        </button>
+                      }
+                      <button type="button" (click)="deleteMessage(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-red-50 hover:text-red-600" aria-label="Delete" title="Delete">
+                        <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
+                      </button>
+                      <button
+                        type="button"
+                        [matMenuTriggerFor]="messageMenu"
+                        [matMenuTriggerData]="{ message: message }"
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900"
+                        aria-label="More actions"
+                        title="More"
+                      >
+                        <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">more_vert</mat-icon>
+                      </button>
+                    </div>
+
+                    <!-- Mobile: actions menu -->
                     <button
                       type="button"
-                      disabled
-                      class="flex h-9 w-9
-                             items-center
-                             justify-center
-                             rounded-lg
-                             border
-                             border-gray-200
-                             text-gray-300"
-                      aria-label="Next page"
+                      [matMenuTriggerFor]="messageMenu"
+                      [matMenuTriggerData]="{ message: message }"
+                      (click)="$event.stopPropagation()"
+                      class="-mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 sm:hidden"
+                      aria-label="More actions"
                     >
-                      <mat-icon>chevron_right</mat-icon>
+                      <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">more_vert</mat-icon>
                     </button>
-                  </div>
+                  </li>
+                }
+              </ul>
 
-                  <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>Messages per page</mat-label>
-                    <mat-select
-                    aria-label="Messages per page"
-                  >
-                    <mat-option>10 per page</mat-option>
-                    <mat-option>25 per page</mat-option>
-                    <mat-option>50 per page</mat-option>
-                  </mat-select>
-                  </mat-form-field>
-                </div>
+              <!-- Footer -->
+              <div class="flex items-center justify-between gap-3 border-t border-slate-200 px-4 py-2 text-xs text-slate-500">
+                <span>
+                  {{ visibleMessages().length }} of {{ filteredMessages().length }}
+                  {{ filteredMessages().length === 1 ? 'message' : 'messages' }}
+                </span>
+                @if (visibleMessages().length < filteredMessages().length) {
+                  <button type="button" (click)="showMore()" class="rounded-md px-2 py-1 font-semibold text-[#007979] hover:bg-[#007979]/10">
+                    Show more
+                  </button>
+                }
               </div>
             }
           </section>
@@ -1127,14 +377,8 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
 
         <!-- Forward -->
         <button mat-menu-item type="button" (click)="forwardMessage(message)">
-          <mat-icon>send</mat-icon>
+          <mat-icon>forward</mat-icon>
           <span>Forward</span>
-        </button>
-
-        <!-- Hold -->
-        <button mat-menu-item type="button" (click)="holdMessage(message)">
-          <mat-icon>schedule</mat-icon>
-          <span>Hold</span>
         </button>
 
         <!-- Archive / Restore -->
@@ -1165,363 +409,100 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
          MESSAGE DETAIL MODAL
          ========================================================= -->
 
-    @if (selectedMessage()) {
+    @if (selectedMessage(); as msg) {
       <div
-        class="contact-message-overlay fixed inset-0 z-50
-               flex items-end justify-center
-               bg-black/50 p-0 sm:items-center sm:p-4"
+        class="contact-message-overlay fixed inset-0 z-50 flex items-stretch justify-center bg-slate-900/60 backdrop-blur-[2px] sm:items-center sm:p-6"
         (click)="closeMessage()"
       >
         <section
-          class="contact-print-modal max-h-[92dvh] w-full
-                 max-w-xl overflow-y-auto
-                 rounded-t-2xl bg-white shadow-2xl
-                 sm:max-h-[90vh] sm:rounded-xl"
+          class="contact-print-modal flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-white shadow-2xl sm:h-[88vh] sm:rounded-2xl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="contact-message-subject"
           (click)="$event.stopPropagation()"
         >
-          <!-- Modal header -->
-          <!-- View modal header -->
-          <div
-            class="border-b
-         bg-[#032D42]
-         px-4 py-2
-         sm:px-6"
-          >
-            <div
-              class="flex items-start
-           justify-between
-           gap-3"
-            >
-              <!-- Subject + Date -->
-              <div class="min-w-0 flex-1">
-                <!-- Subject -->
-                <h2
-                  class="break-words
-               text-base
-               font-bold
-               leading-5
-               text-white
-               sm:text-lg
-               sm:leading-6
-               pl-2"
-                >
-                  {{ selectedMessage()!.subject }}
-                </h2>
+          <!-- Toolbar -->
+          <div class="flex items-center gap-1 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-3 py-2 sm:px-5">
+            <button type="button" (click)="closeMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Back to mailbox" title="Back to mailbox">
+              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">arrow_back</mat-icon>
+            </button>
 
-                <!-- Date line -->
-                <div
-                  class="relative
-               mt-1
-               h-7
-               w-full"
-                >
-                  <!-- Date -->
-                  <p
-                    class="absolute
-       left-2
-       top-1/2
-       -translate-y-1/2
-       text-[10px]
-       font-medium
-       leading-4
-       text-[#F7F4ED]
-       sm:left-4
-       sm:text-xs"
-                  >
-                    {{ formatDate(selectedMessage()!) }}
-                  </p>
+            <span class="mx-1 h-5 w-px bg-white/30" aria-hidden="true"></span>
 
-                  <!-- Print icon centered on date line -->
-                  <button
-                    type="button"
-                    (click)="printContactMessage()"
-                    class="absolute
-                 left-1/2
-                 top-1/2
-                 inline-flex
-                 h-7
-                 w-7
-                 -translate-x-1/2
-                 -translate-y-1/2
-                 items-center
-                 justify-center
-                 rounded-md
-                 text-[#F7F4ED]
-                 transition
-                 hover:bg-white/10
-                 hover:text-white
-                 focus:outline-none
-                 focus:ring-2
-                 focus:ring-white/30"
-                    aria-label="Print message"
-                    title="Print message"
-                  >
-                    <mat-icon
-                      class="!m-0
-                   !h-4
-                   !w-4
-                   !text-[17px]"
-                    >
-                      print
-                    </mat-icon>
-                  </button>
-                </div>
-              </div>
+            @if (msg.status === 'archived') {
+              <button type="button" (click)="unarchiveMessage(msg)" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Move to inbox" title="Move to inbox">
+                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">unarchive</mat-icon>
+              </button>
+            } @else {
+              <button type="button" (click)="archiveMessage(msg)" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Archive" title="Archive">
+                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">archive</mat-icon>
+              </button>
+            }
+            <button type="button" (click)="deleteMessage(msg)" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 hover:!bg-white/15 hover:!text-white" aria-label="Delete" title="Delete">
+              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
+            </button>
 
-              <!-- Close -->
-              <button
-                type="button"
-                (click)="closeMessage()"
-                class="inline-flex
-             h-8
-             w-8
-             shrink-0
-             items-center
-             justify-center
-             rounded-md
-             text-gray-300
-             transition
-             hover:bg-white/10
-             hover:text-white
-             focus:outline-none
-             focus:ring-2
-             focus:ring-white/30"
-                aria-label="Close message"
-              >
-                <mat-icon
-                  class="!m-0
-               !h-5
-               !w-5"
-                >
-                  close
-                </mat-icon>
+            <div class="ml-auto flex items-center gap-1">
+              <button type="button" (click)="printContactMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Print message" title="Print">
+                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">print</mat-icon>
+              </button>
+              <button type="button" (click)="closeMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Close message" title="Close">
+                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">close</mat-icon>
               </button>
             </div>
           </div>
 
-          <!-- Sender -->
-          <div
-            class="border-b
-                   bg-gray-50
-                   px-4 py-1
-                   sm:px-6"
-          >
-            <div
-              class="space-y-1.5
-         rounded-lg
-         bg-gray-50
-         px-3 py-1
-         sm:space-y-1
-         sm:px-4 sm:py-1"
-            >
-              <!-- From -->
-              <div
-                class="flex items-center
-           gap-2"
-              >
-                <span
-                  class="w-12 shrink-0
-             text-[13px]
-             font-semibold
-             text-gray-500
-             sm:w-14
-             sm:text-md"
-                >
-                  From
-                </span>
-
-                <span
-                  class="min-w-0 truncate
-             text-md
-             font-medium
-             text-gray-900
-             sm:text-md"
-                >
-                  {{ selectedMessage()!.name }}
-                </span>
-              </div>
-
-              <!-- Email -->
-              <div
-                class="flex items-center
-           gap-2"
-              >
-                <span
-                  class="w-12 shrink-0
-             text-[13px]
-             font-semibold
-             text-gray-500
-             sm:w-14
-             sm:text-md"
-                >
-                  Email
-                </span>
-
-                <span
-                  class="min-w-0 truncate
-             text-md
-             text-gray-700
-             sm:text-md"
-                >
-                  {{ selectedMessage()!.email }}
-                </span>
-              </div>
-
+          <!-- Scrollable message -->
+          <div class="min-h-0 flex-1 overflow-y-auto">
+            <div class="px-5 pb-8 pt-6 sm:px-10">
               <!-- Subject -->
-              <div
-                class="flex items-center
-           gap-2"
-              >
+              <div class="flex flex-wrap items-start gap-x-3 gap-y-2">
+                <h2 id="contact-message-subject" class="min-w-0 flex-1 break-words text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
+                  {{ msg.subject || '(No subject)' }}
+                </h2>
                 <span
-                  class="w-12 shrink-0
-             text-[13px]
-             font-semibold
-             text-gray-500
-             sm:w-14
-             sm:text-md"
+                  [class]="msg.status === 'unread' ? 'mt-1 shrink-0 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium capitalize text-blue-700' : msg.status === 'archived' ? 'mt-1 shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium capitalize text-slate-600' : 'mt-1 shrink-0 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium capitalize text-emerald-700'"
                 >
-                  Subject
-                </span>
-
-                <span
-                  class="min-w-0 truncate
-             text-xs
-             font-medium
-             text-gray-900
-             sm:text-sm"
-                >
-                  {{ selectedMessage()!.subject }}
+                  {{ msg.status === 'unread' ? 'New' : msg.status }}
                 </span>
               </div>
+
+              <!-- Sender -->
+              <div class="mt-6 flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#007979] text-base font-semibold text-white" aria-hidden="true">
+                  {{ (msg.name || msg.email || '?').charAt(0).toUpperCase() }}
+                </span>
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+                    <p class="min-w-0 truncate text-sm text-slate-900">
+                      <span class="font-semibold">{{ msg.name || msg.email }}</span>
+                      @if (msg.name && msg.name !== msg.email) {
+                        <span class="text-slate-500">&lt;{{ msg.email }}&gt;</span>
+                      }
+                    </p>
+                    <p class="shrink-0 text-xs text-slate-500">{{ formatDate(msg) }}</p>
+                  </div>
+                  <p class="mt-0.5 text-xs text-slate-500">to Zebron</p>
+                </div>
+              </div>
+
+              <!-- Body -->
+              <div class="mt-6 whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-800 sm:pl-[52px]">{{ msg.message }}</div>
+
             </div>
           </div>
-
-          <!-- Message -->
-          <div class="max-h-[45dvh] overflow-y-auto px-4 py-5 sm:max-h-none sm:px-6">
-            <p
-              class="whitespace-pre-wrap
-                     break-words
-                     text-sm leading-7
-                     text-gray-700"
-            >
-              {{ selectedMessage()!.message }}
-            </p>
-          </div>
-
-          <!-- Modal actions -->
-          <!-- Modal actions -->
-          <div
-            class="flex w-full items-center
-         gap-1.5 border-t
-         px-3 py-3
-         sm:gap-2 sm:px-6
-         bg-[#2A835F]/80"
-          >
-            <!-- Reply -->
-            <button
-              type="button"
-              (click)="replyToMessage(selectedMessage()!)"
-              class="inline-flex min-w-0 flex-1
-           h-9 items-center justify-center
-           gap-1 rounded-md
-           bg-[#032D42]
-           px-2
-           text-[11px] font-semibold
-           text-white
-           transition
-           hover:bg-[#064B68]
-           sm:flex-none sm:px-3
-           sm:text-xs"
-            >
-              <mat-icon
-                class="!m-0 !h-4 !w-4
-             !text-[16px]"
-              >
-                reply
-              </mat-icon>
-
-              <span>Reply</span>
+          <!-- Footer actions -->
+          <div class="flex items-center gap-2 border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
+            <button type="button" (click)="replyToMessage(msg)" class="inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]/40 bg-[#007979] text-white shadow-sm hover:bg-[#006666]">
+              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">reply</mat-icon>
+              Reply
             </button>
-
-            <!-- Forward -->
-            <button
-              type="button"
-              (click)="forwardMessage(selectedMessage()!)"
-              class="inline-flex min-w-0 flex-1
-           h-9 items-center justify-center
-           gap-1 rounded-md
-           border border-gray-200
-           bg-white
-           px-2
-           text-[11px] font-semibold
-           text-gray-700
-           transition
-           hover:bg-gray-50
-           sm:flex-none sm:px-3
-           sm:text-xs"
-            >
-              <mat-icon
-                class="!m-0 !h-4 !w-4
-             !text-[16px]"
-              >
-                send
-              </mat-icon>
-
-              <span>Forward</span>
+            <button type="button" (click)="forwardMessage(msg)" class="inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]/40 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">forward</mat-icon>
+              Forward
             </button>
-
-            <!-- Delete -->
-            <button
-              type="button"
-              (click)="deleteMessage(selectedMessage()!)"
-              class="inline-flex min-w-0 flex-1
-           h-9 items-center justify-center
-           gap-1 rounded-md
-           bg-red-50
-           px-2
-           text-[11px] font-semibold
-           text-red-700
-           transition
-           hover:bg-red-100
-           sm:ml-auto
-           sm:flex-none sm:px-3
-           sm:text-xs"
-            >
-              <mat-icon
-                class="!m-0 !h-4 !w-4
-             !text-[16px]"
-              >
-                delete
-              </mat-icon>
-
-              <span>Delete</span>
-            </button>
-
-            <!-- Close -->
-            <button
-              type="button"
-              (click)="closeMessageModal()"
-              class="inline-flex min-w-0 flex-1
-           h-9 items-center justify-center
-           gap-1 rounded-md
-           border border-gray-300
-           bg-white
-           px-2
-           text-[11px] font-semibold
-           text-gray-700
-           transition
-           hover:bg-gray-50
-           sm:flex-none sm:px-3
-           sm:text-xs"
-            >
-              <mat-icon
-                class="!m-0 !h-4 !w-4
-             !text-[16px]"
-              >
-                close
-              </mat-icon>
-
-              <span>Close</span>
+            <button type="button" (click)="closeMessage()" class="inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]/40 ml-auto text-slate-600 hover:bg-slate-100">
+              Close
             </button>
           </div>
         </section>
@@ -1534,15 +515,11 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
 
     @if (composeMode() !== 'none') {
       <div
-        class="fixed inset-0 z-[60]
-               flex items-end justify-center
-               bg-black/50 p-0 sm:items-center sm:p-4"
+        class="fixed inset-0 z-[60] flex items-stretch justify-center bg-slate-900/60 backdrop-blur-[2px] sm:items-center sm:p-6"
         (click)="closeComposer()"
       >
         <section
-          class="max-h-[94dvh] w-full max-w-xl
-                 overflow-y-auto rounded-t-2xl bg-white
-                 shadow-2xl sm:max-h-[92vh] sm:rounded-xl"
+          class="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-white shadow-2xl sm:h-[88vh] sm:rounded-2xl"
           (click)="$event.stopPropagation()"
         >
           <!-- Composer header -->
@@ -1550,7 +527,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
             class="flex items-center
                    justify-between
                    gap-3
-                   bg-[#032D42]
+                   bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]
                    px-4 py-4
                    sm:px-6"
           >
@@ -1596,9 +573,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
 
           <!-- Composer form -->
           <form
-            class="space-y-4
-                   px-4 py-5
-                   sm:px-6"
+            class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-5 sm:px-6"
             (submit)="$event.preventDefault(); sendComposedMessage()"
           >
             <!-- To -->
@@ -1642,7 +617,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
                 <mat-label>Message</mat-label>
                 <textarea matInput
                 id="compose-message"
-                rows="7"
+                rows="14"
                 [value]="composeMessage()"
                 (input)="composeMessage.set($any($event.target).value)"
                 placeholder="Write your message..."
@@ -1654,7 +629,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
 
             <!-- Actions -->
             <div
-              class="grid grid-cols-2
+              class="mt-auto grid grid-cols-2
                      gap-2 border-t pt-4
                      sm:flex sm:justify-end"
             >
@@ -1856,7 +831,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   /**
    * Current mailbox filter.
    */
-  readonly filter = signal<MailboxFilter>('all');
+  readonly filter = signal<MailboxFilter>('inbox');
 
   /**
    * Currently opened message.
@@ -1914,6 +889,20 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   /**
    * Apply status and search filters.
    */
+  /** Folder tabs with their counts. */
+  readonly folders = computed(() => [
+    { key: 'inbox' as MailboxFilter, label: 'Inbox', icon: 'inbox', count: this.messages().length - this.archivedCount() },
+    { key: 'unread' as MailboxFilter, label: 'New', icon: 'mark_email_unread', count: this.newCount() },
+    { key: 'read' as MailboxFilter, label: 'Read', icon: 'drafts', count: this.readCount() },
+    { key: 'archived' as MailboxFilter, label: 'Archived', icon: 'archive', count: this.archivedCount() },
+    { key: 'all' as MailboxFilter, label: 'All mail', icon: 'all_inbox', count: this.messages().length },
+  ]);
+
+  /** Rows shown; "Show more" adds another page. */
+  private readonly pageSize = 25;
+
+  readonly visibleCount = signal(25);
+
   readonly filteredMessages = computed(() => {
     const currentFilter = this.filter();
 
@@ -1925,7 +914,9 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
        * messages. The mailbox therefore uses "unread"
        * as its New state.
        */
-      const matchesStatus = currentFilter === 'all' || message.status === currentFilter;
+      const matchesStatus =
+        currentFilter === 'all' ||
+        (currentFilter === 'inbox' ? message.status !== 'archived' : message.status === currentFilter);
 
       if (!matchesStatus) {
         return false;
@@ -1944,8 +935,37 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
     });
   });
 
+  readonly visibleMessages = computed(() => this.filteredMessages().slice(0, this.visibleCount()));
+
   ngOnInit(): void {
     this.contactStore.startMessageListener();
+  }
+
+  showMore(): void {
+    this.visibleCount.update((count) => count + this.pageSize);
+  }
+
+  setSearch(value: string): void {
+    this.searchQuery.set(value);
+    this.visibleCount.set(this.pageSize);
+    this.clearSelection();
+  }
+
+  /** "3:45 PM" today, "Oct 29" this year, "Oct 29, 2025" otherwise. */
+  shortDate(message: ContactMessage): string {
+    if (!message.createdAt || typeof message.createdAt.toDate !== 'function') {
+      return '';
+    }
+    const date = message.createdAt.toDate();
+    const now = new Date();
+    if (date.toDateString() === now.toDateString()) {
+      return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(date);
+    }
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+    }).format(date);
   }
 
   /**
@@ -1972,6 +992,106 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
    */
   setFilter(filter: MailboxFilter): void {
     this.filter.set(filter);
+    this.visibleCount.set(this.pageSize);
+    this.clearSelection();
+  }
+
+  // ===========================================================
+  // Multi-select (checkboxes) and bulk actions
+  // ===========================================================
+
+  /** IDs of the checked messages. */
+  readonly selectedIds = signal<ReadonlySet<string>>(new Set());
+
+  /** Checked messages that are still in the current view. */
+  readonly checkedMessages = computed(() => {
+    const ids = this.selectedIds();
+    return this.visibleMessages().filter((message) => ids.has(message.id));
+  });
+
+  readonly allVisibleChecked = computed(
+    () => this.visibleMessages().length > 0 && this.checkedMessages().length === this.visibleMessages().length,
+  );
+
+  readonly someVisibleChecked = computed(
+    () => this.checkedMessages().length > 0 && !this.allVisibleChecked(),
+  );
+
+  /** Every checked message is archived (bulk action becomes "Move to inbox"). */
+  readonly checkedAllArchived = computed(
+    () => this.checkedMessages().length > 0 && this.checkedMessages().every((message) => message.status === 'archived'),
+  );
+
+  readonly bulkBusy = signal(false);
+
+  isChecked(message: ContactMessage): boolean {
+    return this.selectedIds().has(message.id);
+  }
+
+  toggleChecked(message: ContactMessage, event?: Event): void {
+    event?.stopPropagation();
+    this.selectedIds.update((ids) => {
+      const next = new Set(ids);
+      if (next.has(message.id)) {
+        next.delete(message.id);
+      } else {
+        next.add(message.id);
+      }
+      return next;
+    });
+  }
+
+  toggleAllVisible(): void {
+    this.selectedIds.set(
+      this.allVisibleChecked() ? new Set() : new Set(this.visibleMessages().map((message) => message.id)),
+    );
+  }
+
+  clearSelection(): void {
+    if (this.selectedIds().size) {
+      this.selectedIds.set(new Set());
+    }
+  }
+
+  private async runBulk(action: (message: ContactMessage) => Promise<void>, done: string): Promise<void> {
+    const messages = this.checkedMessages();
+    if (!messages.length || this.bulkBusy()) {
+      return;
+    }
+    this.bulkBusy.set(true);
+    try {
+      const results = await Promise.allSettled(messages.map((message) => action(message)));
+      const failed = results.filter((result) => result.status === 'rejected').length;
+      this.clearSelection();
+      this.showSuccessToast(
+        failed ? `${messages.length - failed} ${done}, ${failed} failed.` : `${messages.length} ${messages.length === 1 ? 'message' : 'messages'} ${done}.`,
+      );
+    } finally {
+      this.bulkBusy.set(false);
+    }
+  }
+
+  bulkArchive(): Promise<void> {
+    return this.runBulk((message) => this.contactStore.archiveMessage(message.id), 'archived');
+  }
+
+  bulkMoveToInbox(): Promise<void> {
+    return this.runBulk((message) => this.contactStore.unarchiveMessage(message.id), 'moved to the inbox');
+  }
+
+  bulkMarkRead(): Promise<void> {
+    return this.runBulk(
+      (message) => (message.status === 'unread' ? this.contactStore.markAsRead(message.id) : Promise.resolve()),
+      'marked as read',
+    );
+  }
+
+  async bulkDelete(): Promise<void> {
+    const count = this.checkedMessages().length;
+    if (!count || !window.confirm(`Delete ${count} ${count === 1 ? 'message' : 'messages'}? This cannot be undone.`)) {
+      return;
+    }
+    await this.runBulk((message) => this.contactStore.deleteMessage(message.id), 'deleted');
   }
 
   /**
@@ -2508,8 +1628,92 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
   /**
    * Print the currently viewed contact message.
    */
+  /**
+   * Print just the open message: subject, sender, date and body, laid
+   * out as a clean page in a hidden frame (the rest of the app is not
+   * printed).
+   */
   printContactMessage(): void {
-    window.print();
+    const message = this.selectedMessage();
+    if (!message || typeof document === 'undefined') {
+      return;
+    }
+
+    const escape = (value: string | null | undefined) =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+    const status = message.status === 'unread' ? 'New' : message.status === 'archived' ? 'Archived' : 'Read';
+    const printed = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
+    const rows = [
+      ['From', message.name && message.name !== message.email ? `${message.name} <${message.email}>` : message.email],
+      ['To', 'Zebron'],
+      ['Date', this.formatDate(message)],
+      ['Status', status],
+    ]
+      .map(([label, value]) => `<tr><th>${label}</th><td>${escape(value)}</td></tr>`)
+      .join('');
+
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>${escape(message.subject || 'Message')}</title>
+<style>
+  @page { margin: 16mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Roboto, Arial, sans-serif; color: #0f172a; font-size: 12pt; }
+  .band { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 6px;
+          background: linear-gradient(90deg, #007979, #00706f, #2a835f); color: #fff;
+          -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .band strong { font-size: 13pt; letter-spacing: .02em; }
+  .band span { font-size: 9pt; opacity: .9; }
+  h1 { margin: 18px 0 10px; font-size: 17pt; line-height: 1.3; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 14px; }
+  th { width: 70px; padding: 3px 10px 3px 0; text-align: left; vertical-align: top; color: #64748b; font-weight: 600; font-size: 10pt; }
+  td { padding: 3px 0; font-size: 10.5pt; }
+  .body { border-top: 1px solid #e2e8f0; padding-top: 14px; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
+  footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #94a3b8; font-size: 8.5pt; }
+</style>
+</head>
+<body>
+  <div class="band"><strong>ZEBRON</strong><span>Contact message</span></div>
+  <h1>${escape(message.subject || '(No subject)')}</h1>
+  <table>${rows}</table>
+  <div class="body">${escape(message.message)}</div>
+  <footer>Printed ${escape(printed)} from the Zebron Mailbox</footer>
+</body>
+</html>`;
+
+    const frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+    document.body.appendChild(frame);
+
+    const frameDocument = frame.contentDocument;
+    const frameWindow = frame.contentWindow;
+    if (!frameDocument || !frameWindow) {
+      frame.remove();
+      return;
+    }
+
+    frameDocument.open();
+    frameDocument.write(html);
+    frameDocument.close();
+
+    const cleanUp = () => setTimeout(() => frame.remove(), 500);
+    frameWindow.addEventListener('afterprint', cleanUp, { once: true });
+
+    // Let the frame lay out before printing.
+    setTimeout(() => {
+      frameWindow.focus();
+      frameWindow.print();
+      // Fallback for browsers that don't fire afterprint on frames.
+      setTimeout(() => frame.isConnected && frame.remove(), 60_000);
+    }, 50);
   }
 
   /**

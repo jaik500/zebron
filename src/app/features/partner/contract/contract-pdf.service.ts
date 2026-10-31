@@ -43,12 +43,17 @@ export class ContractPdfService {
     };
 
     const heading = (text: string, size = 13): void => {
-      ensureSpace(size + 18);
+      // Room above the heading so it doesn't crowd the text before it
+      // (y is the baseline of the next line). Not at the top of a page.
+      if (y > PAGE_MARGIN) {
+        y += size >= 13 ? 16 : 10;
+      }
+      ensureSpace(size + 24);
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(size);
       pdf.setTextColor(...DARK);
       pdf.text(text, PAGE_MARGIN, y);
-      y += size + 8;
+      y += size + 10;
     };
 
     const paragraph = (text: string, size = 10, color: [number, number, number] = TEXT): void => {
@@ -101,7 +106,7 @@ export class ContractPdfService {
     pdf.setFontSize(10);
     pdf.text(`Contract ${contract.contractNumber}  ·  ${organization.name}`, PAGE_MARGIN, 66);
 
-    y = 122;
+    y = 108;
 
     // ---------------- Summary ----------------
     heading('Contract summary');
@@ -133,6 +138,7 @@ export class ContractPdfService {
     if (provisioned.length === 0) {
       paragraph('No applications are provisioned yet.', 10, MUTED);
     } else {
+      y += 4;
       ensureSpace(24);
       pdf.setFillColor(240, 247, 247);
       pdf.rect(PAGE_MARGIN, y - 12, contentWidth, 18, 'F');

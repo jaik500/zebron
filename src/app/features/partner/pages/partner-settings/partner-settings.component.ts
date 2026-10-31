@@ -51,7 +51,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
            HEADER
            ========================================================= -->
 
-      <header class="bg-[#2a835f] text-white shadow-sm">
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white shadow-sm">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div
             class="flex min-h-16 items-center justify-between gap-4"
@@ -82,7 +82,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
               <h1
                 class="mt-1 truncate text-xl font-semibold sm:text-2xl"
               >
-                {{ '{0} Settings' | t: [organizationName()] }}
+                {{ 'Organization settings' | t }}
               </h1>
             </div>
 
@@ -922,7 +922,7 @@ protected readonly canEditSettings = computed(
       organizationId,
     );
 
-    this.pageTitleService.setTitle(
+    this.pageTitleService.setDocumentTitle(
       `${this.organizationName()} Settings`,
     );
 

@@ -98,10 +98,10 @@ export interface BusinessTransactionDialogData {
         flex
         items-center
         justify-between
-        bg-[#032D42]
+        border-b border-[#007979]/20 bg-gradient-to-r from-[#007979]/15 via-[#00706f]/10 to-[#2a835f]/15
         px-5
         py-4
-        text-white
+        text-slate-900
       "
     >
 
@@ -115,7 +115,7 @@ export interface BusinessTransactionDialogData {
             font-semibold
             uppercase
             tracking-wider
-            text-[#7ED6D1]
+            text-[#007979]
           "
         >
           Zebron Business Operations
@@ -127,7 +127,7 @@ export interface BusinessTransactionDialogData {
             m-0
             text-xl
             font-semibold
-            text-white
+            text-slate-900
           "
         >
           {{
@@ -153,8 +153,8 @@ export interface BusinessTransactionDialogData {
         class="
           !ml-4
           !shrink-0
-          !text-white
-          hover:!bg-white/10
+          !text-slate-500
+          hover:!bg-white/60
         "
       >
         <mat-icon>
@@ -168,8 +168,6 @@ export interface BusinessTransactionDialogData {
     <!-- ============================================================
          ZEBRON ACCENT BAR
          ============================================================ -->
-
-    <div class="h-1 bg-[#007979]"></div>
 
 
     <!-- ============================================================

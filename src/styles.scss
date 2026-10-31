@@ -6,6 +6,7 @@
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 @use './styles/new-input-fields';
+@use './styles/zebron-material';
 @use "tailwindcss";
 
 html {

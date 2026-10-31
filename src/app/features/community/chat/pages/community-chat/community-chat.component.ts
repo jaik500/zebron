@@ -60,7 +60,7 @@ import {
           <h1
             class="text-xl font-semibold text-gray-900"
           >
-            Community Chat
+            Messages
           </h1>
 
           <p

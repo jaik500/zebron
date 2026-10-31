@@ -84,7 +84,7 @@ export interface BusinessDocumentDialogResult {
          HEADER
          ====================================================== -->
 
-    <div class="bg-[#032D42] px-4 py-3 text-white">
+    <div class="border-b border-[#007979]/20 bg-gradient-to-r from-[#007979]/15 via-[#00706f]/10 to-[#2a835f]/15 px-4 py-3 text-slate-900">
 
       <div class="flex items-center justify-between gap-3">
 
@@ -95,7 +95,7 @@ export interface BusinessDocumentDialogResult {
                    font-semibold
                    uppercase
                    tracking-wider
-                   text-[#7ED6D1]"
+                   text-[#007979]"
           >
             Zebron Business Operations
           </p>
@@ -111,7 +111,7 @@ export interface BusinessDocumentDialogResult {
           type="button"
           aria-label="Close"
           matTooltip="Close"
-          class="!h-9 !w-9 !text-white hover:!bg-white/10"
+          class="!h-9 !w-9 !text-slate-500 hover:!bg-white/60"
           (click)="cancel()"
         >
           <mat-icon>close</mat-icon>
@@ -123,8 +123,6 @@ export interface BusinessDocumentDialogResult {
 
 
     <!-- Accent bar -->
-
-    <div class="h-0.5 bg-[#007979]"></div>
 
 
     <!-- ======================================================

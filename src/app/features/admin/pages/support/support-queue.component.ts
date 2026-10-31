@@ -30,7 +30,7 @@ const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, 
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
-      <header class="border-b border-white/10 bg-[#032D42]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div>
             <h1 class="text-2xl font-bold text-white">Support</h1>
@@ -87,10 +87,10 @@ const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, 
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="zb-field zb-field--dense" subscriptSizing="dynamic">
-            <mat-icon matPrefix>search</mat-icon>
+          <mat-form-field appearance="outline" class="zb-field w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
             <mat-label>Search number, subject, requester, organization</mat-label>
-            <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" name="search" />
+            <input placeholder="Search number, subject, requester, organization" matInput [ngModel]="search()" (ngModelChange)="search.set($event)" name="search" />
           </mat-form-field>
         </div>
 

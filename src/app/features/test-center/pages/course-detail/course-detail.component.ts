@@ -39,7 +39,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
     TranslatePipe,CommonModule, RouterLink],
   template: `
     <main class="min-h-screen bg-slate-50 text-slate-800">
-      <header class="bg-[#032D42] text-white">
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
           <a routerLink="/" class="flex items-center gap-2 font-bold" [attr.aria-label]="'Zebron home' | t">
             <img src="/zebron-favicon.svg" alt="" class="h-8 w-8" />
@@ -51,7 +51,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
         </div>
       </header>
 
-      <section class="bg-gradient-to-br from-[#032D42] to-[#07556A] px-5 py-10 text-white sm:px-6 lg:px-8">
+      <section class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-5 py-10 text-white sm:px-6 lg:px-8">
         <div class="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
           <div>
             <div class="mb-4 flex flex-wrap gap-2">

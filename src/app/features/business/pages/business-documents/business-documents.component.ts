@@ -75,11 +75,11 @@ import { CollapsibleRecord } from '../../../../shared/components/collapsible-rec
         </div>
 
         <!-- Search -->
-        <div class="w-full lg:max-w-md lg:flex-1 lg:px-6">
-          <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+        <div class="w-full lg:max-w-xs lg:px-6">
+          <mat-form-field appearance="outline" class="w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
             <mat-label> Search documents </mat-label>
 
-            <mat-icon matPrefix class="mr-2"> search </mat-icon>
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
 
             <input
               matInput

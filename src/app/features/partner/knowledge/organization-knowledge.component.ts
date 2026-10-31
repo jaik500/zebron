@@ -61,12 +61,18 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
-      <header class="border-b border-white/10 bg-[#2a835f]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div class="min-w-0">
-            <h1 class="text-2xl font-bold text-white">{{ 'Knowledge Center' | t }}</h1>
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-2xl font-bold text-white">{{ 'Knowledge Center' | t }}</h1>
+              <span class="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-white ring-1 ring-inset ring-white/30" [title]="'Only members of {0} can see these articles.' | t: [organizationName()]">
+                <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">lock</mat-icon>
+                {{ 'Internal' | t }}
+              </span>
+            </div>
             <p class="text-sm text-white/85">
-              {{ 'Guides, procedures and answers for {0}' | t: [organizationName()] }}
+              {{ 'Documentation, policies and procedures for {0} members, plus articles from Zebron.' | t: [organizationName()] }}
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -154,8 +160,13 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 </div>
                 <p class="mt-3 flex-1 text-sm leading-6 text-gray-600">{{ excerpt(article) }}</p>
                 <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
-                  <span [class]="article.source === 'organization' ? 'rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-800' : 'rounded-full bg-sky-50 px-2 py-0.5 font-semibold text-sky-800'">
-                    {{ article.source === 'organization' ? organizationName() : ('Zebron' | t) }}
+                  <span [class]="article.source === 'organization' ? 'inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-800' : 'rounded-full bg-sky-50 px-2 py-0.5 font-semibold text-sky-800'">
+                    @if (article.source === 'organization') {
+                      <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">lock</mat-icon>
+                      {{ organizationName() }} · {{ 'Internal' | t }}
+                    } @else {
+                      {{ 'Zebron' | t }}
+                    }
                   </span>
                   <span class="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">{{ typeLabel(article.contentType) | t }}</span>
                   <span class="text-gray-500">{{ 'Updated {0}' | t: [(article.updatedAt | date: 'mediumDate')] }}</span>
@@ -215,7 +226,7 @@ export class OrganizationKnowledgeComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    this.pageTitle.setTitle('Knowledge Center');
+    this.pageTitle.setDocumentTitle('Knowledge Center');
 
     try {
       await this.organizationStore.loadOrganizationContext(this.organizationId);

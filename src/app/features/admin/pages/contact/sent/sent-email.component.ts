@@ -22,6 +22,10 @@ import { ContactService } from
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatButtonModule } from '@angular/material/button';
 /**
  * Administrator Sent Emails mailbox.
  *
@@ -42,1528 +46,427 @@ import { MatInputModule } from '@angular/material/input';
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink, MatFormFieldModule, MatInputModule],
+    RouterLink, MatFormFieldModule, MatInputModule, MatIconModule, MatMenuModule, MatDividerModule, MatButtonModule],
   template: `
-
-   <!-- ============================================================
-         PAGE
-         ============================================================ -->
-
-           <!-- ========================================================
-             PAGE HEADER
-             ======================================================== -->
-
-        <div
-          class="mb-2 flex flex-col gap-4
-                 bg-[#032D42]
-                 px-5 py-6 shadow-sm
-                 sm:flex-row
-                 sm:items-center
-                 sm:justify-between
-                 sticky top-0 z-50"
-        >
-
-          <!-- Title -->
-          <div>
-
-            <div
-              class="flex items-center gap-3"
-            >
-
-              <h1
-                class="text-xl font-bold
-                       tracking-tight
-                       text-white
-                       sm:text-2xl"
-              >
-                Sent Mails
-              </h1>
-
-              <span
-                class="rounded-full
-                       bg-white/10
-                       px-2.5 py-1
-                       text-xs font-medium
-                       text-white/80"
-              >
-                {{ messages().length }}
-              </span>
-
-            </div>
-
-            <p
-              class="mt-1 text-sm
-                     text-white/70"
-            >
-              Emails sent from the
-              Zebron administrator mailbox.
-            </p>
-
+    <div class="min-h-screen bg-slate-50 pt-16">
+      <!-- =======================================================
+           HEADER (matches the Inbox)
+           ======================================================= -->
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 sm:flex-nowrap sm:px-6 lg:px-8">
+          <div class="min-w-0 flex-1 sm:flex-none">
+            <h1 class="truncate text-lg font-semibold">Sent</h1>
+            <p class="hidden truncate text-xs text-white/80 lg:block">Emails sent from the Zebron mailbox</p>
           </div>
 
-          <!-- Header actions -->
-          <div
-            class="flex flex-wrap gap-2"
-          >
-
-            <!-- New Email -->
-            <button
-              type="button"
-              (click)="newMessage()"
-              class="inline-flex items-center
-                     justify-center
-                     rounded-lg
-                     bg-white
-                     px-3.5 py-2
-                     text-sm font-semibold
-                     text-[#032D42]
-                     shadow-sm
-                     transition
-                     hover:bg-gray-100"
-            >
-              + New Email
-            </button>
-
-            <!-- Refresh -->
-            <button
-              type="button"
-              (click)="loadMessages()"
-              [disabled]="loading()"
-              class="inline-flex items-center
-                     justify-center
-                     rounded-lg
-                     border border-white/20
-                     px-3.5 py-2
-                     text-sm font-medium
-                     text-white
-                     transition
-                     hover:bg-white/10
-                     disabled:cursor-not-allowed
-                     disabled:opacity-50"
-            >
-
-              <span
-                class="text-base"
-                aria-hidden="true"
-              >
-                ↻
-              </span>
-
-              <span class="ml-2">
-                {{ loading() ? 'Refreshing...' : 'Refresh' }}
-              </span>
-
-            </button>
-
-            <!-- Inbox -->
-            <a
-              routerLink="/admin/contact"
-              class="inline-flex items-center
-                     justify-center
-                     rounded-lg
-                     bg-white
-                     px-3.5 py-2
-                     text-sm font-semibold
-                     text-[#032D42]
-                     shadow-sm
-                     transition
-                     hover:bg-gray-100"
-            >
-              ← Inbox
-            </a>
-
-            <!-- Dashboard -->
-            <a
-              routerLink="/admin"
-              class="inline-flex items-center
-                     justify-center
-                     rounded-lg
-                     border border-white/20
-                     px-3.5 py-2
-                     text-sm font-medium
-                     text-white
-                     transition
-                     hover:bg-white/10"
-            >
-              Dashboard
-            </a>
-
-            <!-- More actions -->
-            <div class="relative">
-              <button
-                type="button"
-                (click)="toggleHeaderMenu()"
-                class="inline-flex h-10 w-10
-                       items-center justify-center
-                       rounded-lg
-                       border border-white/20
-                       text-xl
-                       font-bold
-                       text-white
-                       transition
-                       hover:bg-white/10"
-                aria-label="More sent mailbox actions"
-                [attr.aria-expanded]="headerMenuOpen()"
-              >
-                ⋮
-              </button>
-
-              @if (headerMenuOpen()) {
-                <div
-                  class="absolute right-0 top-full z-[80]
-                         mt-2 w-56 overflow-hidden
-                         rounded-xl border border-gray-200
-                         bg-white py-1 shadow-xl"
-                  role="menu"
-                >
-                  <button
-                    type="button"
-                    (click)="generateSentMessagesPdf()"
-                    [disabled]="messages().length === 0"
-                    class="flex w-full items-center gap-3
-                           px-4 py-3 text-left text-sm
-                           font-medium text-gray-700
-                           transition hover:bg-gray-50
-                           disabled:cursor-not-allowed
-                           disabled:opacity-50"
-                    role="menuitem"
-                  >
-                    <span aria-hidden="true">📄</span>
-                    <span>
-                      <span class="block font-semibold">
-                        Generate PDF
-                      </span>
-                      <span class="block text-xs text-gray-400">
-                        Export all sent records
-                      </span>
-                    </span>
-                  </button>
-                </div>
-              }
-            </div>
-
-          </div>
-
-        </div>
-
-    <div
-      class="min-h-screen bg-gray-50
-             px-4 py-2
-             sm:px-2
-             lg:px-8"
-    >
-
-      <div class="mx-auto max-w-7xl">
-
-        <!-- ========================================================
-             SEARCH
-             ======================================================== -->
-
-        <div class="mb-5">
-
-          <div class="relative">
-
-            <!-- Search icon -->
-            <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>Search recipient, sender, subject, or message...</mat-label>
-                  <span matPrefix class="pl-3 pr-1" aria-hidden="true">🔍</span>
-              <input matInput
-              id="sent-email-search"
+          <mat-form-field appearance="outline" class="zb-field zb-search order-last w-full sm:order-none sm:mx-auto sm:max-w-md">
+            <mat-label>Search sent mail</mat-label>
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+            <input
+              matInput
+              id="sent-search"
               type="search"
               [value]="searchQuery()"
-              (input)="
-                searchQuery.set(
-                  $any($event.target).value
-                )
-              "
-              placeholder="Search recipient, sender, subject, or message..."
+              (input)="setSearch($any($event.target).value)"
+              placeholder="Search recipient, subject or message"
               autocomplete="off"
             />
-            </mat-form-field>
-
-            <!-- Clear -->
             @if (searchQuery()) {
-
-              <button
-                type="button"
-                (click)="searchQuery.set('')"
-                class="absolute
-                       inset-y-0
-                       right-0
-                       flex items-center
-                       px-4
-                       text-gray-400
-                       transition
-                       hover:text-gray-700"
-                aria-label="Clear search"
-              >
-                ✕
+              <button matSuffix mat-icon-button type="button" (click)="setSearch('')" aria-label="Clear search" title="Clear search">
+                <mat-icon>close</mat-icon>
               </button>
-
             }
+          </mat-form-field>
 
-          </div>
+          <button
+            type="button"
+            (click)="newMessage()"
+            class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 text-sm font-semibold text-[#006666] shadow-sm transition hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          >
+            <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">edit</mat-icon>
+            <span class="hidden sm:inline">Compose</span>
+          </button>
 
-          <!-- Search count -->
-          @if (searchQuery()) {
+          <a
+            routerLink="/admin/contact"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-white/90 transition hover:bg-white/15 hover:text-white sm:w-auto sm:px-3"
+            [attr.aria-label]="'Inbox'"
+            title="Inbox"
+          >
+            <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">inbox</mat-icon>
+            <span class="hidden sm:inline">Inbox</span>
+          </a>
 
-            <p
-              class="mt-2 text-xs
-                     text-gray-500"
-            >
-              Showing
-              <span
-                class="font-semibold
-                       text-gray-700"
-              >
-                {{ filteredMessages().length }}
-              </span>
-              matching
-              {{
-                filteredMessages().length === 1
-                  ? 'email'
-                  : 'emails'
-              }}
-            </p>
+          <button
+            type="button"
+            (click)="loadMessages()"
+            [disabled]="loading()"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white disabled:opacity-50"
+            aria-label="Refresh"
+            title="Refresh"
+          >
+            <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]" [class.animate-spin]="loading()">refresh</mat-icon>
+          </button>
 
+          <button
+            type="button"
+            [matMenuTriggerFor]="sentMenu"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white"
+            aria-label="More options"
+            title="More"
+          >
+            <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">more_vert</mat-icon>
+          </button>
+
+          <mat-menu #sentMenu="matMenu" xPosition="before">
+            <button mat-menu-item type="button" (click)="generateSentMessagesPdf()" [disabled]="messages().length === 0">
+              <mat-icon>picture_as_pdf</mat-icon>
+              <span>Export to PDF</span>
+            </button>
+            <a mat-menu-item routerLink="/admin">
+              <mat-icon>dashboard</mat-icon>
+              <span>Admin dashboard</span>
+            </a>
+          </mat-menu>
+        </div>
+      </header>
+
+      <!-- =======================================================
+           MAIN
+           ======================================================= -->
+      <main class="px-3 py-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+          @if (error() && composeMode() === 'none') {
+            <div class="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700" role="alert">
+              {{ error() }}
+            </div>
           }
 
-        </div>
-
-
-        <!-- ========================================================
-             ERROR
-             ======================================================== -->
-
-        @if (error()) {
-
-          <div
-            class="mb-5 rounded-xl
-                   border border-red-200
-                   bg-red-50
-                   px-5 py-4
-                   text-sm text-red-700"
-            role="alert"
-          >
-            {{ error() }}
-          </div>
-
-        }
-
-
-        <!-- ========================================================
-             LOADING
-             ======================================================== -->
-
-        @if (loading()) {
-
-          <div
-            class="rounded-xl
-                   border border-gray-200
-                   bg-white
-                   p-10
-                   text-center
-                   shadow-sm"
-          >
-
-            <div
-              class="mx-auto h-8 w-8
-                     animate-spin
-                     rounded-full
-                     border-4
-                     border-gray-200
-                     border-t-[#032D42]"
-            ></div>
-
-            <p
-              class="mt-4 text-sm
-                     text-gray-500"
-            >
-              Loading sent emails...
-            </p>
-
-          </div>
-
-        }
-
-
-        <!-- ========================================================
-             EMPTY STATE
-             ======================================================== -->
-
-        @else if (messages().length === 0) {
-
-          <div
-            class="rounded-xl
-                   border border-gray-200
-                   bg-white
-                   p-10
-                   text-center
-                   shadow-sm"
-          >
-
-            <div
-              class="mx-auto flex h-14 w-14
-                     items-center justify-center
-                     rounded-full
-                     bg-gray-100
-                     text-2xl"
-            >
-              ✉
+          <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <!-- Folders -->
+            <div class="flex items-center border-b border-slate-200 px-2 py-1.5 sm:px-3">
+              <nav class="flex gap-1" aria-label="Mailbox folders">
+                <a
+                  routerLink="/admin/contact"
+                  class="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">inbox</mat-icon>
+                  Inbox
+                </a>
+                <span
+                  class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#007979]/10 px-3 text-sm font-semibold text-[#006666]"
+                  aria-current="page"
+                >
+                  <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">send</mat-icon>
+                  Sent
+                  @if (messages().length) {
+                    <span class="rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold leading-[18px] text-slate-600">{{ messages().length }}</span>
+                  }
+                </span>
+              </nav>
             </div>
 
-            <h2
-              class="mt-4 text-lg
-                     font-semibold
-                     text-gray-900"
-            >
-              No Sent Emails
-            </h2>
+            <!-- Messages -->
+            @if (loading() && messages().length === 0) {
+              <div class="divide-y divide-slate-100" aria-busy="true">
+                @for (row of [1, 2, 3, 4, 5]; track row) {
+                  <div class="flex items-center gap-4 px-4 py-3">
+                    <div class="h-3 w-32 animate-pulse rounded bg-slate-200"></div>
+                    <div class="h-3 flex-1 animate-pulse rounded bg-slate-100"></div>
+                    <div class="h-3 w-16 animate-pulse rounded bg-slate-100"></div>
+                  </div>
+                }
+              </div>
+            } @else if (filteredMessages().length === 0) {
+              <div class="px-6 py-12 text-center">
+                <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-300">{{ searchQuery() ? 'search_off' : 'send' }}</mat-icon>
+                <p class="mt-2 text-sm font-semibold text-slate-900">
+                  {{ searchQuery() ? 'No sent emails match your search' : 'No sent emails yet' }}
+                </p>
+                @if (searchQuery()) {
+                  <button type="button" (click)="setSearch('')" class="mt-2 text-sm font-medium text-[#007979] hover:underline">Clear search</button>
+                } @else {
+                  <p class="mt-1 text-xs text-slate-500">Replies, forwards and new emails you send appear here.</p>
+                }
+              </div>
+            } @else {
+              <ul class="divide-y divide-slate-100">
+                @for (message of visibleMessages(); track message.id) {
+                  <li
+                    class="group relative flex cursor-pointer items-center gap-3 px-3 py-2.5 transition hover:bg-slate-50 hover:shadow-[inset_3px_0_0_#007979] sm:px-4"
+                    (click)="openMessage(message)"
+                  >
+                    <div class="min-w-0 flex-1 sm:flex sm:items-center sm:gap-4">
+                      <div class="flex items-center justify-between gap-2 sm:w-52 sm:shrink-0">
+                        <p class="truncate text-sm text-slate-700" [title]="message.to">
+                          <span class="text-slate-400">To:</span> {{ message.to }}
+                        </p>
+                        <span class="shrink-0 text-xs text-slate-500 sm:hidden">{{ shortDate(message) }}</span>
+                      </div>
 
-            <p
-              class="mx-auto mt-2
-                     max-w-md
-                     text-sm leading-6
-                     text-gray-500"
-            >
-              Emails sent from the administrator
-              mailbox will appear here.
-            </p>
-
-          </div>
-
-        }
-
-
-        <!-- ========================================================
-             SEARCH EMPTY STATE
-             ======================================================== -->
-
-        @else if (filteredMessages().length === 0) {
-
-          <div
-            class="rounded-xl
-                   border border-gray-200
-                   bg-white
-                   p-10
-                   text-center
-                   shadow-sm"
-          >
-
-            <div
-              class="mx-auto flex h-12 w-12
-                     items-center justify-center
-                     rounded-full
-                     bg-gray-100
-                     text-xl"
-            >
-              🔍
-            </div>
-
-            <h2
-              class="mt-4 text-base
-                     font-semibold
-                     text-gray-900"
-            >
-              No matching emails
-            </h2>
-
-            <p
-              class="mt-2 text-sm
-                     text-gray-500"
-            >
-              Try a different recipient,
-              subject, sender, or message.
-            </p>
-
-            <button
-              type="button"
-              (click)="searchQuery.set('')"
-              class="mt-4 rounded-lg
-                     bg-[#032D42]
-                     px-4 py-2
-                     text-sm font-semibold
-                     text-white
-                     transition
-                     hover:bg-[#064b68]"
-            >
-              Clear Search
-            </button>
-
-          </div>
-
-        }
-
-
-        <!-- ========================================================
-             SENT MAILBOX
-             ======================================================== -->
-
-        @else {
-
-          <div
-            class="overflow-hidden
-                   rounded-xl
-                   border border-gray-200
-                   bg-white
-                   shadow-sm"
-          >
-
-            <!-- ==================================================
-                 DESKTOP TABLE
-                 ================================================== -->
-
-            <div class="hidden md:block">
-
-              <table
-                class="min-w-full
-                       table-fixed
-                       divide-y
-                       divide-gray-200"
-              >
-
-                <thead
-                  class="bg-gray-50"
-                >
-
-                  <tr>
-
-                    <!-- Recipient -->
-                    <th
-                      scope="col"
-                      class="w-[25%]
-                             px-5 py-3.5
-                             text-left
-                             text-xs font-semibold
-                             uppercase
-                             tracking-wider
-                             text-gray-500"
-                    >
-                      Recipient
-                    </th>
-
-                    <!-- Subject -->
-                    <th
-                      scope="col"
-                      class="w-[35%]
-                             px-5 py-3.5
-                             text-left
-                             text-xs font-semibold
-                             uppercase
-                             tracking-wider
-                             text-gray-500"
-                    >
-                      Subject
-                    </th>
-
-                    <!-- Type -->
-                    <th
-                      scope="col"
-                      class="w-[12%]
-                             px-5 py-3.5
-                             text-left
-                             text-xs font-semibold
-                             uppercase
-                             tracking-wider
-                             text-gray-500"
-                    >
-                      Type
-                    </th>
-
-                    <!-- Sent -->
-                    <th
-                      scope="col"
-                      class="w-[16%]
-                             px-5 py-3.5
-                             text-left
-                             text-xs font-semibold
-                             uppercase
-                             tracking-wider
-                             text-gray-500"
-                    >
-                      Sent
-                    </th>
-
-                    <!-- Actions -->
-                    <th
-                      scope="col"
-                      class="w-[12%]
-                             px-5 py-3.5
-                             text-right
-                             text-xs font-semibold
-                             uppercase
-                             tracking-wider
-                             text-gray-500"
-                    >
-                      Action
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-
-                <tbody
-                  class="divide-y
-                         divide-gray-100"
-                >
-
-                  @for (
-                    message of filteredMessages();
-                    track message.id
-                  ) {
-
-                    <tr
-                      class="transition
-                             hover:bg-gray-50"
-                    >
-
-                      <!-- ======================================
-                           RECIPIENT
-                           ====================================== -->
-
-                      <td
-                        class="px-5 py-4
-                               align-top"
-                      >
-
-                        <div
-                          class="break-words
-                                 text-sm
-                                 font-semibold
-                                 text-gray-900"
-                        >
-                          {{ message.to }}
-                        </div>
-
-                        <div
-                          class="mt-1
-                                 break-words
-                                 text-xs
-                                 text-gray-400"
-                        >
-                          From {{ message.from }}
-                        </div>
-
-                      </td>
-
-
-                      <!-- ======================================
-                           SUBJECT
-                           ====================================== -->
-
-                      <td
-                        class="px-5 py-4
-                               align-top"
-                      >
-
-                        <div
-                          class="break-words
-                                 whitespace-normal
-                                 text-sm
-                                 font-medium
-                                 text-gray-900"
-                        >
-                          {{ message.subject }}
-                        </div>
-
-                        <div
-                          class="mt-1
-                                 line-clamp-2
-                                 break-words
-                                 text-xs
-                                 leading-5
-                                 text-gray-500"
-                        >
-                          {{ message.message }}
-                        </div>
-
-                      </td>
-
-
-                      <!-- ======================================
-                           TYPE
-                           ====================================== -->
-
-                      <td
-                        class="px-5 py-4
-                               align-top"
-                      >
-
-                        <span
-                          class="inline-flex
-                                 rounded-full
-                                 bg-gray-100
-                                 px-2.5 py-1
-                                 text-xs
-                                 font-medium
-                                 text-gray-700"
-                        >
+                      <p class="mt-0.5 flex min-w-0 flex-1 items-center gap-2 sm:mt-0">
+                        <span class="shrink-0 rounded bg-slate-100 px-1.5 text-[11px] font-medium leading-[18px] text-slate-500">
                           {{ getMessageTypeLabel(message) }}
                         </span>
-
-                      </td>
-
-
-                      <!-- ======================================
-                           DATE
-                           ====================================== -->
-
-                      <td
-                        class="whitespace-nowrap
-                               px-5 py-4
-                               align-top
-                               text-sm
-                               text-gray-500"
-                      >
-                        {{ formatDate(message.createdAt) }}
-                      </td>
-
-
-                      <!-- ======================================
-                           ACTION
-                           ====================================== -->
-
-                      <td
-                        class="px-5 py-4
-                               text-right
-                               align-top"
-                      >
-
-                        <button
-                          type="button"
-                          (click)="openMessage(message)"
-                          class="rounded-lg
-                                 bg-[#032D42]
-                                 px-3 py-2
-                                 text-xs
-                                 font-semibold
-                                 text-white
-                                 transition
-                                 hover:bg-[#064b68]"
-                        >
-                          View
-                        </button>
-
-                      </td>
-
-                    </tr>
-
-                  }
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-
-            <!-- ==================================================
-                 MOBILE MAILBOX
-                 ================================================== -->
-
-            <div
-              class="divide-y
-                     divide-gray-100
-                     md:hidden"
-            >
-
-              @for (
-                message of filteredMessages();
-                track message.id
-              ) {
-
-                <div
-                  class="p-5"
-                >
-
-                  <!-- Top row -->
-                  <div
-                    class="flex
-                           items-start
-                           justify-between
-                           gap-3"
-                  >
-
-                    <div
-                      class="min-w-0"
-                    >
-
-                      <!-- Recipient -->
-                      <p
-                        class="break-words
-                               text-sm
-                               font-semibold
-                               text-gray-900"
-                      >
-                        {{ message.to }}
+                        <span class="truncate text-sm text-slate-700">{{ message.subject || '(No subject)' }}</span>
                       </p>
-
-                      <!-- Subject -->
-                      <p
-                        class="mt-1
-                               break-words
-                               text-sm
-                               font-medium
-                               text-gray-800"
-                      >
-                        {{ message.subject }}
-                      </p>
-
                     </div>
 
-
-                    <!-- Type -->
                     <span
-                      class="shrink-0
-                             rounded-full
-                             bg-gray-100
-                             px-2.5 py-1
-                             text-xs
-                             font-medium
-                             text-gray-700"
+                      class="hidden w-20 shrink-0 text-right text-xs text-slate-500 sm:block sm:group-hover:invisible sm:group-focus-within:invisible"
+                      [title]="formatDate(message.createdAt)"
                     >
-                      {{ getMessageTypeLabel(message) }}
+                      {{ shortDate(message) }}
                     </span>
 
-                  </div>
-
-
-                  <!-- From -->
-                  <p
-                    class="mt-1
-                           break-words
-                           text-xs
-                           text-gray-400"
-                  >
-                    From {{ message.from }}
-                  </p>
-
-
-                  <!-- Message preview -->
-                  <p
-                    class="mt-3
-                           line-clamp-2
-                           break-words
-                           text-sm
-                           leading-6
-                           text-gray-500"
-                  >
-                    {{ message.message }}
-                  </p>
-
-
-                  <!-- Bottom row -->
-                  <div
-                    class="mt-4
-                           flex
-                           items-center
-                           justify-between
-                           gap-3"
-                  >
-
-                    <span
-                      class="text-xs
-                             text-gray-400"
+                    <div
+                      class="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-lg bg-slate-50 pl-2 sm:group-hover:flex sm:group-focus-within:flex"
+                      (click)="$event.stopPropagation()"
                     >
-                      {{ formatDate(message.createdAt) }}
-                    </span>
+                      <button type="button" (click)="forwardFrom(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900" aria-label="Forward" title="Forward">
+                        <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">forward</mat-icon>
+                      </button>
+                      <button type="button" (click)="deleteFrom(message)" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-red-50 hover:text-red-600" aria-label="Delete" title="Delete">
+                        <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
+                      </button>
+                    </div>
 
                     <button
                       type="button"
-                      (click)="openMessage(message)"
-                      class="rounded-lg
-                             bg-[#032D42]
-                             px-3 py-2
-                             text-xs
-                             font-semibold
-                             text-white
-                             transition
-                             hover:bg-[#064b68]"
+                      [matMenuTriggerFor]="rowMenu"
+                      [matMenuTriggerData]="{ message: message }"
+                      (click)="$event.stopPropagation()"
+                      class="-mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 sm:hidden"
+                      aria-label="More actions"
                     >
-                      View
+                      <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">more_vert</mat-icon>
                     </button>
+                  </li>
+                }
+              </ul>
 
-                  </div>
-
-                </div>
-
-              }
-
-            </div>
-
-          </div>
-
-        }
-
-      </div>
-
-
-      <!-- ==========================================================
-           MESSAGE DETAIL MODAL
-           ========================================================== -->
-@if (selectedMessage()) {
-
-  <!-- ==========================================================
-       SENT MESSAGE VIEW MODAL
-       ========================================================== -->
-
-  <div
-    class="fixed inset-0 z-50
-           flex items-center justify-center
-           bg-black/50 px-4 py-5"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Sent email"
-    (click)="closeMessage()"
-  >
-
-    <div
-      class="w-full max-w-xl
-             overflow-hidden
-             rounded-xl
-             bg-white
-             shadow-2xl"
-      (click)="$event.stopPropagation()"
-    >
-
-      <!-- ======================================================
-           HEADER
-           ====================================================== -->
-
-      <div
-        class="flex items-center
-               justify-between gap-4
-               border-b border-gray-200
-               px-5 py-3.5"
-      >
-
-        <div class="min-w-0">
-
-          <div
-            class="flex items-center gap-2"
-          >
-
-            <span
-              class="shrink-0
-                     rounded-full
-                     bg-gray-100
-                     px-2 py-0.5
-                     text-[11px]
-                     font-semibold
-                     text-gray-700"
-            >
-              {{ getMessageTypeLabel(selectedMessage()!) }}
-            </span>
-
-            <span
-              class="text-xs
-                     text-gray-400"
-            >
-              Sent
-            </span>
-
-          </div>
-
-          <h2
-            class="mt-1 truncate
-                   text-base
-                   font-semibold
-                   text-gray-900"
-            [title]="selectedMessage()!.subject"
-          >
-            {{ selectedMessage()!.subject }}
-          </h2>
-
+              <div class="flex items-center justify-between gap-3 border-t border-slate-200 px-4 py-2 text-xs text-slate-500">
+                <span>
+                  {{ visibleMessages().length }} of {{ filteredMessages().length }}
+                  {{ filteredMessages().length === 1 ? 'email' : 'emails' }}
+                </span>
+                @if (visibleMessages().length < filteredMessages().length) {
+                  <button type="button" (click)="showMore()" class="rounded-md px-2 py-1 font-semibold text-[#007979] hover:bg-[#007979]/10">
+                    Show more
+                  </button>
+                }
+              </div>
+            }
+          </section>
         </div>
-
-        <!-- Close -->
-        <button
-          type="button"
-          (click)="closeMessage()"
-          class="shrink-0
-                 rounded-lg
-                 p-2
-                 text-lg
-                 leading-none
-                 text-gray-400
-                 transition
-                 hover:bg-gray-100
-                 hover:text-gray-700"
-          aria-label="Close message"
-        >
-          ×
-        </button>
-
-      </div>
-
-
-      <!-- ======================================================
-           MESSAGE DETAILS
-           ====================================================== -->
-
-      <div
-        class="max-h-[60vh]
-               overflow-y-auto
-               px-5 py-4"
-      >
-
-        <!-- Recipient -->
-        <div
-          class="flex gap-3"
-        >
-
-          <span
-            class="w-12 shrink-0
-                   text-xs
-                   font-semibold
-                   text-gray-400"
-          >
-            To
-          </span>
-
-          <span
-            class="min-w-0
-                   break-words
-                   text-sm
-                   text-gray-900"
-          >
-            {{ selectedMessage()!.to }}
-          </span>
-
-        </div>
-
-
-        <!-- From -->
-        <div
-          class="mt-2 flex gap-3"
-        >
-
-          <span
-            class="w-12 shrink-0
-                   text-xs
-                   font-semibold
-                   text-gray-400"
-          >
-            From
-          </span>
-
-          <span
-            class="min-w-0
-                   break-words
-                   text-sm
-                   text-gray-700"
-          >
-            {{ selectedMessage()!.from }}
-          </span>
-
-        </div>
-
-
-        <!-- Sent date -->
-        <div
-          class="mt-2 flex gap-3"
-        >
-
-          <span
-            class="w-12 shrink-0
-                   text-xs
-                   font-semibold
-                   text-gray-400"
-          >
-            Date
-          </span>
-
-          <span
-            class="text-sm
-                   text-gray-500"
-          >
-            {{ formatDate(
-              selectedMessage()!.createdAt
-            ) }}
-          </span>
-
-        </div>
-
-
-        <!-- Message -->
-        <div class="mt-4">
-
-          <div
-            class="mb-2 text-xs
-                   font-semibold
-                   uppercase
-                   tracking-wide
-                   text-gray-400"
-          >
-            Message
-          </div>
-
-          <div
-            class="whitespace-pre-wrap
-                   break-words
-                   rounded-lg
-                   border border-gray-200
-                   bg-gray-50
-                   px-4 py-3
-                   text-sm
-                   leading-6
-                   text-gray-700"
-          >
-            {{ selectedMessage()!.message }}
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- ======================================================
-           FOOTER ACTIONS
-           ====================================================== -->
-
-      <div
-        class="flex items-center
-               justify-between
-               border-t border-gray-200
-               bg-gray-50
-               px-5 py-3"
-      >
-
-        <!-- Destructive action -->
-        <button
-          type="button"
-          (click)="deleteMessage()"
-          class="inline-flex
-                 items-center
-                 rounded-lg
-                 border border-red-200
-                 bg-white
-                 px-3 py-2
-                 text-xs
-                 font-semibold
-                 text-red-600
-                 transition
-                 hover:bg-red-50"
-        >
-          🗑
-          <span class="ml-1.5">
-            Delete
-          </span>
-        </button>
-
-
-        <div
-          class="flex items-center
-                 gap-2"
-        >
-
-          <!-- Print -->
-          <button
-            type="button"
-            (click)="printMessage()"
-            class="inline-flex
-                   items-center
-                   rounded-lg
-                   border border-gray-300
-                   bg-white
-                   px-3 py-2
-                   text-xs
-                   font-semibold
-                   text-gray-700
-                   transition
-                   hover:bg-gray-100"
-          >
-            🖨
-            <span class="ml-1.5">
-              Print
-            </span>
-          </button>
-
-
-          <!-- Forward -->
-          <button
-            type="button"
-            (click)="forwardMessage()"
-            class="inline-flex
-                   items-center
-                   rounded-lg
-                   border border-gray-300
-                   bg-white
-                   px-3 py-2
-                   text-xs
-                   font-semibold
-                   text-gray-700
-                   transition
-                   hover:bg-gray-100"
-          >
-            ↗
-            <span class="ml-1.5">
-              Forward
-            </span>
-          </button>
-
-
-          <!-- Close -->
-          <button
-            type="button"
-            (click)="closeMessage()"
-            class="rounded-lg
-                   bg-[#032D42]
-                   px-3.5 py-2
-                   text-xs
-                   font-semibold
-                   text-white
-                   transition
-                   hover:bg-[#064b68]"
-          >
-            Close
-          </button>
-
-        </div>
-
-      </div>
-
+      </main>
     </div>
 
-  </div>
+    <!-- Row actions (phones) -->
+    <mat-menu #rowMenu="matMenu" xPosition="before">
+      <ng-template matMenuContent let-message="message">
+        <button mat-menu-item type="button" (click)="openMessage(message)">
+          <mat-icon>visibility</mat-icon>
+          <span>View</span>
+        </button>
+        <button mat-menu-item type="button" (click)="forwardFrom(message)">
+          <mat-icon>forward</mat-icon>
+          <span>Forward</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item type="button" (click)="deleteFrom(message)">
+          <mat-icon>delete</mat-icon>
+          <span>Delete</span>
+        </button>
+      </ng-template>
+    </mat-menu>
 
-}
-
-
-      <!-- ==========================================================
-           COMPOSE EMAIL MODAL
-           ========================================================== -->
-      @if (composeMode() !== 'none') {
-        <div
-          class="fixed inset-0 z-[70]
-                 flex items-center justify-center
-                 bg-black/50 px-4 py-5"
+    <!-- =========================================================
+         MESSAGE READER (matches the Inbox)
+         ========================================================= -->
+    @if (selectedMessage(); as msg) {
+      <div
+        class="fixed inset-0 z-50 flex items-stretch justify-center bg-slate-900/60 backdrop-blur-[2px] sm:items-center sm:p-6"
+        (click)="closeMessage()"
+      >
+        <section
+          class="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-white shadow-2xl sm:h-[88vh] sm:rounded-2xl"
           role="dialog"
           aria-modal="true"
-          aria-label="Compose email"
-          (click)="closeComposer()"
+          aria-labelledby="sent-message-subject"
+          (click)="$event.stopPropagation()"
         >
-          <section
-            class="max-h-[92vh] w-full max-w-xl
-                   overflow-y-auto rounded-xl
-                   bg-white shadow-2xl"
-            (click)="$event.stopPropagation()"
-          >
-            <header
-              class="flex items-center justify-between gap-4
-                     bg-[#032D42] px-5 py-4"
-            >
-              <div class="min-w-0">
-                <h2 class="text-lg font-semibold text-white">
-                  {{
-                    composeMode() === 'forward'
-                      ? 'Forward Message'
-                      : 'New Email'
-                  }}
+          <div class="flex items-center gap-1 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-3 py-2 sm:px-5">
+            <button type="button" (click)="closeMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white" aria-label="Back to sent mail" title="Back">
+              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">arrow_back</mat-icon>
+            </button>
+            <span class="mx-1 h-5 w-px bg-white/30" aria-hidden="true"></span>
+            <button type="button" (click)="deleteMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white" aria-label="Delete" title="Delete">
+              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
+            </button>
+            <div class="ml-auto flex items-center gap-1">
+              <button type="button" (click)="printMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white" aria-label="Print" title="Print">
+                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">print</mat-icon>
+              </button>
+              <button type="button" (click)="closeMessage()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white" aria-label="Close" title="Close">
+                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">close</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <div class="min-h-0 flex-1 overflow-y-auto">
+            <div class="px-5 pb-8 pt-6 sm:px-10">
+              <div class="flex flex-wrap items-start gap-x-3 gap-y-2">
+                <h2 id="sent-message-subject" class="min-w-0 flex-1 break-words text-xl font-semibold leading-snug text-slate-900 sm:text-2xl">
+                  {{ msg.subject || '(No subject)' }}
                 </h2>
-                <p class="mt-0.5 text-xs text-white/70">
-                  Send an email from the Zebron administrator mailbox.
-                </p>
+                <span class="mt-1 shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                  {{ getMessageTypeLabel(msg) }}
+                </span>
               </div>
 
+              <div class="mt-6 flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#007979] text-base font-semibold text-white" aria-hidden="true">
+                  {{ (msg.from || 'Z').charAt(0).toUpperCase() }}
+                </span>
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+                    <p class="min-w-0 truncate text-sm font-semibold text-slate-900">{{ msg.from || 'Zebron' }}</p>
+                    <p class="shrink-0 text-xs text-slate-500">{{ formatDate(msg.createdAt) }}</p>
+                  </div>
+                  <p class="mt-0.5 truncate text-xs text-slate-500">to {{ msg.to }}</p>
+                </div>
+              </div>
+
+              <div class="mt-6 whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-800 sm:pl-[52px]">{{ msg.message }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
+            <button type="button" (click)="forwardMessage()" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#006666]">
+              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">forward</mat-icon>
+              Forward
+            </button>
+            <button type="button" (click)="closeMessage()" class="ml-auto inline-flex h-9 items-center rounded-lg px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
+              Close
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+
+    <!-- =========================================================
+         COMPOSER
+         ========================================================= -->
+    @if (composeMode() !== 'none') {
+      <div
+        class="fixed inset-0 z-[70] flex items-stretch justify-center bg-slate-900/60 backdrop-blur-[2px] sm:items-center sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Compose email"
+        (click)="closeComposer()"
+      >
+        <section
+          class="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-white shadow-2xl sm:h-[88vh] sm:rounded-2xl"
+          (click)="$event.stopPropagation()"
+        >
+          <header class="flex items-center justify-between gap-4 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-5 py-3">
+            <h2 class="text-base font-semibold text-white">
+              {{ composeMode() === 'forward' ? 'Forward message' : 'New email' }}
+            </h2>
+            <button
+              type="button"
+              (click)="closeComposer()"
+              [disabled]="sending()"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/80 hover:bg-white/15 hover:text-white disabled:opacity-50"
+              aria-label="Close composer"
+            >
+              <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">close</mat-icon>
+            </button>
+          </header>
+
+          @if (error()) {
+            <div class="mx-5 mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+              {{ error() }}
+            </div>
+          }
+
+          <form class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-5 py-5" (submit)="$event.preventDefault(); sendComposedMessage()">
+            <mat-form-field appearance="outline" class="zb-field">
+              <mat-label>To</mat-label>
+              <input
+                matInput
+                id="sent-compose-to"
+                type="email"
+                [value]="composeTo()"
+                (input)="composeTo.set($any($event.target).value)"
+                required
+                autocomplete="email"
+                [disabled]="sending()"
+                placeholder="recipient@example.com"
+              />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="zb-field">
+              <mat-label>Subject</mat-label>
+              <input
+                matInput
+                id="sent-compose-subject"
+                type="text"
+                [value]="composeSubject()"
+                (input)="composeSubject.set($any($event.target).value)"
+                required
+                [disabled]="sending()"
+              />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="zb-field">
+              <mat-label>Message</mat-label>
+              <textarea
+                matInput
+                id="sent-compose-message"
+                rows="14"
+                [value]="composeMessage()"
+                (input)="composeMessage.set($any($event.target).value)"
+                required
+                [disabled]="sending()"
+                placeholder="Write your message..."
+              ></textarea>
+            </mat-form-field>
+
+            <div class="mt-auto flex justify-end gap-2 border-t border-slate-200 pt-4">
               <button
                 type="button"
                 (click)="closeComposer()"
                 [disabled]="sending()"
-                class="flex h-8 w-8 items-center justify-center
-                       rounded-lg text-lg text-white/70
-                       hover:bg-white/10 hover:text-white
-                       disabled:opacity-50"
-                aria-label="Close composer"
+                class="h-9 rounded-lg px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
               >
-                ×
+                Cancel
               </button>
-            </header>
-
-            @if (error()) {
-              <div
-                class="mx-5 mt-4 rounded-lg border border-red-200
-                       bg-red-50 px-3 py-2 text-sm text-red-700"
-                role="alert"
+              <button
+                type="submit"
+                [disabled]="sending()"
+                class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {{ error() }}
-              </div>
-            }
-
-            <form
-              class="space-y-4 px-5 py-5"
-              (submit)="$event.preventDefault(); sendComposedMessage()"
-            >
-              <div>
-
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>To</mat-label>
-                  <input matInput
-                  id="sent-compose-to"
-                  type="email"
-                  [value]="composeTo()"
-                  (input)="composeTo.set($any($event.target).value)"
-                  required
-                  autocomplete="email"
-                  [disabled]="sending()"
-                  placeholder="recipient@example.com"
-                />
-                </mat-form-field>
-              </div>
-
-              <div>
-
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Subject</mat-label>
-                  <input matInput
-                  id="sent-compose-subject"
-                  type="text"
-                  [value]="composeSubject()"
-                  (input)="composeSubject.set($any($event.target).value)"
-                  required
-                  [disabled]="sending()"
-                />
-                </mat-form-field>
-              </div>
-
-              <div>
-
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Message</mat-label>
-                  <textarea matInput
-                  id="sent-compose-message"
-                  rows="9"
-                  [value]="composeMessage()"
-                  (input)="composeMessage.set($any($event.target).value)"
-                  required
-                  [disabled]="sending()"
-                  placeholder="Write your message..."
-                ></textarea>
-                </mat-form-field>
-              </div>
-
-              <div class="flex justify-end gap-2 border-t pt-4">
-                <button
-                  type="button"
-                  (click)="closeComposer()"
-                  [disabled]="sending()"
-                  class="h-9 rounded-lg border border-gray-300
-                         bg-white px-4 text-xs font-semibold text-gray-700
-                         hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  [disabled]="sending()"
-                  class="inline-flex h-9 items-center gap-1.5
-                         rounded-lg bg-[#032D42] px-4 text-xs
-                         font-semibold text-white hover:bg-[#064b68]
-                         disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {{ sending() ? 'Sending...' : composeMode() === 'forward' ? 'Forward' : 'Send Email' }}
-                </button>
-              </div>
-            </form>
-          </section>
-        </div>
-      }
-
-
-      <!-- ==========================================================
-           SUCCESS TOAST
-           ========================================================== -->
-      @if (toastMessage()) {
-        <div
-          class="fixed bottom-4 left-4 right-4 z-[100]
-                 mx-auto max-w-md rounded-xl bg-green-600
-                 px-4 py-3 text-sm font-medium text-white shadow-xl"
-          role="status"
-          aria-live="polite"
-        >
-          {{ toastMessage() }}
-        </div>
-      }
-
-
-      <!-- ==========================================================
-           PRINT-ONLY DOCUMENT
-           ========================================================== -->
-      @if (selectedMessage()) {
-        <article class="zebron-print-document" aria-hidden="true">
-          <header class="zebron-print-header">
-            <div>
-              <div class="zebron-print-brand">ZEBRON</div>
-              <div class="zebron-print-title">Sent Email</div>
+                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]" [class.animate-spin]="sending()">{{ sending() ? 'refresh' : 'send' }}</mat-icon>
+                {{ sending() ? 'Sending...' : composeMode() === 'forward' ? 'Forward' : 'Send' }}
+              </button>
             </div>
-            <div class="zebron-print-date">
-              {{ formatDate(selectedMessage()!.createdAt) }}
-            </div>
-          </header>
+          </form>
+        </section>
+      </div>
+    }
 
-          <section class="zebron-print-meta">
-            <div>
-              <span>From</span>
-              <strong>{{ selectedMessage()!.from }}</strong>
-            </div>
-            <div>
-              <span>To</span>
-              <strong>{{ selectedMessage()!.to }}</strong>
-            </div>
-            <div>
-              <span>Subject</span>
-              <strong>{{ selectedMessage()!.subject }}</strong>
-            </div>
-            <div>
-              <span>Type</span>
-              <strong>
-                {{ getMessageTypeLabel(selectedMessage()!) }}
-              </strong>
-            </div>
-          </section>
-
-          <section class="zebron-print-body">
-            <h2>Message</h2>
-            <div class="zebron-print-message">
-              {{ selectedMessage()!.message }}
-            </div>
-          </section>
-
-          <footer class="zebron-print-footer">
-            Printed from the Zebron administrator mailbox.
-          </footer>
-        </article>
-      }
-
-
-    </div>
+    @if (toastMessage()) {
+      <div
+        class="fixed bottom-4 left-3 right-3 z-[100] flex items-center gap-3 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-2xl sm:left-auto sm:right-6"
+        role="status"
+        aria-live="polite"
+      >
+        <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">check_circle</mat-icon>
+        {{ toastMessage() }}
+      </div>
+    }
   `,
-  styles: [`
-    .zebron-print-document {
-      display: none;
-    }
 
-    @media print {
-      @page {
-        size: auto;
-        margin: 0.65in;
-      }
-
-      body * {
-        visibility: hidden !important;
-      }
-
-      .zebron-print-document,
-      .zebron-print-document * {
-        visibility: visible !important;
-      }
-
-      .zebron-print-document {
-        display: block !important;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        box-sizing: border-box;
-        background: #ffffff;
-        color: #111827;
-        font-family: Arial, Helvetica, sans-serif;
-        padding: 0;
-      }
-
-      .zebron-print-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 24px;
-        padding-bottom: 18px;
-        border-bottom: 2px solid #032d42;
-      }
-
-      .zebron-print-brand {
-        font-size: 18px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        color: #032d42;
-      }
-
-      .zebron-print-title {
-        margin-top: 4px;
-        font-size: 24px;
-        font-weight: 700;
-      }
-
-      .zebron-print-date {
-        font-size: 12px;
-        color: #6b7280;
-        text-align: right;
-      }
-
-      .zebron-print-meta {
-        margin-top: 24px;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        overflow: hidden;
-      }
-
-      .zebron-print-meta > div {
-        display: grid;
-        grid-template-columns: 90px 1fr;
-        gap: 12px;
-        padding: 10px 12px;
-        border-bottom: 1px solid #e5e7eb;
-      }
-
-      .zebron-print-meta > div:last-child {
-        border-bottom: 0;
-      }
-
-      .zebron-print-meta span {
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #6b7280;
-      }
-
-      .zebron-print-meta strong {
-        min-width: 0;
-        overflow-wrap: anywhere;
-        font-size: 12px;
-        font-weight: 600;
-      }
-
-      .zebron-print-body {
-        margin-top: 24px;
-      }
-
-      .zebron-print-body h2 {
-        margin: 0 0 10px;
-        font-size: 13px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #4b5563;
-      }
-
-      .zebron-print-message {
-        white-space: pre-wrap;
-        overflow-wrap: anywhere;
-        font-size: 13px;
-        line-height: 1.7;
-      }
-
-      .zebron-print-footer {
-        margin-top: 36px;
-        padding-top: 12px;
-        border-top: 1px solid #d1d5db;
-        font-size: 10px;
-        color: #9ca3af;
-      }
-    }
-  `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SentEmailComponent
@@ -1661,6 +564,54 @@ export class SentEmailComponent
    */
   readonly loading =
     signal(false);
+
+  /** Rows shown; "Show more" adds another page. */
+  private readonly pageSize = 25;
+
+  readonly visibleCount = signal(25);
+
+  readonly visibleMessages = computed(() => this.filteredMessages().slice(0, this.visibleCount()));
+
+  showMore(): void {
+    this.visibleCount.update((count) => count + this.pageSize);
+  }
+
+  setSearch(value: string): void {
+    this.searchQuery.set(value);
+    this.visibleCount.set(this.pageSize);
+  }
+
+  /** Forward a message straight from the list. */
+  forwardFrom(message: OutboundMessage): void {
+    this.selectedMessage.set(message);
+    this.forwardMessage();
+  }
+
+  /** Delete a message straight from the list. */
+  async deleteFrom(message: OutboundMessage): Promise<void> {
+    this.selectedMessage.set(message);
+    await this.deleteMessage();
+    // Cancelled: don't leave the reader open.
+    this.selectedMessage.set(null);
+  }
+
+  /** "3:45 PM" today, "Oct 29" this year, "Oct 29, 2025" otherwise. */
+  shortDate(message: OutboundMessage): string {
+    const timestamp = message.createdAt as { toDate?: () => Date } | null | undefined;
+    if (!timestamp || typeof timestamp.toDate !== 'function') {
+      return '';
+    }
+    const date = timestamp.toDate();
+    const now = new Date();
+    if (date.toDateString() === now.toDateString()) {
+      return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(date);
+    }
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+    }).format(date);
+  }
 
   /**
    * Error displayed when loading fails.
@@ -2242,12 +1193,79 @@ getMessageTypeLabel(
  */
 printMessage(): void {
   const message = this.selectedMessage();
-
-  if (!message) {
+  if (!message || typeof document === 'undefined') {
     return;
   }
 
-  window.print();
+  const escape = (value: string | null | undefined) =>
+    String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  const printed = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
+  const rows = [
+    ['From', message.from || 'Zebron'],
+    ['To', message.to],
+    ['Date', this.formatDate(message.createdAt)],
+    ['Type', this.getMessageTypeLabel(message)],
+  ]
+    .map(([label, value]) => `<tr><th>${label}</th><td>${escape(value)}</td></tr>`)
+    .join('');
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>${escape(message.subject || 'Sent email')}</title>
+<style>
+  @page { margin: 16mm; }
+  body { margin: 0; font-family: Roboto, Arial, sans-serif; color: #0f172a; font-size: 12pt; }
+  .band { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 6px;
+          background: linear-gradient(90deg, #007979, #00706f, #2a835f); color: #fff;
+          -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .band strong { font-size: 13pt; letter-spacing: .02em; }
+  .band span { font-size: 9pt; opacity: .9; }
+  h1 { margin: 18px 0 10px; font-size: 17pt; line-height: 1.3; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 14px; }
+  th { width: 70px; padding: 3px 10px 3px 0; text-align: left; vertical-align: top; color: #64748b; font-weight: 600; font-size: 10pt; }
+  td { padding: 3px 0; font-size: 10.5pt; }
+  .body { border-top: 1px solid #e2e8f0; padding-top: 14px; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
+  footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 6px; color: #94a3b8; font-size: 8.5pt; }
+</style>
+</head>
+<body>
+  <div class="band"><strong>ZEBRON</strong><span>Sent email</span></div>
+  <h1>${escape(message.subject || '(No subject)')}</h1>
+  <table>${rows}</table>
+  <div class="body">${escape(message.message)}</div>
+  <footer>Printed ${escape(printed)} from the Zebron Mailbox</footer>
+</body>
+</html>`;
+
+  const frame = document.createElement('iframe');
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+  document.body.appendChild(frame);
+
+  const frameDocument = frame.contentDocument;
+  const frameWindow = frame.contentWindow;
+  if (!frameDocument || !frameWindow) {
+    frame.remove();
+    return;
+  }
+
+  frameDocument.open();
+  frameDocument.write(html);
+  frameDocument.close();
+
+  frameWindow.addEventListener('afterprint', () => setTimeout(() => frame.remove(), 500), { once: true });
+  setTimeout(() => {
+    frameWindow.focus();
+    frameWindow.print();
+    setTimeout(() => frame.isConnected && frame.remove(), 60_000);
+  }, 50);
 }
 
 /**

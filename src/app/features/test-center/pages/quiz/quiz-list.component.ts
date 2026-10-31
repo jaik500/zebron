@@ -137,9 +137,9 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             >
 
               <!-- Search -->
-              <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+              <mat-form-field appearance="outline" class="zb-field zb-field--flush w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
                 <mat-label>{{ 'Search quizzes' | t }}</mat-label>
-                <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+                <mat-icon matPrefix aria-hidden="true">search</mat-icon>
                 <input matInput
                     type="search"
                     autocomplete="off"

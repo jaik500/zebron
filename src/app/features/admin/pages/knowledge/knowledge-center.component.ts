@@ -124,9 +124,9 @@ type KnowledgeStatusFilter = 'all' | KnowledgeArticleStatus;
       <!-- Toolbar -->
       <section class="mt-6 min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div class="grid min-w-0 grid-cols-1 gap-x-3 md:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
-          <mat-form-field appearance="outline" class="zb-field">
+          <mat-form-field appearance="outline" class="zb-field zb-search">
             <mat-label>Search</mat-label>
-            <mat-icon matPrefix class="ml-3 mr-1 !text-slate-400" aria-hidden="true">search</mat-icon>
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
             <input matInput type="search" placeholder="Title, text or tag" [value]="searchTerm()" (input)="onSearch($event)" />
           </mat-form-field>
 

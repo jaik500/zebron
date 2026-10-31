@@ -21,7 +21,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
-      <header class="border-b border-white/10 bg-[#2a835f]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div>
             <h1 class="text-2xl font-bold text-white">{{ 'Support Tickets' | t }}</h1>
@@ -92,7 +92,7 @@ export class OrganizationSupportComponent implements OnInit {
   protected readonly filtered = computed(() => this.tickets().filter((ticket) => this.matches(ticket, this.statusFilter())));
 
   async ngOnInit(): Promise<void> {
-    this.pageTitleService.setTitle('Support Tickets');
+    this.pageTitleService.setDocumentTitle('Support Tickets');
     await this.load();
   }
 

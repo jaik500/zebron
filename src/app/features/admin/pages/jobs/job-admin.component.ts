@@ -18,6 +18,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 @Component({
@@ -25,7 +26,7 @@ import { MatButtonModule } from '@angular/material/button';
 
   standalone: true,
 
-  imports: [AdminLayoutSwitchComponent, AdminBackLinkComponent, JobFormComponent, RouterLink, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
+  imports: [MatIconModule, AdminLayoutSwitchComponent, AdminBackLinkComponent, JobFormComponent, RouterLink, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
 
   template: `
     <main
@@ -410,9 +411,9 @@ import { MatButtonModule } from '@angular/material/button';
                        min-w-0
                        lg:max-w-64"
               >
-                <mat-form-field appearance="outline" class="zb-field">
+                <mat-form-field appearance="outline" class="zb-field zb-search">
                   <mat-label>Search jobs</mat-label>
-                  <span matPrefix class="pl-3 pr-1" aria-hidden="true">🔎</span>
+                  <mat-icon matPrefix aria-hidden="true">search</mat-icon>
                   <input matInput
                   type="search"
                   [value]="searchTerm()"

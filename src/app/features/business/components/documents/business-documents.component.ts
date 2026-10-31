@@ -104,14 +104,12 @@ import {
 
         <mat-form-field
           appearance="outline"
-          class="document-search"
+          class="document-search w-full sm:max-w-xs zb-search"
         >
 
           <mat-label>Search documents</mat-label>
 
-          <mat-icon matPrefix>
-            search
-          </mat-icon>
+          <mat-icon matPrefix aria-hidden="true">search</mat-icon>
 
           <input
             matInput

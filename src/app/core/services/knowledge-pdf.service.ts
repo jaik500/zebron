@@ -288,6 +288,8 @@ export class KnowledgePdfService {
       'FD',
     );
 
+    const boxBottom = y + boxHeight;
+
     y += 7;
 
     for (const [label, value] of rows) {
@@ -330,7 +332,9 @@ export class KnowledgePdfService {
       y += 7;
     }
 
-    return y + 6;
+    // Leave clear space between the card and the next heading
+    // (y is a text baseline, so the heading's own height must fit too).
+    return boxBottom + 11;
   }
 
   // ============================================================
@@ -657,10 +661,20 @@ if (headingMatch) {
     fontSize: number,
     spacingAfter: number,
   ): number {
+    /*
+     * startY is where the next line of body text would sit. A heading
+     * needs extra room above it so it doesn't crowd the paragraph or
+     * list that came before (skipped at the top of a new page).
+     */
+    const spaceBefore =
+      startY > this.marginTop
+        ? fontSize * 0.2 + 3
+        : 0;
+
     let y =
       this.ensureSpace(
         pdf,
-        startY,
+        startY + spaceBefore,
         fontSize === 16
           ? 18
           : 15,
@@ -769,7 +783,7 @@ if (headingMatch) {
       y += options.lineHeight;
     }
 
-    return y + 2;
+    return y + 3;
   }
 
   // ============================================================

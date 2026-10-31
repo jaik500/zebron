@@ -22,7 +22,7 @@ import { MatButtonModule } from '@angular/material/button';
   standalone: true,
   imports: [AdminLayoutSwitchComponent, FormsModule, RouterLink, MatIconModule, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
   template: `
-    <header class="border-b border-gray-200 bg-[#032D42]">
+    <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
       <div
         class="mx-auto flex max-w-7xl
            items-center justify-between
@@ -186,11 +186,11 @@ import { MatButtonModule } from '@angular/material/button';
                  sm:justify-between"
         >
           <!-- Search -->
-          <div class="w-full sm:max-w-md">
+          <div class="w-full sm:max-w-xs">
 
-            <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+            <mat-form-field appearance="outline" class="zb-field zb-field--flush w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
               <mat-label>Search users</mat-label>
-              <mat-icon matPrefix class="ml-3 mr-1 !text-gray-400" aria-hidden="true">search</mat-icon>
+              <mat-icon matPrefix aria-hidden="true">search</mat-icon>
               <input matInput
                 id="userSearch"
                 name="userSearch"

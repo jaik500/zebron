@@ -482,7 +482,8 @@ export class CommunityNotificationsComponent implements OnInit {
   // =============================================================
 
   ngOnInit(): void {
-    this.pageTitle.setTitle('Community Notifications');
+    this.pageTitle.setTitle('Community');
+    this.pageTitle.setDocumentTitle('Community Notifications');
 
     this.loadNotifications();
   }

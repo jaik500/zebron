@@ -131,7 +131,7 @@ export const PUBLIC_APPS: PublicApp[] = [
     key: "knowledge",
     group: "connect",
     title: "Knowledge Center",
-    description: "Guides, how-tos, troubleshooting and answers about using Zebron. Like, share and report articles.",
+    description: "Articles, guides and answers from Zebron on a wide range of topics. Like, share and report articles.",
     audience: "For everyone",
     action: "Read articles",
     icon: "menu_book",

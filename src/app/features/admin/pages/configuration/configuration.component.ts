@@ -48,7 +48,7 @@ import { ConfigurationOperationalMonitoringComponent } from './tabs/operational-
 
   template: `
     <div class="min-h-screen bg-gray-50 mt-16">
-      <header class="bg-[#2a835f] shadow-sm">
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] shadow-sm">
         <div
           class="mx-auto flex min-h-10 max-w-7xl items-center px-4 pb-0 sm:px-6 lg:px-8"
         >

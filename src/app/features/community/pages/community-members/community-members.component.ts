@@ -102,7 +102,7 @@ import { MatInputModule } from '@angular/material/input';
                            text-[#032D42]
                            sm:text-3xl"
                   >
-                    Community Members
+                    Members
                   </h1>
 
                   <p
@@ -160,9 +160,9 @@ import { MatInputModule } from '@angular/material/input';
                    md:items-center
                    md:justify-between"
           >
-            <mat-form-field appearance="outline" class="zb-field zb-field--flush flex-1" subscriptSizing="dynamic">
+            <mat-form-field appearance="outline" class="zb-field zb-field--flush w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
               <mat-label>Search community members</mat-label>
-              <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+              <mat-icon matPrefix aria-hidden="true">search</mat-icon>
               <input matInput
                 type="search"
                 [value]="searchTerm()"
@@ -668,7 +668,8 @@ export class CommunityMembersComponent implements OnInit {
   // =============================================================
 
   ngOnInit(): void {
-    this.pageTitle.setTitle('Community Members');
+    this.pageTitle.setTitle('Community');
+    this.pageTitle.setDocumentTitle('Community Members');
 
     void this.loadMembers();
   }

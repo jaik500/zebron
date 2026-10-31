@@ -170,9 +170,9 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
         <!-- Search and Filters -->
         <div class="grid grid-cols-1 gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4 md:grid-cols-[minmax(0,1fr)_220px] md:px-6">
 
-          <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+          <mat-form-field appearance="outline" class="zb-field zb-field--flush w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
             <mat-label>{{ 'Search learners' | t }}</mat-label>
-            <mat-icon matPrefix class="ml-3 mr-1 !text-[#007979]" aria-hidden="true">search</mat-icon>
+            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
             <input matInput
               type="search"
               [placeholder]="'Search by name or email...' | t"

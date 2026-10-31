@@ -34,7 +34,7 @@ import { MatButtonModule } from '@angular/material/button';
      PAGE HEADER
      ============================================================ -->
 
-      <header class="bg-[#032D42] shadow-md mt-16">
+      <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] shadow-md mt-16">
         <div
           class="mx-auto max-w-7xl
            px-4 py-2

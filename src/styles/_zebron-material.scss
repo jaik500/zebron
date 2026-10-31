@@ -1,0 +1,77 @@
+// ============================================================
+// ZEBRON MATERIAL THEME — brand colours and dialogs
+//
+// Uses Angular Material's own design tokens (CSS custom properties),
+// so components keep working across Material updates. `html:root`
+// outranks the `html` rule where mat.theme() writes its defaults.
+// ============================================================
+
+// ---------- Brand colours (primary = Zebron teal) ----------
+html:root {
+  --mat-sys-primary: #007979;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: #c4ece7;
+  --mat-sys-on-primary-container: #00201d;
+  --mat-sys-inverse-primary: #7fd6cc;
+  --mat-sys-surface-tint: #007979;
+  --mat-sys-primary-fixed: #c4ece7;
+  --mat-sys-primary-fixed-dim: #7fd6cc;
+  --mat-sys-on-primary-fixed: #00201d;
+  --mat-sys-on-primary-fixed-variant: #00504b;
+
+  // ---------- Dialogs ----------
+  --mat-dialog-container-shape: 16px;
+  --mat-dialog-container-color: #ffffff;
+  --mat-dialog-container-max-width: calc(100vw - 32px);
+  --mat-dialog-container-small-max-width: calc(100vw - 16px);
+  --mat-dialog-subhead-color: #0f172a;
+  --mat-dialog-subhead-size: 18px;
+  --mat-dialog-subhead-line-height: 26px;
+  --mat-dialog-subhead-weight: 600;
+  --mat-dialog-subhead-tracking: 0;
+  --mat-dialog-supporting-text-color: #334155;
+  --mat-dialog-supporting-text-size: 14px;
+  --mat-dialog-supporting-text-line-height: 22px;
+  --mat-dialog-supporting-text-tracking: 0;
+  --mat-dialog-actions-alignment: flex-end;
+  --mat-dialog-container-elevation-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.35), 0 8px 16px -8px rgba(15, 23, 42, 0.2);
+}
+
+// Softer, slightly blurred backdrop behind dialogs.
+.cdk-overlay-dark-backdrop {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.cdk-overlay-backdrop.cdk-overlay-dark-backdrop.cdk-overlay-backdrop-showing {
+  backdrop-filter: blur(2px);
+}
+
+// ---------- Zebron dialog layout (panelClass: 'zb-dialog', the default) ----------
+// Light brand header, roomy content, footer bar for the buttons.
+// Only applies to dialogs built with mat-dialog-title / -content / -actions.
+.zb-dialog {
+  .mat-mdc-dialog-surface {
+    overflow: hidden;
+  }
+
+  // Only a title placed directly in the dialog component (the standard
+  // layout); titles nested inside custom headers are left alone.
+  .mat-mdc-dialog-surface > * > .mat-mdc-dialog-title {
+    margin: 0;
+    padding: 14px 24px;
+    border-bottom: 1px solid rgba(0, 121, 121, 0.2);
+    background: linear-gradient(90deg, rgba(0, 121, 121, 0.15), rgba(0, 112, 111, 0.1), rgba(42, 131, 95, 0.15));
+
+    // Material draws a spacer before the title text; not needed here.
+    &::before {
+      display: none;
+    }
+  }
+
+  .mat-mdc-dialog-actions {
+    gap: 8px;
+    padding: 12px 24px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+}

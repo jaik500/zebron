@@ -287,7 +287,10 @@ export class PublicKnowledgeArticleComponent {
   private async load(signedIn: boolean): Promise<void> {
     const article = await this.knowledge.get(this.articleId, signedIn);
     this.article.set(article);
-    this.pageTitle.setTitle(article?.title ?? 'Knowledge Center');
+    this.pageTitle.setTitle('Knowledge Center');
+    if (article) {
+      this.pageTitle.setDocumentTitle(article.title);
+    }
     this.loading.set(false);
     if (article && signedIn) {
       // Likes and reports are for signed-in readers.

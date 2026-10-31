@@ -141,6 +141,8 @@ export const FR_COMMON: Readonly<Record<string, string>> = {
   "Applications": "Applications",
   "Zebron": "Zebron",
   "Partner Portal": "Portail partenaire",
+  "Find jobs & training": "Emplois et formations",
+  "Resources": "Ressources",
   "Community": "Communauté",
   "Test Center": "Centre d’évaluation",
   "Knowledge Center": "Centre de connaissances",
