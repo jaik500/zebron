@@ -1261,6 +1261,7 @@ function applicationName(applicationId: string): string {
     "test-center": "Test Center",
     "learning": "Learning (Courses and Test Center)",
     "courses": "Courses",
+    "virtual-classroom": "Virtual Classroom",
     "blog": "Blog",
     "knowledge": "Knowledge Center",
     "configuration": "Configuration",

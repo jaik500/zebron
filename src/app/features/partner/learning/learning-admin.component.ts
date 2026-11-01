@@ -12,11 +12,12 @@ import { CourseService } from '../../courses/course.service';
 import { Course } from '../../courses/course.model';
 import { OrganizationContextStore } from '../../organizations/stores/organization-context.store';
 import { QuizService } from '../../test-center/services/quiz.service';
+import { LiveSessionService, sessionEnd } from '../../live/live-session.service';
 
 /**
- * Learning administration for an organization with Courses and the Test
- * Center: one page with a card for each, live counts and links into the
- * pages that already exist. Opened from the gear on the Learning card.
+ * Learning administration: one page with a card for each capability the
+ * organization has (Courses, Test Center, Virtual Classroom), live counts
+ * and links into their pages. Opened from the gear on the Learning card.
  *
  * Organizations with only the Test Center go straight to its settings.
  *
@@ -53,8 +54,9 @@ import { QuizService } from '../../test-center/services/quiz.service';
         </div>
       </header>
 
-      <div class="mx-auto grid max-w-6xl gap-4 px-4 py-6 sm:px-6 md:grid-cols-2 lg:px-8">
+      <div class="mx-auto grid max-w-6xl gap-4 px-4 py-6 sm:px-6 md:grid-cols-2 lg:px-8" [class]="cardCount() === 3 ? 'xl:grid-cols-3' : ''">
         <!-- ================= COURSES ================= -->
+        @if (hasCourses()) {
         <section class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="courses-card-title">
           <div class="flex items-center gap-3">
             <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-[#007979]"><mat-icon aria-hidden="true">menu_book</mat-icon></span>
@@ -98,10 +100,22 @@ import { QuizService } from '../../test-center/services/quiz.service';
               <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">add</mat-icon>
               {{ 'New course' | t }}
             </a>
+            @if (access.isManagerOrAbove()) {
+              <a [routerLink]="['/partner/org', organizationId, 'learning', 'progress']" class="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">insights</mat-icon>
+                {{ 'Team progress' | t }}
+              </a>
+            }
           </div>
+          @if (access.isManagerOrAbove()) {
+            <p class="mt-3 text-xs text-slate-500">{{ 'Assign courses with due dates from Manage courses, then follow them in Team progress.' | t }}</p>
+          }
         </section>
 
+        }
+
         <!-- ================= TEST CENTER ================= -->
+        @if (hasTestCenter()) {
         <section class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="test-center-card-title">
           <div class="flex items-center gap-3">
             <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-[#007979]"><mat-icon aria-hidden="true">quiz</mat-icon></span>
@@ -139,6 +153,40 @@ import { QuizService } from '../../test-center/services/quiz.service';
             </a>
           </div>
         </section>
+        }
+
+        <!-- ================= VIRTUAL CLASSROOM ================= -->
+        @if (hasLive()) {
+          <section class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="live-card-title">
+            <div class="flex items-center gap-3">
+              <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-[#007979]"><mat-icon aria-hidden="true">video_camera_front</mat-icon></span>
+              <div>
+                <h2 id="live-card-title" class="text-lg font-semibold text-slate-900">{{ 'Virtual Classroom' | t }}</h2>
+                <p class="text-sm text-slate-500">{{ 'Live sessions in Zoom, Google Meet, Teams or Jitsi.' | t }}</p>
+              </div>
+            </div>
+
+            <dl class="mt-4 grid grid-cols-2 gap-2 text-center">
+              <div class="rounded-xl bg-slate-50 p-3">
+                <dt class="text-xs text-slate-500">{{ 'Upcoming sessions' | t }}</dt>
+                <dd class="text-2xl font-semibold text-slate-900">{{ loadingLive() ? '–' : upcomingSessions() }}</dd>
+              </div>
+              <div class="rounded-xl bg-slate-50 p-3">
+                <dt class="text-xs text-slate-500">{{ 'Registered' | t }}</dt>
+                <dd class="text-2xl font-semibold text-slate-900">{{ loadingLive() ? '–' : upcomingRegistrations() }}</dd>
+              </div>
+            </dl>
+
+            <p class="mt-3 text-xs text-slate-500">{{ 'Staff schedule sessions and mark attendance.' | t }}</p>
+
+            <div class="mt-auto flex flex-wrap gap-2 pt-4">
+              <a [routerLink]="['/partner/org', organizationId, 'live']" class="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]">
+                <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">event</mat-icon>
+                {{ 'Schedule and manage' | t }}
+              </a>
+            </div>
+          </section>
+        }
       </div>
     </main>
   `,
@@ -162,6 +210,15 @@ export class LearningAdminComponent implements OnInit {
   protected readonly questionCount = signal(0);
   protected readonly loadingQuizzes = signal(true);
 
+  private readonly live = inject(LiveSessionService);
+  protected readonly hasCourses = signal(false);
+  protected readonly hasTestCenter = signal(false);
+  protected readonly hasLive = signal(false);
+  protected readonly cardCount = computed(() => [this.hasCourses(), this.hasTestCenter(), this.hasLive()].filter(Boolean).length);
+  protected readonly upcomingSessions = signal(0);
+  protected readonly upcomingRegistrations = signal(0);
+  protected readonly loadingLive = signal(true);
+
   private readonly counts = computed(() => {
     const counts: Record<string, number> = {};
     for (const course of this.courseList()) {
@@ -179,14 +236,25 @@ export class LearningAdminComponent implements OnInit {
       // Context errors are shown elsewhere; the counts still load below.
     }
 
+    this.hasCourses.set(this.organizationStore.hasActiveApplication('courses'));
+    this.hasTestCenter.set(this.organizationStore.hasActiveApplication('test-center'));
+    this.hasLive.set(this.organizationStore.hasActiveApplication('virtual-classroom'));
+
     // Only the Test Center: its settings are the whole administration.
-    if (!this.organizationStore.hasActiveApplication('courses')) {
+    if (!this.hasCourses() && !this.hasLive()) {
       await this.router.navigate(['/partner/org', this.organizationId, 'test-center'], { replaceUrl: true });
       return;
     }
 
-    void this.loadCourses();
-    void this.loadQuizzes();
+    if (this.hasCourses()) {
+      void this.loadCourses();
+    }
+    if (this.hasTestCenter()) {
+      void this.loadQuizzes();
+    }
+    if (this.hasLive()) {
+      void this.loadLive();
+    }
   }
 
   protected coursesBy(status: string): number {
@@ -200,6 +268,20 @@ export class LearningAdminComponent implements OnInit {
       this.logger.error('LearningAdminComponent', 'Could not count courses.', error);
     } finally {
       this.loadingCourses.set(false);
+    }
+  }
+
+  private async loadLive(): Promise<void> {
+    try {
+      const upcoming = (await this.live.list(this.organizationId)).filter(
+        (session) => session.status === 'scheduled' && sessionEnd(session).getTime() >= Date.now(),
+      );
+      this.upcomingSessions.set(upcoming.length);
+      this.upcomingRegistrations.set(upcoming.reduce((total, session) => total + session.registeredCount, 0));
+    } catch (error) {
+      this.logger.error('LearningAdminComponent', 'Could not count live sessions.', error);
+    } finally {
+      this.loadingLive.set(false);
     }
   }
 

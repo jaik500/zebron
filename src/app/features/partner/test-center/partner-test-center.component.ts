@@ -9,7 +9,7 @@ import {
 
 import { FormsModule } from '@angular/forms';
 
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -65,6 +65,21 @@ interface CourseForm {
   active: boolean;
 }
 
+interface ProgramForm {
+  name: string;
+  slug: string;
+  description: string;
+  active: boolean;
+}
+
+interface StructureGroup {
+  key: string;
+  name: string;
+  program: TestProgram | null;
+  quizzes: Quiz[];
+  questionCount: number;
+}
+
 interface TopicForm {
   quizId: string;
   name: string;
@@ -81,7 +96,7 @@ interface TopicForm {
 
 const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
   certification: { label: 'Certification', icon: 'workspace_premium' },
-  course: { label: 'Course', icon: 'menu_book' },
+  course: { label: 'Course practice', icon: 'menu_book' },
   subject: { label: 'Subject', icon: 'category' },
   skill: { label: 'Skill', icon: 'build' },
 };
@@ -133,7 +148,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
       </div>
 
       <p class="mt-1 hidden max-w-2xl text-sm text-white/70 sm:block">
-        {{ 'Create and manage custom training and certification courses for your organization.' | t }}
+        {{ 'Programs, quizzes and topics for your organization: the structure your questions go into.' | t }}
       </p>
     </div>
 
@@ -157,17 +172,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979] shadow-sm transition hover:bg-[#E8F5F5] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <mat-icon>account_tree</mat-icon>
-          {{ 'Create Program' | t }}
-        </button>
-
-        <button
-          type="button"
-          (click)="createTopic()"
-          [disabled]="saving() || courses().length === 0"
-          class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979] shadow-sm transition hover:bg-[#E8F5F5] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <mat-icon>topic</mat-icon>
-          {{ 'Create Topic' | t }}
+          {{ 'New program' | t }}
         </button>
 
         <button
@@ -177,7 +182,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <mat-icon>add</mat-icon>
-          {{ 'Create Course' | t }}
+          {{ 'New quiz' | t }}
         </button>
       </div>
     }
@@ -217,7 +222,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           [disabled]="saving()"
         >
           <mat-icon>account_tree</mat-icon>
-          <span>{{ 'Create Program' | t }}</span>
+          <span>{{ 'New program' | t }}</span>
         </button>
 
         <button
@@ -227,7 +232,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           [disabled]="saving() || courses().length === 0"
         >
           <mat-icon>topic</mat-icon>
-          <span>{{ 'Create Topic' | t }}</span>
+          <span>{{ 'New topic' | t }}</span>
         </button>
 
         <button
@@ -237,7 +242,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           [disabled]="saving()"
         >
           <mat-icon>add</mat-icon>
-          <span>{{ 'Create Course' | t }}</span>
+          <span>{{ 'New quiz' | t }}</span>
         </button>
 
         <button
@@ -313,25 +318,108 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
         @else {
           <!-- ==================================================== -->
-          <!-- COURSE FORM -->
+          <!-- PROGRAM FORM -->
+          <!-- ==================================================== -->
+
+          @if (showProgramForm()) {
+            <section id="program-form" class="mb-8 scroll-mt-24 rounded-xl border border-gray-200 bg-white p-6">
+              <div class="flex items-start justify-between gap-4 rounded-lg border border-green-100 bg-green-50/70 p-4">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
+                    {{ editingProgramId() ? ('Edit program' | t) : ('New program' | t) }}
+                  </p>
+                  <h2 class="mt-1 text-xl font-bold text-gray-900">
+                    {{ editingProgramId() ? programForm.name : ('Create a program' | t) }}
+                  </h2>
+                  <p class="mt-1 text-sm text-gray-500">
+                    {{ 'A program groups related quizzes, for example a bootcamp or a department.' | t }}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="cancelProgramForm()"
+                  class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-green-100/70 hover:text-gray-700"
+                  [attr.aria-label]="'Close' | t"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+
+              <div class="mt-6 grid grid-cols-1 gap-x-5 gap-y-2 md:grid-cols-2">
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>{{ 'Program name' | t }}</mat-label>
+                  <input
+                    matInput
+                    [(ngModel)]="programForm.name"
+                    (ngModelChange)="onProgramNameChange()"
+                    [placeholder]="'e.g. Cybersecurity Bootcamp' | t"
+                  />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>{{ 'Slug' | t }}</mat-label>
+                  <input matInput [(ngModel)]="programForm.slug" [disabled]="!!editingProgramId()" />
+                  @if (editingProgramId()) {
+                    <mat-hint>{{ 'Slugs cannot be changed after the program is created.' | t }}</mat-hint>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-full md:col-span-2">
+                  <mat-label>{{ 'Description' | t }}</mat-label>
+                  <textarea matInput rows="3" [(ngModel)]="programForm.description"></textarea>
+                </mat-form-field>
+
+                <div class="flex items-center gap-3 pb-5 md:col-span-2">
+                  <mat-checkbox [(ngModel)]="programForm.active" color="primary">
+                    {{ 'Program is active' | t }}
+                  </mat-checkbox>
+                </div>
+              </div>
+
+              <div class="mt-6 flex flex-wrap justify-end gap-3 border-t border-gray-100 pt-5">
+                <button
+                  type="button"
+                  (click)="cancelProgramForm()"
+                  class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700"
+                >
+                  {{ 'Cancel' | t }}
+                </button>
+                <button
+                  type="button"
+                  (click)="saveProgram()"
+                  [disabled]="savingProgram()"
+                  class="rounded-lg bg-[#032D42] px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  @if (savingProgram()) {
+                    {{ 'Saving...' | t }}
+                  } @else {
+                    {{ editingProgramId() ? ('Save Changes' | t) : ('Create program' | t) }}
+                  }
+                </button>
+              </div>
+            </section>
+          }
+
+          <!-- ==================================================== -->
+          <!-- QUIZ FORM -->
           <!-- ==================================================== -->
 
           @if (showForm()) {
-            <section class="mb-8 rounded-xl border border-gray-200 bg-white p-6">
+            <section id="quiz-form" class="mb-8 scroll-mt-24 rounded-xl border border-gray-200 bg-white p-6">
               <div
                 class="flex items-start justify-between gap-4 rounded-lg border border-green-100 bg-green-50/70 p-4"
               >
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                    {{ editingQuizId() ? ('Edit course' | t) : ('New custom course' | t) }}
+                    {{ editingQuizId() ? ('Edit quiz' | t) : ('New quiz' | t) }}
                   </p>
 
                   <h2 class="mt-1 text-xl font-bold text-gray-900">
-                    {{ editingQuizId() ? form.name : ('Create your course' | t) }}
+                    {{ editingQuizId() ? form.name : ('Create a quiz' | t) }}
                   </h2>
 
                   <p class="mt-1 text-sm text-gray-500">
-                    {{ 'This course belongs exclusively to {0}.' | t: [organizationName()] }}
+                    {{ 'A quiz is a bank of practice questions, grouped into topics. It belongs only to {0}.' | t: [organizationName()] }}
                   </p>
                 </div>
 
@@ -339,7 +427,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                   type="button"
                   (click)="cancelForm()"
                   class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-green-100/70 hover:text-gray-700"
-                  [attr.aria-label]="'Close course form' | t"
+                  [attr.aria-label]="'Close' | t"
                 >
                   <mat-icon>close</mat-icon>
                 </button>
@@ -352,7 +440,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               <div class="mt-6 grid grid-cols-1 gap-x-5 gap-y-2 md:grid-cols-2">
                 <!-- COURSE NAME -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>{{ 'Course name' | t }}</mat-label>
+                  <mat-label>{{ 'Quiz name' | t }}</mat-label>
                   <input
                     matInput
                     [(ngModel)]="form.name"
@@ -374,7 +462,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                     <mat-hint>{{ 'Loading programs...' | t }}</mat-hint>
                   } @else if (programs().length === 0) {
                     <mat-hint class="!text-amber-700">
-                      {{ 'Your organization does not have an active program yet. Create a program before creating a course.' | t }}
+                      {{ 'Your organization does not have an active program yet. Create a program before creating a quiz.' | t }}
                     </mat-hint>
                   }
                 </mat-form-field>
@@ -389,7 +477,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                     [placeholder]="'servicenow-csa-preparation' | t"
                   />
                   @if (editingQuizId()) {
-                    <mat-hint>{{ 'Slugs cannot be changed after the course is created.' | t }}</mat-hint>
+                    <mat-hint>{{ 'Slugs cannot be changed after the quiz is created.' | t }}</mat-hint>
                   }
                 </mat-form-field>
 
@@ -401,10 +489,10 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
                 <!-- TYPE -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>{{ 'Course type' | t }}</mat-label>
+                  <mat-label>{{ 'Quiz type' | t }}</mat-label>
                   <mat-select [(ngModel)]="form.type">
                     <mat-option value="certification">{{ 'Certification' | t }}</mat-option>
-                    <mat-option value="course">{{ 'Course' | t }}</mat-option>
+                    <mat-option value="course">{{ 'Course practice' | t }}</mat-option>
                     <mat-option value="subject">{{ 'Subject' | t }}</mat-option>
                     <mat-option value="skill">{{ 'Skill' | t }}</mat-option>
                   </mat-select>
@@ -430,7 +518,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 <!-- ACTIVE -->
                 <div class="flex items-center gap-3 pb-5 md:col-span-2">
                   <mat-checkbox [(ngModel)]="form.active" color="primary">
-                    {{ 'Course is active' | t }}
+                    {{ 'Quiz is active' | t }}
                   </mat-checkbox>
                 </div>
               </div>
@@ -457,7 +545,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                   @if (saving()) {
                     {{ 'Saving...' | t }}
                   } @else {
-                    {{ editingQuizId() ? ('Save Changes' | t) : ('Create Course' | t) }}
+                    {{ editingQuizId() ? ('Save Changes' | t) : ('Create quiz' | t) }}
                   }
                 </button>
               </div>
@@ -484,7 +572,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                   </h2>
 
                   <p class="mt-1 text-sm text-gray-500">
-                    {{ 'Topics organize the learning content within a Test Center course.' | t }}
+                    {{ 'Topics are sections inside a quiz. Learners can practise one topic or the whole quiz.' | t }}
                   </p>
                 </div>
 
@@ -501,19 +589,19 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               <div class="mt-6 grid grid-cols-1 gap-x-5 gap-y-2 md:grid-cols-2">
                 <!-- COURSE -->
                 <mat-form-field appearance="outline" class="w-full">
-                  <mat-label>{{ 'Course' | t }}</mat-label>
+                  <mat-label>{{ 'Quiz' | t }}</mat-label>
                   <mat-select
                     [(ngModel)]="topicForm.quizId"
                     (ngModelChange)="onTopicCourseChange()"
                     [disabled]="!!editingTopicId()"
                   >
-                    <mat-option value="">{{ 'Select a course' | t }}</mat-option>
+                    <mat-option value="">{{ 'Select a quiz' | t }}</mat-option>
                     @for (course of activeCourses(); track course.id) {
                       <mat-option [value]="course.id">{{ course.name }}</mat-option>
                     }
                   </mat-select>
                   @if (editingTopicId()) {
-                    <mat-hint>{{ 'A topic\\u0027s parent course cannot be changed here.' | t }}</mat-hint>
+                    <mat-hint>{{ 'A topic\\u0027s quiz cannot be changed here.' | t }}</mat-hint>
                   }
                 </mat-form-field>
 
@@ -596,409 +684,249 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           }
 
           <!-- ==================================================== -->
-          <!-- PROGRAM FILTER -->
+          <!-- STRUCTURE: PROGRAM → QUIZ → TOPIC -->
           <!-- ==================================================== -->
 
-          <section class="mb-6 rounded-xl border border-gray-200 bg-white p-4">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <section aria-labelledby="structure-title">
+            <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 class="font-semibold text-gray-900">{{ 'Test Center' | t }}</h2>
-
-                <p class="text-sm text-gray-500">
-                  {{ 'Manage your organization\\u0027s programs, courses, and topics.' | t }}
-                </p>
-              </div>
-
-              <mat-form-field appearance="outline" class="w-full sm:min-w-[240px] sm:max-w-xs">
-                <mat-label>{{ 'Filter courses by program' | t }}</mat-label>
-                <mat-select
-                  [ngModel]="selectedProgramId()"
-                  (ngModelChange)="selectedProgramId.set($event)"
-                >
-                  <mat-option value="all">{{ 'All Programs' | t }}</mat-option>
-                  @for (program of programs(); track program.id) {
-                    <mat-option [value]="program.id">{{ program.name }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            </div>
-          </section>
-
-          <!-- ==================================================== -->
-          <!-- COURSES -->
-          <!-- ==================================================== -->
-
-          <section class="mb-10">
-            <div class="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <h2 class="text-xl font-bold text-gray-900">{{ 'Courses' | t }}</h2>
-
+                <h2 id="structure-title" class="text-xl font-bold text-gray-900">{{ 'Structure' | t }}</h2>
                 <p class="mt-1 text-sm text-gray-500">
-                  {{ '{0} course{1} shown.' | t: [filteredCourses().length, (filteredCourses().length === 1 ? '' : 's')] }}
+                  {{ 'Program → Quiz → Topic → Question. Create them here; the question, import and final exam lists only pick from them.' | t }}
                 </p>
               </div>
-
-              @if (loadingCourses()) {
-                <span class="text-sm text-gray-500"> {{ 'Loading...' | t }} </span>
-              }
+              <div class="flex flex-wrap items-center gap-2">
+                <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+                  <input type="checkbox" class="h-4 w-4 accent-[#007979]" [checked]="showInactive()" (change)="showInactive.set($any($event.target).checked)" />
+                  {{ 'Show inactive' | t }}
+                </label>
+                <button type="button" (click)="expandAll()" class="h-9 rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                  {{ 'Expand all' | t }}
+                </button>
+                <button type="button" (click)="collapseAll()" class="h-9 rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                  {{ 'Collapse all' | t }}
+                </button>
+              </div>
             </div>
 
-            @if (!loadingCourses() && filteredCourses().length === 0) {
-              <div
-                class="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center"
-              >
-                <mat-icon class="!h-10 !w-10 !text-4xl text-gray-400"> menu_book </mat-icon>
-
-                <h3 class="mt-3 font-semibold text-gray-900">{{ 'No custom courses found' | t }}</h3>
-
+            @if (loadingCourses() || loadingPrograms() || loadingTopics()) {
+              <div class="space-y-3" aria-hidden="true">
+                @for (item of [1, 2, 3]; track item) {
+                  <div class="h-16 animate-pulse rounded-xl bg-gray-200/70"></div>
+                }
+              </div>
+            } @else if (!structure().length) {
+              <div class="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
+                <mat-icon class="!h-10 !w-10 !text-4xl text-gray-400">account_tree</mat-icon>
+                <h3 class="mt-3 font-semibold text-gray-900">{{ 'Nothing here yet' | t }}</h3>
                 <p class="mx-auto mt-1 max-w-md text-sm text-gray-500">
-                  {{ 'Create a program first, then create a course and add topics to build the learner experience.' | t }}
+                  {{ 'Start with a program, add a quiz to it, then topics. Questions go into topics.' | t }}
                 </p>
-
                 @if (context.canManageCourses()) {
-                  <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      (click)="createProgram()"
-                      class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979]"
-                    >
-                      <mat-icon>account_tree</mat-icon>
-                      {{ 'Create Program' | t }}
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="startNewCourse()"
-                      [disabled]="programs().length === 0"
-                      class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <mat-icon>add</mat-icon>
-                      {{ 'Create Course' | t }}
-                    </button>
-                  </div>
-                }
-              </div>
-            } @else if (!loadingCourses()) {
-              <div class="grid gap-4 lg:grid-cols-2">
-                @for (course of filteredCourses(); track course.id) {
-                  @let topics = getTopicsForCourse(course.id);
-
-                  <article
-                    class="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <!-- STATUS ACCENT -->
-
-                    <div
-                      [class]="course.active ? 'h-1.5 bg-[#007979]' : 'h-1.5 bg-gray-300'"
-                      aria-hidden="true"
-                    ></div>
-
-                    <div class="flex-1 p-5">
-                      <!-- COURSE HEADER -->
-
-                      <div class="flex items-start gap-4">
-                        <div
-                          [class]="
-                            course.active
-                              ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#E5F4F4] text-[#007979]'
-                              : 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-400'
-                          "
-                        >
-                          <mat-icon aria-hidden="true">{{
-                            getCourseTypeIcon(course.type)
-                          }}</mat-icon>
-                        </div>
-
-                        <div class="min-w-0 flex-1">
-                          <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <p
-                              class="text-xs font-semibold uppercase tracking-wider text-[#007979]"
-                            >
-                              {{ getCourseTypeLabel(course.type) | t }}
-                            </p>
-
-                            <span
-                              class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold"
-                              [class.bg-green-50]="course.active"
-                              [class.text-green-700]="course.active"
-                              [class.bg-gray-100]="!course.active"
-                              [class.text-gray-600]="!course.active"
-                            >
-                              <span
-                                class="h-1.5 w-1.5 rounded-full"
-                                [class.bg-green-500]="course.active"
-                                [class.bg-gray-400]="!course.active"
-                              ></span>
-
-                              {{ course.active ? ('Active' | t) : ('Inactive' | t) }}
-                            </span>
-                          </div>
-
-                          <h3 class="mt-1 break-words text-lg font-bold leading-snug text-gray-900">
-                            {{ course.name }}
-                          </h3>
-                        </div>
-
-                        @if (context.canManageCourses()) {
-                          <button
-                            type="button"
-                            (click)="editCourse(course)"
-                            class="-mr-1 -mt-1 shrink-0 rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-[#032D42]"
-                            [attr.aria-label]="'Edit ' + course.name"
-                          >
-                            <mat-icon>edit</mat-icon>
-                          </button>
-                        }
-                      </div>
-
-                      <!-- COMPACT COURSE DETAILS -->
-                      <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-                        <!-- PROGRAM -->
-                        @if (course.programId) {
-                          <div class="flex min-w-0 items-center gap-1.5">
-                            <mat-icon class="!h-4 !w-4 !text-base text-[#007979]">
-                              account_tree
-                            </mat-icon>
-
-                            <span class="truncate font-medium text-[#007979]">
-                              {{ getProgramName(course.programId) }}
-                            </span>
-                          </div>
-                        }
-
-                        <!-- PROVIDER -->
-                        <div class="flex items-center gap-1.5">
-                          <span class="text-gray-500">{{ 'Provider:' | t }}</span>
-                          <span class="font-medium text-gray-900">
-                            {{ course.provider || '—' }}
-                          </span>
-                        </div>
-
-                        <!-- QUESTION COUNT -->
-                        <div class="flex items-center gap-1.5">
-                          <span class="text-gray-500">{{ 'Questions:' | t }}</span>
-                          <span class="font-semibold text-gray-900">
-                            {{ course.questionCount }}
-                          </span>
-                        </div>
-                      </div>
-
-                      <!-- DESCRIPTION -->
-
-                      <p
-                        class="mt-3 line-clamp-2 text-sm leading-6 text-gray-600"
-                        [attr.title]="course.description"
-                      >
-                        {{ course.description || ('No description.' | t) }}
-                      </p>
-
-                      <!-- COURSE TOPICS -->
-
-                      <details class="group mt-4 rounded-xl border border-gray-100">
-                        <summary
-                          class="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50 [&::-webkit-details-marker]:hidden"
-                        >
-                          <span>{{ 'View topics | {0}' | t: [topics.length] }} </span>
-
-                          <mat-icon
-                            class="!h-5 !w-5 !text-xl text-gray-400 transition-transform group-open:rotate-180"
-                            aria-hidden="true"
-                          >
-                            expand_more
-                          </mat-icon>
-                        </summary>
-
-                        <div class="border-t border-gray-100 px-3 py-2">
-                          @if (topics.length === 0) {
-                            <p class="px-1 py-2 text-xs text-gray-500">
-                              {{ 'No topics have been created for this course yet.' | t }}
-                            </p>
-                          } @else {
-                            <ul class="space-y-1">
-                              @for (topic of topics; track topic.id) {
-                                <li
-                                  class="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-gray-50"
-                                >
-                                  <span
-                                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E5F4F4] text-xs font-bold text-[#007979]"
-                                  >
-                                    {{ topic.sortOrder + 1 }}
-                                  </span>
-
-                                  <div class="min-w-0 flex-1">
-                                    <p class="truncate text-sm font-medium text-gray-900">
-                                      {{ topic.name }}
-                                    </p>
-
-                                    <p class="text-xs text-gray-500">
-                                      {{ '{0} question{1}' | t: [topic.questionCount, (topic.questionCount === 1 ? '' : 's')] }}
-                                    </p>
-                                  </div>
-
-                                  @if (!topic.active) {
-                                    <span
-                                      class="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-600"
-                                    >
-                                      {{ 'Inactive' | t }}
-                                    </span>
-                                  }
-
-                                  @if (context.canManageCourses()) {
-                                    <button
-                                      type="button"
-                                      (click)="editTopic(topic)"
-                                      class="rounded-lg p-1.5 text-gray-500 transition hover:bg-white hover:text-[#032D42]"
-                                      [attr.aria-label]="'Edit topic ' + topic.name"
-                                    >
-                                      <mat-icon class="!text-lg"> edit </mat-icon>
-                                    </button>
-                                  }
-                                </li>
-                              }
-                            </ul>
-                          }
-                        </div>
-                      </details>
-                    </div>
-
-                    <!-- COURSE ACTIONS -->
-
-                    <div
-                      class="flex flex-wrap gap-2 border-t border-gray-100 bg-gray-50/60 px-5 py-2"
-                    >
-                      <a
-                        [routerLink]="[
-                          '/partner/org',
-                          context.organizationId(),
-                          'test-center',
-                          'questions',
-                        ]"
-                        [queryParams]="{ quizId: course.id }"
-                        class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
-                      >
-                        <mat-icon class="!h-5 !w-5 !text-xl" aria-hidden="true"> quiz </mat-icon>
-
-                        {{ 'Manage Questions' | t }}
-                      </a>
-
-                      <button
-                        type="button"
-                        (click)="createTopicForCourse(course)"
-                        [disabled]="!context.canManageCourses() || !course.active"
-                        class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#007979] bg-white px-4 py-2 text-sm font-semibold text-[#007979] shadow-sm transition hover:bg-[#E8F5F5] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <mat-icon class="!h-5 !w-5 !text-xl" aria-hidden="true"> topic </mat-icon>
-
-                        {{ 'Add Topic' | t }}
-                      </button>
-                    </div>
-                  </article>
-                }
-              </div>
-            }
-          </section>
-
-          <!-- ==================================================== -->
-          <!-- TOPIC DIRECTORY -->
-          <!-- ==================================================== -->
-
-          <section>
-            <div class="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <h2 class="text-xl font-bold text-gray-900">{{ 'Topics' | t }}</h2>
-
-                <p class="mt-1 text-sm text-gray-500">
-                  {{ selectedProgramId() === 'all'
-                      ? ('{0} topic{1} across your organization\\u0027s courses.' | t: [filteredTopics().length, filteredTopics().length === 1 ? '' : 's'])
-                      : ('{0} topic{1} in {2}.' | t: [filteredTopics().length, filteredTopics().length === 1 ? '' : 's', selectedProgramName()]) }}
-                </p>
-              </div>
-
-              @if (loadingTopics()) {
-                <span class="text-sm text-gray-500"> {{ 'Loading...' | t }} </span>
-              }
-            </div>
-
-            @if (!loadingTopics() && filteredTopics().length === 0) {
-              <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center">
-                <mat-icon class="!h-10 !w-10 !text-4xl text-gray-400"> topic </mat-icon>
-
-                <h3 class="mt-3 font-semibold text-gray-900">{{ 'No topics yet' | t }}</h3>
-
-                <p class="mx-auto mt-1 max-w-md text-sm text-gray-500">
-                  {{ 'Create topics inside your courses to organize questions and learning content.' | t }}
-                </p>
-
-                @if (context.canManageCourses() && activeCourses().length > 0) {
                   <button
                     type="button"
-                    (click)="createTopic()"
-                    class="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-md font-semibold text-white"
+                    (click)="createProgram()"
+                    class="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-sm font-semibold text-white"
                   >
-                    <mat-icon>topic</mat-icon>
-                    {{ 'Create Topic' | t }}
+                    <mat-icon>account_tree</mat-icon>
+                    {{ 'New program' | t }}
                   </button>
                 }
               </div>
-            } @else if (!loadingTopics()) {
-              <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                <div class="divide-y divide-gray-100">
-                  @for (topic of filteredTopics(); track topic.id) {
-                    <div
-                      class="flex flex-row items-center justify-between gap-3 px-4 py-3 transition-colors duration-200  sm:gap-4 sm:px-4 sm:py-2 hover:bg-green-100"
-                    >
+            } @else {
+              <ul class="space-y-3">
+                @for (group of structure(); track group.key) {
+                  <li class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <!-- PROGRAM -->
+                    <div class="flex items-center gap-3 bg-gray-50/80 px-4 py-3">
+                      <button
+                        type="button"
+                        (click)="toggleProgram(group.key)"
+                        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-200/70"
+                        [attr.aria-expanded]="!collapsedPrograms().has(group.key)"
+                        [attr.aria-label]="(collapsedPrograms().has(group.key) ? 'Expand {0}' : 'Collapse {0}') | t: [group.name]"
+                      >
+                        <mat-icon>{{ collapsedPrograms().has(group.key) ? 'chevron_right' : 'expand_more' }}</mat-icon>
+                      </button>
+                      <mat-icon class="shrink-0 text-[#007979]" aria-hidden="true">account_tree</mat-icon>
                       <div class="min-w-0 flex-1">
-                        <div class="flex flex-wrap items-center gap-2">
-                          <h3 class="font-semibold text-gray-900">
-                            {{ topic.name }}
-                          </h3>
-
-                          <span
-                            class="rounded-full px-2 py-0.5 text-xs font-semibold"
-                            [class.bg-green-100]="topic.active"
-                            [class.text-green-700]="topic.active"
-                            [class.bg-gray-100]="!topic.active"
-                            [class.text-gray-600]="!topic.active"
-                          >
-                            {{ topic.active ? ('Active' | t) : ('Inactive' | t) }}
-                          </span>
-                        </div>
-
-                        <p class="mt-1 text-sm text-gray-500">
-                          {{ getCourseName(topic.quizId) }}
+                        <p class="flex flex-wrap items-center gap-2">
+                          <span class="truncate font-semibold text-gray-900">{{ group.program ? group.name : ('No program' | t) }}</span>
+                          @if (group.program && !group.program.active) {
+                            <span class="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-600">{{ 'Inactive' | t }}</span>
+                          }
                         </p>
-
-                        @if (topic.description) {
-                          <p class=" text-sm text-gray-400">
-                            {{ topic.description | t }}
-                          </p>
-                        }
+                        <p class="text-xs text-gray-500">
+                          {{ (group.quizzes.length === 1 ? '{0} quiz' : '{0} quizzes') | t: [group.quizzes.length] }}
+                          · {{ '{0} questions' | t: [group.questionCount] }}
+                        </p>
                       </div>
-
-                      <div class="flex shrink-0 items-center gap-3 sm:gap-4">
-                        <div class="shrink-0 text-right">
-                          <p class="text-sm text-gray-500">{{ 'Questions' | t }}</p>
-
-                          <p class="font-semibold text-gray-900">
-                            {{ topic.questionCount }}
-                          </p>
-                        </div>
-
-                        @if (context.canManageCourses()) {
-                          <button
-                            type="button"
-                            (click)="editTopic(topic)"
-                            class="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50"
-                            [attr.aria-label]="'Edit topic' | t"
-                          >
-                            <mat-icon>edit</mat-icon>
-                          </button>
-                        }
-                      </div>
+                      @if (context.canManageCourses() && group.program; as program) {
+                        <button
+                          type="button"
+                          (click)="startNewCourseInProgram(program)"
+                          [disabled]="!program.active"
+                          class="hidden h-9 items-center gap-1 rounded-lg border border-[#007979] bg-white px-3 text-xs font-semibold text-[#007979] hover:bg-[#E8F5F5] disabled:opacity-50 sm:inline-flex"
+                        >
+                          <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">add</mat-icon>
+                          {{ 'Quiz' | t }}
+                        </button>
+                        <button
+                          type="button"
+                          (click)="editProgram(program)"
+                          class="rounded-lg p-2 text-gray-500 hover:bg-gray-200/70 hover:text-[#032D42]"
+                          [attr.aria-label]="'Edit {0}' | t: [program.name]"
+                        >
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                      }
                     </div>
-                  }
-                </div>
-              </div>
+
+                    @if (!collapsedPrograms().has(group.key)) {
+                      @if (!group.quizzes.length) {
+                        <p class="border-t border-gray-100 px-4 py-3 pl-14 text-sm text-gray-500">{{ 'No quizzes in this program yet.' | t }}</p>
+                      }
+                      <ul class="divide-y divide-gray-100 border-t border-gray-100">
+                        @for (quiz of group.quizzes; track quiz.id) {
+                          @let quizTopics = topicsFor(quiz.id);
+                          <li>
+                            <!-- QUIZ -->
+                            <div class="flex items-center gap-3 px-4 py-3 sm:pl-10">
+                              <button
+                                type="button"
+                                (click)="toggleQuiz(quiz.id)"
+                                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100"
+                                [attr.aria-expanded]="expandedQuizzes().has(quiz.id)"
+                                [attr.aria-label]="(expandedQuizzes().has(quiz.id) ? 'Collapse {0}' : 'Expand {0}') | t: [quiz.name]"
+                              >
+                                <mat-icon>{{ expandedQuizzes().has(quiz.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+                              </button>
+                              <span
+                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                                [class]="quiz.active ? 'bg-[#E5F4F4] text-[#007979]' : 'bg-gray-100 text-gray-400'"
+                                aria-hidden="true"
+                              >
+                                <mat-icon class="!h-5 !w-5 !text-[20px]">{{ getCourseTypeIcon(quiz.type) }}</mat-icon>
+                              </span>
+                              <div class="min-w-0 flex-1">
+                                <p class="flex flex-wrap items-center gap-2">
+                                  <span class="truncate font-semibold text-gray-900">{{ quiz.name }}</span>
+                                  <span class="text-[11px] font-semibold uppercase tracking-wide text-[#007979]">{{ getCourseTypeLabel(quiz.type) | t }}</span>
+                                  @if (!quiz.active) {
+                                    <span class="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-600">{{ 'Inactive' | t }}</span>
+                                  }
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                  {{ (quizTopics.length === 1 ? '{0} topic' : '{0} topics') | t: [quizTopics.length] }}
+                                  · {{ '{0} questions' | t: [quiz.questionCount] }}
+                                  @if (quiz.provider) {
+                                    · {{ quiz.provider }}
+                                  }
+                                </p>
+                              </div>
+                              <a
+                                [routerLink]="['/partner/org', context.organizationId(), 'test-center', 'questions']"
+                                [queryParams]="{ quizId: quiz.id }"
+                                class="hidden h-9 items-center gap-1 rounded-lg bg-[#007979] px-3 text-xs font-semibold text-white hover:bg-teal-700 sm:inline-flex"
+                              >
+                                <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">quiz</mat-icon>
+                                {{ 'Questions' | t }}
+                              </a>
+                              @if (context.canManageCourses()) {
+                                <button
+                                  type="button"
+                                  (click)="createTopicForCourse(quiz)"
+                                  [disabled]="!quiz.active"
+                                  class="hidden h-9 items-center gap-1 rounded-lg border border-[#007979] bg-white px-3 text-xs font-semibold text-[#007979] hover:bg-[#E8F5F5] disabled:opacity-50 sm:inline-flex"
+                                >
+                                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">add</mat-icon>
+                                  {{ 'Topic' | t }}
+                                </button>
+                                <button
+                                  type="button"
+                                  [matMenuTriggerFor]="quizMenu"
+                                  class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-[#032D42]"
+                                  [attr.aria-label]="'Actions for {0}' | t: [quiz.name]"
+                                >
+                                  <mat-icon>more_vert</mat-icon>
+                                </button>
+                                <mat-menu #quizMenu="matMenu" xPosition="before">
+                                  <button mat-menu-item type="button" (click)="editCourse(quiz)">
+                                    <mat-icon>edit</mat-icon><span>{{ 'Edit quiz' | t }}</span>
+                                  </button>
+                                  <button mat-menu-item type="button" (click)="createTopicForCourse(quiz)" [disabled]="!quiz.active">
+                                    <mat-icon>topic</mat-icon><span>{{ 'Add topic' | t }}</span>
+                                  </button>
+                                  <a mat-menu-item [routerLink]="['/partner/org', context.organizationId(), 'test-center', 'questions']" [queryParams]="{ quizId: quiz.id }">
+                                    <mat-icon>quiz</mat-icon><span>{{ 'Manage questions' | t }}</span>
+                                  </a>
+                                </mat-menu>
+                              }
+                            </div>
+
+                            @if (expandedQuizzes().has(quiz.id)) {
+                              <!-- TOPICS -->
+                              @if (!quizTopics.length) {
+                                <p class="px-4 pb-3 text-sm text-gray-500 sm:pl-24">
+                                  {{ 'No topics yet.' | t }}
+                                  @if (context.canManageCourses() && quiz.active) {
+                                    <button type="button" (click)="createTopicForCourse(quiz)" class="font-semibold text-[#007979] hover:underline">{{ 'Add a topic' | t }}</button>
+                                  }
+                                </p>
+                              } @else {
+                                <ol class="pb-2 sm:pl-20">
+                                  @for (topic of quizTopics; track topic.id; let first = $first, last = $last, index = $index) {
+                                    <li class="flex items-center gap-3 rounded-lg px-4 py-2 hover:bg-gray-50">
+                                      <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E5F4F4] text-xs font-bold text-[#007979]">{{ index + 1 }}</span>
+                                      <div class="min-w-0 flex-1">
+                                        <p class="flex flex-wrap items-center gap-2">
+                                          <span class="truncate text-sm font-medium text-gray-900">{{ topic.name }}</span>
+                                          @if (!topic.active) {
+                                            <span class="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-600">{{ 'Inactive' | t }}</span>
+                                          }
+                                        </p>
+                                        <p class="text-xs text-gray-500">{{ '{0} questions' | t: [topic.questionCount] }}</p>
+                                      </div>
+                                      @if (context.canManageCourses()) {
+                                        <button
+                                          type="button"
+                                          (click)="moveTopic(topic, -1)"
+                                          [disabled]="first || reordering()"
+                                          class="rounded-lg p-1.5 text-gray-500 hover:bg-white hover:text-[#032D42] disabled:opacity-30"
+                                          [attr.aria-label]="'Move {0} up' | t: [topic.name]"
+                                        >
+                                          <mat-icon class="!text-lg">arrow_upward</mat-icon>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          (click)="moveTopic(topic, 1)"
+                                          [disabled]="last || reordering()"
+                                          class="rounded-lg p-1.5 text-gray-500 hover:bg-white hover:text-[#032D42] disabled:opacity-30"
+                                          [attr.aria-label]="'Move {0} down' | t: [topic.name]"
+                                        >
+                                          <mat-icon class="!text-lg">arrow_downward</mat-icon>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          (click)="editTopic(topic)"
+                                          class="rounded-lg p-1.5 text-gray-500 hover:bg-white hover:text-[#032D42]"
+                                          [attr.aria-label]="'Edit {0}' | t: [topic.name]"
+                                        >
+                                          <mat-icon class="!text-lg">edit</mat-icon>
+                                        </button>
+                                      }
+                                    </li>
+                                  }
+                                </ol>
+                              }
+                            }
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </li>
+                }
+              </ul>
             }
           </section>
         }
@@ -1022,8 +950,6 @@ export class PartnerTestCenterComponent implements OnInit {
   private readonly topicService = inject(TestTopicService);
 
   private readonly questionService = inject(TestQuestionService);
-
-  private readonly router = inject(Router);
 
   private readonly toast = inject(HotToastService);
 
@@ -1049,9 +975,71 @@ export class PartnerTestCenterComponent implements OnInit {
   // PROGRAM STATE
   // ============================================================
 
-  protected readonly programs = signal<TestProgram[]>([]);
+  /** Every program, inactive ones included (the Structure tree shows them). */
+  protected readonly allPrograms = signal<TestProgram[]>([]);
+
+  /** Active programs: the only ones a quiz can be put in. */
+  protected readonly programs = computed(() => this.allPrograms().filter((program) => program.active));
 
   protected readonly loadingPrograms = signal(false);
+
+  protected readonly showProgramForm = signal(false);
+
+  protected readonly editingProgramId = signal<string | null>(null);
+
+  protected readonly savingProgram = signal(false);
+
+  protected programForm: ProgramForm = this.createEmptyProgramForm();
+
+  // ============================================================
+  // STRUCTURE TREE STATE
+  // ============================================================
+
+  protected readonly showInactive = signal(false);
+
+  /** Programs are open by default; this holds the closed ones. */
+  protected readonly collapsedPrograms = signal<Set<string>>(new Set());
+
+  /** Quizzes are closed by default; this holds the open ones. */
+  protected readonly expandedQuizzes = signal<Set<string>>(new Set());
+
+  protected readonly reordering = signal(false);
+
+  /** Program → quizzes, with quizzes whose program is missing under "No program". */
+  protected readonly structure = computed((): StructureGroup[] => {
+    const showInactive = this.showInactive();
+    const quizzes = this.courses()
+      .filter((quiz) => showInactive || quiz.active)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const programs = this.allPrograms()
+      .filter((program) => showInactive || program.active)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const known = new Set(this.allPrograms().map((program) => program.id));
+
+    const groups: StructureGroup[] = programs.map((program) => {
+      const inProgram = quizzes.filter((quiz) => quiz.programId === program.id);
+      return {
+        key: program.id,
+        name: program.name,
+        program,
+        quizzes: inProgram,
+        questionCount: inProgram.reduce((total, quiz) => total + (quiz.questionCount || 0), 0),
+      };
+    });
+
+    const orphans = quizzes.filter((quiz) => !quiz.programId || !known.has(quiz.programId));
+    if (orphans.length) {
+      groups.push({
+        key: '__none__',
+        name: '',
+        program: null,
+        quizzes: orphans,
+        questionCount: orphans.reduce((total, quiz) => total + (quiz.questionCount || 0), 0),
+      });
+    }
+
+    return groups;
+  });
 
   protected readonly selectedProgramId = signal('all');
 
@@ -1189,7 +1177,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
       if (!organizationId) {
         this.courses.set([]);
-        this.programs.set([]);
+        this.allPrograms.set([]);
         this.topics.set([]);
 
         return;
@@ -1250,7 +1238,7 @@ export class PartnerTestCenterComponent implements OnInit {
       this.courses.set([]);
 
       const message =
-        error instanceof Error ? error.message : 'We could not load your organization courses.';
+        error instanceof Error ? error.message : 'We could not load your quizzes.';
 
       this.toast.error(message);
     } finally {
@@ -1266,11 +1254,11 @@ export class PartnerTestCenterComponent implements OnInit {
     this.loadingPrograms.set(true);
 
     try {
-      const programs = await this.testProgramService.getActiveOrganizationPrograms(organizationId);
+      const programs = await this.testProgramService.getOrganizationPrograms(organizationId);
 
-      this.programs.set(programs);
+      this.allPrograms.set(programs);
     } catch (error) {
-      this.programs.set([]);
+      this.allPrograms.set([]);
 
       const message =
         error instanceof Error ? error.message : 'Unable to load organization programs.';
@@ -1304,7 +1292,7 @@ export class PartnerTestCenterComponent implements OnInit {
       this.loadingTopics.set(true);
 
       const topicGroups = await Promise.all(
-        courses.map((course) => this.topicService.getAllTopics(organizationId, course.id)),
+        courses.map((course) => this.topicService.getTopicsForManagement(organizationId, course.id)),
       );
 
       const topics = topicGroups.flat().sort((a, b) => a.sortOrder - b.sortOrder);
@@ -1343,7 +1331,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
   protected startNewCourse(): void {
     if (!this.context.canManageCourses()) {
-      this.toast.error('You do not have permission to manage organization courses.');
+      this.toast.error('You do not have permission to manage quizzes.');
 
       return;
     }
@@ -1355,7 +1343,7 @@ export class PartnerTestCenterComponent implements OnInit {
     }
 
     if (this.programs().length === 0) {
-      this.toast.error('Create an active program before creating a course.');
+      this.toast.error('Create an active program before creating a quiz.');
 
       return;
     }
@@ -1366,11 +1354,13 @@ export class PartnerTestCenterComponent implements OnInit {
 
     this.form.programId = this.programs()[0]?.id ?? '';
 
-    // Close the topic form before opening the course form.
+    // Close the other forms before opening the quiz form.
     this.showTopicForm.set(false);
+    this.showProgramForm.set(false);
     this.editingTopicId.set(null);
 
     this.showForm.set(true);
+    this.scrollTo('quiz-form');
   }
 
   // ============================================================
@@ -1390,7 +1380,203 @@ export class PartnerTestCenterComponent implements OnInit {
       return;
     }
 
-    this.router.navigate(['/partner/org', this.context.organizationId(), 'programs']);
+    this.editingProgramId.set(null);
+    this.programForm = this.createEmptyProgramForm();
+    this.showForm.set(false);
+    this.showTopicForm.set(false);
+    this.showProgramForm.set(true);
+    this.scrollTo('program-form');
+  }
+
+  protected editProgram(program: TestProgram): void {
+    if (!this.access.canManagePrograms()) {
+      this.toast.error('You do not have permission to manage programs.');
+      return;
+    }
+
+    this.editingProgramId.set(program.id);
+    this.programForm = {
+      name: program.name ?? '',
+      slug: program.slug ?? program.id,
+      description: program.description ?? '',
+      active: program.active === true,
+    };
+    this.showForm.set(false);
+    this.showTopicForm.set(false);
+    this.showProgramForm.set(true);
+    this.scrollTo('program-form');
+  }
+
+  protected onProgramNameChange(): void {
+    if (!this.editingProgramId()) {
+      this.programForm.slug = this.slugify(this.programForm.name);
+    }
+  }
+
+  protected cancelProgramForm(): void {
+    this.showProgramForm.set(false);
+    this.editingProgramId.set(null);
+    this.programForm = this.createEmptyProgramForm();
+  }
+
+  protected async saveProgram(): Promise<void> {
+    if (this.savingProgram()) {
+      return;
+    }
+
+    const organizationId = this.context.organizationId();
+    if (!organizationId || !this.access.canManagePrograms()) {
+      this.toast.error('You do not have permission to manage programs.');
+      return;
+    }
+
+    const name = this.programForm.name.trim();
+    const slug = this.slugify(this.programForm.slug || name);
+
+    if (!name) {
+      this.toast.error('Program name is required.');
+      return;
+    }
+    if (slug.length < 3) {
+      this.toast.error('Program slug must contain at least 3 characters.');
+      return;
+    }
+
+    try {
+      this.savingProgram.set(true);
+      const editingId = this.editingProgramId();
+
+      if (editingId) {
+        await this.testProgramService.updateProgram(organizationId, editingId, {
+          name,
+          description: this.programForm.description.trim(),
+          active: this.programForm.active,
+        });
+        this.toast.success('Program updated.');
+      } else {
+        if (this.allPrograms().some((program) => program.id === slug || program.slug === slug)) {
+          this.toast.error('A program with this slug already exists. Choose another name or slug.');
+          return;
+        }
+        await this.testProgramService.createProgram(organizationId, {
+          name,
+          slug,
+          description: this.programForm.description.trim(),
+          active: this.programForm.active,
+        });
+        this.toast.success('Program created.');
+      }
+
+      this.cancelProgramForm();
+      await this.loadPrograms(organizationId);
+    } catch (error) {
+      // Program IDs are their slug; another organization may already use it.
+      const message =
+        error instanceof Error && /permission/i.test(error.message)
+          ? 'This slug is already taken. Choose a different slug.'
+          : error instanceof Error
+            ? error.message
+            : 'Unable to save the program.';
+      this.toast.error(message);
+    } finally {
+      this.savingProgram.set(false);
+    }
+  }
+
+  /** New quiz with the program already chosen (from the program row). */
+  protected startNewCourseInProgram(program: TestProgram): void {
+    this.startNewCourse();
+    if (this.showForm()) {
+      this.form.programId = program.id;
+    }
+  }
+
+  // ============================================================
+  // STRUCTURE TREE
+  // ============================================================
+
+  protected toggleProgram(key: string): void {
+    const next = new Set(this.collapsedPrograms());
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    this.collapsedPrograms.set(next);
+  }
+
+  protected toggleQuiz(quizId: string): void {
+    const next = new Set(this.expandedQuizzes());
+    if (next.has(quizId)) {
+      next.delete(quizId);
+    } else {
+      next.add(quizId);
+    }
+    this.expandedQuizzes.set(next);
+  }
+
+  protected expandAll(): void {
+    this.collapsedPrograms.set(new Set());
+    this.expandedQuizzes.set(new Set(this.courses().map((quiz) => quiz.id)));
+  }
+
+  protected collapseAll(): void {
+    this.expandedQuizzes.set(new Set());
+    this.collapsedPrograms.set(new Set(this.structure().map((group) => group.key)));
+  }
+
+  /** Topics of a quiz in learner order (inactive ones only when shown). */
+  protected topicsFor(quizId: string): TestTopic[] {
+    const showInactive = this.showInactive();
+    return this.topics()
+      .filter((topic) => topic.quizId === quizId && (showInactive || topic.active))
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+  }
+
+  /** Move a topic up or down; the quiz's topics are renumbered 0, 1, 2… */
+  protected async moveTopic(topic: TestTopic, direction: -1 | 1): Promise<void> {
+    const organizationId = this.context.organizationId();
+    if (!organizationId || !this.context.canManageCourses() || this.reordering()) {
+      return;
+    }
+
+    const ordered = this.topics()
+      .filter((item) => item.quizId === topic.quizId)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+    const index = ordered.findIndex((item) => item.id === topic.id);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= ordered.length) {
+      return;
+    }
+
+    [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+    const changed = ordered
+      .map((item, position) => ({ item, position }))
+      .filter(({ item, position }) => item.sortOrder !== position);
+
+    const previous = this.topics();
+    const order = new Map(ordered.map((item, position) => [item.id, position]));
+    this.topics.set(previous.map((item) => (order.has(item.id) ? { ...item, sortOrder: order.get(item.id)! } : item)));
+
+    try {
+      this.reordering.set(true);
+      await Promise.all(
+        changed.map(({ item, position }) => this.topicService.updateTopic(organizationId, item.id, { sortOrder: position })),
+      );
+    } catch (error) {
+      this.topics.set(previous);
+      this.toast.error(error instanceof Error ? error.message : 'Unable to reorder the topics.');
+    } finally {
+      this.reordering.set(false);
+    }
+  }
+
+  private scrollTo(id: string): void {
+    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }
+
+  private createEmptyProgramForm(): ProgramForm {
+    return { name: '', slug: '', description: '', active: true };
   }
 
   // ============================================================
@@ -1415,7 +1601,7 @@ export class PartnerTestCenterComponent implements OnInit {
     const activeCourses = this.activeCourses();
 
     if (activeCourses.length === 0) {
-      this.toast.error('Create an active course before creating a topic.');
+      this.toast.error('Create an active quiz before creating a topic.');
 
       return;
     }
@@ -1430,8 +1616,9 @@ export class PartnerTestCenterComponent implements OnInit {
 
     this.topicForm.sortOrder = this.getNextSortOrder(firstCourse.id);
 
-    // Close the course form before opening the topic form.
+    // Close the other forms before opening the topic form.
     this.showForm.set(false);
+    this.showProgramForm.set(false);
     this.editingQuizId.set(null);
 
     this.showTopicForm.set(true);
@@ -1452,7 +1639,7 @@ export class PartnerTestCenterComponent implements OnInit {
     }
 
     if (!course.active) {
-      this.toast.error('Topics can only be created for active courses.');
+      this.toast.error('Topics can only be created for active quizzes.');
 
       return;
     }
@@ -1465,8 +1652,9 @@ export class PartnerTestCenterComponent implements OnInit {
 
     this.topicForm.sortOrder = this.getNextSortOrder(course.id);
 
-    // Close the course form before opening the topic form.
+    // Close the other forms before opening the topic form.
     this.showForm.set(false);
+    this.showProgramForm.set(false);
     this.editingQuizId.set(null);
 
     this.showTopicForm.set(true);
@@ -1485,7 +1673,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
   protected editCourse(course: Quiz): void {
     if (!this.context.canManageCourses()) {
-      this.toast.error('You do not have permission to edit organization courses.');
+      this.toast.error('You do not have permission to edit quizzes.');
 
       return;
     }
@@ -1510,11 +1698,13 @@ export class PartnerTestCenterComponent implements OnInit {
       active: course.active === true,
     };
 
-    // Close the topic form before editing a course.
+    // Close the other forms before editing a quiz.
     this.showTopicForm.set(false);
+    this.showProgramForm.set(false);
     this.editingTopicId.set(null);
 
     this.showForm.set(true);
+    this.scrollTo('quiz-form');
   }
 
   // ============================================================
@@ -1544,8 +1734,9 @@ export class PartnerTestCenterComponent implements OnInit {
       active: topic.active === true,
     };
 
-    // Close the course form before editing a topic.
+    // Close the other forms before editing a topic.
     this.showForm.set(false);
+    this.showProgramForm.set(false);
     this.editingQuizId.set(null);
 
     this.editingTopicId.set(topic.id);
@@ -1612,7 +1803,7 @@ export class PartnerTestCenterComponent implements OnInit {
     }
 
     if (!this.context.canManageCourses()) {
-      this.toast.error('You do not have permission to manage organization courses.');
+      this.toast.error('You do not have permission to manage quizzes.');
 
       return;
     }
@@ -1655,7 +1846,7 @@ export class PartnerTestCenterComponent implements OnInit {
           active: this.form.active,
         });
 
-        this.toast.success('Course updated successfully.');
+        this.toast.success('Quiz updated.');
       } else {
         await this.quizService.createQuiz(organizationId, {
           name: this.form.name.trim(),
@@ -1675,7 +1866,7 @@ export class PartnerTestCenterComponent implements OnInit {
           active: this.form.active,
         });
 
-        this.toast.success('Custom course created successfully.');
+        this.toast.success('Quiz created.');
       }
 
       this.cancelForm();
@@ -1684,7 +1875,7 @@ export class PartnerTestCenterComponent implements OnInit {
 
       await this.loadTopics();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save the course.';
+      const message = error instanceof Error ? error.message : 'Unable to save the quiz.';
 
       this.toast.error(message);
     } finally {
@@ -1730,7 +1921,7 @@ export class PartnerTestCenterComponent implements OnInit {
     // --------------------------------------------------------
 
     if (!quizId) {
-      this.toast.error('Course is required.');
+      this.toast.error('Quiz is required.');
 
       return;
     }
@@ -1738,13 +1929,13 @@ export class PartnerTestCenterComponent implements OnInit {
     const selectedCourse = this.courses().find((course) => course.id === quizId);
 
     if (!selectedCourse) {
-      this.toast.error('The selected course does not belong to your organization.');
+      this.toast.error('The selected quiz does not belong to your organization.');
 
       return;
     }
 
     if (!selectedCourse.active) {
-      this.toast.error('Topics can only be assigned to active courses.');
+      this.toast.error('Topics can only be added to active quizzes.');
 
       return;
     }
@@ -1807,6 +1998,8 @@ export class PartnerTestCenterComponent implements OnInit {
       this.cancelTopicForm();
 
       await this.loadTopics();
+
+      this.expandedQuizzes.set(new Set([...this.expandedQuizzes(), quizId]));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to save the topic.';
 
@@ -1846,19 +2039,19 @@ export class PartnerTestCenterComponent implements OnInit {
 
   private validateCourseForm(): string | null {
     if (!this.form.name.trim()) {
-      return 'Course name is required.';
+      return 'Quiz name is required.';
     }
 
     if (!this.form.slug.trim()) {
-      return 'Course slug is required.';
+      return 'Quiz slug is required.';
     }
 
     if (this.form.slug.trim().length < 3) {
-      return 'Course slug must contain at least 3 characters.';
+      return 'Quiz slug must contain at least 3 characters.';
     }
 
     if (!this.form.type) {
-      return 'Course type is required.';
+      return 'Quiz type is required.';
     }
 
     if (!this.form.programId.trim()) {
@@ -1957,7 +2150,7 @@ export class PartnerTestCenterComponent implements OnInit {
   // ============================================================
 
   protected getCourseName(quizId: string): string {
-    return this.courses().find((course) => course.id === quizId)?.name ?? 'Unknown course';
+    return this.courses().find((course) => course.id === quizId)?.name ?? 'Unknown quiz';
   }
 
   // ============================================================

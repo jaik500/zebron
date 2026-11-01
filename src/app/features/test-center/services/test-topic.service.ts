@@ -134,6 +134,35 @@ async getActiveTopics(
   }
 
   // ============================================================
+  // TOPICS FOR MANAGEMENT (inactive included)
+  // ============================================================
+
+  /**
+   * Every topic of an organization quiz, inactive ones included, for the
+   * Structure page (managers). Rules allow Test Center admins to read
+   * inactive topics; question writers keep using getAllTopics (active).
+   */
+  async getTopicsForManagement(
+    organizationId: string,
+    quizId: string,
+  ): Promise<TestTopic[]> {
+    this.requireOrganizationId(organizationId);
+    this.requireQuizId(quizId);
+
+    const snapshot = await getDocs(
+      query(
+        this.topicsCollection,
+        where('organizationId', '==', organizationId),
+        where('quizId', '==', quizId),
+      ),
+    );
+
+    return snapshot.docs
+      .map((document) => ({ id: document.id, ...document.data() } as TestTopic))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  // ============================================================
   // CREATE TOPIC
   // ============================================================
 

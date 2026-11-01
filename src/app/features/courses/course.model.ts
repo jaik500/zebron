@@ -83,6 +83,10 @@ export interface Course {
   summary: string;
   description: string;
   topic: string;
+  /** Optional learning path this course belongs to, such as "Cybersecurity Program". */
+  program: string;
+  /** Position in the program (1, 2, 3…); null when not in a program. */
+  programOrder: number | null;
   level: CourseLevel;
   cover: CourseCover;
   outcomes: string[];

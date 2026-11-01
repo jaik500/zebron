@@ -389,6 +389,33 @@ import { CourseAccessService } from '../course-access.service';
                   </mat-form-field>
                 </div>
 
+                <!-- Program: groups courses into an ordered learning path in the catalog -->
+                <div class="grid gap-4 sm:grid-cols-[1fr_9rem]">
+                  <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                    <mat-label>{{ 'Program (optional)' | t }}</mat-label>
+                    <input
+                      matInput
+                      maxlength="80"
+                      [value]="store.details().program"
+                      (input)="store.patchDetails({ program: value($event) })"
+                      [placeholder]="'e.g. Cybersecurity Program' | t"
+                    />
+                    <mat-hint>{{ 'Courses with the same program are shown together, in order, in the catalog.' | t }}</mat-hint>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                    <mat-label>{{ 'Step' | t }}</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="1"
+                      max="99"
+                      [disabled]="!store.details().program.trim()"
+                      [value]="store.details().programOrder ?? ''"
+                      (input)="store.patchDetails({ programOrder: stepValue($event) })"
+                    />
+                  </mat-form-field>
+                </div>
+
                 <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
                   <mat-label>{{ 'What learners will be able to do (one per line)' | t }}</mat-label>
                   <textarea matInput rows="4" [value]="outcomesText()" (input)="store.patchDetails({ outcomes: lines($event) })"></textarea>
@@ -445,6 +472,12 @@ import { CourseAccessService } from '../course-access.service';
                             <mat-option disabled>{{ (quizzesLoading() ? 'Loading quizzes...' : 'No active quizzes yet. Create one in the Test Center.') | t }}</mat-option>
                           }
                         </mat-select>
+                        @if (context.organizationId) {
+                          <mat-hint>
+                            {{ 'Quizzes are created in' | t }}
+                            <a [routerLink]="['/partner/org', context.organizationId, 'test-center']" target="_blank" class="font-semibold text-[#007979] underline">{{ 'Test Center → Structure' | t }}</a>
+                          </mat-hint>
+                        }
                       </mat-form-field>
 
                       <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
@@ -721,6 +754,12 @@ export class CourseBuilderComponent {
 
   protected number(event: Event): number {
     return Number((event.target as HTMLInputElement).value) || 1;
+  }
+
+  /** Program step: a whole number from 1, or null when empty. */
+  protected stepValue(event: Event): number | null {
+    const step = Math.round(Number(this.value(event)));
+    return Number.isFinite(step) && step >= 1 ? Math.min(99, step) : null;
   }
 
   protected lines(event: Event): string[] {

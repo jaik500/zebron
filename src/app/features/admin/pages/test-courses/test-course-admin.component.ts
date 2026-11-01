@@ -114,7 +114,7 @@ interface CourseForm {
               <span>/</span>
 
               <span class="text-white/90">
-                Courses
+                Quizzes
               </span>
             </div>
 
@@ -124,13 +124,13 @@ interface CourseForm {
               class="mt-1 text-xl
                      font-semibold text-white"
             >
-              Test Center Courses
+              Test Center Quizzes
             </h1>
 
             <p
               class="text-lg text-white/65"
             >
-              Create and manage the courses available in the Test Center.
+              Create and manage the quizzes available in the Test Center.
             </p>
           </div>
 
@@ -168,7 +168,7 @@ interface CourseForm {
                 add
               </mat-icon>
 
-              Add Course
+              Add Quiz
             </button>
 
             <!-- THREE-DOT MENU -->
@@ -238,7 +238,7 @@ interface CourseForm {
                 </mat-icon>
 
                 <span>
-                  Courses
+                  Quizzes
                 </span>
               </a>
 
@@ -308,7 +308,7 @@ interface CourseForm {
         >
 
           <!-- =====================================================
-               COURSE FORM
+               QUIZ FORM
                ===================================================== -->
 
           @if (showForm()) {
@@ -341,8 +341,8 @@ interface CourseForm {
                     >
                       {{
                         editingQuizId()
-                          ? 'Edit Course'
-                          : 'Create Course'
+                          ? 'Edit Quiz'
+                          : 'Create Quiz'
                       }}
                     </h2>
 
@@ -352,8 +352,8 @@ interface CourseForm {
                     >
                       {{
                         editingQuizId()
-                          ? 'Update the course information below.'
-                          : 'Add a new course to the Test Center.'
+                          ? 'Update the quiz information below.'
+                          : 'Add a new quiz to the Test Center.'
                       }}
                     </p>
                   </div>
@@ -444,7 +444,7 @@ interface CourseForm {
                     <div>
 
                       <mat-form-field appearance="outline" class="zb-field">
-                        <mat-label>Course Scope</mat-label>
+                        <mat-label>Quiz Scope</mat-label>
                         <mat-select
                         id="courseScope"
                         name="courseScope"
@@ -452,11 +452,11 @@ interface CourseForm {
                         [disabled]="!!editingQuizId()"
                       >
                         <mat-option value="organization">
-                          Organization Course
+                          Organization Quiz
                         </mat-option>
 
                         <mat-option value="platform">
-                          Zebron Platform Course
+                          Zebron Platform Quiz
                         </mat-option>
                       </mat-select>
                       </mat-form-field>
@@ -522,7 +522,7 @@ interface CourseForm {
                                    text-xs
                                    text-gray-500"
                           >
-                            This course will only be available to members
+                            This quiz will only be available to members
                             of the selected organization.
                           </p>
 
@@ -578,14 +578,14 @@ interface CourseForm {
                                text-xs
                                text-gray-500"
                       >
-                        Select the program that owns this course.
+                        Select the program that owns this quiz.
                       </p>
                     </div>
 
                   }
 
                   <!-- =================================================
-                       COURSE NAME / SLUG
+                       QUIZ NAME / SLUG
                        ================================================= -->
 
                   <div
@@ -598,7 +598,7 @@ interface CourseForm {
                     <div>
 
                       <mat-form-field appearance="outline" class="zb-field">
-                        <mat-label>Course Name</mat-label>
+                        <mat-label>Quiz Name</mat-label>
                         <input matInput
                         id="courseName"
                         name="courseName"
@@ -636,7 +636,7 @@ interface CourseForm {
                         {{
                           editingQuizId()
                             ? 'The slug cannot be changed after creation.'
-                            : 'Used in the course URL and as the course identifier.'
+                            : 'Used in the quiz URL and as the quiz identifier.'
                         }}
                       </p>
                     </div>
@@ -657,7 +657,7 @@ interface CourseForm {
                     <div>
 
                       <mat-form-field appearance="outline" class="zb-field">
-                        <mat-label>Course Type</mat-label>
+                        <mat-label>Quiz Type</mat-label>
                         <mat-select
                         id="courseType"
                         name="courseType"
@@ -668,7 +668,7 @@ interface CourseForm {
                         </mat-option>
 
                         <mat-option value="course">
-                          Course
+                          Course practice
                         </mat-option>
 
                         <mat-option value="subject">
@@ -739,7 +739,7 @@ interface CourseForm {
                       name="description"
                       [(ngModel)]="form.description"
                       rows="4"
-                      placeholder="Describe what this course covers..."
+                      placeholder="Describe what this quiz covers..."
                     ></textarea>
                     </mat-form-field>
                   </div>
@@ -762,7 +762,7 @@ interface CourseForm {
                                  font-medium
                                  text-gray-800"
                         >
-                          Active course
+                          Active quiz
                         </span>
 
                         <span
@@ -771,7 +771,7 @@ interface CourseForm {
                                  text-xs
                                  text-gray-500"
                         >
-                          Active courses are available to Test Center users.
+                          Active quizzes are available to Test Center users.
                         </span>
                       </span></mat-checkbox>
                   </div>
@@ -872,8 +872,8 @@ interface CourseForm {
                       } @else {
                         {{
                           editingQuizId()
-                            ? 'Update Course'
-                            : 'Create Course'
+                            ? 'Update Quiz'
+                            : 'Create Quiz'
                         }}
                       }
                     </button>
@@ -939,7 +939,7 @@ interface CourseForm {
                          font-semibold
                          text-gray-900"
                 >
-                  Course Management
+                  Quiz Management
                 </h2>
 
                 <p
@@ -948,8 +948,8 @@ interface CourseForm {
                          leading-6
                          text-gray-500"
                 >
-                  Select an existing course to edit it, or create a new
-                  Test Center course.
+                  Select an existing quiz to edit it, or create a new
+                  Test Center quiz.
                 </p>
 
                 <button
@@ -965,7 +965,7 @@ interface CourseForm {
                          transition
                          hover:bg-teal-700"
                 >
-                  + Create Course
+                  + Create Quiz
                 </button>
               </div>
             </section>
@@ -973,7 +973,7 @@ interface CourseForm {
           }
 
           <!-- =====================================================
-               COURSE DIRECTORY
+               QUIZ DIRECTORY
                ===================================================== -->
 
           <section
@@ -1004,7 +1004,7 @@ interface CourseForm {
                            font-semibold
                            text-gray-900"
                   >
-                    Courses
+                    Quizzes
                   </h2>
 
                   <p
@@ -1015,8 +1015,8 @@ interface CourseForm {
                     {{ courses().length }}
                     {{
                       courses().length === 1
-                        ? 'course'
-                        : 'courses'
+                        ? 'quiz'
+                        : 'quizzes'
                     }}
                   </p>
 
@@ -1065,7 +1065,7 @@ interface CourseForm {
                            font-medium
                            text-gray-700"
                   >
-                    No courses yet
+                    No quizzes yet
                   </p>
 
                   <p
@@ -1073,7 +1073,7 @@ interface CourseForm {
                            text-xs
                            text-gray-500"
                   >
-                    Create your first Test Center course.
+                    Create your first Test Center quiz.
                   </p>
                 </div>
 
@@ -1326,7 +1326,7 @@ export class TestCourseAdminComponent
       this.courses.set([]);
 
       this.toast.error(
-        'We could not load the Test Center courses.',
+        'We could not load the Test Center quizzes.',
       );
     } finally {
       this.loadingCourses.set(false);
@@ -1456,7 +1456,7 @@ export class TestCourseAdminComponent
 
         if (!organizationId) {
           this.toast.error(
-            'Select an organization before updating an organization course.',
+            'Select an organization before updating an organization quiz.',
           );
 
           return;
@@ -1490,7 +1490,7 @@ export class TestCourseAdminComponent
         );
 
         this.toast.success(
-          'Course updated successfully.',
+          'Quiz updated successfully.',
         );
       }
 
@@ -1528,7 +1528,7 @@ export class TestCourseAdminComponent
         );
 
         this.toast.success(
-          'Platform course created successfully.',
+          'Platform quiz created successfully.',
         );
       }
 
@@ -1542,7 +1542,7 @@ export class TestCourseAdminComponent
 
         if (!organizationId) {
           this.toast.error(
-            'Select an organization before creating an organization course.',
+            'Select an organization before creating an organization quiz.',
           );
 
           return;
@@ -1553,7 +1553,7 @@ export class TestCourseAdminComponent
 
         if (!programId) {
           this.toast.error(
-            'Select a program before creating an organization course.',
+            'Select a program before creating an organization quiz.',
           );
 
           return;
@@ -1588,7 +1588,7 @@ export class TestCourseAdminComponent
         );
 
         this.toast.success(
-          'Organization course created successfully.',
+          'Organization quiz created successfully.',
         );
       }
 

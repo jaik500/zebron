@@ -4996,7 +4996,7 @@ service cloud.firestore {
       let data = request.resource.data;
 
       return data.keys().hasOnly([
-          "title", "summary", "description", "topic", "level", "cover",
+          "title", "summary", "description", "topic", "program", "programOrder", "level", "cover",
           "outcomes", "skills", "modules", "lessonCount", "estimatedMinutes",
           "status", "providerName", "authorId", "authorName", "organizationId", "id", "finalExam",
           "review", "createdAt", "updatedAt", "publishedAt"
@@ -5005,6 +5005,9 @@ service cloud.firestore {
         && data.title is string
         && data.title.size() > 0
         && data.title.size() <= 200
+        && data.get("program", "") is string
+        && data.get("program", "").size() <= 80
+        && (data.get("programOrder", null) == null || data.programOrder is int)
         && data.get("summary", "") is string
         && data.get("summary", "").size() <= 400
         && data.get("description", "") is string
@@ -5158,6 +5161,166 @@ service cloud.firestore {
     }
 
     /*
+     * Course assignments: a manager asks a member to take a course, or one
+     * lesson of it, optionally by a due date. One document per person and
+     * item: {uid}__{courseId} or {uid}__{courseId}__{lessonId}.
+     * Learners read their own; staff read all; managers write.
+     */
+    function isValidCourseAssignment(organizationId, assignmentId) {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly([
+          "organizationId", "userId", "userName", "courseId", "courseTitle",
+          "cover", "lessonId", "lessonTitle", "dueAt", "required", "note",
+          "assignedBy", "assignedByName", "assignedAt"
+        ])
+        && data.organizationId == organizationId
+        && data.userId is string
+        && data.userId.matches("^[A-Za-z0-9_-]{1,128}$")
+        && data.courseId is string
+        && data.courseId.matches("^[A-Za-z0-9_-]{1,128}$")
+        && (
+          (data.lessonId == null && assignmentId == data.userId + "__" + data.courseId)
+          || (
+            data.lessonId is string
+            && data.lessonId.matches("^[A-Za-z0-9_-]{1,128}$")
+            && assignmentId == data.userId + "__" + data.courseId + "__" + data.lessonId
+          )
+        )
+        && data.userName is string
+        && data.userName.size() <= 120
+        && data.courseTitle is string
+        && data.courseTitle.size() <= 200
+        && data.cover is string
+        && data.cover.size() <= 20
+        && (data.lessonTitle == null || (data.lessonTitle is string && data.lessonTitle.size() <= 200))
+        && (data.dueAt == null || data.dueAt is timestamp)
+        && data.required is bool
+        && data.note is string
+        && data.note.size() <= 500
+        && data.assignedBy == request.auth.uid
+        && data.assignedByName is string
+        && data.assignedByName.size() <= 120
+        && data.assignedAt == request.time;
+    }
+
+    match /organizations/{organizationId}/courseAssignments/{assignmentId} {
+      allow get, list: if isPlatformAdmin();
+
+      allow get, list: if isAuthenticated()
+        && resource.data.userId == request.auth.uid
+        && isOrganizationOperational(organizationId)
+        && hasActiveCoursesEntitlement(organizationId);
+
+      allow get, list: if isOrganizationOperational(organizationId)
+        && hasActiveCoursesEntitlement(organizationId)
+        && isOrganizationStaffOrAbove(organizationId);
+
+      allow create, update: if canWriteOrganizationCourses(organizationId)
+        && isValidCourseAssignment(organizationId, assignmentId);
+
+      allow delete: if canWriteOrganizationCourses(organizationId);
+    }
+
+    // ============================================================
+    // VIRTUAL CLASSROOM (Learning capability, on demand)
+    // ============================================================
+
+    /*
+     * organizations/{id}/liveSessions/{sessionId}: instructor-led live
+     * sessions. The meeting runs in Zoom, Meet, Teams or Jitsi; Zebron
+     * keeps the schedule, link, registrations, attendance and recording.
+     *
+     * - Members of the organization see sessions.
+     * - Staff and above schedule, edit and cancel them.
+     * - Registering goes through registerForLiveSession (capacity).
+     * - A member sees their own registration; staff see all and mark
+     *   attendance.
+     */
+    function hasActiveVirtualClassroom(organizationId) {
+      let entitlementPath =
+        /databases/$(database)/documents/organizations/$(organizationId)/applications/virtual-classroom;
+
+      return exists(entitlementPath)
+        && get(entitlementPath).data.get("status", "") == "active";
+    }
+
+    function canRunLiveSessions(organizationId) {
+      return isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && hasActiveVirtualClassroom(organizationId)
+          && isOrganizationStaffOrAbove(organizationId)
+        );
+    }
+
+    function isValidLiveSession(organizationId) {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly([
+          "title", "description", "organizationId", "instructorId", "instructorName",
+          "startAt", "durationMinutes", "capacity", "provider", "meetingUrl", "recordingUrl",
+          "status", "registeredCount", "createdBy", "createdAt", "updatedAt"
+        ])
+        && data.organizationId == organizationId
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 200
+        && data.get("description", "") is string
+        && data.get("description", "").size() <= 5000
+        && data.startAt is timestamp
+        && data.durationMinutes is int
+        && data.durationMinutes >= 5
+        && data.durationMinutes <= 600
+        && data.capacity is int
+        && data.capacity >= 0
+        && data.capacity <= 10000
+        && data.provider in ["jitsi", "meet", "zoom", "teams", "other"]
+        && data.get("meetingUrl", "") is string
+        && data.get("meetingUrl", "").size() <= 500
+        && data.get("recordingUrl", "") is string
+        && data.get("recordingUrl", "").size() <= 500
+        && data.status in ["scheduled", "cancelled"]
+        && data.registeredCount is int;
+    }
+
+    match /organizations/{organizationId}/liveSessions/{sessionId} {
+      allow get, list: if isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && hasActiveVirtualClassroom(organizationId)
+          && isOrganizationMember(organizationId)
+        );
+
+      allow create: if canRunLiveSessions(organizationId)
+        && isValidLiveSession(organizationId)
+        && request.resource.data.registeredCount == 0;
+
+      // The registration count is kept by registerForLiveSession.
+      allow update: if canRunLiveSessions(organizationId)
+        && isValidLiveSession(organizationId)
+        && request.resource.data.registeredCount == resource.data.registeredCount;
+
+      allow delete: if canRunLiveSessions(organizationId);
+
+      match /registrations/{userId} {
+        allow get: if isCurrentUser(userId)
+          || canRunLiveSessions(organizationId);
+
+        allow list: if canRunLiveSessions(organizationId);
+
+        allow create: if false;
+
+        // Staff mark attendance; nothing else changes.
+        allow update: if canRunLiveSessions(organizationId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["attended", "attendanceMarkedAt"])
+          && request.resource.data.attended is bool;
+
+        allow delete: if canRunLiveSessions(organizationId);
+      }
+    }
+
+    /*
      * Final exam records: written only by the startCourseExam and
      * submitCourseExam Cloud Functions, which grade on the server.
      */
@@ -5169,6 +5332,52 @@ service cloud.firestore {
     match /certificates/{code} {
       allow get: if true;
       allow list, write: if false;
+    }
+
+    /*
+     * Certifications: an ordered path of courses ending in a certification
+     * exam. Definitions are readable when published; Zebron's are written by
+     * platform administrators (seed scripts), an organization's by its
+     * managers. Enrollments and attempts are written only by Cloud Functions
+     * (certifications.ts, course-exams.ts).
+     */
+    match /certifications/{certificationId} {
+      allow get, list: if resource.data.get("status", "") == "published"
+        || isPlatformAdmin();
+
+      allow write: if isPlatformAdmin();
+    }
+
+    match /organizations/{organizationId}/certifications/{certificationId} {
+      allow get, list: if isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && hasActiveCoursesEntitlement(organizationId)
+          && isOrganizationStaffOrAbove(organizationId)
+        )
+        || (
+          isAuthenticated()
+          && isOrganizationOperational(organizationId)
+          && hasActiveCoursesEntitlement(organizationId)
+          && isOrganizationMember(organizationId)
+          && resource.data.get("status", "") == "published"
+        );
+
+      allow write: if canWriteOrganizationCourses(organizationId);
+    }
+
+    match /users/{userId}/certifications/{certificationKey} {
+      allow get, list: if isCurrentUser(userId)
+        || isPlatformAdmin();
+
+      allow write: if false;
+
+      match /attempts/{attemptId} {
+        allow get, list: if isCurrentUser(userId)
+          || isPlatformAdmin();
+
+        allow write: if false;
+      }
     }
 
     match /users/{userId}/courseExams/{progressId} {

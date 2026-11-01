@@ -2529,6 +2529,9 @@ export {
   updateSupportTicket,
 } from "./support-tickets";
 export { askSupportAssistant } from "./support-assistant";
+export { registerForLiveSession } from "./live-sessions";
+export { getTeamLearningProgress } from "./learning-progress";
+export { enrollInCertification, startCertificationExam, submitCertificationExam } from "./certifications";
 export {
   getOrganizationMemberDirectory,
   getOrganizationMemberProfile,

@@ -58,14 +58,14 @@ interface CourseContext {
   examRef: DocumentReference;
 }
 
-interface ExamQuestion {
+export interface ExamQuestion {
   id: string;
   question: string;
   type: string;
   options: { id: string; text: string }[];
 }
 
-function text(value: unknown): string {
+export function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
@@ -95,13 +95,13 @@ function readFinalExam(value: unknown): FinalExam | null {
 }
 
 /** A readable certificate code, e.g. ZB-7Q4K-M2XP. */
-function certificateCode(): string {
+export function certificateCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const characters = Array.from({ length: 8 }, () => alphabet[randomInt(alphabet.length)]).join("");
   return `ZB-${characters.slice(0, 4)}-${characters.slice(4)}`;
 }
 
-function shuffle<T>(items: T[]): T[] {
+export function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
   for (let index = copy.length - 1; index > 0; index -= 1) {
     const other = randomInt(index + 1);
@@ -206,7 +206,7 @@ async function loadQuiz(context: CourseContext): Promise<{ name: string; organiz
   return { name: text(quiz.get("name")), organizationId: quizOrganizationId };
 }
 
-function toExamQuestion(id: string, data: FirebaseFirestore.DocumentData): ExamQuestion {
+export function toExamQuestion(id: string, data: FirebaseFirestore.DocumentData): ExamQuestion {
   const type = text(data.type) || "multiple-choice";
   const options = (Array.isArray(data.options) ? data.options : [])
     .map((option: { id?: unknown; text?: unknown }) => ({ id: text(option.id), text: text(option.text) }))
@@ -254,11 +254,11 @@ function parseNumber(value: unknown): number | null {
   return Number.isFinite(number) ? number : null;
 }
 
-function strings(value: unknown): string[] {
+export function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : [];
 }
 
-function isAnswerCorrect(question: FirebaseFirestore.DocumentData, answer: string): boolean {
+export function isAnswerCorrect(question: FirebaseFirestore.DocumentData, answer: string): boolean {
   if (!answer) {
     return false;
   }
@@ -287,7 +287,7 @@ function isAnswerCorrect(question: FirebaseFirestore.DocumentData, answer: strin
   }
 }
 
-async function questionsById(ids: string[]): Promise<Map<string, FirebaseFirestore.DocumentData>> {
+export async function questionsById(ids: string[]): Promise<Map<string, FirebaseFirestore.DocumentData>> {
   if (!ids.length) {
     return new Map();
   }
@@ -312,6 +312,55 @@ function summary(context: CourseContext, record: FirebaseFirestore.DocumentData 
 }
 
 // ============================================================
+// CERTIFICATION PATHS (users/{uid}/certifications, see certifications.ts)
+// ============================================================
+
+interface CertificationPath {
+  key: string;
+  ref: DocumentReference;
+  title: string;
+  /** 1-based position of this course in the path. */
+  step: number;
+  /** Title of the earlier course that must be passed first, or null. */
+  blockedBy: string | null;
+  /** Its step number. */
+  blockedStep: number;
+  /** Every earlier step is counted and this one is not yet. */
+  isNextStep: boolean;
+  /** Next step, but the course was passed before (out of order): retake it. */
+  needsRetake: boolean;
+}
+
+/** The learner's certification enrollments that include this course, and where it sits in each. */
+async function certificationPaths(context: CourseContext): Promise<CertificationPath[]> {
+  const snapshot = await getFirestore()
+    .collection("users").doc(context.uid).collection("certifications")
+    .where("courseKeys", "array-contains", context.progressId)
+    .get();
+
+  return snapshot.docs.map((document) => {
+    const keys = strings(document.get("courseKeys"));
+    const titles = strings(document.get("courseTitles"));
+    const passes = (document.get("stepPasses") ?? {}) as Record<string, unknown>;
+    const index = keys.indexOf(context.progressId);
+    const firstGap = keys.findIndex((key) => !passes[key]);
+    const counted = !!passes[context.progressId];
+    const isNextStep = !counted && firstGap === index;
+
+    return {
+      key: document.id,
+      ref: document.ref,
+      title: text(document.get("title")) || "this certification",
+      step: index + 1,
+      blockedBy: !counted && firstGap >= 0 && firstGap < index ? titles[firstGap] || `step ${firstGap + 1}` : null,
+      blockedStep: firstGap + 1,
+      isNextStep,
+      needsRetake: isNextStep,
+    };
+  });
+}
+
+// ============================================================
 // START
 // ============================================================
 
@@ -323,7 +372,21 @@ export const startCourseExam = onCall({ region: REGION }, async (request) => {
   const recordSnapshot = await context.examRef.get();
   const record = recordSnapshot.data();
 
-  if (record?.passed === true) {
+  // Certification paths: steps are taken in order, and a course passed out
+  // of order before enrolling is retaken when its step comes up.
+  const paths = await certificationPaths(context);
+  const blocked = paths.find((path) => path.blockedBy);
+  if (blocked && !context.isAdmin) {
+    throw new HttpsError(
+      "failed-precondition",
+      `This is step ${blocked.step} of ${blocked.title}. Pass step ${blocked.blockedStep} (${blocked.blockedBy}) first.`,
+    );
+  }
+
+  const requestedPath = text(((request.data ?? {}) as Record<string, unknown>).certificationKey);
+  const retake = record?.passed === true && paths.some((path) => path.key === requestedPath && path.needsRetake);
+
+  if (record?.passed === true && !retake) {
     throw new HttpsError("already-exists", "You have already passed this exam.");
   }
 
@@ -348,7 +411,8 @@ export const startCourseExam = onCall({ region: REGION }, async (request) => {
   }
 
   const used = Number(record?.attempts ?? 0);
-  if (context.exam.maxAttempts && used >= context.exam.maxAttempts && !context.isAdmin) {
+  // A certification retake of an already passed course is not limited by the course's attempts.
+  if (context.exam.maxAttempts && used >= context.exam.maxAttempts && !context.isAdmin && !retake) {
     throw new HttpsError("resource-exhausted", "You have used all your attempts at this exam. Contact your course manager.");
   }
 
@@ -532,6 +596,15 @@ export const submitCourseExam = onCall({ region: REGION }, async (request) => {
     },
     { merge: true },
   );
+
+  // Count this pass as the next step of any certification path waiting for it.
+  if (passed) {
+    for (const path of await certificationPaths(context)) {
+      if (path.isNextStep) {
+        batch.set(path.ref, { stepPasses: { [context.progressId]: submittedAt }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      }
+    }
+  }
 
   await batch.commit();
 

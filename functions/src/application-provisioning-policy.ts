@@ -106,6 +106,18 @@ export const APPLICATION_PROVISIONING_POLICIES = {
   },
 
   /**
+   * Virtual Classroom: a Learning capability on its own (live sessions run
+   * in Zoom, Google Meet, Teams or Jitsi; Zebron keeps the schedule).
+   */
+  "virtual-classroom": {
+    applicationId: "virtual-classroom",
+    provisioningStrategy: "default",
+    autoProvision: true,
+    enabled: true,
+    dependencies: ["core"],
+  },
+
+  /**
    * Knowledge application.
    */
   // On demand: organizations get the blog only after requesting it.

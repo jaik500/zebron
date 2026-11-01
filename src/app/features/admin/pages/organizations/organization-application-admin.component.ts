@@ -1169,6 +1169,7 @@ export class OrganizationApplicationAdminComponent implements OnInit {
       learning: 'Learning: Courses and Test Center',
       courses: 'Learning: Courses and Test Center',
       'test-center': 'Learning: Test Center only',
+      'virtual-classroom': 'Learning: Virtual Classroom',
       knowledge: 'Knowledge Center',
       blog: 'Blog',
       mailbox: 'Mailbox',

@@ -32,7 +32,11 @@ import { Course, COURSE_COVERS, COURSE_LEVEL_LABELS, CourseExamRecord, CoursePro
       </div>
 
       <div class="flex flex-1 flex-col gap-1.5 p-4">
-        @if (course().topic) {
+        @if (course().program) {
+          <span class="truncate text-[11px] font-bold uppercase tracking-wide text-[#007979]">
+            {{ course().program }}@if (course().programOrder) { · {{ 'Step {0}' | t: [course().programOrder] }} }
+          </span>
+        } @else if (course().topic) {
           <span class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ course().topic }}</span>
         }
         <h3 class="text-base font-semibold leading-snug text-slate-900 group-hover:text-[#007979]">{{ course().title }}</h3>

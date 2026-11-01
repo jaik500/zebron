@@ -118,7 +118,7 @@ export const CourseStore = signalStore(
         (course) =>
           (topic === 'All' || course.topic === topic) &&
           (!term ||
-            `${course.title} ${course.summary} ${course.topic} ${course.skills.join(' ')} ${course.providerName}`
+            `${course.title} ${course.summary} ${course.topic} ${course.program} ${course.skills.join(' ')} ${course.providerName}`
               .toLowerCase()
               .includes(term)),
       );

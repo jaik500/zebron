@@ -669,6 +669,8 @@ export class ZebronHeaderComponent {
       apps.push({ key: 'learning', label: 'Learning', icon: 'school', route: `${base}/courses` });
     } else if (active.includes('test-center')) {
       apps.push({ key: 'learning', label: 'Learning', icon: 'school', route: `${base}/learn/test-center` });
+    } else if (active.includes('virtual-classroom')) {
+      apps.push({ key: 'learning', label: 'Learning', icon: 'school', route: `${base}/live` });
     }
     if (active.includes('community')) {
       apps.push({ key: 'community', label: 'Community', icon: 'forum', route: `${base}/community` });

@@ -115,6 +115,22 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/courses/pages/my-certificates.component').then((m) => m.MyCertificatesComponent),
             },
             {
+                path: 'certifications',
+                data: { title: 'Zebron | Certifications' },
+                loadComponent: () => import('./features/courses/pages/certification-list.component').then((m) => m.CertificationListComponent),
+            },
+            {
+                path: 'certifications/:certificationKey',
+                data: { title: 'Zebron | Certification' },
+                loadComponent: () => import('./features/courses/pages/certification-detail.component').then((m) => m.CertificationDetailComponent),
+            },
+            {
+                path: 'certifications/:certificationKey/exam',
+                canActivate: [authGuard],
+                data: { title: 'Zebron | Certification exam' },
+                loadComponent: () => import('./features/courses/pages/certification-exam.component').then((m) => m.CertificationExamComponent),
+            },
+            {
                 path: 'manage',
                 canActivate: [adminGuard],
                 loadComponent: () => import('./features/courses/builder/course-manage.component').then((m) => m.CourseManageComponent),
@@ -915,7 +931,24 @@ export const routes: Routes = [
         ],
     },
     // -----------------------------------------------------
-    // LEARNING ADMINISTRATION (Courses + Test Center, staff and above)
+    // VIRTUAL CLASSROOM (live sessions; members join, staff schedule)
+    // -----------------------------------------------------
+    {
+        path: 'partner/org/:organizationId/live',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            applicationAccessGuard,
+        ],
+        data: {
+            applicationId: 'virtual-classroom',
+            title: 'Partner | Virtual Classroom',
+            organizationHeader: true,
+        },
+        loadComponent: () => import('./features/live/live-sessions.component').then((m) => m.LiveSessionsComponent),
+    },
+    // -----------------------------------------------------
+    // LEARNING ADMINISTRATION (Courses, Test Center, Virtual Classroom; staff and above)
     // -----------------------------------------------------
     {
         path: 'partner/org/:organizationId/learning/manage',
@@ -923,15 +956,32 @@ export const routes: Routes = [
             authGuard,
             partnerOrganizationGuard,
             partnerRoleGuard,
-            applicationAccessGuard,
         ],
+        // The page shows a card per active capability (and redirects when
+        // the Test Center is the only one), so no single application guard.
         data: {
-            applicationId: 'test-center',
             minimumOrganizationRole: 'org_staff',
             title: 'Partner | Learning administration',
             organizationHeader: true,
         },
         loadComponent: () => import('./features/partner/learning/learning-admin.component').then((m) => m.LearningAdminComponent),
+    },
+    {
+        // Team progress: assignments, completions and certificates (managers).
+        path: 'partner/org/:organizationId/learning/progress',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            partnerRoleGuard,
+            applicationAccessGuard,
+        ],
+        data: {
+            applicationId: 'courses',
+            minimumOrganizationRole: 'org_manager',
+            title: 'Partner | Team progress',
+            organizationHeader: true,
+        },
+        loadComponent: () => import('./features/partner/learning/team-progress.component').then((m) => m.TeamProgressComponent),
     },
     // -----------------------------------------------------
     // ORGANIZATION COURSES (members learn; the organization's own courses plus Zebron's)
@@ -964,6 +1014,22 @@ export const routes: Routes = [
                 path: 'certificates',
                 data: { title: 'Partner | Certificates' },
                 loadComponent: () => import('./features/courses/pages/my-certificates.component').then((m) => m.MyCertificatesComponent),
+            },
+            {
+                path: 'certifications',
+                data: { title: 'Partner | Certifications' },
+                loadComponent: () => import('./features/courses/pages/certification-list.component').then((m) => m.CertificationListComponent),
+            },
+            {
+                path: 'certifications/:certificationKey',
+                data: { title: 'Partner | Certification' },
+                loadComponent: () => import('./features/courses/pages/certification-detail.component').then((m) => m.CertificationDetailComponent),
+            },
+            {
+                path: 'certifications/:certificationKey/exam',
+                canActivate: [authGuard],
+                data: { title: 'Partner | Certification exam' },
+                loadComponent: () => import('./features/courses/pages/certification-exam.component').then((m) => m.CertificationExamComponent),
             },
             {
                 path: 'manage',
@@ -1096,15 +1162,10 @@ export const routes: Routes = [
     // PARTNER PROGRAMS
     // -----------------------------------------------------
     {
+        // Programs are now created in the Test Center Structure view.
         path: 'partner/org/:organizationId/programs',
-        canActivate: [
-            authGuard,
-            partnerOrganizationGuard,
-        ],
-        data: {
-            title: 'Partner | Programs',
-        },
-        loadComponent: () => import('./features/partner/pages/partner-programs/partner-programs.component').then((m) => m.PartnerProgramsComponent),
+        redirectTo: 'partner/org/:organizationId/test-center',
+        pathMatch: 'full',
     },
     // -----------------------------------------------------
     // PARTNER TEST CENTER QUESTIONS

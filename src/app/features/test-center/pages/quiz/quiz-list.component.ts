@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -71,7 +72,8 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
               </nav>
               <h1 class="truncate text-lg font-semibold">{{ 'Quiz library' | t }}</h1>
               @if (typeFilter(); as type) {
-                <button
+       
+       <button
                   type="button"
                   class="mt-1 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold hover:bg-white/30"
                   (click)="typeFilter.set(null)"
@@ -81,9 +83,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                   <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">close</mat-icon>
                 </button>
               }
-              <p class="hidden truncate text-xs text-white/80 sm:block">
-                {{ 'Practice by topic and track your progress.' | t }}
-              </p>
+             
             </div>
 
             <div
@@ -196,6 +196,31 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                 {{ filteredQuizzes().length === 1 ? ('quiz' | t) : ('quizzes' | t) }}
               </p>
             }
+
+            <div class="inline-flex shrink-0 rounded-lg bg-white/10 p-0.5" role="group" [attr.aria-label]="'View' | t">
+              <button
+                type="button"
+                (click)="setView('grid')"
+                [attr.aria-pressed]="view() === 'grid'"
+                [attr.aria-label]="'Card view' | t"
+                [title]="'Card view' | t"
+                class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition focus:outline-none focus:ring-2 focus:ring-white/60"
+                [ngClass]="view() === 'grid' ? 'bg-white text-[#007979]' : 'text-white/85 hover:bg-white/20'"
+              >
+                <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">grid_view</mat-icon>
+              </button>
+              <button
+                type="button"
+                (click)="setView('list')"
+                [attr.aria-pressed]="view() === 'list'"
+                [attr.aria-label]="'List view' | t"
+                [title]="'List view' | t"
+                class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition focus:outline-none focus:ring-2 focus:ring-white/60"
+                [ngClass]="view() === 'list' ? 'bg-white text-[#007979]' : 'text-white/85 hover:bg-white/20'"
+              >
+                <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">view_list</mat-icon>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -305,8 +330,109 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
           </section>
 
 
+          <!-- Quiz list view -->
+          @if (filteredQuizzes().length > 0 && view() === 'list') {
+            <section
+              class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+              [attr.aria-label]="'Quiz list' | t"
+            >
+              <div class="hidden grid-cols-[minmax(0,1fr)_7rem_6rem_6rem_7rem_auto] items-center gap-4 border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid">
+                <span>{{ 'Quiz' | t }}</span>
+                <span>{{ 'Difficulty' | t }}</span>
+                <span class="text-right">{{ 'Questions' | t }}</span>
+                <span class="text-right">{{ 'Time limit' | t }}</span>
+                <span>{{ 'Status' | t }}</span>
+                <span class="w-[10.5rem]"></span>
+              </div>
+
+              <ul class="divide-y divide-slate-100">
+                @for (quiz of filteredQuizzes(); track quiz.id) {
+                  <li
+                    class="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-l-4 px-4 py-3 transition hover:bg-[#E5F4F4]/40 md:grid-cols-[minmax(0,1fr)_7rem_6rem_6rem_7rem_auto] md:gap-4"
+                    [ngClass]="difficultyBorder(quiz.difficulty)"
+                  >
+                    <!-- Title -->
+                    <div class="flex min-w-0 items-center gap-3">
+                      <div
+                        class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E5F4F4] text-lg text-[#007979] sm:flex"
+                        aria-hidden="true"
+                      >
+                        {{ getCategoryIcon(quiz.category) }}
+                      </div>
+                      <div class="min-w-0">
+                        <p class="truncate font-semibold text-slate-900 group-hover:text-[#007979]">{{ quiz.title }}</p>
+                        <p class="truncate text-xs text-slate-500">
+                          <span class="font-semibold uppercase tracking-wide text-[#007979]">{{ quiz.category | t }}</span>
+                          @if (quiz.provider) {
+                            · {{ quiz.provider }}
+                          }
+                          <!-- Small screens: the columns as one line -->
+                          <span class="md:hidden">
+                            · {{ quiz.difficulty || ('Not specified' | t) }} · {{ quiz.questionCount }} {{ 'Questions' | t }}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Columns (md and up) -->
+                    <span
+                      class="hidden text-sm font-semibold md:block"
+                      [ngClass]="difficultyText(quiz.difficulty)"
+                    >{{ quiz.difficulty || ('Not specified' | t) }}</span>
+                    <span class="hidden text-right text-sm tabular-nums text-slate-700 md:block">{{ quiz.questionCount }}</span>
+                    <span class="hidden text-right text-sm text-slate-700 md:block">
+                      {{ quiz.timeLimitMinutes > 0 ? quiz.timeLimitMinutes + ' min' : ('Flexible' | t) }}
+                    </span>
+                    <span class="hidden md:block">
+                      <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [ngClass]="statusClasses(quiz.status)">{{ quiz.status | t }}</span>
+                    </span>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        (click)="toggleFavorite(quiz)"
+                        [attr.aria-pressed]="quiz.isFavorite"
+                        [attr.aria-label]="(quiz.isFavorite ? 'Remove {0} from Popular Practice' : 'Add {0} to Popular Practice') | t: [quiz.title]"
+                        [attr.title]="(quiz.isFavorite ? 'Remove from Popular Practice' : 'Add to Popular Practice') | t"
+                        class="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border transition focus:outline-none focus:ring-2 focus:ring-[#007979]"
+                        [ngClass]="quiz.isFavorite ? 'border-amber-300 bg-amber-50 text-amber-500' : 'border-slate-200 bg-white text-slate-400 hover:border-amber-300 hover:text-amber-500'"
+                      >
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" [attr.fill]="quiz.isFavorite ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                          <path d="m12 3 2.7 5.47 6.03.88-4.36 4.25 1.03 6.01L12 16.77l-5.4 2.84 1.03-6.01-4.36-4.25 6.03-.88L12 3Z" stroke-linejoin="round" />
+                        </svg>
+                      </button>
+
+                      @if (quiz.status === 'Completed') {
+                        <button
+                          type="button"
+                          (click)="viewResults(quiz)"
+                          class="hidden h-9 cursor-pointer items-center rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 sm:inline-flex"
+                        >
+                          {{ 'Results' | t }}
+                        </button>
+                      }
+
+                      <button
+                        type="button"
+                        (click)="startQuiz(quiz)"
+                        class="inline-flex h-9 min-w-[6.5rem] cursor-pointer items-center justify-center gap-1 rounded-lg bg-[#007979] px-3 text-xs font-semibold text-white transition hover:bg-[#006666] focus:outline-none focus:ring-2 focus:ring-teal-200"
+                      >
+                        @if (quiz.status === 'In progress') {
+                          {{ 'Continue' | t }} <span aria-hidden="true">→</span>
+                        } @else if (quiz.status === 'Completed') {
+                          {{ 'Practice again' | t }} <span aria-hidden="true">↻</span>
+                        } @else {
+                          {{ 'Start' | t }} <span aria-hidden="true">→</span>
+                        }
+                      </button>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </section>
+          } @else if (filteredQuizzes().length > 0) {
           <!-- Quiz cards -->
-          @if (filteredQuizzes().length > 0) {
             <section
               class="grid grid-cols-1 gap-5 lg:grid-cols-2"
               [attr.aria-label]="'Quiz list' | t"
@@ -399,7 +525,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                     </div>
 
                     <p class="mt-4 text-sm leading-6 text-slate-600">
-                      {{ quiz.description || ('Practice questions for this course.' | t) }}
+                      {{ quiz.description || ('Practice questions for this quiz.' | t) }}
                     </p>
 
                     @if (quiz.tags.length > 0) {
@@ -494,7 +620,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
               </h2>
 
               <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                {{ 'Try another search term or clear your filters to see all courses.' | t }}
+                {{ 'Try another search term or clear your filters to see all quizzes.' | t }}
               </p>
 
               <button
@@ -551,6 +677,66 @@ export class QuizListComponent implements OnInit {
     this.pageTitleService.setTitle(`${this.organizationName()} Learning`);
   });
 
+  /** Cards or a compact list; remembered on this device. */
+  private readonly viewStorageKey = 'zebron.quizLibrary.view';
+  readonly view = signal<'grid' | 'list'>('grid');
+
+  private readonly restoreView = afterNextRender(() => {
+    try {
+      if (localStorage.getItem(this.viewStorageKey) === 'list') {
+        this.view.set('list');
+      }
+    } catch {
+      // Storage blocked: cards by default.
+    }
+  });
+
+  setView(view: 'grid' | 'list'): void {
+    this.view.set(view);
+    try {
+      localStorage.setItem(this.viewStorageKey, view);
+    } catch {
+      // Storage blocked: the choice lasts until the page reloads.
+    }
+  }
+
+  difficultyBorder(difficulty: string | null | undefined): string {
+    switch (difficulty) {
+      case 'Beginner':
+        return 'border-l-blue-600';
+      case 'Intermediate':
+        return 'border-l-amber-500';
+      case 'Advanced':
+        return 'border-l-violet-600';
+      default:
+        return 'border-l-[#007979]';
+    }
+  }
+
+  difficultyText(difficulty: string | null | undefined): string {
+    switch (difficulty) {
+      case 'Beginner':
+        return 'text-emerald-700';
+      case 'Intermediate':
+        return 'text-amber-700';
+      case 'Advanced':
+        return 'text-violet-700';
+      default:
+        return 'text-slate-500';
+    }
+  }
+
+  statusClasses(status: string): string {
+    switch (status) {
+      case 'In progress':
+        return 'bg-amber-50 text-amber-700';
+      case 'Completed':
+        return 'bg-slate-100 text-slate-600';
+      default:
+        return 'bg-emerald-50 text-emerald-700';
+    }
+  }
+
   readonly searchTerm = signal('');
   readonly difficultyFilter = signal('All');
   readonly statusFilter = signal('All');
@@ -580,7 +766,8 @@ export class QuizListComponent implements OnInit {
         this.readString(record, 'category') ||
         this.readString(record, 'programName') ||
         this.readString(record, 'provider') ||
-        (record.type === 'certification' ? 'Certification' : 'Course');
+        ({ certification: 'Certification', skill: 'Skill', subject: 'Subject' } as Record<string, string>)[record.type] ||
+        'Quiz';
 
       const difficulty = this.normalizeDifficulty(
         this.readString(record, 'difficulty') ||

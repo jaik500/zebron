@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { Quiz } from '../../models/quiz.model';
 import { QuizService } from '../../services/quiz.service';
-import { useCoursesAvailable } from '../../learner-route';
+import { useCoursesAvailable, useLiveAvailable } from '../../learner-route';
 import { TestQuestionService } from '../../services/test-question.service';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -119,7 +119,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             </p>
           </div>
 
-          <div class="grid gap-2 sm:gap-3" [class.grid-cols-4]="coursesAvailable()" [class.grid-cols-3]="!coursesAvailable()">
+          <div class="grid gap-2 sm:gap-3" [class]="browseGridClass()">
             <!-- Certifications -->
             <a
               [routerLink]="[learnerBaseRoute(), 'quizzes']"
@@ -163,6 +163,30 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
                 <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
                   {{ 'Lessons, a final exam and a certificate.' | t }}
+                </p>
+              </a>
+            }
+
+            <!-- Live sessions: only when the organization has the Virtual Classroom -->
+            @if (liveAvailable()) {
+              <a
+                [routerLink]="liveSessionsRoute()"
+                class="group rounded-xl border border-gray-200 bg-white p-2 sm:p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#12BFC3] hover:bg-[#E5F4F4] hover:shadow-md"
+              >
+                <div
+                  class="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-[#E5F4F4] text-[#007979]"
+                >
+                  <mat-icon aria-hidden="true">live_tv</mat-icon>
+                </div>
+
+                <h3
+                  class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
+                >
+                  {{ 'Live sessions' | t }}
+                </h3>
+
+                <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
+                  {{ 'Join instructor-led classes online.' | t }}
                 </p>
               </a>
             }
@@ -430,6 +454,17 @@ private readonly questionService = inject(TestQuestionService); // add
 
   /** Whether to link to Courses: organizations can have the Test Center on its own. */
   readonly coursesAvailable = useCoursesAvailable(this.route);
+
+  /** Live sessions: organizations with the Virtual Classroom only. */
+  readonly liveAvailable = useLiveAvailable(this.route);
+
+  readonly liveSessionsRoute = computed(() => `/partner/org/${this.organizationId()}/live`);
+
+  /** One column per card; five cards wrap to three columns on small screens. */
+  readonly browseGridClass = computed(() => {
+    const count = 3 + (this.coursesAvailable() ? 1 : 0) + (this.liveAvailable() ? 1 : 0);
+    return count === 5 ? 'grid-cols-3 sm:grid-cols-5' : count === 4 ? 'grid-cols-4' : 'grid-cols-3';
+  });
 
   /** The Courses catalog, in the same place (Zebron or the organization). */
   readonly coursesCatalogRoute = computed(() => {

@@ -33,6 +33,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-organization-application-form',
@@ -413,7 +414,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                           class="mt-1 h-4 w-4 cursor-pointer accent-[#007979] disabled:cursor-not-allowed"
                           [checked]="picker.testCenter"
                           [disabled]="picker.courses"
-                          (change)="learningPicker.set({ courses: picker.courses, testCenter: !picker.testCenter })"
+                          (change)="learningPicker.set({ courses: picker.courses, testCenter: !picker.testCenter, live: picker.live })"
                         />
                         <span>
                           <span class="block font-semibold text-slate-900">{{ 'Test Center' | t }}</span>
@@ -421,6 +422,19 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                           @if (picker.courses) {
                             <span class="mt-1 block text-xs text-[#007979]">{{ 'Included with Courses: course final exams use the Test Center.' | t }}</span>
                           }
+                        </span>
+                      </label>
+
+                      <label class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition" [class.border-slate-900]="picker.live" [class.border-slate-200]="!picker.live">
+                        <input
+                          type="checkbox"
+                          class="mt-1 h-4 w-4 cursor-pointer accent-[#007979]"
+                          [checked]="picker.live"
+                          (change)="learningPicker.set({ courses: picker.courses, testCenter: picker.testCenter, live: !picker.live })"
+                        />
+                        <span>
+                          <span class="block font-semibold text-slate-900">{{ 'Virtual Classroom' | t }}</span>
+                          <span class="block text-sm text-slate-500">{{ 'Instructor-led live sessions in Zoom, Google Meet, Teams or Jitsi: schedule, registration, attendance and recordings.' | t }}</span>
                         </span>
                       </label>
                     </div>
@@ -509,6 +523,8 @@ export class OrganizationApplicationFormComponent
 
   private readonly authService = inject(AuthService);
 
+  private readonly i18n = inject(I18nService);
+
   private readonly applicationService =
     inject(OrganizationApplicationRequestService);
 
@@ -540,12 +556,18 @@ export class OrganizationApplicationFormComponent
       // Click to choose its capabilities (Courses, Test Center).
       id: 'learning',
       name: 'Learning',
-      description: 'Courses and the Test Center. Click to choose.',
+      description: 'Courses, the Test Center and the Virtual Classroom. Click to choose.',
     },
     {
       id: 'knowledge',
       name: 'Knowledge Center',
       description: 'Create and manage organization knowledge and documentation.',
+    },
+    {
+      // On demand: the organization's email at <slug>@zebron.org.
+      id: 'mailbox',
+      name: 'Mailbox',
+      description: "Your organization's email address on zebron.org: a shared inbox, departmental mailboxes and sending as the organization.",
     },
   ];
 
@@ -762,38 +784,50 @@ export class OrganizationApplicationFormComponent
   }
 
   // ------------------------------------------------------------
-  // Learning: Courses and/or Test Center
+  // Learning: Courses, Test Center and/or Virtual Classroom
   //
   // Stored as "learning" (Courses + Test Center, since course final
-  // exams run on the Test Center) or "test-center" (Test Center only).
+  // exams run on the Test Center) or "test-center" (Test Center only),
+  // plus "virtual-classroom" when chosen.
   // ------------------------------------------------------------
 
-  readonly learningPicker = signal<{ courses: boolean; testCenter: boolean } | null>(null);
+  readonly learningPicker = signal<{ courses: boolean; testCenter: boolean; live: boolean } | null>(null);
 
-  readonly learningChoice = computed<'both' | 'test-center' | 'none'>(() => {
+  readonly learningChoice = computed<'both' | 'test-center' | 'live' | 'none'>(() => {
     const selected = this.selectedApplications();
     if (selected.has('learning') || selected.has('courses')) {
       return 'both';
     }
-    return selected.has('test-center') ? 'test-center' : 'none';
+    if (selected.has('test-center')) {
+      return 'test-center';
+    }
+    return selected.has('virtual-classroom') ? 'live' : 'none';
   });
 
+  /** "Selected: Courses, Test Center and Virtual Classroom." */
   readonly learningDescription = computed(() => {
-    switch (this.learningChoice()) {
-      case 'both':
-        return 'Selected: Courses and Test Center.';
-      case 'test-center':
-        return 'Selected: Test Center only.';
-      default:
-        return 'Courses and the Test Center. Click to choose.';
+    const selected = this.selectedApplications();
+    const names = [
+      ...(selected.has('learning') || selected.has('courses') ? ['Courses'] : []),
+      ...(selected.has('learning') || selected.has('courses') || selected.has('test-center') ? ['Test Center'] : []),
+      ...(selected.has('virtual-classroom') ? ['Virtual Classroom'] : []),
+    ].map((name) => this.i18n.t(name));
+
+    if (names.length === 0) {
+      return 'Courses, the Test Center and the Virtual Classroom. Click to choose.';
     }
+
+    const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} ${this.i18n.t('and')} ${names[names.length - 1]}`;
+    return this.i18n.t('Selected: {0}.', [list]);
   });
 
   openLearningPicker(): void {
+    const selected = this.selectedApplications();
     const choice = this.learningChoice();
     this.learningPicker.set({
       courses: choice === 'both' || choice === 'none',
-      testCenter: true,
+      testCenter: choice !== 'live',
+      live: selected.has('virtual-classroom'),
     });
   }
 
@@ -801,7 +835,7 @@ export class OrganizationApplicationFormComponent
   setLearningCourses(courses: boolean): void {
     const picker = this.learningPicker();
     if (picker) {
-      this.learningPicker.set({ courses, testCenter: courses ? true : picker.testCenter });
+      this.learningPicker.set({ courses, testCenter: courses ? true : picker.testCenter, live: picker.live });
     }
   }
 
@@ -815,11 +849,16 @@ export class OrganizationApplicationFormComponent
     next.delete('learning');
     next.delete('courses');
     next.delete('test-center');
+    next.delete('virtual-classroom');
 
     if (picker.courses) {
       next.add('learning');
     } else if (picker.testCenter) {
       next.add('test-center');
+    }
+
+    if (picker.live) {
+      next.add('virtual-classroom');
     }
 
     this.selectedApplications.set(next);

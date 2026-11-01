@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
@@ -16,9 +16,12 @@ import {
   COURSE_COVERS,
   courseContextFromRoute,
   courseLink,
+  CourseCover,
   CourseProgress,
+  isCourseComplete,
   progressId,
 } from '../course.model';
+import { CourseAssignment, CourseAssignmentService, isOverdue } from '../course-assignment.service';
 import { CourseAccessService } from '../course-access.service';
 import { CourseStore } from '../course.store';
 
@@ -104,6 +107,63 @@ const WEEKLY_GOAL_MINUTES = 60;
             <p class="mx-auto mt-1 max-w-md text-sm text-slate-600">
               {{ 'Short lessons, quick checks and a certificate at the end. Pick a course below to begin.' | t }}
             </p>
+          </section>
+        }
+
+        @if (signedIn() && assigned().length) {
+          <!-- Assigned by the organization -->
+          <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-4" aria-labelledby="assigned-title">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 id="assigned-title" class="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                <mat-icon class="text-[#007979]" aria-hidden="true">assignment_ind</mat-icon>
+                {{ 'Assigned to you' | t }}
+              </h2>
+              @if (assignedOpenCount()) {
+                <span class="text-sm text-slate-500">{{ '{0} to do' | t: [assignedOpenCount()] }}</span>
+              } @else {
+                <span class="text-sm font-semibold text-emerald-700">{{ 'All done. Well done!' | t }}</span>
+              }
+            </div>
+            <ul class="mt-3 flex flex-col gap-2">
+              @for (item of assigned(); track item.assignment.id) {
+                <li>
+                  <a
+                    [routerLink]="item.link"
+                    class="flex items-center gap-3 rounded-xl border p-3 transition hover:shadow-sm"
+                    [class]="item.overdue ? 'border-rose-200 bg-rose-50/50' : 'border-slate-200 bg-white'"
+                  >
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white" [style.background]="coverName(item.assignment.cover)" aria-hidden="true">
+                      <mat-icon>{{ item.done ? 'task_alt' : item.assignment.lessonId ? 'play_lesson' : 'menu_book' }}</mat-icon>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate font-semibold text-slate-900">{{ item.assignment.lessonTitle || item.assignment.courseTitle }}</span>
+                      <span class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                        @if (item.assignment.lessonTitle) {
+                          <span class="truncate">{{ 'Lesson in {0}' | t: [item.assignment.courseTitle] }}</span>
+                        }
+                        @if (item.assignment.required) {
+                          <span class="rounded-full bg-[#007979]/10 px-2 py-0.5 font-semibold text-[#007979]">{{ 'Required' | t }}</span>
+                        }
+                        @if (item.done) {
+                          <span class="font-semibold text-emerald-700">{{ 'Done' | t }}</span>
+                        } @else if (item.overdue) {
+                          <span class="font-semibold text-rose-700">{{ 'Overdue: was due {0}' | t: [item.due] }}</span>
+                        } @else if (item.due) {
+                          <span>{{ 'Due {0}' | t: [item.due] }}</span>
+                        }
+                        @if (!item.done && item.percent > 0 && !item.assignment.lessonId) {
+                          <span>{{ '{percent}% complete' | t: { percent: item.percent } }}</span>
+                        }
+                      </span>
+                      @if (item.assignment.note && !item.done) {
+                        <span class="mt-1 block truncate text-xs italic text-slate-500">“{{ item.assignment.note }}” · {{ item.assignment.assignedByName }}</span>
+                      }
+                    </span>
+                    <mat-icon class="shrink-0 text-slate-400" aria-hidden="true">chevron_right</mat-icon>
+                  </a>
+                </li>
+              }
+            </ul>
           </section>
         }
 
@@ -246,15 +306,77 @@ export class MyLearningComponent {
 
   protected readonly otherInProgress = computed(() => this.store.inProgress().slice(1));
 
+  // ---------- Assigned by the organization ----------
+  private readonly assignmentService = inject(CourseAssignmentService);
+  private readonly assignments = signal<CourseAssignment[]>([]);
+
+  /** Not done first, soonest due first; done ones last. */
+  protected readonly assigned = computed(() => {
+    const locale = this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US';
+    const progress = this.store.progressById();
+    const exams = this.store.exams();
+    const now = Date.now();
+
+    return this.assignments()
+      .map((assignment) => {
+        const id = `${assignment.organizationId}__${assignment.courseId}`;
+        const record = progress.get(id) ?? null;
+        const done = assignment.lessonId
+          ? !!record?.completedLessonIds.includes(assignment.lessonId)
+          : isCourseComplete(record, exams[id]);
+        const base = `/partner/org/${encodeURIComponent(assignment.organizationId)}/courses/${encodeURIComponent(assignment.courseId)}`;
+
+        return {
+          assignment,
+          done,
+          percent: record?.percent ?? 0,
+          overdue: isOverdue(assignment.dueAt, done, now),
+          due: assignment.dueAt ? assignment.dueAt.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) : '',
+          link: assignment.lessonId ? `${base}/lessons/${encodeURIComponent(assignment.lessonId)}` : base,
+        };
+      })
+      .sort(
+        (a, b) =>
+          Number(a.done) - Number(b.done) ||
+          (a.assignment.dueAt?.getTime() ?? Number.MAX_SAFE_INTEGER) - (b.assignment.dueAt?.getTime() ?? Number.MAX_SAFE_INTEGER) ||
+          a.assignment.courseTitle.localeCompare(b.assignment.courseTitle),
+      );
+  });
+
+  protected readonly assignedOpenCount = computed(() => this.assigned().filter((item) => !item.done).length);
+
   constructor() {
     this.store.setContext(this.context);
     void this.store.loadCatalog();
 
     // Progress belongs to the signed-in learner: reload when that changes.
     effect(() => {
-      this.auth.firebaseUser();
-      untracked(() => void this.store.loadProgress());
+      const user = this.auth.firebaseUser();
+      untracked(() => {
+        void this.store.loadProgress();
+        void this.loadAssignments(user?.uid ?? null);
+      });
     });
+  }
+
+  /** Courses or lessons the organization asked this learner to take. */
+  private async loadAssignments(userId: string | null): Promise<void> {
+    const organizationId = this.context.organizationId;
+    if (!organizationId || !userId) {
+      this.assignments.set([]);
+      return;
+    }
+
+    try {
+      this.assignments.set(await this.assignmentService.listMine(organizationId, userId));
+    } catch {
+      // Optional: My learning still works without them.
+      this.assignments.set([]);
+    }
+  }
+
+  protected coverName(cover: string): string {
+    return COURSE_COVERS[cover as CourseCover] ?? COURSE_COVERS.teal;
   }
 
   protected linkFor(record: CourseProgress): string {

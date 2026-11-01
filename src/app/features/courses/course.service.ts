@@ -94,6 +94,9 @@ export class CourseService {
       summary: text(data['summary']),
       description: text(data['description']),
       topic: text(data['topic']),
+      program: text(data['program']).trim(),
+      programOrder:
+        typeof data['programOrder'] === 'number' && Number.isFinite(data['programOrder']) ? Math.round(data['programOrder'] as number) : null,
       level: LEVELS.includes(level) ? level : 'all',
       cover: COVERS.includes(cover) ? cover : 'teal',
       outcomes: strings(data['outcomes']),
@@ -479,9 +482,13 @@ export class CourseService {
     return snapshot.docs.map((document) => this.toExamRecord(document.id, document.data()));
   }
 
-  async startExam(organizationId: string | null, courseId: string): Promise<ExamSession> {
-    const call = httpsCallable<{ organizationId: string | null; courseId: string }, ExamSession>(firebaseFunctions, 'startCourseExam');
-    return (await call({ organizationId, courseId })).data;
+  /** certificationKey: retake an already passed course to count it as a certification step. */
+  async startExam(organizationId: string | null, courseId: string, certificationKey: string | null = null): Promise<ExamSession> {
+    const call = httpsCallable<{ organizationId: string | null; courseId: string; certificationKey: string | null }, ExamSession>(
+      firebaseFunctions,
+      'startCourseExam',
+    );
+    return (await call({ organizationId, courseId, certificationKey })).data;
   }
 
   async submitExam(

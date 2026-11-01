@@ -401,7 +401,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                         </p>
 
                         <p class="mt-1 text-xs text-slate-500">
-                          {{ 'Review assessment history and course activity.' | t }}
+                          {{ 'Review assessment history and quiz activity.' | t }}
                         </p>
                       </div>
 

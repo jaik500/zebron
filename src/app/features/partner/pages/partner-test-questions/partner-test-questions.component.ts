@@ -125,7 +125,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
               </div>
  
               <p class="mt-1 text-sm text-white/70 hidden sm:block">
-                {{ 'Create questions for your organization\\u0027s courses and move them through the review and publication workflow.' | t }}
+                {{ 'Create questions for your organization\\u0027s quizzes and move them through the review and publication workflow.' | t }}
               </p>
             </div>
  
@@ -186,13 +186,13 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             <div class="grid gap-4 md:grid-cols-[1fr_1fr_0.5fr]">
               <!-- COURSE -->
               <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                <mat-label>{{ 'Course' | t }}</mat-label>
+                <mat-label>{{ 'Quiz' | t }}</mat-label>
  
                 <mat-select
                   [ngModel]="selectedQuizId()"
                   (ngModelChange)="onCourseChange($event)"
                 >
-                  <mat-option value="">{{ 'Select a course' | t }}</mat-option>
+                  <mat-option value="">{{ 'Select a quiz' | t }}</mat-option>
  
                   @for (course of courses(); track course.id) {
                     <mat-option [value]="course.id">
@@ -218,6 +218,16 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                       {{ topic.name }}
                     </mat-option>
                   }
+
+                  <!-- Managers: add a topic without leaving the page -->
+                  @if (access.canManageCourses()) {
+                    <mat-option [value]="newTopicValue" class="!border-t !border-gray-100">
+                      <span class="inline-flex items-center gap-1 font-semibold text-[#007979]">
+                        <mat-icon class="!mr-0 !h-[18px] !w-[18px] !text-[18px] !text-[#007979]">add</mat-icon>
+                        {{ 'New topic' | t }}
+                      </span>
+                    </mat-option>
+                  }
                 </mat-select>
               </mat-form-field>
  
@@ -236,6 +246,63 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             </div>
           </section>
  
+          <!-- Empty lists: the structure is created on the Test Center page -->
+          @if (!courses().length && !loadingQuizzes()) {
+            <p class="-mt-3 mb-6 flex flex-wrap items-center gap-1 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">info</mat-icon>
+              {{ 'No quizzes yet.' | t }}
+              @if (access.canManageCourses()) {
+                <a [routerLink]="['/partner/org', context.organizationId(), 'test-center']" class="font-semibold underline">{{ 'Create one in Structure' | t }}</a>
+              } @else {
+                {{ 'A manager creates them in the Test Center Structure.' | t }}
+              }
+            </p>
+          } @else if (selectedQuizId() && !loadingTopics() && !topics().length && !addingTopic()) {
+            <p class="-mt-3 mb-6 flex flex-wrap items-center gap-1 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">info</mat-icon>
+              {{ 'This quiz has no topics yet.' | t }}
+              @if (access.canManageCourses()) {
+                <button type="button" (click)="openNewTopic()" class="font-semibold underline">{{ 'Add a topic' | t }}</button>
+              } @else {
+                {{ 'A manager adds them in the Test Center Structure.' | t }}
+              }
+            </p>
+          }
+
+          @if (addingTopic()) {
+            <section class="-mt-3 mb-6 rounded-xl border border-[#007979]/30 bg-teal-50/60 p-4" aria-labelledby="new-topic-title">
+              <h2 id="new-topic-title" class="text-sm font-semibold text-gray-900">
+                {{ 'New topic in {0}' | t: [selectedCourse()?.name ?? ''] }}
+              </h2>
+              <div class="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input
+                  id="new-topic-name"
+                  type="text"
+                  maxlength="120"
+                  class="h-10 min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 text-sm"
+                  [placeholder]="'Topic name' | t"
+                  [value]="newTopicName()"
+                  (input)="newTopicName.set($any($event.target).value)"
+                  (keydown.enter)="saveNewTopic()"
+                />
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    (click)="saveNewTopic()"
+                    [disabled]="savingTopic() || newTopicName().trim().length < 3"
+                    class="h-10 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666] disabled:opacity-50"
+                  >
+                    {{ (savingTopic() ? 'Saving...' : 'Add topic') | t }}
+                  </button>
+                  <button type="button" (click)="addingTopic.set(false)" class="h-10 rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    {{ 'Cancel' | t }}
+                  </button>
+                </div>
+              </div>
+              <p class="mt-2 text-xs text-gray-500">{{ 'Description, order and status can be changed later in Structure.' | t }}</p>
+            </section>
+          }
+
           <!-- ================================================== -->
           <!-- SELECTED COURSE / TOPIC -->
           <!-- ================================================== -->
@@ -662,7 +729,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                 <p class="mt-3 font-semibold text-gray-900">{{ 'Select a topic' | t }}</p>
  
                 <p class="mt-1 text-sm text-gray-500">
-                  {{ 'Choose a course and topic to manage its questions.' | t }}
+                  {{ 'Choose a quiz and topic to manage its questions.' | t }}
                 </p>
               </div>
             } @else if (questions().length === 0) {
@@ -931,6 +998,17 @@ export class PartnerTestQuestionsComponent implements OnInit {
   protected readonly questions = signal<TestQuestion[]>([]);
  
   protected readonly loadingTopics = signal(false);
+
+  /** Quick topic creation from the Topic list (managers). */
+  protected readonly newTopicValue = '__new_topic__';
+
+  protected readonly addingTopic = signal(false);
+
+  protected readonly newTopicName = signal('');
+
+  protected readonly savingTopic = signal(false);
+
+  protected readonly loadingQuizzes = signal(true);
  
   protected readonly loadingQuestions = signal(false);
  
@@ -1035,7 +1113,7 @@ protected quizRecipientEmail = '';
         return;
       }
  
-      const courses = await this.quizService.getAllQuizzes(organizationId);
+      const courses = await this.quizService.getAllQuizzes(organizationId).finally(() => this.loadingQuizzes.set(false));
  
       this.courses.set(
         courses.filter(
@@ -1066,6 +1144,8 @@ protected quizRecipientEmail = '';
   // ============================================================
  
   protected async onCourseChange(quizId: string): Promise<void> {
+    this.addingTopic.set(false);
+
     this.selectedQuizId.set(quizId);
  
     this.selectedTopicId.set('');
@@ -1118,10 +1198,89 @@ protected quizRecipientEmail = '';
   }
  
   // ============================================================
+  // NEW TOPIC (managers)
+  // ============================================================
+
+  protected openNewTopic(): void {
+    if (!this.access.canManageCourses() || !this.selectedQuizId()) {
+      return;
+    }
+    this.newTopicName.set('');
+    this.addingTopic.set(true);
+    setTimeout(() => document.getElementById('new-topic-name')?.focus(), 50);
+  }
+
+  protected async saveNewTopic(): Promise<void> {
+    const organizationId = this.context.organizationId();
+    const quizId = this.selectedQuizId();
+    const name = this.newTopicName().trim();
+
+    if (!organizationId || !quizId || name.length < 3 || this.savingTopic() || !this.access.canManageCourses()) {
+      return;
+    }
+
+    if (this.topics().some((topic) => topic.name.trim().toLowerCase() === name.toLowerCase())) {
+      this.toast.error('This quiz already has a topic with that name.');
+      return;
+    }
+
+    const slug = name
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80);
+
+    try {
+      this.savingTopic.set(true);
+
+      // After every existing topic, inactive ones included.
+      const existing = await this.topicService.getTopicsForManagement(organizationId, quizId);
+      const sortOrder = existing.reduce((max, topic) => Math.max(max, Number(topic.sortOrder) || 0), -1) + 1;
+
+      await this.topicService.createTopic(organizationId, {
+        organizationId,
+        quizId,
+        name,
+        slug: slug.length >= 3 ? slug : `topic-${Date.now()}`,
+        description: '',
+        sortOrder,
+        questionCount: 0,
+        active: true,
+      });
+
+      this.addingTopic.set(false);
+      this.toast.success('Topic added.');
+
+      const topics = await this.topicService.getAllTopics(organizationId, quizId);
+      this.topics.set(topics.filter((topic) => topic.active === true));
+
+      const created = this.topics().find((topic) => topic.name === name);
+      if (created) {
+        await this.onTopicChange(created.id);
+      }
+    } catch (error) {
+      this.toast.error(error instanceof Error ? error.message : 'Unable to add the topic.');
+    } finally {
+      this.savingTopic.set(false);
+    }
+  }
+
+  // ============================================================
   // TOPIC CHANGE
   // ============================================================
  
   protected async onTopicChange(topicId: string): Promise<void> {
+    if (topicId === this.newTopicValue) {
+      // Keep the current topic selected and open the small form instead.
+      const previous = this.selectedTopicId();
+      this.selectedTopicId.set(topicId);
+      queueMicrotask(() => this.selectedTopicId.set(previous));
+      this.openNewTopic();
+      return;
+    }
+
     this.selectedTopicId.set(topicId);
  
     this.questions.set([]);
@@ -1199,7 +1358,7 @@ protected quizRecipientEmail = '';
     const topicId = this.selectedTopicId();
  
     if (!quizId) {
-      this.toast.error('Select a course first.');
+      this.toast.error('Select a quiz first.');
  
       return;
     }
@@ -1795,7 +1954,7 @@ protected async copyQuizLink(): Promise<void> {
  
  
   if (!course) {
-    this.toast.error('Select a course before generating a test link.');
+    this.toast.error('Select a quiz before generating a test link.');
     return;
   }
  
@@ -1810,7 +1969,7 @@ protected async copyQuizLink(): Promise<void> {
   }
  
   if (!course.slug) {
-    this.toast.error('This course does not have a valid URL slug.');
+    this.toast.error('This quiz does not have a valid URL slug.');
     return;
   }
  
@@ -1857,12 +2016,12 @@ protected async prepareQuizEmail(): Promise<void> {
   const organizationId = this.context.organizationId();
  
   if (!course || !topic || !organizationId) {
-    this.toast.error('Select a course and topic first.');
+    this.toast.error('Select a quiz and topic first.');
     return;
   }
  
   if (!course.slug) {
-    this.toast.error('The selected course does not have a valid URL slug.');
+    this.toast.error('The selected quiz does not have a valid URL slug.');
     return;
   }
  
@@ -2115,7 +2274,7 @@ protected async sendQuizEmail(): Promise<void> {
     const topic = this.selectedTopic();
  
     if (!course || !topic) {
-      this.toast.error('Select a course and topic first.');
+      this.toast.error('Select a quiz and topic first.');
       return;
     }
  

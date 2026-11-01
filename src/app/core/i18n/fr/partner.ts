@@ -700,4 +700,10 @@ export const FR_PARTNER: Readonly<Record<string, string>> = {
   "Reported by {0}": "Signalé par {0}",
   "a reader": "un lecteur",
   "Mark resolved": "Marquer comme résolu",
+  // Contract page: hide/show lists
+  "Show applications": "Afficher les applications",
+  "Hide applications": "Masquer les applications",
+  "Show requests": "Afficher les demandes",
+  "Hide requests": "Masquer les demandes",
+  "{0} total": "{0} au total",
 };

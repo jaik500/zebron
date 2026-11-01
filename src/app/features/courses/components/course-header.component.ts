@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { doc, getDoc } from 'firebase/firestore';
 import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
+
+import { firestore } from '../../../core/services/firebase-config';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,7 +18,7 @@ export interface CourseCrumb {
   translate?: boolean;
 }
 
-export type CourseTab = 'learning' | 'catalog' | 'certificates' | 'test-center' | 'manage';
+export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificates' | 'test-center' | 'live' | 'manage';
 
 /**
  * Page header for the course pages: back button and breadcrumbs on the
@@ -131,14 +134,35 @@ export class CourseHeaderComponent {
 
   protected readonly showTabs = computed(() => this.activeTab() !== null);
 
+  /** Organizations with the Virtual Classroom get a Live sessions tab. */
+  private readonly liveAvailable = signal(false);
+
+  private readonly checkLive = effect(() => {
+    const organizationId = /^\/partner\/org\/([^/]+)\/courses$/.exec(this.basePath())?.[1] ?? null;
+    untracked(() => {
+      if (!organizationId) {
+        this.liveAvailable.set(false);
+        return;
+      }
+      getDoc(doc(firestore, 'organizations', decodeURIComponent(organizationId), 'applications', 'virtual-classroom'))
+        .then((snapshot) => this.liveAvailable.set(snapshot.data()?.['status'] === 'active'))
+        .catch(() => this.liveAvailable.set(false));
+    });
+  });
+
   protected readonly tabs = computed(() => {
     const tabs: { key: CourseTab; label: string; icon: string; link: string }[] = [
       { key: 'learning', label: 'My learning', icon: 'school', link: this.basePath() },
       { key: 'catalog', label: 'Catalog', icon: 'auto_stories', link: `${this.basePath()}/catalog` },
+      { key: 'certifications', label: 'Certifications', icon: 'military_tech', link: `${this.basePath()}/certifications` },
       { key: 'certificates', label: 'Certificates', icon: 'workspace_premium', link: `${this.basePath()}/certificates` },
       // Zebron Learning = Courses + Test Center: practice quizzes sit beside the courses.
       { key: 'test-center', label: 'Test Center', icon: 'quiz', link: this.basePath().replace(/\/courses$/, '/learn/test-center').replace(/^\/learn\/test-center$/, '/test-center') },
     ];
+
+    if (this.liveAvailable()) {
+      tabs.push({ key: 'live', label: 'Live sessions', icon: 'video_camera_front', link: this.basePath().replace(/\/courses$/, '/live') });
+    }
 
     if (this.canManage()) {
       tabs.push({ key: 'manage', label: 'Manage courses', icon: 'edit_note', link: `${this.basePath()}/manage` });

@@ -62,7 +62,13 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                 </div>
 
                 <div class="p-6">
-                  @if (passed()) {
+                  @if (retakeKey) {
+                    <p class="mb-4 flex items-start gap-2 rounded-xl bg-sky-50 p-3 text-sm text-sky-900">
+                      <mat-icon class="shrink-0" aria-hidden="true">military_tech</mat-icon>
+                      {{ 'Certification step: you passed this course before the step before it, so pass its final exam again to count it.' | t }}
+                    </p>
+                  }
+                  @if (passed() && !retakeKey) {
                     <p class="flex items-center gap-2 rounded-xl bg-emerald-50 p-4 text-emerald-800">
                       <mat-icon aria-hidden="true">verified</mat-icon>
                       {{ 'You passed this exam with {0}%.' | t: [record()?.passScore ?? record()?.bestScore ?? 0] }}
@@ -124,7 +130,7 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                     <button
                       type="button"
                       class="mt-5 inline-flex h-11 items-center gap-1 rounded-lg bg-[#007979] px-5 font-semibold text-white hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50"
-                      [disabled]="starting() || !lessonsDone() || attemptsLeft() === 0"
+                      [disabled]="starting() || !lessonsDone() || (attemptsLeft() === 0 && !retakeKey)"
                       (click)="start()"
                     >
                       {{ (starting() ? 'Preparing your exam...' : record()?.openAttemptId ? 'Continue the exam' : 'Start the exam') | t }}
@@ -366,7 +372,14 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                     }
 
                     <div class="mt-6 flex flex-wrap gap-2">
-                      @if (outcome.passed) {
+                      @if (outcome.passed && retakeKey) {
+                        <a
+                          [routerLink]="[context.basePath, 'certifications', retakeKey]"
+                          class="inline-flex h-11 items-center gap-1 rounded-lg bg-[#007979] px-5 font-semibold text-white hover:bg-[#006666]"
+                        >
+                          <mat-icon aria-hidden="true">military_tech</mat-icon>{{ 'Back to the certification' | t }}
+                        </a>
+                      } @else if (outcome.passed) {
                         <a
                           [routerLink]="[coursePath(), 'certificate']"
                           class="inline-flex h-11 items-center gap-1 rounded-lg bg-[#007979] px-5 font-semibold text-white hover:bg-[#006666]"
@@ -414,6 +427,8 @@ export class CourseExamComponent {
 
   protected readonly context = courseContextFromRoute(this.route);
   private readonly courseId = this.route.snapshot.paramMap.get('courseId') ?? '';
+  /** ?certification=<key>: retake an already passed course to count it as a certification step. */
+  protected readonly retakeKey = this.route.snapshot.queryParamMap.get('certification');
   protected readonly letters = 'ABCDEFGHIJ'.split('');
 
   protected readonly stage = signal<Stage>('intro');
@@ -498,7 +513,7 @@ export class CourseExamComponent {
     this.error.set(null);
 
     try {
-      const session = await this.service.startExam(this.context.organizationId, this.store.course()?.id ?? this.courseId);
+      const session = await this.service.startExam(this.context.organizationId, this.store.course()?.id ?? this.courseId, this.retakeKey);
       this.session.set(session);
       this.answers.set({});
       this.index.set(0);

@@ -285,7 +285,7 @@ import { MatRadioModule } from '@angular/material/radio';
               </div>
 
               <div class="rounded-lg bg-white p-4">
-                <p class="text-xs font-medium text-gray-500">Course</p>
+                <p class="text-xs font-medium text-gray-500">Quiz</p>
 
                 <p class="mt-1 text-sm font-semibold text-gray-900">
                   {{ selectedCourseName() }}
@@ -418,7 +418,7 @@ import { MatRadioModule } from '@angular/material/radio';
         }
 
         <!-- ============================================================
-             COURSE / TOPIC FILTER
+             QUIZ / TOPIC FILTER
              ============================================================ -->
 
         <section
@@ -429,7 +429,7 @@ import { MatRadioModule } from '@angular/material/radio';
             <h2 class="text-base font-semibold text-gray-900">Question Management</h2>
 
             <p class="mt-1 text-sm text-gray-500">
-              Select a course and topic to manage its questions.
+              Select a quiz and topic to manage its questions.
             </p>
           </div>
 
@@ -439,14 +439,14 @@ import { MatRadioModule } from '@angular/material/radio';
             <div>
 
               <mat-form-field appearance="outline" class="zb-field">
-                <mat-label>Course</mat-label>
+                <mat-label>Quiz</mat-label>
                 <mat-select
                 id="course"
                 name="course"
                 [ngModel]="selectedQuizId()"
                 (ngModelChange)="onCourseChange($event)"
               >
-                <mat-option value="">Select a course</mat-option>
+                <mat-option value="">Select a quiz</mat-option>
 
                 @for (course of courses(); track course.id) {
                   <mat-option [value]="course.id">
@@ -474,7 +474,7 @@ import { MatRadioModule } from '@angular/material/radio';
                   @if (loadingTopics()) {
                     Loading topics...
                   } @else if (!selectedQuizId()) {
-                    Select a course first
+                    Select a quiz first
                   } @else {
                     Select a topic
                   }
@@ -553,13 +553,13 @@ import { MatRadioModule } from '@angular/material/radio';
               <span class="text-xl text-teal-600"> ? </span>
             </div>
 
-            <h2 class="mt-4 text-base font-semibold text-gray-900">Select a course and topic</h2>
+            <h2 class="mt-4 text-base font-semibold text-gray-900">Select a quiz and topic</h2>
 
             <p
               class="mx-auto mt-1 max-w-md
                      text-sm text-gray-500"
             >
-              Choose the course and topic above to view and manage its question bank.
+              Choose the quiz and topic above to view and manage its question bank.
             </p>
           </div>
         }
@@ -1229,7 +1229,7 @@ export class TestQuestionAdminComponent implements OnInit {
 
     if (!organizationId) {
       this.courses.set([]);
-      this.toast.error('Select an organization before viewing Test Center courses.');
+      this.toast.error('Select an organization before viewing Test Center quizzes.');
       return;
     }
 
@@ -1242,7 +1242,7 @@ export class TestQuestionAdminComponent implements OnInit {
     } catch (error) {
       console.error('Failed to load Test Center courses:', error);
 
-      this.toast.error('We could not load the Test Center courses.');
+      this.toast.error('We could not load the Test Center quizzes.');
     } finally {
       this.loadingCourses.set(false);
     }
@@ -1296,7 +1296,7 @@ export class TestQuestionAdminComponent implements OnInit {
     } catch (error) {
       console.error('Failed to load Test Center topics:', error);
 
-      this.toast.error('We could not load the topics for this course.');
+      this.toast.error('We could not load the topics for this quiz.');
     } finally {
       this.loadingTopics.set(false);
     }
@@ -1381,7 +1381,7 @@ export class TestQuestionAdminComponent implements OnInit {
 
   startNewQuestion(): void {
     if (!this.selectedQuizId() || !this.selectedTopicId()) {
-      this.toast.error('Select a course and topic first.');
+      this.toast.error('Select a quiz and topic first.');
 
       return;
     }
@@ -1509,7 +1509,7 @@ export class TestQuestionAdminComponent implements OnInit {
     const topicId = this.selectedTopicId();
 
     if (!quizId || !topicId) {
-      this.toast.error('Select a course and topic first.');
+      this.toast.error('Select a quiz and topic first.');
       return;
     }
 
@@ -2184,7 +2184,7 @@ export class TestQuestionAdminComponent implements OnInit {
     }
 
     if (!quizId) {
-      this.toast.error('Please select a course before importing the question bank.');
+      this.toast.error('Please select a quiz before importing the question bank.');
 
       return;
     }
@@ -2303,7 +2303,7 @@ export class TestQuestionAdminComponent implements OnInit {
     const quizId = this.selectedQuizId();
 
     if (!quizId) {
-      this.toast.error('Please select a course before importing a question bank.');
+      this.toast.error('Please select a quiz before importing a question bank.');
 
       return;
     }

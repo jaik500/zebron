@@ -150,4 +150,5 @@ export const FR_APPS: Readonly<Record<string, string>> = {
   "Partly active": "Partiellement actif",
   "Add more": "Ajouter",
   "Already part of your organization.": "Fait déjà partie de votre organisation.",
+  "Your organization's email address on zebron.org: a shared inbox, departmental mailboxes and sending as the organization.": "L’adresse e-mail de votre organisation sur zebron.org : une boîte partagée, des boîtes de service et l’envoi au nom de l’organisation.",
 };

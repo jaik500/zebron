@@ -97,7 +97,7 @@ import { MatButtonModule } from '@angular/material/button';
                 class="mt-1 text-sm
                  text-white/65"
               >
-                Create and manage topics for Test Center courses.
+                Create and manage topics for Test Center quizzes.
               </p>
             </div>
 
@@ -183,7 +183,7 @@ import { MatButtonModule } from '@angular/material/button';
                 <a mat-menu-item routerLink="/admin/test-center/courses">
                   <mat-icon> menu_book </mat-icon>
 
-                  <span> Courses </span>
+                  <span> Quizzes </span>
                 </a>
 
                 <!-- Topics -->
@@ -281,7 +281,7 @@ import { MatButtonModule } from '@angular/material/button';
                       {{
                         editingId()
                           ? 'Update the topic information below.'
-                          : 'Create a new topic for a Test Center course.'
+                          : 'Create a new topic for a Test Center quiz.'
                       }}
                     </p>
                   </div>
@@ -367,14 +367,14 @@ import { MatButtonModule } from '@angular/material/button';
                   <div>
 
                     <mat-form-field appearance="outline" class="zb-field">
-                      <mat-label>Course</mat-label>
+                      <mat-label>Quiz</mat-label>
                       <mat-select
                       id="course"
                       name="quizId"
                       [(ngModel)]="form.quizId"
                       [disabled]="!!editingId()"
                     >
-                      <mat-option value="">Select a course</mat-option>
+                      <mat-option value="">Select a quiz</mat-option>
 
                       @for (course of courses(); track course.id) {
                         <mat-option [value]="course.id">
@@ -983,7 +983,7 @@ export class TestTopicAdminComponent implements OnInit {
         error,
       );
 
-      this.toast.error('Unable to load courses.');
+      this.toast.error('Unable to load quizzes.');
     }
   }
 
@@ -1144,7 +1144,7 @@ export class TestTopicAdminComponent implements OnInit {
     // -------------------------------------------------------
 
     if (!quizId) {
-      this.toast.error('Course is required.');
+      this.toast.error('Quiz is required.');
 
       return;
     }

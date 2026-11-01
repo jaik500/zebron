@@ -364,9 +364,21 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               <mat-icon class="text-[#007979]">apps</mat-icon>
               <h2 class="text-lg font-bold text-gray-900">{{ 'Applications' | t }}</h2>
               <span class="ml-auto text-sm text-gray-500">{{ '{0} provisioned' | t: [provisionedCount()] }}</span>
+              <button
+                mat-icon-button
+                type="button"
+                (click)="showApplications.set(!showApplications())"
+                [attr.aria-expanded]="showApplications()"
+                [attr.aria-controls]="'contract-applications'"
+                [attr.aria-label]="(showApplications() ? 'Hide applications' : 'Show applications') | t"
+                [title]="(showApplications() ? 'Hide applications' : 'Show applications') | t"
+              >
+                <mat-icon>{{ showApplications() ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+              </button>
             </div>
 
-            <ul class="divide-y divide-gray-100">
+            @if (showApplications()) {
+            <ul id="contract-applications" class="divide-y divide-gray-100">
               @for (app of applicationRows(); track app.id) {
                 <li class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
                   <div class="flex min-w-0 flex-1 items-start gap-3">
@@ -467,6 +479,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 </li>
               }
             </ul>
+            }
           </section>
 
           <!-- Learning: choose what to request -->
@@ -507,7 +520,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
                 <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-3">
                   <button mat-button type="button" (click)="capabilityPicker.set(null)">{{ 'Cancel' | t }}</button>
-                  <button mat-flat-button type="button" class="!bg-[#007979] !text-white" [disabled]="!pickerRequest()" (click)="applyCapabilityPicker()">
+                  <button mat-flat-button type="button" class="!bg-[#007979] !text-white" [disabled]="pickerRequest().length === 0" (click)="applyCapabilityPicker()">
                     {{ 'OK' | t }}
                   </button>
                 </div>
@@ -523,15 +536,29 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               @if (awaitingOwnerCount() > 0 && data.viewer.canApprove) {
                 <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">{{ '{0} need your approval' | t: [awaitingOwnerCount()] }}</span>
               }
-              <button mat-icon-button type="button" class="!ml-auto" [attr.aria-label]="'Refresh' | t" [title]="'Refresh' | t" (click)="load()">
+              <span class="ml-auto text-sm text-gray-500">{{ '{0} total' | t: [data.requests.length] }}</span>
+              <button
+                mat-icon-button
+                type="button"
+                (click)="showRequests.set(!showRequests())"
+                [attr.aria-expanded]="showRequests()"
+                [attr.aria-controls]="'contract-requests'"
+                [attr.aria-label]="(showRequests() ? 'Hide requests' : 'Show requests') | t"
+                [title]="(showRequests() ? 'Hide requests' : 'Show requests') | t"
+              >
+                <mat-icon>{{ showRequests() ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+              </button>
+              <button mat-icon-button type="button" [attr.aria-label]="'Refresh' | t" [title]="'Refresh' | t" (click)="load()">
                 <mat-icon>refresh</mat-icon>
               </button>
             </div>
 
-            @if (data.requests.length === 0) {
+            @if (!showRequests()) {
+              <!-- Hidden by default: the header shows the count. -->
+            } @else if (data.requests.length === 0) {
               <p class="px-5 py-6 text-sm text-gray-500 sm:px-6">{{ 'No requests yet.' | t }}</p>
             } @else {
-              <ul class="divide-y divide-gray-100">
+              <ul id="contract-requests" class="divide-y divide-gray-100">
                 @for (item of data.requests; track item.id) {
                   <li class="px-5 py-4 sm:px-6">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -746,6 +773,11 @@ export class OrganizationContractComponent implements OnInit {
 
   });
 
+  /** Both lists start hidden; the headers keep their counts. */
+  protected readonly showApplications = signal(false);
+
+  protected readonly showRequests = signal(false);
+
   protected readonly provisionedCount = computed(
     () =>
       this.applicationRows()
@@ -844,17 +876,27 @@ export class OrganizationContractComponent implements OnInit {
     options: { id: string; name: string; description: string; checked: boolean; locked: boolean; note: string | null }[];
   } | null>(null);
 
-  /** What OK requests: "learning" (Courses, with Test Center), "test-center", or nothing new. */
-  protected readonly pickerRequest = computed(() => {
+  /**
+   * What OK requests: "learning" (Courses, with Test Center) or
+   * "test-center", plus "virtual-classroom" when newly chosen.
+   */
+  protected readonly pickerRequest = computed<string[]>(() => {
     const picker = this.capabilityPicker();
     const option = (id: string) => picker?.options.find((item) => item.id === id);
-    const courses = option('courses');
-    const testCenter = option('test-center');
+    const isNew = (id: string) => !!option(id)?.checked && !option(id)?.locked;
+    const requests: string[] = [];
 
-    if (courses?.checked && !courses.locked) {
-      return 'learning';
+    if (isNew('courses')) {
+      requests.push('learning');
+    } else if (isNew('test-center')) {
+      requests.push('test-center');
     }
-    return testCenter?.checked && !testCenter.locked ? 'test-center' : null;
+
+    if (isNew('virtual-classroom')) {
+      requests.push('virtual-classroom');
+    }
+
+    return requests;
   });
 
   private static readonly OWNED = ['active', 'suspended', 'provisioning', 'selected'];
@@ -888,6 +930,14 @@ export class OrganizationContractComponent implements OnInit {
           locked: testCenterOwned || !coursesOwned,
           note: testCenterOwned ? 'Already part of your organization.' : 'Included with Courses: course final exams use the Test Center.',
         },
+        {
+          id: 'virtual-classroom',
+          name: 'Virtual Classroom',
+          description: 'Instructor-led live sessions in Zoom, Google Meet, Teams or Jitsi: schedule, registration, attendance and recordings.',
+          checked: owned('virtual-classroom'),
+          locked: owned('virtual-classroom'),
+          note: owned('virtual-classroom') ? 'Already part of your organization.' : null,
+        },
       ],
     });
   }
@@ -914,13 +964,35 @@ export class OrganizationContractComponent implements OnInit {
     this.capabilityPicker.set({ ...picker, options });
   }
 
-  protected applyCapabilityPicker(): void {
-    const request = this.pickerRequest();
+  protected async applyCapabilityPicker(): Promise<void> {
+    const requests = this.pickerRequest();
     this.capabilityPicker.set(null);
 
-    if (request) {
-      this.openForm('add_application', request);
+    if (requests.length === 1) {
+      // One application: the usual request form (with an optional reason).
+      this.openForm('add_application', requests[0]);
+      return;
     }
+
+    // Several: send one request for each.
+    await this.run(async () => {
+      let awaitingOwner = false;
+      for (const applicationId of requests) {
+        const result = await this.contracts.submitRequest({
+          organizationId: this.organizationId,
+          type: 'add_application',
+          applicationId,
+          reason: '',
+          confirmName: '',
+        });
+        awaitingOwner = awaitingOwner || result.status === 'awaiting_owner';
+      }
+      this.message.set(
+        awaitingOwner
+          ? 'Requests saved. The organization owner has been asked to approve them before they go to Zebron.'
+          : 'Requests sent to Zebron. You will get an email when they are handled.',
+      );
+    });
   }
 
   protected openForm(type: ServiceRequestType, applicationId: string | null = null): void {

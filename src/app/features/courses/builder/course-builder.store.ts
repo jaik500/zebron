@@ -27,6 +27,9 @@ export interface DraftDetails {
   summary: string;
   description: string;
   topic: string;
+  /** Learning path name and position; empty / null when not in a program. */
+  program: string;
+  programOrder: number | null;
   level: CourseLevel;
   cover: CourseCover;
   outcomes: string[];
@@ -76,6 +79,8 @@ const EMPTY_DETAILS: DraftDetails = {
   summary: '',
   description: '',
   topic: '',
+  program: '',
+  programOrder: null,
   level: 'beginner',
   cover: 'teal',
   outcomes: [],
@@ -299,6 +304,8 @@ export const CourseBuilderStore = signalStore(
               summary: course.summary,
               description: course.description,
               topic: course.topic,
+              program: course.program,
+              programOrder: course.programOrder,
               level: course.level,
               cover: course.cover,
               outcomes: course.outcomes,
@@ -558,6 +565,8 @@ export const CourseBuilderStore = signalStore(
               summary: details.summary.trim(),
               description: details.description.trim(),
               topic: details.topic.trim(),
+              program: details.program.trim().slice(0, 80),
+              programOrder: details.program.trim() && details.programOrder ? Math.max(1, Math.min(99, Math.round(details.programOrder))) : null,
               level: details.level,
               cover: details.cover,
               outcomes: details.outcomes.map((item) => item.trim()).filter(Boolean),

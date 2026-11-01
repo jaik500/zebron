@@ -194,6 +194,28 @@ export const APPLICATION_DEFINITIONS: ApplicationDefinition[] = [
     enabled: true,
   },
 
+  {
+    id: 'virtual-classroom',
+    key: 'virtual-classroom',
+    name: 'Virtual Classroom',
+    description:
+      'Instructor-led live sessions: schedule, registration, join links for Zoom, Google Meet, Teams or Jitsi, attendance and recordings.',
+    category: 'learning',
+    icon: 'video_camera_front',
+    route: '/partner/org/:organizationId/live',
+    availability: 'available',
+    requiresOrganization: true,
+    requiresApproval: false,
+    autoProvision: false,
+    provisioningStrategy: 'default',
+    parent: 'learning',
+    dependencies: ['core'],
+    permissions: [],
+    features: [],
+    version: 1,
+    enabled: true,
+  },
+
   // ===========================================================================
   // Test Center
   // ===========================================================================

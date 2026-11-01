@@ -21,6 +21,7 @@ import { OrganizationAnnouncement } from '../../announcements/organization-annou
 import { OrganizationAnnouncementService } from '../../announcements/organization-announcement.service';
 import { ApplicationRegistryService } from '../../../../core/services/application-registry.service';
 import { CourseService } from '../../../courses/course.service';
+import { LiveSessionService, canJoinNow, sessionEnd } from '../../../live/live-session.service';
 
 import {
   PartnerAdminSearchResult,
@@ -529,6 +530,20 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                     >
                       {{ card.description | t }}
                     </a>
+
+                    @if (card.id === 'learning' && card.enabled && nextLiveSession(); as next) {
+                      <a
+                        [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'live']"
+                        class="mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm"
+                        [class]="next.live ? 'bg-red-50 text-red-800 hover:bg-red-100' : 'bg-teal-50 text-teal-900 hover:bg-teal-100'"
+                      >
+                        <mat-icon class="!h-[18px] !w-[18px] shrink-0 !text-[18px]" aria-hidden="true">{{ next.live ? 'sensors' : 'live_tv' }}</mat-icon>
+                        <span class="min-w-0 flex-1 truncate">
+                          <span class="font-semibold">{{ (next.live ? 'Live now' : 'Next live session') | t }}:</span>
+                          {{ next.title }} · {{ next.when }}
+                        </span>
+                      </a>
+                    }
                   </div>
                 }
               </div>
@@ -651,6 +666,11 @@ export class PartnerAdminComponent implements OnInit {
 
   /** Courses waiting for a manager's review (badge on the Learning card's gear). */
   protected readonly coursesInReview = signal(0);
+
+  private readonly liveSessions = inject(LiveSessionService);
+
+  /** The soonest live session on the Learning card (Virtual Classroom only). */
+  protected readonly nextLiveSession = signal<{ title: string; when: string; live: boolean } | null>(null);
 
   private readonly announcements = signal<OrganizationAnnouncement[]>([]);
 
@@ -866,7 +886,9 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
   /** Learning describes only what the organization has. */
   private cardDescription(applicationId: string, description: string): string {
     if (applicationId === 'learning' && !this.organizationStore.hasActiveApplication('courses')) {
-      return 'Quizzes and exams for your students: practice tests, results and retakes.';
+      return this.organizationStore.hasActiveApplication('test-center')
+        ? 'Quizzes and exams for your students: practice tests, results and retakes.'
+        : 'Live sessions with an instructor: schedule, register and join.';
     }
 
     return description;
@@ -888,12 +910,15 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
    * Its separate settings button continues to use the registry's management route.
    */
   protected dashboardCardRoute(card: DashboardCard): string | (string | null)[] {
-    // Learning opens Courses when the organization has it, otherwise the Test Center.
+    // Learning opens Courses when the organization has it, otherwise the
+    // Test Center, otherwise the Virtual Classroom.
     if (card.id === 'learning' && !this.organizationStore.hasActiveApplication('courses')) {
       const organizationId = this.organizationStore.selectedOrganizationId();
 
       if (organizationId) {
-        return ['/partner/org', organizationId, 'learn', 'test-center'];
+        return this.organizationStore.hasActiveApplication('test-center')
+          ? ['/partner/org', organizationId, 'learn', 'test-center']
+          : ['/partner/org', organizationId, 'live'];
       }
     }
 
@@ -926,7 +951,11 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
     // Learning's gear: with Courses, the Learning administration page (staff
     // and above write courses and Test Center content); with only the Test
     // Center, its settings.
-    if (card.id === 'learning' && this.organizationStore.hasActiveApplication('courses') && this.access.isStaffOrAbove()) {
+    if (
+      card.id === 'learning' &&
+      this.access.isStaffOrAbove() &&
+      (this.organizationStore.hasActiveApplication('courses') || this.organizationStore.hasActiveApplication('virtual-classroom'))
+    ) {
       return ['/partner/org', this.organizationStore.selectedOrganizationId(), 'learning', 'manage'];
     }
 
@@ -978,6 +1007,34 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
       this.coursesInReview.set(await this.courseService.countInReview(organizationId));
     } catch {
       this.coursesInReview.set(0);
+    }
+  }
+
+  /** The next live session that has not ended; a failure here is silent. */
+  private async loadNextLiveSession(organizationId: string): Promise<void> {
+    if (!this.organizationStore.hasActiveApplication('virtual-classroom')) {
+      this.nextLiveSession.set(null);
+      return;
+    }
+
+    try {
+      const now = Date.now();
+      const upcoming = (await this.liveSessions.list(organizationId))
+        .filter((session) => session.status === 'scheduled' && sessionEnd(session).getTime() > now)
+        .sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+      const next = upcoming[0];
+
+      this.nextLiveSession.set(
+        next
+          ? {
+              title: next.title,
+              when: next.startAt.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+              live: canJoinNow(next, now) && next.startAt.getTime() <= now,
+            }
+          : null,
+      );
+    } catch {
+      this.nextLiveSession.set(null);
     }
   }
 
@@ -1047,6 +1104,7 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
 
       void this.loadAnnouncements(organizationId);
       void this.loadCoursesInReview(organizationId);
+      void this.loadNextLiveSession(organizationId);
     } catch {
       /*
        * OrganizationStore exposes

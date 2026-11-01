@@ -21,6 +21,9 @@ interface VerifiedCertificate {
   score: number | null;
   issuedAt: Timestamp | null;
   revoked: boolean;
+  /** Certification credentials expire; course certificates do not. */
+  kind: 'course' | 'certification';
+  expiresAt: Timestamp | null;
 }
 
 /**
@@ -78,7 +81,7 @@ interface VerifiedCertificate {
                   <dd class="text-lg font-semibold text-slate-900">{{ found.learnerName }}</dd>
                 </div>
                 <div>
-                  <dt class="text-xs uppercase tracking-wide text-slate-500">{{ 'Course' | t }}</dt>
+                  <dt class="text-xs uppercase tracking-wide text-slate-500">{{ (found.kind === 'certification' ? 'Certification' : 'Course') | t }}</dt>
                   <dd class="text-lg font-semibold text-slate-900">{{ found.courseTitle }}</dd>
                 </div>
                 <div>
@@ -89,6 +92,17 @@ interface VerifiedCertificate {
                   <dt class="text-xs uppercase tracking-wide text-slate-500">{{ 'Date' | t }}</dt>
                   <dd class="text-slate-800">{{ issued() }}</dd>
                 </div>
+                @if (found.expiresAt) {
+                  <div>
+                    <dt class="text-xs uppercase tracking-wide text-slate-500">{{ 'Valid until' | t }}</dt>
+                    <dd [class]="expired() ? 'font-semibold text-rose-700' : 'text-slate-800'">
+                      {{ expiry() }}
+                      @if (expired()) {
+                        · {{ 'Expired' | t }}
+                      }
+                    </dd>
+                  </div>
+                }
                 @if (found.score !== null) {
                   <div>
                     <dt class="text-xs uppercase tracking-wide text-slate-500">{{ 'Final exam score' | t }}</dt>
@@ -135,6 +149,15 @@ export class CertificateVerifyComponent {
     courseDate(this.certificate()?.issuedAt, this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US'),
   );
 
+  protected readonly expiry = computed(() =>
+    courseDate(this.certificate()?.expiresAt, this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US'),
+  );
+
+  protected readonly expired = computed(() => {
+    const expiresAt = this.certificate()?.expiresAt;
+    return !!expiresAt && expiresAt.toMillis() < Date.now();
+  });
+
   constructor() {
     inject(PageTitleService).setDocumentTitle(this.i18n.t('Check a certificate'));
     if (this.input) {
@@ -165,6 +188,8 @@ export class CertificateVerifyComponent {
               score: typeof data['score'] === 'number' ? data['score'] : null,
               issuedAt: (data['issuedAt'] as Timestamp | null) ?? null,
               revoked: data['revoked'] === true,
+              kind: data['kind'] === 'certification' ? 'certification' : 'course',
+              expiresAt: (data['expiresAt'] as Timestamp | null | undefined) ?? null,
             }
           : null,
       );

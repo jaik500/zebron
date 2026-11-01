@@ -73,3 +73,20 @@ export function useCoursesAvailable(route: ActivatedRoute): Signal<boolean> {
 
   return available.asReadonly();
 }
+
+/**
+ * Whether the organization has the Virtual Classroom (live sessions).
+ * Never on Zebron's own pages. Starts false so the link never flashes in.
+ */
+export function useLiveAvailable(route: ActivatedRoute): Signal<boolean> {
+  const organizationId = routeOrganizationId(route);
+  const available = signal(false);
+
+  if (organizationId) {
+    getDoc(doc(firestore, 'organizations', organizationId, 'applications', 'virtual-classroom'))
+      .then((snapshot) => available.set(snapshot.data()?.['status'] === 'active'))
+      .catch(() => available.set(false));
+  }
+
+  return available.asReadonly();
+}

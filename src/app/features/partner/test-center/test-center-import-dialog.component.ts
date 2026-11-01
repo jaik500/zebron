@@ -91,7 +91,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
              =================================================== -->
         @case ('choose') {
           <p class="text-sm leading-6 text-gray-600">
-            {{ 'Import programs, courses, topics and questions from a' | t }} <strong>{{ 'CSV' | t }}</strong> {{ 'file (from Excel or Google Sheets) or a' | t }} <strong>{{ 'JSON' | t }}</strong> {{ 'file. Missing programs, courses and topics are created. Importing the same file again updates those questions instead of duplicating them.' | t }}
+            {{ 'Import programs, quizzes, topics and questions from a' | t }} <strong>{{ 'CSV' | t }}</strong> {{ 'file (from Excel or Google Sheets) or a' | t }} <strong>{{ 'JSON' | t }}</strong> {{ 'file. Missing programs, quizzes and topics are created. Importing the same file again updates those questions instead of duplicating them.' | t }}
           </p>
 
           <button
@@ -133,14 +133,14 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
           <h3 class="mt-6 text-sm font-semibold text-gray-900">{{ 'For rows that leave these blank' | t }}</h3>
           <p class="mb-3 mt-1 text-xs text-gray-500">
-            {{ 'Columns in the file always win. These are only used when a row has no course, program or topic.' | t }}
+            {{ 'Columns in the file always win. These are only used when a row has no quiz, program or topic.' | t }}
           </p>
 
           <div class="grid gap-x-4 sm:grid-cols-2">
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>{{ 'Course' | t }}</mat-label>
+              <mat-label>{{ 'Quiz' | t }}</mat-label>
               <mat-select [(ngModel)]="defaultQuizId" name="defaultQuizId">
-                <mat-option [value]="null">{{ 'Use the file\\u0027s "course" column' | t }}</mat-option>
+                <mat-option [value]="null">{{ 'Use the file\\u0027s "quiz" column' | t }}</mat-option>
                 @for (course of data.courses; track course.id) {
                   <mat-option [value]="course.id">{{ course.name }}</mat-option>
                 }
@@ -148,7 +148,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="zb-field">
-              <mat-label>{{ 'Program for new courses' | t }}</mat-label>
+              <mat-label>{{ 'Program for new quizzes' | t }}</mat-label>
               <mat-select [(ngModel)]="defaultProgramId" name="defaultProgramId">
                 <mat-option [value]="null">{{ 'Use the file\\u0027s "program" column' | t }}</mat-option>
                 @for (program of data.programs; track program.id) {
@@ -274,7 +274,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 <p class="mt-1">
                   {{ '{0} question{1} added, {2} updated.' | t: [done.questionsCreated, (done.questionsCreated === 1 ? '' : 's'), done.questionsUpdated] }}
                   @if (done.programsCreated || done.coursesCreated || done.topicsCreated) {
-                    {{ 'Created {0} program{1}, {2} course{3} and {4} topic{5}.' | t: [done.programsCreated, (done.programsCreated === 1 ? '' : 's'), done.coursesCreated, (done.coursesCreated === 1 ? '' : 's'), done.topicsCreated, (done.topicsCreated === 1 ? '' : 's')] }}
+                    {{ 'Created {0} program(s), {1} quiz(zes) and {2} topic(s).' | t: [done.programsCreated, done.coursesCreated, done.topicsCreated] }}
                   }
                 </p>
               </div>
@@ -382,7 +382,7 @@ export class TestCenterImportDialogComponent {
 
     return [
       { label: 'Programs', total: programs.total, detail: this.i18n.t('{0} new', [programs.created]) },
-      { label: 'Courses', total: courses.total, detail: this.i18n.t('{0} new', [courses.created]) },
+      { label: 'Quizzes', total: courses.total, detail: this.i18n.t('{0} new', [courses.created]) },
       { label: 'Topics', total: topics.total, detail: this.i18n.t('{0} new', [topics.created]) },
       {
         label: 'Questions',
@@ -403,10 +403,10 @@ export class TestCenterImportDialogComponent {
 
     return [
       ...plan.programs.filter((item) => !item.existing).map((item) => this.i18n.t('Program: {0}', [item.name])),
-      ...plan.courses.filter((item) => !item.existing).map((item) => this.i18n.t('Course: {0}', [item.name])),
+      ...plan.courses.filter((item) => !item.existing).map((item) => this.i18n.t('Quiz: {0}', [item.name])),
       ...plan.topics
         .filter((item) => !item.existing)
-        .map((item) => this.i18n.t('Topic: {0} (in {1})', [item.name, courseNames.get(item.courseKey) ?? this.i18n.t('course')])),
+        .map((item) => this.i18n.t('Topic: {0} (in {1})', [item.name, courseNames.get(item.courseKey) ?? this.i18n.t('quiz')])),
     ];
   });
 
