@@ -234,9 +234,9 @@ import { CourseBuilderStore } from './course-builder.store';
               {{ store.lessonCount() }} {{ (store.lessonCount() === 1 ? 'lesson' : 'lessons') | t }} · {{ duration() }}
             </p>
 
-            @if (!published() && store.problems().length) {
-              <div class="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
-                <p class="mb-1 font-semibold">{{ 'Before you publish' | t }}</p>
+            @if (store.problems().length) {
+              <div class="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900" role="status">
+                <p class="mb-1 font-semibold">{{ (published() ? 'Fix before saving (the course is live)' : 'Before you publish') | t }}</p>
                 <ul class="list-disc space-y-0.5 pl-4">
                   @for (problem of store.problems().slice(0, 5); track problem) {
                     <li>{{ problem }}</li>
@@ -276,9 +276,9 @@ import { CourseBuilderStore } from './course-builder.store';
                     [block]="block"
                     [index]="blockIndex"
                     [count]="lesson.blocks.length"
-                    (change)="store.updateBlock(lesson.id, blockIndex, $event)"
-                    (move)="store.moveBlock(lesson.id, blockIndex, $event)"
-                    (remove)="store.removeBlock(lesson.id, blockIndex)"
+                    (blockChange)="store.updateBlock(lesson.id, blockIndex, $event)"
+                    (blockMove)="store.moveBlock(lesson.id, blockIndex, $event)"
+                    (blockRemove)="store.removeBlock(lesson.id, blockIndex)"
                   />
                 } @empty {
                   <p class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
@@ -507,6 +507,11 @@ export class CourseBuilderComponent {
     const wasNew = this.store.isNew();
     const courseId = await this.store.save(action);
     if (!courseId) {
+      // Say why right away: the banner at the top may be scrolled out of view.
+      const error = this.store.error();
+      if (error) {
+        this.toast.error(this.i18n.t(error), { duration: 6000 });
+      }
       return;
     }
 

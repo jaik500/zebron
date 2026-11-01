@@ -98,6 +98,7 @@ export const FR_COURSES: Readonly<Record<string, string>> = {
   '{percent}% complete': '{percent} % terminé',
   '{percent}% of course': '{percent} % du cours',
   // Course builder and media
+  "Fix before saving (the course is live)": "À corriger avant d'enregistrer (le cours est en ligne)",
   "About this course": "À propos de ce cours",
   "Add a block": "Ajouter un bloc",
   "Add an answer": "Ajouter une réponse",

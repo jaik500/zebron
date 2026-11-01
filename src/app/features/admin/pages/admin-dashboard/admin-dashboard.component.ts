@@ -1177,6 +1177,13 @@ export class AdminDashboardComponent {
       icon: 'menu_book',
     },
     {
+      title: 'Courses',
+      description: 'Create and edit Zebron courses: modules, lessons, videos, audio, slides and quick checks. Publish when ready.',
+      route: '/courses/manage',
+      actionLabel: 'Manage Courses',
+      icon: 'school',
+    },
+    {
       title: 'Blog',
       description: 'Write, review, schedule and pin posts on the public Zebron blog.',
       route: '/blog/manage',

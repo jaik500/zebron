@@ -445,6 +445,9 @@ export const CourseBuilderStore = signalStore(
       },
 
       updateBlock(lessonId: string, index: number, block: LessonBlock): void {
+        if (!block || typeof block !== 'object' || !('type' in block)) {
+          return;
+        }
         updateBlocks(lessonId, (blocks) => blocks.map((item, position) => (position === index ? block : item)));
       },
 

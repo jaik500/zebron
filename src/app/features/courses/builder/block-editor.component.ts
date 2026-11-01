@@ -34,13 +34,13 @@ const MAX_OPTIONS = 6;
       <header class="mb-3 flex items-center gap-2">
         <mat-icon class="text-[#007979]" aria-hidden="true">{{ meta().icon }}</mat-icon>
         <h3 class="flex-1 text-sm font-bold text-slate-600">{{ meta().label | t }}</h3>
-        <button type="button" class="icon-btn" [disabled]="index() === 0" (click)="move.emit(-1)" [attr.aria-label]="'Move up' | t" [matTooltip]="'Move up' | t">
+        <button type="button" class="icon-btn" [disabled]="index() === 0" (click)="blockMove.emit(-1)" [attr.aria-label]="'Move up' | t" [matTooltip]="'Move up' | t">
           <mat-icon>arrow_upward</mat-icon>
         </button>
-        <button type="button" class="icon-btn" [disabled]="index() === count() - 1" (click)="move.emit(1)" [attr.aria-label]="'Move down' | t" [matTooltip]="'Move down' | t">
+        <button type="button" class="icon-btn" [disabled]="index() === count() - 1" (click)="blockMove.emit(1)" [attr.aria-label]="'Move down' | t" [matTooltip]="'Move down' | t">
           <mat-icon>arrow_downward</mat-icon>
         </button>
-        <button type="button" class="icon-btn hover:!text-rose-600" (click)="remove.emit()" [attr.aria-label]="'Delete block' | t" [matTooltip]="'Delete block' | t">
+        <button type="button" class="icon-btn hover:!text-rose-600" (click)="blockRemove.emit()" [attr.aria-label]="'Delete block' | t" [matTooltip]="'Delete block' | t">
           <mat-icon>delete</mat-icon>
         </button>
       </header>
@@ -205,16 +205,18 @@ export class BlockEditorComponent {
   readonly index = input(0);
   readonly count = input(1);
 
-  readonly change = output<LessonBlock>();
-  readonly move = output<number>();
-  readonly remove = output<void>();
+  // Not named "change": native change events from the inputs inside would
+  // bubble up to the host and reach that listener as DOM events.
+  readonly blockChange = output<LessonBlock>();
+  readonly blockMove = output<number>();
+  readonly blockRemove = output<void>();
 
   protected readonly uid = Math.random().toString(36).slice(2, 9);
   protected readonly maxOptions = MAX_OPTIONS;
   protected readonly providers = computed(() => MEDIA_PROVIDERS);
   protected readonly formattingHint = 'Formatting: **bold**, *italic*, # heading, - list item, 1. numbered item, [link](https://…)';
 
-  protected readonly meta = computed(() => BLOCK_META[this.block().type]);
+  protected readonly meta = computed(() => BLOCK_META[this.block()?.type] ?? BLOCK_META.text);
 
   protected readonly mediaKind = computed(() => {
     const type = this.block().type;
@@ -303,7 +305,7 @@ export class BlockEditorComponent {
 
   /** Merge changes into the block (fields that do not apply are ignored). */
   protected set(changes: Record<string, unknown>): void {
-    this.change.emit({ ...this.block(), ...changes } as LessonBlock);
+    this.blockChange.emit({ ...this.block(), ...changes } as LessonBlock);
   }
 
   protected setOption(index: number, text: string): void {
