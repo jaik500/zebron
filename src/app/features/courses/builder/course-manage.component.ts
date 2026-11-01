@@ -12,6 +12,7 @@ import { useLearningHeaderTitle } from '../../test-center/learner-route';
 import { CourseHeaderComponent } from '../components/course-header.component';
 import { Course, COURSE_COVERS, courseContextFromRoute, courseDate, formatMinutes } from '../course.model';
 import { CourseService } from '../course.service';
+import { CourseAccessService } from '../course-access.service';
 
 const STATUS: Record<string, { label: string; classes: string }> = {
   draft: { label: 'Draft', classes: 'bg-slate-100 text-slate-700' },
@@ -41,7 +42,9 @@ const STATUS: Record<string, { label: string; classes: string }> = {
             <h1 class="text-lg font-semibold text-slate-900">
               {{ (context.organizationId ? 'Your organization\\u0027s courses' : 'Zebron courses') | t }}
             </h1>
-            <p class="text-sm text-slate-500">{{ 'Drafts are only visible here until you publish them.' | t }}</p>
+            <p class="text-sm text-slate-500">
+              {{ (canPublish() ? 'Drafts are only visible here until you publish them.' : 'Write drafts, then submit them for review: a manager publishes them.') | t }}
+            </p>
           </div>
           <a
             [routerLink]="context.basePath + '/manage/new'"
@@ -60,6 +63,37 @@ const STATUS: Record<string, { label: string; classes: string }> = {
         } @else if (error()) {
           <p class="rounded-xl bg-rose-50 p-4 text-sm text-rose-700" role="alert">{{ error()! | t }}</p>
         } @else if (courses().length) {
+          @if (canPublish() && inReview().length) {
+            <section class="mb-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-3" aria-labelledby="review-title">
+              <h2 id="review-title" class="flex items-center gap-2 px-1 text-sm font-semibold text-amber-900">
+                <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">rate_review</mat-icon>
+                {{ 'Waiting for your review ({0})' | t: [inReview().length] }}
+              </h2>
+              <ul class="mt-2 flex flex-col gap-2">
+                @for (course of inReview(); track course.id) {
+                  <li>
+                    <a
+                      [routerLink]="[context.basePath, 'manage', course.id]"
+                      class="flex items-center gap-3 rounded-xl border border-amber-200 bg-white p-3 transition hover:border-[#007979] hover:shadow-sm"
+                    >
+                      <span class="h-10 w-10 shrink-0 rounded-lg" [style.background]="cover(course)" aria-hidden="true"></span>
+                      <span class="min-w-0 flex-1">
+                        <span class="block truncate font-semibold text-slate-900">{{ course.title }}</span>
+                        <span class="block text-xs text-slate-500">
+                          {{ 'Submitted by {0}' | t: [course.review?.submittedByName || ('a staff member' | t)] }}
+                          @if (submitted(course)) {
+                            · {{ submitted(course) }}
+                          }
+                        </span>
+                      </span>
+                      <span class="shrink-0 text-sm font-semibold text-[#007979]">{{ 'Review' | t }}</span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
           <ul class="flex flex-col gap-2">
             @for (course of courses(); track course.id) {
               <li>
@@ -108,6 +142,11 @@ export class CourseManageComponent {
   protected readonly error = signal<string | null>(null);
   protected readonly locale = computed(() => (this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US'));
 
+  private readonly access = inject(CourseAccessService);
+  /** Managers and above publish; staff submit for review. */
+  protected readonly canPublish = computed(() => this.access.canPublish(this.context));
+  protected readonly inReview = computed(() => this.courses().filter((course) => course.status === 'in_review'));
+
   private readonly headerTitle = useLearningHeaderTitle(this.route);
 
   constructor() {
@@ -135,6 +174,10 @@ export class CourseManageComponent {
 
   protected minutes(course: Course): string {
     return formatMinutes(course.estimatedMinutes);
+  }
+
+  protected submitted(course: Course): string {
+    return courseDate(course.review?.submittedAt ?? null, this.locale());
   }
 
   protected updated(course: Course): string {

@@ -33,6 +33,7 @@ import {
 } from '../course.model';
 import { BLOCK_META, BlockEditorComponent } from './block-editor.component';
 import { CourseBuilderStore } from './course-builder.store';
+import { CourseAccessService } from '../course-access.service';
 
 /**
  * The course builder: course details, the outline (modules and lessons)
@@ -93,35 +94,63 @@ import { CourseBuilderStore } from './course-builder.store';
           }
 
           @if (published()) {
-            <button
-              type="button"
-              class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg bg-white px-2 text-sm font-bold text-[#007979] hover:bg-teal-50 disabled:opacity-50 sm:px-3"
-              [disabled]="store.saving() || !store.dirty()"
-              (click)="save('save')"
-              [attr.aria-label]="'Save changes' | t"
-              [matTooltip]="'The course is live: changes reach learners as soon as you save.' | t"
-            >
-              <mat-icon aria-hidden="true">{{ store.saving() ? 'hourglass_top' : 'save' }}</mat-icon><span class="hidden sm:inline">{{ 'Save changes' | t }}</span>
-            </button>
+            <!-- Live: managers save changes; staff can only look -->
+            @if (canPublish()) {
+              <button
+                type="button"
+                class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg bg-white px-2 text-sm font-bold text-[#007979] hover:bg-teal-50 disabled:opacity-50 sm:px-3"
+                [disabled]="store.saving() || !store.dirty()"
+                (click)="save('save')"
+                [attr.aria-label]="'Save changes' | t"
+                [matTooltip]="'The course is live: changes reach learners as soon as you save.' | t"
+              >
+                <mat-icon aria-hidden="true">{{ store.saving() ? 'hourglass_top' : 'save' }}</mat-icon><span class="hidden sm:inline">{{ 'Save changes' | t }}</span>
+              </button>
+            }
           } @else {
             <button
               type="button"
               class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-white/35 px-2 text-sm font-semibold hover:bg-white/15 disabled:opacity-50 sm:px-3"
               [disabled]="store.saving() || (!store.dirty() && !store.isNew())"
               (click)="save('save')"
-              [attr.aria-label]="'Save draft' | t"
+              [attr.aria-label]="(inReview() ? 'Save' : 'Save draft') | t"
             >
-              <mat-icon aria-hidden="true">{{ store.saving() ? 'hourglass_top' : 'save' }}</mat-icon><span class="hidden sm:inline">{{ 'Save draft' | t }}</span>
+              <mat-icon aria-hidden="true">{{ store.saving() ? 'hourglass_top' : 'save' }}</mat-icon><span class="hidden sm:inline">{{ (inReview() ? 'Save' : 'Save draft') | t }}</span>
             </button>
-            <button
-              type="button"
-              class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg bg-white px-2 text-sm font-bold text-[#007979] hover:bg-teal-50 disabled:opacity-50 sm:px-3"
-              [disabled]="store.saving()"
-              (click)="save('publish')"
-              [attr.aria-label]="'Publish' | t"
-            >
-              <mat-icon aria-hidden="true">rocket_launch</mat-icon><span class="hidden sm:inline">{{ 'Publish' | t }}</span>
-            </button>
+
+            @if (canPublish()) {
+              @if (inReview()) {
+                <button
+                  type="button"
+                  class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-white/35 px-2 text-sm font-semibold hover:bg-white/15 disabled:opacity-50 sm:px-3"
+                  [disabled]="store.saving()"
+                  (click)="sendBack()"
+                  [attr.aria-label]="'Send back' | t"
+                >
+                  <mat-icon aria-hidden="true">undo</mat-icon><span class="hidden sm:inline">{{ 'Send back' | t }}</span>
+                </button>
+              }
+              <button
+                type="button"
+                class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg bg-white px-2 text-sm font-bold text-[#007979] hover:bg-teal-50 disabled:opacity-50 sm:px-3"
+                [disabled]="store.saving()"
+                (click)="save('publish')"
+                [attr.aria-label]="(inReview() ? 'Approve and publish' : 'Publish') | t"
+              >
+                <mat-icon aria-hidden="true">rocket_launch</mat-icon><span class="hidden sm:inline">{{ (inReview() ? 'Approve and publish' : 'Publish') | t }}</span>
+              </button>
+            } @else if (!inReview()) {
+              <button
+                type="button"
+                class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg bg-white px-2 text-sm font-bold text-[#007979] hover:bg-teal-50 disabled:opacity-50 sm:px-3"
+                [disabled]="store.saving()"
+                (click)="save('submit')"
+                [attr.aria-label]="'Submit for review' | t"
+                [matTooltip]="'A manager checks the course and publishes it.' | t"
+              >
+                <mat-icon aria-hidden="true">send</mat-icon><span class="hidden sm:inline">{{ 'Submit for review' | t }}</span>
+              </button>
+            }
           }
 
           <button
@@ -133,17 +162,34 @@ import { CourseBuilderStore } from './course-builder.store';
             <mat-icon aria-hidden="true">more_vert</mat-icon>
           </button>
           <mat-menu #moreMenu="matMenu" xPosition="before">
-            @if (published()) {
+            @if (published() && canPublish()) {
               <button mat-menu-item type="button" (click)="save('unpublish')">
                 <mat-icon>unpublished</mat-icon><span>{{ 'Unpublish (back to draft)' | t }}</span>
               </button>
             }
-            <button mat-menu-item type="button" (click)="deleteCourse()">
-              <mat-icon class="!text-rose-600">delete</mat-icon><span class="text-rose-700">{{ 'Delete course' | t }}</span>
-            </button>
+            @if (inReview() && !canPublish()) {
+              <button mat-menu-item type="button" (click)="save('withdraw')">
+                <mat-icon>undo</mat-icon><span>{{ 'Withdraw from review' | t }}</span>
+              </button>
+            }
+            @if (!published() || canPublish()) {
+              <button mat-menu-item type="button" (click)="deleteCourse()">
+                <mat-icon class="!text-rose-600">delete</mat-icon><span class="text-rose-700">{{ 'Delete course' | t }}</span>
+              </button>
+            }
           </mat-menu>
         </div>
       </header>
+
+      <!-- Review status -->
+      @if (!store.loading() && reviewBanner(); as banner) {
+        <div class="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+          <p class="flex items-start gap-2 rounded-xl px-4 py-3 text-sm" [ngClass]="banner.classes" role="status">
+            <mat-icon class="!h-5 !w-5 shrink-0 !text-[20px]" aria-hidden="true">{{ banner.icon }}</mat-icon>
+            <span>{{ banner.text | t: banner.args }}</span>
+          </p>
+        </div>
+      }
 
       @if (store.loading()) {
         <div class="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[300px_1fr] lg:px-8" aria-hidden="true">
@@ -517,10 +563,50 @@ export class CourseBuilderComponent {
   });
 
   protected readonly outcomesText = computed(() => this.store.details().outcomes.join(String.fromCharCode(10)));
+  private readonly access = inject(CourseAccessService);
+
   protected readonly published = computed(() => this.store.details().status === 'published');
+  protected readonly inReview = computed(() => this.store.details().status === 'in_review');
+  /** Managers and above publish; staff submit for review. */
+  protected readonly canPublish = computed(() => this.access.canPublish(this.context));
+  /** Staff looking at a live course: only managers change it. */
+  protected readonly readOnly = computed(() => this.published() && !this.canPublish());
+
+  protected readonly reviewBanner = computed<{ icon: string; text: string; args: string[]; classes: string } | null>(() => {
+    const review = this.store.review();
+    const who = review?.submittedByName || this.i18n.t('A staff member');
+
+    if (this.readOnly()) {
+      return {
+        icon: 'lock',
+        text: 'This course is live. Only managers can change it: ask one to edit it or move it back to draft.',
+        args: [],
+        classes: 'bg-slate-100 text-slate-700',
+      };
+    }
+
+    if (this.inReview()) {
+      return this.canPublish()
+        ? { icon: 'rate_review', text: '{0} submitted this course for review. Check it, then Approve and publish or Send back.', args: [who], classes: 'bg-amber-50 text-amber-900' }
+        : { icon: 'hourglass_top', text: 'Waiting for a manager: they will publish it or send it back with a note.', args: [], classes: 'bg-amber-50 text-amber-900' };
+    }
+
+    if (this.store.details().status === 'draft' && review?.note) {
+      return {
+        icon: 'undo',
+        text: 'Sent back by {0}: {1}',
+        args: [review.reviewedByName || this.i18n.t('a manager'), review.note],
+        classes: 'bg-sky-50 text-sky-900',
+      };
+    }
+
+    return null;
+  });
   protected readonly duration = computed(() => formatMinutes(this.store.totalMinutes()));
-  protected readonly statusLabel = computed(() => (this.published() ? 'Published' : 'Draft'));
-  protected readonly statusClass = computed(() => (this.published() ? 'bg-emerald-100 text-emerald-800' : 'bg-white/20 text-white'));
+  protected readonly statusLabel = computed(() => (this.published() ? 'Published' : this.inReview() ? 'In review' : 'Draft'));
+  protected readonly statusClass = computed(() =>
+    this.published() ? 'bg-emerald-100 text-emerald-800' : this.inReview() ? 'bg-amber-100 text-amber-800' : 'bg-white/20 text-white',
+  );
   protected readonly previewLink = computed(() => {
     const courseId = this.store.courseId();
     return courseId && !this.store.isNew() ? `${this.context.basePath}/${courseId}` : null;
@@ -550,7 +636,9 @@ export class CourseBuilderComponent {
   protected onKeydown(event: KeyboardEvent): void {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
       event.preventDefault();
-      void this.save('save');
+      if (!this.readOnly()) {
+        void this.save('save');
+      }
     }
   }
 
@@ -659,9 +747,22 @@ export class CourseBuilderComponent {
     }
   }
 
-  protected async save(action: 'save' | 'publish' | 'unpublish'): Promise<void> {
+  /** Managers: back to draft with a note for the author. */
+  protected async sendBack(): Promise<void> {
+    const note = window.prompt(this.i18n.t('What should be changed? The author sees this note.'));
+    if (note === null) {
+      return;
+    }
+    await this.save('sendBack', note);
+  }
+
+  protected async save(
+    action: 'save' | 'publish' | 'unpublish' | 'submit' | 'withdraw' | 'sendBack',
+    note: string | null = null,
+  ): Promise<void> {
     const wasNew = this.store.isNew();
-    const courseId = await this.store.save(action);
+    const wasInReview = this.inReview();
+    const courseId = await this.store.save(action, note);
     if (!courseId) {
       // Say why right away: the banner at the top may be scrolled out of view.
       const error = this.store.error();
@@ -671,9 +772,15 @@ export class CourseBuilderComponent {
       return;
     }
 
-    this.toast.success(
-      this.i18n.t(action === 'publish' ? 'Published. Learners can see it now.' : action === 'unpublish' ? 'Moved back to draft.' : 'Saved.'),
-    );
+    const messages: Record<typeof action, string> = {
+      save: 'Saved.',
+      publish: wasInReview ? 'Approved and published. Learners can see it now.' : 'Published. Learners can see it now.',
+      unpublish: 'Moved back to draft.',
+      submit: 'Submitted for review. A manager will publish it or send it back.',
+      withdraw: 'Withdrawn: the course is a draft again.',
+      sendBack: 'Sent back to the author with your note.',
+    };
+    this.toast.success(this.i18n.t(messages[action]));
 
     if (wasNew) {
       await this.router.navigate([this.managePath, courseId], { replaceUrl: true });

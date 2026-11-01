@@ -15,6 +15,7 @@ import {
   CourseCover,
   CourseFinalExam,
   CourseLevel,
+  CourseReview,
   CourseStatus,
   LessonBlock,
   LessonBlockType,
@@ -62,6 +63,8 @@ interface BuilderState {
   removedLessonIds: string[];
   savedLessonIds: string[];
   selection: BuilderSelection;
+  /** Who submitted the course for review, and the manager's note when sent back. */
+  review: CourseReview | null;
   dirty: boolean;
   loading: boolean;
   saving: boolean;
@@ -92,6 +95,7 @@ const initialState: BuilderState = {
   removedLessonIds: [],
   savedLessonIds: [],
   selection: { kind: 'details' },
+  review: null,
   dirty: false,
   loading: false,
   saving: false,
@@ -288,6 +292,7 @@ export const CourseBuilderStore = signalStore(
           patchState(store, {
             courseId: course.id,
             isNew: false,
+            review: course.review,
             providerName: course.providerName || providerName,
             details: {
               title: course.title,
@@ -470,16 +475,25 @@ export const CourseBuilderStore = signalStore(
       // ---------- Saving ----------
 
       /**
-       * Save the draft. 'publish' and 'unpublish' also change the status.
+       * Save the draft. The other actions also change the status:
+       *   publish    -> published (managers; approves a course in review)
+       *   unpublish  -> draft (managers)
+       *   submit     -> in_review (staff: ask a manager to publish)
+       *   withdraw   -> draft (take a submitted course back)
+       *   sendBack   -> draft with the manager's note (managers)
        * Returns the course id (new courses get one on their first save).
        */
-      async save(action: 'save' | 'publish' | 'unpublish' = 'save'): Promise<string | null> {
+      async save(
+        action: 'save' | 'publish' | 'unpublish' | 'submit' | 'withdraw' | 'sendBack' = 'save',
+        note: string | null = null,
+      ): Promise<string | null> {
         if (store.saving()) {
           return null;
         }
 
-        // A published course is live: keep it complete on every save.
-        const goingLive = action === 'publish' || (action === 'save' && store.details().status === 'published');
+        // A published course is live, and a submitted one should be ready to go live.
+        const goingLive =
+          action === 'publish' || action === 'submit' || (action === 'save' && store.details().status === 'published');
         if (goingLive && store.problems().length) {
           patchState(store, { error: store.problems()[0] });
           return null;
@@ -520,8 +534,21 @@ export const CourseBuilderStore = signalStore(
           }));
 
           const status: CourseStatus =
-            action === 'publish' ? 'published' : action === 'unpublish' ? 'draft' : details.status;
+            action === 'publish'
+              ? 'published'
+              : action === 'submit'
+                ? 'in_review'
+                : action === 'unpublish' || action === 'withdraw' || action === 'sendBack'
+                  ? 'draft'
+                  : details.status;
           const user = auth.firebaseUser();
+          const userName = auth.user()?.displayName?.trim() || user?.displayName || user?.email || '';
+          const review =
+            action === 'submit'
+              ? { submit: { by: user?.uid ?? '', name: userName } }
+              : action === 'sendBack' || (action === 'publish' && details.status === 'in_review')
+                ? { decision: { by: user?.uid ?? '', name: userName, note: action === 'sendBack' ? (note?.trim().slice(0, 1000) || null) : null } }
+                : undefined;
 
           await service.saveCourse(
             organizationId,
@@ -545,13 +572,19 @@ export const CourseBuilderStore = signalStore(
             },
             lessons,
             store.removedLessonIds(),
-            { isNew: store.isNew(), publishing: action === 'publish' && details.status !== 'published' },
+            { isNew: store.isNew(), publishing: action === 'publish' && details.status !== 'published', review },
           );
 
           patchState(store, {
             courseId,
             isNew: false,
             details: { ...details, title, status },
+            review:
+              action === 'submit'
+                ? { submittedBy: user?.uid ?? null, submittedByName: userName, submittedAt: null, note: null, reviewedBy: null, reviewedByName: null, reviewedAt: null }
+                : review?.decision
+                  ? { ...(store.review() ?? { submittedBy: null, submittedByName: null, submittedAt: null }), note: review.decision.note, reviewedBy: review.decision.by, reviewedByName: userName, reviewedAt: null }
+                  : store.review(),
             savedLessonIds: lessons.map((lesson) => lesson.id),
             removedLessonIds: [],
             dirty: false,

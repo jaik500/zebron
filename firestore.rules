@@ -4974,6 +4974,24 @@ service cloud.firestore {
         );
     }
 
+    /*
+     * Staff write drafts and submit them for review (status in_review);
+     * only managers and above publish or change a published course.
+     */
+    function canDraftOrganizationCourses(organizationId) {
+      return isOrganizationOperational(organizationId)
+        && hasActiveCoursesEntitlement(organizationId)
+        && isOrganizationStaffOrAbove(organizationId);
+    }
+
+    /* The course is not live before or after this write (batches included). */
+    function isUnpublishedOrganizationCourse(organizationId, courseId) {
+      let coursePath = /databases/$(database)/documents/organizations/$(organizationId)/courses/$(courseId);
+
+      return (!exists(coursePath) || get(coursePath).data.status in ["draft", "in_review"])
+        && (!existsAfter(coursePath) || getAfter(coursePath).data.status in ["draft", "in_review"]);
+    }
+
     function isValidCourse(organizationId) {
       let data = request.resource.data;
 
@@ -4981,8 +4999,9 @@ service cloud.firestore {
           "title", "summary", "description", "topic", "level", "cover",
           "outcomes", "skills", "modules", "lessonCount", "estimatedMinutes",
           "status", "providerName", "authorId", "authorName", "organizationId", "id", "finalExam",
-          "createdAt", "updatedAt", "publishedAt"
+          "review", "createdAt", "updatedAt", "publishedAt"
         ])
+        && (data.get("review", null) == null || data.review is map)
         && data.title is string
         && data.title.size() > 0
         && data.title.size() <= 200
@@ -5103,7 +5122,21 @@ service cloud.firestore {
       allow create, update: if canWriteOrganizationCourses(organizationId)
         && isValidCourse(organizationId);
 
-      allow delete: if canWriteOrganizationCourses(organizationId);
+      // Staff: drafts and courses in review only, never publishing.
+      allow create: if canDraftOrganizationCourses(organizationId)
+        && isValidCourse(organizationId)
+        && request.resource.data.status in ["draft", "in_review"];
+
+      allow update: if canDraftOrganizationCourses(organizationId)
+        && isValidCourse(organizationId)
+        && resource.data.status in ["draft", "in_review"]
+        && request.resource.data.status in ["draft", "in_review"];
+
+      allow delete: if canWriteOrganizationCourses(organizationId)
+        || (
+          canDraftOrganizationCourses(organizationId)
+          && resource.data.status in ["draft", "in_review"]
+        );
 
       match /lessons/{lessonId} {
         allow get, list: if isAuthenticated()
@@ -5113,6 +5146,14 @@ service cloud.firestore {
           && isValidCourseLesson();
 
         allow delete: if canWriteOrganizationCourses(organizationId);
+
+        // Staff: lessons of courses that are not live.
+        allow create, update: if canDraftOrganizationCourses(organizationId)
+          && isUnpublishedOrganizationCourse(organizationId, courseId)
+          && isValidCourseLesson();
+
+        allow delete: if canDraftOrganizationCourses(organizationId)
+          && isUnpublishedOrganizationCourse(organizationId, courseId);
       }
     }
 

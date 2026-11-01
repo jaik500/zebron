@@ -20,6 +20,7 @@ import { AnnouncementBannerComponent } from '../../announcements/announcement-ba
 import { OrganizationAnnouncement } from '../../announcements/organization-announcement.model';
 import { OrganizationAnnouncementService } from '../../announcements/organization-announcement.service';
 import { ApplicationRegistryService } from '../../../../core/services/application-registry.service';
+import { CourseService } from '../../../courses/course.service';
 
 import {
   PartnerAdminSearchResult,
@@ -488,9 +489,15 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                           [routerLink]="manageRoute"
                           [attr.aria-label]="'Manage {0}' | t: [(card.title | t)]"
                           [title]="'Manage {0}' | t: [(card.title | t)]"
-                          class="shrink-0 rounded-lg p-2 text-gray-600 transition-colors hover:bg-teal-50 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-[#007979]"
+                          class="relative shrink-0 rounded-lg p-2 text-gray-600 transition-colors hover:bg-teal-50 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-[#007979]"
                         >
                           <mat-icon>settings</mat-icon>
+                          @if (card.id === 'learning' && coursesInReview() > 0) {
+                            <span
+                              class="absolute -right-1 -top-1 min-w-5 rounded-full bg-amber-500 px-1.5 text-center text-[11px] font-bold leading-5 text-white"
+                              [title]="'{0} courses waiting for review' | t: [coursesInReview()]"
+                            >{{ coursesInReview() }}</span>
+                          }
                         </button>
                       } @else if (card.enabled) {
                         <!-- Same destination as the card itself. Shown instead of the
@@ -639,6 +646,11 @@ export class PartnerAdminComponent implements OnInit {
   private readonly authService = inject(AuthService);
 
   private readonly announcementService = inject(OrganizationAnnouncementService);
+
+  private readonly courseService = inject(CourseService);
+
+  /** Courses waiting for a manager's review (badge on the Learning card's gear). */
+  protected readonly coursesInReview = signal(0);
 
   private readonly announcements = signal<OrganizationAnnouncement[]>([]);
 
@@ -911,7 +923,13 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
       return card.route;
     }
 
-    // Learning's gear opens Test Center management (question banks, quizzes).
+    // Learning's gear: with Courses, the Learning administration page (staff
+    // and above write courses and Test Center content); with only the Test
+    // Center, its settings.
+    if (card.id === 'learning' && this.organizationStore.hasActiveApplication('courses') && this.access.isStaffOrAbove()) {
+      return ['/partner/org', this.organizationStore.selectedOrganizationId(), 'learning', 'manage'];
+    }
+
     if (card.id === 'learning' && this.canManageTestCenter() && this.organizationStore.hasActiveApplication('test-center')) {
       return this.applicationRegistry.getById('test-center')?.route
         .replace(':organizationId', this.organizationStore.selectedOrganizationId() ?? '') ?? null;
@@ -947,6 +965,20 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
 
   async ngOnInit(): Promise<void> {
     await this.initialize();
+  }
+
+  /** Managers see how many courses wait for their review. */
+  private async loadCoursesInReview(organizationId: string): Promise<void> {
+    if (!this.access.isManagerOrAbove() || !this.organizationStore.hasActiveApplication('courses')) {
+      this.coursesInReview.set(0);
+      return;
+    }
+
+    try {
+      this.coursesInReview.set(await this.courseService.countInReview(organizationId));
+    } catch {
+      this.coursesInReview.set(0);
+    }
   }
 
   /** Banners are optional; a failure here never blocks the dashboard. */
@@ -1014,6 +1046,7 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
       this.pageTitleService.setTitle(`${this.organizationName()} Dashboard`);
 
       void this.loadAnnouncements(organizationId);
+      void this.loadCoursesInReview(organizationId);
     } catch {
       /*
        * OrganizationStore exposes

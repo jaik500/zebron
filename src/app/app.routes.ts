@@ -915,6 +915,25 @@ export const routes: Routes = [
         ],
     },
     // -----------------------------------------------------
+    // LEARNING ADMINISTRATION (Courses + Test Center, staff and above)
+    // -----------------------------------------------------
+    {
+        path: 'partner/org/:organizationId/learning/manage',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            partnerRoleGuard,
+            applicationAccessGuard,
+        ],
+        data: {
+            applicationId: 'test-center',
+            minimumOrganizationRole: 'org_staff',
+            title: 'Partner | Learning administration',
+            organizationHeader: true,
+        },
+        loadComponent: () => import('./features/partner/learning/learning-admin.component').then((m) => m.LearningAdminComponent),
+    },
+    // -----------------------------------------------------
     // ORGANIZATION COURSES (members learn; the organization's own courses plus Zebron's)
     // -----------------------------------------------------
     {
@@ -949,13 +968,14 @@ export const routes: Routes = [
             {
                 path: 'manage',
                 canActivate: [partnerRoleGuard],
-                data: { minimumOrganizationRole: 'org_manager' },
+                // Staff write drafts and submit them; managers publish (see firestore.rules).
+                data: { minimumOrganizationRole: 'org_staff' },
                 loadComponent: () => import('./features/courses/builder/course-manage.component').then((m) => m.CourseManageComponent),
             },
             {
                 path: 'manage/:courseId',
                 canActivate: [partnerRoleGuard],
-                data: { minimumOrganizationRole: 'org_manager' },
+                data: { minimumOrganizationRole: 'org_staff' },
                 canDeactivate: [leaveCourseBuilderGuard],
                 loadComponent: () => import('./features/courses/builder/course-builder.component').then((m) => m.CourseBuilderComponent),
             },

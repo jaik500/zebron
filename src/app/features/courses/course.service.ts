@@ -8,6 +8,7 @@ import {
   getDocs,
   limit,
   orderBy,
+  getCountFromServer,
   query,
   serverTimestamp,
   setDoc,
@@ -109,6 +110,26 @@ export class CourseService {
       providerName: text(data['providerName'], organizationId ? '' : 'Zebron'),
       publishedAt: (data['publishedAt'] as Timestamp | null) ?? null,
       updatedAt: (data['updatedAt'] as Timestamp | null) ?? null,
+      review: this.toReview(data['review']),
+    };
+  }
+
+  private toReview(value: unknown): Course['review'] {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const review = value as Record<string, unknown>;
+    const textOrNull = (key: string) => (typeof review[key] === 'string' && review[key] ? String(review[key]) : null);
+
+    return {
+      submittedBy: textOrNull('submittedBy'),
+      submittedByName: textOrNull('submittedByName'),
+      submittedAt: (review['submittedAt'] as Timestamp | null) ?? null,
+      note: textOrNull('note'),
+      reviewedBy: textOrNull('reviewedBy'),
+      reviewedByName: textOrNull('reviewedByName'),
+      reviewedAt: (review['reviewedAt'] as Timestamp | null) ?? null,
     };
   }
 
@@ -259,6 +280,12 @@ export class CourseService {
       .sort((a, b) => (b.updatedAt?.toMillis() ?? 0) - (a.updatedAt?.toMillis() ?? 0));
   }
 
+  /** Organization courses waiting for a manager's review. */
+  async countInReview(organizationId: string): Promise<number> {
+    const snapshot = await getCountFromServer(query(this.courses(organizationId), where('status', '==', 'in_review')));
+    return snapshot.data().count;
+  }
+
   /** A course for editing, whatever its status. */
   async getForEditing(organizationId: string | null, courseId: string): Promise<{ course: Course; lessons: Lesson[] } | null> {
     const snapshot = await getDoc(doc(this.courses(organizationId), courseId));
@@ -284,7 +311,14 @@ export class CourseService {
     course: Record<string, unknown>,
     lessons: { id: string; data: Record<string, unknown> }[],
     removedLessonIds: string[],
-    options: { isNew: boolean; publishing: boolean },
+    options: {
+      isNew: boolean;
+      publishing: boolean;
+      review?: {
+        submit?: { by: string; name: string };
+        decision?: { by: string; name: string; note: string | null };
+      };
+    },
   ): Promise<void> {
     const batch = writeBatch(firestore);
     const courseRef = doc(this.courses(organizationId), courseId);
@@ -297,6 +331,30 @@ export class CourseService {
         updatedAt: serverTimestamp(),
         ...(options.isNew ? { createdAt: serverTimestamp() } : {}),
         ...(options.publishing ? { publishedAt: serverTimestamp() } : {}),
+        // Review: staff submit; a manager publishes or sends back with a note.
+        ...(options.review?.submit
+          ? {
+              review: {
+                submittedBy: options.review.submit.by,
+                submittedByName: options.review.submit.name,
+                submittedAt: serverTimestamp(),
+                note: null,
+                reviewedBy: null,
+                reviewedByName: null,
+                reviewedAt: null,
+              },
+            }
+          : {}),
+        ...(options.review?.decision
+          ? {
+              review: {
+                note: options.review.decision.note,
+                reviewedBy: options.review.decision.by,
+                reviewedByName: options.review.decision.name,
+                reviewedAt: serverTimestamp(),
+              },
+            }
+          : {}),
       },
       { merge: true },
     );

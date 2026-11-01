@@ -97,6 +97,23 @@ export interface Course {
   providerName: string;
   publishedAt: Timestamp | null;
   updatedAt: Timestamp | null;
+  /** Organization courses written by staff go through a manager's review. */
+  review: CourseReview | null;
+}
+
+/**
+ * Review of an organization course: staff submit it (status in_review),
+ * a manager publishes it or sends it back to draft with a note.
+ */
+export interface CourseReview {
+  submittedBy: string | null;
+  submittedByName: string | null;
+  submittedAt: Timestamp | null;
+  /** The manager's note when a course was sent back. */
+  note: string | null;
+  reviewedBy: string | null;
+  reviewedByName: string | null;
+  reviewedAt: Timestamp | null;
 }
 
 export type LessonBlock =
