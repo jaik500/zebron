@@ -1,3 +1,5 @@
+import { answerExtras, answerFormFrom, answerPayload, answerProblem, QUESTION_TYPES, resetAnswersForType } from '../../../test-center/models/question-answers';
+import { QuestionAnswerEditorComponent } from '../../../test-center/components/question-answer-editor.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -54,6 +56,10 @@ interface QuestionForm {
   type: TestQuestionType;
   options: TestQuestionOption[];
   correctAnswer: string;
+  correctAnswers?: string[];
+  acceptedAnswers?: string[];
+  numericAnswer?: number | null;
+  numericTolerance?: number | null;
   explanation: string;
   hint: string;
   difficulty: TestQuestionDifficulty;
@@ -89,6 +95,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
     MatSelectModule,
     MatCheckboxModule,
     MatRadioModule,
+    QuestionAnswerEditorComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -526,9 +533,9 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                   <mat-form-field appearance="outline" class="zb-field">
                     <mat-label>{{ 'Type' | t }}</mat-label>
                     <mat-select [(ngModel)]="form.type" (ngModelChange)="onTypeChange()">
-                      <mat-option value="multiple-choice">{{ 'Multiple Choice' | t }}</mat-option>
- 
-                      <mat-option value="true-false">{{ 'True / False' | t }}</mat-option>
+                      @for (type of questionTypes; track type.value) {
+                        <mat-option [value]="type.value">{{ type.label | t }}</mat-option>
+                      }
                     </mat-select>
                   </mat-form-field>
  
@@ -553,59 +560,15 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                   </mat-form-field>
                 </div>
  
-                <!-- ANSWER OPTIONS -->
- 
+                <!-- ANSWERS (every answer type) -->
+
                 <div>
-                  <div class="flex items-center justify-between gap-3">
-                    <span class="text-sm font-medium text-gray-700"> {{ 'Answer options' | t }} </span>
- 
-                    @if (form.type === 'multiple-choice') {
-                      <button
-                        type="button"
-                        (click)="addOption()"
-                        class="text-sm font-semibold text-[#007979]"
-                      >
-                        {{ '+ Add option' | t }}
-                      </button>
-                    }
+                  <span class="text-sm font-medium text-gray-700">{{ 'Answers' | t }}</span>
+                  <div class="mt-2">
+                    <app-question-answer-editor [form]="form" />
                   </div>
- 
-                  <mat-radio-group
-                    class="mt-3 block"
-                    [(ngModel)]="form.correctAnswer"
-                    [attr.aria-label]="'Correct answer' | t"
-                  >
-                    @for (option of form.options; track option.id) {
-                      <div class="flex items-center gap-2">
-                        <mat-radio-button
-                          [value]="option.id"
-                          [attr.aria-label]="'Mark option ' + ($index + 1) + ' as correct'"
-                        ></mat-radio-button>
- 
-                        <mat-form-field appearance="outline" class="zb-field zb-field--grow">
-                          <mat-label>{{ 'Answer option ' + ($index + 1) }}</mat-label>
-                          <input matInput [(ngModel)]="option.text" />
-                        </mat-form-field>
- 
-                        @if (form.type === 'multiple-choice' && form.options.length > 2) {
-                          <button
-                            type="button"
-                            (click)="removeOption(option.id)"
-                            class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-red-600"
-                            [attr.aria-label]="'Remove option' | t"
-                          >
-                            <mat-icon> delete </mat-icon>
-                          </button>
-                        }
-                      </div>
-                    }
-                  </mat-radio-group>
- 
-                  <p class="mt-1 text-xs text-gray-500">
-                    {{ 'Select the radio button for the correct answer.' | t }}
-                  </p>
                 </div>
- 
+
                 <!-- EXPLANATION / HINT -->
  
                 <div class="grid gap-x-5 md:grid-cols-2">
@@ -1038,6 +1001,9 @@ protected quizRecipientEmail = '';
   // ============================================================
  
   protected form: QuestionForm = this.createEmptyForm();
+
+  /** Answer types offered in the editor. */
+  protected readonly questionTypes = QUESTION_TYPES;
  
   // ============================================================
   // COMPUTED
@@ -1282,14 +1248,8 @@ protected quizRecipientEmail = '';
  
       question: question.question ?? '',
  
-      type: question.type,
  
-      options: question.options.map((option) => ({
-        id: option.id,
-        text: option.text,
-      })),
- 
-      correctAnswer: question.correctAnswer,
+      ...answerFormFrom(question),
  
       explanation: question.explanation ?? '',
  
@@ -1385,14 +1345,8 @@ protected quizRecipientEmail = '';
  
         question: this.form.question.trim(),
  
-        type: this.form.type,
  
-        options: this.form.options.map((option) => ({
-          id: option.id,
-          text: option.text.trim(),
-        })),
- 
-        correctAnswer: this.form.correctAnswer,
+ ...answerPayload(this.form),
  
         explanation: this.form.explanation.trim(),
  
@@ -1423,7 +1377,9 @@ protected quizRecipientEmail = '';
  
           options: payload.options,
  
-          correctAnswer: payload.correctAnswer,
+ correctAnswer: payload.correctAnswer,
+
+          ...answerExtras(payload),
  
           explanation: payload.explanation,
  
@@ -1718,35 +1674,7 @@ protected quizRecipientEmail = '';
   // ============================================================
  
   protected onTypeChange(): void {
-    if (this.form.type === 'true-false') {
-      this.form.options = [
-        {
-          id: 'true',
-          text: 'True',
-        },
-        {
-          id: 'false',
-          text: 'False',
-        },
-      ];
- 
-      if (this.form.correctAnswer !== 'true' && this.form.correctAnswer !== 'false') {
-        this.form.correctAnswer = '';
-      }
-    } else if (this.form.options.length < 2) {
-      this.form.options = [
-        {
-          id: 'option-a',
-          text: '',
-        },
-        {
-          id: 'option-b',
-          text: '',
-        },
-      ];
- 
-      this.form.correctAnswer = '';
-    }
+    resetAnswersForType(this.form);
   }
  
   // ============================================================
@@ -1797,23 +1725,7 @@ protected quizRecipientEmail = '';
       return 'Question text is required.';
     }
  
-    if (this.form.options.length < 2) {
-      return 'At least two answer options are required.';
-    }
- 
-    if (this.form.options.some((option) => !option.text.trim())) {
-      return 'Every answer option must contain text.';
-    }
- 
-    if (!this.form.correctAnswer) {
-      return 'Select the correct answer.';
-    }
- 
-    if (!this.form.options.some((option) => option.id === this.form.correctAnswer)) {
-      return 'The selected correct answer is invalid.';
-    }
- 
-    return null;
+    return answerProblem(this.form);
   }
  
   // ============================================================

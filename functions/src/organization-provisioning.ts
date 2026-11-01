@@ -15,10 +15,12 @@ import {
 } from "firebase-admin/firestore";
 
 import {
+  expandApplicationRequest,
   getApplicationProvisioningPolicy,
 } from "./application-provisioning-policy";
 
 import {randomUUID} from "node:crypto";
+import { RESERVED_ADDRESS_NAMES } from "./inbound-email";
 
 /*
  * ================================================================
@@ -226,6 +228,12 @@ function createOrganizationSlug(
     requestedSlug || name,
   );
 
+  // The slug is also the organization's email address (<slug>@zebron.org),
+  // so names Zebron uses itself (contact, support...) are not available.
+  if (baseSlug && RESERVED_ADDRESS_NAMES.includes(baseSlug)) {
+    return `${baseSlug}-org`;
+  }
+
   if (baseSlug) {
     return baseSlug;
   }
@@ -284,8 +292,9 @@ function normalizeRequestedApplicationDefinitions(
           "";
     }
 
-    if (applicationId) {
-      applicationIds.add(applicationId);
+    // Learning and Courses also bring in what they need (Test Center).
+    for (const expandedId of applicationId ? expandApplicationRequest(applicationId) : []) {
+      applicationIds.add(expandedId);
     }
   }
 

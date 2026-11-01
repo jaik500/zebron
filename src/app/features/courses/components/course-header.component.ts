@@ -15,7 +15,7 @@ export interface CourseCrumb {
   translate?: boolean;
 }
 
-export type CourseTab = 'learning' | 'catalog' | 'certificates' | 'manage';
+export type CourseTab = 'learning' | 'catalog' | 'certificates' | 'test-center' | 'manage';
 
 /**
  * Page header for the course pages: back button and breadcrumbs on the
@@ -136,6 +136,8 @@ export class CourseHeaderComponent {
       { key: 'learning', label: 'My learning', icon: 'school', link: this.basePath() },
       { key: 'catalog', label: 'Catalog', icon: 'auto_stories', link: `${this.basePath()}/catalog` },
       { key: 'certificates', label: 'Certificates', icon: 'workspace_premium', link: `${this.basePath()}/certificates` },
+      // Zebron Learning = Courses + Test Center: practice quizzes sit beside the courses.
+      { key: 'test-center', label: 'Test Center', icon: 'quiz', link: this.basePath().replace(/\/courses$/, '/learn/test-center').replace(/^\/learn\/test-center$/, '/test-center') },
     ];
 
     if (this.canManage()) {

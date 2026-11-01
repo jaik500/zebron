@@ -1,5 +1,8 @@
-import { effect, EffectRef, inject } from '@angular/core';
+import { effect, EffectRef, inject, Signal, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { doc, getDoc } from 'firebase/firestore';
+
+import { firestore } from '../../core/services/firebase-config';
 
 import { PageTitleService } from '../../core/services/page-title.service';
 import { PartnerOrganizationContextService } from '../../core/services/partner-organization-context.service';
@@ -50,4 +53,23 @@ export function useLearningHeaderTitle(route: ActivatedRoute): EffectRef {
 
     pageTitleService.setTitle(`${name} Learning`);
   });
+}
+
+/**
+ * Whether Courses is available alongside this Test Center. Always on
+ * Zebron's own pages; on organization pages only while the organization's
+ * Courses capability is active (an organization can have the Test Center
+ * on its own). Starts false there so course links never flash in.
+ */
+export function useCoursesAvailable(route: ActivatedRoute): Signal<boolean> {
+  const organizationId = routeOrganizationId(route);
+  const available = signal(organizationId === null);
+
+  if (organizationId) {
+    getDoc(doc(firestore, 'organizations', organizationId, 'applications', 'courses'))
+      .then((snapshot) => available.set(snapshot.data()?.['status'] === 'active'))
+      .catch(() => available.set(false));
+  }
+
+  return available.asReadonly();
 }

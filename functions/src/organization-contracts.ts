@@ -15,7 +15,11 @@ import {
 } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 
-import { APPLICATION_PROVISIONING_POLICIES } from "./application-provisioning-policy";
+import {
+  APPLICATION_PROVISIONING_POLICIES,
+  expandApplicationRequest,
+  isRequestableApplication,
+} from "./application-provisioning-policy";
 import { provisionOrganizationApplications } from "./application-provisioning";
 import {
   ContractTerms,
@@ -23,6 +27,7 @@ import {
   DEFAULT_NOTICE_PERIOD_DAYS,
 } from "./contract-terms";
 import { isPlatformAdministrator } from "./platform-admin-authorization";
+import { recordEmailUsage } from "./email-usage";
 
 /**
  * Zebron Contract & Billing
@@ -412,7 +417,13 @@ export const submitOrganizationServiceRequest = onCall(
     let newOwnerName: string | null = null;
 
     if (type.endsWith("_application")) {
-      if (!applicationId || !(applicationId in APPLICATION_PROVISIONING_POLICIES)) {
+      // Learning (Courses + Test Center) can be requested as a whole;
+      // suspend, resume and retire act on one capability at a time.
+      const validId = type === "add_application" ?
+        !!applicationId && isRequestableApplication(applicationId) :
+        !!applicationId && applicationId in APPLICATION_PROVISIONING_POLICIES;
+
+      if (!applicationId || !validId) {
         throw new HttpsError("invalid-argument", "Choose a valid application.");
       }
 
@@ -420,17 +431,42 @@ export const submitOrganizationServiceRequest = onCall(
         throw new HttpsError("invalid-argument", "The core application cannot be changed.");
       }
 
-      const entitlement = await db()
+      const applicationsRef = db()
         .collection("organizations").doc(organizationId)
-        .collection("applications").doc(applicationId).get();
+        .collection("applications");
+
+      const entitlement = await applicationsRef.doc(applicationId).get();
 
       applicationStatus = entitlement.exists ? clean(entitlement.data()?.status) : null;
 
       const isActive = applicationStatus === "active";
       const isSuspended = applicationStatus === "suspended";
 
-      if (type === "add_application" && (isActive || isSuspended)) {
-        throw new HttpsError("failed-precondition", "This application is already provisioned.");
+      if (type === "add_application") {
+        // Already provisioned only when everything the request brings in is.
+        const statuses = await Promise.all(
+          expandApplicationRequest(applicationId).map(async (id) =>
+            clean((await applicationsRef.doc(id).get()).data()?.status)),
+        );
+
+        if (statuses.every((status) => status === "active" || status === "suspended")) {
+          throw new HttpsError("failed-precondition", "This application is already provisioned.");
+        }
+      }
+
+      // Course final exams run on Test Center, so it stays while Courses is active.
+      if (
+        applicationId === "test-center" &&
+        (type === "suspend_application" || type === "retire_application")
+      ) {
+        const courses = await applicationsRef.doc("courses").get();
+
+        if (clean(courses.data()?.status) === "active") {
+          throw new HttpsError(
+            "failed-precondition",
+            "Courses uses the Test Center for final exams. Suspend or retire Courses first.",
+          );
+        }
       }
 
       if (type === "suspend_application" && !isActive) {
@@ -914,37 +950,45 @@ async function carryOut(
         throw new HttpsError("failed-precondition", "The request has no application.");
       }
 
-      const policy = APPLICATION_PROVISIONING_POLICIES[applicationId as keyof typeof APPLICATION_PROVISIONING_POLICIES];
-      const entitlementRef = organizationRef.collection("applications").doc(applicationId);
-      const entitlement = await entitlementRef.get();
-      const status = clean(entitlement.data()?.status);
+      // Learning and Courses also provision what they need (Test Center).
+      const applicationIds = expandApplicationRequest(applicationId);
 
-      if (status !== "active") {
-        await entitlementRef.set(
-          {
-            applicationId,
-            organizationId,
-            status: "selected",
-            version: Number(entitlement.data()?.version) || 1,
-            provisioningStrategy: policy?.provisioningStrategy ?? "default",
-            requestedBy: clean(existing.requestedBy) || actorUid,
-            updatedAt: FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
+      for (const id of applicationIds) {
+        const policy = APPLICATION_PROVISIONING_POLICIES[id as keyof typeof APPLICATION_PROVISIONING_POLICIES];
+        const entitlementRef = organizationRef.collection("applications").doc(id);
+        const entitlement = await entitlementRef.get();
+        const status = clean(entitlement.data()?.status);
+
+        if (status !== "active") {
+          await entitlementRef.set(
+            {
+              applicationId: id,
+              organizationId,
+              status: "selected",
+              version: Number(entitlement.data()?.version) || 1,
+              provisioningStrategy: policy?.provisioningStrategy ?? "default",
+              requestedBy: clean(existing.requestedBy) || actorUid,
+              updatedAt: FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+        }
       }
 
       const results = await provisionOrganizationApplications(db(), organizationId, actorUid, {
         mode: "requested",
-        applicationIds: [applicationId],
+        applicationIds,
       });
 
-      const result = results.find((item) => item.applicationId === applicationId);
+      const failed = applicationIds
+        .map((id) => ({ id, result: results.find((item) => item.applicationId === id) }))
+        .filter(({ result }) => result?.status !== "active");
 
-      if (result?.status !== "active") {
+      if (failed.length > 0) {
+        const { id, result } = failed[0];
         throw new HttpsError(
           "failed-precondition",
-          `${name} could not be provisioned${result?.reason ? `: ${result.reason}` : "."} The request is still open; fix the issue and approve again.`,
+          `${applicationName(id)} could not be provisioned${result?.reason ? `: ${result.reason}` : "."} The request is still open; fix the issue and approve again.`,
         );
       }
 
@@ -1215,6 +1259,9 @@ function applicationName(applicationId: string): string {
     "core": "Core",
     "community": "Community",
     "test-center": "Test Center",
+    "learning": "Learning (Courses and Test Center)",
+    "courses": "Courses",
+    "blog": "Blog",
     "knowledge": "Knowledge Center",
     "configuration": "Configuration",
     "business-operations": "Business Operations",
@@ -1318,6 +1365,8 @@ async function notify(to: string[], subject: string, text: string): Promise<void
 
     if (!response.ok) {
       logger.warn("Contract notification email failed.", { status: response.status, subject });
+    } else {
+      await recordEmailUsage("sent", "contract_notification");
     }
   } catch (error) {
     logger.warn("Contract notification email failed.", { error, subject });

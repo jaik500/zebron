@@ -13,13 +13,14 @@ import { LoggerService } from '../../core/services/logger.service';
 
 import {
   allLessons,
-  certificateCode,
   Course,
   CourseContext,
+  CourseExamRecord,
   CourseOutlineLesson,
   CourseProgress,
   dayKey,
   daysThisWeek,
+  isCourseComplete,
   Lesson,
   mergeActivity,
   minutesThisWeek,
@@ -45,6 +46,8 @@ interface CourseState {
   progressLoading: boolean;
   progressLoaded: boolean;
   progressUserId: string | null;
+  /** Final exam records by progress id (written by Cloud Functions). */
+  exams: Record<string, CourseExamRecord>;
 
   // Course page and lesson player
   course: Course | null;
@@ -69,6 +72,7 @@ const initialState: CourseState = {
   progressLoading: false,
   progressLoaded: false,
   progressUserId: null,
+  exams: {},
   course: null,
   courseLoading: false,
   courseError: null,
@@ -87,7 +91,10 @@ function message(error: unknown, fallback: string): string {
 /** What happened when a lesson was completed. */
 export interface LessonCompletion {
   nextLessonId: string | null;
+  /** Every lesson is done. */
   courseCompleted: boolean;
+  /** Every lesson is done and the final exam is still to pass. */
+  examNext: boolean;
 }
 
 /**
@@ -119,9 +126,10 @@ export const CourseStore = signalStore(
 
     progressById: computed(() => new Map(store.progress().map((record) => [record.id, record]))),
 
-    inProgress: computed(() => store.progress().filter((record) => record.status === 'in_progress')),
+    /** Not complete yet: lessons left, or the final exam still to pass. */
+    inProgress: computed(() => store.progress().filter((record) => !isCourseComplete(record, store.exams()[record.id]))),
 
-    completed: computed(() => store.progress().filter((record) => record.status === 'completed')),
+    completed: computed(() => store.progress().filter((record) => isCourseComplete(record, store.exams()[record.id]))),
 
     activity: computed(() => mergeActivity(store.progress())),
 
@@ -149,6 +157,12 @@ export const CourseStore = signalStore(
     courseProgress: computed(() => {
       const course = store.course();
       return course ? store.progressById().get(progressId(course)) ?? null : null;
+    }),
+
+    /** The learner's final exam record for the open course. */
+    courseExam: computed(() => {
+      const course = store.course();
+      return course ? store.exams()[progressId(course)] ?? null : null;
     }),
 
     lessonIndex: computed(() => {
@@ -270,8 +284,16 @@ export const CourseStore = signalStore(
         patchState(store, { progressLoading: true });
 
         try {
-          const progress = await service.listProgress(user.uid);
-          patchState(store, { progress, progressLoaded: true, progressUserId: user.uid });
+          const [progress, exams] = await Promise.all([
+            service.listProgress(user.uid),
+            service.listExamRecords(user.uid).catch(() => []),
+          ]);
+          patchState(store, {
+            progress,
+            exams: Object.fromEntries(exams.map((exam) => [exam.id, exam])),
+            progressLoaded: true,
+            progressUserId: user.uid,
+          });
         } catch (error) {
           logger.error('CourseStore', 'Could not load course progress.', error);
           patchState(store, { progressLoaded: true });
@@ -373,6 +395,7 @@ export const CourseStore = signalStore(
           courseTitle: course.title,
           cover: course.cover,
           lessonCount: outline.length,
+          finalExam: !!course.finalExam,
           completedLessonIds,
           lastLessonId: lesson.id,
           percent,
@@ -380,7 +403,8 @@ export const CourseStore = signalStore(
           checkScores,
           activity: trimActivity(activity),
           learnerName: existing?.learnerName || user.name,
-          certificateCode: existing?.certificateCode ?? (finished ? certificateCode() : null),
+          // Certificates come only from a passed final exam (issued on the server).
+          certificateCode: null,
           skills: course.skills,
           startedAt: existing?.startedAt ?? null,
           updatedAt: existing?.updatedAt ?? null,
@@ -400,7 +424,11 @@ export const CourseStore = signalStore(
             outline.find((item) => !done.has(item.id)) ??
             null;
 
-          return { nextLessonId: nextUnfinished?.id ?? null, courseCompleted: finished };
+          return {
+            nextLessonId: nextUnfinished?.id ?? null,
+            courseCompleted: finished,
+            examNext: finished && !!course.finalExam && store.exams()[record.id]?.passed !== true,
+          };
         } catch (error) {
           logger.error('CourseStore', 'Could not save lesson progress.', error);
           throw new Error(message(error, 'Your progress could not be saved. Try again.'));
@@ -410,8 +438,22 @@ export const CourseStore = signalStore(
       },
 
       /** Forget the signed-in learner's data (after signing out). */
+      /** Reload the final exam records (after an exam is submitted). */
+      async refreshExams(): Promise<void> {
+        const user = currentUser();
+        if (!user) {
+          return;
+        }
+        try {
+          const exams = await service.listExamRecords(user.uid);
+          patchState(store, { exams: Object.fromEntries(exams.map((exam) => [exam.id, exam])) });
+        } catch (error) {
+          logger.error('CourseStore', 'Could not load exam records.', error);
+        }
+      },
+
       resetProgress(): void {
-        patchState(store, { progress: [], progressLoaded: false, progressUserId: null });
+        patchState(store, { progress: [], progressLoaded: false, progressUserId: null, exams: {} });
       },
     };
   }),

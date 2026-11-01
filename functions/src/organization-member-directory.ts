@@ -42,6 +42,9 @@ export interface OrganizationMemberDirectoryEntry {
   userId: string;
   displayName: string | null;
   email: string | null;
+  /** Organization role (used to pick departmental mailbox staff). */
+  role: string | null;
+  active: boolean;
 }
 
 export const getOrganizationMemberDirectory = onCall(
@@ -111,12 +114,14 @@ export const getOrganizationMemberDirectory = onCall(
     // 2. Zebron user profiles.
     // 3. Firebase Authentication accounts.
     // ------------------------------------------------------------
-    const details = new Map<string, { displayName: string; email: string }>();
+    const details = new Map<string, { displayName: string; email: string; role: string; active: boolean }>();
 
     for (const membership of memberships) {
       details.set(String(membership.userId), {
         displayName: clean(membership.displayName),
         email: clean(membership.email),
+        role: clean(membership.role),
+        active: membership.active === true,
       });
     }
 
@@ -183,6 +188,8 @@ export const getOrganizationMemberDirectory = onCall(
           userId,
           displayName: entry?.displayName || null,
           email: entry?.email ? entry.email.toLowerCase() : null,
+          role: entry?.role || null,
+          active: entry?.active ?? false,
         };
       }),
     };

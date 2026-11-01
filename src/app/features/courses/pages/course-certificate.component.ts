@@ -10,7 +10,7 @@ import { PageTitleService } from '../../../core/services/page-title.service';
 import { useLearningHeaderTitle } from '../../test-center/learner-route';
 
 import { CourseHeaderComponent } from '../components/course-header.component';
-import { averageScore, courseContextFromRoute, courseDate } from '../course.model';
+import { courseContextFromRoute, courseDate, hasCertificate } from '../course.model';
 import { CourseStore } from '../course.store';
 
 /** The certificate for a completed course, ready to print or add to LinkedIn. */
@@ -60,7 +60,7 @@ import { CourseStore } from '../course.store';
               {{ 'completed {0} lessons on {1}.' | t: [progress.lessonCount, completedOn()] }}
             </p>
             @if (score() !== null) {
-              <p class="mt-1 text-sm text-slate-600">{{ 'Average quick check score: {0}%' | t: [score()] }}</p>
+              <p class="mt-1 text-sm text-slate-600">{{ 'Final exam score: {0}%' | t: [score()] }}</p>
             }
 
             @if (progress.skills.length) {
@@ -72,7 +72,10 @@ import { CourseStore } from '../course.store';
             }
 
             <p class="mt-8 text-xs text-slate-500">
-              {{ 'Issued by {0}' | t: [issuer()] }} · {{ 'Certificate {0}' | t: [progress.certificateCode ?? ''] }}
+              {{ 'Issued by {0}' | t: [issuer()] }} · {{ 'Certificate {0}' | t: [code()] }}
+            </p>
+            <p class="mt-1 text-xs text-slate-500">
+              {{ 'Check it at' | t }} <a [routerLink]="['/verify', code()]" class="font-medium text-[#007979] hover:underline">{{ verifyUrl() }}</a>
             </p>
           </section>
 
@@ -102,7 +105,7 @@ import { CourseStore } from '../course.store';
         } @else {
           <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center">
             <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-400" aria-hidden="true">workspace_premium</mat-icon>
-            <p class="mt-2 text-slate-700">{{ 'Finish every lesson in this course to earn its certificate.' | t }}</p>
+            <p class="mt-2 text-slate-700">{{ (store.course()?.finalExam ? 'Finish every lesson and pass the final exam to earn the certificate.' : 'This course does not award a certificate.') | t }}</p>
             <a [routerLink]="coursePath()" class="mt-3 inline-block font-semibold text-[#007979] hover:underline">{{ 'Back to the course' | t }}</a>
           </div>
         }
@@ -123,15 +126,18 @@ export class CourseCertificateComponent {
   protected readonly signedIn = computed(() => this.auth.firebaseUser() !== null);
   protected readonly coursePath = computed(() => `${this.context.basePath}/${this.store.course()?.id ?? this.courseId}`);
 
-  /** The learner's progress, only once the course is completed. */
+  /** The learner's progress, only once the final exam is passed. */
   protected readonly record = computed(() => {
     const progress = this.store.courseProgress();
-    return progress?.status === 'completed' ? progress : null;
+    return hasCertificate(progress, this.store.courseExam()) ? progress : null;
   });
 
-  protected readonly score = computed(() => averageScore(this.record()?.checkScores ?? {}));
+  protected readonly exam = computed(() => this.store.courseExam());
+  protected readonly score = computed(() => this.exam()?.passScore ?? this.exam()?.bestScore ?? null);
+  protected readonly code = computed(() => this.exam()?.certificateCode ?? '');
+  protected readonly verifyUrl = computed(() => `${typeof window === 'undefined' ? '' : window.location.origin}/verify/${this.code()}`);
   protected readonly completedOn = computed(() =>
-    courseDate(this.record()?.completedAt ?? this.record()?.updatedAt, this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US'),
+    courseDate(this.exam()?.passedAt ?? this.record()?.completedAt, this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US'),
   );
   protected readonly issuer = computed(() => {
     const provider = this.store.course()?.providerName;
@@ -141,14 +147,14 @@ export class CourseCertificateComponent {
   /** LinkedIn's "Add licence or certification" form, filled in. */
   protected readonly linkedInUrl = computed(() => {
     const record = this.record();
-    const issued = record?.completedAt?.toDate() ?? new Date();
+    const issued = this.exam()?.passedAt?.toDate() ?? record?.completedAt?.toDate() ?? new Date();
     const params = new URLSearchParams({
       startTask: 'CERTIFICATION_NAME',
       name: record?.courseTitle ?? '',
       organizationName: 'Zebron',
       issueYear: String(issued.getFullYear()),
       issueMonth: String(issued.getMonth() + 1),
-      certId: record?.certificateCode ?? '',
+      certId: this.code(),
     });
     return `https://www.linkedin.com/profile/add?${params.toString()}`;
   });

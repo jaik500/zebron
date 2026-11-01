@@ -31,6 +31,14 @@ export interface ContactMessage {
 
   submittedBy?: string;
 
+  /** Platform mailbox (support, billing...); missing means General (contact@). */
+  mailboxId?: string;
+
+  mailboxName?: string;
+
+  /** Addresses the email was sent to (email messages only). */
+  to?: string[];
+
   createdAt: Timestamp;
 
   updatedAt?: Timestamp;

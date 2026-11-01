@@ -1,3 +1,4 @@
+import { correctAnswerValue, isAnswered, isAnswerCorrect } from '../models/question-answers';
 import { Injectable, computed, inject, signal } from '@angular/core';
  
 import { Quiz } from '../models/quiz.model';
@@ -210,7 +211,7 @@ export class TestStore {
   /**
    * Number of answered questions.
    */
-  readonly answeredCount = computed(() => Object.keys(this.selectedAnswers()).length);
+  readonly answeredCount = computed(() => Object.values(this.selectedAnswers()).filter((answer) => isAnswered(answer)).length);
  
   /**
    * Number of unanswered questions.
@@ -515,17 +516,16 @@ export class TestStore {
     }
  
     const questionResults: TestQuestionResult[] = questions.map((question) => {
-      const selectedAnswerId = answers[question.id] ?? null;
+      const selectedAnswerId = isAnswered(answers[question.id]) ? answers[question.id] : null;
  
       return {
         questionId: question.id,
         question: question.question,
         topicId: question.topicId,
         selectedAnswerId,
-        correctAnswerId: question.correctAnswer,
-        isCorrect:
-          selectedAnswerId !== null &&
-          selectedAnswerId === question.correctAnswer,
+        // Every answer type is checked the same way (models/question-answers.ts).
+        correctAnswerId: correctAnswerValue(question),
+        isCorrect: isAnswerCorrect(question, selectedAnswerId),
         explanation: question.explanation,
       };
     });

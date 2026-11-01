@@ -217,7 +217,7 @@ const GUIDES: Guide[] = [
     minRank: 3,
     tags: ["email", "mailbox", "inbox", "send", "reply", "address"],
     content:
-      "Open Mailbox from the Administration page. Email sent to your organization's address (org+your-slug@zebron.org) appears in the Inbox. " +
+      "Open Mailbox from the Administration page. Email sent to your organization's address (your-slug@zebron.org) appears in the Inbox; departmental mailboxes use admissions.your-slug@zebron.org and similar. " +
       "Compose sends to any address (up to 10 recipients, 200 emails a day) as \"Your Organization via Zebron\"; replies come back to the Inbox.",
     link: (id) => org(id, "mailbox"),
   },

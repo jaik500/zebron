@@ -109,7 +109,7 @@ icon: 'calculate',
 },
 {
 key: 'learning-lab',
-label: 'Courses',
+label: 'Zebron Learning',
 route: '/courses',
 icon: 'school',
 featureKey: 'learning-lab',

@@ -13,7 +13,11 @@ export type TestQuestionDifficulty =
 
 export type TestQuestionType =
   | 'multiple-choice'
-  | 'true-false';
+  | 'true-false'
+  | 'multiple-select'
+  | 'short-text'
+  | 'numeric'
+  | 'ordering';
 
 export type TestQuestionStatus =
   | 'draft'
@@ -59,7 +63,24 @@ export interface TestQuestion {
 
   options: TestQuestionOption[];
 
+  /**
+   * multiple-choice / true-false: the right option id. Other types keep a
+   * readable copy of the answer here (see models/question-answers.ts).
+   */
   correctAnswer: string;
+
+  /** multiple-select: every right option id. */
+  correctAnswers?: string[];
+
+  /** short-text: accepted answers (case, accents and extra spaces ignored). */
+  acceptedAnswers?: string[];
+
+  /** numeric: the answer and the allowed margin either side. */
+  numericAnswer?: number | null;
+  numericTolerance?: number | null;
+
+  /** ordering: option ids in the right order (options may be shuffled). */
+  correctOrder?: string[];
 
   explanation?: string;
 

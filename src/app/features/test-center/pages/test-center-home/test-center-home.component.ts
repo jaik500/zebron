@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { Quiz } from '../../models/quiz.model';
 import { QuizService } from '../../services/quiz.service';
+import { useCoursesAvailable } from '../../learner-route';
 import { TestQuestionService } from '../../services/test-question.service';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -118,10 +119,11 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             </p>
           </div>
 
-          <div class="grid grid-cols-4 gap-2 sm:gap-3">
+          <div class="grid gap-2 sm:gap-3" [class.grid-cols-4]="coursesAvailable()" [class.grid-cols-3]="!coursesAvailable()">
             <!-- Certifications -->
             <a
-              routerLink="/test-center/certifications"
+              [routerLink]="[learnerBaseRoute(), 'quizzes']"
+              [queryParams]="{ type: 'certification' }"
               class="group rounded-xl border border-gray-200 bg-white p-2 sm:p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#12BFC3] hover:bg-[#E5F4F4] hover:shadow-md"
             >
               <div
@@ -141,27 +143,29 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
               </p>
             </a>
 
-            <!-- Courses -->
-            <a
-              [routerLink]="[learnerBaseRoute(), 'courses']"
-              class="group rounded-xl border border-gray-200 bg-white p-2 sm:p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#12BFC3] hover:bg-[#E5F4F4] hover:shadow-md"
-            >
-              <div
-                class="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-[#E5F4F4] text-[#007979]"
+            <!-- Courses: the course catalog, only when the organization has Courses (always on Zebron's own pages) -->
+            @if (coursesAvailable()) {
+              <a
+                [routerLink]="coursesCatalogRoute()"
+                class="group rounded-xl border border-gray-200 bg-white p-2 sm:p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#12BFC3] hover:bg-[#E5F4F4] hover:shadow-md"
               >
-                <mat-icon aria-hidden="true"> menu_book </mat-icon>
-              </div>
+                <div
+                  class="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-[#E5F4F4] text-[#007979]"
+                >
+                  <mat-icon aria-hidden="true"> menu_book </mat-icon>
+                </div>
 
-              <h3
-                class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
-              >
-                {{ 'Courses' | t }}
-              </h3>
+                <h3
+                  class="mt-1 text-[16px] text-center leading-tight sm:mt-2 sm:text-md font-bold text-[#032D42]"
+                >
+                  {{ 'Courses' | t }}
+                </h3>
 
-              <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
-                {{ 'Practice what you\\u0027re learning in a course or program.' | t }}
-              </p>
-            </a>
+                <p class="hidden sm:block mt-1 text-xs leading-5 text-gray-600">
+                  {{ 'Lessons, a final exam and a certificate.' | t }}
+                </p>
+              </a>
+            }
 
             <!-- Quizzes -->
             <a
@@ -187,7 +191,8 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
             <!-- Skills -->
             <a
-              routerLink="/test-center/skills"
+              [routerLink]="[learnerBaseRoute(), 'quizzes']"
+              [queryParams]="{ type: 'skill' }"
               class="group rounded-xl border border-gray-200 bg-white p-2 sm:p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#12BFC3] hover:bg-[#E5F4F4] hover:shadow-md"
             >
               <div
@@ -423,6 +428,15 @@ private readonly questionService = inject(TestQuestionService); // add
       : '/test-center';
   });
 
+  /** Whether to link to Courses: organizations can have the Test Center on its own. */
+  readonly coursesAvailable = useCoursesAvailable(this.route);
+
+  /** The Courses catalog, in the same place (Zebron or the organization). */
+  readonly coursesCatalogRoute = computed(() => {
+    const organizationId = this.organizationId();
+    return organizationId ? `/partner/org/${organizationId}/courses/catalog` : '/courses/catalog';
+  });
+
   readonly filteredCourses = computed(() => {
     const search = this.searchTerm().trim().toLowerCase();
     if (!search) return this.courses();
@@ -451,7 +465,8 @@ private readonly questionService = inject(TestQuestionService); // add
 
     // Preserve discovery behavior when the learner has not saved anything,
     // or when saved IDs no longer match available courses.
-    return saved.length > 0 ? saved : filtered;
+    // Quizzes without questions yet are not shown to learners.
+    return (saved.length > 0 ? saved : filtered).filter((course) => this.courseQuestionCount(course) > 0);
   });
 
   private favoriteStorageKey(organizationId: string | null): string {

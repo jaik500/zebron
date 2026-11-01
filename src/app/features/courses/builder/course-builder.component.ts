@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, HostListener, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, HostListener, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -14,11 +14,17 @@ import { I18nService } from '../../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { PageTitleService } from '../../../core/services/page-title.service';
 import { PartnerOrganizationContextService } from '../../../core/services/partner-organization-context.service';
+import { LoggerService } from '../../../core/services/logger.service';
 import { useLearningHeaderTitle } from '../../test-center/learner-route';
+import { Quiz } from '../../test-center/models/quiz.model';
+import { QuizService } from '../../test-center/services/quiz.service';
 
 import {
   COURSE_COVERS,
   COURSE_LEVEL_LABELS,
+  CourseFinalExam,
+  EXAM_ATTEMPTS,
+  EXAM_TIME_LIMITS,
   courseContextFromRoute,
   CourseCover,
   CourseLevel,
@@ -363,6 +369,87 @@ import { CourseBuilderStore } from './course-builder.store';
                     }
                   </div>
                 </fieldset>
+
+                <!-- Final exam: a Test Center quiz, graded on the server -->
+                <fieldset class="rounded-xl border border-slate-200 p-4">
+                  <legend class="px-1 text-sm font-semibold text-slate-800">{{ 'Final exam and certificate' | t }}</legend>
+                  <label class="flex items-start gap-3 text-sm">
+                    <input
+                      type="checkbox"
+                      class="mt-0.5 h-4 w-4 accent-[#007979]"
+                      [checked]="!!exam()"
+                      (change)="toggleExam(checked($event))"
+                    />
+                    <span>
+                      <span class="font-semibold text-slate-900">{{ 'Learners take a final exam' | t }}</span><br />
+                      <span class="text-slate-500">{{ 'Questions come from a Test Center quiz. Passing it earns the certificate; without an exam the course gives no certificate.' | t }}</span>
+                    </span>
+                  </label>
+
+                  @if (exam(); as finalExam) {
+                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                      <mat-form-field appearance="outline" class="zb-field zb-field--flush sm:col-span-2" subscriptSizing="dynamic">
+                        <mat-label>{{ 'Test Center quiz' | t }}</mat-label>
+                        <mat-select [value]="finalExam.quizId" (selectionChange)="chooseQuiz($event.value)">
+                          @for (quiz of quizzes(); track quiz.id) {
+                            <mat-option [value]="quiz.id">
+                              {{ quiz.name }} · {{ '{0} questions' | t: [quiz.questionCount] }}{{ quiz.organizationId ? '' : ' · Zebron' }}
+                            </mat-option>
+                          } @empty {
+                            <mat-option disabled>{{ (quizzesLoading() ? 'Loading quizzes...' : 'No active quizzes yet. Create one in the Test Center.') | t }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                        <mat-label>{{ 'Number of questions' | t }}</mat-label>
+                        <input
+                          matInput
+                          type="number"
+                          min="1"
+                          [max]="maxQuestions()"
+                          [value]="finalExam.questionCount"
+                          (change)="patchExam({ questionCount: clamp(number($event), 1, maxQuestions()) })"
+                        />
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                        <mat-label>{{ 'Pass mark (%)' | t }}</mat-label>
+                        <input
+                          matInput
+                          type="number"
+                          min="1"
+                          max="100"
+                          [value]="finalExam.passMark"
+                          (change)="patchExam({ passMark: clamp(number($event), 1, 100) })"
+                        />
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                        <mat-label>{{ 'Time limit' | t }}</mat-label>
+                        <mat-select [value]="finalExam.timeLimitMinutes ?? 0" (selectionChange)="patchExam({ timeLimitMinutes: $event.value || null })">
+                          @for (minutes of timeLimits; track $index) {
+                            <mat-option [value]="minutes">{{ minutes ? ('{0} minutes' | t: [minutes]) : ('No time limit' | t) }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                        <mat-label>{{ 'Attempts' | t }}</mat-label>
+                        <mat-select [value]="finalExam.maxAttempts ?? 0" (selectionChange)="patchExam({ maxAttempts: $event.value || null })">
+                          @for (attempts of attemptOptions; track $index) {
+                            <mat-option [value]="attempts">{{ attempts ? attempts : ('Unlimited' | t) }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+                    <p class="mt-3 text-xs text-slate-500">
+                      {{ 'Questions are drawn at random from the quiz\\u0027s published questions and graded on the server. Learners see their score and the topics to review, not the answers.' | t }}
+                    </p>
+                  } @else {
+                    <p class="mt-3 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">{{ 'Without a final exam, learners can complete the course but do not earn a certificate.' | t }}</p>
+                  }
+                </fieldset>
               </div>
             }
           </section>
@@ -405,6 +492,8 @@ export class CourseBuilderComponent {
   private readonly i18n = inject(I18nService);
   private readonly pageTitle = inject(PageTitleService);
   private readonly organizationContext = inject(PartnerOrganizationContextService);
+  private readonly quizService = inject(QuizService);
+  private readonly logger = inject(LoggerService);
   protected readonly store = inject(CourseBuilderStore);
 
   protected readonly context = courseContextFromRoute(this.route);
@@ -416,6 +505,16 @@ export class CourseBuilderComponent {
   protected readonly levelLabels = COURSE_LEVEL_LABELS;
   protected readonly covers = Object.keys(COURSE_COVERS) as CourseCover[];
   protected readonly coverStyles = COURSE_COVERS;
+
+  protected readonly exam = computed(() => this.store.details().finalExam);
+  protected readonly quizzes = signal<Quiz[]>([]);
+  protected readonly quizzesLoading = signal(false);
+  protected readonly timeLimits = EXAM_TIME_LIMITS;
+  protected readonly attemptOptions = EXAM_ATTEMPTS;
+  protected readonly maxQuestions = computed(() => {
+    const quiz = this.quizzes().find((item) => item.id === this.exam()?.quizId);
+    return Math.max(1, Math.min(200, quiz?.questionCount || 200));
+  });
 
   protected readonly outcomesText = computed(() => this.store.details().outcomes.join(String.fromCharCode(10)));
   protected readonly published = computed(() => this.store.details().status === 'published');
@@ -436,6 +535,8 @@ export class CourseBuilderComponent {
     const providerName = this.context.organizationId
       ? this.organizationContext.organization()?.name?.trim() || ''
       : 'Zebron';
+
+    void this.loadQuizzes();
 
     if (courseId === 'new') {
       this.store.startNew(this.context.organizationId, providerName);
@@ -458,6 +559,61 @@ export class CourseBuilderComponent {
   protected onBeforeUnload(event: BeforeUnloadEvent): void {
     if (this.store.dirty()) {
       event.preventDefault();
+    }
+  }
+
+  /** Quizzes a final exam can use: Zebron's, plus the organization's own on organization pages. */
+  private async loadQuizzes(): Promise<void> {
+    this.quizzesLoading.set(true);
+    try {
+      const [own, platform] = await Promise.all([
+        this.context.organizationId ? this.quizService.getAvailableQuizzes(this.context.organizationId) : Promise.resolve([]),
+        this.quizService.getAvailableQuizzes(null),
+      ]);
+      this.quizzes.set([...own, ...platform].sort((a, b) => a.name.localeCompare(b.name)));
+    } catch (error) {
+      this.logger.error('CourseBuilderComponent', 'Could not load quizzes for the final exam.', error);
+    } finally {
+      this.quizzesLoading.set(false);
+    }
+  }
+
+  protected checked(event: Event): boolean {
+    return (event.target as HTMLInputElement).checked;
+  }
+
+  protected clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, Math.round(value)));
+  }
+
+  protected toggleExam(on: boolean): void {
+    this.store.patchDetails({
+      finalExam: on
+        ? { quizId: '', quizName: '', questionCount: 20, passMark: 70, timeLimitMinutes: 30, maxAttempts: 3 }
+        : null,
+    });
+  }
+
+  protected chooseQuiz(quizId: string): void {
+    const quiz = this.quizzes().find((item) => item.id === quizId);
+    const exam = this.exam();
+    if (!exam || !quiz) {
+      return;
+    }
+    this.store.patchDetails({
+      finalExam: {
+        ...exam,
+        quizId,
+        quizName: quiz.name,
+        questionCount: Math.min(exam.questionCount, Math.max(1, quiz.questionCount || exam.questionCount)),
+      },
+    });
+  }
+
+  protected patchExam(changes: Partial<CourseFinalExam>): void {
+    const exam = this.exam();
+    if (exam) {
+      this.store.patchDetails({ finalExam: { ...exam, ...changes } });
     }
   }
 

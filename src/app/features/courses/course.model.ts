@@ -48,6 +48,33 @@ export interface CourseModule {
   lessons: CourseOutlineLesson[];
 }
 
+/** A Test Center quiz used as the course's final exam (graded on the server). */
+export interface CourseFinalExam {
+  quizId: string;
+  /** Shown to learners and authors; copied from the quiz when chosen. */
+  quizName: string;
+  questionCount: number;
+  /** Percentage needed to pass (1-100). */
+  passMark: number;
+  /** null: no time limit. */
+  timeLimitMinutes: number | null;
+  /** null: unlimited attempts. */
+  maxAttempts: number | null;
+}
+
+/** The learner's final exam record (users/{uid}/courseExams/{progressId}), written by Cloud Functions. */
+export interface CourseExamRecord {
+  id: string;
+  attempts: number;
+  bestScore: number | null;
+  lastScore: number | null;
+  passed: boolean;
+  passScore: number | null;
+  passedAt: Timestamp | null;
+  certificateCode: string | null;
+  openAttemptId: string | null;
+}
+
 export interface Course {
   id: string;
   /** null for Zebron courses. */
@@ -63,6 +90,7 @@ export interface Course {
   modules: CourseModule[];
   lessonCount: number;
   estimatedMinutes: number;
+  finalExam: CourseFinalExam | null;
   status: CourseStatus;
   authorName: string;
   /** Shown on the card: "Zebron" or the organization's name. */
@@ -100,9 +128,12 @@ export interface CourseProgress {
   courseTitle: string;
   cover: CourseCover;
   lessonCount: number;
+  /** The course has a final exam: lessons alone do not complete it. */
+  finalExam: boolean;
   completedLessonIds: string[];
   lastLessonId: string | null;
   percent: number;
+  /** 'completed' means every lesson is done (see isCourseComplete for exams). */
   status: 'in_progress' | 'completed';
   /** Per lesson: score of the first try at its quick checks (0–100). */
   checkScores: Record<string, number>;
@@ -422,3 +453,23 @@ export function resolveMedia(raw: string, kind: 'video' | 'audio' | 'document', 
 
   return link(host);
 }
+
+/** Every lesson done, and the final exam passed when the course has one. */
+export function isCourseComplete(
+  progress: Pick<CourseProgress, 'status' | 'finalExam'> | null | undefined,
+  exam: Pick<CourseExamRecord, 'passed'> | null | undefined,
+): boolean {
+  return !!progress && progress.status === 'completed' && (!progress.finalExam || exam?.passed === true);
+}
+
+/** A certificate needs a passed final exam. */
+export function hasCertificate(
+  progress: Pick<CourseProgress, 'finalExam'> | null | undefined,
+  exam: Pick<CourseExamRecord, 'passed' | 'certificateCode'> | null | undefined,
+): boolean {
+  return !!progress?.finalExam && exam?.passed === true && !!exam.certificateCode;
+}
+
+/** Choices in the builder; 0 means no limit (stored as null). */
+export const EXAM_TIME_LIMITS = [0, 15, 30, 45, 60, 90, 120] as const;
+export const EXAM_ATTEMPTS = [0, 1, 2, 3, 5] as const;

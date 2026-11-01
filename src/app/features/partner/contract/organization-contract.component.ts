@@ -46,6 +46,12 @@ interface ApplicationRow {
   status: string;
   activatedAt: string | null;
   openRequest: ServiceRequest | null;
+  /** Learning: requested as a whole; its capabilities are suspended or retired one by one. */
+  isParent: boolean;
+  /** The parent this capability belongs to (Learning), if any. */
+  parentName: string | null;
+  /** A parent's capabilities (Learning: Courses, Test Center), shown inside its row. */
+  capabilities: ApplicationRow[];
 }
 
 const APPLICATION_STATUS: Record<string, { label: string; classes: string }> = {
@@ -53,6 +59,7 @@ const APPLICATION_STATUS: Record<string, { label: string; classes: string }> = {
   suspended: { label: 'Suspended', classes: 'bg-amber-50 text-amber-800' },
   deactivated: { label: 'Retired', classes: 'bg-gray-100 text-gray-600' },
   selected: { label: 'Requested', classes: 'bg-sky-50 text-sky-800' },
+  partial: { label: 'Partly active', classes: 'bg-teal-50 text-teal-800' },
   provisioning: { label: 'Provisioning', classes: 'bg-sky-50 text-sky-800' },
   failed: { label: 'Provisioning failed', classes: 'bg-red-50 text-red-700' },
   none: { label: 'Not provisioned', classes: 'bg-gray-50 text-gray-500' },
@@ -377,13 +384,54 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                         }
                       </div>
                       <p class="mt-0.5 line-clamp-2 text-sm text-gray-500">{{ app.description | t }}</p>
+                      @if (app.parentName) {
+                        <p class="mt-0.5 text-xs text-gray-400">{{ 'Part of {0}' | t: [(app.parentName | t)] }}</p>
+                      }
                       @if (app.activatedAt && app.status === 'active') {
                         <p class="mt-0.5 text-xs text-gray-400">{{ 'Active since {0}' | t: [(app.activatedAt | date: 'mediumDate')] }}</p>
+                      }
+
+                      <!-- Learning: its capabilities, each with its own status and actions -->
+                      @if (app.capabilities.length) {
+                        <ul class="mt-2 space-y-1.5">
+                          @for (capability of app.capabilities; track capability.id) {
+                            <li class="flex flex-wrap items-center gap-2 text-sm">
+                              <mat-icon class="!h-[18px] !w-[18px] !text-[18px] text-gray-400">{{ capability.icon }}</mat-icon>
+                              <span class="font-medium text-gray-800">{{ capability.name | t }}</span>
+                              <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="statusInfo(capability.status).classes">{{ statusInfo(capability.status).label | t }}</span>
+                              @if (capability.openRequest; as pending) {
+                                <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="requestStatusClass(pending.status)">
+                                  {{ pending.title.split(':')[0] }} · {{ requestStatusLabel(pending.status) | t }}
+                                </span>
+                              } @else if (data.viewer.canRequest && data.contract.status !== 'terminated') {
+                                @switch (capability.status) {
+                                  @case ('active') {
+                                    <button type="button" class="text-xs font-semibold text-gray-600 hover:text-gray-900 hover:underline" (click)="openForm('suspend_application', capability.id)">{{ 'Suspend' | t }}</button>
+                                    <button type="button" class="text-xs font-semibold text-gray-600 hover:text-gray-900 hover:underline" (click)="openForm('retire_application', capability.id)">{{ 'Retire' | t }}</button>
+                                  }
+                                  @case ('suspended') {
+                                    <button type="button" class="text-xs font-semibold text-gray-600 hover:text-gray-900 hover:underline" (click)="openForm('resume_application', capability.id)">{{ 'Resume' | t }}</button>
+                                    <button type="button" class="text-xs font-semibold text-gray-600 hover:text-gray-900 hover:underline" (click)="openForm('retire_application', capability.id)">{{ 'Retire' | t }}</button>
+                                  }
+                                }
+                              }
+                            </li>
+                          }
+                        </ul>
                       }
                     </div>
                   </div>
 
-                  @if (data.viewer.canRequest && !app.openRequest && data.contract.status !== 'terminated') {
+                  @if (app.isParent) {
+                    @if (data.viewer.canRequest && !app.openRequest && data.contract.status !== 'terminated' && canRequestMore(app)) {
+                      <div class="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+                        <button mat-flat-button type="button" class="!bg-[#007979] !text-white" (click)="openCapabilityPicker(app)">
+                          <mat-icon>add</mat-icon>
+                          {{ (app.status === 'none' ? 'Request' : 'Add more') | t }}
+                        </button>
+                      </div>
+                    }
+                  } @else if (data.viewer.canRequest && !app.openRequest && data.contract.status !== 'terminated') {
                     <div class="flex shrink-0 flex-wrap gap-2 sm:justify-end">
                       @switch (app.status) {
                         @case ('active') {
@@ -420,6 +468,52 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               }
             </ul>
           </section>
+
+          <!-- Learning: choose what to request -->
+          @if (capabilityPicker(); as picker) {
+            <div class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 sm:items-center sm:p-6" (click)="capabilityPicker.set(null)">
+              <section
+                class="w-full max-w-lg overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="capability-picker-title"
+                (click)="$event.stopPropagation()"
+              >
+                <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-5 py-4">
+                  <h2 id="capability-picker-title" class="text-lg font-semibold text-white">{{ picker.name | t }}</h2>
+                  <p class="text-sm text-white/85">{{ 'Choose what your organization needs.' | t }}</p>
+                </header>
+
+                <div class="space-y-3 p-5">
+                  @for (option of picker.options; track option.id) {
+                    <label class="flex items-start gap-3 rounded-xl border p-4" [class.cursor-pointer]="!option.locked" [class.border-slate-900]="option.checked" [class.border-slate-200]="!option.checked">
+                      <input
+                        type="checkbox"
+                        class="mt-1 h-4 w-4 cursor-pointer accent-[#007979] disabled:cursor-not-allowed"
+                        [checked]="option.checked"
+                        [disabled]="option.locked"
+                        (change)="toggleCapability(option.id)"
+                      />
+                      <span>
+                        <span class="block font-semibold text-slate-900">{{ option.name | t }}</span>
+                        <span class="block text-sm text-slate-500">{{ option.description | t }}</span>
+                        @if (option.note) {
+                          <span class="mt-1 block text-xs text-[#007979]">{{ option.note | t }}</span>
+                        }
+                      </span>
+                    </label>
+                  }
+                </div>
+
+                <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-3">
+                  <button mat-button type="button" (click)="capabilityPicker.set(null)">{{ 'Cancel' | t }}</button>
+                  <button mat-flat-button type="button" class="!bg-[#007979] !text-white" [disabled]="!pickerRequest()" (click)="applyCapabilityPicker()">
+                    {{ 'OK' | t }}
+                  </button>
+                </div>
+              </section>
+            </div>
+          }
 
           <!-- ============ REQUESTS ============ -->
           <section class="mt-6 rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -589,27 +683,74 @@ export class OrganizationContractComponent implements OnInit {
     const entitlements = new Map(data.applications.map((item) => [item.applicationId, item]));
     const openRequests = data.requests.filter((item) => item.status === 'awaiting_owner' || item.status === 'submitted');
 
-    return this.registry
+    const rows: ApplicationRow[] = this.registry
       .getEnabledApplications()
       .filter((application) => application.requiresOrganization && application.id !== 'core')
       .map((application) => {
         const entitlement = entitlements.get(application.id);
+        const statusOf = (id: string) => {
+          const status = entitlements.get(id)?.status;
+          return status && status !== 'available' ? status : 'none';
+        };
+
+        // A parent (Learning) has no entitlement: it is active once every capability is.
+        const capabilities = this.registry
+          .getEnabledApplications()
+          .filter((item) => item.parent === application.id);
+        const isParent = capabilities.length > 0;
+        const parent = application.parent
+          ? this.registry.getEnabledApplications().find((item) => item.id === application.parent)
+          : undefined;
 
         return {
           id: application.id,
           name: application.name,
           description: application.description,
           icon: application.icon ?? 'apps',
-          status: entitlement?.status && entitlement.status !== 'available' ? entitlement.status : 'none',
-          activatedAt: entitlement?.activatedAt ?? null,
+          status: isParent
+            ? capabilities.every((item) => statusOf(item.id) === 'active')
+              ? 'active'
+              : 'none'
+            : statusOf(application.id),
+          activatedAt: isParent ? null : entitlement?.activatedAt ?? null,
           openRequest: openRequests.find((item) => item.applicationId === application.id) ?? null,
+          isParent,
+          parentName: parent?.name ?? null,
+          capabilities: [] as ApplicationRow[],
         };
       })
       .sort((a, b) => this.statusOrder(a.status) - this.statusOrder(b.status) || a.name.localeCompare(b.name));
+
+    // Capabilities live inside their parent's row (Learning: Courses, Test Center).
+    const byName = new Map(rows.map((row) => [row.name, row]));
+    for (const row of rows) {
+      const parent = row.parentName ? byName.get(row.parentName) : undefined;
+      if (parent) {
+        parent.capabilities.push(row);
+      }
+    }
+
+    for (const row of rows.filter((item) => item.isParent)) {
+      const owned = row.capabilities.filter((item) => ['active', 'suspended', 'provisioning', 'selected'].includes(item.status));
+      row.status =
+        row.capabilities.length > 0 && row.capabilities.every((item) => item.status === 'active')
+          ? 'active'
+          : owned.length > 0
+            ? 'partial'
+            : 'none';
+      row.openRequest = row.openRequest ?? row.capabilities.find((item) => item.openRequest)?.openRequest ?? null;
+      row.capabilities.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return rows.filter((row) => !row.parentName);
+
   });
 
   protected readonly provisionedCount = computed(
-    () => this.applicationRows().filter((row) => row.status === 'active' || row.status === 'suspended').length,
+    () =>
+      this.applicationRows()
+        .flatMap((row) => (row.isParent ? row.capabilities : [row]))
+        .filter((row) => row.status === 'active' || row.status === 'suspended').length,
   );
 
   protected readonly awaitingOwnerCount = computed(
@@ -693,6 +834,94 @@ export class OrganizationContractComponent implements OnInit {
   }
 
   // ---------------- Requests ----------------
+
+  // ------------------------------------------------------------
+  // Learning: request Courses and/or Test Center
+  // ------------------------------------------------------------
+
+  protected readonly capabilityPicker = signal<{
+    name: string;
+    options: { id: string; name: string; description: string; checked: boolean; locked: boolean; note: string | null }[];
+  } | null>(null);
+
+  /** What OK requests: "learning" (Courses, with Test Center), "test-center", or nothing new. */
+  protected readonly pickerRequest = computed(() => {
+    const picker = this.capabilityPicker();
+    const option = (id: string) => picker?.options.find((item) => item.id === id);
+    const courses = option('courses');
+    const testCenter = option('test-center');
+
+    if (courses?.checked && !courses.locked) {
+      return 'learning';
+    }
+    return testCenter?.checked && !testCenter.locked ? 'test-center' : null;
+  });
+
+  private static readonly OWNED = ['active', 'suspended', 'provisioning', 'selected'];
+
+  protected canRequestMore(app: ApplicationRow): boolean {
+    return app.capabilities.some((item) => !OrganizationContractComponent.OWNED.includes(item.status));
+  }
+
+  protected openCapabilityPicker(app: ApplicationRow): void {
+    const owned = (id: string) =>
+      OrganizationContractComponent.OWNED.includes(app.capabilities.find((item) => item.id === id)?.status ?? 'none');
+    const coursesOwned = owned('courses');
+    const testCenterOwned = owned('test-center');
+
+    this.capabilityPicker.set({
+      name: app.name,
+      options: [
+        {
+          id: 'courses',
+          name: 'Courses',
+          description: 'Members-only courses with lessons, video, final exams and certificates.',
+          checked: coursesOwned || !testCenterOwned,
+          locked: coursesOwned,
+          note: coursesOwned ? 'Already part of your organization.' : null,
+        },
+        {
+          id: 'test-center',
+          name: 'Test Center',
+          description: 'Quizzes and exams for your students: question banks, practice tests, results and retakes.',
+          checked: true,
+          locked: testCenterOwned || !coursesOwned,
+          note: testCenterOwned ? 'Already part of your organization.' : 'Included with Courses: course final exams use the Test Center.',
+        },
+      ],
+    });
+  }
+
+  /** Courses always brings the Test Center. */
+  protected toggleCapability(id: string): void {
+    const picker = this.capabilityPicker();
+    if (!picker) {
+      return;
+    }
+
+    const options = picker.options.map((option) => (option.id === id && !option.locked ? { ...option, checked: !option.checked } : option));
+    const courses = options.find((option) => option.id === 'courses');
+    const testCenter = options.find((option) => option.id === 'test-center');
+
+    if (courses && testCenter && !testCenter.note?.startsWith('Already')) {
+      testCenter.locked = courses.checked;
+      testCenter.note = courses.checked ? 'Included with Courses: course final exams use the Test Center.' : null;
+      if (courses.checked) {
+        testCenter.checked = true;
+      }
+    }
+
+    this.capabilityPicker.set({ ...picker, options });
+  }
+
+  protected applyCapabilityPicker(): void {
+    const request = this.pickerRequest();
+    this.capabilityPicker.set(null);
+
+    if (request) {
+      this.openForm('add_application', request);
+    }
+  }
 
   protected openForm(type: ServiceRequestType, applicationId: string | null = null): void {
     this.message.set('');

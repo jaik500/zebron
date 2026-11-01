@@ -41,14 +41,14 @@ const CORE_ORGANIZATION_STEPS = [
 
 const TEST_CENTER_STEPS = [
   "first_program",
-  "first_course",
+  "first_quiz",
   "first_topic",
   "first_question",
 ];
 
 const TOPIC_FINAL_STEPS = [
   "first_program",
-  "first_course",
+  "first_quiz",
   "first_topic",
 ];
 
@@ -66,7 +66,7 @@ type TestCenterSetup = {
   completedSteps: string[];
   status: "not_started" | "in_progress" | "completed";
   firstProgramId: string | null;
-  firstCourseId: string | null;
+  firstQuizId: string | null;
   firstTopicId: string | null;
   firstQuestionId: string | null;
   startedAt?: unknown;
@@ -146,17 +146,17 @@ async function createMembership(
 }
 
 async function createCourse(
-  courseId = COURSE_ID,
+  quizId = COURSE_ID,
   organizationId = ORGANIZATION_ID,
 ): Promise<void> {
-  await adminDb.collection("testCourses").doc(courseId).set({
-    id: courseId,
+  await adminDb.collection("quizzes").doc(quizId).set({
+    id: quizId,
     organizationId,
     scope: "organization",
     accessType: "organization-members",
     programId: "first-topic-test-program",
     name: "First Topic Test Course",
-    slug: courseId,
+    slug: quizId,
     description: "Course used by first-topic onboarding tests.",
     provider: "Zebron",
     type: "course",
@@ -199,10 +199,10 @@ async function createTestCenterEntitlement(
   const onboarding: TestCenterSetup = {
     steps: [...TEST_CENTER_STEPS],
     currentStep: "first_topic",
-    completedSteps: ["first_program", "first_course"],
+    completedSteps: ["first_program", "first_quiz"],
     status: "in_progress",
     firstProgramId: "first-topic-test-program",
-    firstCourseId: COURSE_ID,
+    firstQuizId: COURSE_ID,
     firstTopicId: null,
     firstQuestionId: null,
     startedAt: AdminFieldValue.serverTimestamp(),
@@ -261,8 +261,8 @@ async function deleteTestData(): Promise<void> {
   for (const collectionName of [
     "organizationMemberships",
     "organizationOnboarding",
-    "testCourses",
-    "testTopics",
+    "quizzes",
+    "quizTopics",
     "organizations",
   ]) {
     await deleteCollection(collectionName);
@@ -316,7 +316,7 @@ describe("completeOrganizationFirstTopic", () => {
       success: true,
       topic: {
         organizationId: ORGANIZATION_ID,
-        courseId: COURSE_ID,
+        quizId: COURSE_ID,
         name: "Networking Fundamentals",
         slug: "networking-fundamentals",
         description: "Introduction to networking fundamentals.",
@@ -326,7 +326,7 @@ describe("completeOrganizationFirstTopic", () => {
       },
       onboarding: {
         currentStep: "first_question",
-        completedSteps: ["first_program", "first_course", "first_topic"],
+        completedSteps: ["first_program", "first_quiz", "first_topic"],
         status: "in_progress",
         isComplete: false,
       },
@@ -338,11 +338,11 @@ describe("completeOrganizationFirstTopic", () => {
     };
     expect(response.topic.id).toBe(response.onboarding.firstTopicId);
 
-    const topic = await adminDb.collection("testTopics").doc(response.topic.id).get();
+    const topic = await adminDb.collection("quizTopics").doc(response.topic.id).get();
     expect(topic.exists).toBe(true);
     expect(topic.data()).toMatchObject({
       organizationId: ORGANIZATION_ID,
-      courseId: COURSE_ID,
+      quizId: COURSE_ID,
       name: "Networking Fundamentals",
       slug: "networking-fundamentals",
       sortOrder: 0,
@@ -355,7 +355,7 @@ describe("completeOrganizationFirstTopic", () => {
       steps: TEST_CENTER_STEPS,
       currentStep: "first_question",
       firstTopicId: response.topic.id,
-      completedSteps: ["first_program", "first_course", "first_topic"],
+      completedSteps: ["first_program", "first_quiz", "first_topic"],
       status: "in_progress",
     });
 
@@ -367,7 +367,7 @@ describe("completeOrganizationFirstTopic", () => {
       completedSteps: CORE_ORGANIZATION_STEPS,
     });
     expect(core).not.toHaveProperty("firstTopicId");
-    expect(core).not.toHaveProperty("firstCourseId");
+    expect(core).not.toHaveProperty("firstQuizId");
     expect(core).not.toHaveProperty("firstQuestionId");
   });
 
@@ -391,7 +391,7 @@ describe("completeOrganizationFirstTopic", () => {
       ),
     ).rejects.toMatchObject({ code: "permission-denied" });
 
-    const topics = await adminDb.collection("testTopics").get();
+    const topics = await adminDb.collection("quizTopics").get();
     expect(topics.empty).toBe(true);
   });
 
@@ -437,8 +437,8 @@ describe("completeOrganizationFirstTopic", () => {
 
   it("rejects when Test Center setup is already complete", async () => {
     await updateTestCenterOnboarding({
-      steps: ["first_program", "first_course"],
-      completedSteps: ["first_program", "first_course"],
+      steps: ["first_program", "first_quiz"],
+      completedSteps: ["first_program", "first_quiz"],
       status: "completed",
       firstTopicId: null,
     });
@@ -448,14 +448,14 @@ describe("completeOrganizationFirstTopic", () => {
   });
 
   it("rejects when the first course ID is missing", async () => {
-    await updateTestCenterOnboarding({ firstCourseId: null });
+    await updateTestCenterOnboarding({ firstQuizId: null });
     await expect(
       completeOrganizationFirstTopic.run(callableRequest(OWNER_UID, validTopicData())),
     ).rejects.toMatchObject({ code: "failed-precondition" });
   });
 
   it("rejects when the first course does not exist", async () => {
-    await updateTestCenterOnboarding({ firstCourseId: "missing-course" });
+    await updateTestCenterOnboarding({ firstQuizId: "missing-course" });
     await expect(
       completeOrganizationFirstTopic.run(callableRequest(OWNER_UID, validTopicData())),
     ).rejects.toMatchObject({ code: "not-found" });
@@ -464,7 +464,7 @@ describe("completeOrganizationFirstTopic", () => {
   it("rejects when the first course belongs to another organization", async () => {
     await createOrganization(OTHER_ORGANIZATION_ID, "Other Organization");
     await createCourse(OTHER_COURSE_ID, OTHER_ORGANIZATION_ID);
-    await updateTestCenterOnboarding({ firstCourseId: OTHER_COURSE_ID });
+    await updateTestCenterOnboarding({ firstQuizId: OTHER_COURSE_ID });
 
     await expect(
       completeOrganizationFirstTopic.run(callableRequest(OWNER_UID, validTopicData())),
@@ -479,9 +479,9 @@ describe("completeOrganizationFirstTopic", () => {
   });
 
   it("rejects a duplicate normalized slug within the same course", async () => {
-    await adminDb.collection("testTopics").doc("existing-topic").set({
+    await adminDb.collection("quizTopics").doc("existing-topic").set({
       organizationId: ORGANIZATION_ID,
-      courseId: COURSE_ID,
+      quizId: COURSE_ID,
       name: "Existing Topic",
       slug: "networking-fundamentals",
       sortOrder: 0,
@@ -520,15 +520,15 @@ describe("completeOrganizationFirstTopic", () => {
   });
 
   it("assigns the next available sort order for this course", async () => {
-    await adminDb.collection("testTopics").doc("topic-one").set({
+    await adminDb.collection("quizTopics").doc("topic-one").set({
       organizationId: ORGANIZATION_ID,
-      courseId: COURSE_ID,
+      quizId: COURSE_ID,
       slug: "topic-one",
       sortOrder: 0,
     });
-    await adminDb.collection("testTopics").doc("topic-two").set({
+    await adminDb.collection("quizTopics").doc("topic-two").set({
       organizationId: ORGANIZATION_ID,
-      courseId: COURSE_ID,
+      quizId: COURSE_ID,
       slug: "topic-two",
       sortOrder: 3,
     });
@@ -571,8 +571,8 @@ describe("completeOrganizationFirstTopic", () => {
 
   it("uses the persisted Test Center steps to determine the next step", async () => {
     await updateTestCenterOnboarding({
-      steps: ["first_program", "first_course", "first_topic", "first_question"],
-      completedSteps: ["first_program", "first_course"],
+      steps: ["first_program", "first_quiz", "first_topic", "first_question"],
+      completedSteps: ["first_program", "first_quiz"],
       firstTopicId: null,
     });
     const result = await completeOrganizationFirstTopic.run(
@@ -591,7 +591,7 @@ describe("completeOrganizationFirstTopic", () => {
   it("completes Test Center setup when first_topic is the final configured step", async () => {
     await updateTestCenterOnboarding({
       steps: TOPIC_FINAL_STEPS,
-      completedSteps: ["first_program", "first_course"],
+      completedSteps: ["first_program", "first_quiz"],
       firstTopicId: null,
     });
     const result = await completeOrganizationFirstTopic.run(
@@ -601,7 +601,7 @@ describe("completeOrganizationFirstTopic", () => {
       success: true,
       onboarding: {
         currentStep: null,
-        completedSteps: ["first_program", "first_course", "first_topic"],
+        completedSteps: ["first_program", "first_quiz", "first_topic"],
         status: "completed",
         isComplete: true,
       },
@@ -619,7 +619,7 @@ describe("completeOrganizationFirstTopic", () => {
     );
     expect(result).toMatchObject({
       onboarding: {
-        completedSteps: ["first_program", "first_course", "first_topic"],
+        completedSteps: ["first_program", "first_quiz", "first_topic"],
       },
     });
   });
@@ -631,18 +631,18 @@ describe("completeOrganizationFirstTopic", () => {
       ),
     ).rejects.toMatchObject({ code: "invalid-argument" });
 
-    expect((await adminDb.collection("testTopics").get()).empty).toBe(true);
+    expect((await adminDb.collection("quizTopics").get()).empty).toBe(true);
     expect((await entitlementRef().get()).data()?.onboarding).toMatchObject({
       firstTopicId: null,
       currentStep: "first_topic",
-      completedSteps: ["first_program", "first_course"],
+      completedSteps: ["first_program", "first_quiz"],
     });
   });
 
   it("does not count topics belonging to another course when assigning sort order", async () => {
-    await adminDb.collection("testTopics").doc("other-course-topic").set({
+    await adminDb.collection("quizTopics").doc("other-course-topic").set({
       organizationId: ORGANIZATION_ID,
-      courseId: OTHER_COURSE_ID,
+      quizId: OTHER_COURSE_ID,
       name: "Other Course Topic",
       slug: "other-course-topic",
       sortOrder: 99,
@@ -666,7 +666,7 @@ describe("completeOrganizationFirstTopic", () => {
     expect(core?.completedSteps).toEqual(CORE_ORGANIZATION_STEPS);
     expect(core?.currentStep).toBe("configuration");
     expect(core).not.toHaveProperty("firstProgramId");
-    expect(core).not.toHaveProperty("firstCourseId");
+    expect(core).not.toHaveProperty("firstQuizId");
     expect(core).not.toHaveProperty("firstTopicId");
     expect(core).not.toHaveProperty("firstQuestionId");
   });

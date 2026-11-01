@@ -9,7 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { useLearningHeaderTitle } from '../../test-center/learner-route';
 
 import { CourseHeaderComponent } from '../components/course-header.component';
-import { averageScore, COURSE_COVERS, courseContextFromRoute, courseDate, courseLink, CourseProgress } from '../course.model';
+import { COURSE_COVERS, courseContextFromRoute, courseDate, courseLink, CourseProgress, hasCertificate } from '../course.model';
 import { CourseAccessService } from '../course-access.service';
 import { CourseStore } from '../course.store';
 
@@ -42,7 +42,7 @@ import { CourseStore } from '../course.store';
           </div>
         } @else {
           <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            @for (record of store.completed(); track record.id) {
+            @for (record of certificates(); track record.id) {
               <a
                 [routerLink]="linkFor(record) + '/certificate'"
                 class="overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-lg"
@@ -69,7 +69,7 @@ import { CourseStore } from '../course.store';
                 @if (store.continueRecord(); as next) {
                   {{ 'Finish {0} for your next certificate.' | t: [next.courseTitle] }}
                 } @else {
-                  {{ 'Complete a course to earn a certificate.' | t }}
+                  {{ 'Pass a course\\u0027s final exam to earn a certificate.' | t }}
                 }
               </p>
               <a
@@ -96,6 +96,11 @@ export class MyCertificatesComponent {
   protected readonly canManage = computed(() => this.access.canManage(this.context));
   protected readonly signedIn = computed(() => this.auth.firebaseUser() !== null);
 
+  /** Courses whose final exam is passed: only these award a certificate. */
+  protected readonly certificates = computed(() =>
+    this.store.completed().filter((record) => hasCertificate(record, this.store.exams()[record.id])),
+  );
+
   private readonly headerTitle = useLearningHeaderTitle(this.route);
 
   constructor() {
@@ -116,10 +121,11 @@ export class MyCertificatesComponent {
   }
 
   protected dateOf(record: CourseProgress): string {
-    return courseDate(record.completedAt ?? record.updatedAt, this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US');
+    return courseDate(this.store.exams()[record.id]?.passedAt ?? record.completedAt ?? record.updatedAt, this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US');
   }
 
   protected scoreOf(record: CourseProgress): number | null {
-    return averageScore(record.checkScores);
+    const exam = this.store.exams()[record.id];
+    return exam?.passScore ?? exam?.bestScore ?? null;
   }
 }

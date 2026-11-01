@@ -5,6 +5,7 @@ import {
 import {
   Component,
   OnInit,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -332,7 +333,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                   @for (application of availableApplications; track application.id) {
                     <button
                       type="button"
-                      (click)="toggleApplication(application.id)"
+                      (click)="application.id === 'learning' ? openLearningPicker() : toggleApplication(application.id)"
                       class="rounded-xl border p-5 text-left transition"
                       [class.border-slate-900]="isApplicationSelected(application.id)"
                       [class.bg-slate-50]="isApplicationSelected(application.id)"
@@ -346,7 +347,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                           </h3>
 
                           <p class="mt-1 text-sm text-slate-500">
-                            {{ application.description | t }}
+                            {{ (application.id === 'learning' ? learningDescription() : application.description) | t }}
                           </p>
                         </div>
 
@@ -372,6 +373,69 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 }
 
               </section>
+
+              <!-- Learning: choose its capabilities -->
+              @if (learningPicker(); as picker) {
+                <div
+                  class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-0 sm:items-center sm:p-6"
+                  (click)="learningPicker.set(null)"
+                  (keydown.escape)="learningPicker.set(null)"
+                >
+                  <section
+                    class="w-full max-w-lg overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="learning-picker-title"
+                    (click)="$event.stopPropagation()"
+                  >
+                    <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-5 py-4">
+                      <h2 id="learning-picker-title" class="text-lg font-semibold text-white">{{ 'Learning' | t }}</h2>
+                      <p class="text-sm text-white/85">{{ 'Choose what your organization needs.' | t }}</p>
+                    </header>
+
+                    <div class="space-y-3 p-5">
+                      <label class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition" [class.border-slate-900]="picker.courses" [class.border-slate-200]="!picker.courses">
+                        <input
+                          type="checkbox"
+                          class="mt-1 h-4 w-4 cursor-pointer accent-[#007979]"
+                          [checked]="picker.courses"
+                          (change)="setLearningCourses(!picker.courses)"
+                        />
+                        <span>
+                          <span class="block font-semibold text-slate-900">{{ 'Courses' | t }}</span>
+                          <span class="block text-sm text-slate-500">{{ 'Members-only courses with lessons, video, final exams and certificates.' | t }}</span>
+                        </span>
+                      </label>
+
+                      <label class="flex items-start gap-3 rounded-xl border p-4 transition" [class.cursor-pointer]="!picker.courses" [class.border-slate-900]="picker.testCenter" [class.border-slate-200]="!picker.testCenter">
+                        <input
+                          type="checkbox"
+                          class="mt-1 h-4 w-4 cursor-pointer accent-[#007979] disabled:cursor-not-allowed"
+                          [checked]="picker.testCenter"
+                          [disabled]="picker.courses"
+                          (change)="learningPicker.set({ courses: picker.courses, testCenter: !picker.testCenter })"
+                        />
+                        <span>
+                          <span class="block font-semibold text-slate-900">{{ 'Test Center' | t }}</span>
+                          <span class="block text-sm text-slate-500">{{ 'Quizzes and exams for your students: question banks, practice tests, results and retakes.' | t }}</span>
+                          @if (picker.courses) {
+                            <span class="mt-1 block text-xs text-[#007979]">{{ 'Included with Courses: course final exams use the Test Center.' | t }}</span>
+                          }
+                        </span>
+                      </label>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-3">
+                      <button type="button" class="h-9 rounded-lg px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100" (click)="learningPicker.set(null)">
+                        {{ 'Cancel' | t }}
+                      </button>
+                      <button type="button" class="h-9 rounded-lg bg-slate-900 px-5 text-sm font-semibold text-white hover:bg-slate-800" (click)="applyLearningPicker()">
+                        {{ 'OK' | t }}
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              }
 
               <!-- Messages -->
               @if (successMessage()) {
@@ -473,9 +537,10 @@ export class OrganizationApplicationFormComponent
       description: 'Community discussions, topics, and member engagement.',
     },
     {
-      id: 'test-center',
-      name: 'Test Center',
-      description: 'Create and manage training programs, courses, and assessments.',
+      // Click to choose its capabilities (Courses, Test Center).
+      id: 'learning',
+      name: 'Learning',
+      description: 'Courses and the Test Center. Click to choose.',
     },
     {
       id: 'knowledge',
@@ -687,10 +752,78 @@ export class OrganizationApplicationFormComponent
   isApplicationSelected(
     applicationId: string,
   ): boolean {
+    if (applicationId === 'learning') {
+      return this.learningChoice() !== 'none';
+    }
 
     return this.selectedApplications().has(
       applicationId,
     );
+  }
+
+  // ------------------------------------------------------------
+  // Learning: Courses and/or Test Center
+  //
+  // Stored as "learning" (Courses + Test Center, since course final
+  // exams run on the Test Center) or "test-center" (Test Center only).
+  // ------------------------------------------------------------
+
+  readonly learningPicker = signal<{ courses: boolean; testCenter: boolean } | null>(null);
+
+  readonly learningChoice = computed<'both' | 'test-center' | 'none'>(() => {
+    const selected = this.selectedApplications();
+    if (selected.has('learning') || selected.has('courses')) {
+      return 'both';
+    }
+    return selected.has('test-center') ? 'test-center' : 'none';
+  });
+
+  readonly learningDescription = computed(() => {
+    switch (this.learningChoice()) {
+      case 'both':
+        return 'Selected: Courses and Test Center.';
+      case 'test-center':
+        return 'Selected: Test Center only.';
+      default:
+        return 'Courses and the Test Center. Click to choose.';
+    }
+  });
+
+  openLearningPicker(): void {
+    const choice = this.learningChoice();
+    this.learningPicker.set({
+      courses: choice === 'both' || choice === 'none',
+      testCenter: true,
+    });
+  }
+
+  /** Courses always brings the Test Center. */
+  setLearningCourses(courses: boolean): void {
+    const picker = this.learningPicker();
+    if (picker) {
+      this.learningPicker.set({ courses, testCenter: courses ? true : picker.testCenter });
+    }
+  }
+
+  applyLearningPicker(): void {
+    const picker = this.learningPicker();
+    if (!picker) {
+      return;
+    }
+
+    const next = new Set(this.selectedApplications());
+    next.delete('learning');
+    next.delete('courses');
+    next.delete('test-center');
+
+    if (picker.courses) {
+      next.add('learning');
+    } else if (picker.testCenter) {
+      next.add('test-center');
+    }
+
+    this.selectedApplications.set(next);
+    this.learningPicker.set(null);
   }
 
   async save(

@@ -95,6 +95,15 @@ export interface ApplicationDefinition {
   provisioningStrategy: ApplicationProvisioningStrategy;
 
   /**
+   * Parent application this one is a capability of, if any.
+   *
+   * Example: Courses and Test Center are capabilities of Learning.
+   * A parent has no entitlement of its own: it counts as active while
+   * any of its capabilities is active.
+   */
+  parent?: string;
+
+  /**
    * Other Zebron applications required by this application.
    */
   dependencies: string[];

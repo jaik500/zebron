@@ -47,7 +47,7 @@ const CORE_ORGANIZATION_STEPS = [
 
 const TEST_CENTER_STEPS = [
   'first_program',
-  'first_course',
+  'first_quiz',
   'first_topic',
   'first_question',
 ];
@@ -70,7 +70,7 @@ type TestCenterSetup = {
   completedSteps: string[];
   status: 'not_started' | 'in_progress' | 'completed';
   firstProgramId: string | null;
-  firstCourseId: string | null;
+  firstQuizId: string | null;
   firstTopicId: string | null;
   firstQuestionId: string | null;
   startedAt?: unknown;
@@ -159,7 +159,7 @@ async function createProgram(
     slug: programId,
     description: 'Cyber Security Program',
     active: true,
-    courseCount: 0,
+    quizCount: 0,
     createdBy: OWNER_UID,
     createdAt: AdminFieldValue.serverTimestamp(),
     updatedAt: AdminFieldValue.serverTimestamp(),
@@ -193,11 +193,11 @@ async function createTestCenterEntitlement(
 ): Promise<void> {
   const entitlementOnboarding: TestCenterSetup = {
     steps: [...TEST_CENTER_STEPS],
-    currentStep: 'first_course',
+    currentStep: 'first_quiz',
     completedSteps: ['first_program'],
     status: 'in_progress',
     firstProgramId: 'cyber-security',
-    firstCourseId: null,
+    firstQuizId: null,
     firstTopicId: null,
     firstQuestionId: null,
     startedAt: AdminFieldValue.serverTimestamp(),
@@ -281,7 +281,7 @@ async function deleteTestData(): Promise<void> {
     'organizationMemberships',
     'organizationOnboarding',
     'testPrograms',
-    'testCourses',
+    'quizzes',
     'organizations',
   ]) {
     await deleteCollection(collectionName);
@@ -366,7 +366,7 @@ describe('completeOrganizationFirstCourse', () => {
       },
       onboarding: {
         currentStep: 'first_topic',
-        completedSteps: ['first_program', 'first_course'],
+        completedSteps: ['first_program', 'first_quiz'],
         status: 'in_progress',
         isComplete: false,
       },
@@ -374,13 +374,13 @@ describe('completeOrganizationFirstCourse', () => {
 
     const response = result as {
       course: { id: string };
-      onboarding: { firstCourseId: string; completedSteps: string[] };
+      onboarding: { firstQuizId: string; completedSteps: string[] };
     };
 
-    expect(response.course.id).toBe(response.onboarding.firstCourseId);
+    expect(response.course.id).toBe(response.onboarding.firstQuizId);
 
     const courseSnapshot = await adminDb
-      .collection('testCourses')
+      .collection('quizzes')
       .doc(response.course.id)
       .get();
 
@@ -406,10 +406,10 @@ describe('completeOrganizationFirstCourse', () => {
     expect(entitlementSnapshot.data()?.onboarding).toMatchObject({
       steps: TEST_CENTER_STEPS,
       currentStep: 'first_topic',
-      completedSteps: ['first_program', 'first_course'],
+      completedSteps: ['first_program', 'first_quiz'],
       status: 'in_progress',
       firstProgramId: 'cyber-security',
-      firstCourseId: response.course.id,
+      firstQuizId: response.course.id,
       firstTopicId: null,
       firstQuestionId: null,
       completedAt: null,
@@ -428,7 +428,7 @@ describe('completeOrganizationFirstCourse', () => {
     });
 
     expect(organizationOnboardingSnapshot.data()).not.toHaveProperty(
-      'firstCourseId',
+      'firstQuizId',
     );
   });
 
@@ -469,7 +469,7 @@ describe('completeOrganizationFirstCourse', () => {
     });
 
     const courses = await adminDb
-      .collection('testCourses')
+      .collection('quizzes')
       .where('organizationId', '==', ORGANIZATION_ID)
       .where('slug', '==', `denied-${uid}`)
       .get();
@@ -540,12 +540,12 @@ describe('completeOrganizationFirstCourse', () => {
     ).rejects.toMatchObject({ code: 'permission-denied' });
   });
 
-  it('rejects when first_course is not the current Test Center step', async () => {
+  it('rejects when first_quiz is not the current Test Center step', async () => {
     // The transition helper derives currentStep from completedSteps.
-    // Completing first_course makes first_topic the next step.
+    // Completing first_quiz makes first_topic the next step.
     await updateTestCenterOnboarding({
-      completedSteps: ['first_program', 'first_course'],
-      firstCourseId: null,
+      completedSteps: ['first_program', 'first_quiz'],
+      firstQuizId: null,
     });
 
     await expect(
@@ -555,7 +555,7 @@ describe('completeOrganizationFirstCourse', () => {
     ).rejects.toMatchObject({ code: 'failed-precondition' });
 
     const courses = await adminDb
-      .collection('testCourses')
+      .collection('quizzes')
       .where('slug', '==', 'wrong-step-course')
       .get();
 
@@ -564,9 +564,9 @@ describe('completeOrganizationFirstCourse', () => {
 
   it('rejects when Test Center setup is completed', async () => {
     await updateTestCenterOnboarding({
-      steps: ['first_program', 'first_course'],
-      completedSteps: ['first_program', 'first_course'],
-      firstCourseId: null,
+      steps: ['first_program', 'first_quiz'],
+      completedSteps: ['first_program', 'first_quiz'],
+      firstQuizId: null,
       status: 'completed',
     });
 
@@ -578,7 +578,7 @@ describe('completeOrganizationFirstCourse', () => {
   });
 
   it('rejects when a first course has already been recorded', async () => {
-    await updateTestCenterOnboarding({ firstCourseId: 'existing-course' });
+    await updateTestCenterOnboarding({ firstQuizId: 'existing-course' });
 
     await expect(
       completeOrganizationFirstCourse.run(
@@ -587,7 +587,7 @@ describe('completeOrganizationFirstCourse', () => {
     ).rejects.toMatchObject({ code: 'already-exists' });
 
     const courses = await adminDb
-      .collection('testCourses')
+      .collection('quizzes')
       .where('slug', '==', 'second-course')
       .get();
 
@@ -595,7 +595,7 @@ describe('completeOrganizationFirstCourse', () => {
   });
 
   it('rejects a duplicate normalized course slug within the organization', async () => {
-    await adminDb.collection('testCourses').doc('existing-course').set({
+    await adminDb.collection('quizzes').doc('existing-course').set({
       organizationId: ORGANIZATION_ID,
       scope: 'organization',
       accessType: 'organization-members',
@@ -642,7 +642,7 @@ describe('completeOrganizationFirstCourse', () => {
 
     const response = result as { course: { id: string } };
     const courseSnapshot = await adminDb
-      .collection('testCourses')
+      .collection('quizzes')
       .doc(response.course.id)
       .get();
 
@@ -695,11 +695,11 @@ describe('completeOrganizationFirstCourse', () => {
     ).rejects.toMatchObject({ code: 'unauthenticated' });
   });
 
-  it('completes Test Center setup when first_course is the final configured step', async () => {
+  it('completes Test Center setup when first_quiz is the final configured step', async () => {
     await updateTestCenterOnboarding({
-      steps: ['first_program', 'first_course'],
+      steps: ['first_program', 'first_quiz'],
       completedSteps: ['first_program'],
-      firstCourseId: null,
+      firstQuizId: null,
       status: 'in_progress',
     });
 
@@ -714,7 +714,7 @@ describe('completeOrganizationFirstCourse', () => {
       success: true,
       onboarding: {
         currentStep: null,
-        completedSteps: ['first_program', 'first_course'],
+        completedSteps: ['first_program', 'first_quiz'],
         status: 'completed',
         isComplete: true,
       },
@@ -722,9 +722,9 @@ describe('completeOrganizationFirstCourse', () => {
 
     const entitlementSnapshot = await entitlementRef().get();
     expect(entitlementSnapshot.data()?.onboarding).toMatchObject({
-      steps: ['first_program', 'first_course'],
+      steps: ['first_program', 'first_quiz'],
       currentStep: null,
-      completedSteps: ['first_program', 'first_course'],
+      completedSteps: ['first_program', 'first_quiz'],
       status: 'completed',
     });
 
@@ -743,9 +743,9 @@ describe('completeOrganizationFirstCourse', () => {
 
   it('follows the configured Test Center workflow rather than hard-coding first_topic', async () => {
     await updateTestCenterOnboarding({
-      steps: ['first_program', 'first_course', 'first_question'],
+      steps: ['first_program', 'first_quiz', 'first_question'],
       completedSteps: ['first_program'],
-      firstCourseId: null,
+      firstQuizId: null,
       status: 'in_progress',
     });
 
@@ -763,7 +763,7 @@ describe('completeOrganizationFirstCourse', () => {
       success: true,
       onboarding: {
         currentStep: 'first_question',
-        completedSteps: ['first_program', 'first_course'],
+        completedSteps: ['first_program', 'first_quiz'],
         status: 'in_progress',
         isComplete: false,
       },
@@ -771,7 +771,7 @@ describe('completeOrganizationFirstCourse', () => {
 
     const entitlementSnapshot = await entitlementRef().get();
     expect(entitlementSnapshot.data()?.onboarding).toMatchObject({
-      steps: ['first_program', 'first_course', 'first_question'],
+      steps: ['first_program', 'first_quiz', 'first_question'],
       currentStep: 'first_question',
     });
   });
@@ -792,7 +792,7 @@ describe('completeOrganizationFirstCourse', () => {
     expect(onboarding?.completedSteps).toEqual(CORE_ORGANIZATION_STEPS);
     expect(onboarding?.currentStep).toBe('configuration');
     expect(onboarding).not.toHaveProperty('firstProgramId');
-    expect(onboarding).not.toHaveProperty('firstCourseId');
+    expect(onboarding).not.toHaveProperty('firstQuizId');
     expect(onboarding).not.toHaveProperty('firstTopicId');
     expect(onboarding).not.toHaveProperty('firstQuestionId');
   });

@@ -7,9 +7,10 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PartnerOrganizationContextService } from '../../../../core/services/partner-organization-context.service';
 import { QuizService } from '../../services/quiz.service';
+import { useCoursesAvailable } from '../../learner-route';
 import { Quiz } from '../../models/quiz.model';
 import { TestTopicService } from '../../services/test-topic.service';
 import { TestQuestionService } from '../../services/test-question.service';
@@ -47,7 +48,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
   selector: 'app-quiz-list',
   standalone: true,
   imports: [
-    TranslatePipe,CommonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
+    TranslatePipe,CommonModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
   template: `
     <main class="mt-14 min-h-screen bg-slate-50">
 
@@ -56,7 +57,30 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
         <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
             <div class="min-w-0 lg:shrink-0">
+              <!-- Zebron Learning: Courses and Test Center -->
+              <nav class="flex items-center gap-1 text-xs text-white/80" [attr.aria-label]="'Breadcrumb' | t">
+                <a [routerLink]="coursesAvailable() ? coursesLink : testCenterLink" class="hover:text-white hover:underline">{{ 'Learning' | t }}</a>
+                <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">chevron_right</mat-icon>
+                <a [routerLink]="testCenterLink" class="hover:text-white hover:underline">{{ 'Test Center' | t }}</a>
+                @if (coursesAvailable()) {
+                  <span class="mx-1 text-white/40" aria-hidden="true">·</span>
+                  <a [routerLink]="coursesLink" class="inline-flex items-center gap-0.5 font-semibold text-white hover:underline">
+                    <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">school</mat-icon>{{ 'Courses' | t }}
+                  </a>
+                }
+              </nav>
               <h1 class="truncate text-lg font-semibold">{{ 'Quiz library' | t }}</h1>
+              @if (typeFilter(); as type) {
+                <button
+                  type="button"
+                  class="mt-1 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold hover:bg-white/30"
+                  (click)="typeFilter.set(null)"
+                  [attr.aria-label]="'Show all quizzes' | t"
+                >
+                  {{ (type === 'certification' ? 'Certifications' : type === 'skill' ? 'Skills' : 'Courses') | t }}
+                  <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">close</mat-icon>
+                </button>
+              }
               <p class="hidden truncate text-xs text-white/80 sm:block">
                 {{ 'Practice by topic and track your progress.' | t }}
               </p>
@@ -532,6 +556,9 @@ export class QuizListComponent implements OnInit {
   readonly statusFilter = signal('All');
   readonly categoryFilter = signal('All');
 
+  /** ?type=certification or ?type=skill (from the Test Center home cards). */
+  readonly typeFilter = signal<string | null>(this.route.snapshot.queryParamMap.get('type'));
+
   readonly courses = signal<Quiz[]>([]);
   readonly favoriteQuizIds = signal<string[]>([]);
   readonly topicCounts = signal<Record<string, number>>({});
@@ -631,7 +658,8 @@ export class QuizListComponent implements OnInit {
         (!query || searchableText.includes(query)) &&
         (difficulty === 'All' || quiz.difficulty === difficulty) &&
         (status === 'All' || quiz.status === status) &&
-        (category === 'All' || quiz.category === category)
+        (category === 'All' || quiz.category === category) &&
+        (!this.typeFilter() || quiz.type === this.typeFilter())
       );
     });
   });
@@ -874,6 +902,15 @@ this.questionCounts.set(resolvedQuestionCounts);
       quiz.slug,
     ]);
   }
+
+  /** Courses, the other half of Zebron Learning, in the same place (Zebron or the organization). */
+  protected readonly coursesLink = this.learnerBaseRoute().replace(/\/learn\/test-center$/, '/courses').replace(/^\/test-center$/, '/courses');
+
+  /** The Test Center home, in the same place. */
+  protected readonly testCenterLink = this.learnerBaseRoute();
+
+  /** Organizations can have the Test Center without Courses: hide course links then. */
+  protected readonly coursesAvailable = useCoursesAvailable(this.route);
 
   private learnerBaseRoute(): string {
     const organizationId =

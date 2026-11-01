@@ -16,11 +16,15 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 
-import { firestore } from '../../core/services/firebase-config';
+import { httpsCallable } from 'firebase/functions';
+
+import { firebaseFunctions, firestore } from '../../core/services/firebase-config';
 
 import {
   Course,
   CourseContext,
+  CourseExamRecord,
+  CourseFinalExam,
   CourseCover,
   CourseLevel,
   CourseModule,
@@ -95,6 +99,7 @@ export class CourseService {
       skills: strings(data['skills']),
       modules,
       lessonCount,
+      finalExam: this.toFinalExam(data['finalExam']),
       estimatedMinutes: numberOr(
         data['estimatedMinutes'],
         modules.flatMap((module) => module.lessons).reduce((total, lesson) => total + lesson.minutes, 0),
@@ -105,6 +110,28 @@ export class CourseService {
       publishedAt: (data['publishedAt'] as Timestamp | null) ?? null,
       updatedAt: (data['updatedAt'] as Timestamp | null) ?? null,
     };
+  }
+
+  private toFinalExam(value: unknown): CourseFinalExam | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const exam = value as Record<string, unknown>;
+    const quizId = text(exam['quizId']);
+    const minutes = numberOr(exam['timeLimitMinutes'], 0);
+    const attempts = numberOr(exam['maxAttempts'], 0);
+
+    return quizId
+      ? {
+          quizId,
+          quizName: text(exam['quizName']),
+          questionCount: Math.max(1, Math.round(numberOr(exam['questionCount'], 20))),
+          passMark: Math.max(1, Math.min(100, Math.round(numberOr(exam['passMark'], 70)))),
+          timeLimitMinutes: minutes > 0 ? minutes : null,
+          maxAttempts: attempts > 0 ? attempts : null,
+        }
+      : null;
   }
 
   /** Parse a stored lesson (also used by the builder). */
@@ -313,6 +340,7 @@ export class CourseService {
       courseTitle: text(data['courseTitle']),
       cover: COVERS.includes(cover) ? cover : 'teal',
       lessonCount: numberOr(data['lessonCount'], 0),
+      finalExam: data['finalExam'] === true,
       completedLessonIds: strings(data['completedLessonIds']),
       lastLessonId: (data['lastLessonId'] as string | null) ?? null,
       percent: numberOr(data['percent'], 0),
@@ -353,6 +381,7 @@ export class CourseService {
       courseTitle: progress.courseTitle,
       cover: progress.cover,
       lessonCount: progress.lessonCount,
+      finalExam: progress.finalExam,
       completedLessonIds: progress.completedLessonIds,
       lastLessonId: progress.lastLessonId,
       percent: progress.percent,
@@ -367,4 +396,83 @@ export class CourseService {
       updatedAt: serverTimestamp(),
     });
   }
+
+  // ============================================================
+  // FINAL EXAMS (graded by Cloud Functions)
+  // ============================================================
+
+  private toExamRecord(id: string, data: Record<string, unknown>): CourseExamRecord {
+    const score = (value: unknown) => (typeof value === 'number' ? value : null);
+    return {
+      id,
+      attempts: numberOr(data['attempts'], 0),
+      bestScore: score(data['bestScore']),
+      lastScore: score(data['lastScore']),
+      passed: data['passed'] === true,
+      passScore: score(data['passScore']),
+      passedAt: (data['passedAt'] as Timestamp | null) ?? null,
+      certificateCode: (data['certificateCode'] as string | null) ?? null,
+      openAttemptId: (data['openAttemptId'] as string | null) ?? null,
+    };
+  }
+
+  async listExamRecords(userId: string): Promise<CourseExamRecord[]> {
+    const snapshot = await getDocs(collection(firestore, 'users', userId, 'courseExams'));
+    return snapshot.docs.map((document) => this.toExamRecord(document.id, document.data()));
+  }
+
+  async startExam(organizationId: string | null, courseId: string): Promise<ExamSession> {
+    const call = httpsCallable<{ organizationId: string | null; courseId: string }, ExamSession>(firebaseFunctions, 'startCourseExam');
+    return (await call({ organizationId, courseId })).data;
+  }
+
+  async submitExam(
+    organizationId: string | null,
+    courseId: string,
+    attemptId: string,
+    answers: Record<string, string>,
+  ): Promise<ExamResult> {
+    const call = httpsCallable<
+      { organizationId: string | null; courseId: string; attemptId: string; answers: Record<string, string> },
+      ExamResult
+    >(firebaseFunctions, 'submitCourseExam');
+    return (await call({ organizationId, courseId, attemptId, answers })).data;
+  }
+}
+
+export interface ExamQuestion {
+  id: string;
+  question: string;
+  type: string;
+  options: { id: string; text: string }[];
+}
+
+/** What startCourseExam returns: the questions without their answers. */
+export interface ExamSession {
+  attemptId: string;
+  quizName: string;
+  /** ISO time, or null without a time limit. */
+  deadline: string | null;
+  questions: ExamQuestion[];
+  passMark: number;
+  maxAttempts: number | null;
+  attemptsUsed: number;
+  bestScore: number | null;
+  passed: boolean;
+}
+
+/** What submitCourseExam returns. */
+export interface ExamResult {
+  score: number;
+  correct: number;
+  total: number;
+  passed: boolean;
+  late: boolean;
+  passMark: number;
+  attemptsUsed: number;
+  maxAttempts: number | null;
+  certificateCode: string | null;
+  topics: { name: string; correct: number; total: number }[];
+  /** Questions answered wrongly (shown after a fail, without the answers). */
+  missed: string[];
 }

@@ -16,6 +16,7 @@ import {
 import { onSchedule } from "firebase-functions/v2/scheduler";
 
 import { isPlatformAdministrator } from "./platform-admin-authorization";
+import { recordEmailUsage } from "./email-usage";
 
 /**
  * Zebron Support Tickets
@@ -859,6 +860,8 @@ async function notify(to: string[], subject: string, text: string): Promise<void
 
         if (!response.ok) {
           logger.warn("Support notification failed.", { status: response.status, subject });
+        } else {
+          await recordEmailUsage("sent", "support_notification");
         }
       } catch (error) {
         logger.warn("Support notification failed.", { error, subject });

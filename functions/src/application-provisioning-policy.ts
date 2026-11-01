@@ -94,8 +94,29 @@ export const APPLICATION_PROVISIONING_POLICIES = {
   },
 
   /**
+   * Courses: a Learning capability. Course final exams run on Test
+   * Center quizzes, so Test Center must be active first.
+   */
+  courses: {
+    applicationId: "courses",
+    provisioningStrategy: "default",
+    autoProvision: true,
+    enabled: true,
+    dependencies: ["core", "test-center"],
+  },
+
+  /**
    * Knowledge application.
    */
+  // On demand: organizations get the blog only after requesting it.
+  blog: {
+    applicationId: "blog",
+    provisioningStrategy: "default",
+    autoProvision: true,
+    enabled: true,
+    dependencies: ["core"],
+  },
+
   knowledge: {
     applicationId: "knowledge",
     provisioningStrategy: "default",
@@ -191,7 +212,7 @@ export const APPLICATION_PROVISIONING_POLICIES = {
   },
 
   /**
-   * Mailbox application.
+   * Mailbox application (on demand: only organizations that request it).
    */
   mailbox: {
     applicationId: "mailbox",
@@ -216,4 +237,33 @@ export function getApplicationProvisioningPolicy(
   return APPLICATION_PROVISIONING_POLICIES[
     applicationId as keyof typeof APPLICATION_PROVISIONING_POLICIES
   ];
+}
+
+/**
+ * Learning is the parent application for Courses and Test Center. It has
+ * no entitlement of its own: it counts as active while either capability
+ * is active. Requesting it, or Courses, also requests what it needs.
+ *
+ * - learning    -> test-center, courses
+ * - courses     -> test-center, courses
+ * - test-center -> test-center only
+ */
+export const APPLICATION_BUNDLES: Readonly<Record<string, readonly string[]>> = {
+  learning: ["test-center", "courses"],
+  courses: ["test-center", "courses"],
+};
+
+/** Application ids a request for this id provisions, dependencies first. */
+export function expandApplicationRequest(
+  applicationId: string,
+): string[] {
+  return [...(APPLICATION_BUNDLES[applicationId] ?? [applicationId])];
+}
+
+/** Whether an id can be requested: a provisioning policy or a bundle. */
+export function isRequestableApplication(
+  applicationId: string,
+): boolean {
+  return applicationId in APPLICATION_PROVISIONING_POLICIES
+    || applicationId in APPLICATION_BUNDLES;
 }

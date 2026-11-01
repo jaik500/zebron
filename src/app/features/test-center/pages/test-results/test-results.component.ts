@@ -1,513 +1,196 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-
-import { CommonModule } from '@angular/common';
-
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { NgClass } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { TestStore } from '../../store/test.store';
+import { MatIconModule } from '@angular/material/icon';
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { ProgressRingComponent } from '../../../courses/components/progress-ring.component';
 import { learnerBaseRoute, useLearningHeaderTitle } from '../../learner-route';
+import { answerText } from '../../models/question-answers';
+import { TestStore } from '../../store/test.store';
 
+/** Topics under this score are suggested for more practice. */
+const WEAK_TOPIC = 70;
+
+/**
+ * Test Center results, in the same style as course exam results: a score
+ * ring, a bar per topic, one-click practice of weak topics, and a review
+ * of every answer with the right one and why.
+ */
 @Component({
   selector: 'app-test-results',
-
   standalone: true,
-
-  imports: [
-    TranslatePipe,CommonModule, RouterLink],
-
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, ProgressRingComponent],
   template: `
     <main class="mt-16 min-h-screen bg-slate-50">
-      <!-- HEADER -->
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
-        <div
-          class="mx-auto max-w-6xl px-4 py-2
-           sm:px-6 lg:px-8"
-        >
-          <div
-            class="flex flex-col gap-2
-             sm:flex-row sm:items-center
-             sm:justify-between"
+        <div class="mx-auto flex max-w-4xl items-center gap-2 px-4 py-2 sm:px-6">
+          <a
+            [routerLink]="[baseRoute, 'quizzes']"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/85 hover:bg-white/15 hover:text-white"
+            [attr.aria-label]="'Back to quizzes' | t"
+            [title]="'Back to quizzes' | t"
           >
-            <div>
-              <p class="text-sm font-medium text-white/70">{{ 'Test Center' | t }}</p>
-
-              <h1 class="text-xl font-bold text-white">{{ 'Test Results' | t }}</h1>
-            </div>
-
-            @if (course(); as selectedCourse) {
-              <p
-                class="text-sm font-medium
-                 text-white/80"
-              >
-                {{ selectedCourse.name }}
-              </p>
-            }
-          </div>
+            <mat-icon aria-hidden="true">arrow_back</mat-icon>
+          </a>
+          <nav class="flex min-w-0 flex-1 items-center gap-1 text-sm" [attr.aria-label]="'Breadcrumb' | t">
+            <a [routerLink]="[baseRoute, 'quizzes']" class="hidden shrink-0 text-white/80 hover:text-white hover:underline sm:inline">{{ 'Test Center' | t }}</a>
+            <mat-icon class="!hidden !h-4 !w-4 shrink-0 !text-base text-white/60 sm:!inline-block" aria-hidden="true">chevron_right</mat-icon>
+            <span class="truncate font-semibold">{{ 'Results' | t }}{{ course()?.name ? ' · ' + course()!.name : '' }}</span>
+          </nav>
         </div>
       </header>
 
-      <!-- CONTENT -->
-      <section
-        class="mx-auto max-w-6xl px-4 py-4
-               sm:px-6 lg:px-8"
-      >
-        @if (!result()) {
-          <!-- EMPTY STATE -->
-          <div
-            class="rounded-2xl border
-                   border-slate-200 bg-white
-                   p-8 text-center shadow-sm"
-          >
-            <h2 class="text-xl font-bold text-slate-900">{{ 'No completed test' | t }}</h2>
-
-            <p
-              class="mx-auto mt-2 max-w-md
-                     text-sm text-slate-600"
-            >
-              {{ 'There is no completed Test Center session available to display.' | t }}
-            </p>
-
-            <a
-              [routerLink]="[baseRoute, 'quizzes']"
-              class="mt-6 inline-flex rounded-lg
-                     bg-[#007979] px-5 py-2.5
-                     text-sm font-semibold text-white
-                     hover:bg-[#006666]"
-            >
-              {{ 'Back to Test Center' | t }}
-            </a>
-          </div>
-        } @else if (result(); as completedResult) {
-          <!-- SCORE SUMMARY -->
-          <div
-            class="grid gap-4
-                   lg:grid-cols-[1fr_2fr]"
-          >
-            <article
-              class="rounded-2xl border
-                     border-slate-200 bg-white
-                     p-6 shadow-sm"
-            >
-              <p
-                class="text-sm font-medium
-                       text-slate-500"
-              >
-                {{ 'Your Score' | t }}
-              </p>
-
-              <p
-                class="mt-3 text-6xl font-bold
-                       tracking-tight text-[#007979]"
-              >
-                {{ completedResult.scorePercentage }}%
-              </p>
-
-              <p
-                class="mt-3 text-lg font-semibold
-                       text-slate-900"
-              >
-                {{ performanceLabel() | t }}
-              </p>
-
-              <p class="mt-2 text-sm text-slate-600">
-                {{ '{0} of {1} questions correct.' | t: [completedResult.correctAnswers, completedResult.totalQuestions] }}
-              </p>
-            </article>
-
-            <!-- STATISTICS -->
-            <article
-              class="rounded-2xl border
-                     border-slate-200 bg-white
-                     p-6 shadow-sm"
-            >
-              <div
-                class="grid grid-cols-2 gap-4
-                       sm:grid-cols-4"
-              >
-                <div class="rounded-xl bg-emerald-50 p-4">
-                  <p
-                    class="text-xs font-medium
-                           uppercase text-emerald-700"
-                  >
-                    {{ 'Correct' | t }}
-                  </p>
-
-                  <p
-                    class="mt-1 text-2xl font-bold
-                           text-emerald-800"
-                  >
-                    {{ completedResult.correctAnswers }}
-                  </p>
-                </div>
-
-                <div class="rounded-xl bg-red-50 p-4">
-                  <p
-                    class="text-xs font-medium
-                           uppercase text-red-700"
-                  >
-                    {{ 'Incorrect' | t }}
-                  </p>
-
-                  <p
-                    class="mt-1 text-2xl font-bold
-                           text-red-800"
-                  >
-                    {{ completedResult.incorrectAnswers }}
-                  </p>
-                </div>
-
-                <div class="rounded-xl bg-amber-50 p-4">
-                  <p
-                    class="text-xs font-medium
-                           uppercase text-amber-700"
-                  >
-                    {{ 'Unanswered' | t }}
-                  </p>
-
-                  <p
-                    class="mt-1 text-2xl font-bold
-                           text-amber-800"
-                  >
-                    {{ completedResult.unansweredQuestions }}
-                  </p>
-                </div>
-
-                <div class="rounded-xl bg-slate-100 p-4">
-                  <p
-                    class="text-xs font-medium
-                           uppercase text-slate-600"
-                  >
-                    {{ 'Answered' | t }}
-                  </p>
-
-                  <p
-                    class="mt-1 text-2xl font-bold
-                           text-slate-900"
-                  >
-                    {{ completedResult.answeredQuestions }}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                class="mt-6 border-t
-                       border-slate-200 pt-5"
-              >
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    class="rounded-full bg-slate-100
-                           px-3 py-1 text-xs font-medium
-                           text-slate-700"
-                  >
-                    {{ completedResult.mode | titlecase }}
-                  </span>
-
-                  <span
-                    class="rounded-full bg-slate-100
-                           px-3 py-1 text-xs font-medium
-                           text-slate-700"
-                  >
-                    {{ completedResult.difficulty | titlecase }}
-                  </span>
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <!-- TOPIC PERFORMANCE -->
-          @if (completedResult.topicPerformance.length) {
-            <section
-              class="mt-6 rounded-2xl border
-                     border-slate-200 bg-white
-                     p-6 shadow-sm"
-            >
-              <h2
-                class="text-lg font-bold
-                       text-slate-900"
-              >
-                {{ 'Performance by Topic' | t }}
-              </h2>
-
-              <p class="mt-1 text-sm text-slate-600">
-                {{ 'See how you performed across the topics covered by this test.' | t }}
-              </p>
-
-              <div class="mt-6 space-y-5">
-                @for (topic of completedResult.topicPerformance; track topic.topicId) {
-                  <div>
-                    <div
-                      class="flex items-center
-                             justify-between gap-4"
-                    >
-                      <div>
-                        <p
-                          class="text-sm font-semibold
-                                 text-slate-900"
-                        >
-                          {{ topic.topicName }}
-                        </p>
-
-                        <p
-                          class="mt-1 text-xs
-                                 text-slate-500"
-                        >
-                          {{ '{0} correct of {1}' | t: [topic.correctAnswers, topic.totalQuestions] }}
-                        </p>
-                      </div>
-
-                      <span
-                        class="text-sm font-bold
-                               text-slate-900"
-                      >
-                        {{ topic.percentage }}%
-                      </span>
-                    </div>
-
-                    <div
-                      class="mt-2 h-2 overflow-hidden
-                             rounded-full bg-slate-100"
-                    >
-                      <div
-                        class="h-full rounded-full
-                               bg-[#007979]"
-                        [style.width.%]="topic.percentage"
-                      ></div>
-                    </div>
-                  </div>
-                }
-              </div>
-            </section>
-          }
-
-          <!-- REVIEW -->
-          <section
-            class="mt-6 rounded-2xl border
-                   border-slate-200 bg-white
-                   p-6 shadow-sm"
-          >
-            <button
-              type="button"
-              class="flex w-full items-center
-                     justify-between text-left"
-              (click)="showReview.set(!showReview())"
-            >
-              <div>
-                <h2
-                  class="text-lg font-bold
-                         text-slate-900"
-                >
-                  {{ 'Review Answers' | t }}
-                </h2>
-
-                <p
-                  class="mt-1 text-sm
-                         text-slate-600"
-                >
-                  {{ 'Review each question and see the correct answer.' | t }}
+      <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+        @if (result(); as outcome) {
+          <!-- Score -->
+          <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div class="flex flex-col items-center gap-4 px-6 py-8 text-center sm:flex-row sm:text-left" [ngClass]="toneBackground()">
+              <app-progress-ring [percent]="outcome.scorePercentage" [size]="112" [color]="toneColor()" />
+              <div class="min-w-0 flex-1">
+                <p class="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
+                  {{ (outcome.mode === 'exam' ? 'Exam mode' : 'Practice mode') | t }}
                 </p>
-              </div>
-
-              <span
-                class="text-sm font-semibold
-                       text-[#007979]"
-              >
-                {{ showReview() ? ('Hide' | t) : ('Show' | t) }}
-              </span>
-            </button>
-
-            @if (showReview()) {
-              <div
-                class="mt-6 space-y-5
-                       border-t border-slate-200
-                       pt-6"
-              >
-                @for (
-                  question of completedResult.questionResults;
-                  track question.questionId;
-                  let index = $index
-                ) {
-                  <article
-                    class="rounded-xl border p-5"
-                    [class.border-emerald-200]="question.isCorrect"
-                    [class.bg-emerald-50]="question.isCorrect"
-                    [class.border-red-200]="
-                      !question.isCorrect && question.selectedAnswerId !== null
-                    "
-                    [class.bg-red-50]="!question.isCorrect && question.selectedAnswerId !== null"
-                    [class.border-amber-200]="question.selectedAnswerId === null"
-                    [class.bg-amber-50]="question.selectedAnswerId === null"
-                  >
-                    <div
-                      class="flex items-start
-                             justify-between gap-4"
-                    >
-                      <div>
-                        <p
-                          class="text-xs font-semibold
-                                 uppercase tracking-wide
-                                 text-slate-500"
-                        >
-                          {{ 'Question {0}' | t: [index + 1] }}
-                        </p>
-
-                        <h3
-                          class="mt-2 text-sm font-semibold
-                                 text-slate-900"
-                        >
-                          {{ question.question }}
-                        </h3>
-                      </div>
-
-                      @if (question.isCorrect) {
-                        <span
-                          class="shrink-0 rounded-full
-                                 bg-emerald-100 px-3 py-1
-                                 text-xs font-bold
-                                 text-emerald-700"
-                        >
-                          {{ 'Correct' | t }}
-                        </span>
-                      } @else if (question.selectedAnswerId === null) {
-                        <span
-                          class="shrink-0 rounded-full
-                                 bg-amber-100 px-3 py-1
-                                 text-xs font-bold
-                                 text-amber-700"
-                        >
-                          {{ 'Unanswered' | t }}
-                        </span>
-                      } @else {
-                        <span
-                          class="shrink-0 rounded-full
-                                 bg-red-100 px-3 py-1
-                                 text-xs font-bold
-                                 text-red-700"
-                        >
-                          {{ 'Incorrect' | t }}
-                        </span>
-                      }
-                    </div>
-
-                    <div
-                      class="mt-4 grid gap-3
-                             sm:grid-cols-2"
-                    >
-                      <div
-                        class="rounded-lg
-                          bg-white/70 p-3"
-                      >
-                        <p
-                          class="text-xs font-medium
-                            text-slate-500"
-                        >
-                          {{ 'Your Answer' | t }}
-                        </p>
-
-                        <p
-                          class="mt-1 text-sm font-semibold
-                            text-slate-900"
-                        >
-                          {{ answerLabel(question.questionId, question.selectedAnswerId) }}
-                        </p>
-                      </div>
-
-                      <div
-                        class="rounded-lg
-                          bg-white/70 p-3"
-                      >
-                        <p
-                          class="text-xs font-medium
-                            text-slate-500"
-                        >
-                          {{ 'Correct Answer' | t }}
-                        </p>
-
-                        <p
-                          class="mt-1 text-sm font-semibold
-                            text-slate-900"
-                        >
-                          {{ answerLabel(question.questionId, question.correctAnswerId) }}
-                        </p>
-                      </div>
-                    </div>
-
-                    @if (question.explanation) {
-                      <div
-                        class="mt-4 rounded-lg
-                               bg-white/70 p-4"
-                      >
-                        <p
-                          class="text-xs font-semibold
-                                 uppercase tracking-wide
-                                 text-slate-500"
-                        >
-                          {{ 'Explanation' | t }}
-                        </p>
-
-                        <p
-                          class="mt-1 text-sm leading-6
-                                 text-slate-700"
-                        >
-                          {{ question.explanation }}
-                        </p>
-                      </div>
-                    }
-                  </article>
+                <h1 class="mt-1 text-2xl font-bold text-slate-900">{{ performanceLabel() | t }}</h1>
+                <p class="mt-1 text-slate-700">{{ '{0} of {1} correct' | t: [outcome.correctAnswers, outcome.totalQuestions] }}</p>
+                @if (outcome.unansweredQuestions) {
+                  <p class="mt-1 text-sm text-slate-500">{{ '{0} not answered' | t: [outcome.unansweredQuestions] }}</p>
                 }
               </div>
+            </div>
+
+            <!-- Next steps -->
+            <div class="flex flex-wrap gap-2 border-t border-slate-100 p-4">
+              @if (weakTopics().length) {
+                <button
+                  type="button"
+                  class="inline-flex h-11 items-center gap-1 rounded-lg bg-[#007979] px-5 font-semibold text-white hover:bg-[#006666] disabled:opacity-50"
+                  [disabled]="testStore.loading()"
+                  (click)="practiseWeakTopics()"
+                >
+                  <mat-icon aria-hidden="true">fitness_center</mat-icon>
+                  {{ (weakTopics().length === 1 ? 'Practise your weak topic' : 'Practise your {0} weak topics') | t: [weakTopics().length] }}
+                </button>
+              }
+              <button
+                type="button"
+                class="inline-flex h-11 items-center gap-1 rounded-lg px-5 font-semibold"
+                [ngClass]="weakTopics().length ? 'border border-slate-200 text-slate-700 hover:bg-slate-50' : 'bg-[#007979] text-white hover:bg-[#006666]'"
+                (click)="takeAnotherTest()"
+              >
+                <mat-icon aria-hidden="true">replay</mat-icon>{{ 'Practise again' | t }}
+              </button>
+              <a
+                [routerLink]="[baseRoute, 'quizzes']"
+                class="inline-flex h-11 items-center gap-1 rounded-lg border border-slate-200 px-5 font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                <mat-icon aria-hidden="true">apps</mat-icon>{{ 'Other quizzes' | t }}
+              </a>
+            </div>
+            @if (testStore.error(); as error) {
+              <p class="mx-4 mb-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-800" role="alert">{{ error | t }}</p>
             }
           </section>
 
-          <!-- ACTIONS -->
-          <div
-            class="mt-6 flex flex-col-reverse
-                   gap-3 sm:flex-row
-                   sm:justify-end"
-          >
-            <button
-              type="button"
-              class="rounded-lg border
-                     border-slate-300 bg-white
-                     px-5 py-2.5 text-sm
-                     font-semibold text-slate-700
-                     hover:bg-slate-50"
-              (click)="takeAnotherTest()"
-            >
-              {{ 'Take Another Test' | t }}
-            </button>
+          <!-- By topic -->
+          @if (outcome.topicPerformance.length) {
+            <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
+              <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">{{ 'By topic' | t }}</h2>
+              <ul class="mt-3 flex flex-col gap-3">
+                @for (topic of outcome.topicPerformance; track topic.topicId) {
+                  <li>
+                    <div class="flex justify-between gap-3 text-sm">
+                      <span class="text-slate-800">
+                        {{ topic.topicName }}
+                        @if (topic.percentage < weakLimit) {
+                          <span class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">{{ 'Practise' | t }}</span>
+                        }
+                      </span>
+                      <span class="shrink-0 tabular-nums text-slate-500">{{ topic.correctAnswers }}/{{ topic.totalQuestions }} · {{ topic.percentage }}%</span>
+                    </div>
+                    <div class="mt-1 h-2 overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        class="h-full rounded-full"
+                        [ngClass]="topic.percentage >= weakLimit ? 'bg-emerald-500' : 'bg-amber-500'"
+                        [style.width.%]="topic.percentage"
+                      ></div>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
 
-            @if (courseSlug()) {
-              <a
-                [routerLink]="[baseRoute, 'quiz-details', courseSlug()]"
-                class="rounded-lg bg-[#007979]
-                       px-5 py-2.5 text-center
-                       text-sm font-semibold
-                       text-white hover:bg-[#006666]"
-              >
-                {{ 'Back to quiz' | t }}
-              </a>
-            }
+          <!-- Review -->
+          <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">{{ 'Review your answers' | t }}</h2>
+              <div class="inline-flex rounded-lg bg-slate-100 p-0.5 text-sm" role="group">
+                @for (option of reviewFilters; track option.key) {
+                  <button
+                    type="button"
+                    class="rounded-md px-3 py-1"
+                    [ngClass]="reviewFilter() === option.key ? 'bg-white font-semibold text-slate-900 shadow-sm' : 'text-slate-600'"
+                    [attr.aria-pressed]="reviewFilter() === option.key"
+                    (click)="reviewFilter.set(option.key)"
+                  >
+                    {{ option.label | t }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <ol class="mt-4 flex flex-col gap-3">
+              @for (item of reviewItems(); track item.questionId) {
+                <li class="rounded-xl border p-4" [ngClass]="item.isCorrect ? 'border-emerald-200' : 'border-rose-200'">
+                  <div class="flex items-start gap-2">
+                    <mat-icon class="shrink-0" [ngClass]="item.isCorrect ? 'text-emerald-600' : 'text-rose-600'" aria-hidden="true">
+                      {{ item.isCorrect ? 'check_circle' : item.selectedAnswerId ? 'cancel' : 'remove_circle_outline' }}
+                    </mat-icon>
+                    <p class="font-medium text-slate-900">{{ item.question }}</p>
+                  </div>
+                  <dl class="mt-2 grid gap-1 pl-8 text-sm">
+                    <div class="flex flex-wrap gap-1">
+                      <dt class="text-slate-500">{{ 'Your answer:' | t }}</dt>
+                      <dd [ngClass]="item.isCorrect ? 'text-emerald-800' : 'text-rose-800'">{{ answerLabel(item.questionId, item.selectedAnswerId) | t }}</dd>
+                    </div>
+                    @if (!item.isCorrect) {
+                      <div class="flex flex-wrap gap-1">
+                        <dt class="text-slate-500">{{ 'Right answer:' | t }}</dt>
+                        <dd class="font-semibold text-emerald-800">{{ answerLabel(item.questionId, item.correctAnswerId) }}</dd>
+                      </div>
+                    }
+                    @if (item.explanation) {
+                      <dd class="mt-1 rounded-lg bg-slate-50 p-2 text-slate-700">{{ item.explanation }}</dd>
+                    }
+                  </dl>
+                </li>
+              } @empty {
+                <li class="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">{{ 'Nothing to review here. Well done!' | t }}</li>
+              }
+            </ol>
+          </section>
+        } @else {
+          <div class="mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center">
+            <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-400" aria-hidden="true">insights</mat-icon>
+            <h1 class="mt-2 text-lg font-semibold text-slate-900">{{ 'No results to show' | t }}</h1>
+            <p class="mt-1 text-sm text-slate-600">{{ 'Finish a quiz to see your score and review your answers.' | t }}</p>
+            <a
+              [routerLink]="[baseRoute, 'quizzes']"
+              class="mt-4 inline-flex h-10 items-center gap-1 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]"
+            >
+              {{ 'Browse quizzes' | t }}
+            </a>
           </div>
         }
-      </section>
+      </div>
     </main>
   `,
-
-  styles: [
-    `
-      :host {
-        display: block;
-      }
-    `,
-  ],
-
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TestResultsComponent {
   private readonly router = inject(Router);
-
   private readonly route = inject(ActivatedRoute);
 
   /** '/test-center' or the organization's learner route. */
@@ -516,33 +199,56 @@ export class TestResultsComponent {
   private readonly headerTitle = useLearningHeaderTitle(this.route);
 
   protected readonly testStore = inject(TestStore);
-
   protected readonly result = this.testStore.completedResult;
-
   protected readonly course = this.testStore.course;
+  protected readonly weakLimit = WEAK_TOPIC;
 
-  protected readonly showReview = signal(false);
+  protected readonly reviewFilters = [
+    { key: 'wrong' as const, label: 'To review' },
+    { key: 'all' as const, label: 'All' },
+  ];
+  protected readonly reviewFilter = signal<'wrong' | 'all'>('wrong');
+
+  protected readonly reviewItems = computed(() => {
+    const items = this.result()?.questionResults ?? [];
+    const withExplanation = items.map((item) => ({
+      ...item,
+      correctAnswerId: item.correctAnswerId,
+      explanation: item.explanation || this.testStore.questions().find((question) => question.id === item.questionId)?.explanation || '',
+    }));
+    return this.reviewFilter() === 'all' ? withExplanation : withExplanation.filter((item) => !item.isCorrect);
+  });
+
+  protected readonly weakTopics = computed(() =>
+    (this.result()?.topicPerformance ?? []).filter((topic) => topic.totalQuestions > 0 && topic.percentage < WEAK_TOPIC),
+  );
+
+  protected readonly toneColor = computed(() => {
+    const score = this.result()?.scorePercentage ?? 0;
+    return score >= 80 ? '#047857' : score >= 60 ? '#007979' : '#b45309';
+  });
+
+  protected readonly toneBackground = computed(() => {
+    const score = this.result()?.scorePercentage ?? 0;
+    return score >= 80 ? 'bg-emerald-50' : score >= 60 ? 'bg-teal-50/60' : 'bg-amber-50';
+  });
 
   protected performanceLabel(): string {
     const score = this.result()?.scorePercentage ?? 0;
 
     if (score >= 90) {
-      return 'Excellent performance';
+      return 'Excellent work!';
     }
-
     if (score >= 80) {
-      return 'Strong performance';
+      return 'Strong result';
     }
-
     if (score >= 70) {
-      return 'Good performance';
+      return 'Good result';
     }
-
     if (score >= 60) {
-      return 'Needs improvement';
+      return 'Getting there';
     }
-
-    return 'Keep practicing';
+    return 'Keep practising';
   }
 
   protected answerLabel(questionId: string, answerId: string | null): string {
@@ -551,31 +257,28 @@ export class TestResultsComponent {
     }
 
     const question = this.testStore.questions().find((item) => item.id === questionId);
-
-    if (!question) {
-      return answerId;
-    }
-
-    const option = question.options.find((option) => option.id === answerId);
-
-    return option?.text ?? answerId;
+    // Every answer type in words: options, several options, text, numbers, order.
+    return question ? answerText(question, answerId) || answerId : answerId;
   }
 
-  protected courseSlug(): string | null {
-    return this.course()?.slug ?? null;
-  }
-
+  /** Back to the quiz's details page to set up another round. */
   protected takeAnotherTest(): void {
     this.testStore.setQuestions([]);
 
-    const slug = this.courseSlug();
+    const slug = this.course()?.slug ?? null;
+    void this.router.navigate(slug ? [this.baseRoute, 'quiz-details', slug] : [this.baseRoute, 'quizzes']);
+  }
 
-    if (!slug) {
-      void this.router.navigate([this.baseRoute, 'quizzes']);
-
+  /** Start a new round straight away, on the topics scored under the target. */
+  protected async practiseWeakTopics(): Promise<void> {
+    const topicIds = this.weakTopics().map((topic) => topic.topicId);
+    if (!topicIds.length) {
       return;
     }
 
-    void this.router.navigate([this.baseRoute, 'quiz-details', slug]);
+    this.testStore.setTopics(topicIds);
+    if (await this.testStore.loadQuestions()) {
+      await this.router.navigate([this.baseRoute, 'practice']);
+    }
   }
 }

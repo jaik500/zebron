@@ -956,7 +956,7 @@ describe('organizations', () => {
           slug: 'program-one',
           description: 'Test program',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         });
       });
 
@@ -977,7 +977,7 @@ describe('organizations', () => {
           slug: 'program-one',
           description: 'Test program',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         });
       });
 
@@ -998,7 +998,7 @@ describe('organizations', () => {
           slug: 'program-two',
           description: 'Other organization program',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         });
       });
 
@@ -1021,7 +1021,7 @@ describe('organizations', () => {
           slug: 'program-one',
           description: 'Test program',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         }),
       );
     });
@@ -1040,7 +1040,7 @@ describe('organizations', () => {
           slug: 'program-one',
           description: 'Test program',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         }),
       );
     });
@@ -1058,7 +1058,7 @@ describe('organizations', () => {
           slug: 'unauthorized-program',
           description: 'Should not be allowed',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         }),
       );
     });
@@ -1076,7 +1076,7 @@ describe('organizations', () => {
           slug: 'unauthorized-program',
           description: 'Should not be allowed',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         }),
       );
     });
@@ -1093,7 +1093,7 @@ describe('organizations', () => {
           slug: 'original-program',
           description: 'Original description',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         });
       });
 
@@ -1106,7 +1106,7 @@ describe('organizations', () => {
           slug: 'updated-program',
           description: 'Updated description',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         }),
       );
     });
@@ -1123,7 +1123,7 @@ describe('organizations', () => {
           slug: 'program-one',
           description: 'Test program',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         });
       });
 
@@ -1136,7 +1136,7 @@ describe('organizations', () => {
           slug: 'moved-program',
           description: 'Should not be allowed',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         }),
       );
     });
@@ -1152,7 +1152,7 @@ describe('organizations', () => {
           slug: 'program-one',
           description: 'Test program',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         });
       });
 
@@ -1165,7 +1165,7 @@ describe('organizations', () => {
           slug: 'unauthorized-update',
           description: 'Should not be allowed',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         }),
       );
     });
@@ -1181,7 +1181,7 @@ describe('organizations', () => {
           slug: 'program-one',
           description: 'Test program',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         });
       });
 
@@ -1517,7 +1517,7 @@ it('denies client creation of organization invitations', async () => {
 });
     });
 
-    describe('testCourses', () => {
+    describe('quizzes', () => {
   it('allows an active organization owner to create a course in their own program', async () => {
     const userId = 'owner-1';
     const organizationId = 'org-1';
@@ -1542,7 +1542,7 @@ it('denies client creation of organization invitations', async () => {
           slug: 'test-program',
           description: 'Test program',
           active: true,
-          courseCount: 0,
+          quizCount: 0,
         },
       );
     });
@@ -1550,7 +1550,7 @@ it('denies client creation of organization invitations', async () => {
     const db = testEnv.authenticatedContext(userId).firestore();
 
     await assertSucceeds(
-      setDoc(doc(db, 'testCourses/course-1'), {
+      setDoc(doc(db, 'quizzes/course-1'), {
         organizationId,
         scope: 'organization',
         accessType: 'organization-members',

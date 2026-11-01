@@ -83,6 +83,7 @@ import { CourseStore } from '../course.store';
               <app-course-card
                 [course]="course"
                 [progress]="store.progressById().get(progressOf(course)) ?? null"
+                [exam]="store.exams()[progressOf(course)]"
                 [link]="context.basePath + '/' + course.id"
               />
             }

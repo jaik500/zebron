@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  afterNextRender,
   computed,
   inject,
   OnDestroy,
@@ -13,7 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { jsPDF } from 'jspdf';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import {
   ContactMessage,
@@ -30,6 +31,24 @@ import { MatButtonModule } from '@angular/material/button';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { MailComposerComponent, MailReaderComponent } from './shared/mail-popups';
+import {
+  PLATFORM_GENERAL_MAILBOX,
+  PLATFORM_MAILBOX_NAMES,
+  PlatformMailbox,
+  PlatformMailboxService,
+  SUGGESTED_PLATFORM_MAILBOXES,
+  platformMailboxAddress,
+} from '../../../../core/services/platform-mailbox.service';
+
+/** The create / edit form in "Manage mailboxes". */
+interface PlatformMailboxForm {
+  isNew: boolean;
+  id: string;
+  name: string;
+  description: string;
+  forwardTo: string;
+  active: boolean;
+}
 type MailboxFilter = 'inbox' | 'all' | 'unread' | 'read' | 'archived';
 
 type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
@@ -51,7 +70,41 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
         <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 sm:flex-nowrap sm:px-6 lg:px-8">
           <div class="min-w-0 flex-1 sm:flex-none">
             <h1 class="truncate text-lg font-semibold">{{ 'Mailbox' | t }}</h1>
-            <p class="hidden truncate text-xs text-white/80 lg:block">{{ 'Messages sent through the Zebron contact form' | t }}</p>
+            <button
+              type="button"
+              [matMenuTriggerFor]="mailboxSwitcher"
+              class="mt-0.5 inline-flex max-w-full items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-xs font-semibold text-white transition hover:bg-white/25"
+              [attr.aria-label]="'Switch mailbox' | t"
+            >
+              <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">{{ currentMailboxId() === generalMailboxId ? 'inbox' : 'groups' }}</mat-icon>
+              <span class="truncate">{{ (currentPlatformMailbox()?.name ?? 'General') | t }}</span>
+              <span class="hidden font-normal text-white/80 md:inline">· {{ mailboxAddress(currentMailboxId()) }}</span>
+              @if (otherMailboxesUnread() > 0) {
+                <span class="rounded-full bg-white px-1.5 text-[10px] font-bold leading-4 text-[#006666]" [title]="'Unread in your other mailboxes' | t">{{ otherMailboxesUnread() }}</span>
+              }
+              <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">expand_more</mat-icon>
+            </button>
+
+            <mat-menu #mailboxSwitcher="matMenu">
+              <p class="px-4 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ 'Mailboxes' | t }}</p>
+              @for (box of openMailboxes(); track box.id) {
+                <button mat-menu-item type="button" (click)="switchMailbox(box.id)" [attr.aria-current]="box.id === currentMailboxId() ? 'true' : null">
+                  <mat-icon>{{ box.id === generalMailboxId ? 'inbox' : 'groups' }}</mat-icon>
+                  <span>{{ box.name | t }}</span>
+                  @if (unreadByMailbox()[box.id]) {
+                    <span class="ml-2 rounded-full bg-[#007979] px-1.5 text-[11px] font-semibold leading-[18px] text-white">{{ unreadByMailbox()[box.id] }}</span>
+                  }
+                  @if (box.id === currentMailboxId()) {
+                    <mat-icon class="!ml-2 !mr-0">check</mat-icon>
+                  }
+                </button>
+              }
+              <mat-divider></mat-divider>
+              <button mat-menu-item type="button" (click)="openManage()">
+                <mat-icon>settings</mat-icon>
+                <span>{{ 'Manage mailboxes' | t }}</span>
+              </button>
+            </mat-menu>
           </div>
 
           <!-- Search (full width on phones, on its own line) -->
@@ -133,6 +186,18 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
           </button>
 
           <mat-menu #mailboxMenu="matMenu" xPosition="before">
+            <button mat-menu-item type="button" [matMenuTriggerFor]="viewMenu">
+              <mat-icon>{{ layout() === 'split' ? 'vertical_split' : 'view_list' }}</mat-icon>
+              <span class="flex flex-col leading-tight">
+                <span>{{ 'View' | t }}</span>
+                <span class="text-xs text-slate-500">{{ (layout() === 'split' ? 'Reading pane' : 'List with bulk actions') | t }}</span>
+              </span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item type="button" (click)="openManage()">
+              <mat-icon>groups</mat-icon>
+              <span>{{ 'Manage mailboxes' | t }}</span>
+            </button>
             <button mat-menu-item type="button" (click)="generateContactMessagesPdf()" [disabled]="filteredMessages().length === 0">
               <mat-icon>picture_as_pdf</mat-icon>
               <span>{{ 'Export to PDF' | t }}</span>
@@ -145,6 +210,24 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
             <button mat-menu-item type="button" (click)="logout()">
               <mat-icon>logout</mat-icon>
               <span>{{ 'Sign out' | t }}</span>
+            </button>
+          </mat-menu>
+
+          <!-- Submenu: view (remembered in this browser) -->
+          <mat-menu #viewMenu="matMenu">
+            <button mat-menu-item type="button" (click)="setLayout('split')" [attr.aria-checked]="layout() === 'split'" role="menuitemradio">
+              <mat-icon>vertical_split</mat-icon>
+              <span>{{ 'Reading pane' | t }}</span>
+              @if (layout() === 'split') {
+                <mat-icon class="!ml-3 !mr-0">check</mat-icon>
+              }
+            </button>
+            <button mat-menu-item type="button" (click)="setLayout('list')" [attr.aria-checked]="layout() === 'list'" role="menuitemradio">
+              <mat-icon>view_list</mat-icon>
+              <span>{{ 'List with bulk actions' | t }}</span>
+              @if (layout() === 'list') {
+                <mat-icon class="!ml-3 !mr-0">check</mat-icon>
+              }
             </button>
           </mat-menu>
         </div>
@@ -161,6 +244,210 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
             </div>
           }
 
+          @if (layout() === 'split') {
+            <!-- =====================================================
+                 READING PANE VIEW
+                 ===================================================== -->
+            <nav class="-mx-1 mb-3 flex gap-1 overflow-x-auto px-1" [attr.aria-label]="'Mailbox folders' | t">
+              @for (folder of folders(); track folder.key) {
+                <button
+                  type="button"
+                  (click)="setFilter(folder.key)"
+                  [attr.aria-pressed]="filter() === folder.key"
+                  [class]="filter() === folder.key
+                    ? 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-[#007979]/10 px-3 text-sm font-semibold text-[#006666]'
+                    : 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900'"
+                >
+                  <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">{{ folder.icon }}</mat-icon>
+                  {{ folder.label | t }}
+                  @if (folder.count > 0) {
+                    <span [class]="folder.key === 'unread' ? 'rounded-full bg-[#007979] px-1.5 text-[11px] font-semibold leading-[18px] text-white' : 'rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold leading-[18px] text-slate-600'">{{ folder.count }}</span>
+                  }
+                </button>
+              }
+            </nav>
+
+            <div class="grid gap-4 lg:h-[calc(100vh-12.5rem)] lg:min-h-[30rem] lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+              <!-- LIST -->
+              <section class="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" [ngClass]="{ 'max-lg:hidden': paneMessage() }">
+                <!-- Pane header: select all, folder, counts, actions for the selected messages -->
+                <div class="flex shrink-0 items-center gap-2 border-b border-slate-200 bg-slate-50/80 py-1.5 pl-2 pr-1">
+                  <label class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-slate-200/60" [title]="'Select all' | t">
+                    <input
+                      type="checkbox"
+                      class="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#007979]"
+                      [checked]="allVisibleChecked()"
+                      [indeterminate]="someVisibleChecked()"
+                      [disabled]="visibleMessages().length === 0"
+                      (change)="toggleAllVisible()"
+                      [attr.aria-label]="'Select all messages' | t"
+                    />
+                  </label>
+                  <h2 class="min-w-0 truncate text-sm font-semibold text-slate-900">{{ (searchQuery() ? 'Search results' : currentFolderLabel()) | t }}</h2>
+                  <span class="ml-auto shrink-0 text-xs text-slate-500" aria-live="polite">
+                    @if (checkedMessages().length > 0) {
+                      <span class="font-semibold text-slate-900">{{ '{0} selected' | t: [checkedMessages().length] }}</span>
+                    } @else {
+                      {{ (filteredMessages().length === 1 ? '{0} email' : '{0} emails') | t: [filteredMessages().length] }}
+                    }
+                  </span>
+                  <button
+                    type="button"
+                    [matMenuTriggerFor]="paneMenu"
+                    class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-slate-200/60 hover:text-slate-900"
+                    [attr.aria-label]="'Actions for selected emails' | t"
+                    [title]="'More' | t"
+                  >
+                    <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">more_vert</mat-icon>
+                  </button>
+                  <mat-menu #paneMenu="matMenu" xPosition="before">
+                    <button mat-menu-item type="button" (click)="allVisibleChecked() ? clearSelection() : toggleAllVisible()" [disabled]="visibleMessages().length === 0">
+                      <mat-icon>{{ allVisibleChecked() ? 'check_box_outline_blank' : 'select_all' }}</mat-icon>
+                      <span>{{ (allVisibleChecked() ? 'Clear selection' : 'Select all') | t }}</span>
+                    </button>
+                    @if (checkedMessages().length === 0) {
+                      <p class="max-w-56 px-4 pb-2 pt-1 text-xs text-slate-500">{{ 'Tick emails to archive or delete several at once.' | t }}</p>
+                    }
+                    <mat-divider></mat-divider>
+                    <button mat-menu-item type="button" (click)="bulkMarkRead()" [disabled]="checkedMessages().length === 0 || bulkBusy()">
+                      <mat-icon>drafts</mat-icon>
+                      <span>{{ 'Mark read' | t }}</span>
+                    </button>
+                    @if (checkedAllArchived()) {
+                      <button mat-menu-item type="button" (click)="bulkMoveToInbox()" [disabled]="checkedMessages().length === 0 || bulkBusy()">
+                        <mat-icon>unarchive</mat-icon>
+                        <span>{{ 'Move to inbox' | t }}</span>
+                      </button>
+                    } @else {
+                      <button mat-menu-item type="button" (click)="bulkArchive()" [disabled]="checkedMessages().length === 0 || bulkBusy()">
+                        <mat-icon>archive</mat-icon>
+                        <span>{{ 'Archive' | t }}</span>
+                      </button>
+                    }
+                    <mat-divider></mat-divider>
+                    <button mat-menu-item type="button" class="!text-red-600" (click)="bulkDelete()" [disabled]="checkedMessages().length === 0 || bulkBusy()">
+                      <mat-icon class="!text-red-600">delete</mat-icon>
+                      <span>{{ 'Delete' | t }}</span>
+                    </button>
+                  </mat-menu>
+                </div>
+
+                @if (loading() && messages().length === 0) {
+                  <div class="divide-y divide-slate-100" aria-busy="true">
+                    @for (row of [1, 2, 3, 4, 5]; track row) {
+                      <div class="space-y-2 px-4 py-3">
+                        <div class="h-3 w-32 animate-pulse rounded bg-slate-200"></div>
+                        <div class="h-3 w-3/4 animate-pulse rounded bg-slate-100"></div>
+                      </div>
+                    }
+                  </div>
+                } @else if (filteredMessages().length === 0) {
+                  <div class="px-6 py-12 text-center">
+                    <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-300">{{ searchQuery() ? 'search_off' : 'inbox' }}</mat-icon>
+                    <p class="mt-2 text-sm font-semibold text-slate-900">{{ (searchQuery() ? 'No messages match your search' : 'No messages here') | t }}</p>
+                  </div>
+                } @else {
+                  <ul class="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">
+                    @for (message of visibleMessages(); track message.id) {
+                      <li
+                        class="flex items-start transition hover:bg-slate-50"
+                        [ngClass]="{ '!bg-[#007979]/10 shadow-[inset_3px_0_0_#007979]': paneMessage()?.id === message.id || isChecked(message), 'bg-teal-50/40': message.status === 'unread' && paneMessage()?.id !== message.id && !isChecked(message) }"
+                      >
+                        <label class="flex h-11 w-10 shrink-0 cursor-pointer items-center justify-center pl-2">
+                          <input
+                            type="checkbox"
+                            class="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#007979]"
+                            [checked]="isChecked(message)"
+                            (change)="toggleChecked(message)"
+                            [attr.aria-label]="'Select message from {0}' | t: [message.name || message.email]"
+                          />
+                        </label>
+                        <button type="button" class="block min-w-0 flex-1 py-3 pl-1 pr-4 text-left" (click)="openMessage(message)" [attr.aria-current]="paneMessage()?.id === message.id ? 'true' : null">
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="flex min-w-0 items-center gap-1.5">
+                              @if (message.status === 'unread') {
+                                <span class="h-2 w-2 shrink-0 rounded-full bg-[#007979]" [attr.aria-label]="'Unread' | t"></span>
+                              }
+                              <span [class]="message.status === 'unread' ? 'truncate text-sm font-semibold text-slate-900' : 'truncate text-sm font-medium text-slate-700'">{{ message.name || message.email }}</span>
+                            </span>
+                            <span class="shrink-0 text-xs text-slate-500">{{ shortDate(message) }}</span>
+                          </div>
+                          <p [class]="message.status === 'unread' ? 'mt-0.5 truncate text-sm font-semibold text-slate-800' : 'mt-0.5 truncate text-sm text-slate-600'">{{ message.subject || ('(No subject)' | t) }}</p>
+                          <p class="mt-0.5 truncate text-xs text-slate-500">{{ message.message }}</p>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                  @if (visibleMessages().length < filteredMessages().length) {
+                    <button type="button" (click)="showMore()" class="shrink-0 border-t border-slate-200 px-4 py-2 text-xs font-semibold text-[#007979] hover:bg-[#007979]/10">
+                      {{ 'Show more' | t }}
+                    </button>
+                  }
+                }
+              </section>
+
+              <!-- MESSAGE -->
+              <section class="flex min-h-[20rem] min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm lg:min-h-0" [ngClass]="{ 'max-lg:hidden': !paneMessage() }">
+                @if (paneMessage(); as msg) {
+                  <div class="flex shrink-0 flex-wrap items-center gap-1 border-b border-slate-100 px-2 py-1.5 sm:px-3">
+                    <button type="button" class="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-sm font-medium text-slate-600 hover:bg-slate-100 lg:hidden" (click)="closeMessage()">
+                      <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">arrow_back</mat-icon>
+                      {{ 'Back' | t }}
+                    </button>
+                    <div class="ml-auto flex flex-wrap items-center gap-1">
+                      <button type="button" (click)="replyToMessage(msg)" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white shadow-sm hover:bg-[#006666]">
+                        <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">reply</mat-icon>
+                        {{ 'Reply' | t }}
+                      </button>
+                      <button type="button" (click)="forwardMessage(msg)" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100" [attr.aria-label]="'Forward' | t" [title]="'Forward' | t">
+                        <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">forward</mat-icon>
+                      </button>
+                      @if (msg.status === 'archived') {
+                        <button type="button" (click)="unarchiveMessage(msg)" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100" [attr.aria-label]="'Move to inbox' | t" [title]="'Move to inbox' | t">
+                          <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">unarchive</mat-icon>
+                        </button>
+                      } @else {
+                        <button type="button" (click)="archiveMessage(msg)" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100" [attr.aria-label]="'Archive' | t" [title]="'Archive' | t">
+                          <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">archive</mat-icon>
+                        </button>
+                      }
+                      <button type="button" (click)="deleteMessage(msg)" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600" [attr.aria-label]="'Delete' | t" [title]="'Delete' | t">
+                        <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+
+                  <article class="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+                    <h2 class="break-words text-xl font-semibold leading-snug text-slate-900">{{ msg.subject || ('(No subject)' | t) }}</h2>
+                    <div class="mt-4 flex items-start gap-3">
+                      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#007979] text-base font-semibold text-white" aria-hidden="true">
+                        {{ (msg.name || msg.email || 'Z').charAt(0).toUpperCase() }}
+                      </span>
+                      <div class="min-w-0 flex-1 text-sm">
+                        <div class="flex flex-wrap items-baseline justify-between gap-x-4">
+                          <p class="min-w-0 break-all text-slate-900">
+                            <span class="font-semibold">{{ msg.name || msg.email }}</span>
+                            @if (msg.name && msg.email && msg.name !== msg.email) {
+                              <span class="text-slate-500"> &lt;{{ msg.email }}&gt;</span>
+                            }
+                          </p>
+                          <p class="shrink-0 text-xs text-slate-500">{{ formatDate(msg) }}</p>
+                        </div>
+                        <p class="mt-0.5 break-all text-xs text-slate-500">{{ 'to {0}' | t: [messageTo(msg)] }}</p>
+                      </div>
+                    </div>
+                    <!-- What was written: never translated. -->
+                    <div class="mt-5 whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-800">{{ msg.message }}</div>
+                  </article>
+                } @else {
+                  <div class="flex h-full min-h-60 flex-col items-center justify-center p-8 text-center">
+                    <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-300">mail</mat-icon>
+                    <p class="mt-2 text-sm text-slate-500">{{ 'Select a message to read it.' | t }}</p>
+                  </div>
+                }
+              </section>
+            </div>
+          } @else {
           <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <!-- Toolbar: folders + search -->
             <div class="flex min-h-11 items-center gap-1 border-b border-slate-200 px-1 py-1.5 sm:gap-2 sm:px-2">
@@ -373,6 +660,7 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
               </div>
             }
           </section>
+          }
         </div>
       </main>
     </div>
@@ -429,12 +717,12 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
          MESSAGE DETAIL MODAL
          ========================================================= -->
 
-    @if (selectedMessage(); as msg) {
+    @if (layout() === 'list' && selectedMessage(); as msg) {
       <app-mail-reader
         [subject]="msg.subject || ''"
         [fromName]="msg.name || ''"
         [fromEmail]="msg.email || ''"
-        to="Zebron"
+        [to]="messageTo(msg)"
         [date]="formatDate(msg)"
         [body]="msg.message || ''"
         [badge]="msg.status === 'unread' ? 'New' : msg.status === 'archived' ? 'Archived' : 'Read'"
@@ -468,6 +756,158 @@ type ComposeMode = 'none' | 'reply' | 'forward' | 'unread';
         (send)="sendComposedMessage()"
         (cancelled)="closeComposer()"
       />
+    }
+
+    <!-- =========================================================
+         MANAGE MAILBOXES
+         ========================================================= -->
+    @if (managing()) {
+      <div
+        class="fixed inset-0 z-[60] flex items-stretch justify-center bg-slate-900/60 backdrop-blur-[2px] sm:items-center sm:p-6"
+        (click)="closeManage()"
+      >
+        <section
+          class="flex h-[100dvh] w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[88vh] sm:rounded-2xl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="platform-mailboxes-title"
+          (click)="$event.stopPropagation()"
+        >
+          <header class="flex shrink-0 items-center justify-between gap-3 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-4 py-3 sm:px-6">
+            <div class="min-w-0">
+              <h2 id="platform-mailboxes-title" class="truncate text-lg font-semibold text-white">
+                {{ (mailboxForm() ? (mailboxForm()!.isNew ? 'New mailbox' : 'Edit mailbox') : 'Zebron mailboxes') | t }}
+              </h2>
+              <p class="truncate text-xs text-white/80">{{ 'Each address on zebron.org gets its own inbox. Anything else goes to General.' | t }}</p>
+            </div>
+            <button
+              type="button"
+              (click)="closeManage()"
+              [disabled]="savingMailbox()"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white disabled:opacity-50"
+              [attr.aria-label]="'Close' | t"
+              [title]="'Close' | t"
+            >
+              <mat-icon class="!m-0 !h-5 !w-5 !text-[20px]">close</mat-icon>
+            </button>
+          </header>
+
+          <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+            @if (manageError()) {
+              <div class="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ manageError() | t }}</div>
+            }
+
+            @if (mailboxForm(); as form) {
+              @if (form.isNew) {
+                <mat-form-field appearance="outline" class="zb-field">
+                  <mat-label>{{ 'Address' | t }}</mat-label>
+                  <mat-select [value]="form.id" (selectionChange)="patchForm({ id: $event.value })">
+                    @for (name of availableNames(); track name) {
+                      <mat-option [value]="name">{{ name }}&#64;zebron.org</mat-option>
+                    }
+                  </mat-select>
+                  <mat-hint>{{ 'Only names kept for Zebron can be used, so they never clash with an organization.' | t }}</mat-hint>
+                </mat-form-field>
+              } @else {
+                <p class="mb-3 text-sm text-slate-600">{{ 'Address' | t }}: <strong class="text-slate-900">{{ mailboxAddress(form.id) }}</strong></p>
+              }
+
+              <mat-form-field appearance="outline" class="zb-field mt-2">
+                <mat-label>{{ 'Mailbox name' | t }}</mat-label>
+                <input matInput maxlength="60" [value]="form.name" (input)="patchForm({ name: $any($event.target).value })" [disabled]="savingMailbox()" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>{{ 'Description (optional)' | t }}</mat-label>
+                <input matInput maxlength="200" [value]="form.description" (input)="patchForm({ description: $any($event.target).value })" [disabled]="savingMailbox()" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>{{ 'Forward a copy to (optional)' | t }}</mat-label>
+                <input matInput type="email" maxlength="254" [value]="form.forwardTo" (input)="patchForm({ forwardTo: $any($event.target).value })" [disabled]="savingMailbox()" placeholder="name@example.com" />
+                <mat-hint>{{ 'Leave empty for no copies. Each copy counts as one more email against the free plan.' | t }}</mat-hint>
+              </mat-form-field>
+
+              @if (form.id !== generalMailboxId) {
+                <label class="mt-3 flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3">
+                  <input type="checkbox" class="mt-0.5 h-4 w-4 cursor-pointer accent-[#007979]" [checked]="form.active" (change)="patchForm({ active: !form.active })" [disabled]="savingMailbox()" />
+                  <span class="text-sm">
+                    <span class="font-semibold text-slate-900">{{ 'Mailbox is on' | t }}</span>
+                    <span class="block text-slate-500">{{ 'When off, email sent to it goes to General.' | t }}</span>
+                  </span>
+                </label>
+              }
+            } @else {
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p class="text-sm text-slate-600">{{ (platformMailboxes().length === 1 ? '{0} mailbox' : '{0} mailboxes') | t: [platformMailboxes().length] }}</p>
+                <div class="flex flex-wrap gap-2">
+                  @if (missingSuggestions().length > 0) {
+                    <button type="button" (click)="addSuggested()" [disabled]="savingMailbox()" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                      <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">playlist_add</mat-icon>
+                      {{ 'Add {0}' | t: [missingSuggestionNames()] }}
+                    </button>
+                  }
+                  <button type="button" (click)="newMailbox()" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white shadow-sm hover:bg-[#006666]">
+                    <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">add</mat-icon>
+                    {{ 'New mailbox' | t }}
+                  </button>
+                </div>
+              </div>
+
+              <ul class="divide-y divide-slate-100 rounded-lg border border-slate-200">
+                @for (box of platformMailboxes(); track box.id) {
+                  <li class="flex items-center gap-3 px-3 py-3">
+                    <span [class]="box.active ? 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-[#007979]' : 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400'">
+                      <mat-icon>{{ box.id === generalMailboxId ? 'inbox' : 'groups' }}</mat-icon>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <p class="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <span class="truncate">{{ box.name | t }}</span>
+                        @if (!box.active) {
+                          <span class="shrink-0 rounded bg-slate-100 px-1.5 text-[11px] font-medium text-slate-500">{{ 'Off' | t }}</span>
+                        }
+                      </p>
+                      <p class="truncate text-xs text-slate-500">
+                        {{ mailboxAddress(box.id) }}
+                        @if (box.id === generalMailboxId) {
+                          · {{ 'contact form and everything else' | t }}
+                        }
+                        · {{ box.forwardTo ? ('copies to {0}' | t: [box.forwardTo]) : ('no copies' | t) }}
+                      </p>
+                    </div>
+                    <button type="button" (click)="editMailbox(box)" class="inline-flex h-8 items-center gap-1 rounded-lg px-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100">
+                      <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">edit</mat-icon>
+                      {{ 'Edit' | t }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+
+          <div class="flex shrink-0 items-center gap-2 border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
+            @if (mailboxForm(); as form) {
+              @if (!form.isNew && form.id !== generalMailboxId) {
+                <button type="button" (click)="deleteMailbox()" [disabled]="savingMailbox()" class="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50">
+                  <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">delete</mat-icon>
+                  {{ 'Delete mailbox' | t }}
+                </button>
+              }
+              <button type="button" (click)="mailboxForm.set(null); manageError.set('')" [disabled]="savingMailbox()" class="ml-auto h-9 rounded-lg px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50">
+                {{ 'Cancel' | t }}
+              </button>
+              <button type="button" (click)="saveMailbox()" [disabled]="savingMailbox()" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#006666] disabled:opacity-50">
+                <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]" [class.animate-spin]="savingMailbox()">{{ savingMailbox() ? 'refresh' : 'save' }}</mat-icon>
+                {{ (savingMailbox() ? 'Saving...' : 'Save') | t }}
+              </button>
+            } @else {
+              <button type="button" (click)="closeManage()" class="ml-auto h-9 rounded-lg px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100">
+                {{ 'Close' | t }}
+              </button>
+            }
+          </div>
+        </section>
+      </div>
     }
 
     <!-- =========================================================
@@ -611,21 +1051,21 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
    * Number of new messages.
    */
   readonly newCount = computed(
-    () => this.messages().filter((message) => message.status === 'unread').length,
+    () => this.mailboxMessages().filter((message) => message.status === 'unread').length,
   );
 
   /**
    * Number of read messages.
    */
   readonly readCount = computed(
-    () => this.messages().filter((message) => message.status === 'read').length,
+    () => this.mailboxMessages().filter((message) => message.status === 'read').length,
   );
 
   /**
    * Number of archived messages.
    */
   readonly archivedCount = computed(
-    () => this.messages().filter((message) => message.status === 'archived').length,
+    () => this.mailboxMessages().filter((message) => message.status === 'archived').length,
   );
 
   /**
@@ -633,11 +1073,11 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
    */
   /** Folder tabs with their counts. */
   readonly folders = computed(() => [
-    { key: 'inbox' as MailboxFilter, label: 'Inbox', icon: 'inbox', count: this.messages().length - this.archivedCount() },
+    { key: 'inbox' as MailboxFilter, label: 'Inbox', icon: 'inbox', count: this.mailboxMessages().length - this.archivedCount() },
     { key: 'unread' as MailboxFilter, label: 'New', icon: 'mark_email_unread', count: this.newCount() },
     { key: 'read' as MailboxFilter, label: 'Read', icon: 'drafts', count: this.readCount() },
     { key: 'archived' as MailboxFilter, label: 'Archived', icon: 'archive', count: this.archivedCount() },
-    { key: 'all' as MailboxFilter, label: 'All mail', icon: 'all_inbox', count: this.messages().length },
+    { key: 'all' as MailboxFilter, label: 'All mail', icon: 'all_inbox', count: this.mailboxMessages().length },
   ]);
 
   /** Rows shown; "Show more" adds another page. */
@@ -650,7 +1090,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
 
     const search = this.searchQuery().trim().toLowerCase();
 
-    return this.messages().filter((message) => {
+    return this.mailboxMessages().filter((message) => {
       /**
        * Firestore uses "unread" for newly received
        * messages. The mailbox therefore uses "unread"
@@ -679,8 +1119,291 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
 
   readonly visibleMessages = computed(() => this.filteredMessages().slice(0, this.visibleCount()));
 
+  // ===========================================================
+  // View: list (bulk actions, reader window) or reading pane
+  // ===========================================================
+
+  /** The server renders the list; the browser then applies the saved choice. */
+  readonly layout = signal<'split' | 'list'>('list');
+
+  private readonly layoutInit = afterNextRender(() => {
+    try {
+      if (localStorage.getItem('zebron.platformMailbox.layout') === 'split') {
+        this.layout.set('split');
+      }
+    } catch {
+      // Storage blocked: keep the list.
+    }
+  });
+
+  setLayout(layout: 'split' | 'list'): void {
+    this.layout.set(layout);
+    this.closeMessage();
+    this.clearSelection();
+    try {
+      localStorage.setItem('zebron.platformMailbox.layout', layout);
+    } catch {
+      // Storage blocked: the choice lasts for this visit.
+    }
+  }
+
+  /** The open message, kept up to date with the list (status changes). */
+  readonly paneMessage = computed(() => {
+    const selected = this.selectedMessage();
+    return selected ? this.messages().find((message) => message.id === selected.id) ?? selected : null;
+  });
+
+  readonly currentFolderLabel = computed(
+    () => this.folders().find((folder) => folder.key === this.filter())?.label ?? 'Inbox',
+  );
+
   ngOnInit(): void {
     this.contactStore.startMessageListener();
+    void this.loadPlatformMailboxes();
+  }
+
+  // ===========================================================
+  // Zebron mailboxes (General, Support, Billing, Partnerships...)
+  // ===========================================================
+
+  private readonly platformMailboxService = inject(PlatformMailboxService);
+  private readonly route = inject(ActivatedRoute);
+
+  readonly generalMailboxId = PLATFORM_GENERAL_MAILBOX;
+
+  readonly platformMailboxes = signal<PlatformMailbox[]>([]);
+
+  /** The open mailbox; ?box=support in the link. */
+  readonly currentMailboxId = signal<string>(PLATFORM_GENERAL_MAILBOX);
+
+  /** Mailboxes that are on (General always is). */
+  readonly openMailboxes = computed(() => {
+    const boxes = this.platformMailboxes().filter((box) => box.active);
+    return boxes.length ? boxes : [{ id: PLATFORM_GENERAL_MAILBOX, name: 'General' } as PlatformMailbox];
+  });
+
+  readonly currentPlatformMailbox = computed(
+    () => this.openMailboxes().find((box) => box.id === this.currentMailboxId()) ?? null,
+  );
+
+  /** Mailbox of a message: older messages and turned-off mailboxes show in General. */
+  mailboxOf(message: ContactMessage): string {
+    const id = message.mailboxId || PLATFORM_GENERAL_MAILBOX;
+    return this.openMailboxes().some((box) => box.id === id) ? id : PLATFORM_GENERAL_MAILBOX;
+  }
+
+  /** Messages in the open mailbox. */
+  readonly mailboxMessages = computed(() =>
+    this.messages().filter((message) => this.mailboxOf(message) === this.currentMailboxId()),
+  );
+
+  readonly unreadByMailbox = computed(() => {
+    const counts: Record<string, number> = {};
+    for (const message of this.messages()) {
+      if (message.status === 'unread') {
+        const id = this.mailboxOf(message);
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+    }
+    return counts;
+  });
+
+  readonly otherMailboxesUnread = computed(() =>
+    Object.entries(this.unreadByMailbox())
+      .filter(([id]) => id !== this.currentMailboxId())
+      .reduce((total, [, count]) => total + count, 0),
+  );
+
+  mailboxAddress(id: string): string {
+    return platformMailboxAddress(id);
+  }
+
+  /** "to" line in the reader: the address the email was sent to. */
+  messageTo(message: ContactMessage): string {
+    return message.to?.length ? message.to.join(', ') : platformMailboxAddress(this.mailboxOf(message));
+  }
+
+  private async loadPlatformMailboxes(): Promise<void> {
+    try {
+      this.platformMailboxes.set(await this.platformMailboxService.list());
+    } catch (error) {
+      // Rules not deployed yet: General only.
+      console.warn('[Mailbox] Zebron mailboxes unavailable.', error);
+    }
+
+    const requested = this.route.snapshot.queryParamMap.get('box');
+    if (requested && this.openMailboxes().some((box) => box.id === requested)) {
+      this.currentMailboxId.set(requested);
+    }
+  }
+
+  switchMailbox(id: string): void {
+    if (id === this.currentMailboxId()) {
+      return;
+    }
+    this.currentMailboxId.set(id);
+    this.setFilter('inbox');
+    this.setSearch('');
+    void this.router.navigate([], {
+      queryParams: { box: id === PLATFORM_GENERAL_MAILBOX ? null : id },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  // Manage mailboxes
+  readonly managing = signal(false);
+  readonly mailboxForm = signal<PlatformMailboxForm | null>(null);
+  readonly manageError = signal('');
+  readonly savingMailbox = signal(false);
+
+  /** Names not used yet by a mailbox. */
+  readonly availableNames = computed(() => {
+    const used = new Set(this.platformMailboxes().map((box) => box.id));
+    return PLATFORM_MAILBOX_NAMES.filter((name) => !used.has(name));
+  });
+
+  readonly missingSuggestions = computed(() => {
+    const used = new Set(this.platformMailboxes().map((box) => box.id));
+    return SUGGESTED_PLATFORM_MAILBOXES.filter((box) => !used.has(box.id));
+  });
+
+  readonly missingSuggestionNames = computed(() => this.missingSuggestions().map((box) => box.name).join(', '));
+
+  openManage(): void {
+    this.manageError.set('');
+    this.mailboxForm.set(null);
+    this.managing.set(true);
+  }
+
+  closeManage(): void {
+    if (!this.savingMailbox()) {
+      this.managing.set(false);
+      this.mailboxForm.set(null);
+    }
+  }
+
+  newMailbox(): void {
+    const first = this.availableNames()[0] ?? '';
+    this.manageError.set('');
+    this.mailboxForm.set({ isNew: true, id: first, name: '', description: '', forwardTo: '', active: true });
+  }
+
+  editMailbox(box: PlatformMailbox): void {
+    this.manageError.set('');
+    this.mailboxForm.set({
+      isNew: !box.configured,
+      id: box.id,
+      name: box.name,
+      description: box.description,
+      forwardTo: box.forwardTo,
+      active: box.active,
+    });
+  }
+
+  patchForm(changes: Partial<PlatformMailboxForm>): void {
+    const form = this.mailboxForm();
+    if (form) {
+      this.mailboxForm.set({ ...form, ...changes });
+    }
+  }
+
+  async saveMailbox(): Promise<void> {
+    const form = this.mailboxForm();
+    const uid = this.authService.firebaseUser()?.uid;
+
+    if (!form || !uid || this.savingMailbox()) {
+      return;
+    }
+
+    if (!form.id || (form.id !== PLATFORM_GENERAL_MAILBOX && !PLATFORM_MAILBOX_NAMES.includes(form.id))) {
+      this.manageError.set('Choose an address.');
+      return;
+    }
+
+    if (!form.name.trim()) {
+      this.manageError.set('Give the mailbox a name.');
+      return;
+    }
+
+    const forwardTo = form.forwardTo.trim();
+    if (forwardTo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forwardTo)) {
+      this.manageError.set('Enter a valid email address for copies, or leave it empty.');
+      return;
+    }
+
+    this.savingMailbox.set(true);
+    this.manageError.set('');
+
+    try {
+      await this.platformMailboxService.save(
+        { id: form.id, name: form.name, description: form.description, forwardTo, active: form.active },
+        uid,
+        form.isNew,
+      );
+      await this.loadPlatformMailboxes();
+      this.mailboxForm.set(null);
+      this.showSuccessToast(form.isNew ? 'Mailbox created' : 'Mailbox saved');
+    } catch (error) {
+      console.error('Failed to save mailbox:', error);
+      this.manageError.set('Unable to save the mailbox. Please try again.');
+    } finally {
+      this.savingMailbox.set(false);
+    }
+  }
+
+  /** Adds the suggested Support, Billing and Partnerships mailboxes. */
+  async addSuggested(): Promise<void> {
+    const uid = this.authService.firebaseUser()?.uid;
+    if (!uid || this.savingMailbox()) {
+      return;
+    }
+
+    this.savingMailbox.set(true);
+    this.manageError.set('');
+
+    try {
+      for (const box of this.missingSuggestions()) {
+        await this.platformMailboxService.save({ ...box, forwardTo: '', active: true }, uid, true);
+      }
+      await this.loadPlatformMailboxes();
+      this.showSuccessToast('Mailboxes added');
+    } catch (error) {
+      console.error('Failed to add mailboxes:', error);
+      this.manageError.set('Unable to save the mailbox. Please try again.');
+    } finally {
+      this.savingMailbox.set(false);
+    }
+  }
+
+  /** Its messages stay and show in General. */
+  async deleteMailbox(): Promise<void> {
+    const form = this.mailboxForm();
+
+    if (!form || form.isNew || form.id === PLATFORM_GENERAL_MAILBOX || this.savingMailbox()) {
+      return;
+    }
+
+    if (!window.confirm(this.i18n.t('Delete the {0} mailbox? Its messages move to General, and email sent to its address will go there too.', [form.name]))) {
+      return;
+    }
+
+    this.savingMailbox.set(true);
+
+    try {
+      await this.platformMailboxService.remove(form.id);
+      await this.loadPlatformMailboxes();
+      this.mailboxForm.set(null);
+      if (this.currentMailboxId() === form.id) {
+        this.switchMailbox(PLATFORM_GENERAL_MAILBOX);
+      }
+      this.showSuccessToast('Mailbox deleted');
+    } catch (error) {
+      console.error('Failed to delete mailbox:', error);
+      this.manageError.set('Unable to delete the mailbox. Please try again.');
+    } finally {
+      this.savingMailbox.set(false);
+    }
   }
 
   showMore(): void {
@@ -1085,6 +1808,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
           to,
           subject,
           message,
+          mailboxId: this.mailboxOf(selected),
         });
 
         this.showSuccessToast('Reply sent successfully.');
@@ -1103,6 +1827,7 @@ export class ContactMailboxComponent implements OnInit, OnDestroy {
           subject,
           message,
           type: mode === 'forward' ? 'forward' : 'new',
+          mailboxId: this.currentMailboxId(),
         });
         this.showSuccessToast(
           mode === 'forward' ? 'Message forwarded successfully.' : 'Message sent successfully.',

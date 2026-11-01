@@ -1166,8 +1166,12 @@ export class OrganizationApplicationAdminComponent implements OnInit {
   applicationLabel(application: string): string {
     const labels: Record<string, string> = {
       community: 'Community',
-      'test-center': 'Test Center',
+      learning: 'Learning: Courses and Test Center',
+      courses: 'Learning: Courses and Test Center',
+      'test-center': 'Learning: Test Center only',
       knowledge: 'Knowledge Center',
+      blog: 'Blog',
+      mailbox: 'Mailbox',
     };
 
     return labels[application] ?? application;

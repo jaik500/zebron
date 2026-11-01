@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, afterNextRender, computed, effect, inject, signal } from '@angular/core';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -296,6 +296,46 @@ interface AdminDashboardCard {
                px-3
                sm:p-2"
       >
+        <!-- =======================================================
+             EMAIL USAGE (Resend free plan: 100 a day, 3,000 a month)
+             ======================================================= -->
+        @if (emailUsage(); as usage) {
+          <section class="mt-2 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm" aria-labelledby="email-usage-title">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <mat-icon class="!h-5 !w-5 !text-[20px] text-[#007979]" aria-hidden="true">forward_to_inbox</mat-icon>
+              <h2 id="email-usage-title" class="text-sm font-semibold text-[#032D42]">Email usage</h2>
+              <span class="text-xs text-slate-500">Free plan: {{ dailyEmailLimit }} a day, {{ monthlyEmailLimit.toLocaleString() }} a month. Sent and received both count. Times are UTC.</span>
+            </div>
+
+            <div class="mt-2 grid gap-3 sm:grid-cols-2">
+              @for (meter of emailMeters(); track meter.label) {
+                <div>
+                  <div class="flex items-baseline justify-between gap-2 text-sm">
+                    <span class="font-medium text-slate-700">{{ meter.label }}</span>
+                    <span [class]="meter.used >= meter.limit ? 'font-semibold text-red-700' : meter.used >= meter.limit * 0.8 ? 'font-semibold text-amber-700' : 'text-slate-700'">
+                      {{ meter.used.toLocaleString() }} / {{ meter.limit.toLocaleString() }}
+                    </span>
+                  </div>
+                  <div class="mt-1 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" [attr.aria-valuenow]="meter.used" aria-valuemin="0" [attr.aria-valuemax]="meter.limit" [attr.aria-label]="meter.label + ' email usage'">
+                    <div
+                      class="h-full rounded-full"
+                      [class]="meter.used >= meter.limit ? 'h-full rounded-full bg-red-600' : meter.used >= meter.limit * 0.8 ? 'h-full rounded-full bg-amber-500' : 'h-full rounded-full bg-[#007979]'"
+                      [style.width.%]="meter.limit ? Math.min(100, (meter.used / meter.limit) * 100) : 0"
+                    ></div>
+                  </div>
+                  <p class="mt-0.5 text-xs text-slate-500">{{ meter.sent.toLocaleString() }} sent · {{ meter.received.toLocaleString() }} received</p>
+                </div>
+              }
+            </div>
+
+            @if (usage.today.total >= dailyEmailLimit * 0.8 || usage.month.total >= monthlyEmailLimit * 0.8) {
+              <p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                Close to the free plan limit. Email over the limit is refused by the provider until the next day or month.
+              </p>
+            }
+          </section>
+        }
+
         <!-- =======================================================
              MANAGE CONTENT
              ======================================================= -->
@@ -1283,11 +1323,54 @@ export class AdminDashboardComponent {
   protected readonly moreMenuOpen = signal(false);
 
   // ============================================================
+  // EMAIL USAGE
+  // ============================================================
+
+  protected readonly dailyEmailLimit = 100;
+  protected readonly monthlyEmailLimit = 3000;
+  protected readonly Math = Math;
+
+  /** Counted by the Cloud Functions in platformEmailUsage (UTC days and months). */
+  protected readonly emailUsage = signal<{
+    today: { sent: number; received: number; total: number };
+    month: { sent: number; received: number; total: number };
+  } | null>(null);
+
+  protected readonly emailMeters = computed(() => {
+    const usage = this.emailUsage();
+    return usage
+      ? [
+          { label: 'Today', used: usage.today.total, limit: this.dailyEmailLimit, sent: usage.today.sent, received: usage.today.received },
+          { label: 'This month', used: usage.month.total, limit: this.monthlyEmailLimit, sent: usage.month.sent, received: usage.month.received },
+        ]
+      : [];
+  });
+
+  private async loadEmailUsage(): Promise<void> {
+    const now = new Date().toISOString();
+    const read = async (id: string) => {
+      const data = (await getDoc(doc(firestore, 'platformEmailUsage', id))).data() ?? {};
+      const sent = Number(data['sent'] ?? 0);
+      const received = Number(data['received'] ?? 0);
+      return { sent, received, total: sent + received };
+    };
+
+    try {
+      const [today, month] = await Promise.all([read(`day-${now.slice(0, 10)}`), read(`month-${now.slice(0, 7)}`)]);
+      this.emailUsage.set({ today, month });
+    } catch (error) {
+      // Rules not deployed yet: the card stays hidden.
+      console.warn('[Admin] Email usage unavailable.', error);
+    }
+  }
+
+  // ============================================================
   // CONSTRUCTOR
   // ============================================================
 
   constructor() {
     this.pageTitleService.setTitle('Admin Dashboard');
+    afterNextRender(() => void this.loadEmailUsage());
   }
 
   // ============================================================

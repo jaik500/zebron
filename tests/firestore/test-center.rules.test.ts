@@ -179,7 +179,7 @@ async function seedProgram(
           slug: programId,
           description: `Program ${programId}`,
 
-          courseCount: 0,
+          quizCount: 0,
           active: true,
 
           createdAt: TEST_DATE,
@@ -200,7 +200,7 @@ async function seedProgram(
  * organization-b -> program-b
  */
 async function seedCourse(
-  courseId: string,
+  quizId: string,
   organizationId: string,
   active = true,
   programId?: string,
@@ -218,7 +218,7 @@ async function seedCourse(
       await setDoc(
         doc(
           context.firestore(),
-          `testCourses/${courseId}`,
+          `quizzes/${quizId}`,
         ),
         {
           organizationId,
@@ -227,9 +227,9 @@ async function seedCourse(
           scope: 'organization',
           accessType: 'organization-members',
 
-          name: `Course ${courseId}`,
-          slug: courseId,
-          description: `Course ${courseId}`,
+          name: `Course ${quizId}`,
+          slug: quizId,
+          description: `Course ${quizId}`,
 
           type: 'course',
 
@@ -245,7 +245,7 @@ async function seedCourse(
 }
 
 async function seedPlatformCourse(
-  courseId: string,
+  quizId: string,
   active = true,
 ): Promise<void> {
   await testEnv.withSecurityRulesDisabled(
@@ -253,7 +253,7 @@ async function seedPlatformCourse(
       await setDoc(
         doc(
           context.firestore(),
-          `testCourses/${courseId}`,
+          `quizzes/${quizId}`,
         ),
         {
           organizationId: null,
@@ -261,9 +261,9 @@ async function seedPlatformCourse(
           scope: 'platform',
           accessType: 'public',
 
-          name: `Platform Course ${courseId}`,
-          slug: courseId,
-          description: `Platform course ${courseId}`,
+          name: `Platform Course ${quizId}`,
+          slug: quizId,
+          description: `Platform course ${quizId}`,
 
           type: 'course',
 
@@ -283,17 +283,17 @@ async function seedPlatformCourse(
 async function seedTopic(
   topicId: string,
   organizationId: string,
-  courseId: string,
+  quizId: string,
   active = true,
 ): Promise<void> {
   await testEnv.withSecurityRulesDisabled(
     async (context) => {
       const db = context.firestore();
-      const topicRef = doc(db, `testTopics/${topicId}`);
+      const topicRef = doc(db, `quizTopics/${topicId}`);
 
       const topicData = {
         organizationId,
-        courseId,
+        quizId,
         name: `Topic ${topicId}`,
         slug: topicId,
         description: `Topic ${topicId}`,
@@ -329,7 +329,7 @@ async function seedTopic(
 async function seedQuestion(
   questionId: string,
   organizationId: string,
-  courseId: string,
+  quizId: string,
   topicId: string,
   status:
     | 'draft'
@@ -341,11 +341,11 @@ async function seedQuestion(
       await setDoc(
         doc(
           context.firestore(),
-          `testQuestions/${questionId}`,
+          `quizQuestions/${questionId}`,
         ),
         {
           organizationId,
-          courseId,
+          quizId,
           topicId,
 
           question: `Question ${questionId}`,
@@ -390,7 +390,7 @@ async function seedAttempt(
   attemptId: string,
   organizationId: string,
   userId: string,
-  courseId = COURSE_A,
+  quizId = COURSE_A,
   topicIds: string[] = [TOPIC_A],
 ): Promise<void> {
   await testEnv.withSecurityRulesDisabled(
@@ -398,13 +398,13 @@ async function seedAttempt(
       await setDoc(
         doc(
           context.firestore(),
-          `testAttempts/${attemptId}`,
+          `quizAttempts/${attemptId}`,
         ),
         {
           organizationId,
           userId,
 
-          courseId,
+          quizId,
           topicIds,
 
           questionCount: 10,
@@ -428,22 +428,22 @@ async function seedResult(
   organizationId: string,
   userId: string,
   attemptId = 'attempt-a',
-  courseId = COURSE_A,
+  quizId = COURSE_A,
 ): Promise<void> {
   await testEnv.withSecurityRulesDisabled(
     async (context) => {
       await setDoc(
         doc(
           context.firestore(),
-          `testResults/${resultId}`,
+          `quizResults/${resultId}`,
         ),
         {
           organizationId,
           userId,
           attemptId,
 
-          courseId,
-          courseName: 'Course A',
+          quizId,
+          quizName: 'Course A',
 
           totalQuestions: 10,
           answeredQuestions: 10,
@@ -610,7 +610,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  `testCourses/${COURSE_A}`,
+                  `quizzes/${COURSE_A}`,
                 ),
               ),
             );
@@ -639,7 +639,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  `testCourses/${COURSE_B}`,
+                  `quizzes/${COURSE_B}`,
                 ),
               ),
             );
@@ -667,7 +667,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  `testCourses/${COURSE_A}`,
+                  `quizzes/${COURSE_A}`,
                 ),
               ),
             );
@@ -690,7 +690,7 @@ describe(
               setDoc(
                 doc(
                   db,
-                  'testCourses/course-new',
+                  'quizzes/course-new',
                 ),
                 {
                   organizationId: ORG_A,
@@ -736,7 +736,7 @@ describe(
               setDoc(
                 doc(
                   db,
-                  'testCourses/course-b',
+                  'quizzes/course-b',
                 ),
                 {
                   organizationId: ORG_B,
@@ -785,7 +785,7 @@ describe(
               setDoc(
                 doc(
                   db,
-                  'testCourses/course-no-program',
+                  'quizzes/course-no-program',
                 ),
                 {
                   organizationId: ORG_A,
@@ -832,7 +832,7 @@ describe(
               setDoc(
                 doc(
                   db,
-                  'testCourses/cross-org-program',
+                  'quizzes/cross-org-program',
                 ),
                 {
                   organizationId: ORG_A,
@@ -886,7 +886,7 @@ describe(
               updateDoc(
                 doc(
                   db,
-                  `testCourses/${COURSE_A}`,
+                  `quizzes/${COURSE_A}`,
                 ),
                 {
                   organizationId: ORG_B,
@@ -917,7 +917,7 @@ describe(
               deleteDoc(
                 doc(
                   db,
-                  `testCourses/${COURSE_A}`,
+                  `quizzes/${COURSE_A}`,
                 ),
               ),
             );
@@ -952,7 +952,7 @@ describe(
                 query(
                   collection(
                     db,
-                    'testCourses',
+                    'quizzes',
                   ),
                   where(
                     'active',
@@ -989,7 +989,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  'testCourses/platform-course-a',
+                  'quizzes/platform-course-a',
                 ),
               ),
             );
@@ -1016,7 +1016,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  'testCourses/platform-course-a',
+                  'quizzes/platform-course-a',
                 ),
               ),
             );
@@ -1039,7 +1039,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  'testCourses/platform-course-a',
+                  'quizzes/platform-course-a',
                 ),
               ),
             );
@@ -1067,7 +1067,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  'testCourses/platform-course-inactive',
+                  'quizzes/platform-course-inactive',
                 ),
               ),
             );
@@ -1099,7 +1099,7 @@ describe(
               query(
                 collection(
                   db,
-                  'testCourses',
+                  'quizzes',
                 ),
                 where(
                   'scope',
@@ -1140,7 +1140,7 @@ describe(
               setDoc(
                 doc(
                   db,
-                  'testCourses/platform-course-new',
+                  'quizzes/platform-course-new',
                 ),
                 {
                   organizationId: null,
@@ -1181,7 +1181,7 @@ describe(
               setDoc(
                 doc(
                   db,
-                  'testCourses/platform-course-new',
+                  'quizzes/platform-course-new',
                 ),
                 {
                   organizationId: null,
@@ -1245,7 +1245,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  `testTopics/${TOPIC_A}`,
+                  `quizTopics/${TOPIC_A}`,
                 ),
               ),
             );
@@ -1280,7 +1280,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  `testTopics/${TOPIC_B}`,
+                  `quizTopics/${TOPIC_B}`,
                 ),
               ),
             );
@@ -1308,11 +1308,11 @@ describe(
               setDoc(
                 doc(
                   db,
-                  'testTopics/topic-new',
+                  'quizTopics/topic-new',
                 ),
                 {
                   organizationId: ORG_A,
-                  courseId: COURSE_A,
+                  quizId: COURSE_A,
 
                   name: 'New Topic',
                   slug: 'new-topic',
@@ -1353,11 +1353,11 @@ describe(
               setDoc(
                 doc(
                   db,
-                  'testTopics/topic-cross-org',
+                  'quizTopics/topic-cross-org',
                 ),
                 {
                   organizationId: ORG_A,
-                  courseId: COURSE_B,
+                  quizId: COURSE_B,
 
                   name:
                     'Cross Organization Topic',
@@ -1408,7 +1408,7 @@ describe(
               updateDoc(
                 doc(
                   db,
-                  `testTopics/${TOPIC_A}`,
+                  `quizTopics/${TOPIC_A}`,
                 ),
                 {
                   organizationId: ORG_B,
@@ -1450,10 +1450,10 @@ describe(
               updateDoc(
                 doc(
                   db,
-                  `testTopics/${TOPIC_A}`,
+                  `quizTopics/${TOPIC_A}`,
                 ),
                 {
-                  courseId:
+                  quizId:
                     'course-b-same-org',
                 },
               ),
@@ -1495,7 +1495,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  `testQuestions/${QUESTION_A}`,
+                  `quizQuestions/${QUESTION_A}`,
                 ),
               ),
             );
@@ -1527,7 +1527,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  `testQuestions/${QUESTION_B}`,
+                  `quizQuestions/${QUESTION_B}`,
                 ),
               ),
             );
@@ -1558,7 +1558,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  'testQuestions/question-draft',
+                  'quizQuestions/question-draft',
                 ),
               ),
             );
@@ -1589,7 +1589,7 @@ describe(
               getDoc(
                 doc(
                   db,
-                  'testQuestions/question-draft',
+                  'quizQuestions/question-draft',
                 ),
               ),
             );
@@ -1610,7 +1610,7 @@ it(
       const db = context.firestore();
 
       const topicSnapshot = await getDoc(
-        doc(db, `testTopics/${TOPIC_A}`),
+        doc(db, `quizTopics/${TOPIC_A}`),
       );
 
       console.log('[question-create-test] Topic verification:', {
@@ -1621,7 +1621,7 @@ it(
 
       expect(topicSnapshot.exists()).toBe(true);
       expect(topicSnapshot.data()?.organizationId).toBe(ORG_A);
-      expect(topicSnapshot.data()?.courseId).toBe(COURSE_A);
+      expect(topicSnapshot.data()?.quizId).toBe(COURSE_A);
     });
 
     const db = testEnv
@@ -1630,10 +1630,10 @@ it(
 
     await assertSucceeds(
       setDoc(
-        doc(db, 'testQuestions/question-new'),
+        doc(db, 'quizQuestions/question-new'),
         {
           organizationId: ORG_A,
-          courseId: COURSE_A,
+          quizId: COURSE_A,
           topicId: TOPIC_A,
           question: 'New question',
           type: 'multiple-choice',
@@ -1670,12 +1670,12 @@ it(
               setDoc(
                 doc(
                   db,
-                  'testQuestions/question-new',
+                  'quizQuestions/question-new',
                 ),
                 {
                   organizationId: ORG_A,
 
-                  courseId: COURSE_A,
+                  quizId: COURSE_A,
 
                   topicId: TOPIC_A,
 
@@ -1742,12 +1742,12 @@ it(
               setDoc(
                 doc(
                   db,
-                  'testQuestions/question-cross-org',
+                  'quizQuestions/question-cross-org',
                 ),
                 {
                   organizationId: ORG_A,
 
-                  courseId: COURSE_B,
+                  quizId: COURSE_B,
 
                   topicId: TOPIC_B,
 
@@ -1818,7 +1818,7 @@ it(
               getDoc(
                 doc(
                   db,
-                  'testAttempts/attempt-a',
+                  'quizAttempts/attempt-a',
                 ),
               ),
             );
@@ -1847,7 +1847,7 @@ it(
               getDoc(
                 doc(
                   db,
-                  'testAttempts/attempt-a',
+                  'quizAttempts/attempt-a',
                 ),
               ),
             );
@@ -1876,7 +1876,7 @@ it(
               getDoc(
                 doc(
                   db,
-                  'testAttempts/attempt-a',
+                  'quizAttempts/attempt-a',
                 ),
               ),
             );
@@ -1908,7 +1908,7 @@ it(
               getDoc(
                 doc(
                   db,
-                  'testAttempts/attempt-b',
+                  'quizAttempts/attempt-b',
                 ),
               ),
             );
@@ -1947,7 +1947,7 @@ it(
               getDoc(
                 doc(
                   db,
-                  'testResults/result-a',
+                  'quizResults/result-a',
                 ),
               ),
             );
@@ -1976,7 +1976,7 @@ it(
               getDoc(
                 doc(
                   db,
-                  'testResults/result-a',
+                  'quizResults/result-a',
                 ),
               ),
             );
@@ -2005,7 +2005,7 @@ it(
               getDoc(
                 doc(
                   db,
-                  'testResults/result-a',
+                  'quizResults/result-a',
                 ),
               ),
             );
@@ -2037,7 +2037,7 @@ it(
               getDoc(
                 doc(
                   db,
-                  'testResults/result-b',
+                  'quizResults/result-b',
                 ),
               ),
             );
@@ -2056,11 +2056,11 @@ it(
       .firestore();
 
     const courseSnapshot = await getDoc(
-      doc(db, `testCourses/${COURSE_A}`),
+      doc(db, `quizzes/${COURSE_A}`),
     );
 
     const topicSnapshot = await getDoc(
-      doc(db, `testTopics/${TOPIC_A}`),
+      doc(db, `quizTopics/${TOPIC_A}`),
     );
 
     console.log('[question diagnostic]', {
@@ -2088,10 +2088,10 @@ it(
 
     await assertSucceeds(
       setDoc(
-        doc(db, 'testQuestions/question-topic-diagnostic'),
+        doc(db, 'quizQuestions/question-topic-diagnostic'),
         {
           organizationId: ORG_A,
-          courseId: COURSE_A,
+          quizId: COURSE_A,
           topicId: TOPIC_A,
           question: 'Topic ownership diagnostic',
           type: 'multiple-choice',
@@ -2125,20 +2125,20 @@ it(
 
     // Verify the topic exists and is readable.
     const topicSnapshot = await getDoc(
-      doc(db, `testTopics/${TOPIC_A}`),
+      doc(db, `quizTopics/${TOPIC_A}`),
     );
 
     expect(topicSnapshot.exists()).toBe(true);
     expect(topicSnapshot.data()?.organizationId).toBe(ORG_A);
-    expect(topicSnapshot.data()?.courseId).toBe(COURSE_A);
+    expect(topicSnapshot.data()?.quizId).toBe(COURSE_A);
 
     // Test the same topic reference in a question write.
     await assertSucceeds(
       setDoc(
-        doc(db, 'testQuestions/question-direct-topic-check'),
+        doc(db, 'quizQuestions/question-direct-topic-check'),
         {
           organizationId: ORG_A,
-          courseId: COURSE_A,
+          quizId: COURSE_A,
           topicId: TOPIC_A,
           question: 'Direct topic lookup diagnostic',
           type: 'multiple-choice',

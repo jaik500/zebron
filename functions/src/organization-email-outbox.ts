@@ -1,6 +1,7 @@
 import {getFirestore} from "firebase-admin/firestore";
 import type {DocumentReference} from "firebase-admin/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
+import { recordEmailUsage } from "./email-usage";
  
 const RESEND_API_URL = "https://api.resend.com/emails";
 const ZEBRON_FROM_EMAIL = "Zebron <noreply@zebron.org>";
@@ -543,6 +544,8 @@ async function deliverOutboxEmail(
  
     throw new Error(message);
   }
+
+  await recordEmailUsage("sent", "organization_outbox");
  
   return typeof result?.id === "string" ?
     result.id :

@@ -5,13 +5,17 @@ import { getAuth } from "firebase-admin/auth";
 import {
   DocumentReference,
   FieldValue,
-  Timestamp,
   getFirestore,
 } from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
-import { organizationInboundAddress } from "./inbound-email";
+import { recordEmailUsage } from "./email-usage";
+import {
+  MAILBOX_KEY_PATTERN,
+  departmentInboundAddress,
+  organizationInboundAddress,
+} from "./inbound-email";
 
 /**
  * Organization Mailbox: send email from an organization to any address.
@@ -22,13 +26,21 @@ import { organizationInboundAddress } from "./inbound-email";
  *   platform administrators) can send.
  * - Mail goes out as "<Organization> via Zebron" <noreply@zebron.org>
  *   with Reply-To set to the organization's inbound address
- *   (org+<slug>@zebron.org), so replies land in its Inbox.
+ *   (<slug>@zebron.org), so replies land in its Inbox.
  * - Replies to an inbound message keep the email thread
  *   (In-Reply-To / References) and mark the message as replied.
  * - Every send is recorded in organizations/{id}/sentMessages.
  *
+ * Departmental mailboxes (mailboxId = the mailbox key, e.g. "admissions"):
+ * - Staff assigned to the mailbox, and organization owners and admins,
+ *   can send. Assignment ends when the person leaves the organization.
+ * - Mail goes out as "<Organization> <Mailbox> via Zebron", replies come
+ *   back to <key>.<slug>@zebron.org, and the send is recorded in
+ *   organizations/{id}/mailboxes/{key}/sentMessages.
+ *
  * Limits protect the shared sending domain from abuse:
- * 10 recipients per email, 200 emails per organization per day.
+ * 10 recipients per email, 200 emails per organization per day
+ * (all of its mailboxes together).
  */
 
 const REGION = "us-central1";
@@ -43,6 +55,8 @@ const MAX_MESSAGE_LENGTH = 20_000;
 const MAX_SENDER_NAME_LENGTH = 80;
 
 const MANAGER_ROLES = ["org_owner", "org_admin", "org_manager"];
+const ADMIN_ROLES = ["org_owner", "org_admin"];
+const STAFF_ROLES = ["org_owner", "org_admin", "org_manager", "org_staff"];
 
 interface MailboxSendRequest {
   organizationId?: unknown;
@@ -52,6 +66,8 @@ interface MailboxSendRequest {
   message?: unknown;
   /** ID of the inbound message being replied to, if any. */
   inReplyToMessageId?: unknown;
+  /** "main" (default) or a departmental mailbox key. */
+  mailboxId?: unknown;
 }
 
 export const sendOrganizationMailboxEmail = onCall(
@@ -80,6 +96,11 @@ export const sendOrganizationMailboxEmail = onCall(
       (address) => !to.includes(address),
     );
     const inReplyToMessageId = clean(data.inReplyToMessageId);
+    const mailboxId = clean(data.mailboxId).toLowerCase() || "main";
+
+    if (mailboxId !== "main" && !MAILBOX_KEY_PATTERN.test(mailboxId)) {
+      throw new HttpsError("invalid-argument", "Invalid mailbox.");
+    }
 
     if (!organizationId) {
       throw new HttpsError("invalid-argument", "Organization ID is required.");
@@ -152,16 +173,44 @@ export const sendOrganizationMailboxEmail = onCall(
       (profile.platformRole === undefined && profile.role === "admin");
 
     const membership = membershipSnapshot.data();
+    const memberRole = String(membership?.role ?? "");
+    const isActiveMember = membershipSnapshot.exists && membership?.active === true;
 
-    const isManager =
-      membershipSnapshot.exists &&
-      membership?.active === true &&
-      MANAGER_ROLES.includes(String(membership?.role));
+    // Departmental mailbox: must exist and be turned on.
+    const mailboxSnapshot = mailboxId === "main" ?
+      null :
+      await organizationRef.collection("mailboxes").doc(mailboxId).get();
+    const mailbox = mailboxSnapshot?.data() ?? null;
 
-    if (!isPlatformAdmin && !isManager) {
+    if (mailboxId !== "main" && (!mailboxSnapshot?.exists || !mailbox || mailbox.active === false)) {
+      throw new HttpsError("not-found", "This mailbox does not exist or is turned off.");
+    }
+
+    const memberIds: string[] = Array.isArray(mailbox?.memberIds) ? mailbox.memberIds.map(String) : [];
+
+    const allowed = mailboxId === "main" ?
+      isActiveMember && MANAGER_ROLES.includes(memberRole) :
+      isActiveMember && (
+        ADMIN_ROLES.includes(memberRole) ||
+        (STAFF_ROLES.includes(memberRole) && memberIds.includes(uid))
+      );
+
+    // On-demand application: the organization must have the Mailbox.
+    const mailboxEntitlement = await organizationRef.collection("applications").doc("mailbox").get();
+
+    if (mailboxEntitlement.get("status") !== "active") {
+      throw new HttpsError(
+        "failed-precondition",
+        "This organization does not have the Mailbox. An owner can request it from the Contract page.",
+      );
+    }
+
+    if (!isPlatformAdmin && !allowed) {
       throw new HttpsError(
         "permission-denied",
-        "Only managers, administrators and owners can send email from the mailbox.",
+        mailboxId === "main" ?
+          "Only managers, administrators and owners can send email from the mailbox." :
+          "Only staff assigned to this mailbox can send email from it.",
       );
     }
 
@@ -176,23 +225,29 @@ export const sendOrganizationMailboxEmail = onCall(
     }
 
     const slug = clean(organization.slug).toLowerCase();
-    const replyTo = /^[a-z0-9][a-z0-9-]{0,99}$/.test(slug) ?
-      organizationInboundAddress(slug) :
-      null;
+    const validSlug = /^[a-z0-9][a-z0-9-]{0,99}$/.test(slug);
+    const replyTo = !validSlug ?
+      null :
+      mailboxId === "main" ?
+        organizationInboundAddress(slug) :
+        departmentInboundAddress(slug, mailboxId);
+
+    const mailboxName = mailboxId === "main" ? "" : sanitizeDisplayName(clean(mailbox?.name));
+    const mailboxRef = mailboxId === "main" ?
+      organizationRef :
+      organizationRef.collection("mailboxes").doc(mailboxId);
 
     // ------------------------------------------------------------
     // Daily limit
     // ------------------------------------------------------------
-    const startOfDay = new Date();
-    startOfDay.setUTCHours(0, 0, 0, 0);
+    // One counter per organization per day covers all of its mailboxes.
+    const usageRef = organizationRef
+      .collection("mailboxUsage")
+      .doc(new Date().toISOString().slice(0, 10));
 
-    const sentToday = await organizationRef
-      .collection("sentMessages")
-      .where("createdAt", ">=", Timestamp.fromDate(startOfDay))
-      .count()
-      .get();
+    const usage = await usageRef.get();
 
-    if (sentToday.data().count >= MAX_DAILY_SENDS) {
+    if (Number(usage.data()?.sent ?? 0) >= MAX_DAILY_SENDS) {
       throw new HttpsError(
         "resource-exhausted",
         `This organization has reached today's limit of ${MAX_DAILY_SENDS} emails. Try again tomorrow.`,
@@ -206,7 +261,7 @@ export const sendOrganizationMailboxEmail = onCall(
     let inboundRef: DocumentReference | null = null;
 
     if (inReplyToMessageId) {
-      inboundRef = organizationRef
+      inboundRef = mailboxRef
         .collection("inboundMessages")
         .doc(inReplyToMessageId);
 
@@ -244,13 +299,16 @@ export const sendOrganizationMailboxEmail = onCall(
         clean(organization.displayName),
     ) || PLATFORM_SENDER_NAME;
 
-    const from = senderName === PLATFORM_SENDER_NAME ?
+    // "Acme Academy Admissions" for a departmental mailbox.
+    const displayName = sanitizeDisplayName(mailboxName ? `${senderName} ${mailboxName}` : senderName);
+
+    const from = displayName === PLATFORM_SENDER_NAME ?
       `${PLATFORM_SENDER_NAME} <${FROM_ADDRESS}>` :
-      `"${senderName} via ${PLATFORM_SENDER_NAME}" <${FROM_ADDRESS}>`;
+      `"${displayName} via ${PLATFORM_SENDER_NAME}" <${FROM_ADDRESS}>`;
 
-    const signedMessage = `${message.trimEnd()}\n\nThe ${senderName} Team`;
+    const signedMessage = `${message.trimEnd()}\n\nThe ${displayName} Team`;
 
-    const sentRef = organizationRef.collection("sentMessages").doc();
+    const sentRef = mailboxRef.collection("sentMessages").doc();
 
     let authorName = clean(profile.displayName);
     let authorEmail = clean(profile.email);
@@ -268,11 +326,12 @@ export const sendOrganizationMailboxEmail = onCall(
     const record = {
       id: sentRef.id,
       organizationId,
+      mailboxId,
       to,
       cc,
       subject,
       message,
-      senderName,
+      senderName: displayName,
       from,
       replyTo,
       inReplyToMessageId: inReplyToMessageId || null,
@@ -332,6 +391,14 @@ export const sendOrganizationMailboxEmail = onCall(
 
       const providerMessageId = typeof result.id === "string" ? result.id : null;
 
+      await Promise.all([
+        usageRef.set(
+          {sent: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp()},
+          {merge: true},
+        ),
+        recordEmailUsage("sent", "organization_mailbox"),
+      ]);
+
       await sentRef.set(
         {
           status: "sent",
@@ -366,7 +433,7 @@ export const sendOrganizationMailboxEmail = onCall(
       return {
         success: true,
         sentMessageId: sentRef.id,
-        senderName,
+        senderName: displayName,
         replyTo,
       };
     } catch (error: unknown) {

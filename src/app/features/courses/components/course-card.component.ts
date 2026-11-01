@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
-import { Course, COURSE_COVERS, COURSE_LEVEL_LABELS, CourseProgress, formatMinutes } from '../course.model';
+import { Course, COURSE_COVERS, COURSE_LEVEL_LABELS, CourseExamRecord, CourseProgress, formatMinutes, hasCertificate, isCourseComplete } from '../course.model';
 
 /** A course in a grid: cover, provider, title, length, skills and progress. */
 @Component({
@@ -54,7 +54,7 @@ import { Course, COURSE_COVERS, COURSE_LEVEL_LABELS, CourseProgress, formatMinut
               <div class="h-full rounded-full bg-gradient-to-r from-[#007979] to-[#2a835f]" [style.width.%]="record.percent"></div>
             </div>
             <p class="mt-1 text-xs text-slate-500">
-              {{ completed() ? ('Completed · certificate ready' | t) : ('{percent}% complete' | t: { percent: record.percent }) }}
+              {{ statusText() | t: { percent: record.percent } }}
             </p>
           </div>
         }
@@ -65,10 +65,22 @@ import { Course, COURSE_COVERS, COURSE_LEVEL_LABELS, CourseProgress, formatMinut
 export class CourseCardComponent {
   readonly course = input.required<Course>();
   readonly progress = input<CourseProgress | null>(null);
+  readonly exam = input<CourseExamRecord | null>(null);
   readonly link = input.required<string>();
 
   protected readonly cover = computed(() => COURSE_COVERS[this.course().cover] ?? COURSE_COVERS.teal);
   protected readonly levelLabel = computed(() => COURSE_LEVEL_LABELS[this.course().level]);
   protected readonly duration = computed(() => formatMinutes(this.course().estimatedMinutes));
-  protected readonly completed = computed(() => this.progress()?.status === 'completed');
+  protected readonly completed = computed(() => isCourseComplete(this.progress(), this.exam()));
+
+  protected readonly statusText = computed(() => {
+    const progress = this.progress();
+    if (hasCertificate(progress, this.exam())) {
+      return 'Completed · certificate earned';
+    }
+    if (this.completed()) {
+      return 'Completed';
+    }
+    return progress?.status === 'completed' ? 'Lessons done · final exam next' : '{percent}% complete';
+  });
 }

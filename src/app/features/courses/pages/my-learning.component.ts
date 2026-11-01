@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { AuthService } from '../../../core/services/auth.service';
 import { useLearningHeaderTitle } from '../../test-center/learner-route';
@@ -193,6 +194,7 @@ export class MyLearningComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly i18n = inject(I18nService);
   protected readonly store = inject(CourseStore);
 
   protected readonly context = courseContextFromRoute(this.route);
@@ -218,12 +220,24 @@ export class MyLearningComponent {
     return allLessons(this.continueCourse()).find((lesson) => !done.has(lesson.id)) ?? null;
   });
 
-  protected readonly nextLessonTitle = computed(() => this.nextLesson()?.title ?? null);
+  /** Lessons done, final exam still to pass. */
+  private readonly examNext = computed(() => {
+    const record = this.store.continueRecord();
+    return !!record && record.status === 'completed' && record.finalExam;
+  });
+
+  protected readonly nextLessonTitle = computed(() =>
+    this.examNext() ? this.i18n.t('Final exam') : this.nextLesson()?.title ?? null,
+  );
 
   protected readonly resumeLink = computed(() => {
     const record = this.store.continueRecord();
     if (!record) {
       return this.context.basePath;
+    }
+
+    if (this.examNext()) {
+      return `${courseLink(record, this.context)}/summary`;
     }
 
     const lesson = this.nextLesson();

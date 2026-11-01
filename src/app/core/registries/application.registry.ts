@@ -142,15 +142,69 @@ export const APPLICATION_DEFINITIONS: ApplicationDefinition[] = [
   },
 
   // ===========================================================================
+  // Learning (parent application: Courses and Test Center)
+  // ===========================================================================
+
+  /*
+   * Learning has no entitlement of its own. It counts as active while
+   * Courses or Test Center is active, and requesting it requests both.
+   * Each capability can also be requested on its own; Courses brings in
+   * Test Center because course final exams are Test Center quizzes.
+   */
+  {
+    id: 'learning',
+    key: 'learning',
+    name: 'Learning',
+    description:
+      'Courses and the Test Center together: lessons, quizzes, final exams and certificates.',
+    category: 'learning',
+    icon: 'school',
+    route: '/partner/org/:organizationId/courses',
+    availability: 'available',
+    requiresOrganization: true,
+    requiresApproval: false,
+    autoProvision: false,
+    provisioningStrategy: 'none',
+    dependencies: ['core'],
+    permissions: [],
+    features: [],
+    version: 1,
+    enabled: true,
+  },
+
+  {
+    id: 'courses',
+    key: 'courses',
+    name: 'Courses',
+    description:
+      'Members-only courses with lessons, video, final exams and certificates. Includes the Test Center.',
+    category: 'learning',
+    icon: 'menu_book',
+    route: '/partner/org/:organizationId/courses',
+    availability: 'available',
+    requiresOrganization: true,
+    requiresApproval: false,
+    autoProvision: false,
+    provisioningStrategy: 'default',
+    parent: 'learning',
+    dependencies: ['core', 'test-center'],
+    permissions: [],
+    features: [],
+    version: 1,
+    enabled: true,
+  },
+
+  // ===========================================================================
   // Test Center
   // ===========================================================================
 
   {
     id: 'test-center',
     key: 'test-center',
+    parent: 'learning',
     name: 'Test Center',
     description:
-      'Assessment and testing platform supporting programs, courses, topics, questions, assessments, and organization-based learning.',
+      'Quizzes and exams for your students: question banks, practice tests, results and retakes. Works on its own, without Courses.',
     category: 'learning',
     icon: 'quiz',
     route: '/partner/org/:organizationId/test-center',
@@ -262,6 +316,31 @@ export const APPLICATION_DEFINITIONS: ApplicationDefinition[] = [
   },
 
   // ===========================================================================
+  // Blog (on demand: only organizations that request it)
+  // ===========================================================================
+
+  {
+    id: 'blog',
+    key: 'blog',
+    name: 'Blog',
+    description:
+      'A members-only blog for news, stories and announcements. Staff write posts, managers review and publish, and members react and comment.',
+    category: 'community',
+    icon: 'article',
+    route: '/partner/org/:organizationId/blog',
+    availability: 'available',
+    requiresOrganization: true,
+    requiresApproval: false,
+    autoProvision: false,
+    provisioningStrategy: 'default',
+    dependencies: ['core'],
+    permissions: [],
+    features: [],
+    version: 1,
+    enabled: true,
+  },
+
+  // ===========================================================================
   // Mailbox
   // ===========================================================================
 
@@ -269,13 +348,14 @@ export const APPLICATION_DEFINITIONS: ApplicationDefinition[] = [
     id: 'mailbox',
     key: 'mailbox',
     name: 'Mailbox',
+    // On demand: organizations get the mailbox only after requesting it.
     description:
-      'Mailbox and inbound communication capabilities for receiving, processing, and managing application messages.',
+      "Your organization's own email address on zebron.org: a shared inbox for managers, departmental mailboxes such as Admissions or HR for assigned staff, and sending as the organization.",
     category: 'business',
     icon: 'mail',
-    route: '/admin/mailbox',
+    route: '/partner/org/:organizationId/mailbox',
     availability: 'available',
-    requiresOrganization: false,
+    requiresOrganization: true,
     requiresApproval: false,
     autoProvision: false,
     provisioningStrategy: 'none',
@@ -443,6 +523,17 @@ export function applicationExists(
 }
 
 /**
+ * Capabilities of a parent application (Learning: Courses, Test Center).
+ */
+export function getApplicationCapabilities(
+  parentId: string,
+): ApplicationDefinition[] {
+  return APPLICATION_DEFINITIONS.filter(
+    application => application.parent === parentId,
+  );
+}
+
+/**
  * Return all enabled applications.
  */
 export function getEnabledApplications(): ApplicationDefinition[] {
@@ -594,6 +685,12 @@ export function validateApplicationRegistry(): string[] {
     ) {
       errors.push(
         `Provisionable application ${application.id} should declare an implementationKey.`,
+      );
+    }
+
+    if (application.parent && !applicationExists(application.parent)) {
+      errors.push(
+        `Application ${application.id} references missing parent ${application.parent}.`,
       );
     }
 

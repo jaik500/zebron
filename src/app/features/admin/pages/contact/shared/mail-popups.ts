@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, model, output, signal } from '@angular/core';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -17,6 +17,8 @@ import { TranslatePipe } from '../../../../../core/i18n/translate.pipe';
  * - <app-mail-composer>: write a new email, reply or forward.
  *
  * Both are presentational: the page owns the data and the actions.
+ * They are also used by the organization mailbox, which turns on the
+ * optional extras (formatted HTML, mark unread, Cc, projected content).
  */
 
 export type MailBadgeTone = 'new' | 'read' | 'archived' | 'neutral';
@@ -56,7 +58,7 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
             <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">arrow_back</mat-icon>
           </button>
 
-          @if (showArchive() || showDelete()) {
+          @if (showArchive() || showDelete() || showMarkUnread()) {
             <span class="mx-1 h-5 w-px bg-white/30" aria-hidden="true"></span>
           }
 
@@ -70,6 +72,12 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
                 <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">archive</mat-icon>
               </button>
             }
+          }
+
+          @if (showMarkUnread()) {
+            <button type="button" (click)="markUnread.emit()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60" [attr.aria-label]="'Mark as unread' | t" [title]="'Mark as unread' | t">
+              <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">mark_email_unread</mat-icon>
+            </button>
           }
 
           @if (showDelete()) {
@@ -120,7 +128,28 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
               </div>
             </div>
 
-            <div class="mt-6 whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-800 sm:pl-[52px]">{{ body() }}</div>
+            @if (html()) {
+              <div class="mt-5 flex gap-1 sm:pl-[52px]" role="group" [attr.aria-label]="'Message format' | t">
+                <button type="button" (click)="formatted.set(true)" [attr.aria-pressed]="formatted()" [class]="formatted() ? 'h-7 rounded-md bg-slate-100 px-2.5 text-xs font-semibold text-slate-900' : 'h-7 rounded-md px-2.5 text-xs font-medium text-slate-500 hover:bg-slate-50'">{{ 'Formatted' | t }}</button>
+                <button type="button" (click)="formatted.set(false)" [attr.aria-pressed]="!formatted()" [class]="formatted() ? 'h-7 rounded-md px-2.5 text-xs font-medium text-slate-500 hover:bg-slate-50' : 'h-7 rounded-md bg-slate-100 px-2.5 text-xs font-semibold text-slate-900'">{{ 'Plain text' | t }}</button>
+              </div>
+            }
+
+            @if (html() && formatted()) {
+              <!-- Sandboxed: no scripts, no access to this app. -->
+              <iframe
+                [title]="'Email content' | t"
+                sandbox=""
+                referrerpolicy="no-referrer"
+                class="mt-3 h-[55vh] w-full rounded-lg border border-slate-200 bg-white sm:ml-[52px] sm:w-[calc(100%-52px)]"
+                [srcdoc]="html()"
+              ></iframe>
+            } @else {
+              <div class="mt-6 whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-800 sm:pl-[52px]">{{ body() }}</div>
+            }
+
+            <!-- Extras from the page: attachments, reply status... -->
+            <div class="sm:pl-[52px]"><ng-content /></div>
           </div>
         </div>
 
@@ -132,6 +161,7 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
               {{ 'Reply' | t }}
             </button>
           }
+          @if (showForward()) {
           <button
             type="button"
             (click)="forward.emit()"
@@ -139,9 +169,10 @@ const BADGE_CLASSES: Record<MailBadgeTone, string> = {
               ? 'inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50'
               : 'inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#006666]'"
           >
-            <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">forward</mat-icon>
-            {{ 'Forward' | t }}
+            <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px]">{{ forwardIcon() }}</mat-icon>
+            {{ forwardLabel() | t }}
           </button>
+          }
           <button type="button" (click)="closed.emit()" class="ml-auto inline-flex h-9 items-center rounded-lg px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
             {{ 'Close' | t }}
           </button>
@@ -169,6 +200,13 @@ export class MailReaderComponent {
   readonly showArchive = input(false);
   readonly archived = input(false);
   readonly showDelete = input(true);
+  readonly showMarkUnread = input(false);
+  readonly showForward = input(true);
+  readonly forwardLabel = input('Forward');
+  readonly forwardIcon = input('forward');
+
+  /** Optional HTML version, shown sandboxed with a Formatted / Plain text switch. */
+  readonly html = input('');
 
   readonly closed = output<void>();
   readonly reply = output<void>();
@@ -176,8 +214,12 @@ export class MailReaderComponent {
   readonly archive = output<void>();
   readonly unarchive = output<void>();
   readonly delete = output<void>();
+  readonly markUnread = output<void>();
 
   private readonly i18n = inject(I18nService);
+
+  /** Formatted (HTML) view first when the email has one. */
+  protected readonly formatted = signal(true);
 
   protected readonly badgeClass = computed(() => BADGE_CLASSES[this.badgeTone()]);
 
@@ -273,6 +315,7 @@ export class MailReaderComponent {
 
 export interface MailDraft {
   to: string;
+  cc?: string;
   subject: string;
   message: string;
 }
@@ -298,7 +341,7 @@ export interface MailDraft {
         <header class="flex shrink-0 items-center justify-between gap-3 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-4 py-3 sm:px-6">
           <div class="min-w-0">
             <h2 id="mail-composer-title" class="truncate text-lg font-semibold text-white">{{ heading() | t }}</h2>
-            <p class="truncate text-xs text-white/80">{{ 'Send an email from Zebron.' | t }}</p>
+            <p class="truncate text-xs text-white/80">{{ subtitle() | t }}</p>
           </div>
           <button
             type="button"
@@ -321,11 +364,14 @@ export interface MailDraft {
               </div>
             }
 
+            <ng-content select="[mailComposerNote]" />
+
             <mat-form-field appearance="outline" class="zb-field">
               <mat-label>{{ 'To' | t }}</mat-label>
               <input
                 matInput
                 type="email"
+                multiple
                 [value]="to()"
                 (input)="to.set($any($event.target).value)"
                 [placeholder]="'recipient@example.com' | t"
@@ -334,6 +380,23 @@ export interface MailDraft {
                 [disabled]="sending()"
               />
             </mat-form-field>
+
+            <ng-content select="[mailComposerRecipients]" />
+
+            @if (showCc()) {
+              <mat-form-field appearance="outline" class="zb-field">
+                <mat-label>{{ 'Cc' | t }}</mat-label>
+                <input
+                  matInput
+                  type="email"
+                  multiple
+                  [value]="cc()"
+                  (input)="cc.set($any($event.target).value)"
+                  autocomplete="off"
+                  [disabled]="sending()"
+                />
+              </mat-form-field>
+            }
 
             <mat-form-field appearance="outline" class="zb-field">
               <mat-label>{{ 'Subject' | t }}</mat-label>
@@ -391,9 +454,12 @@ export class MailComposerComponent {
   readonly submitLabel = input('Send');
   readonly sending = input(false);
   readonly error = input<string | null>(null);
+  readonly subtitle = input('Send an email from Zebron.');
+  readonly showCc = input(false);
 
-  /** Two-way bound fields: [(to)], [(subject)], [(message)]. */
+  /** Two-way bound fields: [(to)], [(cc)], [(subject)], [(message)]. */
   readonly to = model('');
+  readonly cc = model('');
   readonly subject = model('');
   readonly message = model('');
 
@@ -404,7 +470,7 @@ export class MailComposerComponent {
     if (this.sending()) {
       return;
     }
-    this.send.emit({ to: this.to().trim(), subject: this.subject().trim(), message: this.message().trim() });
+    this.send.emit({ to: this.to().trim(), cc: this.cc().trim(), subject: this.subject().trim(), message: this.message().trim() });
   }
 
   cancel(): void {

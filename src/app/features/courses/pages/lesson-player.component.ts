@@ -292,7 +292,7 @@ export class LessonPlayerComponent {
     if (this.store.nextLesson()) {
       return this.lessonDone() ? 'Next lesson' : 'Complete and continue';
     }
-    return this.store.courseProgress()?.status === 'completed' ? 'View certificate' : 'Finish course';
+    return this.lessonDone() ? 'Course summary' : 'Finish course';
   });
 
   private readonly headerTitle = useLearningHeaderTitle(this.route);
@@ -375,9 +375,12 @@ export class LessonPlayerComponent {
 
       const next = this.store.nextLesson();
 
-      if (result.courseCompleted && !alreadyCompleted) {
-        this.toast.success(this.i18n.t('Course complete! Your certificate is ready.'));
-        await this.router.navigate([this.coursePath(), 'certificate']);
+      if (result.courseCompleted && !next) {
+        // The end of the course: the summary, with Take test when there is a final exam.
+        if (!alreadyCompleted) {
+          this.toast.success(this.i18n.t('All lessons done. Well done!'));
+        }
+        await this.router.navigate([this.coursePath(), 'summary']);
       } else if (next) {
         await this.router.navigate([this.coursePath(), 'lessons', next.id]);
       } else if (result.nextLessonId) {
@@ -385,7 +388,7 @@ export class LessonPlayerComponent {
         this.toast.info(this.i18n.t('A few lessons are still open. Here is the next one.'));
         await this.router.navigate([this.coursePath(), 'lessons', result.nextLessonId]);
       } else {
-        await this.router.navigate([this.coursePath(), 'certificate']);
+        await this.router.navigate([this.coursePath(), 'summary']);
       }
     } catch (error) {
       this.toast.error(this.i18n.t((error as Error).message || 'Your progress could not be saved. Try again.'));

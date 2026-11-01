@@ -1,4 +1,15 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import {
+  answerFormFrom,
+  answerPayload,
+  answerProblem,
+  answerText,
+  correctAnswerValue,
+  QUESTION_TYPES,
+  questionTypeLabel,
+  resetAnswersForType,
+} from '../../../test-center/models/question-answers';
+import { QuestionAnswerEditorComponent } from '../../../test-center/components/question-answer-editor.component';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -37,7 +48,7 @@ import { MatRadioModule } from '@angular/material/radio';
 @Component({
   selector: 'app-test-question-admin',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule, MatRadioModule],
+  imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule, MatRadioModule, QuestionAnswerEditorComponent],
   template: `
     <div class="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8 mt-10">
       <div class="mx-auto max-w-7xl">
@@ -652,9 +663,7 @@ import { MatRadioModule } from '@angular/material/radio';
                                text-xs font-medium
                                text-gray-600"
                       >
-                        {{
-                          question.type === 'multiple-choice' ? 'Multiple Choice' : 'True / False'
-                        }}
+                        {{ typeLabel(question.type) }}
                       </span>
                     </div>
 
@@ -668,6 +677,10 @@ import { MatRadioModule } from '@angular/material/radio';
                     </h3>
 
                     <!-- Options -->
+
+                    @if (answerSummary(question); as summary) {
+                      <p class="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">✓ {{ summary }}</p>
+                    }
 
                     <div class="mt-4 grid gap-2 sm:grid-cols-2">
                       @for (option of question.options; track option.id) {
@@ -820,9 +833,9 @@ import { MatRadioModule } from '@angular/material/radio';
                     [(ngModel)]="form.type"
                     (ngModelChange)="onQuestionTypeChange()"
                   >
-                    <mat-option value="multiple-choice">Multiple Choice</mat-option>
-
-                    <mat-option value="true-false">True / False</mat-option>
+                    @for (type of questionTypes; track type.value) {
+                      <mat-option [value]="type.value">{{ type.label }} · {{ type.hint }}</mat-option>
+                    }
                   </mat-select>
                   </mat-form-field>
                 </div>
@@ -864,128 +877,12 @@ import { MatRadioModule } from '@angular/material/radio';
                 </div>
               </div>
 
-              <!-- Answer Options -->
+              <!-- Answers (every answer type) -->
 
               <div>
-                <div
-                  class="mb-3 flex items-center
-                         justify-between"
-                >
-                  <div>
-                    <h3
-                      class="text-sm font-semibold
-                             text-gray-900"
-                    >
-                      Answer Options
-                    </h3>
-
-                    <p
-                      class="mt-1 text-xs
-                             text-gray-500"
-                    >
-                      Select the correct answer.
-                    </p>
-                  </div>
-
-                  @if (form.type === 'multiple-choice') {
-                    <button
-                      type="button"
-                      (click)="addOption()"
-                      class="rounded-lg border
-                             border-teal-200
-                             px-3 py-2
-                             text-xs font-semibold
-                             text-teal-700
-                             transition hover:bg-teal-50"
-                    >
-                      + Add Option
-                    </button>
-                  }
-                </div>
-
-                <div class="space-y-3">
-                  @for (option of form.options; track option.id; let i = $index) {
-                    <div
-                      class="flex items-start gap-3
-                             rounded-lg border p-3"
-                      [class.border-green-300]="form.correctAnswer === option.id"
-                      [class.bg-green-50]="form.correctAnswer === option.id"
-                      [class.border-gray-200]="form.correctAnswer !== option.id"
-                    >
-                      <!-- Radio -->
-
-                      <div class="pt-1">
-                        <mat-radio-button
-                          name="correctAnswer"
-                          [value]="option.id"
-                          [checked]="form.correctAnswer === option.id"
-                          (change)="form.correctAnswer = $event.value"
-                          [id]="'correct-' + option.id"
-                          [attr.aria-label]="'Mark option ' + (i + 1) + ' as correct'"
-                        ></mat-radio-button>
-                      </div>
-
-                      <!-- Letter -->
-
-                      <div
-                        class="flex h-9 w-9 shrink-0
-                               items-center
-                               justify-center
-                               rounded-lg bg-gray-100
-                               text-sm font-semibold
-                               text-gray-600"
-                      >
-                        {{ optionLetter(i) }}
-                      </div>
-
-                      <!-- Text -->
-
-                      <div class="min-w-0 flex-1">
-                        <label [for]="'option-' + option.id" class="sr-only">
-                          Option {{ optionLetter(i) }}
-                        </label>
-
-                        <mat-form-field appearance="outline" class="zb-field">
-                          <mat-label>Enter answer option...</mat-label>
-                          <input matInput
-                          [id]="'option-' + option.id"
-                          [name]="'option-' + option.id"
-                          type="text"
-                          [(ngModel)]="option.text"
-                          placeholder="Enter answer option..."
-                        />
-                        </mat-form-field>
-
-                        @if (form.correctAnswer === option.id) {
-                          <p
-                            class="mt-1 text-xs
-                                   font-medium
-                                   text-green-700"
-                          >
-                            Correct answer
-                          </p>
-                        }
-                      </div>
-
-                      <!-- Remove -->
-
-                      @if (form.type === 'multiple-choice' && form.options.length > 2) {
-                        <button
-                          type="button"
-                          (click)="removeOption(i)"
-                          class="mt-1 rounded-md
-                                 p-1.5
-                                 text-gray-400
-                                 transition
-                                 hover:bg-red-50
-                                 hover:text-red-600"
-                          aria-label="Remove option"
-                        >
-                          ×
-                        </button>
-                      }
-                    </div>
-                  }
+                <h3 class="text-sm font-semibold text-gray-900">Answers</h3>
+                <div class="mt-2">
+                  <app-question-answer-editor [form]="form" />
                 </div>
               </div>
 
@@ -1237,6 +1134,20 @@ export class TestQuestionAdminComponent implements OnInit {
   protected readonly editingQuestionId = signal<string | null>(null);
 
   protected form: QuestionForm = this.createEmptyForm();
+
+  /** Answer types offered in the editor. */
+  protected readonly questionTypes = QUESTION_TYPES;
+
+  protected typeLabel(type: string): string {
+    return questionTypeLabel(type);
+  }
+
+  /** The right answer in words, for types that are not shown by highlighting one option. */
+  protected answerSummary(question: TestQuestion): string {
+    return question.type === 'multiple-choice' || question.type === 'true-false' || !question.type
+      ? ''
+      : answerText(question, correctAnswerValue(question));
+  }
 
   // ============================================================
   // COMPUTED-STYLE HELPERS
@@ -1497,14 +1408,7 @@ export class TestQuestionAdminComponent implements OnInit {
     this.form = {
       question: question.question,
 
-      type: question.type,
-
-      options: question.options.map((option) => ({
-        id: option.id,
-        text: option.text,
-      })),
-
-      correctAnswer: question.correctAnswer,
+      ...answerFormFrom(question),
 
       explanation: question.explanation ?? '',
 
@@ -1534,55 +1438,7 @@ export class TestQuestionAdminComponent implements OnInit {
   // ============================================================
 
   onQuestionTypeChange(): void {
-    if (this.form.type === 'true-false') {
-      this.form.options = [
-        {
-          id: 'true',
-          text: 'True',
-        },
-        {
-          id: 'false',
-          text: 'False',
-        },
-      ];
-
-      if (this.form.correctAnswer !== 'true' && this.form.correctAnswer !== 'false') {
-        this.form.correctAnswer = 'true';
-      }
-
-      return;
-    }
-
-    if (this.form.options.length < 2 || this.isTrueFalseOptions()) {
-      this.form.options = [
-        {
-          id: 'option-a',
-          text: '',
-        },
-        {
-          id: 'option-b',
-          text: '',
-        },
-        {
-          id: 'option-c',
-          text: '',
-        },
-        {
-          id: 'option-d',
-          text: '',
-        },
-      ];
-
-      this.form.correctAnswer = 'option-a';
-    }
-  }
-
-  private isTrueFalseOptions(): boolean {
-    return (
-      this.form.options.length === 2 &&
-      this.form.options[0]?.id === 'true' &&
-      this.form.options[1]?.id === 'false'
-    );
+    resetAnswersForType(this.form);
   }
 
   // ============================================================
@@ -1665,12 +1521,7 @@ export class TestQuestionAdminComponent implements OnInit {
         quizId,
         topicId,
         question: this.form.question.trim(),
-        type: this.form.type,
-        options: this.form.options.map((option) => ({
-          id: option.id,
-          text: option.text.trim(),
-        })),
-        correctAnswer: this.form.correctAnswer,
+        ...answerPayload(this.form),
         difficulty: this.form.difficulty,
         tags: this.parseTags(this.form.tagsText),
         sourceType: this.form.sourceType,
@@ -1729,26 +1580,10 @@ export class TestQuestionAdminComponent implements OnInit {
       return 'Question text is required.';
     }
 
-    const options = this.form.options;
+    const answers = answerProblem(this.form);
 
-    if (options.length < 2) {
-      return 'At least two answer options are required.';
-    }
-
-    const emptyOption = options.some((option) => !option.text.trim());
-
-    if (emptyOption) {
-      return 'Every answer option must contain text.';
-    }
-
-    if (!this.form.correctAnswer) {
-      return 'Select the correct answer.';
-    }
-
-    const correctOption = options.some((option) => option.id === this.form.correctAnswer);
-
-    if (!correctOption) {
-      return 'The selected correct answer is invalid.';
+    if (answers) {
+      return answers;
     }
 
     if (!this.form.difficulty) {
@@ -2573,6 +2408,14 @@ interface QuestionForm {
   options: TestQuestionOption[];
 
   correctAnswer: string;
+
+  correctAnswers?: string[];
+
+  acceptedAnswers?: string[];
+
+  numericAnswer?: number | null;
+
+  numericTolerance?: number | null;
 
   explanation: string;
 

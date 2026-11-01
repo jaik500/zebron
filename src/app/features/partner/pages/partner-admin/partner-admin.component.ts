@@ -812,13 +812,15 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
     .filter((application) =>
       application.route.includes(':organizationId'),
     )
-    .filter((application) =>
-      this.organizationStore.hasActiveApplication(application.id),
-    )
+    // Capabilities (Courses, Test Center) appear through their parent's card.
+    .filter((application) => !application.parent)
+    // Mailbox is for staff and above (assigned staff, managers, admins, owners).
+    .filter((application) => application.id !== 'mailbox' || this.access.isStaffOrAbove())
+    .filter((application) => this.isApplicationActive(application.id))
     .map((application) => ({
       id: application.id,
       title: application.name,
-      description: application.description,
+      description: this.cardDescription(application.id, application.description),
       icon: application.icon ?? 'apps',
       route: application.route.replace(
         ':organizationId',
@@ -829,20 +831,34 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
         (application as typeof application & {
           adminOnly?: boolean;
         }).adminOnly === true,
-    }))
-    // Every organization has a members-only blog (not a provisioned application).
-    .concat({
-      id: 'blog',
-      title: 'Blog',
-      description: 'News, stories and announcements for your members.',
-      icon: 'article',
-      route: `/partner/org/${organizationId}/blog`,
-      enabled: true,
-      adminOnly: false,
-    });
+    }));
+    // The blog is an on-demand application: its card appears once requested and active.
 });
 
 
+
+  /**
+   * A parent application (Learning) has no entitlement of its own: it is
+   * active while any of its capabilities is.
+   */
+  private isApplicationActive(applicationId: string): boolean {
+    const capabilities = this.applicationRegistry
+      .getEnabledApplications()
+      .filter((application) => application.parent === applicationId);
+
+    return capabilities.length > 0
+      ? capabilities.some((application) => this.organizationStore.hasActiveApplication(application.id))
+      : this.organizationStore.hasActiveApplication(applicationId);
+  }
+
+  /** Learning describes only what the organization has. */
+  private cardDescription(applicationId: string, description: string): string {
+    if (applicationId === 'learning' && !this.organizationStore.hasActiveApplication('courses')) {
+      return 'Quizzes and exams for your students: practice tests, results and retakes.';
+    }
+
+    return description;
+  }
 
   /**
    * Operational application links remain hidden until onboarding completes.
@@ -860,6 +876,15 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
    * Its separate settings button continues to use the registry's management route.
    */
   protected dashboardCardRoute(card: DashboardCard): string | (string | null)[] {
+    // Learning opens Courses when the organization has it, otherwise the Test Center.
+    if (card.id === 'learning' && !this.organizationStore.hasActiveApplication('courses')) {
+      const organizationId = this.organizationStore.selectedOrganizationId();
+
+      if (organizationId) {
+        return ['/partner/org', organizationId, 'learn', 'test-center'];
+      }
+    }
+
     if (card.id === 'test-center') {
       const organizationId = this.organizationStore.selectedOrganizationId();
 
@@ -884,6 +909,12 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
   protected settingsRoute(card: DashboardCard): string | (string | null)[] | null {
     if (card.id === 'test-center' && this.canManageTestCenter()) {
       return card.route;
+    }
+
+    // Learning's gear opens Test Center management (question banks, quizzes).
+    if (card.id === 'learning' && this.canManageTestCenter() && this.organizationStore.hasActiveApplication('test-center')) {
+      return this.applicationRegistry.getById('test-center')?.route
+        .replace(':organizationId', this.organizationStore.selectedOrganizationId() ?? '') ?? null;
     }
 
     if (card.id === 'knowledge' && this.access.can('knowledge.manage')) {

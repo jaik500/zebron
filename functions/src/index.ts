@@ -40,6 +40,8 @@ import {
 import {
   completeOrganizationConfiguration,
 } from "./organization-onboarding-configuration";
+import { recordEmailUsage } from "./email-usage";
+import { platformMailboxSender } from "./inbound-email";
 
 
 /**
@@ -756,6 +758,8 @@ export const resetUserPassword = onCall(
         throw new HttpsError("internal", "Unable to send the password reset email.");
       }
 
+      await recordEmailUsage("sent", "password_reset");
+
       /**
        * Record the administrative action.
        *
@@ -983,6 +987,8 @@ export const sendContactReply = onCall(
       to?: unknown;
       subject?: unknown;
       message?: unknown;
+      /** Platform mailbox replying (support, billing...); defaults to the message's own mailbox. */
+      mailboxId?: unknown;
     };
 
     /**
@@ -1044,6 +1050,13 @@ export const sendContactReply = onCall(
     }
 
     /**
+     * Send as the mailbox the message arrived in ("Zebron Support"),
+     * so the answer comes back to that mailbox.
+     */
+    const original = await getDb().collection("contactMessages").doc(messageId).get();
+    const sender = await platformMailboxSender(data.mailboxId ?? original.data()?.mailboxId);
+
+    /**
      * Send the email through Resend.
      */
     try {
@@ -1057,9 +1070,11 @@ export const sendContactReply = onCall(
         },
 
         body: JSON.stringify({
-          from: ZEBRON_FROM_EMAIL,
+          from: sender.from,
 
           to: [to],
+
+          reply_to: sender.replyTo,
 
           subject,
 
@@ -1083,6 +1098,8 @@ export const sendContactReply = onCall(
         throw new HttpsError("internal", "Unable to send the email.");
       }
 
+      await recordEmailUsage("sent", "admin_contact_reply");
+
       /**
        * Record the outbound reply.
        *
@@ -1091,7 +1108,9 @@ export const sendContactReply = onCall(
        * conversation remains associated.
        */
       await getDb().collection("contactMessages").doc(messageId).collection("replies").add({
-        from: ZEBRON_FROM_EMAIL,
+        from: sender.from,
+
+        mailboxId: sender.mailboxId,
 
         to,
 
@@ -1160,6 +1179,8 @@ export const sendNewContactMessage = onCall(
   subject?: unknown;
   message?: unknown;
   type?: unknown;
+  /** Platform mailbox sending (support, billing...); defaults to General. */
+  mailboxId?: unknown;
 };
 
     /**
@@ -1226,6 +1247,8 @@ export const sendNewContactMessage = onCall(
     const idempotencyKey =
   `admin-email:${randomUUID()}`;
 
+    const sender = await platformMailboxSender(data.mailboxId);
+
     try {
       /**
        * Send the email through Resend.
@@ -1242,9 +1265,11 @@ export const sendNewContactMessage = onCall(
         },
 
         body: JSON.stringify({
-          from: ZEBRON_FROM_EMAIL,
+          from: sender.from,
 
           to: [to],
+
+          reply_to: sender.replyTo,
 
           subject,
 
@@ -1268,12 +1293,16 @@ export const sendNewContactMessage = onCall(
         throw new HttpsError("internal", "Unable to send the email.");
       }
 
+      await recordEmailUsage("sent", "admin_contact_new");
+
       /**
        * Keep a record of administrator-sent
        * messages in a dedicated collection.
        */
       await getDb().collection("outboundMessages").add({
-        from: ZEBRON_FROM_EMAIL,
+        from: sender.from,
+
+        mailboxId: sender.mailboxId,
 
         to,
 
@@ -1480,6 +1509,11 @@ export {
 export {
   publishScheduledBlogPosts,
 } from "./blog-scheduler";
+
+export {
+  startCourseExam,
+  submitCourseExam,
+} from "./course-exams";
 
 /**
  * Create a persistent audit record inside the current Firestore transaction.

@@ -966,7 +966,10 @@ export class OrganizationManagementComponent implements OnInit {
   protected readonly canManageBilling = computed(() => this.access.can('billing.manage'));
 
   /** Organization mailbox: managers and above. */
-  protected readonly canUseMailbox = computed(() => this.access.can('mailbox.access'));
+  /** Mailbox is on demand: shown once the organization has it. */
+  protected readonly canUseMailbox = computed(
+    () => this.access.can('mailbox.access') && this.organizationStore.hasActiveApplication('mailbox'),
+  );
 
   protected readonly mailboxUnread = signal(0);
 

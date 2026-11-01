@@ -30,6 +30,8 @@ export interface ContactReply {
   to: string;
   subject: string;
   message: string;
+  /** Platform mailbox answering (support, billing...); defaults to the message's mailbox. */
+  mailboxId?: string;
 }
 
 /**
@@ -45,6 +47,9 @@ export interface NewContactMessage {
    * was created.
    */
   type: 'new' | 'forward';
+
+  /** Platform mailbox sending (support, billing...); defaults to General. */
+  mailboxId?: string;
 }
 
 interface ContactFunctionResponse {

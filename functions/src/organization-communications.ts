@@ -12,6 +12,8 @@ import {
 } from "firebase-functions/v2/https";
  
 import * as logger from "firebase-functions/logger";
+import { recordEmailUsage } from "./email-usage";
+import { organizationInboundAddress } from "./inbound-email";
  
 /**
  * Zebron Organization Communications
@@ -103,15 +105,10 @@ interface AuthorizedOrganizationUser {
  
   /**
    * URL slug of the organization. Used to build the organization's
-   * inbound address (org+<slug>@zebron.org) for Reply-To.
+   * inbound address (<slug>@zebron.org) for Reply-To.
    */
   organizationSlug: string | null;
 }
- 
-/**
- * Inbound addressing. Must match functions/src/inbound-email.ts.
- */
-const INBOUND_DOMAIN = "zebron.org";
  
 /**
  * Build the Reply-To address for an organization, or null when the
@@ -122,7 +119,7 @@ function organizationReplyTo(slug: string | null): string | null {
     return null;
   }
  
-  return `org+${slug}@${INBOUND_DOMAIN}`;
+  return organizationInboundAddress(slug);
 }
  
 /**
@@ -357,10 +354,11 @@ async function authorizeOrganizationUser(
     .collection("organizationMemberships")
     .doc(`${uid}_${organizationId}`);
  
-  const [membershipSnapshot, organizationSnapshot] =
+  const [membershipSnapshot, organizationSnapshot, mailboxEntitlement] =
     await Promise.all([
       membershipRef.get(),
       db.collection("organizations").doc(organizationId).get(),
+      db.collection("organizations").doc(organizationId).collection("applications").doc("mailbox").get(),
     ]);
  
   if (!organizationSnapshot.exists) {
@@ -416,7 +414,10 @@ async function authorizeOrganizationUser(
     role: membership.role,
     organizationId,
     organizationName: extractOrganizationName(organization),
-    organizationSlug: cleanString(organization?.slug).toLowerCase() || null,
+    // Replies come back to the organization only when it has the Mailbox.
+    organizationSlug: mailboxEntitlement.get("status") === "active" ?
+      cleanString(organization?.slug).toLowerCase() || null :
+      null,
   };
 }
  
@@ -795,6 +796,8 @@ async function sendEmail(
       `Email provider returned HTTP ${response.status}.`,
     );
   }
+
+  await recordEmailUsage("sent", "organization_communication");
  
   return typeof result.id === "string" ? result.id : null;
 }

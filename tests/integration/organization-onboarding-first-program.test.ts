@@ -198,7 +198,7 @@ async function createTestCenterEntitlement(
       onboarding: {
         steps: [
           'first_program',
-          'first_course',
+          'first_quiz',
           'first_topic',
           'first_question',
         ],
@@ -207,7 +207,7 @@ async function createTestCenterEntitlement(
         status: 'not_started',
 
         firstProgramId: null,
-        firstCourseId: null,
+        firstQuizId: null,
         firstTopicId: null,
         firstQuestionId: null,
 
@@ -352,11 +352,11 @@ describe('completeOrganizationFirstProgram', () => {
         slug: 'cyber-security',
         description: 'Cyber Security Program',
         active: true,
-        courseCount: 0,
+        quizCount: 0,
       },
       onboarding: {
         firstProgramId: 'cyber-security',
-        currentStep: 'first_course',
+        currentStep: 'first_quiz',
         status: 'in_progress',
       },
     });
@@ -374,7 +374,7 @@ describe('completeOrganizationFirstProgram', () => {
       slug: 'cyber-security',
       description: 'Cyber Security Program',
       active: true,
-      courseCount: 0,
+      quizCount: 0,
       createdBy: OWNER_UID,
     });
 
@@ -416,7 +416,7 @@ describe('completeOrganizationFirstProgram', () => {
 
     expect(entitlementSnapshot.data()?.onboarding).toMatchObject({
       firstProgramId: 'cyber-security',
-      currentStep: 'first_course',
+      currentStep: 'first_quiz',
       completedSteps: ['first_program'],
       status: 'in_progress',
     });
@@ -582,14 +582,14 @@ describe('completeOrganizationFirstProgram', () => {
 
 it('rejects when onboarding is not currently at first_program', async () => {
   // Simulate a Test Center workflow that has already completed
-  // first_program and is now on first_course.
+  // first_program and is now on first_quiz.
   await adminDb
     .collection('organizations')
     .doc(ORGANIZATION_ID)
     .collection('applications')
     .doc('test-center')
     .update({
-      'onboarding.currentStep': 'first_course',
+      'onboarding.currentStep': 'first_quiz',
       'onboarding.completedSteps': ['first_program'],
       'onboarding.status': 'in_progress',
       'onboarding.firstProgramId': 'existing-program',
@@ -624,7 +624,7 @@ it('rejects when onboarding is not currently at first_program', async () => {
         currentStep: null,
         completedSteps: [
           'first_program',
-          'first_course',
+          'first_quiz',
           'first_topic',
           'first_question',
         ],
@@ -695,7 +695,7 @@ it('rejects when onboarding is not currently at first_program', async () => {
         slug: 'cyber-security',
         description: 'Existing program',
         active: true,
-        courseCount: 0,
+        quizCount: 0,
         createdBy: OWNER_UID,
         createdAt:
           AdminFieldValue.serverTimestamp(),

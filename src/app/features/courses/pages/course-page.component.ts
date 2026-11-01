@@ -12,7 +12,7 @@ import { useLearningHeaderTitle } from '../../test-center/learner-route';
 
 import { CourseHeaderComponent } from '../components/course-header.component';
 import { ProgressRingComponent } from '../components/progress-ring.component';
-import { COURSE_COVERS, COURSE_LEVEL_LABELS, courseContextFromRoute, formatMinutes } from '../course.model';
+import { COURSE_COVERS, COURSE_LEVEL_LABELS, courseContextFromRoute, formatMinutes, hasCertificate, isCourseComplete } from '../course.model';
 import { CourseStore } from '../course.store';
 
 /** A course: what you will learn, your progress, and the modules and lessons. */
@@ -75,7 +75,9 @@ import { CourseStore } from '../course.store';
                   @if (checkCount()) {
                     <span>· {{ (checkCount() === 1 ? '{0} quick check' : '{0} quick checks') | t: [checkCount()] }}</span>
                   }
-                  <span>· {{ 'Certificate' | t }}</span>
+                  @if (course.finalExam) {
+                    <span>· {{ 'Final exam and certificate' | t }}</span>
+                  }
                 </p>
 
                 @if (course.outcomes.length) {
@@ -114,6 +116,13 @@ import { CourseStore } from '../course.store';
                 >
                   <mat-icon aria-hidden="true">login</mat-icon>{{ 'Sign in to start' | t }}
                 </a>
+              } @else if (examNext()) {
+                <a
+                  [routerLink]="[coursePath(), 'exam']"
+                  class="inline-flex h-11 items-center justify-center gap-1 rounded-lg bg-[#007979] px-4 font-semibold text-white hover:bg-[#006666]"
+                >
+                  <mat-icon aria-hidden="true">assignment</mat-icon>{{ 'Take the final exam' | t }}
+                </a>
               } @else if (store.resumeLesson(); as lesson) {
                 <a
                   [routerLink]="[coursePath(), 'lessons', lesson.id]"
@@ -124,7 +133,17 @@ import { CourseStore } from '../course.store';
                 </a>
               }
 
-              @if (completed()) {
+              @if (lessonsDone()) {
+                <a
+                  [routerLink]="[coursePath(), 'summary']"
+                  class="inline-flex h-10 items-center justify-center gap-1 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">summarize</mat-icon>
+                  {{ 'Course summary' | t }}
+                </a>
+              }
+
+              @if (certificate()) {
                 <a
                   [routerLink]="[coursePath(), 'certificate']"
                   class="inline-flex h-10 items-center justify-center gap-1 rounded-lg border border-[#007979] px-4 text-sm font-semibold text-[#007979] hover:bg-teal-50"
@@ -197,6 +216,59 @@ import { CourseStore } from '../course.store';
                 }
               </section>
             }
+
+            <!-- Final exam -->
+            @if (course.finalExam; as exam) {
+              <section class="overflow-hidden rounded-2xl border-2" [ngClass]="examPassed() ? 'border-emerald-200 bg-emerald-50/40' : 'border-teal-100 bg-white'">
+                <div class="flex flex-wrap items-center gap-4 p-4">
+                  <span
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+                    [ngClass]="examPassed() ? 'bg-emerald-100 text-emerald-700' : lessonsDone() ? 'bg-teal-50 text-[#007979]' : 'bg-slate-100 text-slate-400'"
+                    aria-hidden="true"
+                  >
+                    <mat-icon>{{ examPassed() ? 'verified' : lessonsDone() ? 'assignment' : 'lock' }}</mat-icon>
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <h3 class="font-semibold text-slate-900">{{ 'Final exam' | t }}</h3>
+                    <p class="text-sm text-slate-600">
+                      {{ '{0} questions · pass mark {1}%' | t: [exam.questionCount, exam.passMark] }}
+                      @if (exam.timeLimitMinutes) {
+                        · {{ '{0} min' | t: [exam.timeLimitMinutes] }}
+                      }
+                      @if (exam.maxAttempts) {
+                        · {{ (exam.maxAttempts === 1 ? '1 attempt' : '{0} attempts') | t: [exam.maxAttempts] }}
+                      }
+                    </p>
+                    <p class="mt-0.5 text-xs text-slate-500">
+                      @if (examPassed()) {
+                        {{ 'Passed with {0}%. Your certificate is ready.' | t: [store.courseExam()?.passScore ?? store.courseExam()?.bestScore ?? 0] }}
+                      } @else if (!lessonsDone()) {
+                        {{ 'Unlocks when every lesson is done. Passing it earns the certificate.' | t }}
+                      } @else if (store.courseExam()?.attempts) {
+                        {{ 'Best score so far: {0}%' | t: [store.courseExam()?.bestScore ?? 0] }}
+                      } @else {
+                        {{ 'Ready when you are. Passing it earns the certificate.' | t }}
+                      }
+                    </p>
+                  </div>
+                  @if (signedIn() && lessonsDone() && !examPassed()) {
+                    <a
+                      [routerLink]="[coursePath(), 'exam']"
+                      class="inline-flex h-10 items-center gap-1 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]"
+                    >
+                      {{ 'Start' | t }}<mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                    </a>
+                  } @else if (examPassed()) {
+                    <a
+                      [routerLink]="[coursePath(), 'certificate']"
+                      class="inline-flex h-10 items-center gap-1 rounded-lg border border-emerald-300 bg-white px-4 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+                    >
+                      <mat-icon aria-hidden="true">workspace_premium</mat-icon>{{ 'Certificate' | t }}
+                    </a>
+                  }
+                </div>
+              </section>
+            }
           </div>
         }
       </div>
@@ -216,7 +288,13 @@ export class CoursePageComponent {
   protected readonly coursePath = computed(() => `${this.context.basePath}/${this.store.course()?.id ?? this.courseId}`);
   protected readonly progress = computed(() => this.store.courseProgress());
   protected readonly doneCount = computed(() => this.store.completedIds().size);
-  protected readonly completed = computed(() => this.progress()?.status === 'completed');
+  /** Every lesson done. */
+  protected readonly lessonsDone = computed(() => this.progress()?.status === 'completed');
+  protected readonly examPassed = computed(() => this.store.courseExam()?.passed === true);
+  protected readonly examNext = computed(() => !!this.store.course()?.finalExam && this.lessonsDone() && !this.examPassed());
+  /** Lessons done and, when there is one, the final exam passed. */
+  protected readonly completed = computed(() => isCourseComplete(this.progress(), this.store.courseExam()));
+  protected readonly certificate = computed(() => hasCertificate(this.progress(), this.store.courseExam()));
   protected readonly cover = computed(() => COURSE_COVERS[this.store.course()?.cover ?? 'teal']);
   protected readonly levelLabel = computed(() => COURSE_LEVEL_LABELS[this.store.course()?.level ?? 'all']);
   protected readonly duration = computed(() => formatMinutes(this.store.course()?.estimatedMinutes ?? 0));
@@ -224,7 +302,7 @@ export class CoursePageComponent {
   protected readonly descriptionHtml = computed(() => renderKnowledgeContent(this.store.course()?.description ?? ''));
 
   protected readonly statusLabel = computed(() =>
-    this.completed() ? 'Completed' : this.doneCount() ? 'In progress' : 'Not started',
+    this.completed() ? 'Completed' : this.examNext() ? 'Final exam next' : this.doneCount() ? 'In progress' : 'Not started',
   );
 
   private readonly headerTitle = useLearningHeaderTitle(this.route);

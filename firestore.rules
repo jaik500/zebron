@@ -4212,24 +4212,42 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // ORGANIZATION MAILBOX (on-demand application)
+    // ============================================================
+
+    /*
+     * Organizations get the Mailbox only after requesting it: everything
+     * below needs organizations/{id}/applications/mailbox to be active.
+     * Platform administrators keep access for support.
+     */
+    function hasActiveMailboxEntitlement(organizationId) {
+      let entitlementPath =
+        /databases/$(database)/documents/organizations/$(organizationId)/applications/mailbox;
+
+      return exists(entitlementPath)
+        && get(entitlementPath).data.get("status", "") == "active";
+    }
+
+    // ============================================================
     // ORGANIZATION INBOUND MESSAGES
     // ============================================================
  
     /*
-     * Email sent to org+<slug>@zebron.org is stored here by the
+     * Email sent to <slug>@zebron.org is stored here by the
      * receiveInboundEmail Cloud Function (Admin SDK, bypasses rules).
      *
      * - Organization owners, admins and managers can read their
      *   organization's mail and mark it read/archived.
      * - Platform administrators retain access for support.
      * - Clients can never create messages or change their content.
-     * - Only platform administrators can permanently delete.
+     * - Managers and above can permanently delete their mail.
      */
     match /organizations/{organizationId}/inboundMessages/{messageId} {
  
       allow get, list: if isPlatformAdmin()
         || (
           isOrganizationConfigurable(organizationId)
+          && hasActiveMailboxEntitlement(organizationId)
           && isOrganizationManagerOrAbove(organizationId)
         );
  
@@ -4238,14 +4256,175 @@ service cloud.firestore {
       allow update: if isPlatformAdmin()
         || (
           isOrganizationConfigurable(organizationId)
+          && hasActiveMailboxEntitlement(organizationId)
           && isOrganizationManagerOrAbove(organizationId)
           && request.resource.data.diff(resource.data)
             .affectedKeys()
             .hasOnly(["status", "read", "archived", "updatedAt"])
           && request.resource.data.get("status", "") in ["new", "read", "archived"]
         );
- 
+
+      allow delete: if isPlatformAdmin()
+        || (
+          isOrganizationConfigurable(organizationId)
+          && hasActiveMailboxEntitlement(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+        );
+    }
+
+    // ============================================================
+    // ORGANIZATION DEPARTMENTAL MAILBOXES
+    // ============================================================
+
+    /*
+     * organizations/{id}/mailboxes/{key}: shared mailboxes such as
+     * admissions or hr, reached at <key>.<slug>@zebron.org.
+     *
+     * - Staff and above can see which mailboxes exist (names, addresses,
+     *   who is assigned); nothing in the configuration is private.
+     * - Owners and admins create, change and delete mailboxes.
+     * - Mail in a mailbox: the staff assigned to it, plus owners and
+     *   admins. Leaving the organization ends access automatically.
+     * - Messages are written only by Cloud Functions (receiveInboundEmail,
+     *   sendOrganizationMailboxEmail).
+     */
+    function organizationMailboxPath(organizationId, mailboxId) {
+      return /databases/$(database)/documents/organizations/$(organizationId)/mailboxes/$(mailboxId);
+    }
+
+    function isAssignedToOrganizationMailbox(organizationId, mailboxId) {
+      return isAuthenticated()
+        && exists(organizationMailboxPath(organizationId, mailboxId))
+        && request.auth.uid in get(organizationMailboxPath(organizationId, mailboxId)).data.get("memberIds", []);
+    }
+
+    function canUseOrganizationMailbox(organizationId, mailboxId) {
+      return isPlatformAdmin()
+        || (
+          isOrganizationConfigurable(organizationId)
+          && hasActiveMailboxEntitlement(organizationId)
+          && (
+            isOrganizationAdmin(organizationId)
+            || (
+              isOrganizationStaffOrAbove(organizationId)
+              && isAssignedToOrganizationMailbox(organizationId, mailboxId)
+            )
+          )
+        );
+    }
+
+    function isValidOrganizationMailbox(mailboxId) {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly([
+          "key", "name", "description", "memberIds", "active",
+          "createdAt", "createdBy", "updatedAt", "updatedBy"
+        ])
+        && mailboxId.matches("^[a-z0-9][a-z0-9-]{0,39}$")
+        && mailboxId != "main"
+        && data.key == mailboxId
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 60
+        && data.get("description", "") is string
+        && data.get("description", "").size() <= 200
+        && data.memberIds is list
+        && data.memberIds.size() <= 50
+        && data.active is bool;
+    }
+
+    match /organizations/{organizationId}/mailboxes/{mailboxId} {
+      allow get, list: if isPlatformAdmin()
+        || (
+          isOrganizationConfigurable(organizationId)
+          && hasActiveMailboxEntitlement(organizationId)
+          && isOrganizationStaffOrAbove(organizationId)
+        );
+
+      allow create, update: if (
+          isPlatformAdmin()
+          || (
+            isOrganizationConfigurable(organizationId)
+          && hasActiveMailboxEntitlement(organizationId)
+            && isOrganizationAdmin(organizationId)
+          )
+        )
+        && isValidOrganizationMailbox(mailboxId);
+
+      allow delete: if isPlatformAdmin()
+        || (
+          isOrganizationConfigurable(organizationId)
+          && hasActiveMailboxEntitlement(organizationId)
+          && isOrganizationAdmin(organizationId)
+        );
+
+      match /inboundMessages/{messageId} {
+        allow get, list: if canUseOrganizationMailbox(organizationId, mailboxId);
+
+        allow create: if false;
+
+        allow update: if canUseOrganizationMailbox(organizationId, mailboxId)
+          && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly(["status", "read", "archived", "updatedAt"])
+          && request.resource.data.get("status", "") in ["new", "read", "archived"];
+
+        allow delete: if canUseOrganizationMailbox(organizationId, mailboxId);
+      }
+
+      match /sentMessages/{messageId} {
+        allow get, list: if canUseOrganizationMailbox(organizationId, mailboxId);
+
+        allow create, update: if false;
+
+        allow delete: if canUseOrganizationMailbox(organizationId, mailboxId);
+      }
+    }
+
+    /* Emails sent per day across an organization's mailboxes (Cloud Functions only). */
+    match /organizations/{organizationId}/mailboxUsage/{day} {
+      allow get, list: if isPlatformAdmin()
+        || (
+          isOrganizationConfigurable(organizationId)
+          && hasActiveMailboxEntitlement(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+        );
+
+      allow write: if false;
+    }
+
+    /*
+     * Zebron's own mailboxes (General, Support, Billing...). The ID is the
+     * address name: platformMailboxes/support is support@zebron.org.
+     * Platform administrators manage them; Cloud Functions read them to
+     * route incoming mail and to send as "Zebron Support".
+     */
+    match /platformMailboxes/{mailboxId} {
+      allow get, list: if isPlatformAdmin();
+
+      allow create, update: if isPlatformAdmin()
+        && mailboxId.matches("^[a-z][a-z-]{1,29}$")
+        && request.resource.data.keys().hasOnly([
+          "name", "description", "forwardTo", "active",
+          "createdAt", "createdBy", "updatedAt", "updatedBy"
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.get("description", "") is string
+        && request.resource.data.get("description", "").size() <= 200
+        && request.resource.data.get("forwardTo", "") is string
+        && request.resource.data.get("forwardTo", "").size() <= 254
+        && request.resource.data.active is bool;
+
       allow delete: if isPlatformAdmin();
+    }
+
+    /* Platform email usage for the admin dashboard (Cloud Functions only). */
+    match /platformEmailUsage/{period} {
+      allow get, list: if isPlatformAdmin();
+
+      allow write: if false;
     }
 
     // ============================================================
@@ -4254,16 +4433,25 @@ service cloud.firestore {
 
     /*
      * Written only by the sendOrganizationMailboxEmail Cloud Function.
-     * Managers, admins and owners can read the organization's sent mail.
+     * Managers, admins and owners can read the organization's sent mail
+     * and delete it from the mailbox.
      */
     match /organizations/{organizationId}/sentMessages/{messageId} {
       allow get, list: if isPlatformAdmin()
         || (
           isOrganizationConfigurable(organizationId)
+          && hasActiveMailboxEntitlement(organizationId)
           && isOrganizationManagerOrAbove(organizationId)
         );
 
-      allow create, update, delete: if false;
+      allow create, update: if false;
+
+      allow delete: if isPlatformAdmin()
+        || (
+          isOrganizationConfigurable(organizationId)
+          && hasActiveMailboxEntitlement(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+        );
     }
 
         // ============================================================
@@ -4562,6 +4750,20 @@ service cloud.firestore {
         && (post.section == "public" || isPlatformAdmin());
     }
 
+    /*
+     * The blog is an on-demand application: organization posts are only
+     * readable and writable while the organization's blog entitlement is
+     * active (organizations/{id}/applications/blog). Platform administrators
+     * keep access for support.
+     */
+    function hasActiveBlogEntitlement(organizationId) {
+      let entitlementPath =
+        /databases/$(database)/documents/organizations/$(organizationId)/applications/blog;
+
+      return exists(entitlementPath)
+        && get(entitlementPath).data.get("status", "") == "active";
+    }
+
     /* A published organization post the signed-in user can read. */
     function isOpenOrganizationBlogPost(organizationId, postId) {
       let post = get(/databases/$(database)/documents/organizations/$(organizationId)/blogPosts/$(postId)).data;
@@ -4571,6 +4773,7 @@ service cloud.firestore {
           isPlatformAdmin()
           || (
             isOrganizationOperational(organizationId)
+            && hasActiveBlogEntitlement(organizationId)
             && isOrganizationMember(organizationId)
           )
         );
@@ -4624,10 +4827,12 @@ service cloud.firestore {
 
       allow get, list: if isAuthenticated()
         && isOrganizationOperational(organizationId)
+          && hasActiveBlogEntitlement(organizationId)
         && isOrganizationMember(organizationId)
         && resource.data.status == "published";
 
       allow get, list: if isOrganizationOperational(organizationId)
+          && hasActiveBlogEntitlement(organizationId)
         && isOrganizationStaffOrAbove(organizationId);
 
       allow create: if isValidBlogPost(organizationId)
@@ -4637,10 +4842,12 @@ service cloud.firestore {
           isPlatformAdmin()
           || (
             isOrganizationOperational(organizationId)
+          && hasActiveBlogEntitlement(organizationId)
             && isOrganizationManagerOrAbove(organizationId)
           )
           || (
             isOrganizationOperational(organizationId)
+          && hasActiveBlogEntitlement(organizationId)
             && isOrganizationStaffOrAbove(organizationId)
             && request.resource.data.status in ["draft", "in_review"]
             && request.resource.data.pinned == false
@@ -4654,10 +4861,12 @@ service cloud.firestore {
           isPlatformAdmin()
           || (
             isOrganizationOperational(organizationId)
+          && hasActiveBlogEntitlement(organizationId)
             && isOrganizationManagerOrAbove(organizationId)
           )
           || (
             isOrganizationOperational(organizationId)
+          && hasActiveBlogEntitlement(organizationId)
             && isOrganizationStaffOrAbove(organizationId)
             && resource.data.authorId == request.auth.uid
             && resource.data.status in ["draft", "in_review", "changes_requested"]
@@ -4669,10 +4878,12 @@ service cloud.firestore {
       allow delete: if isPlatformAdmin()
         || (
           isOrganizationOperational(organizationId)
+          && hasActiveBlogEntitlement(organizationId)
           && isOrganizationManagerOrAbove(organizationId)
         )
         || (
           isOrganizationOperational(organizationId)
+          && hasActiveBlogEntitlement(organizationId)
           && isOrganizationStaffOrAbove(organizationId)
           && resource.data.authorId == request.auth.uid
           && resource.data.status in ["draft", "changes_requested"]
@@ -4692,6 +4903,7 @@ service cloud.firestore {
           )
           || (
             isOrganizationOperational(organizationId)
+          && hasActiveBlogEntitlement(organizationId)
             && isOrganizationManagerOrAbove(organizationId)
           );
       }
@@ -4725,14 +4937,29 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/courses/$(courseId)).data.status == "published";
     }
 
+    /*
+     * Courses is a Learning capability: organization courses are only
+     * readable and writable while organizations/{id}/applications/courses
+     * is active. Platform administrators keep access for support.
+     */
+    function hasActiveCoursesEntitlement(organizationId) {
+      let entitlementPath =
+        /databases/$(database)/documents/organizations/$(organizationId)/applications/courses;
+
+      return exists(entitlementPath)
+        && get(entitlementPath).data.get("status", "") == "active";
+    }
+
     function isOpenOrganizationCourse(organizationId, courseId) {
       return isPlatformAdmin()
         || (
           isOrganizationOperational(organizationId)
+          && hasActiveCoursesEntitlement(organizationId)
           && isOrganizationStaffOrAbove(organizationId)
         )
         || (
           isOrganizationOperational(organizationId)
+          && hasActiveCoursesEntitlement(organizationId)
           && isOrganizationMember(organizationId)
           && get(/databases/$(database)/documents/organizations/$(organizationId)/courses/$(courseId)).data.status == "published"
         );
@@ -4742,6 +4969,7 @@ service cloud.firestore {
       return isPlatformAdmin()
         || (
           isOrganizationOperational(organizationId)
+          && hasActiveCoursesEntitlement(organizationId)
           && isOrganizationManagerOrAbove(organizationId)
         );
     }
@@ -4752,7 +4980,7 @@ service cloud.firestore {
       return data.keys().hasOnly([
           "title", "summary", "description", "topic", "level", "cover",
           "outcomes", "skills", "modules", "lessonCount", "estimatedMinutes",
-          "status", "providerName", "authorId", "authorName", "organizationId", "id",
+          "status", "providerName", "authorId", "authorName", "organizationId", "id", "finalExam",
           "createdAt", "updatedAt", "publishedAt"
         ])
         && data.title is string
@@ -4769,7 +4997,21 @@ service cloud.firestore {
         && data.get("outcomes", []) is list
         && data.get("outcomes", []).size() <= 30
         && data.get("skills", []) is list
-        && data.get("skills", []).size() <= 30;
+        && data.get("skills", []).size() <= 30
+        && (
+          data.get("finalExam", null) == null
+          || (
+            data.finalExam is map
+            && data.finalExam.keys().hasOnly(["quizId", "quizName", "questionCount", "passMark", "timeLimitMinutes", "maxAttempts"])
+            && data.finalExam.quizId is string
+            && data.finalExam.questionCount is int
+            && data.finalExam.questionCount >= 1
+            && data.finalExam.questionCount <= 200
+            && data.finalExam.passMark is int
+            && data.finalExam.passMark >= 1
+            && data.finalExam.passMark <= 100
+          )
+        );
     }
 
     function isValidCourseLesson() {
@@ -4788,7 +5030,7 @@ service cloud.firestore {
 
       return data.keys().hasOnly([
           "userId", "courseId", "organizationId", "courseTitle", "cover",
-          "lessonCount", "completedLessonIds", "lastLessonId", "percent",
+          "lessonCount", "finalExam", "completedLessonIds", "lastLessonId", "percent",
           "status", "checkScores", "activity", "learnerName",
           "certificateCode", "skills", "startedAt", "updatedAt", "completedAt"
         ])
@@ -4849,10 +5091,12 @@ service cloud.firestore {
       allow get, list: if isPlatformAdmin();
 
       allow get, list: if isOrganizationOperational(organizationId)
+        && hasActiveCoursesEntitlement(organizationId)
         && isOrganizationStaffOrAbove(organizationId);
 
       allow get, list: if isAuthenticated()
         && isOrganizationOperational(organizationId)
+        && hasActiveCoursesEntitlement(organizationId)
         && isOrganizationMember(organizationId)
         && resource.data.status == "published";
 
@@ -4869,6 +5113,34 @@ service cloud.firestore {
           && isValidCourseLesson();
 
         allow delete: if canWriteOrganizationCourses(organizationId);
+      }
+    }
+
+    /*
+     * Final exam records: written only by the startCourseExam and
+     * submitCourseExam Cloud Functions, which grade on the server.
+     */
+    /*
+     * Course certificates, for the public check at /verify/<code>.
+     * Written only by submitCourseExam; anyone may look one up by its
+     * code, nobody may list them.
+     */
+    match /certificates/{code} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    match /users/{userId}/courseExams/{progressId} {
+      allow get, list: if isCurrentUser(userId)
+        || isPlatformAdmin();
+
+      allow write: if false;
+
+      match /attempts/{attemptId} {
+        allow get, list: if isCurrentUser(userId)
+          || isPlatformAdmin();
+
+        allow write: if false;
       }
     }
 

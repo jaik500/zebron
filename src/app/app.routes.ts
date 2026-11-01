@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 import { featureGuard } from './core/guards/feature.guard';
@@ -134,11 +135,34 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/courses/pages/lesson-player.component').then((m) => m.LessonPlayerComponent),
             },
             {
+                path: ':courseId/summary',
+                canActivate: [authGuard],
+                loadComponent: () => import('./features/courses/pages/course-summary.component').then((m) => m.CourseSummaryComponent),
+            },
+            {
+                path: ':courseId/exam',
+                canActivate: [authGuard],
+                loadComponent: () => import('./features/courses/pages/course-exam.component').then((m) => m.CourseExamComponent),
+            },
+            {
                 path: ':courseId/certificate',
                 canActivate: [authGuard],
                 loadComponent: () => import('./features/courses/pages/course-certificate.component').then((m) => m.CourseCertificateComponent),
             },
         ],
+    },
+    // -----------------------------------------------------
+    // CERTIFICATE CHECK (public)
+    // -----------------------------------------------------
+    {
+        path: 'verify',
+        data: { title: 'Zebron | Check a certificate' },
+        loadComponent: () => import('./features/courses/pages/certificate-verify.component').then((m) => m.CertificateVerifyComponent),
+    },
+    {
+        path: 'verify/:code',
+        data: { title: 'Zebron | Check a certificate' },
+        loadComponent: () => import('./features/courses/pages/certificate-verify.component').then((m) => m.CertificateVerifyComponent),
     },
     // -----------------------------------------------------
     // PUBLIC KNOWLEDGE CENTER
@@ -436,11 +460,16 @@ export const routes: Routes = [
             authGuard,
             partnerOrganizationGuard,
             partnerRoleGuard,
+            // On-demand application: the organization must have requested it.
+            applicationAccessGuard,
         ],
         data: {
+            applicationId: 'mailbox',
             title: 'Partner | Mailbox',
             organizationHeader: true,
-            minimumOrganizationRole: 'org_manager',
+            // Staff can open the departmental mailboxes they are assigned to;
+            // the page shows each person only the mailboxes they may use.
+            minimumOrganizationRole: 'org_staff',
         },
         loadComponent: () => import('./features/partner/mailbox/organization-mailbox.component').then((m) => m.OrganizationMailboxComponent),
     },
@@ -581,28 +610,18 @@ export const routes: Routes = [
     // -----------------------------------------------------
     // TEST CENTER COURSES
     // -----------------------------------------------------
+    // Old Test Center "courses" (quizzes by type): now the Courses catalog.
     {
         path: 'test-center/courses',
-        canActivate: [featureGuard],
-        data: {
-            featureKey: 'test-center',
-            title: 'Test Center | Courses',
-            header: 'Test Center',
-        },
-        loadComponent: () => import('./features/test-center/pages/course-list/course-list.component').then((m) => m.CourseListComponent),
+        pathMatch: 'full',
+        redirectTo: '/courses/catalog',
     },
     // -----------------------------------------------------
     // TEST CENTER COURSE DETAIL
     // -----------------------------------------------------
     {
         path: 'test-center/courses/:slug',
-        canActivate: [featureGuard],
-        data: {
-            featureKey: 'test-center',
-            title: 'Test Center | Course detail',
-            header: 'Test Center',
-        },
-        loadComponent: () => import('./features/test-center/pages/course-detail/course-detail.component').then((m) => m.CourseDetailsComponent),
+        redirectTo: '/test-center/quiz-details/:slug',
     },
     // -----------------------------------------------------
     // TEST CENTER QUIZ LIST
@@ -633,15 +652,11 @@ export const routes: Routes = [
     // -----------------------------------------------------
     // TEST CENTER SETUP
     // -----------------------------------------------------
+    // Setup now happens on the quiz details page.
     {
         path: 'test-center/setup',
-        canActivate: [featureGuard],
-        data: {
-            featureKey: 'test-center',
-            title: 'Test Center | Setup',
-            header: 'Test Center',
-        },
-        loadComponent: () => import('./features/test-center/pages/test-setup/test-setup.component').then((m) => m.TestSetupComponent),
+        pathMatch: 'full',
+        redirectTo: '/test-center/quizzes',
     },
     // -----------------------------------------------------
     // TEST CENTER PRACTICE
@@ -779,11 +794,17 @@ export const routes: Routes = [
             },
             {
                 path: 'courses',
-                loadComponent: () => import('./features/test-center/pages/course-list/course-list.component').then((m) => m.CourseListComponent),
+                pathMatch: 'full',
+                // The organization id belongs to the parent route, so read it from the URL.
+                redirectTo: () => {
+                    const url = inject(Router).getCurrentNavigation()?.extractedUrl.toString() ?? '';
+                    const organizationId = /\/partner\/org\/([^/?#]+)/.exec(url)?.[1];
+                    return organizationId ? `/partner/org/${organizationId}/courses/catalog` : '/courses/catalog';
+                },
             },
             {
                 path: 'courses/:slug',
-                loadComponent: () => import('./features/test-center/pages/course-detail/course-detail.component').then((m) => m.CourseDetailsComponent),
+                redirectTo: 'quiz-details/:slug',
             },
             {
                 path: 'quizzes',
@@ -795,7 +816,8 @@ export const routes: Routes = [
             },
             {
                 path: 'setup',
-                loadComponent: () => import('./features/test-center/pages/test-setup/test-setup.component').then((m) => m.TestSetupComponent),
+                pathMatch: 'full',
+                redirectTo: 'quizzes',
             },
             {
                 path: 'practice',
@@ -853,8 +875,11 @@ export const routes: Routes = [
         canActivate: [
             authGuard,
             partnerOrganizationGuard,
+            // On-demand application: only organizations that requested it.
+            applicationAccessGuard,
         ],
         data: {
+            applicationId: 'blog',
             blogSection: 'organization',
             title: 'Partner | Blog',
             organizationHeader: true,
@@ -897,8 +922,11 @@ export const routes: Routes = [
         canActivate: [
             authGuard,
             partnerOrganizationGuard,
+            // Courses is a Learning capability the organization requests.
+            applicationAccessGuard,
         ],
         data: {
+            applicationId: 'courses',
             title: 'Partner | Courses',
             organizationHeader: true,
         },
@@ -939,6 +967,16 @@ export const routes: Routes = [
                 path: ':courseId/lessons/:lessonId',
                 canActivate: [authGuard],
                 loadComponent: () => import('./features/courses/pages/lesson-player.component').then((m) => m.LessonPlayerComponent),
+            },
+            {
+                path: ':courseId/summary',
+                canActivate: [authGuard],
+                loadComponent: () => import('./features/courses/pages/course-summary.component').then((m) => m.CourseSummaryComponent),
+            },
+            {
+                path: ':courseId/exam',
+                canActivate: [authGuard],
+                loadComponent: () => import('./features/courses/pages/course-exam.component').then((m) => m.CourseExamComponent),
             },
             {
                 path: ':courseId/certificate',

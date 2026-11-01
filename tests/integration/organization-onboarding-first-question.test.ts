@@ -37,7 +37,7 @@ const CORE_STEPS = [
 ];
 const TEST_CENTER_STEPS = [
   "first_program",
-  "first_course",
+  "first_quiz",
   "first_topic",
   "first_question",
 ];
@@ -45,7 +45,7 @@ const TEST_CENTER_STEPS = [
 type Option = { text: string; isCorrect: boolean };
 type Input = {
   organizationId: string;
-  courseId?: string;
+  quizId?: string;
   topicId?: string;
   question: string;
   explanation?: string;
@@ -58,7 +58,7 @@ type Setup = {
   completedSteps: string[];
   status: "not_started" | "in_progress" | "completed";
   firstProgramId: string | null;
-  firstCourseId: string | null;
+  firstQuizId: string | null;
   firstTopicId: string | null;
   firstQuestionId: string | null;
   startedAt?: unknown;
@@ -127,14 +127,14 @@ async function createMembership(
 }
 
 async function createCourse(
-  courseId = COURSE_ID,
+  quizId = COURSE_ID,
   organizationId = ORGANIZATION_ID,
 ): Promise<void> {
-  await db.collection("testCourses").doc(courseId).set({
-    id: courseId,
+  await db.collection("quizzes").doc(quizId).set({
+    id: quizId,
     organizationId,
     name: "First Question Course",
-    slug: courseId,
+    slug: quizId,
     active: true,
     questionCount: 0,
     createdBy: OWNER_UID,
@@ -145,13 +145,13 @@ async function createCourse(
 
 async function createTopic(
   topicId = TOPIC_ID,
-  courseId = COURSE_ID,
+  quizId = COURSE_ID,
   organizationId = ORGANIZATION_ID,
 ): Promise<void> {
-  await db.collection("testTopics").doc(topicId).set({
+  await db.collection("quizTopics").doc(topicId).set({
     id: topicId,
     organizationId,
-    courseId,
+    quizId,
     name: "First Question Topic",
     slug: topicId,
     active: true,
@@ -169,10 +169,10 @@ async function createEntitlement(
   const onboarding: Setup = {
     steps: [...TEST_CENTER_STEPS],
     currentStep: "first_question",
-    completedSteps: ["first_program", "first_course", "first_topic"],
+    completedSteps: ["first_program", "first_quiz", "first_topic"],
     status: "in_progress",
     firstProgramId: "first-question-program",
-    firstCourseId: COURSE_ID,
+    firstQuizId: COURSE_ID,
     firstTopicId: TOPIC_ID,
     firstQuestionId: null,
     ...overrides,
@@ -260,9 +260,9 @@ beforeEach(async () => {
     deleteCollection("organizations"),
     deleteCollection("organizationMemberships"),
     deleteCollection("organizationOnboarding"),
-    deleteCollection("testCourses"),
-    deleteCollection("testTopics"),
-    deleteCollection("testQuestions"),
+    deleteCollection("quizzes"),
+    deleteCollection("quizTopics"),
+    deleteCollection("quizQuestions"),
   ]);
 
   await createOrganization();
@@ -291,7 +291,7 @@ describe("completeOrganizationFirstQuestion", () => {
 
     expect(result.success).toBe(true);
     expect(result.question.id).toBeTruthy();
-    expect(result.question.courseId).toBe(COURSE_ID);
+    expect(result.question.quizId).toBe(COURSE_ID);
     expect(result.question.topicId).toBe(TOPIC_ID);
     expect(result.onboarding).toMatchObject({
       firstQuestionId: result.question.id,
@@ -300,10 +300,10 @@ describe("completeOrganizationFirstQuestion", () => {
       isComplete: true,
     });
 
-    const question = await db.collection("testQuestions").doc(result.question.id).get();
+    const question = await db.collection("quizQuestions").doc(result.question.id).get();
     expect(question.data()).toMatchObject({
       organizationId: ORGANIZATION_ID,
-      courseId: COURSE_ID,
+      quizId: COURSE_ID,
       topicId: TOPIC_ID,
       question: "What does HTTP stand for?",
       type: "multiple-choice",
@@ -378,7 +378,7 @@ describe("completeOrganizationFirstQuestion", () => {
     // The transition helper derives currentStep from configured steps and
     // completedSteps, so make first_topic the next incomplete step.
     await entitlementRef().update({
-      "onboarding.completedSteps": ["first_program", "first_course"],
+      "onboarding.completedSteps": ["first_program", "first_quiz"],
       "onboarding.currentStep": "first_topic",
     });
     await expectCallableError(
@@ -401,7 +401,7 @@ describe("completeOrganizationFirstQuestion", () => {
   });
 
   it("rejects when the first course ID is missing", async () => {
-    await entitlementRef().update({ "onboarding.firstCourseId": null });
+    await entitlementRef().update({ "onboarding.firstQuizId": null });
     await expectCallableError(
       completeOrganizationFirstQuestion.run(callableRequest(OWNER_UID, validInput())),
       "failed-precondition",
@@ -441,8 +441,8 @@ describe("completeOrganizationFirstQuestion", () => {
     );
   });
 
-  it("rejects a supplied courseId that differs from the configured course", async () => {
-    const input = { ...validInput(), courseId: OTHER_COURSE_ID };
+  it("rejects a supplied quizId that differs from the configured course", async () => {
+    const input = { ...validInput(), quizId: OTHER_COURSE_ID };
     await expectCallableError(
       completeOrganizationFirstQuestion.run(callableRequest(OWNER_UID, input)),
       "failed-precondition",
@@ -457,7 +457,7 @@ describe("completeOrganizationFirstQuestion", () => {
     );
   });
 
-  it("allows courseId and topicId to be omitted", async () => {
+  it("allows quizId and topicId to be omitted", async () => {
     const result = await completeOrganizationFirstQuestion.run(
       callableRequest(OWNER_UID, validInput()),
     ) as any;
@@ -555,21 +555,21 @@ describe("completeOrganizationFirstQuestion", () => {
     await completeOrganizationFirstQuestion.run(
       callableRequest(OWNER_UID, validInput()),
     );
-    expect((await db.collection("testCourses").doc(COURSE_ID).get()).data()?.questionCount).toBe(1);
+    expect((await db.collection("quizzes").doc(COURSE_ID).get()).data()?.questionCount).toBe(1);
   });
 
   it("increments the topic question count", async () => {
     await completeOrganizationFirstQuestion.run(
       callableRequest(OWNER_UID, validInput()),
     );
-    expect((await db.collection("testTopics").doc(TOPIC_ID).get()).data()?.questionCount).toBe(1);
+    expect((await db.collection("quizTopics").doc(TOPIC_ID).get()).data()?.questionCount).toBe(1);
   });
 
   it("uses persisted steps to determine whether first_question completes setup", async () => {
     await createEntitlement({
-      steps: ["first_program", "first_course", "first_question"],
+      steps: ["first_program", "first_quiz", "first_question"],
       currentStep: "first_question",
-      completedSteps: ["first_program", "first_course"],
+      completedSteps: ["first_program", "first_quiz"],
       firstTopicId: TOPIC_ID,
     });
     const result = await completeOrganizationFirstQuestion.run(
@@ -581,7 +581,7 @@ describe("completeOrganizationFirstQuestion", () => {
 
   it("preserves previously completed Test Center steps", async () => {
     await entitlementRef().update({
-      "onboarding.completedSteps": ["first_program", "first_course", "first_topic"],
+      "onboarding.completedSteps": ["first_program", "first_quiz", "first_topic"],
     });
     const result = await completeOrganizationFirstQuestion.run(
       callableRequest(OWNER_UID, validInput()),
@@ -607,8 +607,8 @@ describe("completeOrganizationFirstQuestion", () => {
       completeOrganizationFirstQuestion.run(callableRequest(OWNER_UID, input)),
       "invalid-argument",
     );
-    expect((await db.collection("testQuestions").get()).size).toBe(0);
-    expect((await db.collection("testCourses").doc(COURSE_ID).get()).data()?.questionCount).toBe(0);
-    expect((await db.collection("testTopics").doc(TOPIC_ID).get()).data()?.questionCount).toBe(0);
+    expect((await db.collection("quizQuestions").get()).size).toBe(0);
+    expect((await db.collection("quizzes").doc(COURSE_ID).get()).data()?.questionCount).toBe(0);
+    expect((await db.collection("quizTopics").doc(TOPIC_ID).get()).data()?.questionCount).toBe(0);
   });
 });

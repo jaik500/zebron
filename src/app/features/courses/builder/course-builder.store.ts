@@ -13,6 +13,7 @@ import { LoggerService } from '../../../core/services/logger.service';
 
 import {
   CourseCover,
+  CourseFinalExam,
   CourseLevel,
   CourseStatus,
   LessonBlock,
@@ -29,6 +30,8 @@ export interface DraftDetails {
   cover: CourseCover;
   outcomes: string[];
   skills: string[];
+  /** A Test Center quiz as the final exam; null for none (then no certificate). */
+  finalExam: CourseFinalExam | null;
   status: CourseStatus;
 }
 
@@ -74,6 +77,7 @@ const EMPTY_DETAILS: DraftDetails = {
   cover: 'teal',
   outcomes: [],
   skills: [],
+  finalExam: null,
   status: 'draft',
 };
 
@@ -140,6 +144,9 @@ function publishProblems(details: DraftDetails, modules: DraftModule[], lessonMa
   }
   if (!lessons.length) {
     problems.push('Add at least one lesson.');
+  }
+  if (details.finalExam && !details.finalExam.quizId) {
+    problems.push('Choose the Test Center quiz for the final exam, or switch the final exam off.');
   }
 
   for (const lesson of lessons) {
@@ -291,6 +298,7 @@ export const CourseBuilderStore = signalStore(
               cover: course.cover,
               outcomes: course.outcomes,
               skills: course.skills,
+              finalExam: course.finalExam,
               status: course.status,
             },
             modules: course.modules.map((module) => ({
@@ -527,6 +535,7 @@ export const CourseBuilderStore = signalStore(
               cover: details.cover,
               outcomes: details.outcomes.map((item) => item.trim()).filter(Boolean),
               skills: details.skills.map((item) => item.trim()).filter(Boolean),
+              finalExam: details.finalExam?.quizId ? details.finalExam : null,
               modules,
               lessonCount: lessons.length,
               estimatedMinutes: lessons.reduce((total, lesson) => total + Number(lesson.data['minutes']), 0),

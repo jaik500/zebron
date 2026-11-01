@@ -6,13 +6,23 @@
  * Every address @zebron.org is delivered by Resend to this webhook.
  * Messages are routed by recipient address:
  *
- *   org+<organization-slug>@zebron.org
+ *   <organization-slug>@zebron.org
  *     → organizations/{organizationId}/inboundMessages/{emailId}
- *       (the organization's own mailbox; NOT forwarded to Gmail)
+ *       (the organization's main mailbox; NOT forwarded to Gmail)
+ *
+ *   <mailbox>.<organization-slug>@zebron.org
+ *     → organizations/{organizationId}/mailboxes/{mailbox}/inboundMessages/{emailId}
+ *       (a departmental mailbox such as admissions or hr; mail for a
+ *       missing or turned-off mailbox goes to the main mailbox)
+ *
+ *   Older addresses keep working: org+<slug>@ and org+<slug>.<mailbox>@.
+ *   Platform names (contact, support, noreply...) are reserved and never
+ *   used as organization addresses; an organization whose slug is one of
+ *   them keeps its org+<slug>@ address.
  *
  *   anything else, e.g. contact@zebron.org
  *     → contactMessages/{emailId}
- *       (the platform Contact Mailbox; forwarded to the admin Gmail)
+ *       (the platform mailboxes: General, Support, Billing...)
  *
  * Mail to an unknown or archived organization falls back to the
  * platform mailbox so nothing is lost.
@@ -23,7 +33,9 @@
  *   3. Retrieve the complete received email and attachment metadata.
  *   4. Resolve the destination mailbox.
  *   5. Store the message (idempotent: document ID = Resend email ID).
- *   6. Platform mailbox only: forward a copy to the admin Gmail.
+ *   6. Platform mailbox only: forward a copy, if the mailbox has a
+ *      "Forward a copy to" address (off by default: copies count
+ *      toward the email allowance).
  */
  
 import "./firebase-admin";
@@ -31,6 +43,8 @@ import "./firebase-admin";
 import {onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
+
+import {recordEmailUsage} from "./email-usage";
  
 // ============================================================
 // CONFIGURATION
@@ -42,14 +56,112 @@ export const INBOUND_DOMAIN = "zebron.org";
 /** Platform (Zebron) inbound address. */
 export const PLATFORM_INBOUND_ADDRESS = `contact@${INBOUND_DOMAIN}`;
  
-/** Local-part prefix used for organization addresses: org+<slug>@zebron.org */
+/** Prefix of the older organization addresses: org+<slug>@zebron.org (still accepted). */
 export const ORGANIZATION_ADDRESS_PREFIX = "org";
+
+/**
+ * Address names kept for Zebron itself. Organizations cannot take these
+ * as slugs (see organization-provisioning.ts), and mail to them always
+ * goes to the platform mailbox.
+ */
+export const RESERVED_ADDRESS_NAMES: readonly string[] = [
+  "abuse", "account", "accounts", "admin", "administrator", "alerts", "api", "app",
+  "billing", "contact", "help", "hello", "hostmaster", "info", "legal", "mail",
+  "mailer-daemon", "marketing", "news", "newsletter", "no-reply", "noreply",
+  "notifications", "org", "partner", "partners", "postmaster", "privacy", "root",
+  "sales", "security", "support", "system", "team", "webmaster", "www", "zebron",
+];
+
+const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,99}$/;
  
 /** Sender used when forwarding platform mail to Gmail. */
 const ZEBRON_FROM_EMAIL = "Zebron <noreply@zebron.org>";
  
-/** Personal Gmail that receives a copy of platform inbound mail. */
-const INBOUND_FORWARD_EMAIL = "jaik500@gmail.com";
+
+// ============================================================
+// PLATFORM MAILBOXES
+// ============================================================
+
+/**
+ * Zebron's own mailboxes: platformMailboxes/{name}, where the name is a
+ * reserved address name (support, billing, partners...). "contact" is
+ * General: the contact form, contact@ and anything without its own
+ * mailbox. Platform administrators manage them in the admin Mailbox.
+ */
+export const PLATFORM_GENERAL_MAILBOX = "contact";
+
+/** Reserved names that can never be platform mailboxes (system addresses). */
+const NON_MAILBOX_NAMES = ["noreply", "no-reply", "mailer-daemon", "org", "zebron", "www", "api", "app", "root", "system"];
+
+export function isPlatformMailboxName(name: string): boolean {
+  return RESERVED_ADDRESS_NAMES.includes(name) && !NON_MAILBOX_NAMES.includes(name);
+}
+
+interface PlatformMailboxConfig {
+  mailboxId: string;
+  name: string;
+  /** Where a copy of each message goes, or null for none. */
+  forwardTo: string | null;
+}
+
+async function platformMailboxConfig(mailboxId: string): Promise<PlatformMailboxConfig & {exists: boolean; active: boolean}> {
+  const snapshot = await getFirestore().collection("platformMailboxes").doc(mailboxId).get();
+  const data = snapshot.data() ?? {};
+  const hasForwardSetting = typeof data["forwardTo"] === "string";
+
+  const forwardTo = hasForwardSetting ? String(data["forwardTo"]).trim().toLowerCase() : "";
+
+  return {
+    mailboxId,
+    exists: snapshot.exists,
+    active: data["active"] !== false,
+    name: typeof data["name"] === "string" && data["name"].trim() ? data["name"].trim() : (mailboxId === PLATFORM_GENERAL_MAILBOX ? "General" : mailboxId),
+    // Copies are off unless an address is set in Manage mailboxes:
+    // each copy is one more email against the free plan's allowance.
+    forwardTo: hasForwardSetting && forwardTo ? forwardTo : null,
+  };
+}
+
+/** Which platform mailbox a message to these recipients belongs to. */
+async function resolvePlatformMailbox(recipients: string[]): Promise<PlatformMailboxConfig> {
+  const names = [
+    ...new Set(
+      recipients
+        .map((recipient) => extractAddress(recipient).split("@"))
+        .filter(([, domain]) => domain === INBOUND_DOMAIN)
+        .map(([localPart]) => localPart)
+        .filter((localPart) => localPart !== PLATFORM_GENERAL_MAILBOX && isPlatformMailboxName(localPart)),
+    ),
+  ];
+
+  for (const name of names) {
+    const config = await platformMailboxConfig(name);
+    if (config.exists && config.active) {
+      return config;
+    }
+  }
+
+  return platformMailboxConfig(PLATFORM_GENERAL_MAILBOX);
+}
+
+/**
+ * Sender for email written in a platform mailbox: "Zebron Support"
+ * <noreply@zebron.org>, replies to support@zebron.org.
+ */
+export async function platformMailboxSender(mailboxId: unknown): Promise<{mailboxId: string; from: string; replyTo: string}> {
+  const requested = typeof mailboxId === "string" ? mailboxId.trim().toLowerCase() : "";
+  const id = requested && isPlatformMailboxName(requested) ? requested : PLATFORM_GENERAL_MAILBOX;
+  const config = await platformMailboxConfig(id);
+  const usable = id === PLATFORM_GENERAL_MAILBOX || (config.exists && config.active);
+  const finalId = usable ? id : PLATFORM_GENERAL_MAILBOX;
+  const label = finalId === PLATFORM_GENERAL_MAILBOX ? "Zebron" : `Zebron ${config.name.replace(/[\r\n"<>,;\\]/g, " ").trim()}`;
+
+  return {
+    mailboxId: finalId,
+    from: `"${label}" <noreply@${INBOUND_DOMAIN}>`,
+    replyTo: `${finalId}@${INBOUND_DOMAIN}`,
+  };
+}
  
 /** Organizations in these states do not receive mail. */
 const NON_RECEIVING_ORGANIZATION_STATUSES = ["archived"];
@@ -61,12 +173,27 @@ const NON_RECEIVING_ORGANIZATION_STATUSES = ["archived"];
 /**
  * Build an organization's inbound address from its slug.
  *
- * Example: "acme-academy" → "org+acme-academy@zebron.org"
+ * Example: "acme-academy" → "acme-academy@zebron.org"
+ * (an older organization whose slug is a reserved name keeps "org+<slug>@").
  */
 export function organizationInboundAddress(slug: string): string {
-  return `${ORGANIZATION_ADDRESS_PREFIX}+${slug}@${INBOUND_DOMAIN}`;
+  return RESERVED_ADDRESS_NAMES.includes(slug) ?
+    `${ORGANIZATION_ADDRESS_PREFIX}+${slug}@${INBOUND_DOMAIN}` :
+    `${slug}@${INBOUND_DOMAIN}`;
 }
  
+/**
+ * Build a departmental mailbox address.
+ *
+ * Example: ("acme-academy", "admissions") → "admissions.acme-academy@zebron.org"
+ */
+export function departmentInboundAddress(slug: string, mailboxKey: string): string {
+  return `${mailboxKey}.${slug}@${INBOUND_DOMAIN}`;
+}
+
+/** Departmental mailbox keys: lowercase letters, digits and hyphens. */
+export const MAILBOX_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
+
 /**
  * Extract the bare email address from "Name <a@b>" or "a@b".
  */
@@ -77,23 +204,46 @@ function extractAddress(value: string): string {
 }
  
 /**
- * Return the organization slug addressed by a recipient,
- * or null when the recipient is not an organization address.
+ * Return the organization slug (and departmental mailbox, if any)
+ * addressed by a recipient, or null when it is not an organization address.
+ *
+ *   acme-academy@                → {slug: "acme-academy", mailboxKey: null}
+ *   admissions.acme-academy@     → {slug: "acme-academy", mailboxKey: "admissions"}
+ *   org+acme-academy@            → older form, same as the first
+ *   org+acme-academy.admissions@ → older form, same as the second
+ *   contact@, support@ ...       → null (reserved for Zebron)
  */
-function organizationSlugFromAddress(address: string): string | null {
+function organizationAddressParts(address: string): {slug: string; mailboxKey: string | null} | null {
   const [localPart, domain] = extractAddress(address).split("@");
- 
+
   if (!localPart || domain !== INBOUND_DOMAIN) {
     return null;
   }
- 
-  const match = localPart.match(
-    new RegExp(`^${ORGANIZATION_ADDRESS_PREFIX}\\+([a-z0-9][a-z0-9-]{0,99})$`),
+
+  // Older form: org+<slug> or org+<slug>.<mailbox>
+  const legacy = localPart.match(
+    new RegExp(`^${ORGANIZATION_ADDRESS_PREFIX}\\+([a-z0-9][a-z0-9-]{0,99})(?:\\.([a-z0-9][a-z0-9-]{0,39}))?$`),
   );
- 
-  return match?.[1] ?? null;
+
+  if (legacy) {
+    return {slug: legacy[1], mailboxKey: legacy[2] ?? null};
+  }
+
+  // <mailbox>.<slug> (slugs never contain dots)
+  const department = localPart.match(/^([a-z0-9][a-z0-9-]{0,39})\.([a-z0-9][a-z0-9-]{0,99})$/);
+
+  if (department) {
+    return {slug: department[2], mailboxKey: department[1]};
+  }
+
+  // <slug>, unless the name belongs to Zebron
+  if (SLUG_PATTERN.test(localPart) && !RESERVED_ADDRESS_NAMES.includes(localPart)) {
+    return {slug: localPart, mailboxKey: null};
+  }
+
+  return null;
 }
- 
+
 // ============================================================
 // ROUTING
 // ============================================================
@@ -104,10 +254,16 @@ type InboundDestination =
       organizationId: string;
       organizationSlug: string;
       organizationName: string | null;
+      /** "main", or the departmental mailbox key. */
+      mailboxId: string;
+      mailboxName: string | null;
+      routingNote: string | null;
     }
   | {
       mailbox: "platform";
       routingNote: string | null;
+      /** Filled in after routing: the platform mailbox and its forwarding. */
+      platformMailbox?: PlatformMailboxConfig;
     };
  
 /**
@@ -120,60 +276,99 @@ async function resolveDestination(
 ): Promise<InboundDestination> {
   const db = getFirestore();
  
-  const slugs = [
-    ...new Set(
-      recipients
-        .map((recipient) => organizationSlugFromAddress(recipient))
-        .filter((slug): slug is string => Boolean(slug)),
-    ),
-  ];
- 
-  if (slugs.length === 0) {
+  const targets = recipients
+    .map((recipient) => organizationAddressParts(recipient))
+    .filter((parts): parts is {slug: string; mailboxKey: string | null} => Boolean(parts));
+
+  // One lookup per organization; departmental addresses first so a message
+  // sent to both admissions and the main address lands in admissions.
+  const seen = new Set<string>();
+  const unique = [...targets]
+    .sort((a, b) => Number(Boolean(b.mailboxKey)) - Number(Boolean(a.mailboxKey)))
+    .filter((target) => {
+      const key = `${target.slug}|${target.mailboxKey ?? ""}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+
+  if (unique.length === 0) {
     return {mailbox: "platform", routingNote: null};
   }
- 
-  for (const slug of slugs) {
+
+  for (const {slug, mailboxKey} of unique) {
     const snapshot = await db
       .collection("organizations")
       .where("slug", "==", slug)
       .limit(1)
       .get();
- 
+
     const organization = snapshot.docs[0];
- 
+
     if (!organization) {
       continue;
     }
- 
+
     const data = organization.data();
     const status = typeof data["status"] === "string" ? data["status"] : "active";
- 
+
     if (NON_RECEIVING_ORGANIZATION_STATUSES.includes(status)) {
       return {
         mailbox: "platform",
         routingNote: `Organization "${slug}" is ${status}; delivered to the platform mailbox.`,
       };
     }
- 
+
+    // Mailbox is on demand: without it, mail is kept in the platform mailbox.
+    const mailboxEntitlement = await organization.ref.collection("applications").doc("mailbox").get();
+
+    if (mailboxEntitlement.get("status") !== "active") {
+      return {
+        mailbox: "platform",
+        routingNote: `Organization "${slug}" does not have the Mailbox; delivered to the platform mailbox.`,
+      };
+    }
+
     const name =
       (typeof data["name"] === "string" && data["name"].trim()) ||
       (typeof data["organizationName"] === "string" && data["organizationName"].trim()) ||
       null;
- 
+
+    let mailboxId = "main";
+    let mailboxName: string | null = null;
+    let routingNote: string | null = null;
+
+    if (mailboxKey) {
+      const mailbox = await organization.ref.collection("mailboxes").doc(mailboxKey).get();
+      const mailboxData = mailbox.data();
+
+      if (mailbox.exists && mailboxData?.["active"] !== false) {
+        mailboxId = mailboxKey;
+        mailboxName = typeof mailboxData?.["name"] === "string" ? mailboxData["name"] : mailboxKey;
+      } else {
+        routingNote = `Sent to ${departmentInboundAddress(slug, mailboxKey)}, which is not an active mailbox; delivered to the main mailbox.`;
+      }
+    }
+
     return {
       mailbox: "organization",
       organizationId: organization.id,
       organizationSlug: slug,
       organizationName: name,
+      mailboxId,
+      mailboxName,
+      routingNote,
     };
   }
- 
+
   return {
     mailbox: "platform",
-    routingNote: `No organization matches ${slugs.map(organizationInboundAddress).join(", ")}; delivered to the platform mailbox.`,
+    routingNote: `No organization matches ${unique.map((target) => target.mailboxKey ? departmentInboundAddress(target.slug, target.mailboxKey) : organizationInboundAddress(target.slug)).join(", ")}; delivered to the platform mailbox.`,
   };
 }
- 
+
 // ============================================================
 // HTML
 // ============================================================
@@ -346,16 +541,27 @@ export const receiveInboundEmail = onRequest(
       // --------------------------------------------------------
  
       const destination = await resolveDestination([...to, ...cc, ...bcc]);
+
+      if (destination.mailbox === "platform") {
+        destination.platformMailbox = await resolvePlatformMailbox([...to, ...cc, ...bcc]);
+      }
  
       const db = getFirestore();
  
-      const messageRef =
+      const organizationRef =
         destination.mailbox === "organization" ?
-          db
-            .collection("organizations")
-            .doc(destination.organizationId)
-            .collection("inboundMessages")
-            .doc(emailId) :
+          db.collection("organizations").doc(destination.organizationId) :
+          null;
+
+      const messageRef =
+        destination.mailbox === "organization" && organizationRef ?
+          (destination.mailboxId === "main" ?
+            organizationRef.collection("inboundMessages").doc(emailId) :
+            organizationRef
+              .collection("mailboxes")
+              .doc(destination.mailboxId)
+              .collection("inboundMessages")
+              .doc(emailId)) :
           db.collection("contactMessages").doc(emailId);
  
       // --------------------------------------------------------
@@ -367,7 +573,8 @@ export const receiveInboundEmail = onRequest(
       if (existing.exists) {
         const alreadyComplete =
           destination.mailbox === "organization" ||
-          Boolean(existing.data()?.["forwardedAt"]);
+          Boolean(existing.data()?.["forwardedAt"]) ||
+          existing.data()?.["forwardingSkipped"] === true;
  
         if (alreadyComplete) {
           logger.info("Inbound email already processed.", {
@@ -379,6 +586,8 @@ export const receiveInboundEmail = onRequest(
         }
  
         logger.info("Inbound email exists but forwarding has not completed.", {emailId});
+      } else {
+        await recordEmailUsage("received", destination.mailbox === "organization" ? "organization_inbound" : "platform_inbound");
       }
  
       // --------------------------------------------------------
@@ -424,7 +633,12 @@ export const receiveInboundEmail = onRequest(
             organizationId: destination.organizationId,
             organizationSlug: destination.organizationSlug,
             organizationName: destination.organizationName,
-            inboundAddress: organizationInboundAddress(destination.organizationSlug),
+            mailboxId: destination.mailboxId,
+            mailboxName: destination.mailboxName,
+            routingNote: destination.routingNote,
+            inboundAddress: destination.mailboxId === "main" ?
+              organizationInboundAddress(destination.organizationSlug) :
+              departmentInboundAddress(destination.organizationSlug, destination.mailboxId),
           },
           {merge: true},
         );
@@ -433,6 +647,7 @@ export const receiveInboundEmail = onRequest(
           emailId,
           organizationId: destination.organizationId,
           organizationSlug: destination.organizationSlug,
+          mailboxId: destination.mailboxId,
           senderEmail,
         });
  
@@ -446,29 +661,44 @@ export const receiveInboundEmail = onRequest(
       }
  
       // Platform mailbox.
+      const platformMailbox = destination.platformMailbox ?? await platformMailboxConfig(PLATFORM_GENERAL_MAILBOX);
+      const forwardTo = platformMailbox.forwardTo;
+
       await messageRef.set(
         {
           ...baseRecord,
+          // The admin mailbox uses "unread" for new messages.
+          status: "unread",
+          mailboxId: platformMailbox.mailboxId,
+          mailboxName: platformMailbox.name,
           routingNote: destination.routingNote,
-          forwardedTo: INBOUND_FORWARD_EMAIL,
+          forwardedTo: forwardTo,
           forwardedAt: null,
           forwardingEmailId: null,
+          forwardingSkipped: !forwardTo,
         },
         {merge: true},
       );
- 
+
       logger.info("Inbound email stored in platform mailbox.", {
         emailId,
         senderEmail,
         subject,
+        mailboxId: platformMailbox.mailboxId,
         routingNote: destination.routingNote,
       });
+
+      // No copy configured for this mailbox: done.
+      if (!forwardTo) {
+        response.status(200).json({success: true, emailId, mailbox: "platform", mailboxId: platformMailbox.mailboxId});
+        return;
+      }
  
       // --------------------------------------------------------
-      // 6. Forward platform mail to the admin Gmail.
+      // 6. Forward a copy, when the mailbox asks for one.
       // --------------------------------------------------------
  
-      const forwardedSubject = `[Zebron Inbox] ${subject || "(No subject)"}`;
+      const forwardedSubject = `[Zebron ${platformMailbox.name}] ${subject || "(No subject)"}`;
  
       const escapedMessage = escapeHtml(message).replace(/\r?\n/g, "<br>");
  
@@ -498,7 +728,7 @@ export const receiveInboundEmail = onRequest(
           <div>${escapedMessage}</div>
           <hr />
           <p style="color: #777; font-size: 12px;">
-            Automatically forwarded from the Zebron Contact Mailbox.
+            Automatically forwarded from the Zebron ${escapeHtml(platformMailbox.name)} mailbox.
           </p>
         </div>
       `;
@@ -506,7 +736,7 @@ export const receiveInboundEmail = onRequest(
       const {data: forwardedEmail, error: forwardingError} =
         await resend.emails.send({
           from: ZEBRON_FROM_EMAIL,
-          to: [INBOUND_FORWARD_EMAIL],
+          to: [forwardTo],
           subject: forwardedSubject,
           html: forwardedHtml,
  
@@ -535,6 +765,8 @@ export const receiveInboundEmail = onRequest(
         return;
       }
  
+      await recordEmailUsage("sent", "platform_inbound_forward");
+
       await messageRef.update({
         forwardedAt: FieldValue.serverTimestamp(),
         forwardingEmailId: forwardedEmail?.id ?? null,
@@ -545,7 +777,7 @@ export const receiveInboundEmail = onRequest(
       logger.info("Inbound email forwarded successfully.", {
         emailId,
         senderEmail,
-        forwardedTo: INBOUND_FORWARD_EMAIL,
+        forwardedTo: forwardTo,
         forwardingEmailId: forwardedEmail?.id ?? null,
       });
  
@@ -553,7 +785,8 @@ export const receiveInboundEmail = onRequest(
         success: true,
         emailId,
         mailbox: "platform",
-        forwardedTo: INBOUND_FORWARD_EMAIL,
+        mailboxId: platformMailbox.mailboxId,
+        forwardedTo: forwardTo,
       });
     } catch (error: unknown) {
       logger.error("Failed to process inbound email webhook.", {error});

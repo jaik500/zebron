@@ -626,6 +626,9 @@ export class ZebronHeaderComponent {
   /** Active application keys of the current organization. */
   private readonly activeApplications = signal<string[]>([]);
 
+  /** Departmental mailboxes the person is assigned to in the current organization. */
+  private readonly assignedMailboxCount = signal(0);
+
   /** Organizations the person is an active member of. */
   protected readonly organizationChoices = computed(() => {
     const organizations = this.partnerContext.organizations();
@@ -661,8 +664,11 @@ export class ZebronHeaderComponent {
     const base = `/partner/org/${encodeURIComponent(org.id)}`;
     const active = this.activeApplications();
     const apps = [{ key: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: `${base}/dashboard` }];
-    if (active.includes('test-center')) {
-      apps.push({ key: 'test-center', label: 'Test Center', icon: 'quiz', route: `${base}/learn/test-center` });
+    // Learning: Courses when the organization has it, otherwise the Test Center on its own.
+    if (active.includes('courses')) {
+      apps.push({ key: 'learning', label: 'Learning', icon: 'school', route: `${base}/courses` });
+    } else if (active.includes('test-center')) {
+      apps.push({ key: 'learning', label: 'Learning', icon: 'school', route: `${base}/learn/test-center` });
     }
     if (active.includes('community')) {
       apps.push({ key: 'community', label: 'Community', icon: 'forum', route: `${base}/community` });
@@ -670,9 +676,14 @@ export class ZebronHeaderComponent {
     if (active.includes('knowledge')) {
       apps.push({ key: 'knowledge', label: 'Knowledge Center', icon: 'menu_book', route: `${base}/knowledge` });
     }
-    // Every organization has members-only courses and a members-only blog.
-    apps.push({ key: 'courses', label: 'Courses', icon: 'school', route: `${base}/courses` });
-    apps.push({ key: 'blog', label: 'Blog', icon: 'article', route: `${base}/blog` });
+    // Mailbox (on demand): managers and above, or staff assigned to a departmental mailbox.
+    if (active.includes('mailbox') && (['org_owner', 'org_admin', 'org_manager'].includes(org.role) || this.assignedMailboxCount() > 0)) {
+      apps.push({ key: 'mailbox', label: 'Mailbox', icon: 'mail', route: `${base}/mailbox` });
+    }
+    // The blog only when requested and active.
+    if (active.includes('blog')) {
+      apps.push({ key: 'blog', label: 'Blog', icon: 'article', route: `${base}/blog` });
+    }
     return apps;
   });
 
@@ -715,6 +726,32 @@ export class ZebronHeaderComponent {
       this.activeApplications.set(snapshot.docs.map((document) => document.id));
     } catch {
       this.activeApplications.set([]);
+    }
+
+    await this.loadAssignedMailboxes(organizationId);
+  }
+
+  /** Staff see Mailbox in the menu once they are assigned to a departmental mailbox. */
+  private async loadAssignedMailboxes(organizationId: string): Promise<void> {
+    const uid = this.authService.firebaseUser()?.uid;
+
+    if (!uid) {
+      this.assignedMailboxCount.set(0);
+      return;
+    }
+
+    try {
+      const snapshot = await getDocs(
+        query(
+          collection(firestore, 'organizations', organizationId, 'mailboxes'),
+          where('memberIds', 'array-contains', uid),
+        ),
+      );
+      // Filtered here: an extra where() would need a composite index.
+      this.assignedMailboxCount.set(snapshot.docs.filter((document) => document.data()['active'] !== false).length);
+    } catch {
+      // Members below staff cannot list mailboxes.
+      this.assignedMailboxCount.set(0);
     }
   }
  

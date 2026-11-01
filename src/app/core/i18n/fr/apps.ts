@@ -43,6 +43,11 @@ export const FR_APPS: Readonly<Record<string, string>> = {
   "Open the Learning Lab": "Ouvrir le Learning Lab",
   "Short lessons with quick checks, progress tracking and a certificate at the end.": "Des leçons courtes avec contrôles rapides, suivi de progression et certificat à la fin.",
   "For learners and teams": "Pour les apprenants et les équipes",
+  "Zebron Learning": "Zebron Learning",
+  "Your learning in one place: courses with lessons, final exams and certificates, plus Test Center practice. Pick up where you left off.": "Tout votre apprentissage au même endroit : des cours avec leçons, examens finaux et certificats, et l’entraînement du Centre d’évaluation. Reprenez là où vous vous êtes arrêté.",
+  "Open Zebron Learning": "Ouvrir Zebron Learning",
+  "Part of Zebron Learning. Short lessons with quick checks, a final exam and a certificate at the end.": "Fait partie de Zebron Learning. Des leçons courtes avec contrôles rapides, un examen final et un certificat à la fin.",
+  "Part of Zebron Learning. Practise with quizzes and practice tests, track your results and get ready for course exams and certifications.": "Fait partie de Zebron Learning. Entraînez-vous avec des quiz et des tests, suivez vos résultats et préparez les examens de cours et les certifications.",
   "Ask questions, share updates and connect with people and organizations on Zebron.": "Posez des questions, partagez des nouvelles et échangez avec les personnes et organisations de Zebron.",
   "For everyone on Zebron": "Pour tout le monde sur Zebron",
   "Join the conversation": "Rejoindre la discussion",
@@ -123,4 +128,26 @@ export const FR_APPS: Readonly<Record<string, string>> = {
   "Read the blog": "Lire le blog",
   "news": "actualités",
   "stories": "témoignages",
+
+  // Learning: Courses and Test Center
+  "Courses and the Test Center together: lessons, quizzes, final exams and certificates.": "Les cours et le Centre d’évaluation réunis : leçons, quiz, examens finaux et certificats.",
+  "Members-only courses with lessons, video, final exams and certificates. Includes the Test Center.": "Cours réservés aux membres avec leçons, vidéos, examens finaux et certificats. Comprend le Centre d’évaluation.",
+  "Quizzes and exams for your students: question banks, practice tests, results and retakes. Works on its own, without Courses.": "Quiz et examens pour vos élèves : banques de questions, tests d’entraînement, résultats et reprises. Fonctionne seul, sans les cours.",
+  "Quizzes and exams for your students: practice tests, results and retakes.": "Quiz et examens pour vos élèves : tests d’entraînement, résultats et reprises.",
+  "Courses with lessons, final exams and certificates, plus the Test Center.": "Des cours avec leçons, examens finaux et certificats, plus le Centre d’évaluation.",
+  "Quizzes and exams for your students, without courses.": "Quiz et examens pour vos élèves, sans cours.",
+  "Test Center only": "Centre d’évaluation seulement",
+  "Part of {0}": "Fait partie de : {0}",
+
+  // Learning capability picker (organization application form)
+  "Choose what your organization needs.": "Choisissez ce dont votre organisation a besoin.",
+  "Members-only courses with lessons, video, final exams and certificates.": "Cours réservés aux membres avec leçons, vidéos, examens finaux et certificats.",
+  "Quizzes and exams for your students: question banks, practice tests, results and retakes.": "Quiz et examens pour vos élèves : banques de questions, tests d’entraînement, résultats et reprises.",
+  "Included with Courses: course final exams use the Test Center.": "Inclus avec les cours : les examens finaux des cours utilisent le Centre d’évaluation.",
+  "Selected: Courses and Test Center.": "Sélectionné : Cours et Centre d’évaluation.",
+  "Selected: Test Center only.": "Sélectionné : Centre d’évaluation seulement.",
+  "Courses and the Test Center. Click to choose.": "Les cours et le Centre d’évaluation. Cliquez pour choisir.",
+  "Partly active": "Partiellement actif",
+  "Add more": "Ajouter",
+  "Already part of your organization.": "Fait déjà partie de votre organisation.",
 };
