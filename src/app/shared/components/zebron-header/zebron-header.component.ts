@@ -670,7 +670,8 @@ export class ZebronHeaderComponent {
     if (active.includes('knowledge')) {
       apps.push({ key: 'knowledge', label: 'Knowledge Center', icon: 'menu_book', route: `${base}/knowledge` });
     }
-    // Every organization has a members-only blog.
+    // Every organization has members-only courses and a members-only blog.
+    apps.push({ key: 'courses', label: 'Courses', icon: 'school', route: `${base}/courses` });
     apps.push({ key: 'blog', label: 'Blog', icon: 'article', route: `${base}/blog` });
     return apps;
   });
@@ -812,7 +813,10 @@ export class ZebronHeaderComponent {
  
     if (
       path === '/learning' ||
-      path.startsWith('/learning/')
+      path.startsWith('/learning/') ||
+      path === '/courses' ||
+      path.startsWith('/courses/') ||
+      /^\/partner\/org\/[^/]+\/courses(?:\/|$)/.test(path)
     ) {
       return 'learning-lab';
     }

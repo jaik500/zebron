@@ -41,6 +41,8 @@ export const FR_APPS: Readonly<Record<string, string>> = {
   "Interactive lessons and learning paths that build on the Test Center.": "Leçons interactives et parcours d'apprentissage liés au Centre d’évaluation.",
   "For learners": "Pour les apprenants",
   "Open the Learning Lab": "Ouvrir le Learning Lab",
+  "Short lessons with quick checks, progress tracking and a certificate at the end.": "Des leçons courtes avec contrôles rapides, suivi de progression et certificat à la fin.",
+  "For learners and teams": "Pour les apprenants et les équipes",
   "Ask questions, share updates and connect with people and organizations on Zebron.": "Posez des questions, partagez des nouvelles et échangez avec les personnes et organisations de Zebron.",
   "For everyone on Zebron": "Pour tout le monde sur Zebron",
   "Join the conversation": "Rejoindre la discussion",

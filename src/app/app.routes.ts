@@ -9,6 +9,7 @@ import { applicationAccessGuard } from './core/guards/application-access.guard';
 import { resourceResolver } from './features/resources/resolvers/resource.resolver';
 import { AboutComponent } from './features/about/pages/about/about.component';
 import { testCenterOrganizationGuard } from './core/guards/test-center-organization.guard';
+import { leaveCourseBuilderGuard } from './features/courses/builder/leave-course-builder.guard';
 export const routes: Routes = [
     // =====================================================
     // PUBLIC
@@ -85,6 +86,57 @@ export const routes: Routes = [
             {
                 path: ':postId',
                 loadComponent: () => import('./features/blog/pages/blog-post.component').then((m) => m.BlogPostComponent),
+            },
+        ],
+    },
+    // -----------------------------------------------------
+    // COURSES (Zebron courses; anyone can browse, sign in to learn)
+    // -----------------------------------------------------
+    {
+        path: 'courses',
+        data: {
+            title: 'Zebron | Courses',
+        },
+        children: [
+            {
+                path: '',
+                pathMatch: 'full',
+                loadComponent: () => import('./features/courses/pages/my-learning.component').then((m) => m.MyLearningComponent),
+            },
+            {
+                path: 'catalog',
+                data: { title: 'Zebron | Course catalog' },
+                loadComponent: () => import('./features/courses/pages/course-catalog.component').then((m) => m.CourseCatalogComponent),
+            },
+            {
+                path: 'certificates',
+                data: { title: 'Zebron | Certificates' },
+                loadComponent: () => import('./features/courses/pages/my-certificates.component').then((m) => m.MyCertificatesComponent),
+            },
+            {
+                path: 'manage',
+                canActivate: [adminGuard],
+                loadComponent: () => import('./features/courses/builder/course-manage.component').then((m) => m.CourseManageComponent),
+            },
+            {
+                path: 'manage/:courseId',
+                canActivate: [adminGuard],
+                canDeactivate: [leaveCourseBuilderGuard],
+                loadComponent: () => import('./features/courses/builder/course-builder.component').then((m) => m.CourseBuilderComponent),
+            },
+            {
+                path: ':courseId',
+                loadComponent: () => import('./features/courses/pages/course-page.component').then((m) => m.CoursePageComponent),
+            },
+            {
+                path: ':courseId/lessons/:lessonId',
+                canActivate: [authGuard],
+                loadComponent: () => import('./features/courses/pages/lesson-player.component').then((m) => m.LessonPlayerComponent),
+            },
+            {
+                path: ':courseId/certificate',
+                canActivate: [authGuard],
+                loadComponent: () => import('./features/courses/pages/course-certificate.component').then((m) => m.CourseCertificateComponent),
             },
         ],
     },
@@ -620,14 +672,11 @@ export const routes: Routes = [
     // =====================================================
     // LEARNING
     // =====================================================
+    // The Learning Lab mock-up became My learning in Courses.
     {
         path: 'learning',
-        canActivate: [featureGuard],
-        data: {
-            featureKey: 'test-center',
-            title: 'Zebron | Learning Lab',
-        },
-        loadComponent: () => import('./features/learning-lab/pages/learning-lab.component').then((m) => m.LearningLabComponent),
+        pathMatch: 'full',
+        redirectTo: '/courses',
     },
     // =====================================================
     // PARTNER PORTAL
@@ -837,6 +886,64 @@ export const routes: Routes = [
             {
                 path: ':postId',
                 loadComponent: () => import('./features/blog/pages/blog-post.component').then((m) => m.BlogPostComponent),
+            },
+        ],
+    },
+    // -----------------------------------------------------
+    // ORGANIZATION COURSES (members learn; the organization's own courses plus Zebron's)
+    // -----------------------------------------------------
+    {
+        path: 'partner/org/:organizationId/courses',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+        ],
+        data: {
+            title: 'Partner | Courses',
+            organizationHeader: true,
+        },
+        children: [
+            {
+                path: '',
+                pathMatch: 'full',
+                loadComponent: () => import('./features/courses/pages/my-learning.component').then((m) => m.MyLearningComponent),
+            },
+            {
+                path: 'catalog',
+                data: { title: 'Partner | Course catalog' },
+                loadComponent: () => import('./features/courses/pages/course-catalog.component').then((m) => m.CourseCatalogComponent),
+            },
+            {
+                path: 'certificates',
+                data: { title: 'Partner | Certificates' },
+                loadComponent: () => import('./features/courses/pages/my-certificates.component').then((m) => m.MyCertificatesComponent),
+            },
+            {
+                path: 'manage',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_manager' },
+                loadComponent: () => import('./features/courses/builder/course-manage.component').then((m) => m.CourseManageComponent),
+            },
+            {
+                path: 'manage/:courseId',
+                canActivate: [partnerRoleGuard],
+                data: { minimumOrganizationRole: 'org_manager' },
+                canDeactivate: [leaveCourseBuilderGuard],
+                loadComponent: () => import('./features/courses/builder/course-builder.component').then((m) => m.CourseBuilderComponent),
+            },
+            {
+                path: ':courseId',
+                loadComponent: () => import('./features/courses/pages/course-page.component').then((m) => m.CoursePageComponent),
+            },
+            {
+                path: ':courseId/lessons/:lessonId',
+                canActivate: [authGuard],
+                loadComponent: () => import('./features/courses/pages/lesson-player.component').then((m) => m.LessonPlayerComponent),
+            },
+            {
+                path: ':courseId/certificate',
+                canActivate: [authGuard],
+                loadComponent: () => import('./features/courses/pages/course-certificate.component').then((m) => m.CourseCertificateComponent),
             },
         ],
     },

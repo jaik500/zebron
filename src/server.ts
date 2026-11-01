@@ -87,7 +87,8 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://apis.google.com https://js.stripe.com https://www.googletagmanager.com",
   "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://*.run.app https://firebasestorage.googleapis.com https://www.google-analytics.com https://*.google-analytics.com https://www.google.com https://api.stripe.com",
-  "frame-src 'self' https://*.firebaseapp.com https://www.google.com https://www.youtube-nocookie.com https://player.vimeo.com https://js.stripe.com https://checkout.stripe.com",
+  // Course lessons embed these players (features/courses/course.model.ts resolveMedia).
+  "frame-src 'self' https://*.firebaseapp.com https://www.google.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.loom.com https://drive.google.com https://docs.google.com https://*.sharepoint.com https://w.soundcloud.com https://open.spotify.com https://js.stripe.com https://checkout.stripe.com",
   "worker-src 'self' blob:",
 ].join('; ');
 

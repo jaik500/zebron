@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AdminBackLinkComponent, AdminViewToolbarComponent, adminViewState } from '../../shared/admin-view';
+import { ADMIN_LAYOUT_OPTIONS, AdminBackLinkComponent, AdminLayoutSwitchComponent, adminViewState } from '../../shared/admin-view';
+import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { Resource, ResourceStatus } from '../../../../core/models/resource.model';
@@ -27,7 +28,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-resource-admin',
   standalone: true,
-  imports: [AdminViewToolbarComponent, AdminBackLinkComponent, FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
+  imports: [AdminBackLinkComponent, AdminLayoutSwitchComponent, NgClass, FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -36,30 +37,63 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
           ← Admin Dashboard
         </a>
       </div> -->
-      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
-        <div
-          class="mx-auto flex max-w-7xl items-center
-                 justify-between gap-4 px-4 py-4
-                 sm:px-6 lg:px-8 "
-        >
-          <div>
-            <p
-              class="text-xs font-semibold uppercase tracking-wider
-             text-[#7ED6D1]"
-            >
-              Resoucrce management
-            </p>
-            <h1
-              class="text-xl font-bold text-white
-                     sm:text-3xl"
-            >
-              Resources
-            </h1>
+      <!-- Page header: breadcrumbs, search (phones: toggled by the search icon) and actions -->
+      <header class="mt-16 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 sm:flex-nowrap sm:px-6 lg:px-8">
+          <nav class="flex min-w-0 flex-1 items-center gap-1 text-sm sm:flex-none" aria-label="Breadcrumb">
+            <a routerLink="/admin" class="shrink-0 text-white/80 hover:text-white hover:underline">Admin</a>
+            <mat-icon class="!h-4 !w-4 shrink-0 !text-[16px] text-white/60" aria-hidden="true">chevron_right</mat-icon>
+            <span class="truncate font-semibold" aria-current="page">Resources</span>
+          </nav>
 
-            <p class="mt-1 text-sm text-white/80">
-              Create and manage resources in the Zebron database.
-            </p>
+          <!-- Search: in the header on tablets and desktops; on phones, on its own line when opened -->
+          <div
+            class="order-last w-full sm:order-none sm:mx-auto sm:w-auto sm:max-w-md sm:flex-1"
+            [ngClass]="{ 'max-sm:hidden': !mobileSearchOpen() }"
+          >
+            <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-search" subscriptSizing="dynamic">
+              <mat-label>Search resources</mat-label>
+              <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+              <input
+                matInput
+                id="resource-search"
+                type="search"
+                autocomplete="off"
+                placeholder="Search resources"
+                [value]="searchTerm()"
+                (input)="onSearch($event)"
+                (keydown.escape)="clearSearch()"
+              />
+              <span matSuffix class="flex items-center gap-1 pr-1 text-xs text-slate-400">
+                {{ filteredResources().length }} / {{ resources().length }}
+                @if (searchTerm()) {
+                  <button
+                    type="button"
+                    (click)="clearSearch()"
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    aria-label="Clear search"
+                    title="Clear search"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+              </span>
+            </mat-form-field>
           </div>
+
+          <!-- Phones: show or hide the search bar -->
+          <button
+            type="button"
+            (click)="mobileSearchOpen.set(!mobileSearchOpen())"
+            aria-controls="resource-search"
+            [attr.aria-expanded]="mobileSearchOpen()"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white sm:hidden"
+            [ngClass]="{ 'bg-white/15': mobileSearchOpen() }"
+            [attr.aria-label]="mobileSearchOpen() ? 'Hide search' : 'Search'"
+            [title]="mobileSearchOpen() ? 'Hide search' : 'Search'"
+          >
+            <mat-icon aria-hidden="true">{{ mobileSearchOpen() ? 'search_off' : 'search' }}</mat-icon>
+          </button>
 
           <!-- =====================================================
      Admin Header Actions
@@ -78,18 +112,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
        Hidden on mobile -->
             <a
               routerLink="/admin"
-              class="hidden
-           rounded-lg
-           border border-gray-300
-           bg-white
-           px-3 py-2
-           text-sm
-           font-semibold
-           text-gray-700
-           transition
-           hover:border-[#032D42]
-           hover:text-[#032D42]
-           sm:inline-flex"
+              class="hidden h-9 items-center rounded-lg border border-white/30 px-3 text-sm font-semibold text-white/90 transition hover:bg-white/15 hover:text-white lg:inline-flex"
             >
               Admin Dashboard
             </a>
@@ -100,10 +123,10 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
             <button
               type="button"
               [matMenuTriggerFor]="adminMenu"
-              aria-label="Open navigation menu"
+              aria-label="View options and navigation"
               class="flex
-           h-10
-           w-10
+           h-9
+           w-9
            shrink-0
            items-center
            justify-center
@@ -122,6 +145,14 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
           </div>
 
           <mat-menu #adminMenu="matMenu" xPosition="before" yPosition="below">
+            <!-- View: opens a submenu with List, Cards and Split -->
+            <button mat-menu-item type="button" [matMenuTriggerFor]="viewMenu">
+              <mat-icon>{{ currentLayout().icon }}</mat-icon>
+              <span>View: {{ currentLayout().label }}</span>
+            </button>
+
+            <mat-divider></mat-divider>
+
             <!-- Home -->
             <button mat-menu-item routerLink="/">
               <mat-icon>home</mat-icon>
@@ -178,6 +209,24 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
               <span>Sign out</span>
             </button>
           </mat-menu>
+
+          <mat-menu #viewMenu="matMenu">
+            @for (option of layoutOptions; track option.key) {
+              <button
+                mat-menu-item
+                type="button"
+                role="menuitemradio"
+                [attr.aria-checked]="viewState.layout() === option.key"
+                (click)="viewState.setLayout(option.key)"
+              >
+                <mat-icon>{{ option.icon }}</mat-icon>
+                <span>{{ option.title }}</span>
+                @if (viewState.layout() === option.key) {
+                  <mat-icon class="!ml-2 !mr-0 !text-[#007979]" aria-hidden="true">check</mat-icon>
+                }
+              </button>
+            }
+          </mat-menu>
         </div>
       </header>
 
@@ -227,6 +276,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                       </p>
                     </div>
 
+                    <div class="flex shrink-0 flex-wrap items-center justify-end gap-3">
                     <!-- =====================================================
          EDIT MODE
          ===================================================== -->
@@ -341,6 +391,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                         </mat-icon>
                       </button>
                     }
+                    </div>
                   </div>
                 </div>
 
@@ -798,8 +849,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                   class="border-b border-gray-200 bg-[#66BB6A]/80
                    px-5 py-2"
                 >
-                  <div class="flex items-start justify-between gap-3">
-                    <div>
+                  <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                    <div class="min-w-0">
                       <p
                         class="text-xs font-semibold uppercase
                          tracking-wider text-[#007979]"
@@ -807,36 +858,44 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                         Directory
                       </p>
 
-                      <h2 class="mt-1 text-lg font-semibold text-[#032D42]">Existing resources</h2>
+                      <h2 class="mt-1 truncate text-lg font-semibold text-[#032D42]">Existing resources</h2>
 
-                      <p class="mt-1 text-sm text-white">Select a resource to edit or delete it.</p>
+                      @if (viewState.layout() !== 'split') {
+                        <p class="mt-1 text-sm text-white">Select a resource to edit or delete it.</p>
+                      }
                     </div>
 
-                    @if (!loading()) {
-                      <span
-                        class="rounded-full bg-gray-100 px-2.5 py-1
-                         text-xs font-semibold text-gray-600"
-                      >
-                        {{ resources().length }}
-                      </span>
-                    } @else {
-                      <span class="text-xs text-gray-500"> Loading... </span>
-                    }
+                    <div class="flex shrink-0 items-center gap-2">
+                      <!-- View: list, cards, or the form beside the list -->
+                      <app-admin-layout-switch [state]="viewState" />
+
+                      @if (!loading()) {
+                        <span
+                          class="rounded-full bg-white/80 px-2.5 py-1
+                           text-xs font-semibold text-gray-600"
+                        >
+                          {{ resources().length }}
+                        </span>
+                      } @else {
+                        <span class="text-xs text-gray-600"> Loading... </span>
+                      }
+
+                      @if (viewState.layout() !== 'split') {
+                        <button
+                          type="button"
+                          (click)="startCreate()"
+                          class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#032D42] px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#032D42]/90"
+                          aria-label="Create Resource"
+                          title="Create Resource"
+                        >
+                          <mat-icon class="!h-5 !w-5 !text-[18px]" aria-hidden="true">add</mat-icon>
+                          <span class="hidden sm:inline">Create Resource</span>
+                        </button>
+                      }
+                    </div>
                   </div>
                 </div>
 
-
-              <!-- Search, display preference and Create -->
-              <div class="border-b border-gray-200 bg-white px-4 py-3">
-                <app-admin-view-toolbar
-                  [state]="viewState"
-                  placeholder="Search resources"
-                  createLabel="Create Resource"
-                  [shown]="filteredResources().length"
-                  [total]="resources().length"
-                  (create)="startCreate()"
-                ></app-admin-view-toolbar>
-              </div>
 
                 <!-- Empty state -->
                 @if (!loading() && resources().length === 0) {
@@ -1076,6 +1135,16 @@ export class ResourceAdminComponent implements OnInit {
   // =========================================================
 
   protected readonly viewState = adminViewState('resources');
+
+  /** Phones only: the search bar is hidden until the search icon is tapped. */
+  protected readonly mobileSearchOpen = signal(false);
+
+  /** List / Cards / Split, chosen from the ⋮ menu. */
+  protected readonly layoutOptions = ADMIN_LAYOUT_OPTIONS;
+
+  protected readonly currentLayout = computed(
+    () => ADMIN_LAYOUT_OPTIONS.find((option) => option.key === this.viewState.layout()) ?? ADMIN_LAYOUT_OPTIONS[0],
+  );
 
   /** "Create": an empty form. */
   protected startCreate(): void {

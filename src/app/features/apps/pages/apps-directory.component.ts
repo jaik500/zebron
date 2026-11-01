@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
@@ -45,22 +57,36 @@ interface AppCard extends PublicApp {
   selector: 'app-apps-directory',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, TranslatePipe],
+  imports: [NgClass, RouterLink, MatIconModule, TranslatePipe],
   template: `
     <!-- Hero -->
-    <section class="relative overflow-hidden bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+    <section class="relative mt-16 overflow-hidden bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
       <div class="pointer-events-none absolute -right-16 -top-24 h-48 w-48 rounded-full bg-white/10 blur-3xl" aria-hidden="true"></div>
       <div class="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full bg-[#89D7B7]/25 blur-3xl" aria-hidden="true"></div>
 
-      <div class="relative mx-auto max-w-7xl px-5 pb-5 pt-20 sm:px-6 lg:px-8">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div class="min-w-0">
-            <h1 class="mt-1 text-xl font-bold tracking-tight sm:text-2xl">{{ 'Zebron apps' | t }}</h1>
-          </div>
+      <div class="relative mx-auto max-w-7xl px-4 pb-3 pt-3 sm:px-6 lg:px-8">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 lg:flex-nowrap">
+          <h1 class="min-w-0 flex-1 truncate text-xl font-bold tracking-tight sm:text-2xl lg:flex-none">{{ 'Zebron apps' | t }}</h1>
 
-          <div class="relative w-full shrink-0 lg:w-[26rem]">
+          <!-- Phones: show or hide the search bar -->
+          <button
+            type="button"
+            (click)="mobileSearchOpen.set(!mobileSearchOpen())"
+            aria-controls="apps-search"
+            [attr.aria-expanded]="mobileSearchOpen()"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 transition hover:bg-white/15 hover:text-white sm:hidden"
+            [ngClass]="{ 'bg-white/15': mobileSearchOpen() }"
+            [attr.aria-label]="(mobileSearchOpen() ? 'Hide search' : 'Search') | t"
+            [title]="(mobileSearchOpen() ? 'Hide search' : 'Search') | t"
+          >
+            <mat-icon aria-hidden="true">{{ mobileSearchOpen() ? 'search_off' : 'search' }}</mat-icon>
+          </button>
+
+          <!-- Search: always shown from tablet up; on phones, below the title when opened -->
+          <div class="relative w-full shrink-0 sm:w-80 lg:ml-auto lg:w-[26rem]" [ngClass]="{ 'max-sm:hidden': !mobileSearchOpen() }">
             <mat-icon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 !text-slate-400" aria-hidden="true">search</mat-icon>
             <input
+              id="apps-search"
               type="search"
               class="h-10 w-full rounded-lg border-0 bg-white pl-10 pr-3 text-sm text-slate-900 shadow outline-none ring-0 placeholder:text-slate-400 focus:ring-4 focus:ring-[#89D7B7]/50"
               [placeholder]="'Search apps, for example jobs or tax' | t"
@@ -71,17 +97,37 @@ interface AppCard extends PublicApp {
           </div>
         </div>
 
-        <nav class="mt-4 flex flex-wrap gap-1.5" [attr.aria-label]="'App groups' | t">
-          @for (group of visibleGroups(); track group.key) {
-            <a
-              [href]="'#' + group.key"
-              (click)="jumpTo($event, group.key)"
-              class="rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-xs text-white transition hover:border-white/60 hover:bg-white/20"
+        <!-- Groups: one line, with More / Hide when they don't fit -->
+        <div class="mt-3 flex items-start gap-1.5">
+          <nav
+            #groupChips
+            class="flex min-w-0 flex-1 flex-wrap gap-1.5"
+            [ngClass]="{ 'max-h-[1.75rem] overflow-hidden': !groupsExpanded() }"
+            [attr.aria-label]="'App groups' | t"
+          >
+            @for (group of visibleGroups(); track group.key) {
+              <a
+                [href]="'#' + group.key"
+                (click)="jumpTo($event, group.key)"
+                class="whitespace-nowrap rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-xs text-white transition hover:border-white/60 hover:bg-white/20"
+              >
+                {{ group.title | t }}
+              </a>
+            }
+          </nav>
+
+          @if (groupsOverflow() || groupsExpanded()) {
+            <button
+              type="button"
+              (click)="groupsExpanded.set(!groupsExpanded())"
+              [attr.aria-expanded]="groupsExpanded()"
+              class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#007979] shadow-sm transition hover:bg-teal-50"
             >
-              {{ group.title | t }}
-            </a>
+              {{ (groupsExpanded() ? 'Hide' : 'More') | t }}
+              <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">{{ groupsExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
           }
-        </nav>
+        </div>
       </div>
     </section>
 
@@ -111,26 +157,26 @@ interface AppCard extends PublicApp {
               </div>
             </div>
 
-            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
               @for (app of popularApps(); track app.key) {
                 <div class="relative">
                   <a
                     [routerLink]="app.route"
                     (click)="recordOpen(app)"
-                    class="group flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white py-3 pl-3 pr-12 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007979]/25"
+                    class="group flex h-full min-h-[3.25rem] min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white py-2 pl-2.5 pr-8 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-[#007979]/25 sm:py-3 sm:pl-3 sm:pr-12"
                   >
-                    <span [class]="'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ' + toneFor(app)">
+                    <span [class]="'hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:flex ' + toneFor(app)">
                       <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">{{ app.icon }}</mat-icon>
                     </span>
                     <span class="min-w-0 flex-1">
-                      <span class="block truncate font-bold text-[#032D42] group-hover:text-[#007979]">{{ app.title | t }}</span>
-                      <span class="block truncate text-xs text-slate-500">{{ app.action | t }}</span>
+                      <span class="line-clamp-2 text-xs font-bold leading-snug text-[#032D42] group-hover:text-[#007979] sm:block sm:truncate sm:text-base">{{ app.title | t }}</span>
+                      <span class="hidden truncate text-xs text-slate-500 sm:block">{{ app.action | t }}</span>
                     </span>
                   </a>
                   <button
                     type="button"
                     (click)="toggleFavorite(app)"
-                    [class]="isFavorite(app) ? 'absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-amber-500 transition hover:bg-amber-50' : 'absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-100 hover:text-amber-500'"
+                    [class]="isFavorite(app) ? 'absolute right-0.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-amber-500 transition hover:bg-amber-50 sm:right-2' : 'absolute right-0.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-100 hover:text-amber-500 sm:right-2'"
                     [attr.aria-pressed]="isFavorite(app)"
                     [attr.aria-label]="(isFavorite(app) ? 'Remove {0} from favorites' : 'Add {0} to favorites') | t: [(app.title | t)]"
                     [title]="(isFavorite(app) ? 'Remove from favorites' : 'Add to favorites') | t"
@@ -239,6 +285,43 @@ export class AppsDirectoryComponent {
   private readonly i18n = inject(I18nService);
 
   protected readonly search = signal('');
+
+  /** Phones only: the search bar is hidden until the search icon is tapped. */
+  protected readonly mobileSearchOpen = signal(false);
+
+  /** Group chips: one line unless expanded with More. */
+  protected readonly groupsExpanded = signal(false);
+  protected readonly groupsOverflow = signal(false);
+  private readonly groupChips = viewChild<ElementRef<HTMLElement>>('groupChips');
+  private readonly destroyRef = inject(DestroyRef);
+
+  constructor() {
+    // Show More only when the chips need more than one line: on resize,
+    // and whenever the search changes which groups are shown.
+    afterNextRender(() => {
+      const element = this.groupChips()?.nativeElement;
+      if (!element || typeof ResizeObserver === 'undefined') {
+        return;
+      }
+
+      const observer = new ResizeObserver(() => this.measureGroups());
+      observer.observe(element);
+      this.measureGroups();
+      this.destroyRef.onDestroy(() => observer.disconnect());
+    });
+
+    effect(() => {
+      this.visibleGroups();
+      queueMicrotask(() => this.measureGroups());
+    });
+  }
+
+  private measureGroups(): void {
+    const element = this.groupChips()?.nativeElement;
+    if (element && !this.groupsExpanded()) {
+      this.groupsOverflow.set(element.scrollHeight > element.clientHeight + 2);
+    }
+  }
 
   protected readonly signedIn = computed(() => !!this.auth.firebaseUser());
 

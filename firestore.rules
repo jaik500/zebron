@@ -4708,6 +4708,181 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // COURSES
+    // ============================================================
+
+    /*
+     * courses/{courseId}                         Zebron courses
+     * organizations/{orgId}/courses/{courseId}   an organization's own courses
+     *   .../lessons/{lessonId}                   lesson content
+     * users/{uid}/courseProgress/{progressId}    a learner's progress
+     *
+     * Anyone can browse published Zebron courses; lessons need sign-in.
+     * Organization courses: published ones for members, every one for
+     * staff and above. Zebron admins and organization managers write.
+     */
+    function isPublishedPlatformCourse(courseId) {
+      return get(/databases/$(database)/documents/courses/$(courseId)).data.status == "published";
+    }
+
+    function isOpenOrganizationCourse(organizationId, courseId) {
+      return isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationStaffOrAbove(organizationId)
+        )
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationMember(organizationId)
+          && get(/databases/$(database)/documents/organizations/$(organizationId)/courses/$(courseId)).data.status == "published"
+        );
+    }
+
+    function canWriteOrganizationCourses(organizationId) {
+      return isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+        );
+    }
+
+    function isValidCourse(organizationId) {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly([
+          "title", "summary", "description", "topic", "level", "cover",
+          "outcomes", "skills", "modules", "lessonCount", "estimatedMinutes",
+          "status", "providerName", "authorId", "authorName", "organizationId", "id",
+          "createdAt", "updatedAt", "publishedAt"
+        ])
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 200
+        && data.get("summary", "") is string
+        && data.get("summary", "").size() <= 400
+        && data.get("description", "") is string
+        && data.get("description", "").size() <= 20000
+        && data.status in ["draft", "in_review", "published", "archived"]
+        && data.get("organizationId", null) == organizationId
+        && data.get("modules", []) is list
+        && data.get("modules", []).size() <= 60
+        && data.get("outcomes", []) is list
+        && data.get("outcomes", []).size() <= 30
+        && data.get("skills", []) is list
+        && data.get("skills", []).size() <= 30;
+    }
+
+    function isValidCourseLesson() {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly(["title", "moduleId", "order", "minutes", "blocks", "updatedAt"])
+        && data.title is string
+        && data.title.size() <= 300
+        && data.blocks is list
+        && data.blocks.size() <= 60
+        && data.minutes is number;
+    }
+
+    function isValidCourseProgress(userId) {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly([
+          "userId", "courseId", "organizationId", "courseTitle", "cover",
+          "lessonCount", "completedLessonIds", "lastLessonId", "percent",
+          "status", "checkScores", "activity", "learnerName",
+          "certificateCode", "skills", "startedAt", "updatedAt", "completedAt"
+        ])
+        && data.userId == userId
+        && data.courseId is string
+        && data.courseId.size() > 0
+        && data.courseId.size() <= 200
+        && (data.organizationId == null || data.organizationId is string)
+        && data.courseTitle is string
+        && data.courseTitle.size() <= 300
+        && data.cover is string
+        && data.cover.size() <= 20
+        && data.lessonCount is int
+        && data.completedLessonIds is list
+        && data.completedLessonIds.size() <= 500
+        && (data.lastLessonId == null || data.lastLessonId is string)
+        && data.percent is number
+        && data.percent >= 0
+        && data.percent <= 100
+        && data.status in ["in_progress", "completed"]
+        && data.checkScores is map
+        && data.checkScores.size() <= 500
+        && data.activity is map
+        && data.activity.size() <= 60
+        && data.learnerName is string
+        && data.learnerName.size() <= 200
+        && (data.certificateCode == null || (data.certificateCode is string && data.certificateCode.size() <= 40))
+        && data.skills is list
+        && data.skills.size() <= 50
+        && data.updatedAt == request.time;
+    }
+
+    match /courses/{courseId} {
+      allow get, list: if resource.data.status == "published";
+
+      allow get, list: if isPlatformAdmin();
+
+      allow create, update: if isPlatformAdmin()
+        && isValidCourse(null);
+
+      allow delete: if isPlatformAdmin();
+
+      match /lessons/{lessonId} {
+        allow get, list: if isPlatformAdmin()
+          || (
+            isAuthenticated()
+            && isPublishedPlatformCourse(courseId)
+          );
+
+        allow create, update: if isPlatformAdmin()
+          && isValidCourseLesson();
+
+        allow delete: if isPlatformAdmin();
+      }
+    }
+
+    match /organizations/{organizationId}/courses/{courseId} {
+      allow get, list: if isPlatformAdmin();
+
+      allow get, list: if isOrganizationOperational(organizationId)
+        && isOrganizationStaffOrAbove(organizationId);
+
+      allow get, list: if isAuthenticated()
+        && isOrganizationOperational(organizationId)
+        && isOrganizationMember(organizationId)
+        && resource.data.status == "published";
+
+      allow create, update: if canWriteOrganizationCourses(organizationId)
+        && isValidCourse(organizationId);
+
+      allow delete: if canWriteOrganizationCourses(organizationId);
+
+      match /lessons/{lessonId} {
+        allow get, list: if isAuthenticated()
+          && isOpenOrganizationCourse(organizationId, courseId);
+
+        allow create, update: if canWriteOrganizationCourses(organizationId)
+          && isValidCourseLesson();
+
+        allow delete: if canWriteOrganizationCourses(organizationId);
+      }
+    }
+
+    match /users/{userId}/courseProgress/{progressId} {
+      allow get, list: if isCurrentUser(userId)
+        || isPlatformAdmin();
+
+      allow create, update: if isCurrentUser(userId)
+        && isValidCourseProgress(userId);
+
+      allow delete: if isCurrentUser(userId);
+    }
+
+    // ============================================================
     // COURSE ENROLLMENTS
     // ============================================================
 

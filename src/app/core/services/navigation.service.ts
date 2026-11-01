@@ -109,11 +109,10 @@ icon: 'calculate',
 },
 {
 key: 'learning-lab',
-label: 'Learning Lab',
-route: '/learning',
+label: 'Courses',
+route: '/courses',
 icon: 'school',
 featureKey: 'learning-lab',
-requiresAuth: true,
 },
 {
 key: 'business-operations',
@@ -175,11 +174,10 @@ community: [
 'learning-lab': [
   {
     key: 'learning-dashboard',
-    label: 'Learning Lab',
-    route: '/learning',
+    label: 'My learning',
+    route: '/courses',
     icon: 'school',
     featureKey: 'learning-lab',
-    requiresAuth: true,
   },
 ],
 
@@ -313,7 +311,10 @@ if (
 
 if (
   normalizedUrl === '/learning' ||
-  normalizedUrl.startsWith('/learning/')
+  normalizedUrl.startsWith('/learning/') ||
+  normalizedUrl === '/courses' ||
+  normalizedUrl.startsWith('/courses/') ||
+  /^\/partner\/org\/[^/]+\/courses(?:\/|$)/.test(normalizedUrl)
 ) {
   return 'learning-lab';
 }
