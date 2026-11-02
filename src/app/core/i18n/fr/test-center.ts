@@ -681,4 +681,9 @@ export const FR_TEST_CENTER: Readonly<Record<string, string>> = {
   "{0} quizzes": "{0} quiz",
   "{0} topic": "{0} thème",
   "{0} topics": "{0} thèmes",
+  "Zebron quizzes in this program": "Quiz Zebron de ce programme",
+  "Linked Zebron quizzes": "Quiz Zebron liés",
+  "No Zebron quizzes are available yet.": "Aucun quiz Zebron n'est disponible pour l'instant.",
+  "Loading quizzes...": "Chargement des quiz...",
+  "Optional. Their topics are offered for courses in this program. Zebron quizzes stay shared and unchanged.": "Facultatif. Leurs thèmes sont proposés aux cours de ce programme. Les quiz Zebron restent partagés et inchangés.",
 };

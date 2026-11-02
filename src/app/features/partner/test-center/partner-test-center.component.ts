@@ -70,6 +70,8 @@ interface ProgramForm {
   slug: string;
   description: string;
   active: boolean;
+  /** Zebron quizzes linked to the program. */
+  platformQuizIds: string[];
 }
 
 interface StructureGroup {
@@ -367,6 +369,20 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 <mat-form-field appearance="outline" class="w-full md:col-span-2">
                   <mat-label>{{ 'Description' | t }}</mat-label>
                   <textarea matInput rows="3" [(ngModel)]="programForm.description"></textarea>
+                </mat-form-field>
+
+                <!-- Zebron quizzes: shared platform quizzes this organization uses in the program -->
+                <mat-form-field appearance="outline" class="w-full md:col-span-2">
+                  <mat-label>{{ 'Zebron quizzes in this program' | t }}</mat-label>
+                  <mat-select multiple [(ngModel)]="programForm.platformQuizIds">
+                    @for (quiz of zebronQuizzes(); track quiz.id) {
+                      <mat-option [value]="quiz.id">{{ quiz.name }} · {{ '{0} questions' | t: [quiz.questionCount] }}</mat-option>
+                    }
+                    @if (!zebronQuizzes().length) {
+                      <mat-option disabled>{{ (loadingZebronQuizzes() ? 'Loading quizzes...' : 'No Zebron quizzes are available yet.') | t }}</mat-option>
+                    }
+                  </mat-select>
+                  <mat-hint>{{ 'Optional. Their topics are offered for courses in this program. Zebron quizzes stay shared and unchanged.' | t }}</mat-hint>
                 </mat-form-field>
 
                 <div class="flex items-center gap-3 pb-5 md:col-span-2">
@@ -783,8 +799,20 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                     </div>
 
                     @if (!collapsedPrograms().has(group.key)) {
-                      @if (!group.quizzes.length) {
+                      @let linkedQuizzes = linkedZebronQuizzes(group.program);
+                      @if (!group.quizzes.length && !linkedQuizzes.length) {
                         <p class="border-t border-gray-100 px-4 py-3 pl-14 text-sm text-gray-500">{{ 'No quizzes in this program yet.' | t }}</p>
+                      }
+                      @if (linkedQuizzes.length) {
+                        <div class="flex flex-wrap items-center gap-2 border-t border-gray-100 px-4 py-3 text-sm sm:pl-14">
+                          <span class="inline-flex items-center gap-1 text-xs font-semibold text-gray-500">
+                            <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">link</mat-icon>
+                            {{ 'Linked Zebron quizzes' | t }}
+                          </span>
+                          @for (quiz of linkedQuizzes; track quiz.id) {
+                            <span class="rounded-full border border-[#007979]/30 bg-[#E5F4F4] px-2.5 py-0.5 text-xs font-semibold text-[#007979]">{{ quiz.name }}</span>
+                          }
+                        </div>
                       }
                       <ul class="divide-y divide-gray-100 border-t border-gray-100">
                         @for (quiz of group.quizzes; track quiz.id) {
@@ -991,6 +1019,11 @@ export class PartnerTestCenterComponent implements OnInit {
 
   protected programForm: ProgramForm = this.createEmptyProgramForm();
 
+  /** Active public Zebron quizzes an organization can link to its programs. */
+  protected readonly zebronQuizzes = signal<Quiz[]>([]);
+
+  protected readonly loadingZebronQuizzes = signal(false);
+
   // ============================================================
   // STRUCTURE TREE STATE
   // ============================================================
@@ -1187,7 +1220,7 @@ export class PartnerTestCenterComponent implements OnInit {
        * Courses must finish loading before topics are loaded
        * because topics are resolved through their parent courses.
        */
-      await Promise.all([this.loadCourses(), this.loadPrograms(organizationId)]);
+      await Promise.all([this.loadCourses(), this.loadPrograms(organizationId), this.loadZebronQuizzes()]);
 
       await this.loadTopics();
     } catch {
@@ -1267,6 +1300,30 @@ export class PartnerTestCenterComponent implements OnInit {
     } finally {
       this.loadingPrograms.set(false);
     }
+  }
+
+  // ============================================================
+  // LOAD ZEBRON QUIZZES
+  // ============================================================
+
+  private async loadZebronQuizzes(): Promise<void> {
+    this.loadingZebronQuizzes.set(true);
+
+    try {
+      const quizzes = await this.quizService.getAvailableQuizzes(null);
+      this.zebronQuizzes.set([...quizzes].sort((a, b) => a.name.localeCompare(b.name)));
+    } catch {
+      // Linking Zebron quizzes is optional; the rest of the page still works.
+      this.zebronQuizzes.set([]);
+    } finally {
+      this.loadingZebronQuizzes.set(false);
+    }
+  }
+
+  /** Zebron quizzes linked to a program, in name order; IDs that no longer resolve are skipped. */
+  protected linkedZebronQuizzes(program: TestProgram | null): Quiz[] {
+    const ids = program?.platformQuizIds ?? [];
+    return ids.length ? this.zebronQuizzes().filter((quiz) => ids.includes(quiz.id)) : [];
   }
 
   // ============================================================
@@ -1400,6 +1457,7 @@ export class PartnerTestCenterComponent implements OnInit {
       slug: program.slug ?? program.id,
       description: program.description ?? '',
       active: program.active === true,
+      platformQuizIds: [...(program.platformQuizIds ?? [])],
     };
     this.showForm.set(false);
     this.showTopicForm.set(false);
@@ -1451,6 +1509,7 @@ export class PartnerTestCenterComponent implements OnInit {
           name,
           description: this.programForm.description.trim(),
           active: this.programForm.active,
+          platformQuizIds: this.programForm.platformQuizIds,
         });
         this.toast.success('Program updated.');
       } else {
@@ -1463,6 +1522,7 @@ export class PartnerTestCenterComponent implements OnInit {
           slug,
           description: this.programForm.description.trim(),
           active: this.programForm.active,
+          platformQuizIds: this.programForm.platformQuizIds,
         });
         this.toast.success('Program created.');
       }
@@ -1576,7 +1636,7 @@ export class PartnerTestCenterComponent implements OnInit {
   }
 
   private createEmptyProgramForm(): ProgramForm {
-    return { name: '', slug: '', description: '', active: true };
+    return { name: '', slug: '', description: '', active: true, platformQuizIds: [] };
   }
 
   // ============================================================

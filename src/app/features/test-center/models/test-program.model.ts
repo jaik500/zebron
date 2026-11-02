@@ -39,6 +39,15 @@ export interface TestProgram {
    */
   quizCount: number;
 
+  /**
+   * Zebron (platform) quizzes this organization links to the program.
+   *
+   * Platform quizzes have no programId and are shared by every
+   * organization, so each organization records here which of them
+   * belong to its own programs. Optional: older programs don't have it.
+   */
+  platformQuizIds?: string[];
+
   createdAt: Timestamp;
 
   updatedAt: Timestamp;

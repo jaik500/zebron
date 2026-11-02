@@ -18,6 +18,9 @@ import { LoggerService } from '../../../core/services/logger.service';
 import { useLearningHeaderTitle } from '../../test-center/learner-route';
 import { Quiz } from '../../test-center/models/quiz.model';
 import { QuizService } from '../../test-center/services/quiz.service';
+import { TestProgram } from '../../test-center/models/test-program.model';
+import { TestProgramService } from '../../test-center/services/test-program.service';
+import { TestTopicService } from '../../test-center/services/test-topic.service';
 
 import {
   COURSE_COVERS,
@@ -34,6 +37,14 @@ import {
 import { BLOCK_META, BlockEditorComponent } from './block-editor.component';
 import { CourseBuilderStore } from './course-builder.store';
 import { CourseAccessService } from '../course-access.service';
+
+/** Active topics of one Test Center quiz, shown as a group in the Topic dropdown. */
+interface TopicGroup {
+  quizId: string;
+  programId: string | null;
+  label: string;
+  topics: string[];
+}
 
 /**
  * The course builder: course details, the outline (modules and lessons)
@@ -374,32 +385,32 @@ import { CourseAccessService } from '../course-access.service';
                   <textarea matInput rows="4" [value]="store.details().description" (input)="store.patchDetails({ description: value($event) })"></textarea>
                 </mat-form-field>
 
-                <div class="grid gap-4 sm:grid-cols-2">
-                  <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                    <mat-label>{{ 'Topic' | t }}</mat-label>
-                    <input matInput maxlength="40" [value]="store.details().topic" (input)="store.patchDetails({ topic: value($event) })" [placeholder]="'e.g. Cybersecurity' | t" />
-                  </mat-form-field>
-                  <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                    <mat-label>{{ 'Level' | t }}</mat-label>
-                    <mat-select [value]="store.details().level" (selectionChange)="store.patchDetails({ level: $event.value })">
-                      @for (level of levels; track level) {
-                        <mat-option [value]="level">{{ levelLabels[level] | t }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                </div>
-
                 <!-- Program: groups courses into an ordered learning path in the catalog -->
                 <div class="grid gap-4 sm:grid-cols-[1fr_9rem]">
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
                     <mat-label>{{ 'Program (optional)' | t }}</mat-label>
-                    <input
-                      matInput
-                      maxlength="80"
-                      [value]="store.details().program"
-                      (input)="store.patchDetails({ program: value($event) })"
-                      [placeholder]="'e.g. Cybersecurity Program' | t"
-                    />
+                    @if (context.organizationId) {
+                      <mat-select [value]="store.details().program" (selectionChange)="chooseProgram($event.value)">
+                        <mat-option value="">{{ 'No program' | t }}</mat-option>
+                        @if (programNotListed()) {
+                          <mat-option [value]="store.details().program">{{ store.details().program }} · {{ 'not in the Test Center' | t }}</mat-option>
+                        }
+                        @for (program of programs(); track program.id) {
+                          <mat-option [value]="program.name">{{ program.name }}</mat-option>
+                        }
+                        @if (!programs().length) {
+                          <mat-option disabled>{{ (optionsLoading() ? 'Loading programs...' : 'No active programs yet. Create one in the Test Center.') | t }}</mat-option>
+                        }
+                      </mat-select>
+                    } @else {
+                      <input
+                        matInput
+                        maxlength="80"
+                        [value]="store.details().program"
+                        (input)="store.patchDetails({ program: value($event) })"
+                        [placeholder]="'e.g. Cybersecurity Program' | t"
+                      />
+                    }
                     <mat-hint>{{ 'Courses with the same program are shown together, in order, in the catalog.' | t }}</mat-hint>
                   </mat-form-field>
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
@@ -413,6 +424,37 @@ import { CourseAccessService } from '../course-access.service';
                       [value]="store.details().programOrder ?? ''"
                       (input)="store.patchDetails({ programOrder: stepValue($event) })"
                     />
+                  </mat-form-field>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <!-- Topic: picked from the Test Center topics, grouped by quiz -->
+                  <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                    <mat-label>{{ 'Topic' | t }}</mat-label>
+                    <mat-select [value]="store.details().topic" (selectionChange)="store.patchDetails({ topic: $event.value })">
+                      <mat-option value="">{{ 'No topic' | t }}</mat-option>
+                      @if (topicNotListed()) {
+                        <mat-option [value]="store.details().topic">{{ store.details().topic }} · {{ (topicInOtherProgram() ? 'not in this program' : 'not in the Test Center') | t }}</mat-option>
+                      }
+                      @for (group of visibleTopicGroups(); track group.quizId) {
+                        <mat-optgroup [label]="group.label">
+                          @for (topic of group.topics; track topic) {
+                            <mat-option [value]="topic">{{ topic }}</mat-option>
+                          }
+                        </mat-optgroup>
+                      }
+                      @if (!visibleTopicGroups().length) {
+                        <mat-option disabled>{{ (optionsLoading() ? 'Loading topics...' : selectedProgram() ? 'This program has no active topics yet. Add them in the Test Center.' : 'No active topics yet. Create them in the Test Center.') | t }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                    <mat-label>{{ 'Level' | t }}</mat-label>
+                    <mat-select [value]="store.details().level" (selectionChange)="store.patchDetails({ level: $event.value })">
+                      @for (level of levels; track level) {
+                        <mat-option [value]="level">{{ levelLabels[level] | t }}</mat-option>
+                      }
+                    </mat-select>
                   </mat-form-field>
                 </div>
 
@@ -572,6 +614,8 @@ export class CourseBuilderComponent {
   private readonly pageTitle = inject(PageTitleService);
   private readonly organizationContext = inject(PartnerOrganizationContextService);
   private readonly quizService = inject(QuizService);
+  private readonly topicService = inject(TestTopicService);
+  private readonly programService = inject(TestProgramService);
   private readonly logger = inject(LoggerService);
   protected readonly store = inject(CourseBuilderStore);
 
@@ -588,6 +632,37 @@ export class CourseBuilderComponent {
   protected readonly exam = computed(() => this.store.details().finalExam);
   protected readonly quizzes = signal<Quiz[]>([]);
   protected readonly quizzesLoading = signal(false);
+
+  /** Test Center topics (by quiz) and programs offered in the Topic and Program dropdowns. */
+  protected readonly topicGroups = signal<TopicGroup[]>([]);
+  protected readonly programs = signal<TestProgram[]>([]);
+  protected readonly optionsLoading = signal(true);
+  /** A saved value that is no longer in the Test Center stays selectable so it isn't lost. */
+  /** The Test Center program chosen above (programs are saved by name). */
+  protected readonly selectedProgram = computed(() => {
+    const name = this.store.details().program.trim();
+    return name ? this.programs().find((item) => item.name === name) ?? null : null;
+  });
+  /**
+   * Topics of the chosen program's quizzes, its own and the Zebron quizzes
+   * linked to it in the Test Center; every topic when no program is chosen.
+   */
+  protected readonly visibleTopicGroups = computed(() => {
+    const program = this.selectedProgram();
+    return program ? this.topicGroups().filter((group) => this.inProgram(group, program)) : this.topicGroups();
+  });
+  protected readonly topicNotListed = computed(() => {
+    const topic = this.store.details().topic.trim();
+    return !!topic && !this.visibleTopicGroups().some((group) => group.topics.includes(topic));
+  });
+  protected readonly topicInOtherProgram = computed(() => {
+    const topic = this.store.details().topic.trim();
+    return this.topicGroups().some((group) => group.topics.includes(topic));
+  });
+  protected readonly programNotListed = computed(() => {
+    const program = this.store.details().program.trim();
+    return !!program && !this.programs().some((item) => item.name === program);
+  });
   protected readonly timeLimits = EXAM_TIME_LIMITS;
   protected readonly attemptOptions = EXAM_ATTEMPTS;
   protected readonly maxQuestions = computed(() => {
@@ -655,7 +730,8 @@ export class CourseBuilderComponent {
       ? this.organizationContext.organization()?.name?.trim() || ''
       : 'Zebron';
 
-    void this.loadQuizzes();
+    void this.loadQuizzes().then(() => this.loadTopics());
+    void this.loadPrograms();
 
     if (courseId === 'new') {
       this.store.startNew(this.context.organizationId, providerName);
@@ -697,6 +773,63 @@ export class CourseBuilderComponent {
     } finally {
       this.quizzesLoading.set(false);
     }
+  }
+
+  /** Active topics of every quiz the author can use, one group per quiz. */
+  private async loadTopics(): Promise<void> {
+    try {
+      const results = await Promise.allSettled(
+        this.quizzes().map((quiz) => this.topicService.getActiveTopics(quiz.organizationId ? quiz.organizationId : null, quiz.id)),
+      );
+      const groups = this.quizzes()
+        .map((quiz, index) => {
+          const result = results[index];
+          if (result.status === 'rejected') {
+            this.logger.error('CourseBuilderComponent', 'Could not load topics for quiz ' + quiz.id + '.', result.reason);
+            return null;
+          }
+          const topics = [...new Set(result.value.map((topic) => topic.name.trim()).filter(Boolean))];
+          return topics.length
+            ? { quizId: quiz.id, programId: quiz.programId ?? null, label: quiz.organizationId ? quiz.name : quiz.name + ' · Zebron', topics }
+            : null;
+        })
+        .filter((group): group is TopicGroup => group !== null);
+      this.topicGroups.set(groups);
+    } finally {
+      this.optionsLoading.set(false);
+    }
+  }
+
+  /** The organization's active Test Center programs. Zebron pages keep a free-text program. */
+  private async loadPrograms(): Promise<void> {
+    if (!this.context.organizationId) {
+      return;
+    }
+    try {
+      this.programs.set(await this.programService.getActiveOrganizationPrograms(this.context.organizationId));
+    } catch (error) {
+      this.logger.error('CourseBuilderComponent', 'Could not load Test Center programs.', error);
+    }
+  }
+
+  /** A quiz belongs to a program when it is the program's own or a Zebron quiz linked to it. */
+  private inProgram(group: TopicGroup, program: TestProgram): boolean {
+    return group.programId === program.id || (program.platformQuizIds ?? []).includes(group.quizId);
+  }
+
+  /**
+   * Clearing the program also clears its step. A topic that doesn't belong
+   * to the newly chosen program is cleared so the author picks one from it.
+   */
+  protected chooseProgram(program: string): void {
+    const chosen = this.programs().find((item) => item.name === program);
+    const topic = this.store.details().topic.trim();
+    const topicFits = !topic || !chosen || this.topicGroups().some((group) => this.inProgram(group, chosen) && group.topics.includes(topic));
+    this.store.patchDetails({
+      program,
+      ...(program ? {} : { programOrder: null }),
+      ...(topicFits ? {} : { topic: '' }),
+    });
   }
 
   protected checked(event: Event): boolean {

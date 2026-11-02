@@ -221,17 +221,6 @@ service cloud.firestore {
       ];
     }
 
-    function isOrganizationRole(
-      organizationId,
-      role
-    ) {
-      return claimedOrganizationRole(organizationId) == role
-        || (
-          isOrganizationMemberFromDocument(organizationId)
-          && myOrganizationRoleFromDocument(organizationId) == role
-        );
-    }
-
     function myOrganizationRoleFromDocument(organizationId) {
       return get(
         organizationMembershipPath(
@@ -886,94 +875,6 @@ service cloud.firestore {
           roleId
         )
       ).data.get("groupId", "") == groupId;
-    }
-
-    function groupRolePermissionPath(
-      organizationId,
-      groupId,
-      roleId,
-      permissionId
-    ) {
-      return /databases/$(database)/documents/organizations/$(organizationId)/groups/$(groupId)/roles/$(roleId)/permissions/$(permissionId);
-    }
-
-    function groupRolePermissionExists(
-      organizationId,
-      groupId,
-      roleId,
-      permissionId
-    ) {
-      return exists(
-        groupRolePermissionPath(
-          organizationId,
-          groupId,
-          roleId,
-          permissionId
-        )
-      );
-    }
-
-    function activeGroupRolePermissionExists(
-      organizationId,
-      groupId,
-      roleId,
-      permissionId
-    ) {
-      return groupRolePermissionExists(
-        organizationId,
-        groupId,
-        roleId,
-        permissionId
-      )
-      && get(
-        groupRolePermissionPath(
-          organizationId,
-          groupId,
-          roleId,
-          permissionId
-        )
-      ).data.get("active", false) == true;
-    }
-
-    function groupRoleAssignmentPath(
-      organizationId,
-      groupId,
-      assignmentId
-    ) {
-      return /databases/$(database)/documents/organizations/$(organizationId)/groups/$(groupId)/roleAssignments/$(assignmentId);
-    }
-
-    function groupRoleAssignmentExists(
-      organizationId,
-      groupId,
-      assignmentId
-    ) {
-      return exists(
-        groupRoleAssignmentPath(
-          organizationId,
-          groupId,
-          assignmentId
-        )
-      );
-    }
-
-    function activeGroupRoleAssignmentExists(
-      organizationId,
-      groupId,
-      assignmentId
-    ) {
-      return groupRoleAssignmentExists(
-        organizationId,
-        groupId,
-        assignmentId
-      )
-      && get(
-        groupRoleAssignmentPath(
-          organizationId,
-          groupId,
-          assignmentId
-        )
-      ).data.get("active", false) == true;
     }
 
     function groupAssignmentReferencesSameGroup(
@@ -1801,40 +1702,6 @@ service cloud.firestore {
         );
     }
 
-    function canCreateTestProgram(
-      organizationId
-    ) {
-      return isTestCenterAdmin(
-        organizationId
-      );
-    }
-
-    function canUpdateTestProgram(
-      organizationId,
-      programId
-    ) {
-      return isTestCenterAdmin(
-        organizationId
-      )
-      && testProgramBelongsToOrganization(
-        programId,
-        organizationId
-      );
-    }
-
-    function canDeleteTestProgram(
-      organizationId,
-      programId
-    ) {
-      return isTestCenterAdmin(
-        organizationId
-      )
-      && testProgramBelongsToOrganization(
-        programId,
-        organizationId
-      );
-    }
-
     function testCenterQuizBelongsToOrganization(
       quizId,
       organizationId
@@ -1901,40 +1768,6 @@ service cloud.firestore {
           organizationId,
           quizId
         );
-    }
-
-    function canCreateTestCenterAttempt(
-      organizationId,
-      quizId
-    ) {
-      return isTestCenterMember(organizationId)
-        && testCenterQuizBelongsToOrganization(
-          quizId,
-          organizationId
-        );
-    }
-
-    function canCreateTestCenterResult(
-      organizationId,
-      userId,
-      quizId,
-      attemptId
-    ) {
-      return isTestCenterMember(organizationId)
-        && request.auth.uid == userId
-        && testCenterQuizBelongsToOrganization(
-          quizId,
-          organizationId
-        )
-        && exists(
-          /databases/$(database)/documents/quizAttempts/$(attemptId)
-        )
-        && get(
-          /databases/$(database)/documents/quizAttempts/$(attemptId)
-        ).data.organizationId == organizationId
-        && get(
-          /databases/$(database)/documents/quizAttempts/$(attemptId)
-        ).data.userId == userId;
     }
 
     // ============================================================
@@ -2217,6 +2050,12 @@ service cloud.firestore {
 
     match /testPrograms/{programId} {
 
+      // Zebron quizzes an organization links to its program: optional list of up to 50 IDs.
+      function validProgramPlatformQuizIds(data) {
+        return !('platformQuizIds' in data)
+          || (data.platformQuizIds is list && data.platformQuizIds.size() <= 50);
+      }
+
       allow get: if isPlatformAdmin()
         || (
           isAuthenticated()
@@ -2242,6 +2081,7 @@ service cloud.firestore {
             request.resource.data.organizationId
           )
           && request.resource.data.quizCount == 0
+          && validProgramPlatformQuizIds(request.resource.data)
         );
 
       allow update: if isPlatformAdmin()
@@ -2255,6 +2095,7 @@ service cloud.firestore {
           )
           && request.resource.data.quizCount
             == resource.data.quizCount
+          && validProgramPlatformQuizIds(request.resource.data)
         );
 
       /*
@@ -2827,17 +2668,6 @@ service cloud.firestore {
       function isPublishedAndApprovedPost() {
         return resource.data.get("status", "") == "published"
           && resource.data.get("moderationStatus", "") == "approved";
-      }
-
-      function isValidReactionType(reactionType) {
-        return reactionType in [
-          "like",
-          "love",
-          "laugh",
-          "celebrate",
-          "support",
-          "helpful"
-        ];
       }
 
       function reactionCountsMatchTransition(

@@ -142,6 +142,7 @@ export class TestProgramService {
       slug: string;
       description: string;
       active: boolean;
+      platformQuizIds?: string[];
     },
   ): Promise<string> {
     this.requireOrganizationId(
@@ -185,6 +186,8 @@ export class TestProgramService {
         description,
         active:
           program.active === true,
+        platformQuizIds:
+          this.normalizePlatformQuizIds(program.platformQuizIds),
         quizCount: 0,
         createdAt:
           serverTimestamp(),
@@ -208,6 +211,7 @@ export class TestProgramService {
       slug?: string;
       description?: string;
       active?: boolean;
+      platformQuizIds?: string[];
     },
   ): Promise<void> {
     this.requireOrganizationId(
@@ -302,10 +306,24 @@ export class TestProgramService {
         changes.active === true;
     }
 
+    if (
+      changes.platformQuizIds !== undefined
+    ) {
+      payload['platformQuizIds'] =
+        this.normalizePlatformQuizIds(changes.platformQuizIds);
+    }
+
     await updateDoc(
       programReference,
       payload,
     );
+  }
+
+  /** Linked Zebron quiz IDs: trimmed, unique, at most 50 (the rules allow 50). */
+  private normalizePlatformQuizIds(
+    ids: string[] | undefined,
+  ): string[] {
+    return [...new Set((ids ?? []).map((id) => id.trim()).filter(Boolean))].slice(0, 50);
   }
 
   // ============================================================
