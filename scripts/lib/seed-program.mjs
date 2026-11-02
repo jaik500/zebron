@@ -41,11 +41,13 @@ const DIFFICULTIES = ["easy", "medium", "hard"];
  * @param {string} options.courseTopic  the course catalog topic, e.g. "Cybersecurity"
  * @param {string} options.folder       absolute path of the folder with 01-….mjs content files
  * @param {string} options.idPrefix     course id prefix removed for question tags, e.g. "cybersecurity-"
- * @param {object} [options.certification]  a certification over all the program's courses, in order:
+ * @param {object|object[]} [options.certification]  one certification, or several (for example a Zebron
+ *   certification and an external exam preparation track), over the program's courses in order:
  *   { id, title, credentialName, summary, description, preparesFor[], level, cover,
  *     exam: { questionsPerCourse, passMark, timeLimitMinutes, maxAttempts, cooldownDays }, validityYears }
  */
 export async function seedProgram({ programName, courseTopic, folder, idPrefix, certification = null }) {
+const certificationList = (Array.isArray(certification) ? certification : [certification]).filter(Boolean);
 const PROGRAM_NAME = programName;
 const args = new Set(process.argv.slice(2));
 const CHECK_ONLY = args.has("--check");
@@ -111,7 +113,7 @@ const now = FieldValue.serverTimestamp();
 console.log(`\nProject ${PROJECT_ID}${APPLY ? "" : " (dry run)"}\n`);
 
 if (args.has("--update-programs")) {
-  await seedCertification(true);
+  for (const item of certificationList) await seedCertification(item, true);
   // Only set program and step on courses that already exist (nothing else changes).
   for (const course of courses) {
     const ref = db.collection("courses").doc(course.id);
@@ -132,17 +134,14 @@ for (const course of courses) {
   await seedQuiz(course);
   await seedCourse(course);
 }
-await seedCertification(OVERWRITE);
+for (const item of certificationList) await seedCertification(item, OVERWRITE);
 
 console.log(APPLY ? "\nDone." : "\nDry run only. Run again with --apply to write.");
 
 // ------------------------------------------------------------------
 
 /** certifications/{id}: the program's courses in order, with the exam rules. */
-async function seedCertification(replace) {
-  if (!certification) {
-    return;
-  }
+async function seedCertification(certification, replace) {
   const ref = db.collection("certifications").doc(certification.id);
   const existing = await ref.get();
   if (existing.exists && !replace) {

@@ -21,6 +21,22 @@ import { seedProgram } from "./seed-program.mjs";
  * @param {object} track.certification     CERTIFICATION from the track file
  */
 export async function seedExamPrep(track) {
+  const certification = await prepareExamPrep(track);
+  await seedProgram({
+    programName: track.programName,
+    courseTopic: track.courseTopic,
+    folder: track.folder,
+    idPrefix: track.idPrefix,
+    certification: [...(track.extraCertifications ?? []), certification],
+  });
+}
+
+/**
+ * Validate an exam preparation track against the course content, print the
+ * objective coverage, and return the certification with each mapped lesson's
+ * title added (exits on problems).
+ */
+export async function prepareExamPrep(track) {
   const { certification } = track;
   const coursesById = new Map();
   for (const folder of track.courseFolders) {
@@ -82,11 +98,5 @@ export async function seedExamPrep(track) {
     })),
   }));
 
-  await seedProgram({
-    programName: track.programName,
-    courseTopic: track.courseTopic,
-    folder: track.folder,
-    idPrefix: track.idPrefix,
-    certification: { ...certification, objectives },
-  });
+  return { ...certification, objectives };
 }
