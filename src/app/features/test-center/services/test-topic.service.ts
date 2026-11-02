@@ -29,14 +29,25 @@ export class TestTopicService {
   // VALIDATION
   // ============================================================
 
+  /**
+   * Topics are owned by an organization, or by Zebron when the owner is null.
+   * An empty string is never a valid owner.
+   */
   private requireOrganizationId(
-    organizationId: string,
+    organizationId: string | null,
   ): void {
-    if (!organizationId.trim()) {
+    if (organizationId !== null && !organizationId.trim()) {
       throw new Error(
         'An organization is required for Test Center topics.',
       );
     }
+  }
+
+  /** Query constraints for one owner: an organization, or Zebron (null). */
+  private ownerConstraints(organizationId: string | null) {
+    return organizationId === null
+      ? [where('scope', '==', 'platform'), where('organizationId', '==', null)]
+      : [where('organizationId', '==', organizationId)];
   }
 
   private requireQuizId(
@@ -105,18 +116,18 @@ async getActiveTopics(
   // ============================================================
 
   async getAllTopics(
-    organizationId: string,
+    organizationId: string | null,
     quizId: string,
   ): Promise<TestTopic[]> {
     this.requireOrganizationId(organizationId);
     this.requireQuizId(quizId);
 
-   const topicsQuery = query(
-  this.topicsCollection,
-  where('organizationId', '==', organizationId),
-  where('quizId', '==', quizId),
-  where('active', '==', true),
-);
+    const topicsQuery = query(
+      this.topicsCollection,
+      ...this.ownerConstraints(organizationId),
+      where('quizId', '==', quizId),
+      where('active', '==', true),
+    );
 
     const snapshot = await getDocs(
       topicsQuery,
@@ -138,12 +149,12 @@ async getActiveTopics(
   // ============================================================
 
   /**
-   * Every topic of an organization quiz, inactive ones included, for the
-   * Structure page (managers). Rules allow Test Center admins to read
-   * inactive topics; question writers keep using getAllTopics (active).
+   * Every topic of a quiz, inactive ones included, for the Structure pages.
+   * Pass null for a Zebron quiz (platform admins). Rules allow Test Center
+   * admins to read inactive topics; question writers use getAllTopics (active).
    */
   async getTopicsForManagement(
-    organizationId: string,
+    organizationId: string | null,
     quizId: string,
   ): Promise<TestTopic[]> {
     this.requireOrganizationId(organizationId);
@@ -152,7 +163,7 @@ async getActiveTopics(
     const snapshot = await getDocs(
       query(
         this.topicsCollection,
-        where('organizationId', '==', organizationId),
+        ...this.ownerConstraints(organizationId),
         where('quizId', '==', quizId),
       ),
     );
@@ -167,7 +178,7 @@ async getActiveTopics(
   // ============================================================
 
   async createTopic(
-    organizationId: string,
+    organizationId: string | null,
     topic: Omit<
       TestTopic,
       'id' | 'createdAt' | 'updatedAt'
@@ -193,6 +204,8 @@ async getActiveTopics(
     const reference = await addDoc(
       this.topicsCollection,
       {
+        // Zebron topics carry scope 'platform'; organization topics keep their existing shape.
+        ...(organizationId === null ? { scope: 'platform' } : {}),
         organizationId,
         quizId: topic.quizId,
         name: topic.name.trim(),
@@ -217,7 +230,7 @@ async getActiveTopics(
   // ============================================================
 
   async updateTopic(
-    organizationId: string,
+    organizationId: string | null,
     topicId: string,
     changes: Partial<
       Omit<
@@ -260,7 +273,7 @@ async getActiveTopics(
   // ============================================================
 
   async deleteTopic(
-    organizationId: string,
+    organizationId: string | null,
     topicId: string,
   ): Promise<void> {
     this.requireOrganizationId(

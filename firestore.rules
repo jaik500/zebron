@@ -1601,6 +1601,46 @@ service cloud.firestore {
         && isActivePublicPlatformQuiz(quizId);
     }
 
+    // Zebron (platform) content: written only by platform admins, with
+    // scope 'platform' and organizationId explicitly null.
+    function isPlatformOwned(data) {
+      return data.get("scope", "") == "platform"
+        && "organizationId" in data
+        && data.organizationId == null;
+    }
+
+    function isPlatformQuiz(quizId) {
+      let quizPath =
+        /databases/$(database)/documents/quizzes/$(quizId);
+
+      return exists(quizPath)
+        && isPlatformOwned(get(quizPath).data);
+    }
+
+    function isPlatformTopicOfQuiz(topicId, quizId) {
+      let topicPath =
+        /databases/$(database)/documents/quizTopics/$(topicId);
+
+      return exists(topicPath)
+        && isPlatformOwned(get(topicPath).data)
+        && get(topicPath).data.get("quizId", "") == quizId;
+    }
+
+    function canCreatePlatformTopic(data) {
+      return isPlatformAdmin()
+        && isPlatformOwned(data)
+        && data.quizId is string
+        && isPlatformQuiz(data.quizId);
+    }
+
+    function canCreatePlatformQuestion(data) {
+      return isPlatformAdmin()
+        && isPlatformOwned(data)
+        && data.quizId is string
+        && data.topicId is string
+        && isPlatformTopicOfQuiz(data.topicId, data.quizId);
+    }
+
     function isPublishedPlatformQuestion(questionId) {
       let questionPath =
         /databases/$(database)/documents/quizQuestions/$(questionId);
@@ -2243,12 +2283,15 @@ service cloud.firestore {
         );
 
       allow create: if
-        request.resource.data.organizationId is string
-        && request.resource.data.quizId is string
-        && canCreateTestCenterTopic(
-          request.resource.data.organizationId,
-          request.resource.data.quizId
-        );
+        (
+          request.resource.data.organizationId is string
+          && request.resource.data.quizId is string
+          && canCreateTestCenterTopic(
+            request.resource.data.organizationId,
+            request.resource.data.quizId
+          )
+        )
+        || canCreatePlatformTopic(request.resource.data);
 
       allow update: if
         isTestCenterAdmin(resource.data.organizationId)
@@ -2314,14 +2357,17 @@ service cloud.firestore {
         );
 
       allow create: if
-        request.resource.data.organizationId is string
-        && request.resource.data.quizId is string
-        && request.resource.data.topicId is string
-        && canCreateTestCenterQuestion(
-          request.resource.data.organizationId,
-          request.resource.data.quizId,
-          request.resource.data.topicId
-        );
+        (
+          request.resource.data.organizationId is string
+          && request.resource.data.quizId is string
+          && request.resource.data.topicId is string
+          && canCreateTestCenterQuestion(
+            request.resource.data.organizationId,
+            request.resource.data.quizId,
+            request.resource.data.topicId
+          )
+        )
+        || canCreatePlatformQuestion(request.resource.data);
 
       allow update: if
         isTestCenterAdmin(resource.data.organizationId)

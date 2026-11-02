@@ -1163,7 +1163,7 @@ export class AdminDashboardComponent {
 
     {
       title: 'Test Center',
-      description: 'Manage test courses, topics, questions, and question banks.',
+      description: 'Zebron\'s public quizzes, their topics and questions.',
       route: '/admin/test-center',
       actionLabel: 'Open Test Center',
       icon: 'test-center',
@@ -1171,7 +1171,7 @@ export class AdminDashboardComponent {
 
     {
       title: 'Partner Test Center',
-      description: 'Manage test courses, topics, questions, and question banks.',
+      description: 'Organizations manage their own programs, quizzes and questions.',
       route: '/partner/dashboard',
       actionLabel: 'Open Test Center',
       icon: 'test-center',

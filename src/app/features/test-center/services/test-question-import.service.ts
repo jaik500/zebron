@@ -37,7 +37,7 @@ export class TestQuestionImportService {
   // ============================================================
 
   async importQuestionBank(
-    organizationId: string,
+    organizationId: string | null,
     quizId: string,
     topicDefinitions:
       readonly TestQuestionImportTopic[],
@@ -245,6 +245,8 @@ export class TestQuestionImportService {
 
         const payload:
           Record<string, unknown> = {
+          ...(organizationId === null ? { scope: 'platform' } : {}),
+
           organizationId,
 
           quizId,
@@ -392,7 +394,7 @@ export class TestQuestionImportService {
   // ============================================================
 
   private async loadCourseTopics(
-    organizationId: string,
+    organizationId: string | null,
     quizId: string,
   ): Promise<TestTopic[]> {
     const snapshot =
@@ -433,7 +435,7 @@ export class TestQuestionImportService {
   // ============================================================
 
   private async resolveOrCreateTopics(
-    organizationId: string,
+    organizationId: string | null,
     quizId: string,
     existingTopics: TestTopic[],
     definitions:
@@ -520,6 +522,8 @@ export class TestQuestionImportService {
             'quizTopics',
           ),
           {
+            ...(organizationId === null ? { scope: 'platform' } : {}),
+
             organizationId,
 
             quizId,
@@ -670,7 +674,7 @@ export class TestQuestionImportService {
   // ============================================================
 
   private async refreshQuestionCounts(
-    organizationId: string,
+    organizationId: string | null,
     quizId: string,
     topics: TestTopic[],
   ): Promise<void> {
@@ -1008,7 +1012,7 @@ export class TestQuestionImportService {
   // ============================================================
 
   private async validateCourse(
-    organizationId: string,
+    organizationId: string | null,
     quizId: string,
   ): Promise<void> {
     const snapshot =
@@ -1026,12 +1030,14 @@ export class TestQuestionImportService {
 
     if (
       !snapshot.exists() ||
-      snapshot.data()[
+      (snapshot.data()[
         'organizationId'
-      ] !== organizationId
+      ] ?? null) !== organizationId
     ) {
       throw new Error(
-        'The selected Test Center course does not belong to the current organization.',
+        organizationId === null
+          ? 'The selected quiz is not a Zebron quiz.'
+          : 'The selected Test Center course does not belong to the current organization.',
       );
     }
   }
@@ -1118,10 +1124,11 @@ export class TestQuestionImportService {
     return normalized;
   }
 
+  /** null means Zebron (platform) content; an empty string is never valid. */
   private requireOrganizationId(
-    organizationId: string,
+    organizationId: string | null,
   ): void {
-    if (!organizationId?.trim()) {
+    if (organizationId !== null && !organizationId?.trim()) {
       throw new Error(
         'An organization is required for Test Center operations.',
       );

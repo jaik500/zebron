@@ -11,7 +11,7 @@ import {
 } from '../../../test-center/models/question-answers';
 import { QuestionAnswerEditorComponent } from '../../../test-center/components/question-answer-editor.component';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
 
@@ -40,7 +40,6 @@ import {
 
 import { TestQuestionImportService } from '../../../test-center/services/test-question-import.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
-import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -50,32 +49,29 @@ import { MatRadioModule } from '@angular/material/radio';
   standalone: true,
   imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule, MatRadioModule, QuestionAnswerEditorComponent],
   template: `
-    <div class="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8 mt-10">
+    <header class="mt-16 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] shadow-md">
+      <div class="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8">
+        <nav class="flex flex-wrap items-center gap-2 text-sm text-white/65" aria-label="Breadcrumb">
+          <a routerLink="/admin" class="transition hover:text-white">Admin</a>
+          <span>/</span>
+          <a routerLink="/admin/test-center" class="transition hover:text-white">Test Center</a>
+          <span>/</span>
+          <span class="text-white/90">Questions</span>
+        </nav>
+        <h1 class="mt-1 text-xl font-semibold text-white">Zebron questions</h1>
+        <p class="hidden text-sm text-white/70 sm:block">Questions for Zebron's public quizzes. Pick a quiz and topic, then add, edit or import questions.</p>
+      </div>
+    </header>
+    <div class="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-7xl">
         <!-- ============================================================
              PAGE HEADER
              ============================================================ -->
 
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div class="mb-2 flex items-center gap-2 text-sm text-gray-500">
-              <a routerLink="/admin" class="transition hover:text-teal-600"> Admin </a>
-
-              <span>/</span>
-
-              <a routerLink="/admin/test-center/topics" class="transition hover:text-teal-600">
-                Test Center
-              </a>
-
-              <span>/</span>
-
-              <span class="text-gray-700"> Questions </span>
-            </div>
-
-            <p class="mt-1 text-sm text-gray-600">
-              Create, edit, publish, and manage Test Center questions. Version 1.0.0
-            </p>
-          </div>
+          <a routerLink="/admin/test-center" class="inline-flex items-center gap-1 text-sm font-semibold text-[#007979] hover:underline">
+            ← Quizzes and topics
+          </a>
 
           <!-- ============================================================
                HEADER ACTIONS
@@ -1050,7 +1046,10 @@ export class TestQuestionAdminComponent implements OnInit {
 
   private readonly questionImportService = inject(TestQuestionImportService);
 
-  private readonly organizationContext = inject(OrganizationContextService);
+  private readonly route = inject(ActivatedRoute);
+
+  /** This page edits Zebron (platform) content only: the owner is always null. */
+  private readonly owner = null;
 
   // ============================================================
   // DATA
@@ -1216,8 +1215,14 @@ export class TestQuestionAdminComponent implements OnInit {
   // ============================================================
 
   async ngOnInit(): Promise<void> {
+    this.pageTitleService.setTitle('Test Center Questions');
     await this.loadCourses();
-    this.pageTitleService.setTitle('Question Bank');
+
+    // Opened from the Structure page with ?quizId=…
+    const quizId = this.route.snapshot.queryParamMap.get('quizId');
+    if (quizId && this.courses().some((course) => course.id === quizId)) {
+      await this.onCourseChange(quizId);
+    }
   }
 
   // ============================================================
@@ -1225,20 +1230,13 @@ export class TestQuestionAdminComponent implements OnInit {
   // ============================================================
 
   private async loadCourses(): Promise<void> {
-    const organizationId = this.organizationContext.organizationId();
-
-    if (!organizationId) {
-      this.courses.set([]);
-      this.toast.error('Select an organization before viewing Test Center quizzes.');
-      return;
-    }
 
     try {
       this.loadingCourses.set(true);
 
-      const courses = await this.quizService.getActiveQuizzes(organizationId);
+      const courses = await this.quizService.getAllQuizzesForAdmin();
 
-      this.courses.set(courses);
+      this.courses.set(courses.filter((course) => course.scope === 'platform' && course.active));
     } catch (error) {
       console.error('Failed to load Test Center courses:', error);
 
@@ -1280,12 +1278,7 @@ export class TestQuestionAdminComponent implements OnInit {
       return;
     }
 
-    const organizationId = this.organizationContext.organizationId();
-
-    if (!organizationId) {
-      this.toast.error('Select an organization before loading Test Center topics.');
-      return;
-    }
+    const organizationId = this.owner;
 
     try {
       this.loadingTopics.set(true);
@@ -1329,11 +1322,11 @@ export class TestQuestionAdminComponent implements OnInit {
   // ============================================================
 
   private async loadQuestions(): Promise<void> {
-    const organizationId = this.organizationContext.organizationId();
+    const organizationId = this.owner;
 
     const topicId = this.selectedTopicId();
 
-    if (!organizationId || !topicId) {
+    if (!topicId) {
       this.questions.set([]);
       return;
     }
@@ -1360,9 +1353,9 @@ export class TestQuestionAdminComponent implements OnInit {
   // ============================================================
 
   private async refreshTopics(quizId: string): Promise<void> {
-    const organizationId = this.organizationContext.organizationId();
+    const organizationId = this.owner;
 
-    if (!organizationId || !quizId) {
+    if (!quizId) {
       return;
     }
 
@@ -1498,12 +1491,7 @@ export class TestQuestionAdminComponent implements OnInit {
       return;
     }
 
-    const organizationId = this.organizationContext.organizationId();
-
-    if (!organizationId) {
-      this.toast.error('Select an organization before managing Test Center questions.');
-      return;
-    }
+    const organizationId = this.owner;
 
     const quizId = this.selectedQuizId();
     const topicId = this.selectedTopicId();
@@ -1612,12 +1600,7 @@ export class TestQuestionAdminComponent implements OnInit {
       return;
     }
 
-    const organizationId = this.organizationContext.organizationId();
-
-    if (!organizationId) {
-      this.toast.error('Select an organization before deleting questions.');
-      return;
-    }
+    const organizationId = this.owner;
 
     try {
       await this.questionService.deleteQuestion(organizationId, question.id);
@@ -2189,12 +2172,7 @@ export class TestQuestionAdminComponent implements OnInit {
       return;
     }
 
-    const organizationId = this.organizationContext.organizationId();
-
-    if (!organizationId) {
-      this.toast.error('Select an organization before importing the question bank.');
-      return;
-    }
+    const organizationId = this.owner;
 
     if (this.importing()) {
       return;
@@ -2308,12 +2286,7 @@ export class TestQuestionAdminComponent implements OnInit {
       return;
     }
 
-    const organizationId = this.organizationContext.organizationId();
-
-    if (!organizationId) {
-      this.toast.error('Select an organization before importing the question bank.');
-      return;
-    }
+    const organizationId = this.owner;
 
     if (this.importing()) {
       return;

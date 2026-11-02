@@ -122,7 +122,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
           <div class="grid gap-2 sm:gap-3" [class]="browseGridClass()">
             <!-- Certifications -->
             <a
-              [routerLink]="[learnerBaseRoute(), 'quizzes']"
+              [routerLink]="['/partner/org', organizationId, 'courses', 'certifications']"
               [queryParams]="{ type: 'certification' }"
               class="group rounded-xl border border-gray-200 bg-white p-2 sm:p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#12BFC3] hover:bg-[#E5F4F4] hover:shadow-md"
             >
@@ -611,7 +611,8 @@ private readonly questionService = inject(TestQuestionService); // add
       const organizationId = this.organizationId();
       this.loadFavorites(organizationId);
 
-      const courses = await this.quizService.getAvailableQuizzes(organizationId);
+      // Own quizzes plus Zebron quizzes linked to the organization's programs.
+      const courses = await this.quizService.getQuizzesForLearners(organizationId);
       this.courses.set(courses);
       await this.loadQuestionCounts(courses, organizationId); // add
 

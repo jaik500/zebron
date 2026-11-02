@@ -4,12 +4,16 @@ export interface TestProgram {
   id: string;
 
   /**
-   * Organization that owns this program.
-   *
-   * Platform programs are not represented by this model.
-   * Organization programs always belong to exactly one organization.
+   * Organization that owns this program; null for a Zebron (platform)
+   * program, which Zebron's own quizzes and courses use.
    */
-  organizationId: string;
+  organizationId: string | null;
+
+  /**
+   * 'platform' for Zebron programs. Optional: organization programs
+   * created before Zebron programs existed don't have it.
+   */
+  scope?: 'platform' | 'organization';
 
   /**
    * Human-readable program name.

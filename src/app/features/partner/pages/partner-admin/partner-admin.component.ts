@@ -554,7 +554,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                ADMINISTRATION
                ===================================================== -->
 
-          @if (!isOrganizationOnboarding() && access.canAccessAdministration()) {
+          @if (!isOrganizationOnboarding() && (access.canAccessAdministration() || mailboxCard())) {
             <section class="mt-10">
               <div class="mb-5">
                 <div class="flex items-center gap-2">
@@ -573,6 +573,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
               </div>
 
               <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                @if (access.canAccessAdministration()) {
                 <a
                   [routerLink]="administrationRoute()"
                   class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
@@ -594,6 +595,29 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                     {{ 'Manage organization courses, members, programs, settings, notifications, and administrative operations.' | t }}
                   </p>
                 </a>
+                }
+
+                <!-- Mailbox: shown here once provisioned, never in Your Workspace -->
+                @if (mailboxCard(); as mailbox) {
+                  <a
+                    [routerLink]="mailbox.route"
+                    class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
+                  >
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 text-[#007979] transition-colors group-hover:bg-[#007979] group-hover:text-white"
+                      >
+                        <mat-icon>{{ mailbox.icon }}</mat-icon>
+                      </div>
+
+                      <h3 class="min-w-0 flex-1 text-lg font-bold text-gray-900">{{ mailbox.title | t }}</h3>
+
+                      <mat-icon class="shrink-0 text-gray-300 transition-colors group-hover:text-[#007979]">arrow_forward</mat-icon>
+                    </div>
+
+                    <p class="mt-3 text-sm leading-6 text-gray-500">{{ mailbox.description | t }}</p>
+                  </a>
+                }
               </div>
             </section>
           }
@@ -846,8 +870,8 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
     )
     // Capabilities (Courses, Test Center) appear through their parent's card.
     .filter((application) => !application.parent)
-    // Mailbox is for staff and above (assigned staff, managers, admins, owners).
-    .filter((application) => application.id !== 'mailbox' || this.access.isStaffOrAbove())
+    // Mailbox is shown in the Administration section instead (see mailboxCard).
+    .filter((application) => application.id !== 'mailbox')
     .filter((application) => this.isApplicationActive(application.id))
     .map((application) => ({
       id: application.id,
@@ -868,6 +892,32 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
 });
 
 
+
+  /**
+   * Mailbox card for the Administration section: only once the mailbox is
+   * provisioned (active) and only for staff and above (assigned staff,
+   * managers, admins, owners).
+   */
+  protected readonly mailboxCard = computed<{ title: string; description: string; icon: string; route: string } | null>(() => {
+    const organizationId = this.organizationStore.selectedOrganizationId();
+
+    if (!organizationId || !this.canShowOperationalWorkspace() || !this.access.isStaffOrAbove()) {
+      return null;
+    }
+
+    const mailbox = this.applicationRegistry.getEnabledApplications().find((application) => application.id === 'mailbox');
+
+    if (!mailbox || !this.organizationStore.hasActiveApplication('mailbox')) {
+      return null;
+    }
+
+    return {
+      title: mailbox.name,
+      description: mailbox.description,
+      icon: mailbox.icon ?? 'mail',
+      route: mailbox.route.replace(':organizationId', organizationId),
+    };
+  });
 
   /**
    * A parent application (Learning) has no entitlement of its own: it is

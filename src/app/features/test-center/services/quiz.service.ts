@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import {
   addDoc,
@@ -15,6 +15,7 @@ import {
 import { firestore } from '../../../core/services/firebase-config';
 
 import { Quiz } from '../models/quiz.model';
+import { TestProgramService } from './test-program.service';
 
 /**
  * Quizzes in the Test Center: question banks (with topics and questions)
@@ -33,6 +34,51 @@ export class QuizService {
 
   /** Stored name kept for existing data: quizzes live in `quizzes`. */
   private readonly quizzesCollection = collection(firestore, 'quizzes');
+
+  private readonly programService = inject(TestProgramService);
+
+  // ============================================================
+  // ORGANIZATION LEARNERS — OWN QUIZZES + LINKED ZEBRON QUIZZES
+  // ============================================================
+
+  /**
+   * Quizzes an organization's learners see: the organization's own active
+   * quizzes, plus the active Zebron quizzes the organization linked to one
+   * of its active programs (Test Center → program → "Zebron quizzes in this
+   * program"). Without an organization this is the Zebron list.
+   */
+  async getQuizzesForLearners(organizationId: string | null): Promise<Quiz[]> {
+    const owner = organizationId?.trim() || null;
+
+    if (!owner) {
+      return this.getAvailableQuizzes(null);
+    }
+
+    const [own, linked] = await Promise.all([
+      this.getAvailableQuizzes(owner),
+      this.getLinkedPlatformQuizzes(owner).catch((error) => {
+        // Linked Zebron quizzes are an extra; the organization's own list still loads.
+        console.warn('[QuizService] Could not load linked Zebron quizzes.', error);
+        return [] as Quiz[];
+      }),
+    ]);
+
+    const ownIds = new Set(own.map((quiz) => quiz.id));
+    return [...own, ...linked.filter((quiz) => !ownIds.has(quiz.id))];
+  }
+
+  /** Active Zebron quizzes linked to any of the organization's active programs. */
+  async getLinkedPlatformQuizzes(organizationId: string): Promise<Quiz[]> {
+    const programs = await this.programService.getActiveOrganizationPrograms(organizationId);
+    const linkedIds = new Set(programs.flatMap((program) => program.platformQuizIds ?? []));
+
+    if (!linkedIds.size) {
+      return [];
+    }
+
+    const platform = await this.getAvailableQuizzes(null);
+    return platform.filter((quiz) => linkedIds.has(quiz.id));
+  }
 
   // ============================================================
   // GET ALL QUIZZES
@@ -476,6 +522,8 @@ async getQuizBySlug(
     certificationCode?: string;
     imageUrl?: string;
     active: boolean;
+    /** Optional Zebron program (testPrograms, scope 'platform'). */
+    programId?: string | null;
   }): Promise<string> {
     const name = course.name?.trim() ?? '';
 
@@ -522,7 +570,7 @@ async getQuizBySlug(
 
       accessType: 'public',
 
-      programId: null,
+      programId: course.programId?.trim() || null,
 
       name,
 
@@ -630,6 +678,57 @@ async getQuizBySlug(
     // ----------------------------------------------------------
 
     await updateDoc(doc(firestore, 'quizzes', quizId), updatePayload);
+  }
+
+  // ============================================================
+  // UPDATE PLATFORM QUIZ
+  // ============================================================
+
+  /**
+   * Updates a Zebron-owned platform quiz (platform administrators).
+   *
+   * Scope, owner, access type, program and slug never change here.
+   */
+  async updatePlatformQuiz(
+    quizId: string,
+    changes: {
+      name?: string;
+      description?: string;
+      provider?: string;
+      type?: Quiz['type'];
+      certificationCode?: string;
+      active?: boolean;
+      /** Zebron program ID, or null for no program. */
+      programId?: string | null;
+    },
+  ): Promise<void> {
+    if (!quizId?.trim()) {
+      throw new Error('Quiz ID is required.');
+    }
+
+    const existing = await getDoc(doc(firestore, 'quizzes', quizId));
+
+    if (!existing.exists() || existing.data()['scope'] !== 'platform') {
+      throw new Error('This is not a Zebron quiz.');
+    }
+
+    const payload: Record<string, unknown> = { updatedAt: serverTimestamp() };
+
+    if (changes.name !== undefined) {
+      const name = changes.name.trim();
+      if (!name) {
+        throw new Error('Quiz name is required.');
+      }
+      payload['name'] = name;
+    }
+    if (changes.description !== undefined) payload['description'] = changes.description.trim();
+    if (changes.provider !== undefined) payload['provider'] = changes.provider.trim() || null;
+    if (changes.type !== undefined) payload['type'] = changes.type;
+    if (changes.certificationCode !== undefined) payload['certificationCode'] = changes.certificationCode.trim() || null;
+    if (changes.active !== undefined) payload['active'] = changes.active === true;
+    if (changes.programId !== undefined) payload['programId'] = changes.programId?.trim() || null;
+
+    await updateDoc(doc(firestore, 'quizzes', quizId), payload);
   }
 
   // ============================================================

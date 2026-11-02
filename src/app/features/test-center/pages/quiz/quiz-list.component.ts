@@ -797,7 +797,11 @@ export class QuizListComponent implements OnInit {
         status: 'Available' as QuizStatus,
         isFavorite: this.favoriteQuizIds().includes(String(record.id ?? '')),
         tags,
-        provider: this.readString(record, 'provider'),
+        // On organization pages, mark linked Zebron quizzes.
+        provider:
+          this.isOrganizationRoute && record.scope === 'platform'
+            ? [this.readString(record, 'provider'), 'Zebron'].filter(Boolean).join(' · ')
+            : this.readString(record, 'provider'),
         type: this.readString(record, 'type'),
       };
     }).filter((quiz) => quiz.id.length > 0),
@@ -890,8 +894,9 @@ export class QuizListComponent implements OnInit {
 
       this.loadFavoriteQuizIds(organizationId);
 
+      // Own quizzes plus Zebron quizzes linked to the organization's programs.
       const courses =
-        await this.quizService.getAvailableQuizzes(organizationId);
+        await this.quizService.getQuizzesForLearners(organizationId);
 
       const availableCourses = courses ?? [];
       this.courses.set(availableCourses);

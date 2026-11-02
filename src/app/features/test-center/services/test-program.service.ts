@@ -319,6 +319,90 @@ export class TestProgramService {
     );
   }
 
+  // ============================================================
+  // ZEBRON (PLATFORM) PROGRAMS — platform administrators
+  // ============================================================
+
+  /** Zebron programs, inactive ones included, in name order. */
+  async getPlatformPrograms(): Promise<TestProgram[]> {
+    const snapshot = await getDocs(
+      query(
+        this.programsCollection,
+        where('scope', '==', 'platform'),
+        where('organizationId', '==', null),
+      ),
+    );
+
+    return snapshot.docs
+      .map((document) => ({ id: document.id, ...document.data() }) as TestProgram)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * Creates a Zebron program. Its ID is "zebron-<slug>" so it never collides
+   * with an organization program (those use the bare slug).
+   * Returns the existing program's ID when one with this slug already exists.
+   */
+  async createPlatformProgram(program: {
+    name: string;
+    description?: string;
+    active?: boolean;
+  }): Promise<{ id: string; created: boolean }> {
+    const name = program.name?.trim() ?? '';
+    const slug = this.normalizeSlug(name);
+
+    if (!name || !slug) {
+      throw new Error('Program name is required.');
+    }
+
+    const reference = doc(this.programsCollection, `zebron-${slug}`);
+    const existing = await getDoc(reference);
+
+    if (existing.exists()) {
+      return { id: reference.id, created: false };
+    }
+
+    await setDoc(reference, {
+      scope: 'platform',
+      organizationId: null,
+      name,
+      slug,
+      description: program.description?.trim() ?? '',
+      active: program.active !== false,
+      quizCount: 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    return { id: reference.id, created: true };
+  }
+
+  async updatePlatformProgram(
+    programId: string,
+    changes: { name?: string; description?: string; active?: boolean },
+  ): Promise<void> {
+    const reference = doc(firestore, 'testPrograms', programId);
+    const existing = await getDoc(reference);
+
+    if (!existing.exists() || existing.data()['scope'] !== 'platform') {
+      throw new Error('This is not a Zebron program.');
+    }
+
+    const payload: Record<string, unknown> = { updatedAt: serverTimestamp() };
+
+    if (changes.name !== undefined) {
+      const name = changes.name.trim();
+      if (!name) {
+        throw new Error('Program name is required.');
+      }
+      payload['name'] = name;
+    }
+    if (changes.description !== undefined) payload['description'] = changes.description.trim();
+    if (changes.active !== undefined) payload['active'] = changes.active === true;
+
+    await updateDoc(reference, payload);
+  }
+
   /** Linked Zebron quiz IDs: trimmed, unique, at most 50 (the rules allow 50). */
   private normalizePlatformQuizIds(
     ids: string[] | undefined,

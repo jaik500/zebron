@@ -389,28 +389,19 @@ interface TopicGroup {
                 <div class="grid gap-4 sm:grid-cols-[1fr_9rem]">
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
                     <mat-label>{{ 'Program (optional)' | t }}</mat-label>
-                    @if (context.organizationId) {
-                      <mat-select [value]="store.details().program" (selectionChange)="chooseProgram($event.value)">
-                        <mat-option value="">{{ 'No program' | t }}</mat-option>
-                        @if (programNotListed()) {
-                          <mat-option [value]="store.details().program">{{ store.details().program }} · {{ 'not in the Test Center' | t }}</mat-option>
-                        }
-                        @for (program of programs(); track program.id) {
-                          <mat-option [value]="program.name">{{ program.name }}</mat-option>
-                        }
-                        @if (!programs().length) {
-                          <mat-option disabled>{{ (optionsLoading() ? 'Loading programs...' : 'No active programs yet. Create one in the Test Center.') | t }}</mat-option>
-                        }
-                      </mat-select>
-                    } @else {
-                      <input
-                        matInput
-                        maxlength="80"
-                        [value]="store.details().program"
-                        (input)="store.patchDetails({ program: value($event) })"
-                        [placeholder]="'e.g. Cybersecurity Program' | t"
-                      />
-                    }
+                    <!-- Organization pages list the organization's programs; Zebron pages list Zebron programs. -->
+                    <mat-select [value]="store.details().program" (selectionChange)="chooseProgram($event.value)">
+                      <mat-option value="">{{ 'No program' | t }}</mat-option>
+                      @if (programNotListed()) {
+                        <mat-option [value]="store.details().program">{{ store.details().program }} · {{ 'not in the Test Center' | t }}</mat-option>
+                      }
+                      @for (program of programs(); track program.id) {
+                        <mat-option [value]="program.name">{{ program.name }}</mat-option>
+                      }
+                      @if (!programs().length) {
+                        <mat-option disabled>{{ (optionsLoading() ? 'Loading programs...' : 'No active programs yet. Create one in the Test Center.') | t }}</mat-option>
+                      }
+                    </mat-select>
                     <mat-hint>{{ 'Courses with the same program are shown together, in order, in the catalog.' | t }}</mat-hint>
                   </mat-form-field>
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
@@ -800,13 +791,18 @@ export class CourseBuilderComponent {
     }
   }
 
-  /** The organization's active Test Center programs. Zebron pages keep a free-text program. */
+  /**
+   * Programs offered in the Program list: the organization's own active
+   * programs on organization pages, Zebron's active programs on Zebron pages.
+   * The two never mix.
+   */
   private async loadPrograms(): Promise<void> {
-    if (!this.context.organizationId) {
-      return;
-    }
     try {
-      this.programs.set(await this.programService.getActiveOrganizationPrograms(this.context.organizationId));
+      this.programs.set(
+        this.context.organizationId
+          ? await this.programService.getActiveOrganizationPrograms(this.context.organizationId)
+          : (await this.programService.getPlatformPrograms()).filter((program) => program.active),
+      );
     } catch (error) {
       this.logger.error('CourseBuilderComponent', 'Could not load Test Center programs.', error);
     }

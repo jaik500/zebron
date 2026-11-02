@@ -1368,22 +1368,14 @@ export const routes: Routes = [
     // ADMIN TEST CENTER
     // -----------------------------------------------------
     {
+        // Zebron's quizzes and topics (platform admins).
         path: 'admin/test-center',
         canActivate: [adminGuard, featureGuard],
         data: {
             featureKey: 'test-center',
             title: 'Admin | Test Center',
         },
-        loadComponent: () => import('./features/admin/pages/test-center/test-center-admin-component').then((m) => m.TestCenterAdminComponent),
-    },
-    {
-        path: 'admin/test-center/courses',
-        canActivate: [adminGuard, featureGuard],
-        data: {
-            featureKey: 'test-center',
-            title: 'Admin | Test Center Courses',
-        },
-        loadComponent: () => import('./features/admin/pages/test-courses/test-course-admin.component').then((m) => m.TestCourseAdminComponent),
+        loadComponent: () => import('./features/admin/pages/test-center/test-center-admin.component').then((m) => m.TestCenterAdminComponent),
     },
     {
         path: 'admin/test-center/questions',
@@ -1394,14 +1386,16 @@ export const routes: Routes = [
         },
         loadComponent: () => import('./features/admin/pages/test-questions/test-question-admin.component').then((m) => m.TestQuestionAdminComponent),
     },
+    // Old admin pages: quizzes and topics are now one Structure page.
+    {
+        path: 'admin/test-center/courses',
+        pathMatch: 'full',
+        redirectTo: 'admin/test-center',
+    },
     {
         path: 'admin/test-center/topics',
-        canActivate: [adminGuard, featureGuard],
-        data: {
-            featureKey: 'test-center',
-            title: 'Admin | Test Center Topics',
-        },
-        loadComponent: () => import('./features/admin/pages/test-topics/test-topic-admin.component').then((m) => m.TestTopicAdminComponent),
+        pathMatch: 'full',
+        redirectTo: 'admin/test-center',
     },
     // -----------------------------------------------------
     // ADMIN COMMUNITY

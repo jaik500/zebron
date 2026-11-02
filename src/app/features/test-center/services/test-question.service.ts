@@ -32,7 +32,7 @@ export class TestQuestionService {
     collection(firestore, 'quizQuestions');
 
   async getAllQuestionsForCourse(
-    organizationId: string,
+    organizationId: string | null,
     quizId: string,
   ): Promise<TestQuestion[]> {
     this.requireOrganizationId(organizationId);
@@ -41,7 +41,7 @@ export class TestQuestionService {
     const snapshot = await getDocs(
       query(
         this.questionsCollection,
-        where('organizationId', '==', organizationId),
+        ...this.ownerConstraints(organizationId),
         where('quizId', '==', quizId),
       ),
     );
@@ -52,7 +52,7 @@ export class TestQuestionService {
   }
 
   async getAllQuestionsForTopic(
-    organizationId: string,
+    organizationId: string | null,
     topicId: string,
   ): Promise<TestQuestion[]> {
     this.requireOrganizationId(organizationId);
@@ -64,7 +64,7 @@ export class TestQuestionService {
     const snapshot = await getDocs(
       query(
         this.questionsCollection,
-        where('organizationId', '==', organizationId),
+        ...this.ownerConstraints(organizationId),
         where('topicId', '==', topicId),
       ),
     );
@@ -75,7 +75,7 @@ export class TestQuestionService {
   }
 
   async getQuestionById(
-    organizationId: string,
+    organizationId: string | null,
     questionId: string,
   ): Promise<TestQuestion | null> {
     this.requireOrganizationId(organizationId);
@@ -94,7 +94,10 @@ export class TestQuestionService {
 
     const data = snapshot.data();
 
-    if (data['organizationId'] !== organizationId) {
+    if (
+      (data['organizationId'] ?? null) !== organizationId ||
+      (organizationId === null && data['scope'] !== 'platform')
+    ) {
       return null;
     }
 
@@ -247,7 +250,7 @@ async getQuestionsForTest(
 }
 
   async createQuestion(
-    organizationId: string,
+    organizationId: string | null,
     question: Omit<TestQuestion, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<string> {
     this.requireOrganizationId(organizationId);
@@ -284,6 +287,8 @@ async getQuestionsForTest(
         this.questionsCollection,
         {
           ...question,
+          // Zebron questions carry scope 'platform'; organization questions keep their existing shape.
+          ...(organizationId === null ? { scope: 'platform' } : {}),
           organizationId,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -318,7 +323,7 @@ async getQuestionsForTest(
   }
 
   async updateQuestion(
-    organizationId: string,
+    organizationId: string | null,
     questionId: string,
     changes: Partial<
       Omit<
@@ -370,7 +375,7 @@ async getQuestionsForTest(
   }
 
   async deleteQuestion(
-    organizationId: string,
+    organizationId: string | null,
     questionId: string,
   ): Promise<void> {
     this.requireOrganizationId(organizationId);
@@ -392,7 +397,7 @@ async getQuestionsForTest(
   }
 
   async submitQuestionForReview(
-    organizationId: string,
+    organizationId: string | null,
     questionId: string,
   ): Promise<void> {
     await this.transitionQuestion(
@@ -404,7 +409,7 @@ async getQuestionsForTest(
   }
 
   async startQuestionReview(
-    organizationId: string,
+    organizationId: string | null,
     questionId: string,
   ): Promise<void> {
     await this.transitionQuestion(
@@ -416,7 +421,7 @@ async getQuestionsForTest(
   }
 
   async returnQuestion(
-    organizationId: string,
+    organizationId: string | null,
     questionId: string,
   ): Promise<void> {
     await this.transitionQuestion(
@@ -428,7 +433,7 @@ async getQuestionsForTest(
   }
 
   async approveQuestion(
-    organizationId: string,
+    organizationId: string | null,
     questionId: string,
   ): Promise<void> {
     await this.transitionQuestion(
@@ -440,7 +445,7 @@ async getQuestionsForTest(
   }
 
   async publishQuestion(
-    organizationId: string,
+    organizationId: string | null,
     questionId: string,
   ): Promise<void> {
     await this.transitionQuestion(
@@ -452,7 +457,7 @@ async getQuestionsForTest(
   }
 
   private async transitionQuestion(
-    organizationId: string,
+    organizationId: string | null,
     questionId: string,
     nextStatus: TestQuestionStatus,
     allowedCurrentStatuses: TestQuestionStatus[],
@@ -485,7 +490,7 @@ async getQuestionsForTest(
 
 
 private async verifyCourseOwnership(
-  organizationId: string,
+  organizationId: string | null,
   quizId: string,
 ): Promise<void> {
   console.log('[TestQuestionService] Verifying course ownership', {
@@ -528,15 +533,17 @@ private async verifyCourseOwnership(
     active: data['active'],
   });
 
-  if (data['organizationId'] !== organizationId) {
+  if ((data['organizationId'] ?? null) !== organizationId) {
     throw new Error(
-      'The selected course does not belong to the current organization.',
+      organizationId === null
+        ? 'The selected quiz is not a Zebron quiz.'
+        : 'The selected course does not belong to the current organization.',
     );
   }
 }
 
 private async verifyTopicOwnership(
-  organizationId: string,
+  organizationId: string | null,
   topicId: string,
   quizId: string,
 ): Promise<void> {
@@ -582,7 +589,7 @@ private async verifyTopicOwnership(
   });
 
   if (
-    data['organizationId'] !== organizationId ||
+    (data['organizationId'] ?? null) !== organizationId ||
     data['quizId'] !== quizId
   ) {
     throw new Error(
@@ -593,12 +600,23 @@ private async verifyTopicOwnership(
 
 
 
-  private requireOrganizationId(organizationId: string): void {
-    if (!organizationId?.trim()) {
+  /**
+   * Questions are owned by an organization, or by Zebron when the owner is
+   * null. An empty string is never a valid owner.
+   */
+  private requireOrganizationId(organizationId: string | null): void {
+    if (organizationId !== null && !organizationId?.trim()) {
       throw new Error(
         'An organization is required for Test Center operations.',
       );
     }
+  }
+
+  /** Query constraints for one owner: an organization, or Zebron (null). */
+  private ownerConstraints(organizationId: string | null): QueryConstraint[] {
+    return organizationId === null
+      ? [where('scope', '==', 'platform'), where('organizationId', '==', null)]
+      : [where('organizationId', '==', organizationId)];
   }
 
   private requireQuizId(quizId: string): void {
@@ -625,14 +643,10 @@ private async verifyTopicOwnership(
   }
 
   async getQuestionCountForCourse(
-  organizationId: string,
+  organizationId: string | null,
   quizId: string,
 ): Promise<number> {
-  if (!organizationId.trim()) {
-    throw new Error(
-      'Organization ID is required.',
-    );
-  }
+  this.requireOrganizationId(organizationId);
 
   if (!quizId.trim()) {
     throw new Error(
@@ -642,11 +656,7 @@ private async verifyTopicOwnership(
 
   const questionsQuery = query(
     this.questionsCollection,
-    where(
-      'organizationId',
-      '==',
-      organizationId,
-    ),
+    ...this.ownerConstraints(organizationId),
     where(
       'quizId',
       '==',
@@ -663,15 +673,11 @@ private async verifyTopicOwnership(
 }
 
 async getQuestionCountForTopic(
-  organizationId: string,
+  organizationId: string | null,
   quizId: string,
   topicId: string,
 ): Promise<number> {
-  if (!organizationId.trim()) {
-    throw new Error(
-      'Organization ID is required.',
-    );
-  }
+  this.requireOrganizationId(organizationId);
 
   if (!quizId.trim()) {
     throw new Error(
@@ -687,11 +693,7 @@ async getQuestionCountForTopic(
 
   const questionsQuery = query(
     this.questionsCollection,
-    where(
-      'organizationId',
-      '==',
-      organizationId,
-    ),
+    ...this.ownerConstraints(organizationId),
     where(
       'quizId',
       '==',
