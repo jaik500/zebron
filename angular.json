@@ -63,6 +63,7 @@
               "entry": "src/server.ts"
             },
             "allowedCommonJsDependencies": [
+              "jspdf",
               "core-js",
               "html2canvas",
               "fflate",
