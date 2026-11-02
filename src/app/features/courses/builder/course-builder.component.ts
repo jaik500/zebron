@@ -14,6 +14,7 @@ import { I18nService } from '../../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { PageTitleService } from '../../../core/services/page-title.service';
 import { PartnerOrganizationContextService } from '../../../core/services/partner-organization-context.service';
+import { PartnerAccessService } from '../../../core/services/partner-access.service';
 import { LoggerService } from '../../../core/services/logger.service';
 import { useLearningHeaderTitle } from '../../test-center/learner-route';
 import { Quiz } from '../../test-center/models/quiz.model';
@@ -418,6 +419,28 @@ interface TopicGroup {
                   </mat-form-field>
                 </div>
 
+                <!-- New program: opens the program form in a new tab so this course's unsaved changes stay put -->
+                @if (canCreateProgram()) {
+                  <div class="-mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <span>{{ 'Program not in the list?' | t }}</span>
+                    <a
+                      [routerLink]="newProgramPath"
+                      [queryParams]="{ newProgram: 1 }"
+                      target="_blank"
+                      rel="noopener"
+                      (click)="programTabOpened = true"
+                      class="inline-flex items-center gap-1 rounded-lg border border-[#007979] px-2.5 py-1 font-semibold text-[#007979] hover:bg-teal-50"
+                    >
+                      <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">add</mat-icon>
+                      {{ 'New program' | t }}
+                      <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">open_in_new</mat-icon>
+                    </a>
+                    @if (programTabOpened) {
+                      <span>{{ 'Come back to this tab when you have saved it: the list updates by itself.' | t }}</span>
+                    }
+                  </div>
+                }
+
                 <div class="grid gap-4 sm:grid-cols-2">
                   <!-- Topic: picked from the Test Center topics, grouped by quiz -->
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
@@ -605,6 +628,7 @@ export class CourseBuilderComponent {
   private readonly pageTitle = inject(PageTitleService);
   private readonly organizationContext = inject(PartnerOrganizationContextService);
   private readonly quizService = inject(QuizService);
+  private readonly partnerAccess = inject(PartnerAccessService);
   private readonly topicService = inject(TestTopicService);
   private readonly programService = inject(TestProgramService);
   private readonly logger = inject(LoggerService);
@@ -728,6 +752,27 @@ export class CourseBuilderComponent {
       this.store.startNew(this.context.organizationId, providerName);
     } else {
       void this.store.load(this.context.organizationId, providerName, courseId);
+    }
+  }
+
+  /** Where "New program" goes: the organization's Test Center, or Zebron's admin Test Center. */
+  protected readonly newProgramPath = this.context.organizationId
+    ? ['/partner/org', this.context.organizationId, 'test-center']
+    : ['/admin/test-center'];
+
+  /** Set once "New program" was clicked; the list refreshes when this tab gets focus again. */
+  protected programTabOpened = false;
+
+  /** Organizations: managers and above create programs. Zebron pages are for platform admins. */
+  protected canCreateProgram(): boolean {
+    return this.context.organizationId ? this.partnerAccess.canManagePrograms() : true;
+  }
+
+  /** Back from the program tab: reload the Program list so the new program can be picked. */
+  @HostListener('window:focus')
+  protected onWindowFocus(): void {
+    if (this.programTabOpened) {
+      void this.loadPrograms();
     }
   }
 

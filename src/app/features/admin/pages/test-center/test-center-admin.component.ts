@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -540,6 +540,7 @@ export class TestCenterAdminComponent implements OnInit {
   private readonly courseService = inject(CourseService);
   private readonly toast = inject(HotToastService);
   private readonly pageTitle = inject(PageTitleService);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly quizTypes = QUIZ_TYPES;
 
@@ -576,7 +577,12 @@ export class TestCenterAdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.pageTitle.setTitle('Test Center');
-    void this.load();
+    void this.load().then(() => {
+      // Opened from the course builder's "New program" button.
+      if (this.route.snapshot.queryParamMap.has('newProgram')) {
+        this.startNewProgram();
+      }
+    });
   }
 
   // ============================================================

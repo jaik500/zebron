@@ -9,7 +9,7 @@ import {
 
 import { FormsModule } from '@angular/forms';
 
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -975,6 +975,8 @@ export class PartnerTestCenterComponent implements OnInit {
 
   private readonly testProgramService = inject(TestProgramService);
 
+  private readonly route = inject(ActivatedRoute);
+
   private readonly topicService = inject(TestTopicService);
 
   private readonly questionService = inject(TestQuestionService);
@@ -1159,6 +1161,11 @@ export class PartnerTestCenterComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.initialize();
+
+    // Opened from the course builder's "New program" button.
+    if (this.route.snapshot.queryParamMap.has('newProgram') && this.access.canManagePrograms()) {
+      this.createProgram();
+    }
 
     this.pageTitleService.setTitle(`${this.organizationName()} Test Center`);
   }
