@@ -648,4 +648,13 @@ export const FR_COURSES: Readonly<Record<string, string>> = {
   "Not ready yet": "Pas encore prêt",
   "About {0} on the {1}–{2} scale ({3} passes the real exam). This is an estimate, not the vendor score.": "Environ {0} sur l’échelle {1}–{2} ({3} pour réussir l’examen officiel). C’est une estimation, pas le score de l’éditeur.",
   "By exam domain": "Par domaine d’examen",
+  "Complete the courses in order, then pass the final exam. Courses cannot be skipped.": "Suivez les cours dans l’ordre, puis réussissez l’examen final. Aucun cours ne peut être sauté.",
+  "Certification categories": "Catégories de certifications",
+  "No certifications in this category yet.": "Aucune certification dans cette catégorie pour le moment.",
+  "Zebron Certifications": "Certifications Zebron",
+  "External Professional Certifications": "Certifications professionnelles externes",
+  "Earned on Zebron: complete the courses in order, then pass the certification exam on Zebron to receive a Zebron credential anyone can verify.": "Obtenues sur Zebron : suivez les cours dans l’ordre, puis réussissez l’examen de certification sur Zebron pour recevoir un titre Zebron vérifiable par tous.",
+  "Industry certifications awarded by their vendors, such as CompTIA and ServiceNow. Zebron prepares you with the same ordered courses, a map of every exam objective and a full practice exam; you book and take the real exam with the vendor.": "Certifications de l’industrie décernées par leurs éditeurs, comme CompTIA et ServiceNow. Zebron vous y prépare avec les mêmes cours ordonnés, une carte de chaque objectif d’examen et un examen d’entraînement complet ; vous réservez et passez l’examen officiel auprès de l’éditeur.",
+  "External Professional Certification": "Certification professionnelle externe",
+  "Zebron Certification": "Certification Zebron",
 };

@@ -40,12 +40,8 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
     <main class="mt-16 min-h-screen bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
-        [backLink]="context.basePath + '/certifications'"
-        [crumbs]="[
-          { label: 'Learning', link: context.basePath },
-          { label: 'Certifications', link: context.basePath + '/certifications' },
-          { label: definition()?.credentialName ?? 'Certification', translate: !definition() }
-        ]"
+        [backLink]="listLink()"
+        [crumbs]="crumbs()"
       />
 
       <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
@@ -63,9 +59,9 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
               <div class="min-w-0 flex-1">
                 <p class="text-xs font-bold uppercase tracking-[0.15em] text-white/80">
                   @if (cert.vendor; as vendor) {
-                    {{ 'Exam preparation' | t }} · {{ vendor.name }} {{ vendor.exam }} {{ vendor.code }}
+                    {{ 'External Professional Certification' | t }} · {{ vendor.name }}
                   } @else {
-                    {{ cert.providerName }} · {{ 'Certification' | t }}
+                    {{ 'Zebron Certification' | t }} · {{ cert.providerName }}
                   }
                 </p>
                 <h1 class="mt-1 text-2xl font-bold">{{ cert.credentialName }}</h1>
@@ -365,6 +361,21 @@ export class CertificationDetailComponent {
   protected readonly loading = signal(true);
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
+
+  /** The list, opened on this certification's category. */
+  protected readonly listLink = computed(() =>
+    `${this.context.basePath}/certifications${this.definition()?.kind === 'exam-prep' ? '?category=external' : ''}`,
+  );
+
+  protected readonly crumbs = computed(() => {
+    const definition = this.definition();
+    return [
+      { label: 'Learning', link: this.context.basePath },
+      { label: 'Certifications', link: `${this.context.basePath}/certifications` },
+      ...(definition?.kind === 'exam-prep' ? [{ label: 'External Professional Certifications', link: this.listLink() }] : []),
+      { label: definition?.credentialName ?? 'Certification', translate: !definition },
+    ];
+  });
 
   protected readonly signedIn = computed(() => this.auth.firebaseUser() !== null);
 

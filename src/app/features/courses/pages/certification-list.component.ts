@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
@@ -59,8 +59,28 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
         <div class="mb-5 max-w-3xl">
           <h1 class="text-lg font-semibold text-slate-900">{{ 'Certifications' | t }}</h1>
           <p class="mt-1 text-sm text-slate-600">
-            {{ 'Complete the courses in order, then pass the certification exam to earn a credential you can share. Courses cannot be skipped.' | t }}
+            {{ 'Complete the courses in order, then pass the final exam. Courses cannot be skipped.' | t }}
           </p>
+        </div>
+
+        <!-- Two categories: Zebron certifications and external professional certifications -->
+        <div class="mb-5 inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1" role="tablist" [attr.aria-label]="'Certification categories' | t">
+          @for (group of groups(); track group.kind) {
+            <button
+              type="button"
+              role="tab"
+              [id]="'cert-tab-' + group.kind"
+              [attr.aria-selected]="category() === group.kind"
+              [attr.aria-controls]="'cert-panel-' + group.kind"
+              (click)="selectCategory(group.kind)"
+              class="inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold transition"
+              [ngClass]="category() === group.kind ? 'bg-[#007979] text-white shadow-sm' : 'text-slate-700 hover:bg-slate-100'"
+            >
+              <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">{{ group.icon }}</mat-icon>
+              {{ group.title | t }}
+              <span class="rounded-full px-1.5 text-xs" [ngClass]="category() === group.kind ? 'bg-white/20' : 'bg-slate-100 text-slate-600'">{{ group.rows.length }}</span>
+            </button>
+          }
         </div>
 
         @if (loading()) {
@@ -71,16 +91,15 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
           </div>
         } @else if (error()) {
           <p class="rounded-xl bg-rose-50 p-4 text-sm text-rose-700" role="alert">{{ error()! | t }}</p>
-        } @else if (!rows().length) {
+        } @else if (!current().rows.length) {
           <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
             <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-400" aria-hidden="true">military_tech</mat-icon>
-            <p class="mt-2 text-sm text-slate-600">{{ 'No certifications are available yet.' | t }}</p>
+            <p class="mt-2 text-sm text-slate-600">{{ 'No certifications in this category yet.' | t }}</p>
           </div>
         } @else {
-          @for (group of groups(); track group.kind) {
-          <section class="mb-8" [attr.aria-labelledby]="'cert-group-' + group.kind">
-            <h2 [id]="'cert-group-' + group.kind" class="text-sm font-bold uppercase tracking-wide text-slate-500">{{ group.title | t }}</h2>
-            <p class="mb-3 mt-0.5 max-w-3xl text-sm text-slate-600">{{ group.note | t }}</p>
+          @if (current(); as group) {
+          <section [id]="'cert-panel-' + group.kind" role="tabpanel" [attr.aria-labelledby]="'cert-tab-' + group.kind">
+            <p class="mb-4 max-w-3xl text-sm text-slate-600">{{ group.note | t }}</p>
           <div class="grid gap-4 md:grid-cols-2">
             @for (row of group.rows; track row.definition.key) {
               <a
@@ -92,7 +111,7 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
                   <div class="min-w-0 flex-1">
                     <p class="text-xs font-bold uppercase tracking-wide text-white/80">
                       @if (row.definition.vendor; as vendor) {
-                        {{ 'Exam prep' | t }} · {{ vendor.name }} {{ vendor.code }}
+                        {{ vendor.name }} · {{ 'Exam preparation' | t }}
                       } @else {
                         {{ row.definition.providerName }}
                       }
@@ -109,7 +128,7 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
                   @if (row.definition.summary) {
                     <p class="text-sm text-slate-600">{{ row.definition.summary }}</p>
                   }
-                  @if (row.definition.preparesFor.length) {
+                  @if (row.definition.preparesFor.length && row.definition.kind !== 'exam-prep') {
                     <p class="text-xs text-slate-500">
                       <span class="font-semibold text-slate-700">{{ 'Prepares you for' | t }}:</span> {{ row.definition.preparesFor.join(', ') }}
                     </p>
@@ -156,6 +175,7 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
 })
 export class CertificationListComponent {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly service = inject(CertificationService);
   private readonly logger = inject(LoggerService);
@@ -187,22 +207,38 @@ export class CertificationListComponent {
     }),
   );
 
-  protected readonly groups = computed(() =>
-    [
-      {
-        kind: 'zebron',
-        title: 'Zebron certifications',
-        note: 'Earned on Zebron: complete the courses in order, then pass the certification exam.',
-        rows: this.rows().filter((row) => row.definition.kind !== 'exam-prep'),
-      },
-      {
-        kind: 'exam-prep',
-        title: 'Industry exam preparation',
-        note: 'Prepare for a vendor certification with the same ordered path and a full practice exam. You book and take the real exam with the vendor.',
-        rows: this.rows().filter((row) => row.definition.kind === 'exam-prep'),
-      },
-    ].filter((group) => group.rows.length),
+  protected readonly groups = computed(() => [
+    {
+      kind: 'zebron' as const,
+      icon: 'military_tech',
+      title: 'Zebron Certifications',
+      note: 'Earned on Zebron: complete the courses in order, then pass the certification exam on Zebron to receive a Zebron credential anyone can verify.',
+      rows: this.rows().filter((row) => row.definition.kind !== 'exam-prep'),
+    },
+    {
+      kind: 'external' as const,
+      icon: 'workspace_premium',
+      title: 'External Professional Certifications',
+      note: 'Industry certifications awarded by their vendors, such as CompTIA and ServiceNow. Zebron prepares you with the same ordered courses, a map of every exam objective and a full practice exam; you book and take the real exam with the vendor.',
+      rows: this.rows().filter((row) => row.definition.kind === 'exam-prep'),
+    },
+  ]);
+
+  /** The selected category (?category=external), remembered in the URL. */
+  protected readonly category = signal<'zebron' | 'external'>(
+    this.route.snapshot.queryParamMap.get('category') === 'external' ? 'external' : 'zebron',
   );
+  protected readonly current = computed(() => this.groups().find((group) => group.kind === this.category())!);
+
+  protected selectCategory(kind: 'zebron' | 'external'): void {
+    this.category.set(kind);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { category: kind === 'external' ? 'external' : null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
 
   constructor() {
     void this.loadDefinitions();

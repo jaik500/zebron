@@ -59,6 +59,8 @@ interface CertificationExamRules {
   cooldownDays: number;
   /** Exam prep: report a scaled score, such as 100–900 with 750 to pass. */
   scale: { min: number; max: number; pass: number } | null;
+  /** Exam prep: only these question types (the real exam's), or null for all. */
+  questionTypes: string[] | null;
 }
 
 interface PrepDomain {
@@ -140,6 +142,7 @@ function readExam(value: unknown): CertificationExamRules {
     scale: scale && Number.isFinite(Number(scale.min)) && Number.isFinite(Number(scale.max)) ?
       { min: Number(scale.min), max: Number(scale.max), pass: Number(scale.pass) || Number(scale.max) } :
       null,
+    questionTypes: Array.isArray(exam.questionTypes) && exam.questionTypes.length ? strings(exam.questionTypes) : null,
   };
 }
 
@@ -356,7 +359,12 @@ export const startCertificationExam = onCall({ region: REGION, timeoutSeconds: 1
           db.collection("quizQuestions").where("topicId", "==", topicId).where("status", "==", "published").get(),
         ),
       );
-      const pool = shuffle(pools.flatMap((snapshot) => snapshot.docs).filter((question) => !questionData.has(question.id)));
+      const types = context.exam.questionTypes;
+      const pool = shuffle(
+        pools
+          .flatMap((snapshot) => snapshot.docs)
+          .filter((question) => !questionData.has(question.id) && (!types || types.includes(text(question.get("type"))))),
+      );
       for (const question of pool.slice(0, wanted)) {
         chosenIds.push(question.id);
         chosenCourses.push(`${domain.code}. ${domain.name}`);
