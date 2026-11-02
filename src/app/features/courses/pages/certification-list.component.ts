@@ -29,6 +29,12 @@ const STAGE: Record<CertificationStage, { label: string; classes: string; icon: 
   waiting: { label: 'Waiting period', classes: 'bg-rose-100 text-rose-800', icon: 'schedule' },
   certified: { label: 'Certified', classes: 'bg-emerald-100 text-emerald-800', icon: 'verified' },
   expired: { label: 'Expired: renew', classes: 'bg-rose-100 text-rose-800', icon: 'update' },
+  prepared: { label: 'Ready for the real exam', classes: 'bg-emerald-100 text-emerald-800', icon: 'task_alt' },
+};
+
+/** Exam prep wording for the stages that read differently. */
+const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: string; icon: string }>> = {
+  'exam-ready': { label: 'Practice exam open', classes: 'bg-sky-100 text-sky-800', icon: 'quiz' },
 };
 
 /**
@@ -71,8 +77,12 @@ const STAGE: Record<CertificationStage, { label: string; classes: string; icon: 
             <p class="mt-2 text-sm text-slate-600">{{ 'No certifications are available yet.' | t }}</p>
           </div>
         } @else {
+          @for (group of groups(); track group.kind) {
+          <section class="mb-8" [attr.aria-labelledby]="'cert-group-' + group.kind">
+            <h2 [id]="'cert-group-' + group.kind" class="text-sm font-bold uppercase tracking-wide text-slate-500">{{ group.title | t }}</h2>
+            <p class="mb-3 mt-0.5 max-w-3xl text-sm text-slate-600">{{ group.note | t }}</p>
           <div class="grid gap-4 md:grid-cols-2">
-            @for (row of rows(); track row.definition.key) {
+            @for (row of group.rows; track row.definition.key) {
               <a
                 [routerLink]="[context.basePath, 'certifications', row.definition.key]"
                 class="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#007979]/50"
@@ -80,7 +90,13 @@ const STAGE: Record<CertificationStage, { label: string; classes: string; icon: 
                 <div class="flex items-start gap-3 p-5 text-white" [style.background]="cover(row.definition)">
                   <mat-icon class="!h-10 !w-10 shrink-0 !text-[40px]" aria-hidden="true">military_tech</mat-icon>
                   <div class="min-w-0 flex-1">
-                    <p class="text-xs font-bold uppercase tracking-wide text-white/80">{{ row.definition.providerName }}</p>
+                    <p class="text-xs font-bold uppercase tracking-wide text-white/80">
+                      @if (row.definition.vendor; as vendor) {
+                        {{ 'Exam prep' | t }} · {{ vendor.name }} {{ vendor.code }}
+                      } @else {
+                        {{ row.definition.providerName }}
+                      }
+                    </p>
                     <h2 class="text-lg font-bold leading-snug">{{ row.definition.credentialName }}</h2>
                   </div>
                   <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold" [ngClass]="stage(row).classes">
@@ -115,16 +131,24 @@ const STAGE: Record<CertificationStage, { label: string; classes: string; icon: 
 
                   <p class="mt-auto text-xs text-slate-500">
                     {{ '{0} courses' | t: [row.definition.courses.length] }} ·
-                    {{ 'Exam: {0}% to pass' | t: [row.definition.exam.passMark] }} ·
-                    {{ 'Valid {0} years' | t: [row.definition.validityYears] }}
-                    @if (row.enrollment?.credential?.expiresAt; as expires) {
-                      · <span class="font-semibold text-slate-700">{{ 'Valid until {0}' | t: [dateLabel(expires)] }}</span>
+                    @if (row.definition.kind === 'exam-prep') {
+                      {{ '{0} objectives covered' | t: [row.definition.objectives.length] }} ·
+                      {{ 'Practice exam: {0} questions' | t: [row.definition.exam.questionCount] }} ·
+                      {{ 'Real exam taken with {0}' | t: [row.definition.vendor?.name ?? ''] }}
+                    } @else {
+                      {{ 'Exam: {0}% to pass' | t: [row.definition.exam.passMark] }} ·
+                      {{ 'Valid {0} years' | t: [row.definition.validityYears] }}
+                      @if (row.enrollment?.credential?.expiresAt; as expires) {
+                        · <span class="font-semibold text-slate-700">{{ 'Valid until {0}' | t: [dateLabel(expires)] }}</span>
+                      }
                     }
                   </p>
                 </div>
               </a>
             }
           </div>
+          </section>
+          }
         }
       </div>
     </main>
@@ -163,6 +187,23 @@ export class CertificationListComponent {
     }),
   );
 
+  protected readonly groups = computed(() =>
+    [
+      {
+        kind: 'zebron',
+        title: 'Zebron certifications',
+        note: 'Earned on Zebron: complete the courses in order, then pass the certification exam.',
+        rows: this.rows().filter((row) => row.definition.kind !== 'exam-prep'),
+      },
+      {
+        kind: 'exam-prep',
+        title: 'Industry exam preparation',
+        note: 'Prepare for a vendor certification with the same ordered path and a full practice exam. You book and take the real exam with the vendor.',
+        rows: this.rows().filter((row) => row.definition.kind === 'exam-prep'),
+      },
+    ].filter((group) => group.rows.length),
+  );
+
   constructor() {
     void this.loadDefinitions();
 
@@ -173,7 +214,8 @@ export class CertificationListComponent {
   }
 
   protected stage(row: { definition: CertificationDefinition; enrollment: CertificationEnrollment | null }) {
-    return STAGE[certificationStage(row.definition, row.enrollment)];
+    const stage = certificationStage(row.definition, row.enrollment);
+    return (row.definition.kind === 'exam-prep' ? PREP_STAGE[stage] : undefined) ?? STAGE[stage];
   }
 
   protected cover(definition: CertificationDefinition): string {

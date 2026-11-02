@@ -50,10 +50,23 @@ interface CertificationCourse {
 
 interface CertificationExamRules {
   questionsPerCourse: number;
+  /** Exam prep: total questions, spread over the domains by weight. */
+  questionCount: number;
   passMark: number;
   timeLimitMinutes: number | null;
+  /** 0 = unlimited (exam prep practice). */
   maxAttempts: number;
   cooldownDays: number;
+  /** Exam prep: report a scaled score, such as 100–900 with 750 to pass. */
+  scale: { min: number; max: number; pass: number } | null;
+}
+
+interface PrepDomain {
+  code: string;
+  name: string;
+  weight: number;
+  /** Quiz topic ids of the lessons mapped to this domain's objectives. */
+  topicIds: string[];
 }
 
 interface Context {
@@ -68,6 +81,29 @@ interface Context {
   exam: CertificationExamRules;
   validityYears: number;
   enrollmentRef: DocumentReference;
+  /** "exam-prep": prepares for a vendor exam; ends in "Exam ready", not a credential. */
+  isPrep: boolean;
+  domains: PrepDomain[];
+}
+
+/** Exam prep: each domain's quiz topic ids, from the objective map ({ course, topic } → "<course>-quiz--<topic>"). */
+function readDomains(definition: FirebaseFirestore.DocumentData): PrepDomain[] {
+  const objectives = Array.isArray(definition.objectives) ? definition.objectives : [];
+  return (Array.isArray(definition.domains) ? definition.domains : []).map((domain: Record<string, unknown>) => {
+    const code = text(domain.code);
+    const topicIds = new Set<string>();
+    for (const objective of objectives as Record<string, unknown>[]) {
+      if (text(objective.domain) !== code) {
+        continue;
+      }
+      for (const item of (Array.isArray(objective.refs) ? objective.refs : []) as Record<string, unknown>[]) {
+        if (text(item.course) && text(item.topic)) {
+          topicIds.add(`${text(item.course)}-quiz--${text(item.topic)}`);
+        }
+      }
+    }
+    return { code, name: text(domain.name), weight: Number(domain.weight) || 0, topicIds: [...topicIds] };
+  });
 }
 
 function progressIdOf(course: CertificationCourse): string {
@@ -92,12 +128,18 @@ function readExam(value: unknown): CertificationExamRules {
   };
   const minutes = Number(exam.timeLimitMinutes);
 
+  const scale = (exam.scale && typeof exam.scale === "object" ? exam.scale : null) as Record<string, unknown> | null;
+
   return {
     questionsPerCourse: number("questionsPerCourse", 5, 1, 50),
+    questionCount: number("questionCount", 90, 1, 200),
     passMark: number("passMark", 75, 1, 100),
     timeLimitMinutes: Number.isInteger(minutes) && minutes > 0 ? minutes : null,
-    maxAttempts: number("maxAttempts", 3, 1, 20),
+    maxAttempts: number("maxAttempts", 3, 0, 20),
     cooldownDays: number("cooldownDays", 7, 0, 365),
+    scale: scale && Number.isFinite(Number(scale.min)) && Number.isFinite(Number(scale.max)) ?
+      { min: Number(scale.min), max: Number(scale.max), pass: Number(scale.pass) || Number(scale.max) } :
+      null,
   };
 }
 
@@ -156,8 +198,10 @@ async function loadContext(request: CallableRequest<unknown>): Promise<Context> 
     courses,
     courseKeys: courses.map(progressIdOf),
     exam: readExam(definition.exam),
-    validityYears: Number.isFinite(years) && years > 0 ? years : 3,
+    validityYears: Number.isFinite(years) && years >= 0 ? years : 3,
     enrollmentRef: db.doc(`users/${uid}/certifications/${key}`),
+    isPrep: definition.kind === "exam-prep",
+    domains: definition.kind === "exam-prep" ? readDomains(definition) : [],
   };
 }
 
@@ -265,7 +309,7 @@ export const startCertificationExam = onCall({ region: REGION, timeoutSeconds: 1
 
   const credential = (enrollment.credential ?? null) as Record<string, unknown> | null;
   const expiresAt = credential ? millis(credential.expiresAt) : null;
-  if (credential && expiresAt && expiresAt > Date.now()) {
+  if (!context.isPrep && credential && expiresAt && expiresAt > Date.now()) {
     throw new HttpsError("already-exists", "You already hold this certification. You can renew it when it expires.");
   }
 
@@ -294,16 +338,34 @@ export const startCertificationExam = onCall({ region: REGION, timeoutSeconds: 1
   }
 
   const used = lockedUntil && lockedUntil <= Date.now() ? 0 : Number(exam.attempts ?? 0);
-  if (used >= context.exam.maxAttempts && !context.isAdmin) {
+  if (context.exam.maxAttempts > 0 && used >= context.exam.maxAttempts && !context.isAdmin) {
     throw new HttpsError("resource-exhausted", "You have used all your attempts for now.");
   }
 
-  // Draw questions from each course's final exam quiz.
+  // Draw questions from each course's final exam quiz (exam prep: from each domain's mapped topics, by weight).
   const chosenIds: string[] = [];
   const chosenCourses: string[] = [];
   const questionData = new Map<string, FirebaseFirestore.DocumentData>();
 
-  for (const course of context.courses) {
+  if (context.isPrep) {
+    const totalWeight = context.domains.reduce((total, domain) => total + domain.weight, 0) || 1;
+    for (const domain of context.domains) {
+      const wanted = Math.round((domain.weight / totalWeight) * context.exam.questionCount);
+      const pools = await Promise.all(
+        domain.topicIds.map((topicId) =>
+          db.collection("quizQuestions").where("topicId", "==", topicId).where("status", "==", "published").get(),
+        ),
+      );
+      const pool = shuffle(pools.flatMap((snapshot) => snapshot.docs).filter((question) => !questionData.has(question.id)));
+      for (const question of pool.slice(0, wanted)) {
+        chosenIds.push(question.id);
+        chosenCourses.push(`${domain.code}. ${domain.name}`);
+        questionData.set(question.id, question.data());
+      }
+    }
+  }
+
+  for (const course of context.isPrep ? [] : context.courses) {
     const courseSnapshot = await db.doc(course.organizationId ? `organizations/${course.organizationId}/courses/${course.courseId}` : `courses/${course.courseId}`).get();
     const quizId = text((courseSnapshot.get("finalExam") ?? {}).quizId);
     if (!quizId) {
@@ -434,7 +496,33 @@ export const submitCertificationExam = onCall({ region: REGION }, async (request
   let expiresAt: Timestamp | null = null;
   let lockedUntil: Timestamp | null = null;
 
-  if (passed) {
+  const scaled = context.exam.scale ?
+    Math.round(context.exam.scale.min + ((context.exam.scale.max - context.exam.scale.min) * score) / 100) :
+    null;
+
+  if (context.isPrep) {
+    // Exam prep: no credential; passing marks the learner Exam ready. Practice is unlimited unless maxAttempts is set.
+    const roundOver = context.exam.maxAttempts > 0 && attemptsUsed >= context.exam.maxAttempts && !passed;
+    lockedUntil = roundOver && context.exam.cooldownDays > 0 ? Timestamp.fromMillis(submittedAt.toMillis() + context.exam.cooldownDays * DAY_MS) : null;
+    const readiness = (enrollment.readiness ?? null) as Record<string, unknown> | null;
+
+    batch.set(
+      context.enrollmentRef,
+      {
+        exam: {
+          attempts: roundOver ? 0 : attemptsUsed,
+          openAttemptId: null,
+          lockedUntil,
+          lastScore: score,
+          bestScore,
+          lastScaled: scaled,
+        },
+        ...(passed ? { readiness: { readyAt: readiness?.readyAt ?? submittedAt, lastPassedAt: submittedAt, score, scaled } } : {}),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } else if (passed) {
     code = certificateCode();
     const expiry = new Date(submittedAt.toMillis());
     expiry.setFullYear(expiry.getFullYear() + context.validityYears);
@@ -509,6 +597,9 @@ export const submitCertificationExam = onCall({ region: REGION }, async (request
     lockedUntil: lockedUntil ? lockedUntil.toMillis() : null,
     certificateCode: code,
     expiresAt: expiresAt ? expiresAt.toMillis() : null,
+    scaledScore: scaled,
+    scale: context.exam.scale,
+    examReady: context.isPrep && passed,
     sections: [...sections.values()],
     missed: passed ? [] : missed.slice(0, 50),
   };

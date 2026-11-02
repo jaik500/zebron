@@ -149,7 +149,9 @@ async function seedCertification(replace) {
     console.log(`skip   certification ${certification.id} (already exists; pass --overwrite to replace)`);
     return;
   }
-  console.log(`${APPLY ? "write " : "would "} certification ${certification.id}: ${courses.length} courses in order`);
+  // Explicit course list (for example the Cybersecurity courses plus this folder's), or this folder's courses.
+  const pathCourses = certification.courses ?? courses.map((course) => ({ courseId: course.id, title: course.title }));
+  console.log(`${APPLY ? "write " : "would "} certification ${certification.id}: ${pathCourses.length} courses in order${certification.kind === "exam-prep" ? `, ${certification.objectives?.length ?? 0} objectives mapped` : ""}`);
   if (!APPLY) {
     return;
   }
@@ -164,7 +166,12 @@ async function seedCertification(replace) {
     providerName: "Zebron",
     programName: PROGRAM_NAME,
     organizationId: null,
-    courses: courses.map((course) => ({ courseId: course.id, organizationId: null, title: course.title })),
+    courses: pathCourses.map((course) => ({ courseId: course.courseId, organizationId: null, title: course.title })),
+    // Industry exam preparation: vendor exam, official domains and the objective map.
+    kind: certification.kind ?? "zebron",
+    ...(certification.kind === "exam-prep"
+      ? { vendor: certification.vendor, domains: certification.domains, objectives: certification.objectives }
+      : {}),
     exam: {
       questionsPerCourse: 5,
       passMark: 75,

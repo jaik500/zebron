@@ -58,14 +58,18 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
             @case ('intro') {
               <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                 <div class="bg-gradient-to-r from-[#032d42] to-[#007979] px-6 py-6 text-white">
-                  <p class="text-xs font-bold uppercase tracking-[0.15em] text-white/80">{{ 'Certification exam' | t }}</p>
+                  <p class="text-xs font-bold uppercase tracking-[0.15em] text-white/80">{{ (cert.kind === 'exam-prep' ? 'Practice exam' : 'Certification exam') | t }}</p>
                   <h1 class="mt-1 text-2xl font-bold">{{ cert.credentialName }}</h1>
                 </div>
                 <div class="p-6">
                   <ul class="grid gap-3 sm:grid-cols-2">
                     <li class="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
                       <mat-icon class="text-[#007979]" aria-hidden="true">help</mat-icon>
-                      <span>{{ '{0} questions from all {1} courses' | t: [cert.exam.questionsPerCourse * cert.courses.length, cert.courses.length] }}</span>
+                      @if (cert.kind === 'exam-prep') {
+                        <span>{{ '{0} questions, weighted by exam domain' | t: [cert.exam.questionCount] }}</span>
+                      } @else {
+                        <span>{{ '{0} questions from all {1} courses' | t: [cert.exam.questionsPerCourse * cert.courses.length, cert.courses.length] }}</span>
+                      }
                     </li>
                     <li class="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
                       <mat-icon class="text-[#007979]" aria-hidden="true">flag</mat-icon>
@@ -83,12 +87,20 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                     </li>
                     <li class="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
                       <mat-icon class="text-[#007979]" aria-hidden="true">replay</mat-icon>
-                      <span>{{ '{0} of {1} attempts left, then a {2}-day wait' | t: [attemptsLeft(), cert.exam.maxAttempts, cert.exam.cooldownDays] }}</span>
+                      @if (cert.exam.maxAttempts > 0) {
+                        <span>{{ '{0} of {1} attempts left, then a {2}-day wait' | t: [attemptsLeft(), cert.exam.maxAttempts, cert.exam.cooldownDays] }}</span>
+                      } @else {
+                        <span>{{ 'Unlimited practice' | t }}</span>
+                      }
                     </li>
                   </ul>
 
                   <p class="mt-4 text-sm text-slate-600">
-                    {{ 'Passing earns the {0} credential, valid for {1} years.' | t: [cert.credentialName, cert.validityYears] }}
+                    @if (cert.vendor; as vendor) {
+                      {{ 'This practice exam is modelled on {0} {1} ({2}). Passing it means you are ready to book the real exam with {0}; it is not the real exam and does not award a credential.' | t: [vendor.name, vendor.exam, vendor.code] }}
+                    } @else {
+                      {{ 'Passing earns the {0} credential, valid for {1} years.' | t: [cert.credentialName, cert.validityYears] }}
+                    }
                   </p>
 
                   @if (!ready()) {
@@ -305,9 +317,14 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                   <div class="flex flex-col items-center gap-3 px-6 py-8 text-center" [ngClass]="outcome.passed ? 'bg-emerald-50' : 'bg-rose-50/60'">
                     <app-progress-ring [percent]="outcome.score" [size]="104" [color]="outcome.passed ? '#047857' : '#be123c'" />
                     <h1 class="text-2xl font-bold" [ngClass]="outcome.passed ? 'text-emerald-800' : 'text-rose-800'">
-                      {{ (outcome.passed ? 'You are certified!' : 'Not passed this time') | t }}
+                      {{ (outcome.examReady ? 'You are ready for the real exam!' : outcome.passed ? 'You are certified!' : cert.kind === 'exam-prep' ? 'Not ready yet' : 'Not passed this time') | t }}
                     </h1>
                     <p class="text-slate-700">{{ '{0} of {1} correct · pass mark {2}%' | t: [outcome.correct, outcome.total, outcome.passMark] }}</p>
+                    @if (outcome.scaledScore != null && outcome.scale) {
+                      <p class="text-sm text-slate-700">
+                        {{ 'About {0} on the {1}–{2} scale ({3} passes the real exam). This is an estimate, not the vendor score.' | t: [outcome.scaledScore, outcome.scale.min, outcome.scale.max, outcome.scale.pass] }}
+                      </p>
+                    }
                     @if (outcome.late) {
                       <p class="text-sm text-rose-700">{{ 'Time ran out before the answers arrived, so they could not be counted.' | t }}</p>
                     }
@@ -323,7 +340,7 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
 
                   <div class="p-6">
                     @if (outcome.sections.length > 1) {
-                      <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">{{ 'By course' | t }}</h2>
+                      <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">{{ (cert.kind === 'exam-prep' ? 'By exam domain' : 'By course') | t }}</h2>
                       <ul class="mt-3 flex flex-col gap-3">
                         @for (section of outcome.sections; track section.name) {
                           <li>
@@ -353,7 +370,14 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                     }
 
                     <div class="mt-6 flex flex-wrap items-center gap-2">
-                      @if (outcome.passed && outcome.certificateCode) {
+                      @if (outcome.examReady && cert.vendor?.bookingUrl) {
+                        <a [href]="cert.vendor!.bookingUrl" target="_blank" rel="noopener noreferrer" class="inline-flex h-11 items-center gap-1 rounded-lg bg-[#007979] px-5 font-semibold text-white hover:bg-[#006666]">
+                          <mat-icon aria-hidden="true">open_in_new</mat-icon>{{ 'Book the exam with {0}' | t: [cert.vendor!.name] }}
+                        </a>
+                        <button type="button" class="inline-flex h-11 items-center gap-1 rounded-lg border border-slate-200 px-5 font-semibold text-slate-700 hover:bg-slate-50" (click)="retry()">
+                          <mat-icon aria-hidden="true">replay</mat-icon>{{ 'Practice again' | t }}
+                        </button>
+                      } @else if (outcome.passed && outcome.certificateCode) {
                         <a [routerLink]="['/verify', outcome.certificateCode]" class="inline-flex h-11 items-center gap-1 rounded-lg bg-[#007979] px-5 font-semibold text-white hover:bg-[#006666]">
                           <mat-icon aria-hidden="true">verified</mat-icon>{{ 'View your credential' | t }}
                         </a>
@@ -408,7 +432,7 @@ export class CertificationExamComponent {
   protected readonly ready = computed(() => {
     const definition = this.definition();
     const stage = definition ? certificationStage(definition, this.enrollment()) : 'not-enrolled';
-    return stage === 'exam-ready' || stage === 'expired';
+    return stage === 'exam-ready' || stage === 'expired' || stage === 'prepared';
   });
 
   protected readonly notReadyMessage = computed(() => {
@@ -421,7 +445,7 @@ export class CertificationExamComponent {
       case 'not-enrolled':
         return 'Start the certification first.';
       default:
-        return 'The exam opens when every course is completed.';
+        return definition?.kind === 'exam-prep' ? 'The practice exam opens when every course is completed.' : 'The exam opens when every course is completed.';
     }
   });
 

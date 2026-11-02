@@ -61,7 +61,13 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
             <div class="flex flex-wrap items-start gap-4 p-6 text-white" [style.background]="cover()">
               <mat-icon class="!h-14 !w-14 shrink-0 !text-[56px]" aria-hidden="true">military_tech</mat-icon>
               <div class="min-w-0 flex-1">
-                <p class="text-xs font-bold uppercase tracking-[0.15em] text-white/80">{{ cert.providerName }} · {{ 'Certification' | t }}</p>
+                <p class="text-xs font-bold uppercase tracking-[0.15em] text-white/80">
+                  @if (cert.vendor; as vendor) {
+                    {{ 'Exam preparation' | t }} · {{ vendor.name }} {{ vendor.exam }} {{ vendor.code }}
+                  } @else {
+                    {{ cert.providerName }} · {{ 'Certification' | t }}
+                  }
+                </p>
                 <h1 class="mt-1 text-2xl font-bold">{{ cert.credentialName }}</h1>
                 <p class="mt-1 text-sm text-white/85">{{ cert.title }}</p>
               </div>
@@ -71,7 +77,7 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
                 @if (cert.description || cert.summary) {
                   <p class="whitespace-pre-line text-sm leading-6 text-slate-700">{{ cert.description || cert.summary }}</p>
                 }
-                @if (cert.preparesFor.length) {
+                @if (cert.preparesFor.length && cert.kind !== 'exam-prep') {
                   <p class="mt-3 text-sm text-slate-600">
                     <span class="font-semibold text-slate-800">{{ 'Prepares you for' | t }}:</span> {{ cert.preparesFor.join(', ') }}
                   </p>
@@ -80,9 +86,15 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
               </div>
               <ul class="flex flex-col gap-2 text-sm text-slate-700">
                 <li class="flex items-center gap-2"><mat-icon class="text-[#007979]" aria-hidden="true">format_list_numbered</mat-icon>{{ '{0} courses, in order' | t: [cert.courses.length] }}</li>
-                <li class="flex items-center gap-2"><mat-icon class="text-[#007979]" aria-hidden="true">quiz</mat-icon>{{ '{0} exam questions' | t: [cert.exam.questionsPerCourse * cert.courses.length] }}</li>
-                <li class="flex items-center gap-2"><mat-icon class="text-[#007979]" aria-hidden="true">flag</mat-icon>{{ '{0}% to pass' | t: [cert.exam.passMark] }}</li>
-                <li class="flex items-center gap-2"><mat-icon class="text-[#007979]" aria-hidden="true">event_available</mat-icon>{{ 'Valid {0} years' | t: [cert.validityYears] }}</li>
+                @if (cert.kind === 'exam-prep') {
+                  <li class="flex items-center gap-2"><mat-icon class="text-[#007979]" aria-hidden="true">checklist</mat-icon>{{ '{0} exam objectives mapped' | t: [cert.objectives.length] }}</li>
+                  <li class="flex items-center gap-2"><mat-icon class="text-[#007979]" aria-hidden="true">quiz</mat-icon>{{ '{0}-question practice exam' | t: [cert.exam.questionCount] }}</li>
+                  <li class="flex items-center gap-2"><mat-icon class="text-[#007979]" aria-hidden="true">all_inclusive</mat-icon>{{ 'Unlimited practice' | t }}</li>
+                } @else {
+                  <li class="flex items-center gap-2"><mat-icon class="text-[#007979]" aria-hidden="true">quiz</mat-icon>{{ '{0} exam questions' | t: [cert.exam.questionsPerCourse * cert.courses.length] }}</li>
+                  <li class="flex items-center gap-2"><mat-icon class="text-[#007979]" aria-hidden="true">flag</mat-icon>{{ '{0}% to pass' | t: [cert.exam.passMark] }}</li>
+                  <li class="flex items-center gap-2"><mat-icon class="text-[#007979]" aria-hidden="true">event_available</mat-icon>{{ 'Valid {0} years' | t: [cert.validityYears] }}</li>
+                }
               </ul>
             </div>
 
@@ -101,7 +113,7 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
                   class="inline-flex h-10 items-center gap-1 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666] disabled:opacity-50"
                 >
                   <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">flag</mat-icon>
-                  {{ (busy() ? 'Starting...' : 'Start this certification') | t }}
+                  {{ (busy() ? 'Starting...' : cert.kind === 'exam-prep' ? 'Start preparing' : 'Start this certification') | t }}
                 </button>
                 <p class="text-xs text-slate-500">{{ 'Courses you already passed in order count automatically.' | t }}</p>
               </div>
@@ -110,6 +122,62 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
               <p class="border-t border-rose-100 bg-rose-50 px-6 py-3 text-sm text-rose-700" role="alert">{{ error()! | t }}</p>
             }
           </section>
+
+          @if (cert.vendor; as vendor) {
+            <!-- ================= THE REAL EXAM ================= -->
+            <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-6" aria-labelledby="vendor-title">
+              <h2 id="vendor-title" class="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                <mat-icon class="text-[#007979]" aria-hidden="true">event</mat-icon>{{ 'The real exam' | t }}: {{ vendor.name }} {{ vendor.exam }} ({{ vendor.code }})
+              </h2>
+              <p class="mt-1 text-sm text-slate-600">{{ 'The real exam is not taken on Zebron. When you are ready, book it with the vendor.' | t }}</p>
+              @if (vendor.format) {
+                <p class="mt-3 text-sm text-slate-700"><span class="font-semibold text-slate-900">{{ 'Format' | t }}:</span> {{ vendor.format }}</p>
+              }
+              @if (vendor.objectivesNote) {
+                <p class="mt-2 text-sm text-slate-700">{{ vendor.objectivesNote }}</p>
+              }
+              @if (vendor.bookingUrl) {
+                <a [href]="vendor.bookingUrl" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#007979] hover:underline">
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">open_in_new</mat-icon>{{ 'Book the exam with {0}' | t: [vendor.name] }}
+                </a>
+              }
+              @if (vendor.disclaimer) {
+                <p class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">{{ vendor.disclaimer }}</p>
+              }
+            </section>
+          }
+
+          @if (cert.domains.length) {
+            <!-- ================= OBJECTIVE COVERAGE ================= -->
+            <section class="mt-6" aria-labelledby="objectives-title">
+              <h2 id="objectives-title" class="text-lg font-semibold text-slate-900">{{ 'Exam objectives and where they are taught' | t }}</h2>
+              <p class="mb-3 mt-1 text-sm text-slate-600">{{ 'Every objective of the exam is mapped to the lessons that teach it. The practice exam draws questions from each domain by its weight.' | t }}</p>
+              <div class="flex flex-col gap-2">
+                @for (domain of objectiveGroups(); track domain.code) {
+                  <details class="group rounded-2xl border border-slate-200 bg-white">
+                    <summary class="flex cursor-pointer list-none items-center gap-3 p-4">
+                      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#007979]/10 text-sm font-bold text-[#007979]">{{ domain.code }}</span>
+                      <span class="min-w-0 flex-1 font-semibold text-slate-900">{{ domain.name }}</span>
+                      <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">{{ domain.weight }}%</span>
+                      <mat-icon class="text-slate-400 transition group-open:rotate-180" aria-hidden="true">keyboard_arrow_down</mat-icon>
+                    </summary>
+                    <ul class="flex flex-col gap-3 border-t border-slate-100 p-4">
+                      @for (objective of domain.objectives; track objective.code) {
+                        <li>
+                          <p class="text-sm text-slate-800"><span class="font-mono font-semibold text-slate-500">{{ objective.code }}</span> {{ objective.text }}</p>
+                          <div class="mt-1 flex flex-wrap gap-1.5">
+                            @for (ref of objective.refs; track ref.course + ref.topic) {
+                              <a [routerLink]="[context.basePath, ref.course, 'lessons', ref.topic]" class="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-700 hover:border-[#007979] hover:text-[#007979]">{{ ref.title }}</a>
+                            }
+                          </div>
+                        </li>
+                      }
+                    </ul>
+                  </details>
+                }
+              </div>
+            </section>
+          }
 
           <!-- ================= STEPS ================= -->
           <section class="mt-6" aria-labelledby="steps-title">
@@ -186,16 +254,46 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
           <!-- ================= EXAM AND CREDENTIAL ================= -->
           <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-6" aria-labelledby="exam-title">
             <h2 id="exam-title" class="flex items-center gap-2 text-lg font-semibold text-slate-900">
-              <mat-icon class="text-[#007979]" aria-hidden="true">assignment</mat-icon>{{ 'Certification exam' | t }}
+              <mat-icon class="text-[#007979]" aria-hidden="true">assignment</mat-icon>{{ (cert.kind === 'exam-prep' ? 'Practice exam' : 'Certification exam') | t }}
             </h2>
             <p class="mt-1 text-sm text-slate-600">
-              {{ '{0} questions from all the courses · {1}% to pass · {2} attempts, then a {3}-day wait' | t: [cert.exam.questionsPerCourse * cert.courses.length, cert.exam.passMark, cert.exam.maxAttempts, cert.exam.cooldownDays] }}
+              @if (cert.kind === 'exam-prep') {
+                {{ '{0} questions weighted like the real exam · aim for {1}% or more · practice as often as you like' | t: [cert.exam.questionCount, cert.exam.passMark] }}
+                @if (cert.exam.scale; as scale) {
+                  · {{ 'shown on the {0}–{1} scale ({2} to pass the real exam)' | t: [scale.min, scale.max, scale.pass] }}
+                }
+              } @else {
+                {{ '{0} questions from all the courses · {1}% to pass · {2} attempts, then a {3}-day wait' | t: [cert.exam.questionsPerCourse * cert.courses.length, cert.exam.passMark, cert.exam.maxAttempts, cert.exam.cooldownDays] }}
+              }
               @if (cert.exam.timeLimitMinutes) {
                 · {{ '{0} minutes' | t: [cert.exam.timeLimitMinutes] }}
               }
             </p>
 
             @switch (stage()) {
+              @case ('prepared') {
+                <div class="mt-4 rounded-xl bg-emerald-50 p-4">
+                  <p class="flex items-center gap-2 font-semibold text-emerald-800">
+                    <mat-icon aria-hidden="true">task_alt</mat-icon>{{ 'You are ready for the real exam.' | t }}
+                  </p>
+                  <p class="mt-1 text-sm text-emerald-900">
+                    {{ 'Practice exam passed on {0}' | t: [dateLabel(enrollment()?.readiness?.readyAt ?? null)] }}
+                    @if (enrollment()?.exam?.bestScore != null) {
+                      · {{ 'best score {0}%' | t: [enrollment()!.exam.bestScore] }}
+                    }
+                  </p>
+                  <div class="mt-3 flex flex-wrap items-center gap-3">
+                    @if (cert.vendor?.bookingUrl) {
+                      <a [href]="cert.vendor!.bookingUrl" target="_blank" rel="noopener noreferrer" class="inline-flex h-10 items-center gap-1 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]">
+                        {{ 'Book the exam with {0}' | t: [cert.vendor!.name] }}<mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">open_in_new</mat-icon>
+                      </a>
+                    }
+                    <a [routerLink]="[context.basePath, 'certifications', cert.key, 'exam']" class="text-sm font-semibold text-[#007979] hover:underline">
+                      {{ (enrollment()?.exam?.openAttemptId ? 'Continue the practice exam' : 'Practice again') | t }}
+                    </a>
+                  </div>
+                </div>
+              }
               @case ('certified') {
                 @if (enrollment()?.credential; as credential) {
                   <div class="mt-4 rounded-xl bg-emerald-50 p-4">
@@ -221,9 +319,9 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
               @case ('exam-ready') {
                 <div class="mt-4 flex flex-wrap items-center gap-3">
                   <a [routerLink]="[context.basePath, 'certifications', cert.key, 'exam']" class="inline-flex h-11 items-center gap-1 rounded-lg bg-[#007979] px-5 font-semibold text-white hover:bg-[#006666]">
-                    {{ (enrollment()?.exam?.openAttemptId ? 'Continue the exam' : 'Take the certification exam') | t }}<mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                    {{ (enrollment()?.exam?.openAttemptId ? 'Continue the exam' : cert.kind === 'exam-prep' ? 'Take the practice exam' : 'Take the certification exam') | t }}<mat-icon aria-hidden="true">arrow_forward</mat-icon>
                   </a>
-                  @if (enrollment()?.exam?.attempts) {
+                  @if (enrollment()?.exam?.attempts && cert.exam.maxAttempts > 0) {
                     <span class="text-sm text-slate-500">{{ '{0} of {1} attempts used' | t: [enrollment()!.exam.attempts, cert.exam.maxAttempts] }}</span>
                   }
                 </div>
@@ -239,7 +337,7 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
               @default {
                 <p class="mt-4 flex items-center gap-2 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
                   <mat-icon class="text-slate-400" aria-hidden="true">lock</mat-icon>
-                  {{ 'The exam opens when every course is completed.' | t }}
+                  {{ (cert.kind === 'exam-prep' ? 'The practice exam opens when every course is completed.' : 'The exam opens when every course is completed.') | t }}
                 </p>
               }
             }
@@ -304,6 +402,15 @@ export class CertificationDetailComponent {
 
       return { key, course, state, passedAt, percent: progress.get(key)?.percent ?? 0, link: this.courseLink(course) };
     });
+  });
+
+  /** Exam prep: the objectives under each domain. */
+  protected readonly objectiveGroups = computed(() => {
+    const definition = this.definition();
+    return (definition?.domains ?? []).map((domain) => ({
+      ...domain,
+      objectives: definition!.objectives.filter((objective) => objective.domain === domain.code),
+    }));
   });
 
   protected readonly doneCount = computed(() => this.steps().filter((step) => step.state === 'done').length);

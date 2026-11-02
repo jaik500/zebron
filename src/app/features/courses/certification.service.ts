@@ -23,8 +23,38 @@ export interface CertificationCourseRef {
   title: string;
 }
 
+/** Exam prep: the vendor exam this certification prepares for (taken with the vendor, not on Zebron). */
+export interface CertificationVendor {
+  name: string;
+  exam: string;
+  code: string;
+  format: string;
+  bookingUrl: string;
+  objectivesNote: string;
+  disclaimer: string;
+}
+
+export interface CertificationDomain {
+  code: string;
+  name: string;
+  weight: number;
+}
+
+/** One exam objective and the lessons that teach it. */
+export interface CertificationObjective {
+  code: string;
+  domain: string;
+  text: string;
+  refs: { course: string; topic: string; title: string }[];
+}
+
 export interface CertificationDefinition {
   id: string;
+  /** "zebron": ends in a Zebron credential. "exam-prep": prepares for a vendor exam; ends in "ready". */
+  kind: 'zebron' | 'exam-prep';
+  vendor: CertificationVendor | null;
+  domains: CertificationDomain[];
+  objectives: CertificationObjective[];
   organizationId: string | null;
   key: string;
   title: string;
@@ -42,6 +72,8 @@ export interface CertificationDefinition {
     timeLimitMinutes: number | null;
     maxAttempts: number;
     cooldownDays: number;
+    questionCount: number;
+    scale: { min: number; max: number; pass: number } | null;
   };
   validityYears: number;
 }
@@ -59,9 +91,12 @@ export interface CertificationEnrollment {
     openAttemptId: string | null;
   };
   credential: { code: string; issuedAt: Date | null; expiresAt: Date | null; score: number | null } | null;
+  /** Exam prep: set when the practice exam is passed. */
+  readiness: { readyAt: Date | null; score: number | null; scaled: number | null } | null;
 }
 
-export type CertificationStage = 'not-enrolled' | 'in-progress' | 'exam-ready' | 'waiting' | 'certified' | 'expired';
+/** 'prepared' (exam prep only): the practice exam is passed; book the real exam with the vendor. */
+export type CertificationStage = 'not-enrolled' | 'in-progress' | 'exam-ready' | 'waiting' | 'certified' | 'expired' | 'prepared';
 
 export interface CertificationSession {
   attemptId: string;
@@ -84,6 +119,9 @@ export interface CertificationResult {
   lockedUntil: number | null;
   certificateCode: string | null;
   expiresAt: number | null;
+  scaledScore: number | null;
+  scale: { min: number; max: number; pass: number } | null;
+  examReady: boolean;
   sections: { name: string; correct: number; total: number }[];
   missed: string[];
 }
@@ -109,6 +147,9 @@ export function certificationStage(
   const expires = enrollment.credential?.expiresAt?.getTime() ?? null;
   if (enrollment.credential && expires && expires > now) {
     return 'certified';
+  }
+  if (definition.kind === 'exam-prep' && enrollment.readiness) {
+    return 'prepared';
   }
   const allDone = definition.courses.every((course) => enrollment.stepPasses[stepKey(course)]);
   if (!allDone) {
@@ -193,8 +234,34 @@ function toDefinition(id: string, organizationId: string | null, data: Record<st
   const exam = (data['exam'] ?? {}) as Record<string, unknown>;
   const num = (value: unknown, fallback: number) => (typeof value === 'number' && Number.isFinite(value) ? value : fallback);
 
+  const vendor = (data['vendor'] ?? null) as Record<string, unknown> | null;
+  const scale = (exam['scale'] ?? null) as Record<string, unknown> | null;
+
   return {
     id,
+    kind: data['kind'] === 'exam-prep' ? 'exam-prep' : 'zebron',
+    vendor: vendor
+      ? {
+          name: str(vendor['name']),
+          exam: str(vendor['exam']),
+          code: str(vendor['code']),
+          format: str(vendor['format']),
+          bookingUrl: /^https:\/\//.test(str(vendor['bookingUrl'])) ? str(vendor['bookingUrl']) : '',
+          objectivesNote: str(vendor['objectivesNote']),
+          disclaimer: str(vendor['disclaimer']),
+        }
+      : null,
+    domains: (Array.isArray(data['domains']) ? data['domains'] : []).map((item: Record<string, unknown>) => ({
+      code: str(item['code']),
+      name: str(item['name']),
+      weight: num(item['weight'], 0),
+    })),
+    objectives: (Array.isArray(data['objectives']) ? data['objectives'] : []).map((item: Record<string, unknown>) => ({
+      code: str(item['code']),
+      domain: str(item['domain']),
+      text: str(item['text']),
+      refs: (Array.isArray(item['refs']) ? item['refs'] : []).map((ref: Record<string, unknown>) => ({ course: str(ref['course']), topic: str(ref['topic']), title: str(ref['title']) || str(ref['topic']) })),
+    })),
     organizationId,
     key: certificationKey(organizationId, id),
     title: str(data['title']) || id,
@@ -216,6 +283,10 @@ function toDefinition(id: string, organizationId: string | null, data: Record<st
       timeLimitMinutes: typeof exam['timeLimitMinutes'] === 'number' ? (exam['timeLimitMinutes'] as number) : null,
       maxAttempts: num(exam['maxAttempts'], 3),
       cooldownDays: num(exam['cooldownDays'], 7),
+      questionCount: num(exam['questionCount'], 0),
+      scale: scale && typeof scale['min'] === 'number' && typeof scale['max'] === 'number'
+        ? { min: scale['min'] as number, max: scale['max'] as number, pass: num(scale['pass'], scale['max'] as number) }
+        : null,
     },
     validityYears: num(data['validityYears'], 3),
   };
@@ -225,6 +296,7 @@ function toEnrollment(key: string, data: Record<string, unknown>): Certification
   const passes = (data['stepPasses'] ?? {}) as Record<string, unknown>;
   const exam = (data['exam'] ?? {}) as Record<string, unknown>;
   const credential = data['credential'] as Record<string, unknown> | null | undefined;
+  const readiness = data['readiness'] as Record<string, unknown> | null | undefined;
 
   return {
     key,
@@ -250,5 +322,12 @@ function toEnrollment(key: string, data: Record<string, unknown>): Certification
             score: typeof credential['score'] === 'number' ? (credential['score'] as number) : null,
           }
         : null,
+    readiness: readiness
+      ? {
+          readyAt: date(readiness['readyAt']),
+          score: typeof readiness['score'] === 'number' ? (readiness['score'] as number) : null,
+          scaled: typeof readiness['scaled'] === 'number' ? (readiness['scaled'] as number) : null,
+        }
+      : null,
   };
 }
