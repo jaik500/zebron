@@ -49,12 +49,13 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
   class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-sm"
   [attr.aria-label]="'Breadcrumb' | t"
 >
-  @for (crumb of crumbs(); track $index; let last = $last) {
+  @for (crumb of crumbs(); track $index; let last = $last; let first = $first) {
     @if (crumb.link && !last) {
       <a
         [routerLink]="crumb.link"
-        class="min-w-0 truncate shrink text-white/80 hover:text-white hover:underline"
-        [class.!shrink-0]="crumb.label === 'Learning'"
+        class="min-w-0 truncate text-white/80 hover:text-white hover:underline"
+        [class.shrink-0]="first"
+        [class.shrink]="!first"
       >
         {{ crumb.translate === false ? crumb.label : (crumb.label | t) }}
       </a>
@@ -67,7 +68,7 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
       </mat-icon>
     } @else {
       <span
-        class="min-w-0 truncate font-semibold"
+        class="min-w-0 truncate font-semibold shrink-[9999]"
         [attr.aria-current]="last ? 'page' : null"
       >
         {{ crumb.translate === false ? crumb.label : (crumb.label | t) }}
