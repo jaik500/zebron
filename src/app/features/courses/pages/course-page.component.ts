@@ -195,9 +195,9 @@ import { CourseStore } from '../course.store';
                       aria-hidden="true"
                     >
                       @if (store.completedIds().has(lesson.id)) {
-                        <mat-icon class="!h-4 !w-4 !text-base">check</mat-icon>
+                        <mat-icon class="!flex !h-4 !w-4 items-center justify-center !text-base !leading-none">check</mat-icon>
                       } @else if (lesson.id === store.resumeLesson()?.id && signedIn()) {
-                        <mat-icon class="!h-4 !w-4 !text-base">play_arrow</mat-icon>
+                        <mat-icon class="!flex !h-4 !w-4 translate-x-[0.5px] items-center justify-center !text-base !leading-none">play_arrow</mat-icon>
                       }
                     </span>
                     <span class="min-w-0 flex-1 text-slate-800">

@@ -68,7 +68,7 @@ type ViewBlock =
         <!-- Outline (wide screens) -->
         <nav class="hidden self-start rounded-2xl border border-slate-200 bg-white p-3 lg:sticky lg:top-20 lg:block" [attr.aria-label]="'Course outline' | t">
           @for (module of store.course()?.modules ?? []; track module.id; let moduleIndex = $index) {
-            <p class="px-2 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ 'Module {0}' | t: [moduleIndex + 1] }}</p>
+            <p class="px-2 pb-1 pt-2 text-[12px] font-bold uppercase tracking-wide text-[#007979]">{{ 'Module {0}' | t: [moduleIndex + 1] }}</p>
             @for (item of module.lessons; track item.id) {
               <a
                 [routerLink]="[coursePath(), 'lessons', item.id]"
@@ -118,7 +118,7 @@ type ViewBlock =
               <a [routerLink]="coursePath()" class="mt-3 inline-block font-semibold text-[#007979] hover:underline">{{ 'Back to the course' | t }}</a>
             </div>
           } @else if (store.lesson(); as lesson) {
-            <article class="max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 sm:p-8">
+            <article class="max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 sm:p-8">
               @if (moduleTitle()) {
                 <p class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ moduleTitle() }}</p>
               }

@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
@@ -21,7 +22,6 @@ import { Quiz } from '../../test-center/models/quiz.model';
 import { QuizService } from '../../test-center/services/quiz.service';
 import { TestProgram } from '../../test-center/models/test-program.model';
 import { TestProgramService } from '../../test-center/services/test-program.service';
-import { TestTopicService } from '../../test-center/services/test-topic.service';
 
 import {
   COURSE_COVERS,
@@ -38,14 +38,7 @@ import {
 import { BLOCK_META, BlockEditorComponent } from './block-editor.component';
 import { CourseBuilderStore } from './course-builder.store';
 import { CourseAccessService } from '../course-access.service';
-
-/** Active topics of one Test Center quiz, shown as a group in the Topic dropdown. */
-interface TopicGroup {
-  quizId: string;
-  programId: string | null;
-  label: string;
-  topics: string[];
-}
+import { CourseService } from '../course.service';
 
 /**
  * The course builder: course details, the outline (modules and lessons)
@@ -60,6 +53,7 @@ interface TopicGroup {
   imports: [
     NgClass,
     RouterLink,
+    MatAutocompleteModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -442,25 +436,25 @@ interface TopicGroup {
                 }
 
                 <div class="grid gap-4 sm:grid-cols-2">
-                  <!-- Topic: picked from the Test Center topics, grouped by quiz -->
+                  <!-- Topic: a broad catalog category (the catalog's filter chips). Free text, with
+                       suggestions from the topics this organization's (or Zebron's) courses already use. -->
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
                     <mat-label>{{ 'Topic' | t }}</mat-label>
-                    <mat-select [value]="store.details().topic" (selectionChange)="store.patchDetails({ topic: $event.value })">
-                      <mat-option value="">{{ 'No topic' | t }}</mat-option>
-                      @if (topicNotListed()) {
-                        <mat-option [value]="store.details().topic">{{ store.details().topic }} · {{ (topicInOtherProgram() ? 'not in this program' : 'not in the Test Center') | t }}</mat-option>
+                    <input
+                      matInput
+                      maxlength="40"
+                      [value]="store.details().topic"
+                      (input)="store.patchDetails({ topic: value($event) })"
+                      (blur)="tidyTopic()"
+                      [matAutocomplete]="topicAuto"
+                      [placeholder]="'e.g. Cybersecurity' | t"
+                    />
+                    <mat-autocomplete #topicAuto="matAutocomplete" (optionSelected)="store.patchDetails({ topic: $event.option.value })">
+                      @for (topic of topicMatches(); track topic) {
+                        <mat-option [value]="topic">{{ topic }}</mat-option>
                       }
-                      @for (group of visibleTopicGroups(); track group.quizId) {
-                        <mat-optgroup [label]="group.label">
-                          @for (topic of group.topics; track topic) {
-                            <mat-option [value]="topic">{{ topic }}</mat-option>
-                          }
-                        </mat-optgroup>
-                      }
-                      @if (!visibleTopicGroups().length) {
-                        <mat-option disabled>{{ (optionsLoading() ? 'Loading topics...' : selectedProgram() ? 'This program has no active topics yet. Add them in the Test Center.' : 'No active topics yet. Create them in the Test Center.') | t }}</mat-option>
-                      }
-                    </mat-select>
+                    </mat-autocomplete>
+                    <mat-hint>{{ 'Pick an existing topic to keep the catalog tidy, or type a new one.' | t }}</mat-hint>
                   </mat-form-field>
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
                     <mat-label>{{ 'Level' | t }}</mat-label>
@@ -629,7 +623,7 @@ export class CourseBuilderComponent {
   private readonly organizationContext = inject(PartnerOrganizationContextService);
   private readonly quizService = inject(QuizService);
   private readonly partnerAccess = inject(PartnerAccessService);
-  private readonly topicService = inject(TestTopicService);
+  private readonly courseService = inject(CourseService);
   private readonly programService = inject(TestProgramService);
   private readonly logger = inject(LoggerService);
   protected readonly store = inject(CourseBuilderStore);
@@ -648,31 +642,18 @@ export class CourseBuilderComponent {
   protected readonly quizzes = signal<Quiz[]>([]);
   protected readonly quizzesLoading = signal(false);
 
-  /** Test Center topics (by quiz) and programs offered in the Topic and Program dropdowns. */
-  protected readonly topicGroups = signal<TopicGroup[]>([]);
+  /** Programs offered in the Program dropdown (testPrograms). */
   protected readonly programs = signal<TestProgram[]>([]);
   protected readonly optionsLoading = signal(true);
-  /** A saved value that is no longer in the Test Center stays selectable so it isn't lost. */
-  /** The Test Center program chosen above (programs are saved by name). */
-  protected readonly selectedProgram = computed(() => {
-    const name = this.store.details().program.trim();
-    return name ? this.programs().find((item) => item.name === name) ?? null : null;
-  });
-  /**
-   * Topics of the chosen program's quizzes, its own and the Zebron quizzes
-   * linked to it in the Test Center; every topic when no program is chosen.
-   */
-  protected readonly visibleTopicGroups = computed(() => {
-    const program = this.selectedProgram();
-    return program ? this.topicGroups().filter((group) => this.inProgram(group, program)) : this.topicGroups();
-  });
-  protected readonly topicNotListed = computed(() => {
-    const topic = this.store.details().topic.trim();
-    return !!topic && !this.visibleTopicGroups().some((group) => group.topics.includes(topic));
-  });
-  protected readonly topicInOtherProgram = computed(() => {
-    const topic = this.store.details().topic.trim();
-    return this.topicGroups().some((group) => group.topics.includes(topic));
+
+  /** Topics already used by this organization's courses (or Zebron's), for the Topic suggestions. */
+  protected readonly knownTopics = signal<string[]>([]);
+  /** Suggestions matching what is typed; every known topic when the field is empty. */
+  protected readonly topicMatches = computed(() => {
+    const typed = this.store.details().topic.trim().toLowerCase();
+    return this.knownTopics()
+      .filter((topic) => !typed || (topic.toLowerCase().includes(typed) && topic.toLowerCase() !== typed))
+      .slice(0, 20);
   });
   protected readonly programNotListed = computed(() => {
     const program = this.store.details().program.trim();
@@ -745,7 +726,8 @@ export class CourseBuilderComponent {
       ? this.organizationContext.organization()?.name?.trim() || ''
       : 'Zebron';
 
-    void this.loadQuizzes().then(() => this.loadTopics());
+    void this.loadQuizzes();
+    void this.loadKnownTopics();
     void this.loadPrograms();
 
     if (courseId === 'new') {
@@ -811,28 +793,33 @@ export class CourseBuilderComponent {
     }
   }
 
-  /** Active topics of every quiz the author can use, one group per quiz. */
-  private async loadTopics(): Promise<void> {
+  /** Distinct topics of the courses in this context (organization or Zebron), in name order. */
+  private async loadKnownTopics(): Promise<void> {
     try {
-      const results = await Promise.allSettled(
-        this.quizzes().map((quiz) => this.topicService.getActiveTopics(quiz.organizationId ? quiz.organizationId : null, quiz.id)),
-      );
-      const groups = this.quizzes()
-        .map((quiz, index) => {
-          const result = results[index];
-          if (result.status === 'rejected') {
-            this.logger.error('CourseBuilderComponent', 'Could not load topics for quiz ' + quiz.id + '.', result.reason);
-            return null;
-          }
-          const topics = [...new Set(result.value.map((topic) => topic.name.trim()).filter(Boolean))];
-          return topics.length
-            ? { quizId: quiz.id, programId: quiz.programId ?? null, label: quiz.organizationId ? quiz.name : quiz.name + ' · Zebron', topics }
-            : null;
-        })
-        .filter((group): group is TopicGroup => group !== null);
-      this.topicGroups.set(groups);
-    } finally {
-      this.optionsLoading.set(false);
+      const courses = await this.courseService.listAll(this.context.organizationId);
+      const byKey = new Map<string, string>();
+      for (const course of courses) {
+        const topic = (course.topic ?? '').trim();
+        if (topic && !byKey.has(topic.toLowerCase())) {
+          byKey.set(topic.toLowerCase(), topic);
+        }
+      }
+      this.knownTopics.set([...byKey.values()].sort((x, y) => x.localeCompare(y)));
+    } catch (error) {
+      this.logger.error('CourseBuilderComponent', 'Could not load course topics for suggestions.', error);
+    }
+  }
+
+  /**
+   * Keep spelling consistent: when the typed topic matches an existing one
+   * apart from case or spaces, use the existing spelling.
+   */
+  protected tidyTopic(): void {
+    const typed = this.store.details().topic.trim().replace(/\s+/g, ' ');
+    const existing = this.knownTopics().find((topic) => topic.toLowerCase() === typed.toLowerCase());
+    const next = existing ?? typed;
+    if (next !== this.store.details().topic) {
+      this.store.patchDetails({ topic: next });
     }
   }
 
@@ -850,27 +837,14 @@ export class CourseBuilderComponent {
       );
     } catch (error) {
       this.logger.error('CourseBuilderComponent', 'Could not load Test Center programs.', error);
+    } finally {
+      this.optionsLoading.set(false);
     }
   }
 
-  /** A quiz belongs to a program when it is the program's own or a Zebron quiz linked to it. */
-  private inProgram(group: TopicGroup, program: TestProgram): boolean {
-    return group.programId === program.id || (program.platformQuizIds ?? []).includes(group.quizId);
-  }
-
-  /**
-   * Clearing the program also clears its step. A topic that doesn't belong
-   * to the newly chosen program is cleared so the author picks one from it.
-   */
+  /** Clearing the program also clears its step. */
   protected chooseProgram(program: string): void {
-    const chosen = this.programs().find((item) => item.name === program);
-    const topic = this.store.details().topic.trim();
-    const topicFits = !topic || !chosen || this.topicGroups().some((group) => this.inProgram(group, chosen) && group.topics.includes(topic));
-    this.store.patchDetails({
-      program,
-      ...(program ? {} : { programOrder: null }),
-      ...(topicFits ? {} : { topic: '' }),
-    });
+    this.store.patchDetails(program ? { program } : { program: '', programOrder: null });
   }
 
   protected checked(event: Event): boolean {

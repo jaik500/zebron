@@ -45,20 +45,36 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
             </a>
           }
 
-          <nav class="flex min-w-0 flex-1 items-center gap-1 text-sm" [attr.aria-label]="'Breadcrumb' | t">
-            @for (crumb of crumbs(); track $index; let last = $last) {
-              @if (crumb.link && !last) {
-                <a [routerLink]="crumb.link" class="shrink-0 text-white/80 hover:text-white hover:underline">
-                  {{ crumb.translate === false ? crumb.label : (crumb.label | t) }}
-                </a>
-                <mat-icon class="!h-4 !w-4 shrink-0 !text-base text-white/60" aria-hidden="true">chevron_right</mat-icon>
-              } @else {
-                <span class="truncate font-semibold" [attr.aria-current]="last ? 'page' : null">
-                  {{ crumb.translate === false ? crumb.label : (crumb.label | t) }}
-                </span>
-              }
-            }
-          </nav>
+         <nav
+  class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-xl"
+  [attr.aria-label]="'Breadcrumb' | t"
+>
+  @for (crumb of crumbs(); track $index; let last = $last) {
+    @if (crumb.link && !last) {
+      <a
+        [routerLink]="crumb.link"
+        class="min-w-0 truncate shrink text-white/80 hover:text-white hover:underline"
+      >
+        {{ crumb.translate === false ? crumb.label : (crumb.label | t) }}
+      </a>
+
+      <mat-icon
+        class="!h-4 !w-4 shrink-0 !text-base text-white/60"
+        aria-hidden="true"
+      >
+        chevron_right
+      </mat-icon>
+    } @else {
+      <span
+        class="min-w-0 truncate font-semibold"
+        [attr.aria-current]="last ? 'page' : null"
+      >
+        {{ crumb.translate === false ? crumb.label : (crumb.label | t) }}
+      </span>
+    }
+  }
+</nav>
+         
 
           @if (showSearch()) {
             <button
