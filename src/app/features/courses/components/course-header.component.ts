@@ -45,7 +45,7 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
             </a>
           }
 
-         <nav
+<nav
   class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-xl"
   [attr.aria-label]="'Breadcrumb' | t"
 >
@@ -54,6 +54,7 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
       <a
         [routerLink]="crumb.link"
         class="min-w-0 truncate shrink text-white/80 hover:text-white hover:underline"
+        [class.!shrink-0]="crumb.label === 'Learning'"
       >
         {{ crumb.translate === false ? crumb.label : (crumb.label | t) }}
       </a>
