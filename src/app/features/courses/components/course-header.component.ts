@@ -46,7 +46,7 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
           }
 
 <nav
-  class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-base"
+  class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-sm"
   [attr.aria-label]="'Breadcrumb' | t"
 >
   @for (crumb of crumbs(); track $index; let last = $last) {
