@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -23,18 +31,25 @@ import { CourseStore } from '../course.store';
 type ViewBlock =
   | { kind: 'text'; html: string }
   | { kind: 'tip'; html: string }
-  | { kind: 'media'; mediaKind: 'video' | 'audio' | 'document'; url: string; start: number; label: string; caption: string }
+  | {
+      kind: 'media';
+      mediaKind: 'video' | 'audio' | 'document';
+      url: string;
+      start: number;
+      label: string;
+      caption: string;
+    }
   | { kind: 'image'; url: string; alt: string; caption: string }
   | {
-    kind: 'check';
-    index: number;
-    questions: {
-      question: string;
-      options: string[];
-      answer: number;
-      explanation?: string;
-    }[];
-  }
+      kind: 'check';
+      index: number;
+      questions: {
+        question: string;
+        options: string[];
+        answer: number;
+        explanation?: string;
+      }[];
+    };
 /**
  * The lesson player: course outline on the left (wide screens), the lesson
  * in a readable column, quick checks that must be answered correctly before
@@ -44,7 +59,15 @@ type ViewBlock =
   selector: 'app-lesson-player',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, RouterLink, MatIconModule, MatExpansionModule, TranslatePipe, CourseHeaderComponent, LessonMediaComponent],
+  imports: [
+    NgClass,
+    RouterLink,
+    MatIconModule,
+    MatExpansionModule,
+    TranslatePipe,
+    CourseHeaderComponent,
+    LessonMediaComponent,
+  ],
   template: `
     <main class="mt-16 min-h-screen bg-slate-50">
       <app-course-header
@@ -52,26 +75,47 @@ type ViewBlock =
         [backLink]="coursePath()"
         [crumbs]="[
           { label: 'Learning', link: context.basePath },
-          { label: store.course()?.title ?? 'Course', link: coursePath(), translate: !store.course() },
-          { label: store.lesson()?.title ?? 'Lesson', translate: !store.lesson() }
+          {
+            label: store.course()?.title ?? 'Course',
+            link: coursePath(),
+            translate: !store.course(),
+          },
+          { label: store.lesson()?.title ?? 'Lesson', translate: !store.lesson() },
         ]"
       />
 
-      <div class="mx-auto grid max-w-7xl gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[270px_1fr] lg:px-8">
+      <div class="mx-auto grid max-w-7xl gap-6 py-5 sm:px-2 lg:grid-cols-[270px_1fr] lg:px-8">
         <!-- Outline (wide screens) -->
-        <nav class="hidden self-start rounded-2xl border border-slate-200 bg-white p-3 lg:sticky lg:top-20 lg:block" [attr.aria-label]="'Course outline' | t">
-          @for (module of store.course()?.modules ?? []; track module.id; let moduleIndex = $index) {
-            <p class="px-2 pb-1 pt-2 text-[12px] font-bold uppercase tracking-wide text-[#007979]">{{ 'Module {0}' | t: [moduleIndex + 1] }}</p>
+        <nav
+          class="hidden self-start rounded-2xl border border-slate-200 bg-white p-3 lg:sticky lg:top-20 lg:block"
+          [attr.aria-label]="'Course outline' | t"
+        >
+          @for (
+            module of store.course()?.modules ?? [];
+            track module.id;
+            let moduleIndex = $index
+          ) {
+            <p class="px-2 pb-1 pt-2 text-[12px] font-bold uppercase tracking-wide text-[#007979]">
+              {{ 'Module {0}' | t: [moduleIndex + 1] }}
+            </p>
             @for (item of module.lessons; track item.id) {
               <a
                 [routerLink]="[coursePath(), 'lessons', item.id]"
-                class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm"
-                [ngClass]="item.id === store.lesson()?.id ? 'bg-teal-50 font-semibold text-[#007979]' : 'text-slate-700 hover:bg-slate-50'"
+                class="flex items-center gap-2 rounded-lg px-1 py-1.5 text-sm"
+                [ngClass]="
+                  item.id === store.lesson()?.id
+                    ? 'bg-teal-50 font-semibold text-[#007979]'
+                    : 'text-slate-700 hover:bg-slate-50'
+                "
                 [attr.aria-current]="item.id === store.lesson()?.id ? 'page' : null"
               >
                 <span
                   class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2"
-                  [ngClass]="store.completedIds().has(item.id) ? 'border-[#007979] bg-[#007979] text-white' : 'border-slate-200'"
+                  [ngClass]="
+                    store.completedIds().has(item.id)
+                      ? 'border-[#007979] bg-[#007979] text-white'
+                      : 'border-slate-200'
+                  "
                   aria-hidden="true"
                 >
                   @if (store.completedIds().has(item.id)) {
@@ -86,7 +130,9 @@ type ViewBlock =
 
         <div class="min-w-0">
           <!-- Where you are -->
-          <div class="lesson-progress-sticky sticky top-16 z-10 -mx-1 bg-slate-50/95 px-1 pb-3 pt-1 backdrop-blur">
+          <div
+            class="lesson-progress-sticky sticky top-16 z-10 -mx-1 bg-slate-50/95 px-2 pb-3 pt-1 backdrop-blur"
+          >
             <div class="flex justify-between gap-2 text-xs text-slate-500">
               <span>
                 @if (store.lessonIndex() >= 0) {
@@ -99,23 +145,42 @@ type ViewBlock =
               <span>{{ '{percent}% of course' | t: { percent: coursePercent() } }}</span>
             </div>
             <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200">
-              <div class="h-full rounded-full bg-gradient-to-r from-[#007979] to-[#2a835f] transition-all" [style.width.%]="coursePercent()"></div>
+              <div
+                class="h-full rounded-full bg-gradient-to-r from-[#007979] to-[#2a835f] transition-all"
+                [style.width.%]="coursePercent()"
+              ></div>
             </div>
           </div>
 
           @if (store.courseLoading() || store.lessonLoading()) {
-            <div class="h-96 max-w-3xl animate-pulse rounded-2xl bg-slate-200/70" aria-hidden="true"></div>
+            <div
+              class="h-96 max-w-3xl animate-pulse rounded-2xl bg-slate-200/70"
+              aria-hidden="true"
+            ></div>
           } @else if (store.courseError() || store.lessonError()) {
-            <div class="max-w-3xl rounded-2xl border border-slate-200 bg-white p-8 text-center" role="alert">
+            <div
+              class="max-w-3xl rounded-2xl border border-slate-200 bg-white p-8 text-center"
+              role="alert"
+            >
               <p class="text-slate-700">{{ (store.courseError() || store.lessonError())! | t }}</p>
-              <a [routerLink]="coursePath()" class="mt-3 inline-block font-semibold text-[#007979] hover:underline">{{ 'Back to the course' | t }}</a>
+              <a
+                [routerLink]="coursePath()"
+                class="mt-3 inline-block font-semibold text-[#007979] hover:underline"
+                >{{ 'Back to the course' | t }}</a
+              >
             </div>
           } @else if (store.lesson(); as lesson) {
-            <article class="max-w-5xl rounded-2xl border border-slate-200 bg-white py-5 sm:py-5">
+            <article class="max-w-5xl  border border-slate-200 bg-white py-5 sm:py-5">
               @if (moduleTitle()) {
-                <p class="px-5 text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ moduleTitle() }}</p>
+                <p class="px-5 text-[11px] font-bold uppercase tracking-wide text-[#007979]">
+                  {{ moduleTitle() }}
+                </p>
               }
-              <h1 class="px-5 mt-1 text-2xl font-bold leading-tight text-slate-900 sm:text-[1.75rem]">{{ lesson.title }}</h1>
+              <h1
+                class="px-5 mt-1 text-2xl font-bold leading-tight text-slate-900 sm:text-[1.75rem]"
+              >
+                {{ lesson.title }}
+              </h1>
 
               <div class="mt-5">
                 <mat-accordion class="block w-full" [multi]="true">
@@ -128,10 +193,11 @@ type ViewBlock =
                       (closed)="closeBlock($index)"
                     >
                       <mat-expansion-panel-header
-                        class="!min-h-14 !bg-slate-100 !px-4 hover:!bg-slate-200 sm:!px-5"
+                        class="!min-h-14 !bg-slate-100 !px-8 hover:!bg-slate-200 sm:!px-5 "
                       >
                         <mat-panel-title class="!m-0 !min-w-0 !items-center">
-                          <span class="truncate text-base font-bold text-slate-900 sm:text-lg">
+                          <span class="truncate text-base font-bold text-slate-900 sm:text-lg"
+                            >
                             @if (!expandedBlocks().has($index)) {
                               <span class="font-semibold text-slate-500">{{ 'Next:' | t }} </span>
                             }
@@ -140,7 +206,7 @@ type ViewBlock =
                         </mat-panel-title>
                       </mat-expansion-panel-header>
 
-                      <div class="px-1 pb-3 pt-4 sm:px-1">
+                      <div class="px-4 pb-3 pt-4 sm:px-0">
                         @if (block.kind === 'text') {
                           <div
                             class="text-[1.0625rem] leading-7 text-slate-800
@@ -157,7 +223,9 @@ type ViewBlock =
                           ></div>
                         } @else if (block.kind === 'tip') {
                           <aside class="flex gap-3 rounded-xl bg-amber-50 p-4 text-amber-900">
-                            <mat-icon class="shrink-0 text-amber-600" aria-hidden="true">lightbulb</mat-icon>
+                            <mat-icon class="shrink-0 text-amber-600" aria-hidden="true"
+                              >lightbulb</mat-icon
+                            >
                             <div
                               class="text-[0.975rem] leading-7 text-amber-900
                                 [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:font-bold
@@ -186,7 +254,9 @@ type ViewBlock =
                               loading="lazy"
                             />
                             @if (block.caption) {
-                              <figcaption class="mt-2 text-sm text-slate-500">{{ block.caption }}</figcaption>
+                              <figcaption class="mt-2 text-sm text-slate-500">
+                                {{ block.caption }}
+                              </figcaption>
                             }
                           </figure>
                         } @else if (block.kind === 'check') {
@@ -203,24 +273,54 @@ type ViewBlock =
                             </h2>
 
                             <div class="mt-4 space-y-6">
-                              @for (question of block.questions; track $index; let questionIndex = $index) {
+                              @for (
+                                question of block.questions;
+                                track $index;
+                                let questionIndex = $index
+                              ) {
                                 <div class="border-b border-slate-100 pb-5 last:border-0 last:pb-0">
                                   <p class="font-medium text-slate-800">
-                                    <span class="mr-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+                                    <span
+                                      class="mr-1 text-xs font-bold uppercase tracking-wide text-slate-500"
+                                    >
                                       {{ 'Question {0}' | t: [questionIndex + 1] }}
                                     </span>
                                     {{ question.question }}
                                   </p>
 
                                   <div class="mt-3 flex flex-col gap-2">
-                                    @for (option of question.options; track $index; let optionIndex = $index) {
+                                    @for (
+                                      option of question.options;
+                                      track $index;
+                                      let optionIndex = $index
+                                    ) {
                                       <button
                                         type="button"
                                         class="rounded-xl border px-3 py-2.5 text-left transition"
-                                        [ngClass]="optionClass(checkAnswerKey(block.index, questionIndex), optionIndex, question.answer)"
-                                        [disabled]="isSolved(checkAnswerKey(block.index, questionIndex), question.answer)"
-                                        [attr.aria-pressed]="selected()[checkAnswerKey(block.index, questionIndex)] === optionIndex"
-                                        (click)="choose(checkAnswerKey(block.index, questionIndex), optionIndex, question.answer)"
+                                        [ngClass]="
+                                          optionClass(
+                                            checkAnswerKey(block.index, questionIndex),
+                                            optionIndex,
+                                            question.answer
+                                          )
+                                        "
+                                        [disabled]="
+                                          isSolved(
+                                            checkAnswerKey(block.index, questionIndex),
+                                            question.answer
+                                          )
+                                        "
+                                        [attr.aria-pressed]="
+                                          selected()[checkAnswerKey(block.index, questionIndex)] ===
+                                          optionIndex
+                                        "
+                                        (click)="
+                                          choose(
+                                            checkAnswerKey(block.index, questionIndex),
+                                            optionIndex,
+                                            question.answer
+                                          )
+                                        "
                                       >
                                         {{ option }}
                                       </button>
@@ -228,10 +328,17 @@ type ViewBlock =
                                   </div>
 
                                   <div class="mt-2 min-h-5 text-sm" aria-live="polite">
-                                    @if (selected()[checkAnswerKey(block.index, questionIndex)] !== undefined) {
-                                      @if (selected()[checkAnswerKey(block.index, questionIndex)] === question.answer) {
+                                    @if (
+                                      selected()[checkAnswerKey(block.index, questionIndex)] !==
+                                      undefined
+                                    ) {
+                                      @if (
+                                        selected()[checkAnswerKey(block.index, questionIndex)] ===
+                                        question.answer
+                                      ) {
                                         <p class="text-[#007979]">
-                                          <strong>{{ 'Correct.' | t }}</strong> {{ question.explanation }}
+                                          <strong>{{ 'Correct.' | t }}</strong>
+                                          {{ question.explanation }}
                                         </p>
                                       } @else {
                                         <p class="text-rose-700">
@@ -252,7 +359,9 @@ type ViewBlock =
                 </mat-accordion>
               </div>
 
-              <div class="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
+              <div
+                class="mt-8 mx-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5"
+              >
                 @if (store.previousLesson(); as previous) {
                   <a
                     [routerLink]="[coursePath(), 'lessons', previous.id]"
@@ -271,13 +380,19 @@ type ViewBlock =
                   (click)="complete()"
                 >
                   {{ continueLabel() | t }}
-                  <mat-icon aria-hidden="true">{{ store.nextLesson() ? 'arrow_forward' : 'flag' }}</mat-icon>
+                  <mat-icon aria-hidden="true">{{
+                    store.nextLesson() ? 'arrow_forward' : 'flag'
+                  }}</mat-icon>
                 </button>
               </div>
               @if (!canContinue()) {
-                <p class="mt-2 text-right text-xs text-slate-500">{{ 'Answer the quick check to continue.' | t }}</p>
+                <p class="mt-2 mx-2 text-right text-xs text-slate-500">
+                  {{ 'Answer the quick check to continue.' | t }}
+                </p>
               } @else {
-                <p class="mt-2 text-right text-xs text-slate-500">{{ 'Your progress is saved when you continue.' | t }}</p>
+                <p class="mt-2 mx-2 text-right text-xs text-slate-500">
+                  {{ 'Your progress is saved when you continue.' | t }}
+                </p>
               }
             </article>
           }
@@ -308,13 +423,20 @@ export class LessonPlayerComponent {
   /** First answer per quick check: right or wrong. */
   private readonly firstTry = signal<Record<string, boolean>>({});
 
-  protected readonly coursePath = computed(() => `${this.context.basePath}/${this.store.course()?.id ?? this.courseId()}`);
+  protected readonly coursePath = computed(
+    () => `${this.context.basePath}/${this.store.course()?.id ?? this.courseId()}`,
+  );
 
   protected readonly coursePercent = computed(() => this.store.courseProgress()?.percent ?? 0);
 
   protected readonly moduleTitle = computed(() => {
     const lesson = this.store.lesson();
-    return this.store.course()?.modules.find((module) => module.lessons.some((item) => item.id === lesson?.id))?.title ?? '';
+    return (
+      this.store
+        .course()
+        ?.modules.find((module) => module.lessons.some((item) => item.id === lesson?.id))?.title ??
+      ''
+    );
   });
 
   protected readonly blocks = computed<ViewBlock[]>(() => {
@@ -325,32 +447,63 @@ export class LessonPlayerComponent {
         case 'tip':
           return { kind: 'tip', html: renderKnowledgeContent(block.text) };
         case 'video':
-          return { kind: 'media', mediaKind: 'video', url: block.url, start: block.start ?? 0, label: '', caption: block.caption ?? '' };
+          return {
+            kind: 'media',
+            mediaKind: 'video',
+            url: block.url,
+            start: block.start ?? 0,
+            label: '',
+            caption: block.caption ?? '',
+          };
         case 'audio':
-          return { kind: 'media', mediaKind: 'audio', url: block.url, start: 0, label: '', caption: block.caption ?? '' };
+          return {
+            kind: 'media',
+            mediaKind: 'audio',
+            url: block.url,
+            start: 0,
+            label: '',
+            caption: block.caption ?? '',
+          };
         case 'document':
-          return { kind: 'media', mediaKind: 'document', url: block.url, start: 0, label: block.title ?? '', caption: block.caption ?? '' };
+          return {
+            kind: 'media',
+            mediaKind: 'document',
+            url: block.url,
+            start: 0,
+            label: block.title ?? '',
+            caption: block.caption ?? '',
+          };
         case 'image':
-          return { kind: 'image', url: /^https:\/\//i.test(block.url) ? block.url : '', alt: block.alt, caption: block.caption ?? '' };
+          return {
+            kind: 'image',
+            url: /^https:\/\//i.test(block.url) ? block.url : '',
+            alt: block.alt,
+            caption: block.caption ?? '',
+          };
         case 'check':
           return {
             kind: 'check',
             index,
-            questions: ('questions' in block && Array.isArray(block.questions) && block.questions.length
-              ? block.questions
-              : [{
-                  question: 'question' in block ? block.question ?? '' : '',
-                  options: 'options' in block ? block.options ?? [] : [],
-                  answer: 'answer' in block ? block.answer ?? -1 : -1,
-                  explanation: 'explanation' in block ? block.explanation ?? '' : '',
-                }]),
+            questions:
+              'questions' in block && Array.isArray(block.questions) && block.questions.length
+                ? block.questions
+                : [
+                    {
+                      question: 'question' in block ? (block.question ?? '') : '',
+                      options: 'options' in block ? (block.options ?? []) : [],
+                      answer: 'answer' in block ? (block.answer ?? -1) : -1,
+                      explanation: 'explanation' in block ? (block.explanation ?? '') : '',
+                    },
+                  ],
           };
       }
     });
   });
 
   private readonly checks = computed(() =>
-    this.blocks().filter((block): block is Extract<ViewBlock, { kind: 'check' }> => block.kind === 'check'),
+    this.blocks().filter(
+      (block): block is Extract<ViewBlock, { kind: 'check' }> => block.kind === 'check',
+    ),
   );
 
   private readonly lessonDone = computed(() => {
@@ -359,12 +512,15 @@ export class LessonPlayerComponent {
   });
 
   /** Every quick check answered correctly (or the lesson was already done). */
-  protected readonly canContinue = computed(() =>
-    this.lessonDone() || this.checks().every((check) =>
-      check.questions.every((question, questionIndex) =>
-        this.selected()[this.checkAnswerKey(check.index, questionIndex)] === question.answer,
+  protected readonly canContinue = computed(
+    () =>
+      this.lessonDone() ||
+      this.checks().every((check) =>
+        check.questions.every(
+          (question, questionIndex) =>
+            this.selected()[this.checkAnswerKey(check.index, questionIndex)] === question.answer,
+        ),
       ),
-    ),
   );
 
   protected readonly continueLabel = computed(() => {
@@ -439,8 +595,7 @@ export class LessonPlayerComponent {
 
         const stickyProgress = document.querySelector<HTMLElement>('.lesson-progress-sticky');
         const stickyBottom = stickyProgress?.getBoundingClientRect().bottom ?? 112;
-        const targetTop =
-          window.scrollY + panel.getBoundingClientRect().top - stickyBottom - 16;
+        const targetTop = window.scrollY + panel.getBoundingClientRect().top - stickyBottom - 16;
 
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         window.scrollTo({
@@ -491,8 +646,10 @@ export class LessonPlayerComponent {
     }
 
     if (block.kind === 'media') {
-      return block.label || block.caption || (
-        block.mediaKind === 'video' ? 'Video' : block.mediaKind === 'audio' ? 'Audio' : 'Document'
+      return (
+        block.label ||
+        block.caption ||
+        (block.mediaKind === 'video' ? 'Video' : block.mediaKind === 'audio' ? 'Audio' : 'Document')
       );
     }
 
@@ -570,7 +727,8 @@ export class LessonPlayerComponent {
       })),
     );
     const score = questions.length
-      ? (questions.filter(({ key }) => this.firstTry()[key] === true).length / questions.length) * 100
+      ? (questions.filter(({ key }) => this.firstTry()[key] === true).length / questions.length) *
+        100
       : null;
 
     const alreadyCompleted = this.store.courseProgress()?.status === 'completed';
@@ -599,7 +757,9 @@ export class LessonPlayerComponent {
         await this.router.navigate([this.coursePath(), 'summary']);
       }
     } catch (error) {
-      this.toast.error(this.i18n.t((error as Error).message || 'Your progress could not be saved. Try again.'));
+      this.toast.error(
+        this.i18n.t((error as Error).message || 'Your progress could not be saved. Try again.'),
+      );
     }
   }
 }

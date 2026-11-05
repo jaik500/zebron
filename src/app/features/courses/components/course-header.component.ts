@@ -32,7 +32,7 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
   imports: [NgClass, RouterLink, MatFormFieldModule, MatIconModule, MatInputModule, TranslatePipe],
   template: `
     <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" [ngClass]="showTabs() ? 'pt-3' : 'py-2'">
+      <div class="mx-auto max-w-7xl px-4 sm:px-2 lg:px-8" [ngClass]="showTabs() ? 'pt-3' : 'py-2'">
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
           @if (backLink()) {
             <a
