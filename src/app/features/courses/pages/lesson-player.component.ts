@@ -111,11 +111,11 @@ type ViewBlock =
               <a [routerLink]="coursePath()" class="mt-3 inline-block font-semibold text-[#007979] hover:underline">{{ 'Back to the course' | t }}</a>
             </div>
           } @else if (store.lesson(); as lesson) {
-            <article class="max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 sm:p-8">
+            <article class="max-w-5xl rounded-2xl border border-slate-200 bg-white py-5 sm:py-5">
               @if (moduleTitle()) {
-                <p class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ moduleTitle() }}</p>
+                <p class="px-5 text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ moduleTitle() }}</p>
               }
-              <h1 class="mt-1 text-2xl font-bold leading-tight text-slate-900 sm:text-[1.75rem]">{{ lesson.title }}</h1>
+              <h1 class="px-5 mt-1 text-2xl font-bold leading-tight text-slate-900 sm:text-[1.75rem]">{{ lesson.title }}</h1>
 
               <div class="mt-5">
                 <mat-accordion class="block w-full" [multi]="true">
@@ -131,13 +131,16 @@ type ViewBlock =
                         class="!min-h-14 !bg-slate-100 !px-4 hover:!bg-slate-200 sm:!px-5"
                       >
                         <mat-panel-title class="!m-0 !min-w-0 !items-center">
-                          <span class="truncate text-sm font-semibold text-slate-800">
+                          <span class="truncate text-base font-bold text-slate-900 sm:text-lg">
+                            @if (!expandedBlocks().has($index)) {
+                              <span class="font-semibold text-slate-500">{{ 'Next:' | t }} </span>
+                            }
                             {{ blockTitle(block, $index) }}
                           </span>
                         </mat-panel-title>
                       </mat-expansion-panel-header>
 
-                      <div class="px-1 pb-3 pt-4 sm:px-2">
+                      <div class="px-1 pb-3 pt-4 sm:px-1">
                         @if (block.kind === 'text') {
                           <div
                             class="text-[1.0625rem] leading-7 text-slate-800
@@ -147,10 +150,10 @@ type ViewBlock =
                               [&_ol]:mb-4 [&_ol]:ml-6 [&_ol]:list-decimal [&_li]:my-1
                               [&_a]:text-teal-700 [&_a]:underline
                               [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-sm
-                              [&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-slate-900 [&_pre]:p-4 [&_pre]:text-slate-50
+                              [&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-slate-900 [&_pre]:p-3 [&_pre]:text-slate-50
                               [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-inherit
                               [&>*:last-child]:mb-0"
-                            [innerHTML]="block.html"
+                            [innerHTML]="blockContentHtml(block, $index)"
                           ></div>
                         } @else if (block.kind === 'tip') {
                           <aside class="flex gap-3 rounded-xl bg-amber-50 p-4 text-amber-900">
@@ -498,6 +501,33 @@ export class LessonPlayerComponent {
     }
 
     return 'Quick check';
+  }
+
+  /**
+   * The first heading is already represented by the expansion-panel header.
+   * Remove it from the expanded text only when it matches that header title.
+   */
+  protected blockContentHtml(block: Extract<ViewBlock, { kind: 'text' }>, index: number): string {
+    const match = block.html.match(/^\s*(<h[1-6]\b[^>]*>[\s\S]*?<\/h[1-6]>)/i);
+    if (!match) {
+      return block.html;
+    }
+
+    const headingText = match[1]
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&#39;|&apos;/gi, "'")
+      .replace(/&quot;/gi, '"')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const headerText = this.blockTitle(block, index).replace(/\s+/g, ' ').trim();
+    return headingText.toLocaleLowerCase() === headerText.toLocaleLowerCase()
+      ? block.html.slice(match[0].length)
+      : block.html;
   }
 
   protected checkAnswerKey(blockIndex: number, questionIndex: number): string {
