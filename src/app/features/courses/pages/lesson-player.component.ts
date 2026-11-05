@@ -69,7 +69,7 @@ type ViewBlock =
     LessonMediaComponent,
   ],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen w-full min-w-0 overflow-x-clip bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
         [backLink]="coursePath()"
@@ -84,7 +84,7 @@ type ViewBlock =
         ]"
       />
 
-      <div class="mx-auto grid max-w-7xl gap-6 py-5 sm:px-2 lg:grid-cols-[270px_1fr] lg:px-8">
+      <div class="mx-auto grid w-full min-w-0 max-w-[1720px] grid-cols-[minmax(0,1fr)] gap-4 px-3 py-5 sm:gap-5 sm:px-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6 lg:px-6 2xl:px-8">
         <!-- Outline (wide screens) -->
         <nav
           class="hidden self-start rounded-2xl border border-slate-200 bg-white p-3 lg:sticky lg:top-20 lg:block"
@@ -128,7 +128,7 @@ type ViewBlock =
           }
         </nav>
 
-        <div class="min-w-0">
+        <div class="w-full min-w-0">
           <!-- Where you are -->
           <div
             class="lesson-progress-sticky sticky top-16 z-10 -mx-1 bg-slate-50/95 px-2 pb-3 pt-1 backdrop-blur"
@@ -170,7 +170,7 @@ type ViewBlock =
               >
             </div>
           } @else if (store.lesson(); as lesson) {
-            <article class="max-w-5xl  border border-slate-200 bg-white py-5 sm:py-5">
+            <article class="w-full min-w-0 max-w-none overflow-hidden rounded-xl border border-slate-200 bg-white py-5">
               @if (moduleTitle()) {
                 <p class="px-5 text-[11px] font-bold uppercase tracking-wide text-[#007979]">
                   {{ moduleTitle() }}
@@ -182,18 +182,18 @@ type ViewBlock =
                 {{ lesson.title }}
               </h1>
 
-              <div class="mt-5">
-                <mat-accordion class="block w-full" [multi]="true">
+              <div class="mt-5 w-full min-w-0">
+                <mat-accordion class="block w-full min-w-0" [multi]="true">
                   @for (block of blocks(); track $index) {
                     <mat-expansion-panel
                       [attr.id]="'lesson-block-' + $index"
-                      class="!mb-2 !scroll-mt-32 !overflow-hidden !rounded-xl !border !border-slate-200 !bg-white !shadow-none"
+                      class="!mb-2 !w-full !min-w-0 !scroll-mt-32 !overflow-hidden !rounded-xl !border !border-slate-200 !bg-white !shadow-none"
                       [expanded]="expandedBlocks().has($index)"
                       (opened)="openBlock($index)"
                       (closed)="closeBlock($index)"
                     >
                       <mat-expansion-panel-header
-                        class="!min-h-14 !bg-slate-100 !px-8 hover:!bg-slate-200 sm:!px-5 "
+                        class="!min-h-14 !w-full !bg-slate-100 !px-4 hover:!bg-slate-200 sm:!px-5"
                       >
                         <mat-panel-title class="!m-0 !min-w-0 !items-center">
                           <span class="truncate text-base font-bold text-slate-900 sm:text-lg"
@@ -206,28 +206,28 @@ type ViewBlock =
                         </mat-panel-title>
                       </mat-expansion-panel-header>
 
-                      <div class="px-4 pb-3 pt-4 sm:px-0">
+                      <div class="w-full min-w-0 px-3 pb-3 pt-4 sm:px-4">
                         @if (block.kind === 'text') {
                           <div
-                            class="text-[1.0625rem] leading-7 text-slate-800
+                            class="min-w-0 break-words [overflow-wrap:anywhere] text-[1.0625rem] leading-7 text-slate-800
                               [&_h2]:mb-2 [&_h2]:mt-7 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-900
                               [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-slate-900
                               [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:ml-6 [&_ul]:list-disc
                               [&_ol]:mb-4 [&_ol]:ml-6 [&_ol]:list-decimal [&_li]:my-1
                               [&_a]:text-teal-700 [&_a]:underline
                               [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-sm
-                              [&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-slate-900 [&_pre]:p-3 [&_pre]:text-slate-50
+                              [&_pre]:mb-4 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-slate-900 [&_pre]:p-3 [&_pre]:text-slate-50
                               [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-inherit
                               [&>*:last-child]:mb-0"
                             [innerHTML]="blockContentHtml(block, $index)"
                           ></div>
                         } @else if (block.kind === 'tip') {
-                          <aside class="flex gap-3 rounded-xl bg-amber-50 p-4 text-amber-900">
+                          <aside class="flex min-w-0 gap-3 rounded-xl bg-amber-50 p-3 text-amber-900 sm:p-4">
                             <mat-icon class="shrink-0 text-amber-600" aria-hidden="true"
                               >lightbulb</mat-icon
                             >
                             <div
-                              class="text-[0.975rem] leading-7 text-amber-900
+                              class="min-w-0 break-words [overflow-wrap:anywhere] text-[0.975rem] leading-7 text-amber-900
                                 [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:font-bold
                                 [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:font-bold
                                 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:ml-6 [&_ul]:list-disc
@@ -360,7 +360,7 @@ type ViewBlock =
               </div>
 
               <div
-                class="mt-8 mx-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5"
+                class="mx-3 mt-8 flex min-w-0 flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5 sm:mx-4"
               >
                 @if (store.previousLesson(); as previous) {
                   <a
@@ -375,7 +375,7 @@ type ViewBlock =
 
                 <button
                   type="button"
-                  class="inline-flex h-11 items-center gap-1 rounded-lg bg-[#007979] px-5 font-semibold text-white transition hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex h-11 max-w-full items-center justify-center gap-1 rounded-lg bg-[#007979] px-4 font-semibold text-white transition hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
                   [disabled]="!canContinue() || store.saving()"
                   (click)="complete()"
                 >
