@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { HotToastService } from '@ngxpert/hot-toast';
 
 import { I18nService } from '../../../core/i18n/i18n.service';
@@ -24,8 +25,16 @@ type ViewBlock =
   | { kind: 'tip'; html: string }
   | { kind: 'media'; mediaKind: 'video' | 'audio' | 'document'; url: string; start: number; label: string; caption: string }
   | { kind: 'image'; url: string; alt: string; caption: string }
-  | { kind: 'check'; index: number; question: string; options: string[]; answer: number; explanation: string };
-
+  | {
+    kind: 'check';
+    index: number;
+    questions: {
+      question: string;
+      options: string[];
+      answer: number;
+      explanation?: string;
+    }[];
+  }
 /**
  * The lesson player: course outline on the left (wide screens), the lesson
  * in a readable column, quick checks that must be answered correctly before
@@ -35,23 +44,7 @@ type ViewBlock =
   selector: 'app-lesson-player',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent, LessonMediaComponent],
-  styles: [
-    `
-      :host ::ng-deep .lesson-prose { font-size: 1.0625rem; line-height: 1.75; color: #1e293b; }
-      :host ::ng-deep .lesson-prose h2 { font-size: 1.3rem; font-weight: 700; margin: 1.75rem 0 0.5rem; color: #032d42; }
-      :host ::ng-deep .lesson-prose h3 { font-size: 1.1rem; font-weight: 700; margin: 1.25rem 0 0.4rem; color: #032d42; }
-      :host ::ng-deep .lesson-prose p { margin: 0 0 1rem; }
-      :host ::ng-deep .lesson-prose ul { list-style: disc; margin: 0 0 1rem 1.4rem; }
-      :host ::ng-deep .lesson-prose ol { list-style: decimal; margin: 0 0 1rem 1.4rem; }
-      :host ::ng-deep .lesson-prose li { margin: 0.25rem 0; }
-      :host ::ng-deep .lesson-prose a { color: #007979; text-decoration: underline; }
-      :host ::ng-deep .lesson-prose code { background: #f1f5f9; border-radius: 4px; padding: 0.1rem 0.35rem; font-size: 0.9em; }
-      :host ::ng-deep .lesson-prose pre { background: #0f172a; color: #f8fafc; border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 0 0 1rem; }
-      :host ::ng-deep .lesson-prose pre code { background: transparent; padding: 0; color: inherit; }
-      :host ::ng-deep .lesson-prose > :last-child { margin-bottom: 0; }
-    `,
-  ],
+  imports: [NgClass, RouterLink, MatIconModule, MatExpansionModule, TranslatePipe, CourseHeaderComponent, LessonMediaComponent],
   template: `
     <main class="mt-16 min-h-screen bg-slate-50">
       <app-course-header
@@ -93,7 +86,7 @@ type ViewBlock =
 
         <div class="min-w-0">
           <!-- Where you are -->
-          <div class="sticky top-16 z-10 -mx-1 bg-slate-50/95 px-1 pb-3 pt-1 backdrop-blur">
+          <div class="lesson-progress-sticky sticky top-16 z-10 -mx-1 bg-slate-50/95 px-1 pb-3 pt-1 backdrop-blur">
             <div class="flex justify-between gap-2 text-xs text-slate-500">
               <span>
                 @if (store.lessonIndex() >= 0) {
@@ -124,66 +117,136 @@ type ViewBlock =
               }
               <h1 class="mt-1 text-2xl font-bold leading-tight text-slate-900 sm:text-[1.75rem]">{{ lesson.title }}</h1>
 
-              <div class="mt-5 flex flex-col gap-5">
-                @for (block of blocks(); track $index) {
-                  @if (block.kind === 'text') {
-                      <div class="lesson-prose" [innerHTML]="block.html"></div>
-                  } @else if (block.kind === 'tip') {
-                      <aside class="flex gap-3 rounded-xl bg-amber-50 p-4 text-amber-900">
-                        <mat-icon class="shrink-0 text-amber-600" aria-hidden="true">lightbulb</mat-icon>
-                        <div class="lesson-prose !text-[0.975rem] !text-amber-900" [innerHTML]="block.html"></div>
-                      </aside>
-                  } @else if (block.kind === 'media') {
-                      <app-lesson-media
-                        [kind]="block.mediaKind"
-                        [url]="block.url"
-                        [start]="block.start"
-                        [label]="block.label"
-                        [caption]="block.caption"
-                      />
-                  } @else if (block.kind === 'image') {
-                      <figure>
-                        <img [src]="block.url" [alt]="block.alt" class="w-full rounded-xl border border-slate-200" loading="lazy" />
-                        @if (block.caption) {
-                          <figcaption class="mt-2 text-sm text-slate-500">{{ block.caption }}</figcaption>
-                        }
-                      </figure>
-                  } @else if (block.kind === 'check') {
-                      <section class="rounded-xl border-2 border-teal-100 p-4 sm:p-5" [attr.aria-labelledby]="'check-' + block.index">
-                        <h2 [id]="'check-' + block.index" class="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                          <mat-icon class="text-[#007979]" aria-hidden="true">quiz</mat-icon>{{ 'Quick check' | t }}
-                        </h2>
-                        <p class="mt-2 text-slate-800">{{ block.question }}</p>
-                        <div class="mt-3 flex flex-col gap-2">
-                          @for (option of block.options; track $index; let optionIndex = $index) {
-                            <button
-                              type="button"
-                              class="rounded-xl border px-3 py-2.5 text-left transition"
-                              [ngClass]="optionClass(block.index, optionIndex, block.answer)"
-                              [disabled]="isSolved(block.index)"
-                              [attr.aria-pressed]="selected()[block.index] === optionIndex"
-                              (click)="choose(block.index, optionIndex, block.answer)"
-                            >
-                              {{ option }}
-                            </button>
-                          }
-                        </div>
-                        <div class="mt-2 min-h-5 text-sm" aria-live="polite">
-                          @if (selected()[block.index] !== undefined) {
-                            @if (selected()[block.index] === block.answer) {
-                              <p class="text-[#007979]">
-                                <strong>{{ 'Correct.' | t }}</strong> {{ block.explanation }}
-                              </p>
-                            } @else {
-                              <p class="text-rose-700">
-                                <strong>{{ 'Not quite.' | t }}</strong> {{ 'Have another look and try again.' | t }}
-                              </p>
+              <div class="mt-5">
+                <mat-accordion class="block w-full" [multi]="true">
+                  @for (block of blocks(); track $index) {
+                    <mat-expansion-panel
+                      [attr.id]="'lesson-block-' + $index"
+                      class="!mb-2 !scroll-mt-32 !overflow-hidden !rounded-xl !border !border-slate-200 !bg-white !shadow-none"
+                      [expanded]="expandedBlocks().has($index)"
+                      (opened)="openBlock($index)"
+                      (closed)="closeBlock($index)"
+                    >
+                      <mat-expansion-panel-header
+                        class="!min-h-14 !bg-slate-100 !px-4 hover:!bg-slate-200 sm:!px-5"
+                      >
+                        <mat-panel-title class="!m-0 !min-w-0 !items-center">
+                          <span class="truncate text-sm font-semibold text-slate-800">
+                            {{ blockTitle(block, $index) }}
+                          </span>
+                        </mat-panel-title>
+                      </mat-expansion-panel-header>
+
+                      <div class="px-1 pb-3 pt-4 sm:px-2">
+                        @if (block.kind === 'text') {
+                          <div
+                            class="text-[1.0625rem] leading-7 text-slate-800
+                              [&_h2]:mb-2 [&_h2]:mt-7 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-900
+                              [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-slate-900
+                              [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:ml-6 [&_ul]:list-disc
+                              [&_ol]:mb-4 [&_ol]:ml-6 [&_ol]:list-decimal [&_li]:my-1
+                              [&_a]:text-teal-700 [&_a]:underline
+                              [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-sm
+                              [&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-slate-900 [&_pre]:p-4 [&_pre]:text-slate-50
+                              [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-inherit
+                              [&>*:last-child]:mb-0"
+                            [innerHTML]="block.html"
+                          ></div>
+                        } @else if (block.kind === 'tip') {
+                          <aside class="flex gap-3 rounded-xl bg-amber-50 p-4 text-amber-900">
+                            <mat-icon class="shrink-0 text-amber-600" aria-hidden="true">lightbulb</mat-icon>
+                            <div
+                              class="text-[0.975rem] leading-7 text-amber-900
+                                [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:font-bold
+                                [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:font-bold
+                                [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:ml-6 [&_ul]:list-disc
+                                [&_ol]:mb-3 [&_ol]:ml-6 [&_ol]:list-decimal
+                                [&_a]:text-teal-800 [&_a]:underline
+                                [&>*:last-child]:mb-0"
+                              [innerHTML]="block.html"
+                            ></div>
+                          </aside>
+                        } @else if (block.kind === 'media') {
+                          <app-lesson-media
+                            [kind]="block.mediaKind"
+                            [url]="block.url"
+                            [start]="block.start"
+                            [label]="block.label"
+                            [caption]="block.caption"
+                          />
+                        } @else if (block.kind === 'image') {
+                          <figure>
+                            <img
+                              [src]="block.url"
+                              [alt]="block.alt"
+                              class="w-full rounded-xl border border-slate-200"
+                              loading="lazy"
+                            />
+                            @if (block.caption) {
+                              <figcaption class="mt-2 text-sm text-slate-500">{{ block.caption }}</figcaption>
                             }
-                          }
-                        </div>
-                      </section>
+                          </figure>
+                        } @else if (block.kind === 'check') {
+                          <section
+                            class="rounded-xl border-2 border-teal-100 p-4 sm:p-5"
+                            [attr.aria-labelledby]="'check-' + block.index"
+                          >
+                            <h2
+                              [id]="'check-' + block.index"
+                              class="flex items-center gap-2 text-sm font-semibold text-slate-900"
+                            >
+                              <mat-icon class="text-[#007979]" aria-hidden="true">quiz</mat-icon>
+                              {{ 'Quick check' | t }}
+                            </h2>
+
+                            <div class="mt-4 space-y-6">
+                              @for (question of block.questions; track $index; let questionIndex = $index) {
+                                <div class="border-b border-slate-100 pb-5 last:border-0 last:pb-0">
+                                  <p class="font-medium text-slate-800">
+                                    <span class="mr-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+                                      {{ 'Question {0}' | t: [questionIndex + 1] }}
+                                    </span>
+                                    {{ question.question }}
+                                  </p>
+
+                                  <div class="mt-3 flex flex-col gap-2">
+                                    @for (option of question.options; track $index; let optionIndex = $index) {
+                                      <button
+                                        type="button"
+                                        class="rounded-xl border px-3 py-2.5 text-left transition"
+                                        [ngClass]="optionClass(checkAnswerKey(block.index, questionIndex), optionIndex, question.answer)"
+                                        [disabled]="isSolved(checkAnswerKey(block.index, questionIndex), question.answer)"
+                                        [attr.aria-pressed]="selected()[checkAnswerKey(block.index, questionIndex)] === optionIndex"
+                                        (click)="choose(checkAnswerKey(block.index, questionIndex), optionIndex, question.answer)"
+                                      >
+                                        {{ option }}
+                                      </button>
+                                    }
+                                  </div>
+
+                                  <div class="mt-2 min-h-5 text-sm" aria-live="polite">
+                                    @if (selected()[checkAnswerKey(block.index, questionIndex)] !== undefined) {
+                                      @if (selected()[checkAnswerKey(block.index, questionIndex)] === question.answer) {
+                                        <p class="text-[#007979]">
+                                          <strong>{{ 'Correct.' | t }}</strong> {{ question.explanation }}
+                                        </p>
+                                      } @else {
+                                        <p class="text-rose-700">
+                                          <strong>{{ 'Not quite.' | t }}</strong>
+                                          {{ 'Have another look and try again.' | t }}
+                                        </p>
+                                      }
+                                    }
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          </section>
+                        }
+                      </div>
+                    </mat-expansion-panel>
                   }
-                }
+                </mat-accordion>
               </div>
 
               <div class="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
@@ -233,9 +296,14 @@ export class LessonPlayerComponent {
   private readonly courseId = signal(this.route.snapshot.paramMap.get('courseId') ?? '');
 
   /** Chosen option per quick check (by block index). */
-  protected readonly selected = signal<Record<number, number>>({});
+  protected readonly selected = signal<Record<string, number>>({});
+  /** Expanded lesson sections. The first section opens when a lesson loads. */
+  protected readonly expandedBlocks = signal<Set<number>>(new Set([0]));
+  /** Temporarily highlights the section that has just received focus. */
+  protected readonly focusedBlock = signal<number | null>(null);
+  private focusHighlightTimer: number | undefined;
   /** First answer per quick check: right or wrong. */
-  private readonly firstTry = signal<Record<number, boolean>>({});
+  private readonly firstTry = signal<Record<string, boolean>>({});
 
   protected readonly coursePath = computed(() => `${this.context.basePath}/${this.store.course()?.id ?? this.courseId()}`);
 
@@ -265,10 +333,14 @@ export class LessonPlayerComponent {
           return {
             kind: 'check',
             index,
-            question: block.question,
-            options: block.options,
-            answer: block.answer,
-            explanation: block.explanation ?? '',
+            questions: ('questions' in block && Array.isArray(block.questions) && block.questions.length
+              ? block.questions
+              : [{
+                  question: 'question' in block ? block.question ?? '' : '',
+                  options: 'options' in block ? block.options ?? [] : [],
+                  answer: 'answer' in block ? block.answer ?? -1 : -1,
+                  explanation: 'explanation' in block ? block.explanation ?? '' : '',
+                }]),
           };
       }
     });
@@ -284,8 +356,12 @@ export class LessonPlayerComponent {
   });
 
   /** Every quick check answered correctly (or the lesson was already done). */
-  protected readonly canContinue = computed(
-    () => this.lessonDone() || this.checks().every((check) => this.selected()[check.index] === check.answer),
+  protected readonly canContinue = computed(() =>
+    this.lessonDone() || this.checks().every((check) =>
+      check.questions.every((question, questionIndex) =>
+        this.selected()[this.checkAnswerKey(check.index, questionIndex)] === question.answer,
+      ),
+    ),
   );
 
   protected readonly continueLabel = computed(() => {
@@ -319,6 +395,7 @@ export class LessonPlayerComponent {
       this.courseId.set(courseId);
       this.selected.set({});
       this.firstTry.set({});
+      this.expandedBlocks.set(new Set([0]));
       void this.load(courseId, lessonId);
     });
   }
@@ -329,20 +406,117 @@ export class LessonPlayerComponent {
     window.scrollTo({ top: 0 });
   }
 
-  protected isSolved(index: number): boolean {
-    const check = this.checks().find((item) => item.index === index);
-    return !!check && this.selected()[index] === check.answer;
-  }
+  /** Add an index and move focus to a newly opened section after its panel animation. */
+  protected openBlock(index: number): void {
+    this.expandedBlocks.update((current) => new Set(current).add(index));
 
-  protected choose(index: number, option: number, answer: number): void {
-    if (this.firstTry()[index] === undefined) {
-      this.firstTry.update((current) => ({ ...current, [index]: option === answer }));
+    // The first section is opened automatically when a lesson loads. Only
+    // user-opened sections need the guided focus/scroll transition.
+    if (index === 0) {
+      return;
     }
-    this.selected.update((current) => ({ ...current, [index]: option }));
+
+    // Angular Material emits (opened) after the expansion animation completes.
+    // Two animation frames let the browser settle the final panel geometry
+    // before measuring and performing one deliberate scroll.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const panel = document.getElementById(`lesson-block-${index}`);
+        if (!panel || !this.expandedBlocks().has(index)) {
+          return;
+        }
+
+        const heading = panel.querySelector<HTMLElement>('.mat-expansion-panel-header');
+        if (!heading) {
+          return;
+        }
+
+        // Focus without allowing the browser to perform a second, implicit scroll.
+        heading.focus({ preventScroll: true });
+
+        const stickyProgress = document.querySelector<HTMLElement>('.lesson-progress-sticky');
+        const stickyBottom = stickyProgress?.getBoundingClientRect().bottom ?? 112;
+        const targetTop =
+          window.scrollY + panel.getBoundingClientRect().top - stickyBottom - 16;
+
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        window.scrollTo({
+          top: Math.max(0, targetTop),
+          behavior: reduceMotion ? 'auto' : 'smooth',
+        });
+
+        this.focusedBlock.set(index);
+        if (this.focusHighlightTimer !== undefined) {
+          window.clearTimeout(this.focusHighlightTimer);
+        }
+        this.focusHighlightTimer = window.setTimeout(() => {
+          this.focusedBlock.set(null);
+          this.focusHighlightTimer = undefined;
+        }, 1400);
+      });
+    });
   }
 
-  protected optionClass(index: number, option: number, answer: number): string {
-    const chosen = this.selected()[index];
+  protected closeBlock(index: number): void {
+    this.expandedBlocks.update((current) => {
+      const next = new Set(current);
+      next.delete(index);
+      return next;
+    });
+  }
+
+  /** Prefer a heading authored in the lesson content for the collapsed title. */
+  protected blockTitle(block: ViewBlock, index: number): string {
+    if (block.kind === 'text' || block.kind === 'tip') {
+      const heading = block.html.match(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/i)?.[1];
+      if (heading) {
+        const title = heading
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&amp;/gi, '&')
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/&#39;|&apos;/gi, "'")
+          .replace(/&quot;/gi, '"')
+          .replace(/\\s+/g, ' ')
+          .trim();
+        if (title) {
+          return title;
+        }
+      }
+      return block.kind === 'tip' ? 'Key takeaway' : `Reading section ${index + 1}`;
+    }
+
+    if (block.kind === 'media') {
+      return block.label || block.caption || (
+        block.mediaKind === 'video' ? 'Video' : block.mediaKind === 'audio' ? 'Audio' : 'Document'
+      );
+    }
+
+    if (block.kind === 'image') {
+      return block.caption || 'Image';
+    }
+
+    return 'Quick check';
+  }
+
+  protected checkAnswerKey(blockIndex: number, questionIndex: number): string {
+    return `${blockIndex}:${questionIndex}`;
+  }
+
+  protected isSolved(key: string, answer: number): boolean {
+    return this.selected()[key] === answer;
+  }
+
+  protected choose(key: string, option: number, answer: number): void {
+    if (this.firstTry()[key] === undefined) {
+      this.firstTry.update((current) => ({ ...current, [key]: option === answer }));
+    }
+    this.selected.update((current) => ({ ...current, [key]: option }));
+  }
+
+  protected optionClass(key: string, option: number, answer: number): string {
+    const chosen = this.selected()[key];
 
     if (chosen === option) {
       return option === answer
@@ -360,9 +534,13 @@ export class LessonPlayerComponent {
       return;
     }
 
-    const checks = this.checks();
-    const score = checks.length
-      ? (checks.filter((check) => this.firstTry()[check.index] === true).length / checks.length) * 100
+    const questions = this.checks().flatMap((check) =>
+      check.questions.map((question, questionIndex) => ({
+        key: this.checkAnswerKey(check.index, questionIndex),
+      })),
+    );
+    const score = questions.length
+      ? (questions.filter(({ key }) => this.firstTry()[key] === true).length / questions.length) * 100
       : null;
 
     const alreadyCompleted = this.store.courseProgress()?.status === 'completed';

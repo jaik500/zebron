@@ -127,7 +127,32 @@ export type LessonBlock =
   | { type: 'document'; url: string; title?: string; caption?: string }
   | { type: 'image'; url: string; alt: string; caption?: string }
   | { type: 'tip'; text: string }
-  | { type: 'check'; question: string; options: string[]; answer: number; explanation?: string };
+  | {
+      type: 'check';
+      /** New format: several questions in one Quick Check block. */
+      questions: LessonCheckQuestion[];
+      question?: never;
+      options?: never;
+      answer?: never;
+      explanation?: never;
+    }
+  | {
+      type: 'check';
+      /** Legacy single-question format remains supported for existing lessons. */
+      question: string;
+      options: string[];
+      answer: number;
+      explanation?: string;
+      questions?: never;
+    };
+
+export interface LessonCheckQuestion {
+  question: string;
+  options: string[];
+  /** Zero-based index of the correct option. */
+  answer: number;
+  explanation?: string;
+}
 
 export type LessonBlockType = LessonBlock['type'];
 

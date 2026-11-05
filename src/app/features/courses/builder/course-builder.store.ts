@@ -139,7 +139,10 @@ export function emptyBlock(type: LessonBlockType): LessonBlock {
     case 'image':
       return { type: 'image', url: '', alt: '', caption: '' };
     case 'check':
-      return { type: 'check', question: '', options: ['', ''], answer: 0, explanation: '' };
+      return {
+        type: 'check',
+        questions: [{ question: '', options: ['', ''], answer: 0, explanation: '' }],
+      };
   }
 }
 
@@ -165,10 +168,27 @@ function publishProblems(details: DraftDetails, modules: DraftModule[], lessonMa
     }
     lesson.blocks.forEach((block) => {
       if (block.type === 'check') {
-        const options = block.options.map((option) => option.trim());
-        if (!block.question.trim() || options.filter(Boolean).length < 2 || !options[block.answer]) {
-          problems.push(`"${name}": finish its quick check (a question, two answers and the right one marked).`);
+        const questions = 'questions' in block && block.questions
+          ? block.questions
+          : [{
+              question: block.question ?? '',
+              options: block.options ?? ['', ''],
+              answer: block.answer ?? 0,
+              explanation: block.explanation ?? '',
+            }];
+
+        if (!questions.length) {
+          problems.push(`"${name}": add at least one question to its Quick Check.`);
         }
+
+        questions.forEach((question, questionIndex) => {
+          const options = question.options.map((option) => option.trim());
+          if (!question.question.trim() || options.filter(Boolean).length < 2 || !options[question.answer]) {
+            problems.push(
+              `"${name}": finish Quick Check question ${questionIndex + 1} (a question, two answers and the right one marked).`,
+            );
+          }
+        });
       }
       if ((block.type === 'video' || block.type === 'audio' || block.type === 'document' || block.type === 'image') && !/^https:\/\//i.test(block.url.trim())) {
         problems.push(`"${name}": a ${block.type} block needs an https:// link.`);
@@ -194,14 +214,29 @@ function cleanBlock(block: LessonBlock): LessonBlock {
     case 'image':
       return { type: 'image', url: block.url.trim(), alt: block.alt.trim(), caption: block.caption?.trim() ?? '' };
     case 'check': {
-      const kept = block.options.map((option, index) => ({ option: option.trim(), index })).filter((item) => item.option);
-      const answer = Math.max(0, kept.findIndex((item) => item.index === block.answer));
+      const questions = 'questions' in block && block.questions
+        ? block.questions
+        : [{
+            question: block.question ?? '',
+            options: block.options ?? ['', ''],
+            answer: block.answer ?? 0,
+            explanation: block.explanation ?? '',
+          }];
+
       return {
         type: 'check',
-        question: block.question.trim(),
-        options: kept.map((item) => item.option),
-        answer,
-        explanation: block.explanation?.trim() ?? '',
+        questions: questions.map((question) => {
+          const kept = question.options
+            .map((option, index) => ({ option: option.trim(), index }))
+            .filter((item) => item.option);
+          const answer = Math.max(0, kept.findIndex((item) => item.index === question.answer));
+          return {
+            question: question.question.trim(),
+            options: kept.map((item) => item.option),
+            answer,
+            explanation: question.explanation?.trim() ?? '',
+          };
+        }),
       };
     }
   }

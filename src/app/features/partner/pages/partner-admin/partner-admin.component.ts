@@ -82,6 +82,14 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             </button>
 
             <mat-menu #dashboardMenu="matMenu">
+              <div
+                      class="inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 mx-1 px-4 py-2 text-sm font-semibold text-[#007979]"
+                    >
+                      {{ 'Role:' | t }}
+                      <span class="font-medium text-gray-700">
+                        {{ roleLabel() | t }}
+                      </span>
+                    </div>
               <a mat-menu-item routerLink="/profile">
                 <mat-icon>person</mat-icon>
                 <span>{{ 'Profile' | t }}</span>
@@ -107,6 +115,10 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                   <span>{{ 'Administration' | t }}</span>
                 </a>
               }
+               <a mat-menu-item routerLink="/support">
+                  <mat-icon>support_agent</mat-icon>
+                  <span>{{ 'Help & Support' | t }}</span>
+                </a>
             </mat-menu>
           </div>
         </div>
@@ -257,8 +269,8 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
               <!-- Operational search is available after onboarding only. -->
               @if (canShowOperationalWorkspace()) {
 
-<div class="relative mt-4">
-  <mat-form-field appearance="outline" class="zb-field zb-field--flush w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
+<div class="relative mt-3">
+  <mat-form-field appearance="outline" class="zb-field zb-field--flush w-full sm:max-w-xl zb-search" subscriptSizing="dynamic">
     <mat-label>{{ 'Search partner resources' | t }}</mat-label>
     <mat-icon matPrefix aria-hidden="true">search</mat-icon>
     <input matInput
@@ -385,7 +397,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
             <!-- The whole card opens Profile (stretched link); Help & Support sits above it. -->
             <div
-              class="group relative block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md lg:min-w-[250px]"
+              class="hidden md:block group relative block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md lg:min-w-[250px]"
             >
               <div class="flex items-start justify-between gap-4">
                 <div>

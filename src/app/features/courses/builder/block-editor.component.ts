@@ -22,6 +22,7 @@ export const BLOCK_META: Record<LessonBlock['type'], { label: string; icon: stri
 };
 
 const MAX_OPTIONS = 6;
+const MAX_QUESTIONS = 20;
 
 /** Edit one lesson block. Every change is emitted as a whole new block. */
 @Component({
@@ -60,53 +61,82 @@ const MAX_OPTIONS = 6;
           </mat-form-field>
         }
         @case ('check') {
-          <div class="flex flex-col gap-3">
-            <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-              <mat-label>{{ 'Question' | t }}</mat-label>
-              <textarea matInput rows="2" [value]="check().question" (input)="set({ question: value($event) })"></textarea>
-            </mat-form-field>
-
-            <fieldset class="flex flex-col gap-2">
-              <legend class="mb-1 text-xs font-semibold text-slate-500">{{ 'Answers: mark the right one' | t }}</legend>
-              @for (option of check().options; track $index; let optionIndex = $index) {
-                <div class="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    class="h-4 w-4 shrink-0 accent-[#007979]"
-                    [name]="'answer-' + uid"
-                    [checked]="check().answer === optionIndex"
-                    (change)="set({ answer: optionIndex })"
-                    [attr.aria-label]="'Right answer' | t"
-                  />
-                  <input
-                    class="h-10 min-w-0 flex-1 rounded-lg border px-3 text-sm"
-                    [ngClass]="check().answer === optionIndex ? 'border-[#007979] bg-teal-50' : 'border-slate-200 bg-white'"
-                    [value]="option"
-                    [placeholder]="'Answer {0}' | t: [optionIndex + 1]"
-                    (input)="setOption(optionIndex, value($event))"
-                  />
+          <div class="flex flex-col gap-5">
+            @for (question of check().questions; track $index; let questionIndex = $index) {
+              <fieldset class="flex flex-col gap-3 rounded-xl border border-slate-200 p-3 sm:p-4">
+                <div class="flex items-center justify-between gap-3">
+                  <legend class="text-sm font-bold text-slate-700">{{ 'Question {0}' | t: [questionIndex + 1] }}</legend>
                   <button
                     type="button"
-                    class="icon-btn"
-                    [disabled]="check().options.length <= 2"
-                    (click)="removeOption(optionIndex)"
-                    [attr.aria-label]="'Remove answer' | t"
+                    class="icon-btn hover:!text-rose-600"
+                    [disabled]="check().questions.length <= 1"
+                    (click)="removeQuestion(questionIndex)"
+                    [attr.aria-label]="'Remove question' | t"
+                    [matTooltip]="'Remove question' | t"
                   >
-                    <mat-icon>close</mat-icon>
+                    <mat-icon>delete</mat-icon>
                   </button>
                 </div>
-              }
-              @if (check().options.length < maxOptions) {
-                <button type="button" class="self-start text-sm font-semibold text-[#007979] hover:underline" (click)="addOption()">
-                  + {{ 'Add an answer' | t }}
-                </button>
-              }
-            </fieldset>
 
-            <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-              <mat-label>{{ 'Why it is right (shown after a correct answer)' | t }}</mat-label>
-              <input matInput [value]="check().explanation ?? ''" (input)="set({ explanation: value($event) })" />
-            </mat-form-field>
+                <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                  <mat-label>{{ 'Question' | t }}</mat-label>
+                  <textarea matInput rows="2" [value]="question.question" (input)="setQuestion(questionIndex, { question: value($event) })"></textarea>
+                </mat-form-field>
+
+                <fieldset class="flex flex-col gap-2">
+                  <legend class="mb-1 text-xs font-semibold text-slate-500">{{ 'Answers: mark the right one' | t }}</legend>
+                  @for (option of question.options; track $index; let optionIndex = $index) {
+                    <div class="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        class="h-4 w-4 shrink-0 accent-[#007979]"
+                        [name]="'answer-' + uid + '-' + questionIndex"
+                        [checked]="question.answer === optionIndex"
+                        (change)="setQuestion(questionIndex, { answer: optionIndex })"
+                        [attr.aria-label]="'Right answer' | t"
+                      />
+                      <input
+                        class="h-10 min-w-0 flex-1 rounded-lg border px-3 text-sm"
+                        [ngClass]="question.answer === optionIndex ? 'border-[#007979] bg-teal-50' : 'border-slate-200 bg-white'"
+                        [value]="option"
+                        [placeholder]="'Answer {0}' | t: [optionIndex + 1]"
+                        (input)="setQuestionOption(questionIndex, optionIndex, value($event))"
+                      />
+                      <button
+                        type="button"
+                        class="icon-btn"
+                        [disabled]="question.options.length <= 2"
+                        (click)="removeOption(questionIndex, optionIndex)"
+                        [attr.aria-label]="'Remove answer' | t"
+                      >
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </div>
+                  }
+                  @if (question.options.length < maxOptions) {
+                    <button type="button" class="self-start text-sm font-semibold text-[#007979] hover:underline" (click)="addOption(questionIndex)">
+                      + {{ 'Add an answer' | t }}
+                    </button>
+                  }
+                </fieldset>
+
+                <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+                  <mat-label>{{ 'Why it is right (shown after a correct answer)' | t }}</mat-label>
+                  <input matInput [value]="question.explanation ?? ''" (input)="setQuestion(questionIndex, { explanation: value($event) })" />
+                </mat-form-field>
+              </fieldset>
+            }
+
+            @if (check().questions.length < maxQuestions) {
+              <button
+                type="button"
+                class="self-start inline-flex items-center gap-2 rounded-lg border border-[#007979]/30 px-3 py-2 text-sm font-semibold text-[#007979] hover:bg-teal-50"
+                (click)="addQuestion()"
+              >
+                <mat-icon class="!h-5 !w-5 !text-xl">add</mat-icon>
+                {{ 'Add another question' | t }}
+              </button>
+            }
           </div>
         }
         @default {
@@ -213,6 +243,7 @@ export class BlockEditorComponent {
 
   protected readonly uid = Math.random().toString(36).slice(2, 9);
   protected readonly maxOptions = MAX_OPTIONS;
+  protected readonly maxQuestions = MAX_QUESTIONS;
   protected readonly providers = computed(() => MEDIA_PROVIDERS);
   protected readonly formattingHint = 'Formatting: **bold**, *italic*, # heading, - list item, 1. numbered item, [link](https://…)';
 
@@ -223,9 +254,23 @@ export class BlockEditorComponent {
     return type === 'video' || type === 'audio' || type === 'document' ? type : null;
   });
 
+  /** Normalize legacy single-question blocks for the multi-question editor. */
   protected readonly check = computed(() => {
     const block = this.block();
-    return block.type === 'check' ? block : { type: 'check' as const, question: '', options: [], answer: 0, explanation: '' };
+    if (block.type !== 'check') {
+      return { questions: [{ question: '', options: ['', ''], answer: 0, explanation: '' }] };
+    }
+    if ('questions' in block && block.questions) {
+      return { questions: block.questions };
+    }
+    return {
+      questions: [{
+        question: block.question ?? '',
+        options: block.options ?? ['', ''],
+        answer: block.answer ?? 0,
+        explanation: block.explanation ?? '',
+      }],
+    };
   });
 
   protected readonly textOf = computed(() => {
@@ -308,19 +353,56 @@ export class BlockEditorComponent {
     this.blockChange.emit({ ...this.block(), ...changes } as LessonBlock);
   }
 
-  protected setOption(index: number, text: string): void {
-    const options = this.check().options.map((option, position) => (position === index ? text : option));
-    this.set({ options });
+  private emitQuestions(questions: { question: string; options: string[]; answer: number; explanation?: string }[]): void {
+    this.blockChange.emit({ type: 'check', questions } as LessonBlock);
   }
 
-  protected addOption(): void {
-    this.set({ options: [...this.check().options, ''] });
+  protected setQuestion(index: number, changes: Partial<{ question: string; answer: number; explanation: string }>): void {
+    const questions = this.check().questions.map((question, position) =>
+      position === index ? { ...question, ...changes } : question,
+    );
+    this.emitQuestions(questions);
   }
 
-  protected removeOption(index: number): void {
-    const check = this.check();
-    const options = check.options.filter((_, position) => position !== index);
-    const answer = check.answer === index ? 0 : check.answer > index ? check.answer - 1 : check.answer;
-    this.set({ options, answer });
+  protected setQuestionOption(questionIndex: number, optionIndex: number, text: string): void {
+    const questions = this.check().questions.map((question, position) =>
+      position === questionIndex
+        ? { ...question, options: question.options.map((option, index) => index === optionIndex ? text : option) }
+        : question,
+    );
+    this.emitQuestions(questions);
+  }
+
+  protected addOption(questionIndex: number): void {
+    const questions = this.check().questions.map((question, position) =>
+      position === questionIndex && question.options.length < MAX_OPTIONS
+        ? { ...question, options: [...question.options, ''] }
+        : question,
+    );
+    this.emitQuestions(questions);
+  }
+
+  protected removeOption(questionIndex: number, optionIndex: number): void {
+    const questions = this.check().questions.map((question, position) => {
+      if (position !== questionIndex || question.options.length <= 2) return question;
+      const options = question.options.filter((_, index) => index !== optionIndex);
+      const answer = question.answer === optionIndex ? 0 : question.answer > optionIndex ? question.answer - 1 : question.answer;
+      return { ...question, options, answer };
+    });
+    this.emitQuestions(questions);
+  }
+
+  protected addQuestion(): void {
+    const questions = this.check().questions;
+    if (questions.length < MAX_QUESTIONS) {
+      this.emitQuestions([...questions, { question: '', options: ['', ''], answer: 0, explanation: '' }]);
+    }
+  }
+
+  protected removeQuestion(index: number): void {
+    const questions = this.check().questions;
+    if (questions.length > 1) {
+      this.emitQuestions(questions.filter((_, position) => position !== index));
+    }
   }
 }
