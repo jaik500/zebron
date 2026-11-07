@@ -12,13 +12,14 @@ import { useLearningHeaderTitle } from '../../test-center/learner-route';
 import { CourseHeaderComponent } from '../components/course-header.component';
 import { courseContextFromRoute, courseDate, hasCertificate } from '../course.model';
 import { CourseStore } from '../course.store';
+import { ShareLinkButtonComponent } from '../../../shared/share-link-button.component';
 
 /** The certificate for a completed course, ready to print or add to LinkedIn. */
 @Component({
   selector: 'app-course-certificate',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent],
+  imports: [RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent, ShareLinkButtonComponent],
   styles: [
     `
       @media print {
@@ -95,6 +96,9 @@ import { CourseStore } from '../course.store';
             >
               <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">share</mat-icon>{{ 'Add to LinkedIn' | t }}
             </a>
+            @if (code()) {
+              <app-share-link-button [url]="verifyUrl()" [title]="record()?.courseTitle ?? ''" />
+            }
             <a
               [routerLink]="context.basePath + '/catalog'"
               class="inline-flex h-10 items-center gap-1 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"

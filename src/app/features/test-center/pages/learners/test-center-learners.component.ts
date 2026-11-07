@@ -20,6 +20,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../../core/i18n/i18n.service';
+import { downloadCsv } from '../../../../shared/csv-download';
 
 @Component({
   selector: 'app-test-center-learners',
@@ -162,9 +164,20 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             </p>
           </div>
 
-          <span class="inline-flex w-fit items-center rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
-            {{ '{0} learners' | t: [filteredLearners().length] }}
-          </span>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="inline-flex w-fit items-center rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+              {{ '{0} learners' | t: [filteredLearners().length] }}
+            </span>
+            <button
+              type="button"
+              (click)="downloadLearnersCsv()"
+              [disabled]="!filteredLearners().length"
+              class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <mat-icon class="!h-4 !w-4 !text-base !leading-none" aria-hidden="true">download</mat-icon>
+              {{ 'Download CSV' | t }}
+            </button>
+          </div>
         </div>
 
         <!-- Search and Filters -->
@@ -455,6 +468,8 @@ export class TestCenterLearnersComponent {
   private readonly learnersService =
     inject(TestCenterLearnersService);
 
+  private readonly i18n = inject(I18nService);
+
   private readonly organizationContext =
     inject(OrganizationContextService);
 
@@ -578,6 +593,24 @@ export class TestCenterLearnersComponent {
       .replace(/\b\w/g, character =>
         character.toUpperCase()
       );
+  }
+
+  /** The learners shown (search and filter applied) as a CSV file. */
+  downloadLearnersCsv(): void {
+    const t = (text: string) => this.i18n.t(text);
+    downloadCsv('test-center-learners', [
+      [t('Learner'), t('Email'), t('Role'), t('Status'), t('Assessments'), t('Average score'), t('Latest score'), t('Last assessment')],
+      ...this.filteredLearners().map((learner) => [
+        learner.name,
+        learner.email,
+        learner.role,
+        t(this.statusLabel(learner.status)),
+        learner.assessmentCount,
+        learner.averageScore,
+        learner.latestScore,
+        learner.lastAssessmentAt,
+      ]),
+    ]);
   }
 
   statusLabel(status: string): string {

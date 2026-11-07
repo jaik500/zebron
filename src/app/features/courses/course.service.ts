@@ -373,6 +373,59 @@ export class CourseService {
     await batch.commit();
   }
 
+  /**
+   * Copy a course and its lessons into a new draft ("Copy of …") in the same
+   * place (Zebron or the organization). Learner progress, review history and
+   * publishing dates are not copied. Returns the new course id.
+   */
+  async duplicateCourse(
+    organizationId: string | null,
+    courseId: string,
+    author: { id: string; name: string },
+  ): Promise<string> {
+    const sourceRef = doc(this.courses(organizationId), courseId);
+    const [source, lessons] = await Promise.all([getDoc(sourceRef), getDocs(collection(sourceRef, 'lessons'))]);
+    if (!source.exists()) {
+      throw new Error('The course could not be found.');
+    }
+
+    const data = source.data();
+    const title = `Copy of ${String(data['title'] ?? 'course')}`.slice(0, 200);
+    const base = title
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60);
+    const newId = `${base || 'course'}-${Math.random().toString(36).slice(2, 6)}`;
+
+    // Everything but review history, publishing and timestamps.
+    const rest: Record<string, unknown> = { ...data };
+    for (const key of ['review', 'publishedAt', 'createdAt', 'updatedAt', 'id']) {
+      delete rest[key];
+    }
+    const copyRef = doc(this.courses(organizationId), newId);
+    const batch = writeBatch(firestore);
+
+    batch.set(copyRef, {
+      ...rest,
+      title,
+      status: 'draft',
+      organizationId,
+      authorId: author.id,
+      authorName: author.name,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    for (const lesson of lessons.docs) {
+      batch.set(doc(copyRef, 'lessons', lesson.id), { ...lesson.data(), updatedAt: serverTimestamp() });
+    }
+
+    await batch.commit();
+    return newId;
+  }
+
   /** Delete a course and all of its lessons. */
   async deleteCourse(organizationId: string | null, courseId: string): Promise<void> {
     const courseRef = doc(this.courses(organizationId), courseId);

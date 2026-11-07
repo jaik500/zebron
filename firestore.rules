@@ -1697,6 +1697,20 @@ service cloud.firestore {
         );
     }
 
+    /**
+     * Test Center learner results (Learners pages, exports): managers and
+     * above while the Test Center is active, and platform administrators.
+     * Changing or deleting results stays with admins and owners.
+     */
+    function canReviewTestCenterResults(organizationId) {
+      return isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+          && hasActiveTestCenterEntitlement(organizationId)
+        );
+    }
+
     /** Preserve owner/admin-only access for attempt and result administration. */
     function isOperationalOrganizationAdmin(organizationId) {
       return isPlatformAdmin()
@@ -2416,7 +2430,7 @@ service cloud.firestore {
         )
         || (
           resource.data.organizationId != null
-          && isOperationalOrganizationAdmin(resource.data.organizationId)
+          && canReviewTestCenterResults(resource.data.organizationId)
         )
         || (
           isAuthenticated()
@@ -2434,7 +2448,7 @@ service cloud.firestore {
         || (
           isAuthenticated()
           && resource.data.organizationId != null
-          && isOperationalOrganizationAdmin(resource.data.organizationId)
+          && canReviewTestCenterResults(resource.data.organizationId)
         )
         || (
           isAuthenticated()
@@ -2487,7 +2501,7 @@ service cloud.firestore {
         )
         || (
           resource.data.organizationId != null
-          && isOperationalOrganizationAdmin(resource.data.organizationId)
+          && canReviewTestCenterResults(resource.data.organizationId)
         )
         || (
           isAuthenticated()
@@ -2505,7 +2519,7 @@ service cloud.firestore {
         || (
           isAuthenticated()
           && resource.data.organizationId != null
-          && isOperationalOrganizationAdmin(resource.data.organizationId)
+          && canReviewTestCenterResults(resource.data.organizationId)
         )
         || (
           isAuthenticated()

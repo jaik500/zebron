@@ -13,6 +13,7 @@ import { PageTitleService } from '../../core/services/page-title.service';
 import { PartnerAccessService } from '../../core/services/partner-access.service';
 import { OrganizationContextStore } from '../organizations/stores/organization-context.store';
 import { PollBoardComponent } from '../../shared/polls/poll-board.component';
+import { downloadCsv } from '../../shared/csv-download';
 import {
   LIVE_PROVIDERS,
   LiveProvider,
@@ -422,9 +423,17 @@ const DURATIONS = [30, 45, 60, 90, 120, 180];
             } @else if (attendees().length === 0) {
               <p class="p-5 text-sm text-slate-500">{{ 'No one has registered yet.' | t }}</p>
             } @else {
-              <p class="border-b border-slate-100 px-5 py-2 text-xs text-slate-500">
-                {{ '{0} registered · {1} attended' | t: [attendees().length, attendedCount()] }}
-              </p>
+              <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-2 text-xs text-slate-500">
+                <span class="min-w-0 flex-1">{{ '{0} registered · {1} attended' | t: [attendees().length, attendedCount()] }}</span>
+                <button
+                  type="button"
+                  (click)="downloadAttendanceCsv(session)"
+                  class="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 font-semibold text-[#007979] hover:bg-teal-50"
+                >
+                  <mat-icon class="!h-4 !w-4 !text-base !leading-none" aria-hidden="true">download</mat-icon>
+                  {{ 'Download CSV' | t }}
+                </button>
+              </div>
               <ul class="divide-y divide-slate-100">
                 @for (person of attendees(); track person.userId) {
                   <li>
@@ -498,6 +507,22 @@ export class LiveSessionsComponent implements OnInit {
 
   // Attendance
   protected readonly attendanceFor = signal<LiveSession | null>(null);
+
+  /** Registrations and attendance of one session as a CSV file. */
+  protected downloadAttendanceCsv(session: LiveSession): void {
+    const t = (text: string) => this.i18n.t(text);
+    downloadCsv(`attendance-${session.title}`, [
+      [t('Session'), t('Start'), t('Name'), t('Email'), t('Registered'), t('Attended')],
+      ...this.attendees().map((person) => [
+        session.title,
+        session.startAt.toISOString(),
+        person.name,
+        person.email ?? '',
+        person.registeredAt,
+        t(person.attended ? 'Yes' : 'No'),
+      ]),
+    ]);
+  }
   /** Session whose polls panel is open (staff). */
   protected readonly pollsFor = signal<LiveSession | null>(null);
   protected readonly attendees = signal<LiveRegistration[]>([]);

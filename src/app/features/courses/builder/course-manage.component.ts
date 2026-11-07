@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
@@ -105,6 +105,9 @@ const STATUS: Record<string, { label: string; classes: string }> = {
             </section>
           }
 
+          @if (duplicateError()) {
+            <p class="mb-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-700" role="alert">{{ duplicateError()! | t }}</p>
+          }
           <ul class="flex flex-col gap-2">
             @for (course of courses(); track course.id) {
               <li class="flex items-stretch gap-2">
@@ -127,6 +130,17 @@ const STATUS: Record<string, { label: string; classes: string }> = {
                   </span>
                   <mat-icon class="shrink-0 text-slate-400" aria-hidden="true">edit</mat-icon>
                 </a>
+                <button
+                  type="button"
+                  (click)="duplicate(course)"
+                  [disabled]="duplicatingId() !== null"
+                  class="inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-[#007979] hover:bg-teal-50 hover:text-[#007979] disabled:opacity-50"
+                  [attr.aria-label]="'Duplicate {0}' | t: [course.title]"
+                  [title]="'Copy this course and its lessons into a new draft' | t"
+                >
+                  <mat-icon aria-hidden="true">{{ duplicatingId() === course.id ? 'hourglass_empty' : 'content_copy' }}</mat-icon>
+                  <span class="hidden sm:inline">{{ 'Duplicate' | t }}</span>
+                </button>
                 @if (canAssign() && course.status === 'published') {
                   <button
                     type="button"
@@ -328,6 +342,7 @@ const STATUS: Record<string, { label: string; classes: string }> = {
 })
 export class CourseManageComponent {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly service = inject(CourseService);
   private readonly logger = inject(LoggerService);
   private readonly i18n = inject(I18nService);
@@ -383,6 +398,32 @@ export class CourseManageComponent {
       this.error.set('Courses could not be loaded. Try again.');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  // ---------- Duplicate ----------
+
+  protected readonly duplicatingId = signal<string | null>(null);
+  protected readonly duplicateError = signal<string | null>(null);
+
+  /** Copy a course and its lessons into a new draft, then open it in the builder. */
+  protected async duplicate(course: Course): Promise<void> {
+    const user = this.auth.firebaseUser();
+    if (!user || this.duplicatingId()) return;
+
+    this.duplicatingId.set(course.id);
+    this.duplicateError.set(null);
+    try {
+      const id = await this.service.duplicateCourse(this.context.organizationId, course.id, {
+        id: user.uid,
+        name: user.displayName || user.email || '',
+      });
+      await this.router.navigate([this.context.basePath, 'manage', id]);
+    } catch (error) {
+      this.logger.error('CourseManageComponent', 'Could not duplicate the course.', error);
+      this.duplicateError.set('The course could not be duplicated. Try again.');
+    } finally {
+      this.duplicatingId.set(null);
     }
   }
 

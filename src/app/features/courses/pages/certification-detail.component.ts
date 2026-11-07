@@ -22,6 +22,7 @@ import {
 import { CourseHeaderComponent } from '../components/course-header.component';
 import { COURSE_COVERS, courseContextFromRoute } from '../course.model';
 import { CourseStore } from '../course.store';
+import { ShareLinkButtonComponent } from '../../../shared/share-link-button.component';
 
 type StepState = 'done' | 'current' | 'retake' | 'locked';
 
@@ -35,7 +36,7 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
   selector: 'app-certification-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent],
+  imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent, ShareLinkButtonComponent],
   template: `
     <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
@@ -301,9 +302,12 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
                       <div><dt class="text-xs text-slate-500">{{ 'Issued' | t }}</dt><dd class="text-slate-900">{{ dateLabel(credential.issuedAt) }}</dd></div>
                       <div><dt class="text-xs text-slate-500">{{ 'Valid until' | t }}</dt><dd class="text-slate-900">{{ dateLabel(credential.expiresAt) }}</dd></div>
                     </dl>
-                    <a [routerLink]="['/verify', credential.code]" class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#007979] hover:underline">
-                      <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">open_in_new</mat-icon>{{ 'Public verification page' | t }}
-                    </a>
+                    <div class="mt-3 flex flex-wrap items-center gap-3">
+                      <a [routerLink]="['/verify', credential.code]" class="inline-flex items-center gap-1 text-sm font-semibold text-[#007979] hover:underline">
+                        <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">open_in_new</mat-icon>{{ 'Public verification page' | t }}
+                      </a>
+                      <app-share-link-button [url]="verifyLink(credential.code)" [title]="cert.credentialName" />
+                    </div>
                   </div>
                 }
               }
@@ -380,6 +384,11 @@ export class CertificationDetailComponent {
   protected readonly signedIn = computed(() => this.auth.firebaseUser() !== null);
 
   private readonly headerTitle = useLearningHeaderTitle(this.route);
+
+  /** The public /verify page of a credential, as a full link to share. */
+  protected verifyLink(code: string): string {
+    return `${typeof window === 'undefined' ? '' : window.location.origin}/verify/${code}`;
+  }
 
   protected readonly cover = computed(() => COURSE_COVERS[this.definition()?.cover ?? 'navy'] ?? COURSE_COVERS.navy);
   protected readonly stage = computed(() => {

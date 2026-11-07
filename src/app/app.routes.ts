@@ -873,13 +873,14 @@ export const routes: Routes = [
             {
                 path: 'learners',
                 canActivate: [partnerRoleGuard],
-                data: { minimumOrganizationRole: 'org_staff' },
+                // Learner results: managers and above (firestore.rules canReviewTestCenterResults).
+                data: { minimumOrganizationRole: 'org_manager' },
                 loadComponent: () => import('./features/test-center/pages/learners/test-center-learners.component').then((m) => m.TestCenterLearnersComponent),
             },
             {
                 path: 'learners/:userId',
                 canActivate: [partnerRoleGuard],
-                data: { minimumOrganizationRole: 'org_staff' },
+                data: { minimumOrganizationRole: 'org_manager' },
                 loadComponent: () => import('./features/test-center/pages/learner-dashboard/test-center-learner-dashboard.component').then((m) => m.TestCenterLearnerDashboardComponent),
             },
         ],

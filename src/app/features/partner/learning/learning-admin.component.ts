@@ -147,10 +147,12 @@ import { LiveSessionService, sessionEnd } from '../../live/live-session.service'
               <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">playlist_add</mat-icon>
               {{ 'Questions' | t }}
             </a>
-            <a [routerLink]="['/partner/org', organizationId, 'test-center', 'learners']" class="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-              <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">groups</mat-icon>
-              {{ 'Learner results' | t }}
-            </a>
+            @if (access.isManagerOrAbove()) {
+              <a [routerLink]="['/partner/org', organizationId, 'test-center', 'learners']" class="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">groups</mat-icon>
+                {{ 'Learner results' | t }}
+              </a>
+            }
           </div>
         </section>
         }

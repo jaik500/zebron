@@ -24,6 +24,7 @@ describe('Zebron Firestore Security Rules - Test Center exams', () => {
   const ORGANIZATION_ID = 'org-exams';
   const MEMBER_UID = 'exam-member';
   const MANAGER_UID = 'exam-manager';
+  const STAFF_UID = 'exam-staff';
   const OTHER_UID = 'exam-other';
 
   beforeAll(async () => {
@@ -56,7 +57,7 @@ describe('Zebron Firestore Security Rules - Test Center exams', () => {
       await setDoc(doc(db, `organizations/${ORGANIZATION_ID}`), { name: 'Exams', status: 'active', active: true });
       await setDoc(doc(db, `organizations/${ORGANIZATION_ID}/applications/test-center`), { status: 'active' });
 
-      for (const [userId, role] of [[MEMBER_UID, 'org_member'], [MANAGER_UID, 'org_manager']] as const) {
+      for (const [userId, role] of [[MEMBER_UID, 'org_member'], [STAFF_UID, 'org_staff'], [MANAGER_UID, 'org_manager']] as const) {
         await setDoc(doc(db, `organizationMemberships/${userId}_${ORGANIZATION_ID}`), {
           userId,
           organizationId: ORGANIZATION_ID,
@@ -118,6 +119,17 @@ describe('Zebron Firestore Security Rules - Test Center exams', () => {
           status: 'published',
         });
       }
+
+      // An organization result for MEMBER_UID (Learners pages).
+      await setDoc(doc(db, 'quizResults/org-result'), {
+        id: 'org-result',
+        organizationId: ORGANIZATION_ID,
+        userId: MEMBER_UID,
+        attemptId: 'org-attempt',
+        quizId: 'org-practice',
+        mode: 'practice',
+        scorePercentage: 70,
+      });
 
       // A server-written exam result on Zebron's bank, for MEMBER_UID.
       await setDoc(doc(db, 'quizResults/platform-result'), {
@@ -210,6 +222,17 @@ describe('Zebron Firestore Security Rules - Test Center exams', () => {
 
     await assertSucceeds(getDoc(doc(db(OTHER_UID), 'quizQuestions/zebron-practice-q1')));
     await assertFails(getDoc(doc(db(OTHER_UID), 'quizQuestions/zebron-exam-q1')));
+  });
+
+  // ==========================================================
+  // LEARNER RESULTS (Learners pages)
+  // ==========================================================
+
+  it("lets managers read their organization's learner results, not staff", async () => {
+    await seed();
+
+    await assertSucceeds(getDoc(doc(db(MANAGER_UID), 'quizResults/org-result')));
+    await assertFails(getDoc(doc(db(STAFF_UID), 'quizResults/org-result')));
   });
 
   // ==========================================================

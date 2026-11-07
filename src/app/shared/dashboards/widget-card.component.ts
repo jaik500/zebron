@@ -3,7 +3,9 @@ import { DatePipe, NgComponentOutlet } from '@angular/common';
 
 import { MatIconModule } from '@angular/material/icon';
 
+import { I18nService } from '../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { CsvCell, downloadCsv } from '../csv-download';
 import { DashboardContext, DashboardDataSourceRegistry, WidgetData } from './data-source.registry';
 import { DashboardWidget } from './dashboard.model';
 import { ALWAYS_ON, DashboardWidgetRegistry } from './widget.registry';
@@ -74,10 +76,24 @@ type CardState = 'loading' | 'ready' | 'empty' | 'denied' | 'inactive' | 'unknow
         }
       </div>
 
-      @if (state() === 'ready' && data()?.asOf; as asOf) {
-        <p class="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-500">
-          {{ 'Updated {0}' | t: [(asOf | date: 'MMM d, h:mm a') ?? ''] }}
-        </p>
+      @if (state() === 'ready' && data(); as shown) {
+        <footer class="flex min-w-0 items-center gap-2 border-t border-slate-100 px-4 py-1.5 text-[11px] text-slate-500">
+          <span class="min-w-0 flex-1 truncate">
+            @if (shown.asOf; as asOf) {
+              {{ 'Updated {0}' | t: [(asOf | date: 'MMM d, h:mm a') ?? ''] }}
+            }
+          </span>
+          <button
+            type="button"
+            class="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 font-semibold text-slate-500 hover:bg-slate-100 hover:text-[#007979]"
+            (click)="downloadCsv()"
+            [attr.aria-label]="'Download {0} as CSV' | t: [widget().title || (definition()?.name ?? '')]"
+            [title]="'Download CSV' | t"
+          >
+            <mat-icon class="!h-4 !w-4 !text-base !leading-none" aria-hidden="true">download</mat-icon>
+            CSV
+          </button>
+        </footer>
       }
     </article>
   `,
@@ -85,6 +101,7 @@ type CardState = 'loading' | 'ready' | 'empty' | 'denied' | 'inactive' | 'unknow
 export class WidgetCardComponent {
   private readonly widgets = inject(DashboardWidgetRegistry);
   private readonly sources = inject(DashboardDataSourceRegistry);
+  private readonly i18n = inject(I18nService);
 
   readonly widget = input.required<DashboardWidget>();
   readonly context = input.required<DashboardContext>();
@@ -106,6 +123,36 @@ export class WidgetCardComponent {
       const force = this.attempt() > 0 || (this.context().revision ?? 0) > 0;
       untracked(() => void this.load(force));
     });
+  }
+
+  /** The figures this widget shows, as a CSV file (built here: no extra reads). */
+  protected downloadCsv(): void {
+    const data = this.data();
+    if (!data) return;
+
+    const t = (text: string) => this.i18n.t(text);
+    const title = this.widget().title || this.definition()?.name || 'widget';
+    let rows: CsvCell[][];
+
+    switch (data.kind) {
+      case 'number':
+        rows = [[t('Figure'), t('Value'), t('Unit'), t('Details')], [title, data.value, data.unit ?? '', data.caption ?? '']];
+        break;
+      case 'progress':
+        rows = [[t('Measure'), t('Done'), t('Target'), t('Details')], [title, data.value, data.target, data.caption ?? '']];
+        break;
+      case 'list':
+        rows = [[t('Title'), t('Details')], ...data.items.map((item) => [item.title, item.subtitle ?? ''])];
+        break;
+      case 'series':
+        rows = [[t('Label'), data.unit ? `${t('Value')} (${data.unit})` : t('Value')], ...data.points.map((point) => [point.label, point.value])];
+        break;
+    }
+
+    if (data.asOf) {
+      rows.push([], [t('Updated'), data.asOf]);
+    }
+    downloadCsv(title, rows);
   }
 
   protected reload(): void {

@@ -13,6 +13,7 @@ import {
   TeamLearningProgress,
   TeamMemberRow,
 } from '../../courses/course-assignment.service';
+import { downloadCsv as saveCsv } from '../../../shared/csv-download';
 
 type Tab = 'assignments' | 'people';
 type StatusFilter = 'all' | 'open' | 'overdue' | 'not_started' | 'in_progress' | 'completed';
@@ -433,21 +434,6 @@ export class TeamProgressComponent implements OnInit {
       ];
     }
 
-    const csv = rows
-      .map((row) => row.map((cell) => {
-        const value = String(cell);
-        // Quote, and keep spreadsheet apps from running a cell as a formula.
-        const safe = /^[=+\-@]/.test(value) ? `'${value}` : value;
-        return `"${safe.replace(/"/g, '""')}"`;
-      }).join(','))
-      .join('\r\n');
-
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `team-progress-${this.tab()}-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    saveCsv(`team-progress-${this.tab()}`, rows);
   }
 }

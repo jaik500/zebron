@@ -9,6 +9,8 @@ import {
 } from '../../models/test-center-learner.model';
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { I18nService } from '../../../../core/i18n/i18n.service';
+import { downloadCsv } from '../../../../shared/csv-download';
 
 @Component({
   selector: 'app-test-center-learner-dashboard',
@@ -244,11 +246,21 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                     </p>
                   </div>
 
-                  <span
-                    class="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
-                  >
-                    {{ '{0} records' | t: [dashboard.assessments.length] }}
-                  </span>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span
+                      class="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
+                    >
+                      {{ '{0} records' | t: [dashboard.assessments.length] }}
+                    </span>
+                    <button
+                      type="button"
+                      (click)="downloadAssessmentsCsv(dashboard)"
+                      [disabled]="!dashboard.assessments.length"
+                      class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      {{ 'Download CSV' | t }}
+                    </button>
+                  </div>
                 </div>
 
                 <div *ngIf="dashboard.assessments.length === 0" class="px-6 py-14 text-center">
@@ -506,6 +518,26 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 export class TestCenterLearnerDashboardComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly learnersService = inject(TestCenterLearnersService);
+  private readonly i18n = inject(I18nService);
+
+  /** This learner's assessments (practice and exams) as a CSV file. */
+  downloadAssessmentsCsv(dashboard: LearnerDashboard): void {
+    const t = (text: string) => this.i18n.t(text);
+    downloadCsv(`test-center-results-${dashboard.learner.name}`, [
+      [t('Learner'), t('Quiz'), t('Mode'), t('Score %'), t('Correct'), t('Incorrect'), t('Unanswered'), t('Questions'), t('Completed')],
+      ...dashboard.assessments.map((assessment) => [
+        dashboard.learner.name,
+        assessment.quizName,
+        t(assessment.mode === 'exam' ? 'Exam' : 'Practice'),
+        assessment.scorePercentage,
+        assessment.correctAnswers,
+        assessment.incorrectAnswers,
+        assessment.unansweredQuestions,
+        assessment.totalQuestions,
+        assessment.completedAt,
+      ]),
+    ]);
+  }
 
   dashboard: LearnerDashboard | null = null;
 
