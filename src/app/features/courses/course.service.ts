@@ -11,7 +11,6 @@ import {
   getCountFromServer,
   query,
   serverTimestamp,
-  setDoc,
   Timestamp,
   where,
   writeBatch,
@@ -513,31 +512,23 @@ export class CourseService {
   }
 
   /**
-   * Save a learner's whole progress record (a full write, so trimmed
-   * activity days really go away). startedAt is set on the first save and
-   * completedAt when the course is first completed.
+   * Mark a lesson done. The server checks the lesson is in the course,
+   * works out percent and status, and writes the progress record
+   * (functions/src/course-progress.ts); browsers cannot write it.
+   * day is the learner's local day, for their activity chart.
    */
-  async saveProgress(progress: CourseProgress, justCompleted: boolean): Promise<void> {
-    await setDoc(doc(this.progress(progress.userId), progress.id), {
-      userId: progress.userId,
-      courseId: progress.courseId,
-      organizationId: progress.organizationId,
-      courseTitle: progress.courseTitle,
-      cover: progress.cover,
-      lessonCount: progress.lessonCount,
-      finalExam: progress.finalExam,
-      completedLessonIds: progress.completedLessonIds,
-      lastLessonId: progress.lastLessonId,
-      percent: progress.percent,
-      status: progress.status,
-      checkScores: progress.checkScores,
-      activity: progress.activity,
-      learnerName: progress.learnerName,
-      skills: progress.skills,
-      startedAt: progress.startedAt ?? serverTimestamp(),
-      completedAt: justCompleted ? serverTimestamp() : progress.completedAt,
-      updatedAt: serverTimestamp(),
-    });
+  async completeLesson(
+    organizationId: string | null,
+    courseId: string,
+    lessonId: string,
+    checkScore: number | null,
+    day: string,
+  ): Promise<LessonCompletionResult> {
+    const call = httpsCallable<
+      { organizationId: string | null; courseId: string; lessonId: string; checkScore: number | null; day: string },
+      LessonCompletionResult
+    >(firebaseFunctions, 'completeCourseLesson');
+    return (await call({ organizationId, courseId, lessonId, checkScore, day })).data;
   }
 
   // ============================================================
@@ -585,6 +576,14 @@ export class CourseService {
     >(firebaseFunctions, 'submitCourseExam');
     return (await call({ organizationId, courseId, attemptId, answers })).data;
   }
+}
+
+/** What completeCourseLesson returns. */
+export interface LessonCompletionResult {
+  completedLessonIds: string[];
+  percent: number;
+  status: 'in_progress' | 'completed';
+  justCompleted: boolean;
 }
 
 export interface ExamQuestion {

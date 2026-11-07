@@ -2534,6 +2534,7 @@ export { castPollVote } from "./polls";
 export { refreshOrganizationStats, refreshDashboardStatsNightly } from "./dashboard-stats";
 export { startQuizExam, submitQuizExam } from "./quiz-exams";
 export { getTeamLearningProgress } from "./learning-progress";
+export { completeCourseLesson } from "./course-progress";
 export { enrollInCertification, startCertificationExam, submitCertificationExam } from "./certifications";
 export {
   getOrganizationMemberDirectory,

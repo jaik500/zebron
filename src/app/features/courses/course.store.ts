@@ -25,7 +25,6 @@ import {
   mergeActivity,
   minutesThisWeek,
   progressId,
-  trimActivity,
   weekStreak,
 } from './course.model';
 import { CourseService } from './course.service';
@@ -354,7 +353,8 @@ export const CourseStore = signalStore(
       /**
        * Mark the open lesson done. score is the first-try result of its
        * quick checks (null when it has none). Completing the last lesson
-       * completes the course and issues the certificate code.
+       * completes the course (the final exam, if any, comes next). The
+       * server records it (completeCourseLesson).
        */
       async completeLesson(score: number | null): Promise<LessonCompletion | null> {
         const course = store.course();
@@ -366,57 +366,21 @@ export const CourseStore = signalStore(
         }
 
         const outline = allLessons(course);
-        const existing = store.progressById().get(progressId(course)) ?? null;
-        const done = new Set(existing?.completedLessonIds ?? []);
-        const isNewLesson = !done.has(lesson.id);
-        done.add(lesson.id);
-
-        const completedLessonIds = outline.map((item) => item.id).filter((id) => done.has(id));
-        // Same arithmetic as the rules (firestore.rules, isValidCourseProgress).
-        const percent = outline.length ? Math.round((completedLessonIds.length * 100) / outline.length) : 0;
-        const finished = outline.length > 0 && completedLessonIds.length === outline.length;
-        const justCompleted = finished && existing?.status !== 'completed';
-
-        const checkScores = { ...(existing?.checkScores ?? {}) };
-        if (score !== null && checkScores[lesson.id] === undefined) {
-          checkScores[lesson.id] = Math.max(0, Math.min(100, Math.round(score)));
-        }
-
-        const today = dayKey();
-        const activity = { ...(existing?.activity ?? {}) };
-        if (isNewLesson) {
-          activity[today] = (activity[today] ?? 0) + Math.max(1, Math.round(lesson.minutes));
-        }
-
-        const record: CourseProgress = {
-          id: progressId(course),
-          userId: user.uid,
-          courseId: course.id,
-          organizationId: course.organizationId,
-          courseTitle: course.title,
-          cover: course.cover,
-          lessonCount: outline.length,
-          finalExam: !!course.finalExam,
-          completedLessonIds,
-          lastLessonId: lesson.id,
-          percent,
-          status: finished ? 'completed' : 'in_progress',
-          checkScores,
-          activity: trimActivity(activity),
-          learnerName: existing?.learnerName || user.name,
-          skills: course.skills,
-          startedAt: existing?.startedAt ?? null,
-          updatedAt: existing?.updatedAt ?? null,
-          completedAt: existing?.completedAt ?? null,
-        };
+        const id = progressId(course);
 
         patchState(store, { saving: true });
 
         try {
-          await service.saveProgress(record, justCompleted);
+          // The server checks the lesson and writes the progress record.
+          const saved = await service.completeLesson(course.organizationId, course.id, lesson.id, score, dayKey());
           // Read it back so the server timestamps are filled in.
-          replaceProgress((await service.getProgress(user.uid, record.id)) ?? record);
+          const record = await service.getProgress(user.uid, id);
+          if (record) {
+            replaceProgress(record);
+          }
 
+          const done = new Set(saved.completedLessonIds);
+          const finished = saved.status === 'completed';
           const index = outline.findIndex((item) => item.id === lesson.id);
           const nextUnfinished =
             outline.slice(index + 1).find((item) => !done.has(item.id)) ??
@@ -426,7 +390,7 @@ export const CourseStore = signalStore(
           return {
             nextLessonId: nextUnfinished?.id ?? null,
             courseCompleted: finished,
-            examNext: finished && !!course.finalExam && store.exams()[record.id]?.passed !== true,
+            examNext: finished && !!course.finalExam && store.exams()[id]?.passed !== true,
           };
         } catch (error) {
           logger.error('CourseStore', 'Could not save lesson progress.', error);

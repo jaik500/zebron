@@ -7,15 +7,14 @@ import {
   RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
 
-import { deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 
 import fs from 'node:fs';
 
 /**
  * Course progress (users/{uid}/courseProgress, firestore.rules):
- * - percent and status must follow from completedLessonIds and lessonCount;
- * - the legacy certificateCode field is gone (certificates come from exams);
- * - learners cannot delete their progress.
+ * - written only by completeCourseLesson (functions/src/course-progress.ts);
+ * - learners read their own, cannot write or delete it.
  */
 describe('Zebron Firestore Security Rules - course progress', () => {
   let testEnv: RulesTestEnvironment;
@@ -71,55 +70,36 @@ describe('Zebron Firestore Security Rules - course progress', () => {
     return testEnv.authenticatedContext(LEARNER_UID).firestore();
   }
 
-  it('saves progress whose percent and status match the lessons done', async () => {
-    await assertSucceeds(setDoc(doc(learnerDb(), PATH), record()));
-    await assertSucceeds(setDoc(doc(learnerDb(), PATH), record({ completedLessonIds: ['a', 'b'], percent: 67 })));
-    await assertSucceeds(
-      setDoc(doc(learnerDb(), PATH), record({ completedLessonIds: ['a', 'b', 'c'], percent: 100, status: 'completed', completedAt: serverTimestamp() })),
-    );
-  });
-
-  it('saves an empty course at 0 percent, in progress', async () => {
-    await assertSucceeds(setDoc(doc(learnerDb(), PATH), record({ lessonCount: 0, completedLessonIds: [], percent: 0 })));
-    await assertFails(setDoc(doc(learnerDb(), PATH), record({ lessonCount: 0, completedLessonIds: [], percent: 0, status: 'completed' })));
-  });
-
-  it('rejects a percent that does not match the lessons done', async () => {
-    await assertFails(setDoc(doc(learnerDb(), PATH), record({ percent: 100 })));
-    await assertFails(setDoc(doc(learnerDb(), PATH), record({ percent: 34 })));
-  });
-
-  it('rejects completed status before every lesson is done', async () => {
-    await assertFails(setDoc(doc(learnerDb(), PATH), record({ status: 'completed' })));
-  });
-
-  it('rejects in-progress status when every lesson is done', async () => {
-    await assertFails(
-      setDoc(doc(learnerDb(), PATH), record({ completedLessonIds: ['a', 'b', 'c'], percent: 100, status: 'in_progress' })),
-    );
-  });
-
-  it('rejects more lessons done than the course has', async () => {
-    await assertFails(
-      setDoc(doc(learnerDb(), PATH), record({ lessonCount: 1, completedLessonIds: ['a', 'b'], percent: 200, status: 'completed' })),
-    );
-  });
-
-  it('rejects the retired certificateCode field', async () => {
-    await assertFails(setDoc(doc(learnerDb(), PATH), record({ certificateCode: 'ABC-123' })));
-    await assertFails(setDoc(doc(learnerDb(), PATH), record({ certificateCode: null })));
-  });
-
-  it('does not let a learner delete progress', async () => {
+  it('lets the learner read their own progress', async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), PATH), record());
     });
 
-    await assertFails(deleteDoc(doc(learnerDb(), PATH)));
+    await assertSucceeds(getDoc(doc(learnerDb(), PATH)));
   });
 
-  it("does not let another user write the learner's progress", async () => {
+  it('does not let another user read the learner\'s progress', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), PATH), record());
+    });
+
     const otherDb = testEnv.authenticatedContext(OTHER_UID).firestore();
-    await assertFails(setDoc(doc(otherDb, PATH), record()));
+    await assertFails(getDoc(doc(otherDb, PATH)));
+  });
+
+  it('does not let the learner write progress, even a consistent record', async () => {
+    await assertFails(setDoc(doc(learnerDb(), PATH), record()));
+    await assertFails(
+      setDoc(doc(learnerDb(), PATH), record({ completedLessonIds: ['a', 'b', 'c'], percent: 100, status: 'completed' })),
+    );
+  });
+
+  it('does not let the learner change or delete existing progress', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), PATH), record());
+    });
+
+    await assertFails(updateDoc(doc(learnerDb(), PATH), { percent: 100, status: 'completed' }));
+    await assertFails(deleteDoc(doc(learnerDb(), PATH)));
   });
 });

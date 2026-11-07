@@ -4991,53 +4991,6 @@ service cloud.firestore {
         && data.minutes is number;
     }
 
-    function isValidCourseProgress(userId) {
-      let data = request.resource.data;
-
-      return data.keys().hasOnly([
-          "userId", "courseId", "organizationId", "courseTitle", "cover",
-          "lessonCount", "finalExam", "completedLessonIds", "lastLessonId", "percent",
-          "status", "checkScores", "activity", "learnerName",
-          "skills", "startedAt", "updatedAt", "completedAt"
-        ])
-        && data.userId == userId
-        && data.courseId is string
-        && data.courseId.size() > 0
-        && data.courseId.size() <= 200
-        && (data.organizationId == null || data.organizationId is string)
-        && data.courseTitle is string
-        && data.courseTitle.size() <= 300
-        && data.cover is string
-        && data.cover.size() <= 20
-        && data.lessonCount is int
-        && data.lessonCount >= 0
-        && data.lessonCount <= 500
-        && data.completedLessonIds is list
-        && data.completedLessonIds.size() <= data.lessonCount
-        && (data.lastLessonId == null || data.lastLessonId is string)
-        && data.status in ["in_progress", "completed"]
-        // percent and status follow from the lessons done (course.store.ts).
-        && data.percent is number
-        && data.percent == (
-          data.lessonCount == 0
-            ? 0
-            : math.round(data.completedLessonIds.size() * 100.0 / data.lessonCount)
-        )
-        && (data.status == "completed") == (
-          data.lessonCount > 0
-          && data.completedLessonIds.size() == data.lessonCount
-        )
-        && data.checkScores is map
-        && data.checkScores.size() <= 500
-        && data.activity is map
-        && data.activity.size() <= 60
-        && data.learnerName is string
-        && data.learnerName.size() <= 200
-        && data.skills is list
-        && data.skills.size() <= 50
-        && data.updatedAt == request.time;
-    }
-
     match /courses/{courseId} {
       allow get, list: if resource.data.status == "published";
 
@@ -5666,11 +5619,10 @@ service cloud.firestore {
       allow get, list: if isCurrentUser(userId)
         || isPlatformAdmin();
 
-      allow create, update: if isCurrentUser(userId)
-        && isValidCourseProgress(userId);
-
-      // Progress is history for team reports: learners cannot delete it.
-      allow delete: if false;
+      // Written only by completeCourseLesson (functions/src/course-progress.ts),
+      // which checks the lesson is in the course. Learners cannot delete it:
+      // it is the history behind team progress and dashboards.
+      allow write: if false;
     }
 
     match /outboundMessages/{messageId} {
