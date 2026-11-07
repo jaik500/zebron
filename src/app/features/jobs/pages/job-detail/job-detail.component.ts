@@ -78,7 +78,7 @@ import { CourseService } from '../../../courses/course.service';
 
             <!-- Back to jobs -->
             <a
-              routerLink="/find"
+              routerLink="/jobs"
               fragment="job-opportunities"
               class="inline-flex
                      w-fit
@@ -198,7 +198,7 @@ import { CourseService } from '../../../courses/course.service';
             </p>
 
             <a
-              routerLink="/find"
+              routerLink="/jobs"
               fragment="job-opportunities"
               class="mt-6
                      inline-flex
@@ -815,7 +815,7 @@ import { CourseService } from '../../../courses/course.service';
                    BACK TO JOBS
                    ================================================= -->
               <a
-                routerLink="/find"
+                routerLink="/jobs"
                 fragment="job-opportunities"
                 class="flex
                        items-center

@@ -5,6 +5,8 @@ import { JobStore } from '../../../jobs/stores/job.store';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { legacyJobSearch } from '../../../jobs/job-search-params';
+
 @Component({
   selector: 'app-job-finder',
   standalone: true,
@@ -524,13 +526,13 @@ export class JobFinderComponent {
    * results page remains shareable/bookmarkable.
    */
   await this.router.navigate(
-    ['/find/job/results'],
+    ['/jobs'],
     {
-      queryParams: {
+      queryParams: legacyJobSearch({
         type: this.selectedJobType(),
         location: this.location.trim(),
         preference: this.selectedPreference(),
-      },
+      }),
     },
   );
 }

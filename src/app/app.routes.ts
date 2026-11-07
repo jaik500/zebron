@@ -12,6 +12,7 @@ import { AboutComponent } from './features/about/pages/about/about.component';
 import { testCenterOrganizationGuard } from './core/guards/test-center-organization.guard';
 import { leaveCourseBuilderGuard } from './features/courses/builder/leave-course-builder.guard';
 import { leaveDashboardsGuard } from './features/dashboards/leave-dashboards.guard';
+import { legacyJobSearch } from './features/jobs/job-search-params';
 export const routes: Routes = [
     // =====================================================
     // PUBLIC
@@ -247,11 +248,9 @@ export const routes: Routes = [
         loadComponent: () => import('./features/resource-finder/pages/job/job-finder.component').then((m) => m.JobFinderComponent),
     },
     {
+        // Old results page: now the job board at /jobs, with the same search.
         path: 'find/job/results',
-        data: {
-            title: 'Zebron | Jobs',
-        },
-        loadComponent: () => import('./features/resource-finder/pages/job-results/job-results.component').then((m) => m.JobResultsComponent),
+        redirectTo: ({ queryParams }) => inject(Router).createUrlTree(['/jobs'], { queryParams: legacyJobSearch(queryParams) }),
     },
     // -----------------------------------------------------
     // TRAINING FINDER
@@ -275,10 +274,19 @@ export const routes: Routes = [
     // JOB DETAILS
     // -----------------------------------------------------
     {
+        path: 'jobs',
+        pathMatch: 'full',
+        data: {
+            title: 'Zebron | Job board',
+            header: 'Job board',
+        },
+        loadComponent: () => import('./features/jobs/pages/job-board/job-board.component').then((m) => m.JobBoardComponent),
+    },
+    {
         path: 'jobs/my',
         data: {
             title: 'Zebron | My jobs',
-            header: 'Find jobs & training',
+            header: 'My jobs',
         },
         loadComponent: () => import('./features/jobs/pages/my-jobs/my-jobs.component').then((m) => m.MyJobsComponent),
     },
@@ -286,6 +294,7 @@ export const routes: Routes = [
         path: 'jobs/:id',
         data: {
             title: 'Zebron | Job detail',
+            header: 'Job board',
         },
         loadComponent: () => import('./features/jobs/pages/job-detail/job-detail.component').then((m) => m.JobDetailComponent),
     },

@@ -163,6 +163,14 @@ function describeAlert(alert: Data): string {
 function buildEmail(alert: Data, listings: Listing[], more: number, baseUrl: string): { subject: string; text: string; html: string } {
   const label = describeAlert(alert);
   const manageUrl = `${baseUrl}/jobs/my`;
+  // The job board with this alert's filters.
+  const search = new URLSearchParams(Object.entries({
+    q: text(alert.keywords),
+    location: text(alert.state),
+    arrangement: text(alert.workArrangement),
+    type: text(alert.employmentType),
+  }).filter(([, value]) => value)).toString();
+  const boardUrl = `${baseUrl}/jobs${search ? `?${search}` : ""}`;
   const subject = listings.length === 1 ?
     `1 new job for ${label} on Zebron` :
     `${listings.length + more} new jobs for ${label} on Zebron`;
@@ -174,7 +182,7 @@ function buildEmail(alert: Data, listings: Listing[], more: number, baseUrl: str
     `New jobs on the Zebron job board for ${label}:`,
     "",
     lines.join("\n\n"),
-    more > 0 ? `\nand ${more} more on ${baseUrl}/find/job` : "",
+    more > 0 ? `\nand ${more} more: ${boardUrl}` : `\nSee all matching jobs: ${boardUrl}`,
     "",
     `Change or stop this alert: ${manageUrl}`,
   ].join("\n");
@@ -185,7 +193,7 @@ function buildEmail(alert: Data, listings: Listing[], more: number, baseUrl: str
   const html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#032D42">
 <p>New jobs on the Zebron job board for <strong>${escapeHtml(label)}</strong>:</p>
 <ul style="padding-left:18px">${items}</ul>
-${more > 0 ? `<p>And ${more} more on <a href="${baseUrl}/find/job" style="color:#007979">the job board</a>.</p>` : ""}
+<p>${more > 0 ? `And ${more} more. ` : ""}<a href="${escapeHtml(boardUrl)}" style="color:#007979">See all matching jobs on the job board</a>.</p>
 <p style="color:#777;font-size:12px">You get this email because you set a job alert on Zebron. <a href="${manageUrl}" style="color:#007979">Change or stop this alert</a>.</p>
 </div>`;
 

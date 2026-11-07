@@ -47,20 +47,19 @@ const EMPLOYMENT_TYPES: { value: EmploymentType | ''; label: string }[] = [
   imports: [RouterLink, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
   template: `
     <main class="min-h-screen bg-gray-50">
-      <header class="border-b border-gray-200 bg-[#032D42]">
-        <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div class="min-w-0">
-            <p class="text-xs font-semibold uppercase tracking-wider text-[#7ED6D1]">Zebron job board</p>
-            <h1 class="text-xl font-bold text-white sm:text-2xl">My jobs</h1>
-          </div>
+      <!-- The universal header shows the page name ("My jobs"). -->
+      <h1 class="sr-only">My jobs</h1>
+      <div class="border-b border-gray-200 bg-white">
+        <div class="mx-auto flex max-w-5xl items-center gap-2 px-4 py-2 sm:px-6 lg:px-8">
           <a
-            routerLink="/find/job"
-            class="inline-flex h-10 shrink-0 items-center rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-700 hover:border-[#7ED6D1] hover:text-[#032D42]"
+            routerLink="/jobs"
+            class="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-sm font-medium text-[#007979] hover:bg-[#007979]/10"
           >
-            Find jobs
+            <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">arrow_back</mat-icon>
+            Job board
           </a>
         </div>
-      </header>
+      </div>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         @if (auth.isLoading()) {
