@@ -11,6 +11,7 @@ import { QuizService } from '../../services/quiz.service';
 import { TestDifficulty, TestMode, TestStore } from '../../store/test.store';
 import { OrganizationContextService } from '../../../../core/services/organization-context.service';
 import { TestQuestionService } from '../../services/test-question.service';
+import { CourseService } from '../../../courses/course.service';
 import { PartnerOrganizationContextService } from '../../../../core/services/partner-organization-context.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
@@ -93,7 +94,6 @@ import { learnerBaseRoute } from '../../learner-route';
 
         <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
           <div class="mx-auto flex max-w-5xl items-center gap-3 px-4 py-1 sm:px-6 lg:px-8">
-            <!-- Back to the quiz list -->
             <a
               [routerLink]="[learnerBaseRoute(), 'quizzes']"
               class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/85 transition hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
@@ -103,39 +103,18 @@ import { learnerBaseRoute } from '../../learner-route';
               <mat-icon aria-hidden="true">arrow_back</mat-icon>
             </a>
 
-            <!-- Title, details and description -->
             <div class="min-w-0 flex-1">
-              <h1 class="truncate text-base font-semibold leading-tight sm:text-lg">
+              <h1 class="truncate text-base font-semibold leading-tight sm:text-lg" [title]="course()!.name">
                 {{ course()!.name }}
               </h1>
-
-              <div class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-white/80">
-                <span class="shrink-0 rounded bg-white/15 px-1.5 py-px text-[10px] font-bold uppercase tracking-wider text-white">
-                  {{ course()!.type | t }}
-                </span>
-                @if (course()!.certificationCode) {
-                  <span class="shrink-0 font-semibold text-white">{{ course()!.certificationCode }}</span>
+              <!-- e.g. "Course: Introduction to Networking · 4 topics · 25 questions" -->
+              <p class="mt-0.5 truncate text-xs text-white/80">
+                @if (topics().length) {
+                  {{ (topics().length === 1 ? '1 topic' : '{0} topics') | t: [topics().length] }}
+                  <span aria-hidden="true">·</span>
                 }
-                @if (course()!.provider) {
-                  <span class="truncate">
-                    <span aria-hidden="true">·</span> {{ course()!.provider }}
-                  </span>
-                }
-              </div>
-
-              @if (course()!.description) {
-                <p class="mt-1 hidden max-w-3xl truncate text-xs text-white/70 sm:block" [title]="course()!.description | t">
-                  {{ course()!.description | t }}
-                </p>
-              }
-            </div>
-
-            <!-- Question count -->
-            <div class="shrink-0 rounded-lg bg-white/15 px-3 py-1.5 text-center">
-              <p class="text-lg font-bold leading-none">
-                {{ courseQuestionCount() ?? course()!.questionCount }}
+                {{ '{0} questions' | t: [courseQuestionCount() ?? course()!.questionCount] }}
               </p>
-              <p class="mt-0.5 text-[12px] text-white/80">{{ 'questions' | t }}</p>
             </div>
           </div>
         </header>
@@ -144,45 +123,36 @@ import { learnerBaseRoute } from '../../learner-route';
              TOPIC SELECTION
              ================================================ -->
 
-        <section class="mx-auto max-w-5xl px-5 py-7 sm:px-6 lg:px-8">
-          <div class="grid gap-7 lg:grid-cols-[1fr_280px]">
+        <section class="mx-auto max-w-5xl px-4 pt-2 pb-4 sm:px-6 lg:px-8">
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
             <!-- ============================================
                  TOPICS
                  ============================================ -->
 
-            <div>
-              <div>
-                <h2 class="text-xl font-bold text-[#032D42]">{{ 'Choose quiz topics' | t }}</h2>
-
-                <p class="mt-1 text-sm text-gray-600">
-                  {{ 'You can select one or several topics.' | t }}
+            <div class="min-w-0">
+              <!-- About this quiz: the description only -->
+              @if (course()!.description) {
+                <p class="mb-4 break-words rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 [overflow-wrap:anywhere]">
+                  {{ course()!.description | t }}
                 </p>
-              </div>
+              }
 
-              <!-- SELECT ALL -->
-              @if (topics().length > 0) {
-                <div
-                  class="mt-4 flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white px-4 py-3"
-                >
-                  <div>
-                    <p class="text-sm font-semibold text-[#032D42]">{{ 'Select all topics' | t }}</p>
-
-                    <p class="text-xs text-gray-500">{{ 'Include every topic in this quiz.' | t }}</p>
-                  </div>
-
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="text-base font-bold text-[#032D42]">{{ 'Choose topics' | t }}</h2>
+                @if (topics().length > 0) {
                   <button
                     type="button"
-                    class="shrink-0 rounded-lg border border-[#007979] px-3 py-1.5 text-xs font-semibold text-[#007979] transition hover:bg-[#E5F4F4]"
+                    class="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-[#007979] transition hover:bg-[#E5F4F4]"
                     (click)="toggleAllTopics()"
                   >
                     {{ allTopicsSelected() ? ('Clear all' | t) : ('Select all' | t) }}
                   </button>
-                </div>
-              }
+                }
+              </div>
 
               <!-- TOPIC LOADING -->
               @if (topicsLoading()) {
-                <div class="mt-4 rounded-xl border border-gray-200 bg-white p-8 text-center">
+                <div class="mt-2 rounded-lg border border-gray-200 bg-white p-6 text-center">
                   <div
                     class="mx-auto h-7 w-7 animate-spin rounded-full border-4 border-[#E5F4F4] border-t-[#007979]"
                     [attr.aria-label]="'Loading topics' | t"
@@ -203,11 +173,11 @@ import { learnerBaseRoute } from '../../learner-route';
 
               <!-- TOPIC LIST -->
               @if (!topicsLoading() && !topicsError() && topics().length > 0) {
-                <div class="mt-4 space-y-2.5">
+                <div class="mt-2 space-y-1.5">
                   @for (topic of topics(); track topic.id) {
                     <button
                       type="button"
-                      class="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all duration-200"
+                      class="flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all duration-200"
                       [class.border-[#12BFC3]]="isSelected(topic.id)"
                       [class.bg-[#E5F4F4]]="isSelected(topic.id)"
                       [class.border-gray-200]="!isSelected(topic.id)"
@@ -235,20 +205,20 @@ import { learnerBaseRoute } from '../../learner-route';
 
                       <!-- Topic -->
                       <span class="min-w-0 flex-1">
-                        <span class="block text-sm font-bold text-[#032D42]">
+                        <span class="block break-words text-sm font-semibold text-[#032D42] [overflow-wrap:anywhere]">
                           {{ topic.name }}
                         </span>
 
                         @if (topic.description) {
-                          <span class="mt-0.5 block text-xs leading-5 text-gray-600">
+                          <span class="block truncate text-xs text-gray-500" [title]="topic.description | t">
                             {{ topic.description | t }}
                           </span>
                         }
                       </span>
 
                       <!-- Question count -->
-                      <span class="shrink-0 text-sm font-medium text-gray-500">
-                        {{ '{0} questions' | t: [topicQuestionCountFor(topic)] }}
+                      <span class="shrink-0 text-xs font-medium text-gray-500">
+                        {{ topicQuestionCountFor(topic) }}
                       </span>
                     </button>
                   }
@@ -258,7 +228,7 @@ import { learnerBaseRoute } from '../../learner-route';
               <!-- NO TOPICS -->
               @if (!topicsLoading() && !topicsError() && topics().length === 0) {
                 <div
-                  class="mt-4 rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center"
+                  class="mt-2 rounded-lg border border-dashed border-gray-300 bg-white p-6 text-center"
                 >
                   <div
                     class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#E5F4F4] text-[#007979]"
@@ -282,29 +252,16 @@ import { learnerBaseRoute } from '../../learner-route';
                  ============================================ -->
 
             <aside>
-              <div class="sticky top-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex items-center gap-3">
-                  <div
-                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E5F4F4] text-[#007979]"
-                  >
-                    <mat-icon aria-hidden="true"> quiz </mat-icon>
-                  </div>
+              <div class="sticky top-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="flex items-baseline justify-between gap-2">
                   <h2 class="text-base font-bold text-[#032D42]">{{ 'Quiz setup' | t }}</h2>
+                  <p class="text-xs text-gray-500">
+                    {{ '{0} topics · {1} questions' | t: [selectedTopicCount(), selectedQuestionCount()] }}
+                  </p>
                 </div>
 
-                <dl class="mt-3 grid grid-cols-2 gap-2">
-                  <div class="rounded-lg bg-gray-50 px-3 py-2">
-                    <dt class="text-[11px] text-gray-500">{{ 'Topics' | t }}</dt>
-                    <dd class="text-base font-bold text-[#032D42]">{{ selectedTopicCount() }}</dd>
-                  </div>
-                  <div class="rounded-lg bg-gray-50 px-3 py-2">
-                    <dt class="text-[11px] text-gray-500">{{ 'No. of questions' | t }}</dt>
-                    <dd class="text-base font-bold text-[#032D42]">{{ selectedQuestionCount() }}</dd>
-                  </div>
-                </dl>
-
                 <!-- Test settings -->
-                <div class="mt-5 flex flex-col gap-4">
+                <div class="mt-3 flex flex-col gap-3">
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense" subscriptSizing="dynamic">
                     <mat-label>{{ 'Number of questions' | t }}</mat-label>
                     <mat-select
@@ -336,7 +293,7 @@ import { learnerBaseRoute } from '../../learner-route';
                         <mat-option [value]="option.value">{{ option.label | t }}</mat-option>
                       }
                     </mat-select>
-                    <mat-hint>{{ (testStore.isExamOnly() ? 'Exam only: graded by Zebron' : mode() === 'practice' ? 'Instant feedback' : 'Feedback at the end') | t }}</mat-hint>
+                    <mat-hint>{{ (isExamOnly() ? 'Exam only: graded by Zebron' : mode() === 'practice' ? 'Instant feedback' : 'Feedback at the end') | t }}</mat-hint>
                   </mat-form-field>
 
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense" subscriptSizing="dynamic">
@@ -358,7 +315,7 @@ import { learnerBaseRoute } from '../../learner-route';
 
                 <button
                   type="button"
-                  class="mt-4 w-full rounded-lg bg-[#007979] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#006666] disabled:cursor-not-allowed disabled:bg-gray-300"
+                  class="mt-3 w-full rounded-lg bg-[#007979] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#006666] disabled:cursor-not-allowed disabled:bg-gray-300"
                   [disabled]="!canStart() || starting()"
                   (click)="startQuiz()"
                 >
@@ -404,6 +361,8 @@ export class QuizDetailsComponent implements OnInit {
   protected readonly testStore = inject(TestStore);
 
   private readonly questionService = inject(TestQuestionService);
+
+  private readonly courseService = inject(CourseService);
 
   private readonly partnerOrganizationContext = inject(PartnerOrganizationContextService);
 
@@ -451,6 +410,9 @@ export class QuizDetailsComponent implements OnInit {
   readonly courseQuestionCount = signal<number | null>(null);
 
   readonly topicQuestionCounts = signal<Record<string, number>>({});
+
+  /** The learning course whose final exam uses this quiz, shown in the header. */
+  readonly linkedCourse = signal<{ id: string; title: string } | null>(null);
 
   // =====================================================
   // TEST STORE STATE
@@ -552,6 +514,11 @@ export class QuizDetailsComponent implements OnInit {
       this.course.set(course);
       this.testStore.setCourse(course);
 
+      // The course this quiz belongs to (in the background; the header shows it when found).
+      void this.courseService
+        .findCourseForQuiz(course.id, course.scope === 'platform' ? null : course.organizationId, this.isOrganizationRoute ? organizationId : null)
+        .then((linked) => this.linkedCourse.set(linked && linked.title ? linked : null));
+
       // Pass the organization ID from the URL directly to the store.
       await this.testStore.loadTopics(course.id, organizationId);
       // Exam-only questions can't be read from the browser; the cached counts are used.
@@ -640,9 +607,12 @@ export class QuizDetailsComponent implements OnInit {
     { value: 'exam', label: 'Exam' },
   ];
 
+  /** Exam-only bank: no practice mode, and its questions never reach the browser. */
+  readonly isExamOnly = computed(() => this.course()?.examOnly === true);
+
   /** Exam-only banks can't be practised. */
   readonly modeChoices = computed(() =>
-    this.testStore.isExamOnly() ? this.modeOptions.filter((option) => option.value === 'exam') : this.modeOptions,
+    this.isExamOnly() ? this.modeOptions.filter((option) => option.value === 'exam') : this.modeOptions,
   );
 
   /**

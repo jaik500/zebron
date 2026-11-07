@@ -218,6 +218,37 @@ export class CourseService {
   }
 
   /**
+   * The published course whose final exam uses this Test Center quiz, or
+   * null. Looks in the organization's courses first (they may use their own
+   * quizzes or Zebron's), then in Zebron's (which use Zebron quizzes only).
+   * One small query per place; places the reader can't open are skipped.
+   */
+  async findCourseForQuiz(
+    quizId: string,
+    quizOrganizationId: string | null,
+    viewerOrganizationId: string | null,
+  ): Promise<{ id: string; title: string; organizationId: string | null } | null> {
+    const places: (string | null)[] = quizOrganizationId
+      ? [quizOrganizationId]
+      : [...(viewerOrganizationId ? [viewerOrganizationId] : []), null];
+
+    for (const owner of places) {
+      try {
+        const snapshot = await getDocs(
+          query(this.courses(owner), where('status', '==', 'published'), where('finalExam.quizId', '==', quizId), limit(1)),
+        );
+        const found = snapshot.docs[0];
+        if (found) {
+          return { id: found.id, title: String(found.data()['title'] ?? ''), organizationId: owner };
+        }
+      } catch {
+        // Courses not switched on for the organization, or not readable: skip.
+      }
+    }
+    return null;
+  }
+
+  /**
    * The catalog for a context: Zebron courses, plus the organization's
    * own courses (listed first) on organization pages.
    */

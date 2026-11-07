@@ -286,6 +286,29 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
           >
  
             <!-- =================================================
+                 ORGANIZATION DASHBOARD (on every organization page
+                 except the dashboard itself)
+                 ================================================= -->
+
+            @if (organizationDashboardLink(); as dashboardLink) {
+              <a
+                mat-icon-button
+                [routerLink]="dashboardLink"
+                matTooltip="Organization dashboard"
+                aria-label="Organization dashboard"
+                class="
+                  !h-10
+                  !w-10
+                  !shrink-0
+                  !text-white
+                  hover:!bg-white/10
+                "
+              >
+                <mat-icon>space_dashboard</mat-icon>
+              </a>
+            }
+
+            <!-- =================================================
                  ALL APPS (public directory, every screen size)
                  ================================================= -->
 
@@ -653,6 +676,20 @@ export class ZebronHeaderComponent {
     // Platform admins viewing an organization they don't belong to.
     const viewed = this.partnerContext.organization();
     return fromUrl && viewed?.id === fromUrl ? { id: viewed.id, name: viewed.name, role: '', roleLabel: '' } : null;
+  });
+
+  /**
+   * The organization dashboard of the organization page being viewed
+   * (/partner/org/:id/...), for the header button. Null elsewhere and on
+   * the dashboard itself.
+   */
+  protected readonly organizationDashboardLink = computed(() => {
+    const url = this.currentUrl().split(/[?#]/)[0];
+    const match = /^\/partner\/org\/([^/]+)(\/.*)?$/.exec(url);
+    if (!match) return null;
+    const rest = match[2] ?? '';
+    if (rest === '' || rest === '/' || rest === '/dashboard') return null;
+    return `/partner/org/${match[1]}/dashboard`;
   });
 
   /** Links for the current organization: its dashboard plus the apps it has. */

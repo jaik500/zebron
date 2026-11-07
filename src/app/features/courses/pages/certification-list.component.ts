@@ -106,22 +106,23 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
                 [routerLink]="[context.basePath, 'certifications', row.definition.key]"
                 class="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#007979]/50"
               >
-                <div class="flex items-start gap-3 p-5 text-white" [style.background]="cover(row.definition)">
-                  <mat-icon class="!h-10 !w-10 shrink-0 !text-[40px]" aria-hidden="true">military_tech</mat-icon>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-xs font-bold uppercase tracking-wide text-white/80">
+                <div class="pb-3 pl-3 pr-5 pt-1.5 text-white" [style.background]="cover(row.definition)">
+                  <!-- Badge, provider and status on one line; the title below lines up with the provider (badge 2.25rem + gap 0.5rem). -->
+                  <div class="flex min-w-0 items-center gap-2">
+                    <mat-icon class="!h-9 !w-9 shrink-0 !text-[36px] !leading-none" aria-hidden="true">military_tech</mat-icon>
+                    <p class="min-w-0 flex-1 truncate text-xs font-bold uppercase tracking-wide text-white/80">
                       @if (row.definition.vendor; as vendor) {
                         {{ vendor.name }} · {{ 'Exam preparation' | t }}
                       } @else {
                         {{ row.definition.providerName }}
                       }
                     </p>
-                    <h2 class="text-lg font-bold leading-snug">{{ row.definition.credentialName }}</h2>
+                    <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold" [ngClass]="stage(row).classes">
+                      <mat-icon class="!h-3.5 !w-3.5 !text-[14px] !leading-none" aria-hidden="true">{{ stage(row).icon }}</mat-icon>
+                      {{ stage(row).label | t }}
+                    </span>
                   </div>
-                  <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold" [ngClass]="stage(row).classes">
-                    <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">{{ stage(row).icon }}</mat-icon>
-                    {{ stage(row).label | t }}
-                  </span>
+                  <h2 class="-mt-1.5 break-words pl-11 text-lg font-bold leading-snug [overflow-wrap:anywhere]">{{ row.definition.credentialName }}</h2>
                 </div>
 
                 <div class="flex min-w-0 flex-1 flex-col gap-3 p-5">

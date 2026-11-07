@@ -6,6 +6,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
   serverTimestamp,
@@ -52,6 +53,54 @@ export class TestProgramService {
       id: snapshot.id,
       ...snapshot.data(),
     } as TestProgram;
+  }
+
+  // ============================================================
+  // PROGRAM NAME FOR A QUIZ (learner pages)
+  // ============================================================
+
+  /**
+   * The program a learner sees a quiz under, or ''.
+   *
+   * - On organization pages, a Zebron quiz shows under the organization's
+   *   program that links it (platformQuizIds).
+   * - Otherwise the quiz's own program (programId), or the program name
+   *   stored on Zebron's seeded quizzes (programName).
+   *
+   * Zebron programs aren't readable by learners, so failures fall through
+   * quietly to the next option.
+   */
+  async getProgramNameForQuiz(
+    quiz: { id: string; organizationId: string | null; programId?: string | null; programName?: string | null },
+    viewerOrganizationId: string | null,
+  ): Promise<string> {
+    if (!quiz.organizationId && viewerOrganizationId) {
+      try {
+        const linked = await getDocs(
+          query(
+            this.programsCollection,
+            where('organizationId', '==', viewerOrganizationId),
+            where('platformQuizIds', 'array-contains', quiz.id),
+            limit(1),
+          ),
+        );
+        const name = linked.docs[0]?.get('name');
+        if (typeof name === 'string' && name.trim()) return name.trim();
+      } catch {
+        // Not readable here: try the quiz's own program.
+      }
+    }
+
+    if (quiz.programId) {
+      try {
+        const program = await this.getProgram(quiz.programId);
+        if (program?.name?.trim()) return program.name.trim();
+      } catch {
+        // Zebron programs are readable only by platform administrators.
+      }
+    }
+
+    return quiz.programName?.trim() ?? '';
   }
 
   // ============================================================
