@@ -37,9 +37,9 @@ import { Course, COURSE_COVERS, COURSE_LEVEL_LABELS, CourseExamRecord, CoursePro
             {{ course().program }}@if (course().programOrder) { · {{ 'Step {0}' | t: [course().programOrder] }} }
           </span>
         } @else if (course().topic) {
-          <span class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ course().topic }}</span>
+          <span class="truncate text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ course().topic }}</span>
         }
-        <h3 class="text-base font-semibold leading-snug text-slate-900 group-hover:text-[#007979]">{{ course().title }}</h3>
+        <h3 class="break-words text-base font-semibold leading-snug text-slate-900 [overflow-wrap:anywhere] group-hover:text-[#007979]">{{ course().title }}</h3>
         <p class="text-xs text-slate-500">
           {{ levelLabel() | t }} · {{ duration() }} · {{ course().lessonCount }} {{ (course().lessonCount === 1 ? 'lesson' : 'lessons') | t }}
         </p>

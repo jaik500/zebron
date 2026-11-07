@@ -39,7 +39,7 @@ const STATUS: Record<string, { label: string; classes: string }> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
         [crumbs]="[{ label: 'Learning', link: context.basePath }, { label: 'Manage courses' }]"

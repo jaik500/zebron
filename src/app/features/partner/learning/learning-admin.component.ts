@@ -29,7 +29,7 @@ import { LiveSessionService, sessionEnd } from '../../live/live-session.service'
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, MatIconModule, TranslatePipe],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <a
@@ -54,7 +54,7 @@ import { LiveSessionService, sessionEnd } from '../../live/live-session.service'
         </div>
       </header>
 
-      <div class="mx-auto grid max-w-6xl gap-4 px-4 py-6 sm:px-6 md:grid-cols-2 lg:px-8" [class]="cardCount() === 3 ? 'xl:grid-cols-3' : ''">
+      <div class="mx-auto grid grid-cols-1 max-w-6xl gap-4 px-4 py-6 sm:px-6 md:grid-cols-2 lg:px-8" [class]="cardCount() === 3 ? 'xl:grid-cols-3' : ''">
         <!-- ================= COURSES ================= -->
         @if (hasCourses()) {
         <section class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="courses-card-title">

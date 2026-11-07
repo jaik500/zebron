@@ -64,7 +64,7 @@ import { CourseService } from '../course.service';
     BlockEditorComponent,
   ],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <!-- Page header: back and breadcrumbs left, actions right (icons only on phones) -->
       <header class="sticky top-16 z-20 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div class="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2 sm:px-6 lg:px-8">
@@ -78,7 +78,7 @@ import { CourseService } from '../course.service';
           </a>
           <nav class="flex min-w-0 flex-1 items-center gap-1 text-sm" [attr.aria-label]="'Breadcrumb' | t">
             <a [routerLink]="managePath" class="hidden shrink-0 text-white/80 hover:text-white hover:underline sm:inline">{{ 'Manage courses' | t }}</a>
-            <mat-icon class="!hidden !h-4 !w-4 shrink-0 !text-base text-white/60 sm:!inline-block" aria-hidden="true">chevron_right</mat-icon>
+            <mat-icon class="!hidden !h-4 !w-4 shrink-0 !text-base !leading-none text-white/60 sm:!inline-block" aria-hidden="true">chevron_right</mat-icon>
             <span class="truncate font-semibold">{{ store.details().title || ('New course' | t) }}</span>
             <span class="ml-1 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold" [ngClass]="statusClass()">{{ statusLabel() | t }}</span>
           </nav>
@@ -198,7 +198,7 @@ import { CourseService } from '../course.service';
       }
 
       @if (store.loading()) {
-        <div class="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-8" aria-hidden="true">
+        <div class="mx-auto grid grid-cols-1 max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-8" aria-hidden="true">
           <div class="h-80 animate-pulse rounded-2xl bg-slate-200/70"></div>
           <div class="h-96 animate-pulse rounded-2xl bg-slate-200/70"></div>
         </div>
@@ -213,7 +213,7 @@ import { CourseService } from '../course.service';
           </div>
         }
 
-        <div class="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-8">
+        <div class="mx-auto grid grid-cols-1 max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-8">
           <!-- Outline -->
           <nav class="self-start rounded-2xl border border-slate-200 bg-white p-3 lg:sticky lg:top-32" [attr.aria-label]="'Course outline' | t">
             <button
@@ -309,7 +309,7 @@ import { CourseService } from '../course.service';
             @if (store.selectedLesson(); as lesson) {
               <div class="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
                 <p class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ 'Lesson' | t }}</p>
-                <div class="mt-2 grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px]">
+                <div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_140px]">
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
                     <mat-label>{{ 'Lesson title' | t }}</mat-label>
                     <input matInput [value]="lesson.title" (input)="store.patchLesson(lesson.id, { title: value($event) })" />
@@ -381,7 +381,7 @@ import { CourseService } from '../course.service';
                 </mat-form-field>
 
                 <!-- Program: groups courses into an ordered learning path in the catalog -->
-                <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
                     <mat-label>{{ 'Program (optional)' | t }}</mat-label>
                     <!-- Organization pages list the organization's programs; Zebron pages list Zebron programs. -->
@@ -425,9 +425,9 @@ import { CourseService } from '../course.service';
                       (click)="programTabOpened = true"
                       class="inline-flex items-center gap-1 rounded-lg border border-[#007979] px-2.5 py-1 font-semibold text-[#007979] hover:bg-teal-50"
                     >
-                      <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">add</mat-icon>
+                      <mat-icon class="!h-4 !w-4 !text-base !leading-none" aria-hidden="true">add</mat-icon>
                       {{ 'New program' | t }}
-                      <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">open_in_new</mat-icon>
+                      <mat-icon class="!h-4 !w-4 !text-base !leading-none" aria-hidden="true">open_in_new</mat-icon>
                     </a>
                     @if (programTabOpened) {
                       <span>{{ 'Come back to this tab when you have saved it: the list updates by itself.' | t }}</span>
@@ -435,7 +435,7 @@ import { CourseService } from '../course.service';
                   </div>
                 }
 
-                <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <!-- Topic: a broad catalog category (the catalog's filter chips). Free text, with
                        suggestions from the topics this organization's (or Zebron's) courses already use. -->
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
@@ -510,7 +510,7 @@ import { CourseService } from '../course.service';
                   </label>
 
                   @if (exam(); as finalExam) {
-                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <mat-form-field appearance="outline" class="zb-field zb-field--flush sm:col-span-2" subscriptSizing="dynamic">
                         <mat-label>{{ 'Test Center quiz' | t }}</mat-label>
                         <mat-select [value]="finalExam.quizId" (selectionChange)="chooseQuiz($event.value)">

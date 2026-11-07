@@ -128,7 +128,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
            MAIN
            ========================================================= -->
 
-      <main class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+      <main class="mx-auto max-w-7xl overflow-x-clip px-4 py-4 sm:px-6 lg:px-8">
         <!-- =======================================================
              PROFILE REMINDER: stays until first and last name are set
              ======================================================= -->
@@ -227,13 +227,13 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                ORGANIZATION SUMMARY
                ===================================================== -->
 
-          <section class="mb-8 grid gap-5 lg:grid-cols-[1fr_auto]">
+          <section class="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
             <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <div class="flex items-start gap-4">
                 <div
                   class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#5DB996]"
                 >
-                  <mat-icon class="!text-2xl text-white"> business </mat-icon>
+                  <mat-icon class="!text-2xl !leading-none text-white"> business </mat-icon>
                 </div>
 
                 <div class="min-w-0">
@@ -253,9 +253,9 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                       ]"
                       class="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/20"
                     >
-                      <mat-icon class="!h-5 !w-5 !text-xl">checklist</mat-icon>
+                      <mat-icon class="!h-5 !w-5 !text-xl !leading-none">checklist</mat-icon>
                       <span>{{ 'Complete onboarding steps' | t }}</span>
-                      <mat-icon class="!h-4 !w-4 !text-base">arrow_forward</mat-icon>
+                      <mat-icon class="!h-4 !w-4 !text-base !leading-none">arrow_forward</mat-icon>
                     </a>
                   }
 
@@ -436,7 +436,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                       [queryParams]="supportQuery()"
                       class="relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-[#007979]/30 bg-white px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]"
                     >
-                      <mat-icon class="!h-4 !w-4 !text-base">support_agent</mat-icon>
+                      <mat-icon class="!h-4 !w-4 !text-base !leading-none">support_agent</mat-icon>
                       {{ 'Help & Support' | t }}
                     </a>
                   </div>
@@ -467,7 +467,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                 </p>
               </div>
 
-              <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 @for (card of visibleDashboardCards(); track card.id) {
                   <div
                     class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm
@@ -546,11 +546,11 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                     @if (card.id === 'learning' && card.enabled && nextLiveSession(); as next) {
                       <a
                         [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'live']"
-                        class="mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm"
+                        class="mt-3 flex min-w-0 items-start gap-2 rounded-lg px-3 py-2 text-sm leading-5"
                         [class]="next.live ? 'bg-red-50 text-red-800 hover:bg-red-100' : 'bg-teal-50 text-teal-900 hover:bg-teal-100'"
                       >
-                        <mat-icon class="!h-[18px] !w-[18px] shrink-0 !text-[18px]" aria-hidden="true">{{ next.live ? 'sensors' : 'live_tv' }}</mat-icon>
-                        <span class="min-w-0 flex-1 truncate">
+                        <mat-icon class="mt-px !h-[18px] !w-[18px] shrink-0 !text-[18px]" aria-hidden="true">{{ next.live ? 'sensors' : 'live_tv' }}</mat-icon>
+                        <span class="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">
                           <span class="font-semibold">{{ (next.live ? 'Live now' : 'Next live session') | t }}:</span>
                           {{ next.title }} · {{ next.when }}
                         </span>
@@ -584,7 +584,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                 </p>
               </div>
 
-              <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 @if (access.canAccessAdministration()) {
                 <a
                   [routerLink]="administrationRoute()"

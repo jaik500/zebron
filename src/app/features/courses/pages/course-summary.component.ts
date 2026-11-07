@@ -26,7 +26,7 @@ import { CourseStore } from '../course.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent, ProgressRingComponent],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
         [backLink]="coursePath()"
@@ -127,7 +127,7 @@ import { CourseStore } from '../course.store';
             }
           </section>
 
-          <div class="mt-4 grid gap-4 md:grid-cols-2">
+          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <!-- What you learned -->
             @if (course.outcomes.length) {
               <section class="rounded-2xl border border-slate-200 bg-white p-5">

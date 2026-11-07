@@ -35,7 +35,7 @@ const WEEKLY_GOAL_MINUTES = 60;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent, CourseCardComponent, ProgressRingComponent],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
         [crumbs]="[{ label: 'Learning' }, { label: 'My learning' }]"
@@ -66,19 +66,19 @@ const WEEKLY_GOAL_MINUTES = 60;
           </section>
         } @else if (store.continueRecord(); as record) {
           <!-- Continue learning -->
-          <section class="grid overflow-hidden rounded-2xl border border-slate-200 bg-white md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <section class="grid grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
             <div class="relative min-h-36" [style.background]="coverOf(record)">
               <div class="absolute bottom-4 left-5">
                 <app-progress-ring [percent]="record.percent" [size]="68" color="#ffffff" trackColor="rgba(255,255,255,0.25)" />
               </div>
             </div>
-            <div class="flex flex-col justify-center gap-2 p-5">
+            <div class="flex min-w-0 flex-col justify-center gap-2 p-4 sm:p-5">
               <span class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ 'Continue learning' | t }}</span>
-              <h2 class="text-xl font-semibold leading-snug text-slate-900">{{ record.courseTitle }}</h2>
+              <h2 class="break-words text-xl font-semibold leading-snug text-slate-900 [overflow-wrap:anywhere]">{{ record.courseTitle }}</h2>
               @if (nextLessonTitle(); as title) {
-                <p class="flex items-center gap-1 text-sm text-slate-600">
-                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px] text-[#007979]" aria-hidden="true">play_circle</mat-icon>
-                  {{ 'Next: {0}' | t: [title] }}
+                <p class="flex min-w-0 items-start gap-1 text-sm text-slate-600">
+                  <mat-icon class="!h-[18px] !w-[18px] shrink-0 !text-[18px] text-[#007979]" aria-hidden="true">play_circle</mat-icon>
+                  <span class="min-w-0 break-words [overflow-wrap:anywhere]">{{ 'Next: {0}' | t: [title] }}</span>
                 </p>
               }
               <p class="text-xs text-slate-500">
@@ -202,7 +202,7 @@ const WEEKLY_GOAL_MINUTES = 60;
               <h2 class="text-lg font-semibold text-slate-900">{{ 'In progress' | t }}</h2>
               <span class="text-sm text-slate-500">{{ 'Pick up where you left off' | t }}</span>
             </div>
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               @for (record of otherInProgress(); track record.id) {
                 <a
                   [routerLink]="linkFor(record)"
@@ -228,7 +228,7 @@ const WEEKLY_GOAL_MINUTES = 60;
         </div>
 
         @if (store.catalogLoading() && !store.catalog().length) {
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
             @for (item of [1, 2, 3]; track item) {
               <div class="h-64 animate-pulse rounded-2xl bg-slate-200/70"></div>
             }
@@ -236,7 +236,7 @@ const WEEKLY_GOAL_MINUTES = 60;
         } @else if (store.catalogError()) {
           <p class="rounded-xl bg-rose-50 p-4 text-sm text-rose-700" role="alert">{{ store.catalogError()! | t }}</p>
         } @else if (store.recommended().length) {
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (course of store.recommended(); track course.id + (course.organizationId ?? '')) {
               <app-course-card [course]="course" [link]="context.basePath + '/' + course.id" />
             }

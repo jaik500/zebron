@@ -8,6 +8,7 @@ import { firestore } from '../../../core/services/firebase-config';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
@@ -29,7 +30,7 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
   selector: 'app-course-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, RouterLink, MatFormFieldModule, MatIconModule, MatInputModule, TranslatePipe],
+  imports: [NgClass, RouterLink, MatFormFieldModule, MatIconModule, MatInputModule, MatMenuModule, TranslatePipe],
   template: `
     <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
       <div class="mx-auto max-w-7xl px-4 sm:px-2 lg:px-8" [ngClass]="showTabs() ? 'pt-3' : 'py-2'">
@@ -37,7 +38,7 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
           @if (backLink()) {
             <a
               [routerLink]="backLink()"
-              class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/85 transition hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+              class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/85 transition hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50 md:inline-flex"
               [attr.aria-label]="'Back' | t"
               [title]="'Back' | t"
             >
@@ -61,7 +62,7 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
       </a>
 
       <mat-icon
-        class="!h-4 !w-4 shrink-0 !text-base text-white/60"
+        class="!h-4 !w-4 shrink-0 !text-base !leading-none text-white/60"
         aria-hidden="true"
       >
         chevron_right
@@ -114,22 +115,50 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
         </div>
 
         @if (showTabs()) {
-          <nav class="mt-2 flex gap-1 overflow-x-auto [scrollbar-width:none]" [attr.aria-label]="'Courses' | t">
+          <nav class="mt-2 flex items-end gap-1" [attr.aria-label]="'Courses' | t">
+            <div class="flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none]">
             @for (tab of tabs(); track tab.key) {
+              <!-- On phones the secondary tabs move into the "More" menu (the open one stays visible). -->
               <a
                 [routerLink]="tab.link"
                 class="inline-flex shrink-0 items-center gap-1.5 rounded-t-lg px-3 py-2 text-sm font-medium transition"
-                [ngClass]="
+                [ngClass]="[
                   tab.key === activeTab()
                     ? 'bg-slate-50 font-semibold text-[#007979]'
-                    : 'text-white/85 hover:bg-white/10 hover:text-white'
-                "
+                    : 'text-white/85 hover:bg-white/10 hover:text-white',
+                  isSecondary(tab.key) && tab.key !== activeTab() ? 'max-md:hidden' : ''
+                ]"
                 [attr.aria-current]="tab.key === activeTab() ? 'page' : null"
               >
                 <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">{{ tab.icon }}</mat-icon>
                 {{ tab.label | t }}
               </a>
             }
+            </div>
+
+            <!-- Phones: every tab, in a menu at the far right. -->
+            <button
+              type="button"
+              class="mb-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/85 transition hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50 md:hidden"
+              [matMenuTriggerFor]="tabMenu"
+              [attr.aria-label]="'More' | t"
+              [title]="'More' | t"
+            >
+              <mat-icon aria-hidden="true">more_vert</mat-icon>
+            </button>
+            <mat-menu #tabMenu="matMenu" xPosition="before">
+              @for (tab of tabs(); track tab.key) {
+                <a
+                  mat-menu-item
+                  [routerLink]="tab.link"
+                  [attr.aria-current]="tab.key === activeTab() ? 'page' : null"
+                  [ngClass]="tab.key === activeTab() ? '!bg-teal-50 !font-semibold !text-[#007979]' : ''"
+                >
+                  <mat-icon aria-hidden="true" [ngClass]="tab.key === activeTab() ? '!text-[#007979]' : ''">{{ tab.icon }}</mat-icon>
+                  <span>{{ tab.label | t }}</span>
+                </a>
+              }
+            </mat-menu>
           </nav>
         }
       </div>
@@ -167,6 +196,13 @@ export class CourseHeaderComponent {
         .catch(() => this.liveAvailable.set(false));
     });
   });
+
+  /** Tabs that move into the "More" menu on phones. */
+  private readonly secondaryTabs = new Set<CourseTab>(['certificates', 'test-center', 'live', 'manage']);
+
+  protected isSecondary(key: CourseTab): boolean {
+    return this.secondaryTabs.has(key);
+  }
 
   protected readonly tabs = computed(() => {
     const tabs: { key: CourseTab; label: string; icon: string; link: string }[] = [

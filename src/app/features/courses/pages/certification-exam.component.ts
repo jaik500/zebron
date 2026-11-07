@@ -37,7 +37,7 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent, ProgressRingComponent],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
         [backLink]="stage() === 'taking' ? null : detailPath"
@@ -62,7 +62,7 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                   <h1 class="mt-1 text-2xl font-bold">{{ cert.credentialName }}</h1>
                 </div>
                 <div class="p-6">
-                  <ul class="grid gap-3 sm:grid-cols-2">
+                  <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <li class="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
                       <mat-icon class="text-[#007979]" aria-hidden="true">help</mat-icon>
                       @if (cert.kind === 'exam-prep') {
@@ -144,7 +144,7 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                         role="timer"
                         [attr.aria-label]="'Time left' | t"
                       >
-                        <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">timer</mat-icon>{{ clock() }}
+                        <mat-icon class="!h-4 !w-4 !text-base !leading-none" aria-hidden="true">timer</mat-icon>{{ clock() }}
                       </span>
                     }
                   </div>
@@ -231,7 +231,7 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                                 aria-hidden="true"
                               >
                                 @if (item.type === 'multiple-select' && isChosen(item.id, option.id)) {
-                                  <mat-icon class="!h-4 !w-4 !text-base">check</mat-icon>
+                                  <mat-icon class="!h-4 !w-4 !text-base !leading-none">check</mat-icon>
                                 } @else {
                                   {{ letters[optionIndex] }}
                                 }

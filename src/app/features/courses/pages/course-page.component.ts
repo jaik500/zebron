@@ -30,7 +30,7 @@ import { CourseStore } from '../course.store';
     `,
   ],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
         [backLink]="context.basePath + '/catalog'"
@@ -43,7 +43,7 @@ import { CourseStore } from '../course.store';
 
       <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         @if (store.courseLoading()) {
-          <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]" aria-hidden="true">
+          <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]" aria-hidden="true">
             <div class="h-64 animate-pulse rounded-2xl bg-slate-200/70"></div>
             <div class="h-64 animate-pulse rounded-2xl bg-slate-200/70"></div>
           </div>
@@ -56,7 +56,7 @@ import { CourseStore } from '../course.store';
             </a>
           </div>
         } @else if (store.course(); as course) {
-          <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
             <!-- About the course -->
             <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <div class="h-20" [style.background]="cover()" aria-hidden="true"></div>
@@ -82,7 +82,7 @@ import { CourseStore } from '../course.store';
 
                 @if (course.outcomes.length) {
                   <h2 class="mt-5 text-sm font-semibold uppercase tracking-wide text-slate-500">{{ 'What you will learn' | t }}</h2>
-                  <ul class="mt-2 grid gap-2 sm:grid-cols-2">
+                  <ul class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     @for (outcome of course.outcomes; track $index) {
                       <li class="flex gap-2 text-slate-700">
                         <mat-icon class="shrink-0 text-[#007979]" aria-hidden="true">check_circle</mat-icon>

@@ -39,7 +39,7 @@ const ROLE_LABELS: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, MatIconModule, TranslatePipe],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <a
@@ -68,7 +68,7 @@ const ROLE_LABELS: Record<string, string> = {
 
       <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
         @if (loading()) {
-          <div class="grid gap-3 sm:grid-cols-4" aria-hidden="true">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-4" aria-hidden="true">
             @for (item of [1, 2, 3, 4]; track item) {
               <div class="h-20 animate-pulse rounded-2xl bg-slate-200/70"></div>
             }

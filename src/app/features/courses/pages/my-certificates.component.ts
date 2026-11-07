@@ -20,7 +20,7 @@ import { CourseStore } from '../course.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
         [crumbs]="[{ label: 'Learning', link: context.basePath }, { label: 'Certificates' }]"
@@ -35,13 +35,13 @@ import { CourseStore } from '../course.store';
             <a routerLink="/login" class="mt-3 inline-block font-semibold text-[#007979] hover:underline">{{ 'Sign in' | t }}</a>
           </div>
         } @else if (!store.progressLoaded()) {
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
             @for (item of [1, 2, 3]; track item) {
               <div class="h-48 animate-pulse rounded-2xl bg-slate-200/70"></div>
             }
           </div>
         } @else {
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (record of certificates(); track record.id) {
               <a
                 [routerLink]="linkFor(record) + '/certificate'"

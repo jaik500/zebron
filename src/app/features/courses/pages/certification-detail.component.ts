@@ -37,7 +37,7 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
         [backLink]="listLink()"
@@ -68,7 +68,7 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
                 <p class="mt-1 text-sm text-white/85">{{ cert.title }}</p>
               </div>
             </div>
-            <div class="grid gap-4 p-6 md:grid-cols-[minmax(0,1fr)_16rem]">
+            <div class="grid grid-cols-1 gap-4 p-6 md:grid-cols-[minmax(0,1fr)_16rem]">
               <div>
                 @if (cert.description || cert.summary) {
                   <p class="whitespace-pre-line text-sm leading-6 text-slate-700">{{ cert.description || cert.summary }}</p>
@@ -296,7 +296,7 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
                     <p class="flex items-center gap-2 font-semibold text-emerald-800">
                       <mat-icon aria-hidden="true">verified</mat-icon>{{ 'You are certified.' | t }}
                     </p>
-                    <dl class="mt-2 grid gap-2 text-sm sm:grid-cols-3">
+                    <dl class="mt-2 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
                       <div><dt class="text-xs text-slate-500">{{ 'Credential code' | t }}</dt><dd class="font-mono text-slate-900">{{ credential.code }}</dd></div>
                       <div><dt class="text-xs text-slate-500">{{ 'Issued' | t }}</dt><dd class="text-slate-900">{{ dateLabel(credential.issuedAt) }}</dd></div>
                       <div><dt class="text-xs text-slate-500">{{ 'Valid until' | t }}</dt><dd class="text-slate-900">{{ dateLabel(credential.expiresAt) }}</dd></div>

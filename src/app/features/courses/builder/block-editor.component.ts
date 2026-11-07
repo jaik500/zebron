@@ -133,7 +133,7 @@ const MAX_QUESTIONS = 20;
                 class="self-start inline-flex items-center gap-2 rounded-lg border border-[#007979]/30 px-3 py-2 text-sm font-semibold text-[#007979] hover:bg-teal-50"
                 (click)="addQuestion()"
               >
-                <mat-icon class="!h-5 !w-5 !text-xl">add</mat-icon>
+                <mat-icon class="!h-5 !w-5 !text-xl !leading-none">add</mat-icon>
                 {{ 'Add another question' | t }}
               </button>
             }
@@ -173,7 +173,7 @@ const MAX_QUESTIONS = 20;
               <img [src]="urlOf()" [alt]="altOf()" class="max-h-72 rounded-xl border border-slate-200 object-contain" />
             }
 
-            <div class="grid gap-3 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               @if (block().type === 'video') {
                 <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
                   <mat-label>{{ 'Start at (optional)' | t }}</mat-label>

@@ -47,7 +47,7 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
         [crumbs]="[{ label: 'Learning', link: context.basePath }, { label: 'Certifications' }]"
@@ -84,7 +84,7 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
         </div>
 
         @if (loading()) {
-          <div class="grid gap-4 md:grid-cols-2" aria-hidden="true">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2" aria-hidden="true">
             @for (item of [1, 2]; track item) {
               <div class="h-64 animate-pulse rounded-2xl bg-slate-200/70"></div>
             }
@@ -100,7 +100,7 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
           @if (current(); as group) {
           <section [id]="'cert-panel-' + group.kind" role="tabpanel" [attr.aria-labelledby]="'cert-tab-' + group.kind">
             <p class="mb-4 max-w-3xl text-sm text-slate-600">{{ group.note | t }}</p>
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             @for (row of group.rows; track row.definition.key) {
               <a
                 [routerLink]="[context.basePath, 'certifications', row.definition.key]"

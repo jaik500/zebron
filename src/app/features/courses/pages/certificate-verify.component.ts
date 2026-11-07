@@ -38,7 +38,7 @@ interface VerifiedCertificate {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, MatIconModule, TranslatePipe],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div class="mx-auto max-w-3xl px-4 py-6 sm:px-6">
           <p class="text-xs font-bold uppercase tracking-[0.15em] text-white/80">{{ 'Zebron Learning' | t }}</p>
@@ -75,7 +75,7 @@ interface VerifiedCertificate {
               <p class="flex items-center gap-2 font-semibold text-emerald-700">
                 <mat-icon aria-hidden="true">verified</mat-icon>{{ 'Genuine Zebron certificate' | t }}
               </p>
-              <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+              <dl class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <dt class="text-xs uppercase tracking-wide text-slate-500">{{ 'Awarded to' | t }}</dt>
                   <dd class="text-lg font-semibold text-slate-900">{{ found.learnerName }}</dd>

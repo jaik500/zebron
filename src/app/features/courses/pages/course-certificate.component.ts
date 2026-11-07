@@ -35,7 +35,7 @@ import { CourseStore } from '../course.store';
     `,
   ],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50 print:mt-0 print:bg-white">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50 print:mt-0 print:bg-white">
       <app-course-header
         [basePath]="context.basePath"
         [backLink]="coursePath()"

@@ -38,7 +38,7 @@ const LEVEL_ORDER: Record<CourseLevel, number> = { beginner: 0, intermediate: 1,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent, CourseCardComponent],
   template: `
-    <main class="mt-16 min-h-screen bg-slate-50">
+    <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
         [basePath]="context.basePath"
         [crumbs]="[{ label: 'Learning', link: context.basePath }, { label: 'Catalog' }]"
@@ -84,7 +84,7 @@ const LEVEL_ORDER: Record<CourseLevel, number> = { beginner: 0, intermediate: 1,
         </div>
 
         @if (store.catalogLoading() && !store.catalog().length) {
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
             @for (item of [1, 2, 3, 4, 5, 6]; track item) {
               <div class="h-64 animate-pulse rounded-2xl bg-slate-200/70"></div>
             }
@@ -106,7 +106,11 @@ const LEVEL_ORDER: Record<CourseLevel, number> = { beginner: 0, intermediate: 1,
               @for (program of programs(); track program.name) {
                 <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <header class="flex flex-wrap items-center gap-3 p-4 sm:p-5">
-                    <span class="h-12 w-12 shrink-0 rounded-xl" [style.background]="program.cover" aria-hidden="true"></span>
+                    <span
+  class="hidden h-12 w-12 shrink-0 rounded-xl md:block"
+  [style.background]="program.cover"
+  aria-hidden="true"
+></span>
                     <div class="min-w-0 flex-1">
                       <h3 class="text-lg font-semibold text-slate-900">{{ program.name }}</h3>
                       <p class="text-sm text-slate-500">
@@ -125,13 +129,21 @@ const LEVEL_ORDER: Record<CourseLevel, number> = { beginner: 0, intermediate: 1,
                       }
                     </div>
                     @if (program.next; as next) {
-                      <a
-                        [routerLink]="context.basePath + '/' + next.course.id"
-                        class="inline-flex h-10 items-center gap-1 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]"
-                      >
-                        <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">play_arrow</mat-icon>
-                        {{ (program.done || program.started ? 'Continue: step {0}' : 'Start with step {0}') | t: [next.step] }}
-                      </a>
+                    <a
+  [routerLink]="context.basePath + '/' + next.course.id"
+  class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#007979] text-white hover:bg-[#006666] md:w-auto md:justify-start md:gap-1 md:px-4"
+  [attr.aria-label]="
+    (program.done || program.started ? 'Continue: step {0}' : 'Start with step {0}')
+      | t: [next.step]
+  "
+>
+  <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">
+    play_arrow
+  </mat-icon>
+  <span class="hidden md:inline">
+    {{ (program.done || program.started ? 'Continue: step {0}' : 'Start with step {0}') | t: [next.step] }}
+  </span>
+</a>
                     } @else {
                       <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
                         <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">workspace_premium</mat-icon>
@@ -150,7 +162,7 @@ const LEVEL_ORDER: Record<CourseLevel, number> = { beginner: 0, intermediate: 1,
                   </header>
 
                   @if (!collapsed().has(program.name)) {
-                    <ol class="grid border-t border-slate-100 sm:grid-cols-2">
+                    <ol class="grid grid-cols-1 border-t border-slate-100 sm:grid-cols-2">
                       @for (item of program.courses; track item.course.id + (item.course.organizationId ?? '')) {
                         <li class="border-b border-slate-100 sm:odd:border-r">
                           <a
@@ -196,7 +208,7 @@ const LEVEL_ORDER: Record<CourseLevel, number> = { beginner: 0, intermediate: 1,
                 <mat-icon class="text-[#007979]" aria-hidden="true">menu_book</mat-icon>
                 {{ 'More courses' | t }}
               </h2>
-              <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 @for (course of standalone(); track course.id + (course.organizationId ?? '')) {
                   <app-course-card
                     [course]="course"
@@ -209,7 +221,7 @@ const LEVEL_ORDER: Record<CourseLevel, number> = { beginner: 0, intermediate: 1,
             </section>
           }
         } @else if (store.filteredCatalog().length) {
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (course of sortedResults(); track course.id + (course.organizationId ?? '')) {
               <app-course-card
                 [course]="course"
