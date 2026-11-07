@@ -10,12 +10,16 @@ import { Job, EmploymentType, WorkArrangement } from '../../../../core/models/jo
 
 import { JobStore } from '../../stores/job.store';
 
+import { SaveJobButtonComponent } from '../../components/save-job-button.component';
+
+import { CourseService } from '../../../courses/course.service';
+
 @Component({
   selector: 'app-job-detail',
 
   standalone: true,
 
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, SaveJobButtonComponent],
 
   template: `
     <!-- =========================================================
@@ -284,6 +288,20 @@ import { JobStore } from '../../stores/job.store';
                   {{ currentJob.organizationName }}
                 </p>
 
+                @if (currentJob.sourceName || currentJob.postedAt) {
+                  <p class="mt-1 text-sm text-gray-500">
+                    @if (currentJob.sourceName) {
+                      Listed on {{ currentJob.sourceName }}
+                    }
+                    @if (currentJob.sourceName && currentJob.postedAt) {
+                      ·
+                    }
+                    @if (currentJob.postedAt) {
+                      Posted {{ formatDeadline(currentJob.postedAt!) }}
+                    }
+                  </p>
+                }
+
                 <!-- Quick information -->
                 <div
                   class="mt-5
@@ -462,6 +480,29 @@ import { JobStore } from '../../stores/job.store';
                 }
 
                 <!-- =================================================
+                     PREPARE FOR THIS JOB (Zebron courses sharing its skills)
+                     ================================================= -->
+                @if (preparation().length) {
+                  <section class="mt-8 border-t border-gray-100 pt-8">
+                    <h3 class="text-lg font-bold text-[#032D42]">Prepare for this job</h3>
+                    <p class="mt-1 text-sm text-gray-500">Free Zebron courses that teach skills this job asks for.</p>
+                    <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+                      @for (course of preparation(); track course.id) {
+                        <li>
+                          <a
+                            [routerLink]="['/courses', course.id]"
+                            class="block h-full rounded-lg border border-gray-200 p-4 transition hover:border-[#007979] hover:shadow-sm"
+                          >
+                            <span class="block text-sm font-semibold text-[#032D42]">{{ course.title }}</span>
+                            <span class="mt-1 block text-xs text-gray-500">{{ course.matched.join(', ') }}</span>
+                          </a>
+                        </li>
+                      }
+                    </ul>
+                  </section>
+                }
+
+                <!-- =================================================
                      MOBILE APPLY
                      ================================================= -->
                 <div
@@ -505,6 +546,9 @@ import { JobStore } from '../../stores/job.store';
                       Application information is not currently available.
                     </div>
                   }
+                  <div class="mt-3">
+                    <app-save-job-button [job]="currentJob" [full]="true" />
+                  </div>
                 </div>
               </div>
             </article>
@@ -577,6 +621,14 @@ import { JobStore } from '../../stores/job.store';
                     No application link provided.
                   </div>
                 }
+
+                <div class="mt-3">
+                  <app-save-job-button [job]="currentJob" [full]="true" />
+                </div>
+
+                <a routerLink="/jobs/my" class="mt-3 block text-center text-sm font-medium text-[#007979] hover:underline">
+                  Saved jobs and alerts
+                </a>
               </section>
 
               <!-- =================================================
@@ -842,6 +894,40 @@ export class JobDetailComponent implements OnInit {
 
     if (job) {
       this.updateSeoMetadata(job);
+      void this.loadPreparation(job);
+    }
+  }
+
+  // =========================================================
+  // Prepare for this job
+  // =========================================================
+
+  /** Up to 4 published Zebron courses whose skills match the job's skills. */
+  protected readonly preparation = signal<{ id: string; title: string; matched: string[] }[]>([]);
+
+  private readonly courses = inject(CourseService);
+
+  private async loadPreparation(job: Job): Promise<void> {
+    const wanted = new Map((job.skills ?? []).map((skill) => [skill.trim().toLowerCase(), skill.trim()]));
+    if (!wanted.size) {
+      return;
+    }
+
+    try {
+      const catalog = await this.courses.listPublished(null);
+      const matches = catalog
+        .map((course) => ({
+          id: course.id,
+          title: course.title,
+          matched: (course.skills ?? []).filter((skill) => wanted.has(skill.trim().toLowerCase())),
+        }))
+        .filter((course) => course.matched.length > 0)
+        .sort((a, b) => b.matched.length - a.matched.length || a.title.localeCompare(b.title))
+        .slice(0, 4);
+      this.preparation.set(matches);
+    } catch {
+      // Course suggestions are a bonus: the job page works without them.
+      this.preparation.set([]);
     }
   }
 

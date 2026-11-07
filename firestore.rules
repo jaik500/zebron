@@ -4535,6 +4535,58 @@ service cloud.firestore {
       allow create, update, delete: if isPlatformAdmin();
     }
 
+    // ============================================================
+    // JOB SEEKERS: SAVED JOBS AND JOB ALERTS
+    // ============================================================
+
+    /*
+     * users/{uid}/savedJobs/{jobId}: a job someone saved, with a copy of
+     * its title and employer so the list still reads after it closes.
+     * users/{uid}/jobAlerts/{alertId}: up to five daily email alerts
+     * (fixed ids alert-1 … alert-5). sendJobAlerts
+     * (functions/src/job-board.ts) reads them and sets lastSentAt.
+     * Only the owner reads or changes either list.
+     */
+    match /users/{userId}/savedJobs/{jobId} {
+      allow read, delete: if isCurrentUser(userId);
+
+      allow create, update: if isCurrentUser(userId)
+        && request.resource.data.keys().hasOnly(["jobId", "title", "organizationName", "savedAt"])
+        && request.resource.data.jobId == jobId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.organizationName is string
+        && request.resource.data.organizationName.size() <= 200
+        && request.resource.data.savedAt == request.time
+        && exists(/databases/$(database)/documents/jobs/$(jobId));
+    }
+
+    match /users/{userId}/jobAlerts/{alertId} {
+      allow read, delete: if isCurrentUser(userId);
+
+      allow create, update: if isCurrentUser(userId)
+        && alertId in ["alert-1", "alert-2", "alert-3", "alert-4", "alert-5"]
+        && request.resource.data.keys().hasOnly([
+          "id", "keywords", "state", "workArrangement", "employmentType",
+          "active", "createdAt", "lastSentAt"
+        ])
+        && request.resource.data.id == alertId
+        && request.resource.data.keywords is string
+        && request.resource.data.keywords.size() <= 100
+        && request.resource.data.state is string
+        && request.resource.data.state.size() <= 2
+        && request.resource.data.workArrangement in ["", "on-site", "hybrid", "remote"]
+        && request.resource.data.employmentType in ["", "full-time", "part-time", "contract", "internship", "temporary"]
+        && request.resource.data.active is bool
+        // lastSentAt belongs to sendJobAlerts: kept as it is.
+        && request.resource.data.get("lastSentAt", null) == (resource == null ? null : resource.data.get("lastSentAt", null))
+        && (
+          resource == null
+            ? request.resource.data.createdAt == request.time
+            : request.resource.data.createdAt == resource.data.createdAt
+        );
+    }
+
         // ============================================================
     // RESOURCE TYPES (public lookup list)
     // ============================================================

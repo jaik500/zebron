@@ -8,7 +8,7 @@ import {
   withState,
 } from '@ngrx/signals';
 
-import { Job } from '../../../core/models/job.model';
+import { isJobOpen, Job } from '../../../core/models/job.model';
 import { JobService } from '../../../core/services/job.service';
 
 
@@ -98,10 +98,12 @@ export const JobStore = signalStore(
       // Active jobs
       // --------------------------------------------------------
 
+      // Listings past their expiry are hidden at once, even before
+      // expireJobListings closes them on the server.
       const activeJobs = computed(() =>
         jobs().filter(
           (job) =>
-            job.status === 'active',
+            isJobOpen(job),
         ),
       );
 
@@ -743,7 +745,7 @@ export const JobStore = signalStore(
             return;
           }
       
-          if (job.status !== 'active') {
+          if (!isJobOpen(job)) {
             patchState(store, {
               loading: false,
               selectedJob: null,

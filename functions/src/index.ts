@@ -2535,6 +2535,7 @@ export { refreshOrganizationStats, refreshDashboardStatsNightly } from "./dashbo
 export { startQuizExam, submitQuizExam } from "./quiz-exams";
 export { getTeamLearningProgress } from "./learning-progress";
 export { completeCourseLesson } from "./course-progress";
+export { expireJobListings, sendJobAlerts } from "./job-board";
 export { enrollInCertification, startCertificationExam, submitCertificationExam } from "./certifications";
 export {
   getOrganizationMemberDirectory,

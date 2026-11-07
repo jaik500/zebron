@@ -12,6 +12,9 @@ import {
   JobStatus,
   EmploymentType,
   WorkArrangement,
+  jobExpiresAt,
+  JOB_DAYS_AFTER_DEADLINE,
+  JOB_DAYS_WITHOUT_DEADLINE,
 } from '../../../../../core/models/job.model';
 
 import { Organization } from '../../../../../core/models/organization.model';
@@ -1002,7 +1005,25 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                   </mat-form-field>
                 </div>
 
-                <div class="sm:max-w-xs">
+                <div class="grid gap-4 sm:grid-cols-3">
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Source site</mat-label>
+                    <input matInput
+                    id="sourceName"
+                    type="text"
+                    formControlName="sourceName"
+                    placeholder="e.g. Indeed, USAJOBS, company site"
+                  />
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="zb-field">
+                    <mat-label>Date posted</mat-label>
+                    <input matInput
+                    id="postedAt"
+                    type="date"
+                    formControlName="postedAt"
+                  />
+                  </mat-form-field>
 
                   <mat-form-field appearance="outline" class="zb-field">
                     <mat-label>Application deadline</mat-label>
@@ -1013,6 +1034,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                   />
                   </mat-form-field>
                 </div>
+
+                <p class="-mt-2 text-xs text-gray-500">{{ expiryHint }}</p>
               </div>
             </section>
 
@@ -1300,6 +1323,10 @@ export class JobFormComponent implements OnInit {
 
     applicationDeadline: [''],
 
+    sourceName: [''],
+
+    postedAt: [''],
+
     status: ['draft', Validators.required],
 
     featured: [false],
@@ -1384,6 +1411,10 @@ export class JobFormComponent implements OnInit {
         applicationUrl: job.applicationUrl ?? '',
 
         applicationDeadline: this.timestampToDateInput(job.applicationDeadline),
+
+        sourceName: job.sourceName ?? '',
+
+        postedAt: this.timestampToDateInput(job.postedAt ?? job.createdAt),
 
         status: job.status ?? 'draft',
 
@@ -1678,6 +1709,8 @@ export class JobFormComponent implements OnInit {
             ? Timestamp.fromDate(new Date(`${formValue.applicationDeadline}T00:00:00`))
             : null,
 
+          ...this.listingDates(formValue),
+
           status: formValue.status as JobStatus,
 
           featured: formValue.featured,
@@ -1775,6 +1808,8 @@ const organization =
         applicationDeadline: formValue.applicationDeadline
           ? Timestamp.fromDate(new Date(`${formValue.applicationDeadline}T00:00:00`))
           : null,
+
+        ...this.listingDates(formValue),
 
         status: formValue.status as JobStatus,
 
@@ -1887,6 +1922,38 @@ const organization =
   // =========================================================
   // Timestamp -> HTML Date
   // =========================================================
+
+  /**
+   * Source, posted date and expiry, from the form. The posted date defaults
+   * to today; the expiry is 5 days after the deadline, or 60 days after the
+   * posted date when there is no deadline (jobExpiresAt in job.model.ts).
+   */
+  private listingDates(formValue: {
+    applicationDeadline: string;
+    sourceName: string;
+    postedAt: string;
+    status: string;
+  }): Pick<Job, 'sourceName' | 'postedAt' | 'expiresAt' | 'closedReason'> {
+    const applicationDeadline = formValue.applicationDeadline
+      ? Timestamp.fromDate(new Date(`${formValue.applicationDeadline}T00:00:00`))
+      : null;
+
+    const postedAt = formValue.postedAt
+      ? Timestamp.fromDate(new Date(`${formValue.postedAt}T00:00:00`))
+      : Timestamp.now();
+
+    return {
+      sourceName: formValue.sourceName.trim(),
+      postedAt,
+      expiresAt: jobExpiresAt({ applicationDeadline, postedAt }),
+      closedReason: formValue.status === 'closed' ? 'manual' : null,
+    };
+  }
+
+  /** Shown under the dates: when this listing will close on its own. */
+  protected readonly expiryHint =
+    `Listings close on their own ${JOB_DAYS_AFTER_DEADLINE} days after the application deadline, ` +
+    `or ${JOB_DAYS_WITHOUT_DEADLINE} days after the posted date when there is no deadline.`;
 
   private timestampToDateInput(timestamp?: Timestamp | null): string {
     if (!timestamp) {

@@ -1,11 +1,12 @@
 import { Component, computed, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { JobStore } from '../../../jobs/stores/job.store';
+import { SaveJobButtonComponent } from '../../../jobs/components/save-job-button.component';
 
 @Component({
   selector: 'app-job-results',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, SaveJobButtonComponent],
   template: `
     <main class="min-h-screen bg-gray-50">
       <!-- =====================================================
@@ -54,6 +55,7 @@ import { JobStore } from '../../../jobs/stores/job.store';
             </p>
           </div>
 
+          <div class="flex shrink-0 items-center gap-2">
           <a
             routerLink="/"
             class="inline-flex
@@ -73,6 +75,13 @@ import { JobStore } from '../../../jobs/stores/job.store';
           >
             ← Home
           </a>
+          <a
+            routerLink="/jobs/my"
+            class="hidden shrink-0 items-center rounded-lg border border-white/40 px-3 py-2 text-sm font-semibold text-white transition hover:border-[#7ED6D1] sm:inline-flex"
+          >
+            Saved jobs and alerts
+          </a>
+          </div>
         </div>
       </header>
 
@@ -540,8 +549,10 @@ import { JobStore } from '../../../jobs/stores/job.store';
                     </div>
 
 
-                    <!-- View job -->
-                    <a
+                    <!-- Save and view job -->
+                    <div class="flex shrink-0 items-center gap-2">
+                      <app-save-job-button [job]="job" />
+                      <a
                       [routerLink]="['/jobs', job.id]"
                       class="inline-flex
                              shrink-0
@@ -559,6 +570,7 @@ import { JobStore } from '../../../jobs/stores/job.store';
                     >
                       View job →
                     </a>
+                    </div>
 
                   </div>
 
@@ -625,7 +637,7 @@ import { JobStore } from '../../../jobs/stores/job.store';
                  text-xs
                  text-gray-500"
         >
-          Free to use · No account required
+          Free to use · No account required · <a routerLink="/jobs/my" class="font-medium text-[#007979] hover:underline">Sign in to save jobs and get alerts</a>
         </p>
       </div>
     </main>

@@ -275,6 +275,14 @@ export const routes: Routes = [
     // JOB DETAILS
     // -----------------------------------------------------
     {
+        path: 'jobs/my',
+        data: {
+            title: 'Zebron | My jobs',
+            header: 'Find jobs & training',
+        },
+        loadComponent: () => import('./features/jobs/pages/my-jobs/my-jobs.component').then((m) => m.MyJobsComponent),
+    },
+    {
         path: 'jobs/:id',
         data: {
             title: 'Zebron | Job detail',
