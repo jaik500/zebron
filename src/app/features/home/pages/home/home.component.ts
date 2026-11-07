@@ -327,7 +327,7 @@ const HOME_BLOG_POSTS = 3;
             <!-- Jobs -->
  
             <a
-              routerLink="/find/job"
+              routerLink="/jobs"
               class="group rounded-2xl
                      border border-gray-200
                      bg-[#E5F4F4] p-6
@@ -442,123 +442,8 @@ const HOME_BLOG_POSTS = 3;
               </span>
             </a>
  
-            <!-- Test Center -->
- 
-            <a
-              routerLink="/test-center"
-              class="group rounded-2xl
-                     border border-gray-200
-                     bg-[#E5F4F4] p-6
-                     shadow-sm
-                     transition
-                     hover:-translate-y-1
-                     hover:border-[#007979]/40
-                     hover:shadow-md"
-            >
-              <div class="flex items-center gap-4">
-                <div
-                  class="flex h-12 w-12 shrink-0
-                         items-center justify-center
-                         rounded-xl
-                         bg-white"
-                >
-                  <mat-icon aria-hidden="true" class="!text-[#007979]"> quiz </mat-icon>
-                </div>
- 
-                <h3
-                  class="min-w-0 text-xl font-bold
-                         text-[#032D42]"
-                >
-                  {{ t().testCenterTitle }}
-                </h3>
-              </div>
- 
-              <p
-                class="mt-4 text-sm leading-6
-                       text-gray-600"
-              >
-                {{ t().testCenterText }}
-              </p>
- 
-              <span
-                class="mt-5 inline-flex
-                       items-center gap-1
-                       text-sm font-bold
-                       text-[#007979]"
-              >
-                {{ t().testCenterLink }}
- 
-                <mat-icon
-                  aria-hidden="true"
-                  class="!m-0 !h-5 !w-5
-                         !text-[17px]
-                         transition-transform
-                         group-hover:translate-x-1"
-                >
-                  arrow_forward
-                </mat-icon>
-              </span>
-            </a>
- 
-            <!-- Community -->
- 
-            <a
-              routerLink="/community"
-              class="group rounded-2xl
-                     border border-gray-200
-                     bg-[#E5F4F4] p-6
-                     shadow-sm
-                     transition
-                     hover:-translate-y-1
-                     hover:border-[#007979]/40
-                     hover:shadow-md"
-            >
-              <div class="flex items-center gap-4">
-                <div
-                  class="flex h-12 w-12 shrink-0
-                         items-center justify-center
-                         rounded-xl
-                         bg-white"
-                >
-                  <mat-icon aria-hidden="true" class="!text-[#007979]">
-                  diversity_3
-                  </mat-icon>
-                </div>
- 
-                <h3
-                  class="min-w-0 text-xl font-bold
-                         text-[#032D42]"
-                >
-                  {{ t().communityTitle }}
-                </h3>
-              </div>
- 
-              <p
-                class="mt-4 text-sm leading-6
-                       text-gray-600"
-              >
-                {{ t().communityText }}
-              </p>
- 
-              <span
-                class="mt-5 inline-flex
-                       items-center gap-1
-                       text-sm font-bold
-                       text-[#007979]"
-              >
-                {{ t().communityLink }}
- 
-                <mat-icon
-                  aria-hidden="true"
-                  class="!m-0 !h-5 !w-5
-                         !text-[17px]
-                         transition-transform
-                         group-hover:translate-x-1"
-                >
-                  arrow_forward
-                </mat-icon>
-              </span>
-            </a>
+         
+
  
             <!-- Tax & Pay Calculator -->
  

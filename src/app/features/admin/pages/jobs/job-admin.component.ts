@@ -1,12 +1,19 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
+import { NgTemplateOutlet } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AdminBackLinkComponent, AdminLayoutSwitchComponent, adminViewState } from '../../shared/admin-view';
 import { JobFormComponent } from './job-form/job-form.component';
+import { JobImportComponent } from './job-import.component';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
-import { Job } from '../../../../core/models/job.model';
+import { Job, isJobExpired, isJobOpen, jobExpiresAtMillis } from '../../../../core/models/job.model';
+
+/** The stored expiry, else the rule (deadline + 5 days, or posted + 60 days). */
+function jobExpiresAtMillisOf(job: Job): number | null {
+  return job.expiresAt?.toMillis() ?? jobExpiresAtMillis(job);
+}
 
 import { MatMenuModule } from '@angular/material/menu';
 
@@ -16,1345 +23,395 @@ import { HotToastService } from '@ngxpert/hot-toast';
 import { JobStore } from '../../../jobs/stores/job.store';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-job-admin',
 
   standalone: true,
 
-  imports: [MatIconModule, AdminLayoutSwitchComponent, AdminBackLinkComponent, JobFormComponent, RouterLink, MatMenuModule, MatDividerModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
+  imports: [NgTemplateOutlet, MatIconModule, AdminLayoutSwitchComponent, AdminBackLinkComponent, JobFormComponent, JobImportComponent, RouterLink, MatMenuModule, MatDividerModule, MatButtonModule],
 
   template: `
-    <main
-      class="min-h-screen
-             bg-gray-50 mt-16"
-    >
-      <!-- =====================================================
-           Header
-           ===================================================== -->
-      <header
-        class="border-b
-               border-gray-200
-               bg-[#2a835f]"
-      >
-        <div
-          class="mx-auto flex
-                 max-w-7xl
-                 items-center
-                 justify-between
-                 gap-4
-                 px-4 py-1
-                 sm:px-6
-                 lg:px-8"
-        >
-          <!-- Title -->
-          <div class="min-w-0">
+    <main class="mt-16 min-h-screen bg-gray-50">
+      <!-- The universal header shows "Job Management". -->
+      <h1 class="sr-only">Job management</h1>
 
-
-            <p
-              class="
-                     text-md
-                     text-white/80"
-            >
-              Manage the opportunities available through the Zebron Job Finder.
-            </p>
-          </div>
-
-          <!-- =================================================
-               Header Actions
-               ================================================= -->
-          <div
-            class="flex
-                   shrink-0
-                   items-center
-                   gap-2"
-          >
-           <!-- Job Board -->
-            <div class="flex flex-wrap items-center gap-3">
-              <a
-                routerLink="/find"
-                class="inline-flex
-           items-center
-           justify-center
-           gap-2
-           rounded-lg
-           border
-           border-[#007979]
-           bg-white
-           px-4
-           py-2.5
-           text-sm
-           font-medium
-           text-[#007979]
-           transition
-           hover:bg-[#007979]/50
-           hover:text-white
-           hover: border-white/20
-           focus:outline-none
-           focus:ring-2
-           focus:ring-[#007979]/20"
-              >
-                <span>💼</span>
-                Job Board
-              </a>
-            </div>
-
-            <!-- Dashboard -->
-            <a
-              routerLink="/admin"
-              class="hidden
-                     items-center
-                     rounded-lg
-                     border border-gray-300
-                     bg-white
-                     px-3 py-2.5
-                     text-sm
-                     font-semibold
-                     text-gray-700
-                     shadow-sm
-                     transition
-                     hover:border-[#7ED6D1]
-                     hover:text-[#032D42]
-                     sm:inline-flex"
-            >
-              ← Dashboard
-            </a>
-
-            <!-- Add Job -->
-            <a
-              href="/admin/jobs/new" (click)="startCreate($event)"
-              class="hidden
-                     items-center
-                     rounded-lg
-                     bg-[#007979]
-                     px-4 py-2.5
-                     text-sm
-                     font-semibold
-                     text-white
-                     shadow-sm
-                     transition
-                     hover:bg-[#006666]
-                     sm:inline-flex"
-            >
-              + Add Job
-            </a>
-
-            <!-- =================================================
-                 Three-dot Menu
-                 ================================================= -->
+      <div class="mx-auto max-w-7xl space-y-4 px-4 py-4 sm:px-6 lg:px-8">
+        <!-- ================= Toolbar ================= -->
+        <section class="rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Phones: a search icon that shows or hides the search box -->
             <button
-              mat-icon-button
-              [matMenuTriggerFor]="adminMenu"
-              aria-label="Open admin navigation"
-              class="!h-10
-                     !w-10
-                     !text-white"
+              type="button"
+              (click)="toggleMobileSearch(searchBox)"
+              [attr.aria-expanded]="searchShown()"
+              aria-controls="admin-job-search"
+              [attr.aria-label]="searchShown() ? 'Hide search' : 'Search jobs'"
+              [class]="
+                'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition sm:hidden ' +
+                (searchShown() ? 'border-[#007979] bg-[#007979]/10 text-[#007979]' : 'border-gray-200 text-gray-600')
+              "
             >
-              <span
-                class="text-2xl
-                       font-bold
-                       leading-none"
-                aria-hidden="true"
-              >
-                ⋮
-              </span>
+              <mat-icon aria-hidden="true">search</mat-icon>
             </button>
 
-            <mat-menu #adminMenu="matMenu" xPosition="before">
-              <!-- Dashboard -->
-              <a mat-menu-item routerLink="/admin">
-                <span> Dashboard </span>
-              </a>
-
-              <!-- Resources -->
-              <a mat-menu-item routerLink="/admin/resources">
-                <span> Resources </span>
-              </a>
-
-              <!-- Categories -->
-              <a mat-menu-item routerLink="/admin/categories">
-                <span> Categories </span>
-              </a>
-
-              <!-- Organizations -->
-              <a mat-menu-item routerLink="/admin/organizations">
-                <span> Organizations </span>
-              </a>
-
-              <!-- Contact Messages -->
-              <a mat-menu-item routerLink="/admin/contact">
-                <span> Contact Messages </span>
-              </a>
-
-              <!-- Add Jobs -->
-              <a mat-menu-item href="/admin/jobs/new" (click)="startCreate($event)">
-                <span> Add Jobs </span>
-              </a>
-
-              <mat-divider></mat-divider>
-
-              <!-- Sign Out -->
-              <button mat-menu-item type="button" (click)="signOut()">
-                <span class="text-red-600"> Sign out </span>
-              </button>
-            </mat-menu>
-          </div>
-        </div>
-      </header>
-
-      <!-- =====================================================
-           Content
-           ===================================================== -->
-      <div
-        class="mx-auto
-               max-w-7xl
-               px-4 py-3
-               sm:px-6
-               lg:px-8"
-      >
-        <div [class]="viewState.layout() === 'split' ? 'grid items-start gap-6 lg:grid-cols-3' : ''">
-        <!-- ===================================================
-             Job form (Create / Edit), shown on this page
-             =================================================== -->
-        @if (viewState.showForm()) {
-          <div [class]="viewState.layout() === 'split' ? 'min-w-0 lg:col-span-2' : 'min-w-0'">
-            @if (viewState.layout() !== 'split') {
-              <app-admin-back-link label="Back to jobs" (back)="closeForm()" />
-            }
-            <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-              @for (key of formKeys(); track key) {
-                <app-job-form
-                  [embedded]="true"
-                  [editJobId]="editingJobId()"
-                  (saved)="onFormSaved()"
-                  (cancelled)="closeForm()"
-                />
-              }
-            </div>
-          </div>
-        }
-
-        @if (viewState.showList()) {
-        <div
-          [class]="viewState.layout() === 'split'
-            ? 'min-w-0 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto'
-            : 'min-w-0'"
-        >
-        <!-- ===================================================
-             Loading
-             =================================================== -->
-        @if (loading()) {
-          <div
-            class="rounded-xl
-                   border
-                   border-gray-200
-                   bg-white
-                   px-6 py-12
-                   text-center
-                   shadow-sm"
-          >
+            <!-- Search (always on wider screens; a full row on phones when opened) -->
             <div
-              class="mx-auto
-                     h-8 w-8
-                     animate-spin
-                     rounded-full
-                     border-4
-                     border-gray-200
-                     border-t-[#007979]"
-            ></div>
-
-            <p
-              class="mt-4
-                     text-sm
-                     text-gray-500"
+              id="admin-job-search"
+              class="relative order-last min-w-0 basis-full sm:order-none sm:block sm:flex-1 sm:basis-56"
+              [class.hidden]="!searchShown()"
             >
-              Loading jobs...
-            </p>
-          </div>
-        }
+              <mat-icon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 !text-gray-400" aria-hidden="true">search</mat-icon>
+              <input
+                #searchBox
+                type="search"
+                [value]="searchTerm()"
+                (input)="setSearchTerm($any($event.target).value)"
+                (keydown.escape)="clearSearch()"
+                placeholder="Search title, employer, skill, place…"
+                aria-label="Search jobs"
+                class="h-10 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#007979] focus:ring-4 focus:ring-[#007979]/15"
+              />
+            </div>
 
-        <!-- ===================================================
-             Error
-             =================================================== -->
-        @else if (error()) {
-          <div
-            class="rounded-xl
-                   border
-                   border-red-200
-                   bg-red-50
-                   px-5 py-4"
-          >
-            <p
-              class="text-sm
-                     font-medium
-                     text-red-700"
-            >
-              {{ error() }}
-            </p>
+            <div class="hidden sm:block">
+              <app-admin-layout-switch [state]="viewState" />
+            </div>
+
+            <span class="flex-1 sm:hidden"></span>
 
             <button
               type="button"
-              (click)="loadJobs()"
-              class="mt-3
-                     text-sm
-                     font-semibold
-                     text-red-700
-                     underline
-                     hover:text-red-900"
+              (click)="importOpen.set(!importOpen())"
+              [attr.aria-expanded]="importOpen()"
+              class="hidden h-10 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition hover:border-[#007979] hover:text-[#007979] sm:inline-flex"
             >
-              Try again
+              <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">upload_file</mat-icon>
+              Import CSV
             </button>
-          </div>
-        }
-
-        <!-- ===================================================
-             No Jobs At All
-             =================================================== -->
-        @else if (jobs().length === 0) {
-          <section
-            class="rounded-xl
-                   border
-                   border-dashed
-                   border-gray-300
-                   bg-white
-                   px-6 py-14
-                   text-center
-                   shadow-sm"
-          >
-            <div
-              class="mx-auto
-                     flex
-                     h-14 w-14
-                     items-center
-                     justify-center
-                     rounded-2xl
-                     bg-[#007979]/10
-                     text-2xl"
-              aria-hidden="true"
-            >
-              💼
-            </div>
-
-            <h2
-              class="mt-4
-                     text-lg
-                     font-semibold
-                     text-[#032D42]"
-            >
-              No jobs yet
-            </h2>
-
-            <p
-              class="mx-auto
-                     mt-2
-                     max-w-md
-                     text-sm
-                     leading-6
-                     text-gray-600"
-            >
-              Add your first job opportunity to make it available to the Zebron Job Finder.
-            </p>
 
             <a
-              href="/admin/jobs/new" (click)="startCreate($event)"
-              class="mt-6
-                     inline-flex
-                     items-center
-                     rounded-lg
-                     bg-[#007979]
-                     px-5 py-2.5
-                     text-sm
-                     font-semibold
-                     text-white
-                     shadow-sm
-                     transition
-                     hover:bg-[#006666]"
+              href="/admin/jobs/new"
+              (click)="startCreate($event)"
+              class="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#006666]"
             >
-              + Add Job
+              <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">add</mat-icon>
+              <span>Add job</span>
             </a>
-          </section>
-        }
 
-        <!-- ===================================================
-             Jobs
-             =================================================== -->
-        @else {
-          <!-- =================================================
-               Search & Filters
-               ================================================= -->
-          <section
-            class="mb-2
-                   rounded-xl
-                   border
-                   border-gray-200
-                   bg-white
-                   px-4 py-2
-                   shadow-sm
-                   sm:px-5"
-          >
-            <!-- Search Row -->
-            <div
-              class="flex
-                     flex-col
-                     gap-3
-                     lg:flex-row
-                     lg:items-center"
-            >
-              <!-- Search -->
-              <div
-                class="relative
-                       w-full
-                       min-w-0
-                       lg:max-w-64"
-              >
-                <mat-form-field appearance="outline" class="zb-field zb-search">
-                  <mat-label>Search jobs</mat-label>
-                  <mat-icon matPrefix aria-hidden="true">search</mat-icon>
-                  <input matInput
-                  type="search"
-                  [value]="searchTerm()"
-                  (input)="setSearchTerm($any($event.target).value)"
-                  placeholder="Search jobs, organizations, locations, skills, tags..."
-                  aria-label="Search jobs"
-                />
-                </mat-form-field>
-
-                @if (searchTerm()) {
-                  <button
-                    type="button"
-                    (click)="clearSearch()"
-                    aria-label="Clear search"
-                    class="absolute
-                           right-3
-                           top-1/2
-                           -translate-y-1/2
-                           text-gray-400
-                           hover:text-gray-700"
-                  >
-                    ×
-                  </button>
-                }
-              </div>
-
-              <!-- Clear Filters -->
-              @if (hasActiveFilters()) {
-                <button
-                  type="button"
-                  (click)="clearFilters()"
-                  class="inline-flex
-                         shrink-0
-                         items-center
-                         justify-center
-                         rounded-lg
-                         border
-                         border-gray-300
-                         bg-white
-                         px-4 py-2.5
-                         text-sm
-                         font-semibold
-                         text-gray-700
-                         transition
-                         hover:border-[#007979]
-                         hover:text-[#007979]"
-                >
-                  Clear Filters
-                </button>
-              }
-            </div>
-
-            <!-- Filter heading -->
-            <div
-              class="mt-2
-                     flex
-                     items-center
-                     justify-between
-                     gap-3"
-            >
-              <div>
-                <!-- <p
-                  class="text-xs
-                         font-semibold
-                         uppercase
-                         tracking-wider
-                         text-gray-500"
-                >
-                  Filters
-                </p> -->
-
-                <p
-                  class="mt-0.5
-                         text-xs
-                         text-gray-800"
-                >
-                  Narrow the job listing by column.
-                </p>
-              </div>
-
-              <p
-                class="text-xs
-                       font-medium
-                       text-gray-500"
-              >
-                Showing
-                {{ filteredJobs().length }}
-                of
-                {{ jobs().length }}
-              </p>
-            </div>
-
-            <!-- =================================================
-                 Mobile / Tablet Filter Grid
-                 ================================================= -->
-            <div
-              class="mt-4
-                     grid
-                     gap-3
-                     sm:grid-cols-2
-                     lg:hidden"
-            >
-              <!-- Job Filter -->
-              <div>
-
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Job</mat-label>
-                  <input matInput
-                  id="mobileJobFilter"
-                  type="text"
-                  [value]="jobFilter()"
-                  (input)="setJobFilter($any($event.target).value)"
-                  placeholder="Filter job title"
-                />
-                </mat-form-field>
-              </div>
-
-              <!-- Organization Filter -->
-              <div>
-
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Organization</mat-label>
-                  <input matInput
-                  id="mobileOrganizationFilter"
-                  type="text"
-                  [value]="organizationFilter()"
-                  (input)="setOrganizationFilter($any($event.target).value)"
-                  placeholder="Filter organization"
-                />
-                </mat-form-field>
-              </div>
-
-              <!-- Type -->
-              <div>
-
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Employment Type</mat-label>
-                  <mat-select
-                  id="mobileTypeFilter"
-                  [value]="employmentTypeFilter()"
-                  (selectionChange)="setEmploymentTypeFilter($event.value)"
-                >
-                  <mat-option value="">All types</mat-option>
-
-                  <mat-option value="full-time">Full-time</mat-option>
-
-                  <mat-option value="part-time">Part-time</mat-option>
-
-                  <mat-option value="contract">Contract</mat-option>
-
-                  <mat-option value="internship">Internship</mat-option>
-
-                  <mat-option value="temporary">Temporary</mat-option>
-                </mat-select>
-                </mat-form-field>
-              </div>
-
-              <!-- Location -->
-              <div>
-
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Location</mat-label>
-                  <input matInput
-                  id="mobileLocationFilter"
-                  type="text"
-                  [value]="locationFilter()"
-                  (input)="setLocationFilter($any($event.target).value)"
-                  placeholder="City or state"
-                />
-                </mat-form-field>
-              </div>
-
-              <!-- Status -->
-              <div>
-
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Status</mat-label>
-                  <mat-select
-                  id="mobileStatusFilter"
-                  [value]="statusFilter()"
-                  (selectionChange)="setStatusFilter($event.value)"
-                >
-                  <mat-option value="">All statuses</mat-option>
-
-                  <mat-option value="active">Active</mat-option>
-
-                  <mat-option value="draft">Draft</mat-option>
-
-                  <mat-option value="closed">Closed</mat-option>
-                </mat-select>
-                </mat-form-field>
-              </div>
-
-              <!-- Featured -->
-              <div>
-
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>Featured</mat-label>
-                  <mat-select
-                  id="mobileFeaturedFilter"
-                  [value]="featuredFilter()"
-                  (selectionChange)="setFeaturedFilter($event.value)"
-                >
-                  <mat-option value="">All jobs</mat-option>
-
-                  <mat-option value="featured">Featured</mat-option>
-
-                  <mat-option value="not-featured">Not featured</mat-option>
-                </mat-select>
-                </mat-form-field>
-              </div>
-            </div>
-          </section>
-
-          <!-- =================================================
-               Summary
-               ================================================= -->
-          <div
-            class="mb-5
-                   flex
-                   flex-col
-                   gap-3
-                   sm:flex-row
-                   sm:items-center
-                   sm:justify-between"
-          >
-            <div>
-              <h2
-                class="text-lg
-                       font-bold
-                       text-[#032D42]"
-              >
-                All Jobs
-              </h2>
-
-              <p
-                class="mt-1
-                       text-sm
-                       text-gray-500"
-              >
-                @if (hasActiveFilters()) {
-                  Showing
-                  <span
-                    class="font-semibold
-                           text-gray-700"
-                  >
-                    {{ filteredJobs().length }}
-                  </span>
-                  of
-                  {{ jobs().length }}
-                  jobs.
-                } @else {
-                  {{ jobs().length }}
-                  {{ jobs().length === 1 ? 'job' : 'jobs' }}
-                  onboarded.
-                }
-              </p>
-            </div>
-
-            <!-- Status summary -->
-            <div
-              class="flex
-                     flex-wrap
-                     items-center
-                     gap-2"
-            >
-              <!-- Display preference: table or cards (saved per admin) -->
-              <app-admin-layout-switch [state]="viewState" />
-
-              <span
-                class="rounded-full
-                       bg-green-100
-                       px-3 py-1
-                       text-xs
-                       font-medium
-                       text-green-700"
-              >
-                {{ activeCount() }}
-                Active
-              </span>
-
-              <span
-                class="rounded-full
-                       bg-yellow-100
-                       px-3 py-1
-                       text-xs
-                       font-medium
-                       text-yellow-700"
-              >
-                {{ draftCount() }}
-                Draft
-              </span>
-
-              <span
-                class="rounded-full
-                       bg-gray-100
-                       px-3 py-1
-                       text-xs
-                       font-medium
-                       text-gray-600"
-              >
-                {{ closedCount() }}
-                Closed
-              </span>
-            </div>
+            <button mat-icon-button type="button" [matMenuTriggerFor]="pageMenu" aria-label="More options" class="!text-gray-600">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #pageMenu="matMenu" xPosition="before">
+              <!-- Phones: the view choice lives here -->
+              <button mat-menu-item type="button" class="sm:!hidden" (click)="viewState.setLayout('list')">
+                <mat-icon>{{ viewState.layout() === 'list' ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
+                <span>List view</span>
+              </button>
+              <button mat-menu-item type="button" class="sm:!hidden" (click)="viewState.setLayout('cards')">
+                <mat-icon>{{ viewState.layout() === 'cards' ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
+                <span>Cards view</span>
+              </button>
+              <mat-divider class="sm:!hidden"></mat-divider>
+              <a mat-menu-item routerLink="/jobs" target="_blank">
+                <mat-icon>open_in_new</mat-icon>
+                <span>View the job board</span>
+              </a>
+              <button mat-menu-item type="button" (click)="importOpen.set(true)">
+                <mat-icon>upload_file</mat-icon>
+                <span>Import jobs (CSV)</span>
+              </button>
+              <mat-divider></mat-divider>
+              <a mat-menu-item routerLink="/admin"><span>Admin dashboard</span></a>
+              <a mat-menu-item routerLink="/admin/resources"><span>Resources</span></a>
+              <a mat-menu-item routerLink="/admin/categories"><span>Categories</span></a>
+              <a mat-menu-item routerLink="/admin/organizations"><span>Organizations</span></a>
+              <a mat-menu-item routerLink="/admin/contact"><span>Contact messages</span></a>
+              <mat-divider></mat-divider>
+              <button mat-menu-item type="button" (click)="signOut()">
+                <span class="text-red-600">Sign out</span>
+              </button>
+            </mat-menu>
           </div>
 
-          <!-- =================================================
-               No Filter Results
-               ================================================= -->
-          @if (filteredJobs().length === 0) {
-            <section
-              class="rounded-xl
-                     border
-                     border-dashed
-                     border-gray-300
-                     bg-white
-                     px-6 py-12
-                     text-center
-                     shadow-sm"
-            >
-              <div
-                class="mx-auto
-                       flex
-                       h-12 w-12
-                       items-center
-                       justify-center
-                       rounded-xl
-                       bg-gray-100
-                       text-xl"
-                aria-hidden="true"
-              >
-                🔎
-              </div>
-
-              <h2
-                class="mt-4
-                       text-lg
-                       font-semibold
-                       text-[#032D42]"
-              >
-                No matching jobs
-              </h2>
-
-              <p
-                class="mx-auto
-                       mt-2
-                       max-w-md
-                       text-sm
-                       leading-6
-                       text-gray-600"
-              >
-                No jobs match the current search and filter criteria.
-              </p>
-
+          <!-- Status chips (counts double as the status filter) -->
+          <!-- Phones: All is hidden (tap a selected chip again to clear it), and Closed and
+               Closed automatically sit behind More. -->
+          <div class="mt-3 flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by status">
+            @for (chip of statusChips(); track chip.key) {
               <button
                 type="button"
-                (click)="clearFilters()"
-                class="mt-5
-                       inline-flex
-                       items-center
-                       rounded-lg
-                       bg-[#007979]
-                       px-4 py-2.5
-                       text-sm
-                       font-semibold
-                       text-white
-                       transition
-                       hover:bg-[#006666]"
+                (click)="toggleStatus(chip.key)"
+                [attr.aria-pressed]="statusFilter() === chip.key"
+                [class]="
+                  'h-8 items-center gap-1.5 rounded-full border px-3 text-sm transition sm:inline-flex ' +
+                  (chip.key === '' || (chip.extra && !moreStatuses() && statusFilter() !== chip.key) ? 'hidden ' : 'inline-flex ') +
+                  (statusFilter() === chip.key
+                    ? 'border-[#007979] bg-[#007979] font-semibold text-white'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300')
+                "
               >
-                Clear Filters
+                <span class="sm:hidden">{{ chip.short }}</span>
+                <span class="hidden sm:inline">{{ chip.label }}</span>
+                <span [class]="statusFilter() === chip.key ? 'text-white/85' : 'text-gray-400'">{{ chip.count }}</span>
               </button>
-            </section>
-
-          } @else {
-            <!-- =================================================
-                 Desktop Table
-                 ================================================= -->
-            <div
-              [class]="viewState.layout() !== 'list'
-                ? 'hidden'
-                : 'hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block'"
+            }
+            <button
+              type="button"
+              (click)="moreStatuses.set(!moreStatuses())"
+              [attr.aria-expanded]="moreStatuses()"
+              class="inline-flex h-8 items-center gap-0.5 rounded-full px-2.5 text-sm font-medium text-[#007979] hover:bg-[#007979]/10 sm:hidden"
             >
-              <div class="overflow-x-auto">
-                <table
-                  class="min-w-full
-                         divide-y
-                         divide-gray-200"
-                >
-                  <thead class="bg-[#66BB6A]/80">
-                    <tr>
-                      <!-- =====================================
-                           Job Column
-                           ===================================== -->
-                      <th
-                        class="min-w-[260px]
-                               px-5 py-3
-                               text-left
-                               align-top"
-                      >
-                        <div
-                          class="text-xs
-                                 font-semibold
-                                 uppercase
-                                 tracking-wider"
-                        >
-                          Job
-                        </div>
+              {{ moreStatuses() ? 'Less' : 'More' }}
+              <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">{{ moreStatuses() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+          </div>
 
-                        <mat-form-field appearance="outline" class="zb-field">
-                          <mat-label>Filter jobs by title</mat-label>
-                          <input matInput
-                          type="text"
-                          [value]="jobFilter()"
-                          (input)="setJobFilter($any($event.target).value)"
-                          placeholder="Filter job..."
-                          aria-label="Filter jobs by title"
-                        />
-                        </mat-form-field>
-                      </th>
+          <!-- Other filters -->
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <!-- Job type, featured and place: one line, also on phones -->
+            <div class="flex min-w-0 basis-full items-center gap-2 sm:basis-auto">
+            <label class="sr-only" for="job-type-filter">Job type</label>
+            <select
+              id="job-type-filter"
+              (change)="setEmploymentTypeFilter($any($event.target).value)"
+              [class]="pill(employmentTypeFilter()) + ' min-w-0 flex-1 sm:flex-none'"
+            >
+              <option value="" [selected]="!employmentTypeFilter()">Any job type</option>
+              <option value="full-time" [selected]="employmentTypeFilter() === 'full-time'">Full-time</option>
+              <option value="part-time" [selected]="employmentTypeFilter() === 'part-time'">Part-time</option>
+              <option value="contract" [selected]="employmentTypeFilter() === 'contract'">Contract</option>
+              <option value="internship" [selected]="employmentTypeFilter() === 'internship'">Internship</option>
+              <option value="temporary" [selected]="employmentTypeFilter() === 'temporary'">Temporary</option>
+            </select>
+            <label class="sr-only" for="job-featured-filter">Featured</label>
+            <select
+              id="job-featured-filter"
+              (change)="setFeaturedFilter($any($event.target).value)"
+              [class]="pill(featuredFilter()) + ' min-w-0 flex-1 sm:flex-none'"
+            >
+              <option value="" [selected]="!featuredFilter()">Featured or not</option>
+              <option value="featured" [selected]="featuredFilter() === 'featured'">Featured only</option>
+              <option value="not-featured" [selected]="featuredFilter() === 'not-featured'">Not featured</option>
+            </select>
+            <label class="sr-only" for="job-location-filter">Location</label>
+            <input
+              id="job-location-filter"
+              type="search"
+              [value]="locationFilter()"
+              (input)="setLocationFilter($any($event.target).value)"
+              placeholder="City"
+              [class]="pill(locationFilter()) + ' min-w-0 flex-1 !pr-3 placeholder:text-gray-400 sm:w-44 sm:flex-none'"
+            />
+            </div>
+            @if (hasActiveFilters()) {
+              <button type="button" (click)="clearFilters()" class="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100">
+                <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">close</mat-icon>
+                Clear all
+              </button>
+            }
+            <span class="ml-auto text-sm text-gray-500" aria-live="polite">
+              {{ filteredJobs().length }} of {{ jobs().length }} jobs
+            </span>
+          </div>
+        </section>
 
-                      <!-- =====================================
-                           Organization
-                           ===================================== -->
-                      <th
-                        class="min-w-[210px]
-                               px-5 py-3
-                               text-left
-                               align-top"
-                      >
-                        <div
-                          class="text-xs
-                                 font-semibold
-                                 uppercase
-                                 tracking-wider"
-                        >
-                          Organization
-                        </div>
+        @if (importOpen()) {
+          <app-job-import [existingJobs]="jobs()" (imported)="loadJobs()" (closed)="importOpen.set(false)" />
+        }
 
-                        <mat-form-field appearance="outline" class="zb-field">
-                          <mat-label>Filter by organization</mat-label>
-                          <input matInput
-                          type="text"
-                          [value]="organizationFilter()"
-                          (input)="setOrganizationFilter($any($event.target).value)"
-                          placeholder="Filter organization..."
-                          aria-label="Filter by organization"
-                        />
-                        </mat-form-field>
-                      </th>
-
-                      <!-- =====================================
-                           Type
-                           ===================================== -->
-                      <th
-                        class="min-w-[150px]
-                               px-5 py-3
-                               text-left
-                               align-top"
-                      >
-                        <div
-                          class="text-xs
-                                 font-semibold
-                                 uppercase
-                                 tracking-wider"
-                        >
-                          Type
-                        </div>
-
-                        <mat-form-field appearance="outline" class="zb-field">
-                          <mat-label>Filter by employment type</mat-label>
-                          <mat-select
-                          [value]="employmentTypeFilter()"
-                          (selectionChange)="setEmploymentTypeFilter($event.value)"
-                          aria-label="Filter by employment type"
-                        >
-                          <mat-option value="">All</mat-option>
-
-                          <mat-option value="full-time">Full-time</mat-option>
-
-                          <mat-option value="part-time">Part-time</mat-option>
-
-                          <mat-option value="contract">Contract</mat-option>
-
-                          <mat-option value="internship">Internship</mat-option>
-
-                          <mat-option value="temporary">Temporary</mat-option>
-                        </mat-select>
-                        </mat-form-field>
-                      </th>
-
-                      <!-- =====================================
-                           Location
-                           ===================================== -->
-                      <th
-                        class="min-w-[180px]
-                               px-5 py-3
-                               text-left
-                               align-top"
-                      >
-                        <div
-                          class="text-xs
-                                 font-semibold
-                                 uppercase
-                                 tracking-wider"
-                        >
-                          Location
-                        </div>
-
-                        <mat-form-field appearance="outline" class="zb-field">
-                          <mat-label>Filter by location</mat-label>
-                          <input matInput
-                          type="text"
-                          [value]="locationFilter()"
-                          (input)="setLocationFilter($any($event.target).value)"
-                          placeholder="City / state..."
-                          aria-label="Filter by location"
-                        />
-                        </mat-form-field>
-                      </th>
-
-                      <!-- =====================================
-                           Status
-                           ===================================== -->
-                      <th
-                        class="min-w-[130px]
-                               px-5 py-3
-                               text-left
-                               align-top"
-                      >
-                        <div
-                          class="text-xs
-                                 font-semibold
-                                 uppercase
-                                 tracking-wider"
-                        >
-                          Status
-                        </div>
-
-                        <mat-form-field appearance="outline" class="zb-field">
-                          <mat-label>Filter by status</mat-label>
-                          <mat-select
-                          [value]="statusFilter()"
-                          (selectionChange)="setStatusFilter($event.value)"
-                          aria-label="Filter by status"
-                        >
-                          <mat-option value="">All</mat-option>
-
-                          <mat-option value="active">Active</mat-option>
-
-                          <mat-option value="draft">Draft</mat-option>
-
-                          <mat-option value="closed">Closed</mat-option>
-                        </mat-select>
-                        </mat-form-field>
-                      </th>
-
-                      <!-- =====================================
-                           Featured
-                           ===================================== -->
-                      <th
-                        class="min-w-[125px]
-                               px-5 py-3
-                               text-left
-                               align-top"
-                      >
-                        <div
-                          class="text-xs
-                                 font-semibold
-                                 uppercase
-                                 tracking-wider"
-                        >
-                          Featured
-                        </div>
-
-                        <mat-form-field appearance="outline" class="zb-field">
-                          <mat-label>Filter featured jobs</mat-label>
-                          <mat-select
-                          [value]="featuredFilter()"
-                          (selectionChange)="setFeaturedFilter($event.value)"
-                          aria-label="Filter featured jobs"
-                        >
-                          <mat-option value="">All</mat-option>
-
-                          <mat-option value="featured">Featured</mat-option>
-
-                          <mat-option value="not-featured">Not featured</mat-option>
-                        </mat-select>
-                        </mat-form-field>
-                      </th>
-
-                      <!-- Actions -->
-                      <th
-                        class="px-5 py-3
-                               text-right
-                               align-top
-                               text-xs
-                               font-semibold
-                               uppercase
-                               tracking-wider"
-                      >
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody
-                    class="divide-y
-                           divide-gray-100"
-                  >
-                    @for (job of filteredJobs(); track job.id) {
-                      <tr
-                        class="transition
-                               hover:bg-gray-50"
-                      >
-                        <!-- Job -->
-                        <td class="px-5 py-4">
-                          <div>
-                            <div
-                              class="flex
-                                     items-center
-                                     gap-2"
-                            >
-                              <span
-                                class="font-semibold
-                                       text-gray-900"
-                              >
-                                {{ job.title }}
-                              </span>
-
-                              @if (job.featured) {
-                                <span
-                                  class="rounded-full
-                                         bg-yellow-100
-                                         px-2 py-0.5
-                                         text-[10px]
-                                         font-semibold
-                                         text-yellow-700"
-                                >
-                                  Featured
-                                </span>
-                              }
-                            </div>
-
-                            <p
-                              class="mt-1
-                                     line-clamp-2
-                                     text-sm
-                                     text-gray-500"
-                            >
-                              {{ truncate(job.description, 100) }}
-                            </p>
-                          </div>
-                        </td>
-
-                        <!-- Organization -->
-                        <td
-                          class="px-5 py-4
-                                 text-sm
-                                 text-gray-700"
-                        >
-                          {{ job.organizationName }}
-                        </td>
-
-                        <!-- Type -->
-                        <td
-                          class="px-5 py-4
-                                 text-sm
-                                 text-gray-600"
-                        >
-                          {{ formatEmploymentType(job.employmentType) }}
-                        </td>
-
-                        <!-- Location -->
-                        <td
-                          class="px-5 py-4
-                                 text-sm
-                                 text-gray-600"
-                        >
-                          {{ formatLocation(job) }}
-                        </td>
-
-                        <!-- Status -->
-                        <td class="px-5 py-4">
-                          <span [class]="statusClasses(job.status)">
-                            {{ formatStatus(job.status) }}
-                          </span>
-                        </td>
-
-                        <!-- Featured -->
-                        <td class="px-5 py-4">
-                          @if (job.featured) {
-                            <span
-                              class="text-sm
-                                     font-medium
-                                     text-yellow-700"
-                            >
-                              Yes
-                            </span>
-                          } @else {
-                            <span
-                              class="text-sm
-                                     text-gray-400"
-                            >
-                              No
-                            </span>
-                          }
-                        </td>
-
-                        <!-- Actions -->
-                        <td
-                          class="px-5 py-4
-                                 text-right"
-                        >
-                          <div
-                            class="flex
-                                   justify-end
-                                   gap-3"
-                          >
-                            <a
-                              [href]="'/admin/jobs/' + job.id + '/edit'" (click)="openEdit($event, job.id)"
-                              class="text-sm
-                                     font-semibold
-                                     text-[#007979]
-                                     hover:underline"
-                            >
-                              Edit
-                            </a>
-
-                            <button
-                              type="button"
-                              (click)="deleteJob(job)"
-                              class="text-sm
-                                     font-semibold
-                                     text-red-600
-                                     hover:underline"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
+        <div [class]="viewState.layout() === 'split' ? 'grid items-start gap-4 lg:grid-cols-3' : ''">
+          <!-- ================= Form (create / edit / copy) ================= -->
+          @if (viewState.showForm()) {
+            <div [class]="viewState.layout() === 'split' ? 'min-w-0 lg:col-span-2' : 'min-w-0'">
+              @if (viewState.layout() !== 'split') {
+                <app-admin-back-link label="Back to jobs" (back)="closeForm()" />
+              }
+              <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                @for (key of formKeys(); track key) {
+                  <app-job-form
+                    [embedded]="true"
+                    [editJobId]="editingJobId()"
+                    [copyFromJobId]="copyingJobId()"
+                    (saved)="onFormSaved()"
+                    (cancelled)="closeForm()"
+                  />
+                }
               </div>
             </div>
+          }
 
-            <!-- =================================================
-                 Mobile Cards
-                 ================================================= -->
+          <!-- ================= List ================= -->
+          @if (viewState.showList()) {
             <div
-              [class]="viewState.layout() === 'cards'
-                ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
-                : viewState.layout() === 'split' ? 'space-y-3' : 'space-y-3 md:hidden'"
+              [class]="viewState.layout() === 'split'
+                ? 'min-w-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto'
+                : 'min-w-0'"
             >
-              @for (job of filteredJobs(); track job.id) {
-                <article
-                  class="rounded-xl
-                         border
-                         border-gray-200
-                         bg-white
-                         p-4
-                         shadow-sm"
-                >
-                  <div
-                    class="flex
-                           items-start
-                           justify-between
-                           gap-3"
-                  >
-                    <div class="min-w-0">
-                      <div
-                        class="flex
-                               flex-wrap
-                               items-center
-                               gap-2"
-                      >
-                        <h3
-                          class="font-semibold
-                                 text-gray-900"
-                        >
-                          {{ job.title }}
-                        </h3>
-
-                        @if (job.featured) {
-                          <span
-                            class="rounded-full
-                                   bg-yellow-100
-                                   px-2 py-0.5
-                                   text-[10px]
-                                   font-semibold
-                                   text-yellow-700"
-                          >
-                            Featured
-                          </span>
-                        }
-                      </div>
-
-                      <p
-                        class="mt-1
-                               text-sm
-                               text-gray-500"
-                      >
-                        {{ job.organizationName }}
-                      </p>
-                    </div>
-
-                    <span [class]="statusClasses(job.status)">
-                      {{ formatStatus(job.status) }}
-                    </span>
-                  </div>
-
-                  <div
-                    class="mt-4
-                           grid
-                           grid-cols-2
-                           gap-3
-                           text-sm"
-                  >
-                    <div>
-                      <p
-                        class="text-xs
-                               text-gray-400"
-                      >
-                        Employment
-                      </p>
-
-                      <p
-                        class="mt-0.5
-                               text-gray-700"
-                      >
-                        {{ formatEmploymentType(job.employmentType) }}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p
-                        class="text-xs
-                               text-gray-400"
-                      >
-                        Location
-                      </p>
-
-                      <p
-                        class="mt-0.5
-                               text-gray-700"
-                      >
-                        {{ formatLocation(job) }}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p class="text-xs text-gray-400">Work arrangement</p>
-                      <p class="mt-0.5 text-gray-700">{{ formatWorkArrangement(job.workArrangement) }}</p>
-                    </div>
-
-                    <div>
-                      <p class="text-xs text-gray-400">Pay</p>
-                      <p class="mt-0.5 text-gray-700">{{ formatPay(job) }}</p>
-                    </div>
-
-                    @if (job.categoryName) {
-                      <div>
-                        <p class="text-xs text-gray-400">Category</p>
-                        <p class="mt-0.5 text-gray-700">{{ job.categoryName }}</p>
-                      </div>
+              @if (loading() && !jobs().length) {
+                <div class="flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-12 text-sm text-gray-600 shadow-sm">
+                  <span class="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-[#007979]"></span>
+                  Loading jobs…
+                </div>
+              } @else if (error()) {
+                <div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700" role="alert">
+                  {{ error() }}
+                  <button type="button" (click)="loadJobs()" class="ml-2 font-semibold underline">Try again</button>
+                </div>
+              } @else if (!filteredJobs().length) {
+                <div class="rounded-xl border border-gray-200 bg-white px-6 py-10 text-center shadow-sm">
+                  <mat-icon class="!h-10 !w-10 !text-[40px] text-gray-300" aria-hidden="true">work_off</mat-icon>
+                  <h2 class="mt-2 text-base font-semibold text-[#032D42]">{{ jobs().length ? 'No jobs match' : 'No jobs yet' }}</h2>
+                  <p class="mt-1 text-sm text-gray-500">
+                    {{ jobs().length ? 'Try another search or clear the filters.' : 'Add a job, or import several from a CSV file.' }}
+                  </p>
+                  <div class="mt-4 flex justify-center gap-2">
+                    @if (hasActiveFilters()) {
+                      <button type="button" (click)="clearFilters()" class="h-9 rounded-lg border border-gray-300 px-3 text-sm font-semibold text-gray-700 hover:border-[#007979]">Clear filters</button>
                     }
-
-                    <div>
-                      <p class="text-xs text-gray-400">Apply by</p>
-                      <p class="mt-0.5 text-gray-700">{{ formatDeadline(job) }}</p>
+                    <a href="/admin/jobs/new" (click)="startCreate($event)" class="inline-flex h-9 items-center rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]">Add job</a>
+                  </div>
+                </div>
+              } @else if (viewState.layout() === 'cards') {
+                <!-- Cards -->
+                <ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  @for (job of filteredJobs(); track job.id) {
+                    <li class="flex flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                      <div class="flex items-start gap-2">
+                        <div class="min-w-0 flex-1">
+                          <div class="flex flex-wrap items-center gap-1.5">
+                            <span [class]="statusClasses(job.status)">{{ formatStatus(job.status) }}</span>
+                            @if (job.featured) {
+                              <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Featured</span>
+                            }
+                          </div>
+                          <a
+                            [href]="'/admin/jobs/' + job.id + '/edit'"
+                            (click)="openEdit($event, job.id)"
+                            class="mt-1.5 line-clamp-2 block text-[15px] font-semibold leading-snug text-[#032D42] hover:text-[#007979]"
+                          >
+                            {{ job.title }}
+                          </a>
+                          <p class="mt-0.5 truncate text-sm text-gray-600">{{ job.organizationName }}</p>
+                        </div>
+                        <ng-container *ngTemplateOutlet="rowMenu; context: { $implicit: job }" />
+                      </div>
+                      <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                        <div><dt class="text-gray-500">Where</dt><dd class="truncate text-gray-800">{{ formatLocation(job) }} · {{ formatWorkArrangement(job.workArrangement) }}</dd></div>
+                        <div><dt class="text-gray-500">Type</dt><dd class="text-gray-800">{{ formatEmploymentType(job.employmentType) }}</dd></div>
+                        <div><dt class="text-gray-500">Pay</dt><dd class="truncate text-gray-800">{{ formatPay(job) }}</dd></div>
+                        <div><dt class="text-gray-500">Deadline</dt><dd class="text-gray-800">{{ formatDeadline(job) }}</dd></div>
+                      </dl>
+                      @if (expiryNote(job); as note) {
+                        <p class="mt-auto pt-3 text-xs text-gray-500">{{ note }}</p>
+                      }
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <!-- List (and split): one compact row per job -->
+                <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                  @if (viewState.layout() !== 'split') {
+                    <div class="hidden grid-cols-[minmax(0,2.2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_40px] gap-3 border-b border-gray-100 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 md:grid">
+                      <span>Job</span>
+                      <span>Where</span>
+                      <span>Type and pay</span>
+                      <span>Status</span>
+                      <span class="sr-only">Actions</span>
                     </div>
-
-                    @if (skillsOf(job).length) {
-                      <div class="col-span-2">
-                        <p class="text-xs text-gray-400">Skills</p>
-                        <div class="mt-1 flex flex-wrap gap-1">
-                          @for (skill of skillsOf(job).slice(0, 6); track skill) {
-                            <span class="rounded-full bg-[#007979]/10 px-2 py-0.5 text-xs text-[#006666]">{{ skill }}</span>
+                  }
+                  <ul class="divide-y divide-gray-100">
+                    @for (job of filteredJobs(); track job.id) {
+                      <li
+                        [class]="
+                          'items-center gap-3 px-4 py-2.5 transition hover:bg-gray-50 ' +
+                          (viewState.layout() === 'split'
+                            ? 'flex'
+                            : 'flex md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_40px]') +
+                          (editingJobId() === job.id ? ' bg-[#007979]/5' : '')
+                        "
+                      >
+                        <div class="min-w-0 flex-1">
+                          <a
+                            [href]="'/admin/jobs/' + job.id + '/edit'"
+                            (click)="openEdit($event, job.id)"
+                            class="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-[#032D42] hover:text-[#007979]"
+                          >
+                            <span class="truncate">{{ job.title }}</span>
+                            @if (job.featured) {
+                              <mat-icon class="!h-4 !w-4 shrink-0 !text-base text-amber-500" aria-label="Featured">star</mat-icon>
+                            }
+                          </a>
+                          <p class="truncate text-xs text-gray-500">
+                            {{ job.organizationName }}
+                            @if (viewState.layout() === 'split') {
+                              · {{ formatStatus(job.status) }}
+                            }
+                          </p>
+                          <!-- Phones: the details in one line -->
+                          @if (viewState.layout() !== 'split') {
+                            <p class="truncate text-xs text-gray-500 md:hidden">
+                              {{ formatStatus(job.status) }} · {{ formatLocation(job) }} · {{ formatEmploymentType(job.employmentType) }}
+                            </p>
                           }
                         </div>
-                      </div>
+
+                        @if (viewState.layout() !== 'split') {
+                          <div class="hidden min-w-0 text-sm md:block">
+                            <p class="truncate text-gray-800">{{ formatLocation(job) }}</p>
+                            <p class="truncate text-xs text-gray-500">{{ formatWorkArrangement(job.workArrangement) }}</p>
+                          </div>
+                          <div class="hidden min-w-0 text-sm md:block">
+                            <p class="truncate text-gray-800">{{ formatEmploymentType(job.employmentType) }}</p>
+                            <p class="truncate text-xs text-gray-500">{{ formatPay(job) }}</p>
+                          </div>
+                          <div class="hidden min-w-0 md:block">
+                            <span [class]="statusClasses(job.status)">{{ formatStatus(job.status) }}</span>
+                            @if (expiryNote(job); as note) {
+                              <p class="mt-0.5 truncate text-xs text-gray-500" [title]="note">{{ note }}</p>
+                            }
+                          </div>
+                        }
+
+                        <ng-container *ngTemplateOutlet="rowMenu; context: { $implicit: job }" />
+                      </li>
                     }
-
-                    <div class="col-span-2">
-                      <p
-                        class="text-xs
-                               text-gray-400"
-                      >
-                        Description
-                      </p>
-
-                      <p
-                        class="mt-0.5
-                               text-sm
-                               leading-5
-                               text-gray-600"
-                      >
-                        {{ truncate(job.description, 150) }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div
-                    class="mt-4
-                           flex
-                           justify-end
-                           gap-4
-                           border-t
-                           border-gray-100
-                           pt-3"
-                  >
-                    <a
-                      [href]="'/admin/jobs/' + job.id + '/edit'" (click)="openEdit($event, job.id)"
-                      class="text-sm
-                             font-semibold
-                             text-[#007979]"
-                    >
-                      Edit
-                    </a>
-
-                    <button
-                      type="button"
-                      (click)="deleteJob(job)"
-                      class="text-sm
-                             font-semibold
-                             text-red-600"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </article>
+                  </ul>
+                </div>
               }
             </div>
           }
-        }
-        </div>
-        }
         </div>
       </div>
+
+      <!-- Row actions, shared by the list and the cards -->
+      <ng-template #rowMenu let-job>
+        <button mat-icon-button type="button" [matMenuTriggerFor]="jobMenu" [attr.aria-label]="'Actions for ' + job.title" class="!h-9 !w-9 shrink-0 !p-1.5 !text-gray-500">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #jobMenu="matMenu" xPosition="before">
+          <a mat-menu-item [href]="'/admin/jobs/' + job.id + '/edit'" (click)="openEdit($event, job.id)">
+            <mat-icon>edit</mat-icon>
+            <span>Edit</span>
+          </a>
+          <a mat-menu-item [href]="'/admin/jobs/new?copy=' + job.id" (click)="openCopy($event, job.id)">
+            <mat-icon>content_copy</mat-icon>
+            <span>Copy as new job</span>
+          </a>
+          @if (job.status === 'active') {
+            <a mat-menu-item [routerLink]="['/jobs', job.id]" target="_blank">
+              <mat-icon>open_in_new</mat-icon>
+              <span>View on the job board</span>
+            </a>
+          }
+          <mat-divider></mat-divider>
+          <button mat-menu-item type="button" (click)="deleteJob(job)">
+            <mat-icon class="!text-red-600">delete</mat-icon>
+            <span class="text-red-600">Delete</span>
+          </button>
+        </mat-menu>
+      </ng-template>
     </main>
   `,
 })
@@ -1404,8 +461,104 @@ protected readonly error =
 
   protected readonly formKeys = computed(() => [this.formKey()]);
 
+  /** When an open job closes on its own, or why a closed one was closed. */
+  protected expiryNote(job: Job): string {
+    if (job.closedReason === 'expired') {
+      return 'Closed automatically';
+    }
+    if (job.status !== 'active') {
+      return '';
+    }
+    const expires = jobExpiresAtMillisOf(job);
+    if (expires === null) {
+      return '';
+    }
+    if (isJobExpired(job)) {
+      return 'Past its closing date (hidden; closes tonight)';
+    }
+    return `Closes ${new Date(expires).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  }
+
+  /** Phones: the search box opened with the search icon (always shown while it has words). */
+  private readonly mobileSearch = signal(false);
+  protected readonly searchShown = computed(() => this.mobileSearch() || this.searchTerm().trim() !== '');
+
+  protected toggleMobileSearch(input: HTMLInputElement): void {
+    if (this.searchShown()) {
+      this.mobileSearch.set(false);
+      this.clearSearch();
+      return;
+    }
+    this.mobileSearch.set(true);
+    setTimeout(() => input.focus());
+  }
+
+  /** Phones: Closed and Closed automatically shown with More. */
+  protected readonly moreStatuses = signal(false);
+
+  /** Choose a status; choosing the selected one again shows all jobs. */
+  protected toggleStatus(key: string): void {
+    this.setStatusFilter(this.statusFilter() === key ? '' : key);
+  }
+
+  /** Status chips with counts; the key is the status filter value. */
+  protected readonly statusChips = computed(() => {
+    const jobs = this.jobs();
+    const week = 7 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    return [
+      { key: '', label: 'All', short: 'All', count: jobs.length, extra: false },
+      { key: 'draft', label: 'Drafts', short: 'Drafts', count: jobs.filter((job) => job.status === 'draft').length, extra: false },
+      { key: 'active', label: 'Active', short: 'Active', count: jobs.filter((job) => job.status === 'active').length, extra: false },
+      {
+        extra: false,
+        key: 'expiring',
+        label: 'Expiring in 7 days',
+        short: 'Expiring',
+        count: jobs.filter((job) => {
+          const expires = jobExpiresAtMillisOf(job);
+          return isJobOpen(job) && expires !== null && expires - now <= week;
+        }).length,
+      },
+      { key: 'closed', label: 'Closed', short: 'Closed', count: jobs.filter((job) => job.status === 'closed').length, extra: true },
+      {
+        extra: true,
+        key: 'expired',
+        label: 'Closed automatically',
+        short: 'Auto-closed',
+        count: jobs.filter((job) => job.closedReason === 'expired' || (job.status === 'active' && isJobExpired(job))).length,
+      },
+    ];
+  });
+
+  /** A filter as a pill: tinted when it is set. */
+  protected pill(value: string): string {
+    return (
+      'h-8 rounded-full border py-0 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-[#007979]/40 ' +
+      (value ? 'border-[#007979] bg-[#007979]/10 font-medium text-[#007979]' : 'border-gray-300 bg-white text-gray-700')
+    );
+  }
+
+  /** The CSV import panel. */
+  protected readonly importOpen = signal(false);
+
+  /** Job being copied into a new one ("Copy as new"). */
+  protected readonly copyingJobId = signal<string | null>(null);
+
+  protected openCopy(event: Event, jobId: string | undefined): void {
+    event.preventDefault();
+    if (!jobId) {
+      return;
+    }
+    this.editingJobId.set(null);
+    this.copyingJobId.set(jobId);
+    this.formKey.update((key) => key + 1);
+    this.viewState.openForm();
+  }
+
   protected startCreate(event?: Event): void {
     event?.preventDefault();
+    this.copyingJobId.set(null);
     this.editingJobId.set(null);
     this.formKey.update((key) => key + 1);
     this.viewState.openForm();
@@ -1416,12 +569,14 @@ protected readonly error =
     if (!jobId) {
       return;
     }
+    this.copyingJobId.set(null);
     this.editingJobId.set(jobId);
     this.formKey.update((key) => key + 1);
     this.viewState.openForm();
   }
 
   protected closeForm(): void {
+    this.copyingJobId.set(null);
     this.editingJobId.set(null);
     this.formKey.update((key) => key + 1);
     this.viewState.backToList();
@@ -1602,7 +757,18 @@ protected readonly error =
       // Status
       // ---------------------------------------------------
 
-      if (statusFilter && job.status !== statusFilter) {
+      if (statusFilter === 'expiring') {
+        // Active, open, and closing on its own within 7 days.
+        const expires = jobExpiresAtMillisOf(job);
+        if (!isJobOpen(job) || expires === null || expires - Date.now() > 7 * 24 * 60 * 60 * 1000) {
+          return false;
+        }
+      } else if (statusFilter === 'expired') {
+        // Closed by expireJobListings, or past its expiry and about to be.
+        if (job.closedReason !== 'expired' && !(job.status === 'active' && isJobExpired(job))) {
+          return false;
+        }
+      } else if (statusFilter && job.status !== statusFilter) {
         return false;
       }
 

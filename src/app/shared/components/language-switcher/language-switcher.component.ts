@@ -35,9 +35,10 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
       [matMenuTriggerFor]="languageMenu"
       [attr.aria-label]="'Select language' | t"
       [title]="'Select language' | t"
-      class="inline-flex h-9 items-center gap-1 rounded-full border border-white/25 px-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+      class="inline-flex h-9 items-center gap-0.5 rounded-full border border-white/25 pl-2.5 pr-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:gap-1 sm:px-2.5"
     >
-      <mat-icon aria-hidden="true" class="!h-[18px] !w-[18px] !text-[18px]">language</mat-icon>
+      <!-- The globe shows from small screens up; phones get just the code, to save room. -->
+      <mat-icon aria-hidden="true" class="!hidden !h-[18px] !w-[18px] !text-[18px] sm:!inline-block">language</mat-icon>
       <span class="tracking-wide">{{ currentLanguageCode() }}</span>
       <mat-icon aria-hidden="true" class="!h-[18px] !w-[18px] !text-[18px] opacity-80">expand_more</mat-icon>
     </button>
