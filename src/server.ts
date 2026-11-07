@@ -144,6 +144,56 @@ function toIsoString(value: unknown): string | undefined {
  * Only published resources are included. This endpoint runs on the trusted
  * Node.js server and uses the Firebase Admin SDK for its Firestore query.
  */
+/**
+ * Open job board listings (jobs/{id}) for the sitemap, so Google finds new
+ * jobs quickly. Listings past their expiry are left out (the same rule as
+ * jobExpiresAtMillis in src/app/core/models/job.model.ts and
+ * functions/src/job-board.ts): 5 days after the application deadline, or
+ * 60 days after they were posted.
+ */
+async function jobSitemapUrls(): Promise<string> {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const millis = (value: unknown): number | null => {
+    const iso = toIsoString(value);
+    return iso ? Date.parse(iso) : null;
+  };
+
+  try {
+    const snapshot = await adminFirestore.collection('jobs').where('status', '==', 'active').get();
+    const now = Date.now();
+
+    return snapshot.docs
+      .map((document) => {
+        const data = document.data();
+        const deadline = millis(data['applicationDeadline']);
+        const posted = millis(data['postedAt']) ?? millis(data['createdAt']);
+        const expires =
+          millis(data['expiresAt']) ??
+          (deadline !== null ? deadline + 5 * DAY_MS : posted !== null ? posted + 60 * DAY_MS : null);
+
+        if (expires !== null && now >= expires) {
+          return '';
+        }
+
+        const lastModified = toIsoString(data['updatedAt']) ?? toIsoString(data['createdAt']);
+        return `
+  <url>
+    <loc>https://zebron.org/jobs/${encodeURIComponent(document.id)}</loc>${
+      lastModified
+        ? `
+    <lastmod>${lastModified}</lastmod>`
+        : ''
+    }
+  </url>`;
+      })
+      .join('');
+  } catch (error: unknown) {
+    // The sitemap still works without jobs.
+    console.error('Failed to list jobs for the sitemap:', error instanceof Error ? error.message : String(error));
+    return '';
+  }
+}
+
 app.get('/sitemap.xml', async (_req, res) => {
   try {
     const snapshot = await adminFirestore
@@ -178,6 +228,8 @@ app.get('/sitemap.xml', async (_req, res) => {
       .filter(Boolean)
       .join('');
 
+    const jobUrls = await jobSitemapUrls();
+
     const staticUrls = `
   <url>
     <loc>https://zebron.org/</loc>
@@ -195,12 +247,16 @@ app.get('/sitemap.xml', async (_req, res) => {
     <loc>https://zebron.org/find/job</loc>
   </url>
   <url>
+    <loc>https://zebron.org/jobs</loc>
+    <changefreq>daily</changefreq>
+  </url>
+  <url>
     <loc>https://zebron.org/find/training</loc>
   </url>`;
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset
-  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${staticUrls}${resourceUrls}
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${staticUrls}${resourceUrls}${jobUrls}
 </urlset>`;
 
     res.type('application/xml').send(sitemap);

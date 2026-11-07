@@ -1,12 +1,14 @@
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
 
 import { Meta, Title } from '@angular/platform-browser';
 
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT, Location, isPlatformBrowser } from '@angular/common';
+
+import { MatIconModule } from '@angular/material/icon';
 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { Job, EmploymentType, WorkArrangement } from '../../../../core/models/job.model';
+import { Job, EmploymentType, WorkArrangement, jobExpiresAtMillis } from '../../../../core/models/job.model';
 
 import { JobStore } from '../../stores/job.store';
 
@@ -19,7 +21,7 @@ import { CourseService } from '../../../courses/course.service';
 
   standalone: true,
 
-  imports: [CommonModule, RouterLink, SaveJobButtonComponent],
+  imports: [CommonModule, RouterLink, MatIconModule, SaveJobButtonComponent],
 
   template: `
     <!-- =========================================================
@@ -27,80 +29,44 @@ import { CourseService } from '../../../courses/course.service';
          ========================================================= -->
     <main
       class="min-h-screen
-             bg-gray-50"
+             bg-gray-50 mt-16"
     >
       <!-- =======================================================
-           HEADER
+           ACTION BAR (the universal header shows "Job board")
            ======================================================= -->
-      <header
-        class="border-b
-               border-gray-200
-               bg-[#032D42]"
-      >
-        <div
-          class="mx-auto
-                 max-w-6xl
-                 px-4
-                 py-5
-                 sm:px-6
-                 lg:px-8"
-        >
-          <div
-            class="flex
-                   flex-col
-                   gap-4
-                   sm:flex-row
-                   sm:items-center
-                   sm:justify-between"
+      <div class="sticky top-16 z-40 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white shadow-sm">
+        <div class="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 sm:px-6 lg:px-8">
+          <button
+            type="button"
+            (click)="back()"
+            class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-medium text-white/90 transition hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
           >
-            <div>
-              <p
-                class="text-xs
-                       font-semibold
-                       uppercase
-                       tracking-wider
-                       text-[#7ED6D1]"
-              >
-                Zebron Job Opportunities
-              </p>
+            <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">arrow_back</mat-icon>
+            Job board
+          </button>
 
-              <h1
-                class="mt-1
-                       text-2xl
-                       font-bold
-                       tracking-tight
-                       text-white
-                       sm:text-3xl"
-              >
-                Job Details
-              </h1>
+          @if (job(); as barJob) {
+            <span class="hidden min-w-0 flex-1 truncate border-l border-white/25 pl-3 text-sm font-semibold text-white md:block">
+              {{ barJob.title }}
+            </span>
+            <div class="ml-auto flex shrink-0 items-center gap-1">
+              <app-save-job-button [job]="barJob" [iconOnly]="true" [onDark]="true" />
+              @if (barJob.applicationUrl) {
+                <a
+                  [href]="barJob.applicationUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex h-9 items-center gap-1 rounded-lg bg-white px-3 text-sm font-semibold text-[#007979] shadow-sm hover:bg-gray-100"
+                >
+                  Apply
+                  <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">open_in_new</mat-icon>
+                  <span class="sr-only">(opens the employer's site)</span>
+                </a>
+              }
             </div>
-
-            <!-- Back to jobs -->
-            <a
-              routerLink="/jobs"
-              fragment="job-opportunities"
-              class="inline-flex
-                     w-fit
-                     items-center
-                     rounded-lg
-                     border
-                     border-white/30
-                     bg-white
-                     px-4
-                     py-2
-                     text-sm
-                     font-semibold
-                     text-[#032D42]
-                     shadow-sm
-                     transition
-                     hover:bg-gray-100"
-            >
-              ← Back to Jobs
-            </a>
-          </div>
+          }
         </div>
-      </header>
+      </div>
 
       <!-- =======================================================
            CONTENT
@@ -199,7 +165,6 @@ import { CourseService } from '../../../courses/course.service';
 
             <a
               routerLink="/jobs"
-              fragment="job-opportunities"
               class="mt-6
                      inline-flex
                      items-center
@@ -266,7 +231,7 @@ import { CourseService } from '../../../courses/course.service';
                 }
 
                 <!-- Title -->
-                <h2
+                <h1
                   class="mt-3
                          text-2xl
                          font-bold
@@ -276,7 +241,7 @@ import { CourseService } from '../../../courses/course.service';
                          sm:text-3xl"
                 >
                   {{ currentJob.title }}
-                </h2>
+                </h1>
 
                 <!-- Organization -->
                 <p
@@ -288,16 +253,16 @@ import { CourseService } from '../../../courses/course.service';
                   {{ currentJob.organizationName }}
                 </p>
 
-                @if (currentJob.sourceName || currentJob.postedAt) {
+                @if (currentJob.sourceName || currentJob.postedAt || currentJob.createdAt) {
                   <p class="mt-1 text-sm text-gray-500">
                     @if (currentJob.sourceName) {
                       Listed on {{ currentJob.sourceName }}
                     }
-                    @if (currentJob.sourceName && currentJob.postedAt) {
-                      ·
-                    }
-                    @if (currentJob.postedAt) {
-                      Posted {{ formatDeadline(currentJob.postedAt!) }}
+                    @if (currentJob.postedAt ?? currentJob.createdAt; as postedOn) {
+                      @if (currentJob.sourceName) {
+                        ·
+                      }
+                      Posted {{ formatDeadline(postedOn) }}
                     }
                   </p>
                 }
@@ -816,7 +781,6 @@ import { CourseService } from '../../../courses/course.service';
                    ================================================= -->
               <a
                 routerLink="/jobs"
-                fragment="job-opportunities"
                 class="flex
                        items-center
                        justify-center
@@ -857,6 +821,14 @@ export class JobDetailComponent implements OnInit {
 
   private readonly router = inject(Router);
 
+  private readonly location = inject(Location);
+
+  private readonly document = inject(DOCUMENT);
+
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
   // =========================================================
   // State
   // =========================================================
@@ -872,7 +844,24 @@ export class JobDetailComponent implements OnInit {
   // =========================================================
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.removeStructuredData());
     void this.loadJob();
+  }
+
+  /**
+   * Back to the job board. When the visitor came from the board, go back in
+   * history so their search and scroll position are kept; otherwise (a link
+   * from an email or another site) open the board.
+   */
+  protected back(): void {
+    // Angular numbers its navigations in the history state: above 1 means
+    // this page was opened from another page of the app.
+    const state = this.location.getState() as { navigationId?: number } | null;
+    if ((state?.navigationId ?? 1) > 1) {
+      this.location.back();
+      return;
+    }
+    void this.router.navigate(['/jobs']);
   }
 
   // =========================================================
@@ -888,14 +877,169 @@ export class JobDetailComponent implements OnInit {
       return;
     }
 
-    await this.jobStore.loadPublicJob(id);
+    // jobResolver has usually loaded it already (always on the server).
+    if (this.jobStore.selectedJob()?.id !== id) {
+      await this.jobStore.loadPublicJob(id);
+    }
 
     const job = this.jobStore.selectedJob();
 
     if (job) {
       this.updateSeoMetadata(job);
-      void this.loadPreparation(job);
+      this.setStructuredData(job);
+      this.setRobots('index, follow');
+      // Course suggestions are for people, not search engines: browser only.
+      if (this.isBrowser) {
+        void this.loadPreparation(job);
+      }
+    } else {
+      // Closed, expired or missing: keep it out of search results.
+      this.removeStructuredData();
+      this.setRobots('noindex');
     }
+  }
+
+  // =========================================================
+  // Google job listings (schema.org JobPosting)
+  // =========================================================
+
+  private static readonly STRUCTURED_DATA_ID = 'zebron-job-posting';
+
+  /**
+   * Adds the job as schema.org JobPosting data, which Google uses to show
+   * it in Google job search. Rendered on the server (app.routes.server.ts),
+   * so the data is in the HTML Google fetches.
+   * https://developers.google.com/search/docs/appearance/structured-data/job-posting
+   */
+  private setStructuredData(job: Job): void {
+    this.removeStructuredData();
+
+    const script = this.document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = JobDetailComponent.STRUCTURED_DATA_ID;
+    // "</" would end the script element early: escape it.
+    script.textContent = JSON.stringify(this.jobPosting(job)).replace(/<\//g, '<\\/');
+    this.document.head.appendChild(script);
+
+    this.setCanonical(`https://zebron.org/jobs/${encodeURIComponent(job.id ?? '')}`);
+  }
+
+  private removeStructuredData(): void {
+    this.document.getElementById(JobDetailComponent.STRUCTURED_DATA_ID)?.remove();
+  }
+
+  private setRobots(content: string): void {
+    this.meta.updateTag({ name: 'robots', content });
+  }
+
+  private setCanonical(url: string): void {
+    let link = this.document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!link) {
+      link = this.document.createElement('link');
+      link.rel = 'canonical';
+      this.document.head.appendChild(link);
+    }
+    link.href = url;
+  }
+
+  private jobPosting(job: Job): Record<string, unknown> {
+    const toDate = (value: { toDate?: () => Date } | null | undefined): Date | null =>
+      value && typeof value.toDate === 'function' ? value.toDate() : null;
+
+    const posted = toDate(job.postedAt) ?? toDate(job.createdAt) ?? new Date();
+    const expires = toDate(job.expiresAt) ?? (() => {
+      const millis = jobExpiresAtMillis(job);
+      return millis === null ? null : new Date(millis);
+    })();
+
+    const employmentTypes: Record<EmploymentType, string> = {
+      'full-time': 'FULL_TIME',
+      'part-time': 'PART_TIME',
+      contract: 'CONTRACTOR',
+      internship: 'INTERN',
+      temporary: 'TEMPORARY',
+    };
+
+    const location: NonNullable<Job['location']> = job.location ?? {};
+    const country = this.countryCode(location.country);
+    const hasPlace = !!(location.city?.trim() || location.state?.trim());
+
+    const posting: Record<string, unknown> = {
+      '@context': 'https://schema.org/',
+      '@type': 'JobPosting',
+      title: job.title,
+      description: this.descriptionHtml(job),
+      datePosted: posted.toISOString().slice(0, 10),
+      employmentType: employmentTypes[job.employmentType] ?? 'OTHER',
+      hiringOrganization: {
+        '@type': 'Organization',
+        name: job.organizationName,
+      },
+      url: `https://zebron.org/jobs/${encodeURIComponent(job.id ?? '')}`,
+      directApply: false,
+    };
+
+    if (expires) {
+      posting['validThrough'] = expires.toISOString();
+    }
+
+    if (hasPlace || job.workArrangement !== 'remote') {
+      posting['jobLocation'] = {
+        '@type': 'Place',
+        address: {
+          '@type': 'PostalAddress',
+          ...(location.city?.trim() ? { addressLocality: location.city.trim() } : {}),
+          ...(location.state?.trim() ? { addressRegion: location.state.trim() } : {}),
+          addressCountry: country,
+        },
+      };
+    }
+
+    if (job.workArrangement === 'remote') {
+      posting['jobLocationType'] = 'TELECOMMUTE';
+      posting['applicantLocationRequirements'] = { '@type': 'Country', name: country };
+    }
+
+    const pay = job.compensation;
+    if (pay && (pay.min != null || pay.max != null)) {
+      posting['baseSalary'] = {
+        '@type': 'MonetaryAmount',
+        currency: pay.currency || 'USD',
+        value: {
+          '@type': 'QuantitativeValue',
+          ...(pay.min != null && pay.max != null && pay.min !== pay.max
+            ? { minValue: pay.min, maxValue: pay.max }
+            : { value: pay.min ?? pay.max }),
+          unitText: pay.period === 'hour' ? 'HOUR' : 'YEAR',
+        },
+      };
+    }
+
+    if (job.skills?.length) {
+      posting['skills'] = job.skills.join(', ');
+    }
+
+    return posting;
+  }
+
+  /** The description as simple HTML (Google requires HTML), with the text escaped. */
+  private descriptionHtml(job: Job): string {
+    const escape = (value: string) =>
+      value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return (job.description ?? '')
+      .trim()
+      .split(/\n{2,}/)
+      .map((paragraph) => `<p>${escape(paragraph).replace(/\n/g, '<br>')}</p>`)
+      .join('');
+  }
+
+  /** Two-letter country code; listings are in the United States unless they say otherwise. */
+  private countryCode(country: string | undefined): string {
+    const value = (country ?? '').trim();
+    if (!value || /^(us|usa|united states( of america)?)$/i.test(value)) {
+      return 'US';
+    }
+    return value.length === 2 ? value.toUpperCase() : value;
   }
 
   // =========================================================

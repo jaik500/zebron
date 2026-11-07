@@ -49,11 +49,11 @@ const EMPLOYMENT_TYPES: { value: EmploymentType | ''; label: string }[] = [
     <main class="min-h-screen bg-gray-50">
       <!-- The universal header shows the page name ("My jobs"). -->
       <h1 class="sr-only">My jobs</h1>
-      <div class="border-b border-gray-200 bg-white">
+      <div class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white shadow-sm">
         <div class="mx-auto flex max-w-5xl items-center gap-2 px-4 py-2 sm:px-6 lg:px-8">
           <a
             routerLink="/jobs"
-            class="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-sm font-medium text-[#007979] hover:bg-[#007979]/10"
+            class="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-sm font-medium text-white/90 transition hover:bg-white/15 hover:text-white"
           >
             <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">arrow_back</mat-icon>
             Job board

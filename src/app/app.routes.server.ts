@@ -21,6 +21,18 @@ export const serverRoutes: ServerRoute[] = [
   // authentication session, so these routes render
   // on the client.
   // =====================================================
+  // =====================================================
+  // PUBLIC JOB PAGES
+  //
+  // Rendered on the server so Google reads each job and its
+  // JobPosting data (Google job search). The job is loaded by
+  // jobResolver before rendering.
+  // =====================================================
+  {
+    path: 'jobs/:id',
+    renderMode: RenderMode.Server,
+  },
+
   {
     path: '**',
     renderMode: RenderMode.Client,

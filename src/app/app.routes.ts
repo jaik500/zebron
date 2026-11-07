@@ -13,6 +13,7 @@ import { testCenterOrganizationGuard } from './core/guards/test-center-organizat
 import { leaveCourseBuilderGuard } from './features/courses/builder/leave-course-builder.guard';
 import { leaveDashboardsGuard } from './features/dashboards/leave-dashboards.guard';
 import { legacyJobSearch } from './features/jobs/job-search-params';
+import { jobResolver } from './features/jobs/resolvers/job.resolver';
 export const routes: Routes = [
     // =====================================================
     // PUBLIC
@@ -295,6 +296,10 @@ export const routes: Routes = [
         data: {
             title: 'Zebron | Job detail',
             header: 'Job board',
+        },
+        // Loaded before rendering, so the server-rendered page has the job (Google job listings).
+        resolve: {
+            job: jobResolver,
         },
         loadComponent: () => import('./features/jobs/pages/job-detail/job-detail.component').then((m) => m.JobDetailComponent),
     },
