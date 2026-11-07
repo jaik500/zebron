@@ -4998,7 +4998,7 @@ service cloud.firestore {
           "userId", "courseId", "organizationId", "courseTitle", "cover",
           "lessonCount", "finalExam", "completedLessonIds", "lastLessonId", "percent",
           "status", "checkScores", "activity", "learnerName",
-          "certificateCode", "skills", "startedAt", "updatedAt", "completedAt"
+          "skills", "startedAt", "updatedAt", "completedAt"
         ])
         && data.userId == userId
         && data.courseId is string
@@ -5010,20 +5010,29 @@ service cloud.firestore {
         && data.cover is string
         && data.cover.size() <= 20
         && data.lessonCount is int
+        && data.lessonCount >= 0
+        && data.lessonCount <= 500
         && data.completedLessonIds is list
-        && data.completedLessonIds.size() <= 500
+        && data.completedLessonIds.size() <= data.lessonCount
         && (data.lastLessonId == null || data.lastLessonId is string)
-        && data.percent is number
-        && data.percent >= 0
-        && data.percent <= 100
         && data.status in ["in_progress", "completed"]
+        // percent and status follow from the lessons done (course.store.ts).
+        && data.percent is number
+        && data.percent == (
+          data.lessonCount == 0
+            ? 0
+            : math.round(data.completedLessonIds.size() * 100.0 / data.lessonCount)
+        )
+        && (data.status == "completed") == (
+          data.lessonCount > 0
+          && data.completedLessonIds.size() == data.lessonCount
+        )
         && data.checkScores is map
         && data.checkScores.size() <= 500
         && data.activity is map
         && data.activity.size() <= 60
         && data.learnerName is string
         && data.learnerName.size() <= 200
-        && (data.certificateCode == null || (data.certificateCode is string && data.certificateCode.size() <= 40))
         && data.skills is list
         && data.skills.size() <= 50
         && data.updatedAt == request.time;
@@ -5660,26 +5669,8 @@ service cloud.firestore {
       allow create, update: if isCurrentUser(userId)
         && isValidCourseProgress(userId);
 
-      allow delete: if isCurrentUser(userId);
-    }
-
-    // ============================================================
-    // COURSE ENROLLMENTS
-    // ============================================================
-
-    /*
-     * Users can read only their own enrollments.
-     * Enrollments are created and changed by trusted backend code
-     * or platform administrators.
-     */
-    match /courseEnrollments/{enrollmentId} {
-      allow get, list: if isPlatformAdmin()
-        || (
-          isAuthenticated()
-          && resource.data.get("userId", "") == request.auth.uid
-        );
-
-      allow create, update, delete: if isPlatformAdmin();
+      // Progress is history for team reports: learners cannot delete it.
+      allow delete: if false;
     }
 
     match /outboundMessages/{messageId} {

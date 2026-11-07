@@ -5,13 +5,18 @@ import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https
 
 import {
   certificateCode,
+  GRACE_MS,
+  HistoryItem,
   isAnswerCorrect,
+  isLate,
   questionsById,
+  scoreOf,
   shuffle,
   strings,
   text,
   toExamQuestion,
-} from "./course-exams";
+  writeExamHistory,
+} from "./exam-engine";
 import { isPlatformAdministrator } from "./platform-admin-authorization";
 
 /**
@@ -39,7 +44,6 @@ import { isPlatformAdministrator } from "./platform-admin-authorization";
  */
 
 const REGION = "us-central1";
-const GRACE_MS = 2 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface CertificationCourse {
@@ -458,7 +462,7 @@ export const submitCertificationExam = onCall({ region: REGION }, async (request
   }
 
   const deadline = attempt.get("deadline") as Timestamp | null;
-  const late = !!deadline && Date.now() > deadline.toMillis() + GRACE_MS;
+  const late = isLate(deadline);
   const ids: string[] = attempt.get("questionIds") ?? [];
   const courseOf: string[] = attempt.get("questionCourses") ?? [];
   const questions = await questionsById(ids);
@@ -466,6 +470,7 @@ export const submitCertificationExam = onCall({ region: REGION }, async (request
   const sections = new Map<string, { name: string; correct: number; total: number }>();
   const missed: string[] = [];
   const graded: Record<string, string> = {};
+  const history: HistoryItem[] = [];
   let correct = 0;
   let total = 0;
 
@@ -488,9 +493,10 @@ export const submitCertificationExam = onCall({ region: REGION }, async (request
     }
     sections.set(name, section);
     graded[id] = answer;
+    history.push({ questionId: id, question: text(question.question), topicId: name, answer, isCorrect: right });
   });
 
-  const score = total ? Math.round((correct / total) * 100) : 0;
+  const score = scoreOf(correct, total);
   const passed = score >= context.exam.passMark;
   const submittedAt = Timestamp.now();
   const exam = (enrollment.exam ?? {}) as Record<string, unknown>;
@@ -499,6 +505,23 @@ export const submitCertificationExam = onCall({ region: REGION }, async (request
 
   const batch = db.batch();
   batch.update(attemptRef, { answers: graded, correct, total, score, passed, late, submittedAt });
+
+  // The Test Center history: certification exams appear with every other
+  // assessment, reported by course (each course is one section).
+  writeExamHistory(batch, {
+    organizationId: context.organizationId,
+    userId: context.uid,
+    quizId: `certification:${context.key}`,
+    quizName: text(context.definition.title) || "Certification exam",
+    source: "certification",
+    items: history,
+    topicNames: new Map([...sections.keys()].map((name) => [name, name])),
+    score,
+    passed,
+    startedAt: (attempt.get("startedAt") as Timestamp | null) ?? submittedAt,
+    submittedAt,
+    details: { certificationId: context.certificationId, certificationKind: context.isPrep ? "exam-prep" : "certification" },
+  });
 
   let code: string | null = null;
   let expiresAt: Timestamp | null = null;

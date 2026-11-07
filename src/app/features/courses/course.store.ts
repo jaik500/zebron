@@ -372,7 +372,8 @@ export const CourseStore = signalStore(
         done.add(lesson.id);
 
         const completedLessonIds = outline.map((item) => item.id).filter((id) => done.has(id));
-        const percent = outline.length ? Math.round((completedLessonIds.length / outline.length) * 100) : 0;
+        // Same arithmetic as the rules (firestore.rules, isValidCourseProgress).
+        const percent = outline.length ? Math.round((completedLessonIds.length * 100) / outline.length) : 0;
         const finished = outline.length > 0 && completedLessonIds.length === outline.length;
         const justCompleted = finished && existing?.status !== 'completed';
 
@@ -403,8 +404,6 @@ export const CourseStore = signalStore(
           checkScores,
           activity: trimActivity(activity),
           learnerName: existing?.learnerName || user.name,
-          // Certificates come only from a passed final exam (issued on the server).
-          certificateCode: null,
           skills: course.skills,
           startedAt: existing?.startedAt ?? null,
           updatedAt: existing?.updatedAt ?? null,

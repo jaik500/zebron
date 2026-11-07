@@ -1,5 +1,3 @@
-import { randomInt } from "node:crypto";
-
 import {
   DocumentReference,
   FieldValue,
@@ -9,6 +7,19 @@ import {
 import { logger } from "firebase-functions";
 import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https";
 
+import {
+  certificateCode,
+  GRACE_MS,
+  isAnswerCorrect,
+  isLate,
+  questionsById,
+  scoreOf,
+  shuffle,
+  strings,
+  text,
+  toExamQuestion,
+  writeExamHistory,
+} from "./exam-engine";
 import { isPlatformAdministrator } from "./platform-admin-authorization";
 
 /**
@@ -40,8 +51,6 @@ import { isPlatformAdministrator } from "./platform-admin-authorization";
  */
 
 const REGION = "us-central1";
-/** Extra time allowed after the deadline for the answers to arrive. */
-const GRACE_MS = 2 * 60 * 1000;
 const MAX_QUESTIONS = 200;
 
 interface FinalExam {
@@ -61,17 +70,6 @@ interface CourseContext {
   course: FirebaseFirestore.DocumentData;
   exam: FinalExam;
   examRef: DocumentReference;
-}
-
-export interface ExamQuestion {
-  id: string;
-  question: string;
-  type: string;
-  options: { id: string; text: string }[];
-}
-
-export function text(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
 }
 
 function readFinalExam(value: unknown): FinalExam | null {
@@ -97,22 +95,6 @@ function readFinalExam(value: unknown): FinalExam | null {
     timeLimitMinutes: Number.isInteger(minutes) && minutes > 0 ? minutes : null,
     maxAttempts: Number.isInteger(attempts) && attempts > 0 ? attempts : null,
   };
-}
-
-/** A readable certificate code, e.g. ZB-7Q4K-M2XP. */
-export function certificateCode(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const characters = Array.from({ length: 8 }, () => alphabet[randomInt(alphabet.length)]).join("");
-  return `ZB-${characters.slice(0, 4)}-${characters.slice(4)}`;
-}
-
-export function shuffle<T>(items: T[]): T[] {
-  const copy = [...items];
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const other = randomInt(index + 1);
-    [copy[index], copy[other]] = [copy[other], copy[index]];
-  }
-  return copy;
 }
 
 /**
@@ -209,101 +191,6 @@ async function loadQuiz(context: CourseContext): Promise<{ name: string; organiz
   }
 
   return { name: text(quiz.get("name")), organizationId: quizOrganizationId };
-}
-
-export function toExamQuestion(id: string, data: FirebaseFirestore.DocumentData): ExamQuestion {
-  const type = text(data.type) || "multiple-choice";
-  const options = (Array.isArray(data.options) ? data.options : [])
-    .map((option: { id?: unknown; text?: unknown }) => ({ id: text(option.id), text: text(option.text) }))
-    .filter((option: { id: string }) => option.id);
-
-  return {
-    id,
-    question: text(data.question),
-    type,
-    // Ordering questions must not arrive in the right order.
-    options: type === "ordering" ? shuffle(options) : options,
-  };
-}
-
-// ------------------------------------------------------------
-// Grading for every answer type. Keep in step with
-// src/app/features/test-center/models/question-answers.ts.
-// ------------------------------------------------------------
-
-const SEPARATOR = "|";
-
-function splitAnswer(value: string): string[] {
-  return value.split(SEPARATOR).filter(Boolean);
-}
-
-function normalizeText(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/[.!?]+$/, "");
-}
-
-function parseNumber(value: unknown): number | null {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
-  }
-  const cleaned = String(value ?? "").trim().replace(/\s/g, "").replace(",", ".");
-  if (!cleaned || !/^[-+]?\d*\.?\d+(e[-+]?\d+)?$/i.test(cleaned)) {
-    return null;
-  }
-  const number = Number(cleaned);
-  return Number.isFinite(number) ? number : null;
-}
-
-export function strings(value: unknown): string[] {
-  return Array.isArray(value) ? value.map((item) => text(item)).filter(Boolean) : [];
-}
-
-export function isAnswerCorrect(question: FirebaseFirestore.DocumentData, answer: string): boolean {
-  if (!answer) {
-    return false;
-  }
-
-  switch (text(question.type)) {
-    case "multiple-select": {
-      const right = strings(question.correctAnswers).length ? strings(question.correctAnswers) : splitAnswer(text(question.correctAnswer));
-      return [...new Set(splitAnswer(answer))].sort().join(SEPARATOR) === [...new Set(right)].sort().join(SEPARATOR);
-    }
-    case "short-text":
-      return strings(question.acceptedAnswers).some((accepted) => normalizeText(accepted) === normalizeText(answer));
-    case "numeric": {
-      const typed = parseNumber(answer);
-      const expected = parseNumber(question.numericAnswer);
-      const margin = Math.abs(parseNumber(question.numericTolerance) ?? 0);
-      return typed !== null && expected !== null && Math.abs(typed - expected) <= margin + 1e-9;
-    }
-    case "ordering": {
-      const order = strings(question.correctOrder).length ?
-        strings(question.correctOrder) :
-        (Array.isArray(question.options) ? question.options : []).map((option: { id?: unknown }) => text(option.id));
-      return splitAnswer(answer).join(SEPARATOR) === order.join(SEPARATOR);
-    }
-    default:
-      return answer === text(question.correctAnswer);
-  }
-}
-
-export async function questionsById(ids: string[]): Promise<Map<string, FirebaseFirestore.DocumentData>> {
-  if (!ids.length) {
-    return new Map();
-  }
-
-  const db = getFirestore();
-  const snapshots = await db.getAll(...ids.map((id) => db.doc(`quizQuestions/${id}`)));
-  return new Map(
-    snapshots
-      .filter((snapshot) => snapshot.exists)
-      .map((snapshot) => [snapshot.id, snapshot.data() as FirebaseFirestore.DocumentData]),
-  );
 }
 
 function summary(context: CourseContext, record: FirebaseFirestore.DocumentData | undefined) {
@@ -507,7 +394,7 @@ export const submitCourseExam = onCall({ region: REGION }, async (request) => {
   }
 
   const deadline = attempt.get("deadline") as Timestamp | null;
-  const late = !!deadline && Date.now() > deadline.toMillis() + GRACE_MS;
+  const late = isLate(deadline);
 
   const ids: string[] = attempt.get("questionIds") ?? [];
   const questions = await questionsById(ids);
@@ -547,7 +434,7 @@ export const submitCourseExam = onCall({ region: REGION }, async (request) => {
   }
 
   const total = [...questions.keys()].filter((id) => ids.includes(id)).length;
-  const score = total ? Math.round((correct / total) * 100) : 0;
+  const score = scoreOf(correct, total);
   const passed = score >= context.exam.passMark;
   const firstPass = passed && record?.passed !== true;
   const code = firstPass ? certificateCode() : text(record?.certificateCode) || null;
@@ -606,66 +493,19 @@ export const submitCourseExam = onCall({ region: REGION }, async (request) => {
 
   // The Test Center history (quizAttempts + quizResults): one place for
   // every assessment. Course exams never reveal the right answers.
-  const historyAttemptRef = db.collection("quizAttempts").doc();
-  const historyResultRef = db.collection("quizResults").doc();
-  const answeredCount = history.filter((item) => item.answer).length;
-  const historyCommon = {
+  writeExamHistory(batch, {
     organizationId: context.organizationId,
     userId: context.uid,
     quizId: context.exam.quizId,
     quizName: text(record?.quizName) || text(context.course.title),
-    scope: context.organizationId ? "organization" : "platform",
-    mode: "exam",
     source: "course",
-    courseId: context.courseId,
-    courseTitle: text(context.course.title),
-    passed,
-  };
-  batch.set(historyAttemptRef, {
-    ...historyCommon,
-    id: historyAttemptRef.id,
-    topicIds: [...topics.keys()],
-    questionIds: ids,
-    questionCount: total,
-    correctCount: correct,
+    items: history,
+    topicNames: new Map([...topics.entries()].map(([topicId, topic]) => [topicId, topic.name])),
     score,
-    status: "completed",
-    results: history.map((item) => ({ questionId: item.questionId, selectedAnswer: item.answer, correct: item.isCorrect })),
+    passed,
     startedAt: attempt.get("startedAt") ?? submittedAt,
-    completedAt: submittedAt,
-  });
-  batch.set(historyResultRef, {
-    ...historyCommon,
-    id: historyResultRef.id,
-    attemptId: historyAttemptRef.id,
-    totalQuestions: total,
-    answeredQuestions: answeredCount,
-    correctAnswers: correct,
-    incorrectAnswers: answeredCount - correct,
-    unansweredQuestions: total - answeredCount,
-    scorePercentage: score,
-    difficulty: "mixed",
-    examOnly: true,
-    topicPerformance: [...topics.entries()].map(([topicId, topic]) => ({
-      topicId,
-      topicName: topic.name,
-      totalQuestions: topic.total,
-      answeredQuestions: history.filter((item) => item.topicId === topicId && item.answer).length,
-      correctAnswers: topic.correct,
-      incorrectAnswers: history.filter((item) => item.topicId === topicId && item.answer && !item.isCorrect).length,
-      percentage: topic.total ? Math.round((topic.correct / topic.total) * 100) : 0,
-    })),
-    questionResults: history.map((item) => ({
-      questionId: item.questionId,
-      question: item.question,
-      topicId: item.topicId,
-      selectedAnswerId: item.answer || null,
-      correctAnswerId: "",
-      isCorrect: item.isCorrect,
-      explanation: "",
-    })),
-    completedAt: submittedAt,
-    createdAt: submittedAt,
+    submittedAt,
+    details: { courseId: context.courseId, courseTitle: text(context.course.title) },
   });
 
   // Count this pass as the next step of any certification path waiting for it.

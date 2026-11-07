@@ -186,7 +186,6 @@ export interface CourseProgress {
   /** Minutes learned per day, 'YYYY-MM-DD' keys, last 60 days. */
   activity: Record<string, number>;
   learnerName: string;
-  certificateCode: string | null;
   skills: string[];
   startedAt: Timestamp | null;
   updatedAt: Timestamp | null;

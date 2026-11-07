@@ -3,7 +3,7 @@ import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
 import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https";
 
-import { ExamQuestion, isAnswerCorrect, questionsById, shuffle, strings, text, toExamQuestion } from "./course-exams";
+import { ExamQuestion, isAnswerCorrect, questionsById, scoreOf, shuffle, strings, text, toExamQuestion } from "./exam-engine";
 import { isPlatformAdministrator } from "./platform-admin-authorization";
 
 /**
@@ -224,7 +224,7 @@ export const submitQuizExam = onCall({ region: REGION, timeoutSeconds: 60 }, asy
   const total = questionResults.length;
   const answered = questionResults.filter((item) => item.selectedAnswerId !== null).length;
   const correct = questionResults.filter((item) => item.isCorrect).length;
-  const score = total ? Math.round((correct / total) * 100) : 0;
+  const score = scoreOf(correct, total);
 
   const topicPerformance = topicIds
     .map((topicId) => {

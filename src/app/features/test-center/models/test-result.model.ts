@@ -59,8 +59,8 @@ export interface TestResult {
 
   mode: 'practice' | 'exam';
 
-  /** Who recorded it: the Test Center (browser for practice, server for exams) or a course final exam. */
-  source?: 'test-center' | 'course';
+  /** Who recorded it: the Test Center (browser for practice, server for exams), a course final exam or a certification exam. */
+  source?: 'test-center' | 'course' | 'certification';
 
   /** Exam-only bank: right answers and explanations are not included. */
   examOnly?: boolean;
