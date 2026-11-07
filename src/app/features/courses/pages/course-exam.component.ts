@@ -205,7 +205,7 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                           @for (optionId of orderFor(item); track optionId; let position = $index; let first = $first; let last = $last) {
                             <li class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
                               <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300 text-xs font-bold text-slate-600">{{ position + 1 }}</span>
-                              <span class="flex-1 text-slate-800">{{ optionText(item, optionId) }}</span>
+                              <span class="min-w-0 flex-1 break-words text-slate-800">{{ optionText(item, optionId) }}</span>
                               <button type="button" class="h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30" [disabled]="first" (click)="moveItem(item, position, -1)" [attr.aria-label]="'Move up' | t">
                                 <mat-icon>arrow_upward</mat-icon>
                               </button>
@@ -249,7 +249,7 @@ type Stage = 'intro' | 'taking' | 'submitting' | 'result';
                                   {{ letters[optionIndex] }}
                                 }
                               </span>
-                              <span class="flex-1">{{ option.text }}</span>
+                              <span class="min-w-0 flex-1 break-words">{{ option.text }}</span>
                             </button>
                           }
                         </div>

@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -84,7 +85,9 @@ type ViewBlock =
         ]"
       />
 
-      <div class="mx-auto grid w-full min-w-0 max-w-[1720px] grid-cols-[minmax(0,1fr)] gap-4 px-3 py-5 sm:gap-5 sm:px-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6 lg:px-6 2xl:px-8">
+      <div
+        class="mx-auto grid w-full min-w-0 max-w-7xl grid-cols-[minmax(0,1fr)] gap-3 px-2 py-3 sm:gap-5 sm:px-5 sm:py-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6 lg:px-6 2xl:max-w-[88rem] 2xl:px-8"
+      >
         <!-- Outline (wide screens) -->
         <nav
           class="hidden self-start rounded-2xl border border-slate-200 bg-white p-3 lg:sticky lg:top-20 lg:block"
@@ -133,7 +136,7 @@ type ViewBlock =
           <div
             class="lesson-progress-sticky sticky top-16 z-10 -mx-1 bg-slate-50/95 px-2 pb-3 pt-1 backdrop-blur"
           >
-            <div class="flex justify-between gap-2 text-xs text-slate-500">
+            <div class="flex items-center justify-between gap-3 text-xs font-medium text-slate-600">
               <span>
                 @if (store.lessonIndex() >= 0) {
                   {{ 'Lesson {0} of {1}' | t: [store.lessonIndex() + 1, store.outline().length] }}
@@ -144,9 +147,16 @@ type ViewBlock =
               </span>
               <span>{{ '{percent}% of course' | t: { percent: coursePercent() } }}</span>
             </div>
-            <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200">
+            <div
+              class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"
+              role="progressbar"
+              [attr.aria-label]="'Course progress' | t"
+              [attr.aria-valuenow]="coursePercent()"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
               <div
-                class="h-full rounded-full bg-gradient-to-r from-[#007979] to-[#2a835f] transition-all"
+                class="h-full rounded-full bg-gradient-to-r from-[#007979] to-[#2a835f] transition-[width] duration-500"
                 [style.width.%]="coursePercent()"
               ></div>
             </div>
@@ -170,34 +180,69 @@ type ViewBlock =
               >
             </div>
           } @else if (store.lesson(); as lesson) {
-            <article class="w-full min-w-0 max-w-none overflow-hidden rounded-xl border border-slate-200 bg-white py-5">
+            <article
+              class="mx-auto w-full min-w-0 max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white pb-5 pt-5 shadow-sm sm:pb-6 sm:pt-6"
+            >
               @if (moduleTitle()) {
-                <p class="px-5 text-[11px] font-bold uppercase tracking-wide text-[#007979]">
+                <p class="break-words px-4 text-[11px] font-bold uppercase tracking-wide text-[#007979] sm:px-6">
                   {{ moduleTitle() }}
                 </p>
               }
               <h1
-                class="px-5 mt-1 text-2xl font-bold leading-tight text-slate-900 sm:text-[1.75rem]"
+                class="mt-1 break-words px-4 text-[1.375rem] font-bold leading-tight tracking-tight text-slate-950 [overflow-wrap:anywhere] sm:px-6 sm:text-[1.75rem]"
               >
                 {{ lesson.title }}
               </h1>
 
-              <div class="mt-5 w-full min-w-0">
+              <div class="mt-4 w-full min-w-0 sm:mt-5">
                 <mat-accordion class="block w-full min-w-0" [multi]="true">
                   @for (block of blocks(); track $index) {
                     <mat-expansion-panel
                       [attr.id]="'lesson-block-' + $index"
-                      class="!mb-2 !w-full !min-w-0 !scroll-mt-32 !overflow-hidden !rounded-xl !border !border-slate-200 !bg-white !shadow-none"
+                      class="!m-0 !w-full !min-w-0 !scroll-mt-32 !overflow-hidden !rounded-none !border-0 !border-t !border-slate-200 !bg-white !shadow-none transition-colors last:!border-b [&_.mat-expansion-panel-body]:!p-0"
+                      [ngClass]="
+                        focusedBlock() === $index
+                          ? '!ring-2 !ring-inset !ring-[#007979]/40'
+                          : ''
+                      "
                       [expanded]="expandedBlocks().has($index)"
                       (opened)="openBlock($index)"
                       (closed)="closeBlock($index)"
                     >
                       <mat-expansion-panel-header
-                        class="!min-h-14 !w-full !bg-slate-100 !px-4 hover:!bg-slate-200 sm:!px-5"
+                        class="!min-h-14 !w-full !rounded-none !pl-2.5 !pr-4 transition-colors sm:!pl-4 sm:!pr-6"
+                        [ngClass]="
+                          expandedBlocks().has($index)
+                            ? '!h-auto !bg-teal-50 !py-3 hover:!bg-teal-100/60'
+                            : '!bg-white hover:!bg-slate-50'
+                        "
                       >
-                        <mat-panel-title class="!m-0 !min-w-0 !items-center">
-                          <span class="truncate text-base font-bold text-slate-900 sm:text-lg"
-                            >
+                        <mat-panel-title class="!m-0 !flex !w-full !min-w-0 !items-center !gap-2.5 sm:!gap-3">
+                          <span
+                            class="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold tabular-nums transition-colors sm:h-[22px] sm:w-[22px] sm:text-xs"
+                            [ngClass]="
+                              isBlockDone(block, $index)
+                                ? 'bg-[#007979] text-white'
+                                : expandedBlocks().has($index)
+                                  ? 'bg-[#007979] text-white ring-4 ring-teal-100'
+                                  : 'border-[1.5px] border-slate-300 bg-white text-slate-500'
+                            "
+                            aria-hidden="true"
+                          >
+                            @if (isBlockDone(block, $index)) {
+                              <mat-icon class="!h-3 !w-3 !text-[12px] sm:!h-3.5 sm:!w-3.5 sm:!text-[14px]">check</mat-icon>
+                            } @else {
+                              {{ $index + 1 }}
+                            }
+                          </span>
+                          <span
+                            class="block min-w-0 flex-1 whitespace-normal break-words text-left text-base font-bold [overflow-wrap:anywhere] leading-snug sm:text-lg"
+                            [ngClass]="
+                              expandedBlocks().has($index)
+                                ? 'whitespace-normal break-words text-[#043b3b]'
+                                : 'line-clamp-2 text-slate-800'
+                            "
+                          >
                             @if (!expandedBlocks().has($index)) {
                               <span class="font-semibold text-slate-500">{{ 'Next:' | t }} </span>
                             }
@@ -206,23 +251,33 @@ type ViewBlock =
                         </mat-panel-title>
                       </mat-expansion-panel-header>
 
-                      <div class="w-full min-w-0 px-3 pb-3 pt-4 sm:px-4">
+                      <div class="ml-[18px] min-w-0 border-l-2 border-teal-200 pb-5 pt-3 sm:ml-[26px] sm:pt-4">
                         @if (block.kind === 'text') {
                           <div
-                            class="min-w-0 break-words [overflow-wrap:anywhere] text-[1.0625rem] leading-7 text-slate-800
-                              [&_h2]:mb-2 [&_h2]:mt-7 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-900
-                              [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-slate-900
+                            class="min-w-0 break-words pl-2 pr-4 [overflow-wrap:anywhere] text-[1.0625rem] leading-7 text-slate-800 sm:pl-3 sm:pr-6
+                              [&_.kc-table-wrap]:!-ml-2 [&_.kc-table-wrap]:!-mr-4 [&_.kc-table-wrap]:!mb-4 [&_.kc-table-wrap]:!rounded-none [&_.kc-table-wrap]:!border-x-0
+                              sm:[&_.kc-table-wrap]:!-ml-3 sm:[&_.kc-table-wrap]:!-mr-6
+                              [&_.kc-table]:[overflow-wrap:normal] [&_.kc-table_td]:break-words
+                              [&_.kc-table_th]:!bg-slate-50 [&_.kc-table_th]:!text-[11px] [&_.kc-table_th]:!uppercase [&_.kc-table_th]:!tracking-wide [&_.kc-table_th]:!text-slate-500
+                              [&_.kc-table_th:first-child]:!pl-2 [&_.kc-table_td:first-child]:!pl-2
+                              [&_.kc-table_th:last-child]:!pr-4 [&_.kc-table_td:last-child]:!pr-4
+                              sm:[&_.kc-table_th:first-child]:!pl-3 sm:[&_.kc-table_td:first-child]:!pl-3
+                              sm:[&_.kc-table_th:last-child]:!pr-6 sm:[&_.kc-table_td:last-child]:!pr-6
+                              [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:leading-snug [&_h2]:text-[#00605f]
+                              [&_h3]:mb-1.5 [&_h3]:mt-5 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:leading-snug [&_h3]:text-[#00605f]
                               [&_p]:mb-4 [&_ul]:mb-4 [&_ul]:ml-6 [&_ul]:list-disc
                               [&_ol]:mb-4 [&_ol]:ml-6 [&_ol]:list-decimal [&_li]:my-1
                               [&_a]:text-teal-700 [&_a]:underline
                               [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-sm
-                              [&_pre]:mb-4 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-slate-900 [&_pre]:p-3 [&_pre]:text-slate-50
+                              [&_pre]:-ml-2 [&_pre]:-mr-4 [&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:bg-slate-900 [&_pre]:py-3 [&_pre]:pl-2 [&_pre]:pr-4 [&_pre]:text-slate-50 sm:[&_pre]:-ml-3 sm:[&_pre]:-mr-6 sm:[&_pre]:pl-3 sm:[&_pre]:pr-6
                               [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-inherit
                               [&>*:last-child]:mb-0"
                             [innerHTML]="blockContentHtml(block, $index)"
                           ></div>
                         } @else if (block.kind === 'tip') {
-                          <aside class="flex min-w-0 gap-3 rounded-xl bg-amber-50 p-3 text-amber-900 sm:p-4">
+                          <aside
+                            class="flex min-w-0 gap-2 border-y border-amber-100 bg-amber-50 py-3 pl-2 pr-4 text-amber-900 sm:gap-3 sm:py-4 sm:pl-3 sm:pr-6"
+                          >
                             <mat-icon class="shrink-0 text-amber-600" aria-hidden="true"
                               >lightbulb</mat-icon
                             >
@@ -239,6 +294,7 @@ type ViewBlock =
                           </aside>
                         } @else if (block.kind === 'media') {
                           <app-lesson-media
+                            class="block [&_.rounded-xl]:!rounded-none [&_.border]:!border-x-0 [&_figcaption]:pl-2 [&_figcaption]:pr-4 sm:[&_figcaption]:pl-3 sm:[&_figcaption]:pr-6 [&_a]:!pl-2 [&_a]:!pr-4 sm:[&_a]:!pl-3 sm:[&_a]:!pr-6"
                             [kind]="block.mediaKind"
                             [url]="block.url"
                             [start]="block.start"
@@ -246,22 +302,22 @@ type ViewBlock =
                             [caption]="block.caption"
                           />
                         } @else if (block.kind === 'image') {
-                          <figure>
+                          <figure class="m-0">
                             <img
                               [src]="block.url"
                               [alt]="block.alt"
-                              class="w-full rounded-xl border border-slate-200"
+                              class="block w-full border-y border-slate-200"
                               loading="lazy"
                             />
                             @if (block.caption) {
-                              <figcaption class="mt-2 text-sm text-slate-500">
+                              <figcaption class="mt-2 break-words pl-2 pr-4 text-sm text-slate-500 [overflow-wrap:anywhere] sm:pl-3 sm:pr-6">
                                 {{ block.caption }}
                               </figcaption>
                             }
                           </figure>
                         } @else if (block.kind === 'check') {
                           <section
-                            class="rounded-xl border-2 border-teal-100 p-4 sm:p-5"
+                            class="min-w-0 border-y border-teal-100 bg-teal-50/40 py-4 pl-2 pr-4 sm:py-5 sm:pl-3 sm:pr-6"
                             [attr.aria-labelledby]="'check-' + block.index"
                           >
                             <h2
@@ -279,7 +335,7 @@ type ViewBlock =
                                 let questionIndex = $index
                               ) {
                                 <div class="border-b border-slate-100 pb-5 last:border-0 last:pb-0">
-                                  <p class="font-medium text-slate-800">
+                                  <p class="break-words font-medium text-slate-800 [overflow-wrap:anywhere]">
                                     <span
                                       class="mr-1 text-xs font-bold uppercase tracking-wide text-slate-500"
                                     >
@@ -296,7 +352,7 @@ type ViewBlock =
                                     ) {
                                       <button
                                         type="button"
-                                        class="rounded-xl border px-3 py-2.5 text-left transition"
+                                        class="min-h-12 w-full min-w-0 whitespace-normal break-words rounded-xl border px-3 py-3 text-left text-sm leading-6 transition [overflow-wrap:anywhere] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979] focus-visible:ring-offset-2"
                                         [ngClass]="
                                           optionClass(
                                             checkAnswerKey(block.index, questionIndex),
@@ -327,7 +383,7 @@ type ViewBlock =
                                     }
                                   </div>
 
-                                  <div class="mt-2 min-h-5 text-sm" aria-live="polite">
+                                  <div class="mt-2 min-h-5 break-words text-sm [overflow-wrap:anywhere]" aria-live="polite">
                                     @if (
                                       selected()[checkAnswerKey(block.index, questionIndex)] !==
                                       undefined
@@ -360,12 +416,12 @@ type ViewBlock =
               </div>
 
               <div
-                class="mx-3 mt-8 flex min-w-0 flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5 sm:mx-4"
+                class="mx-4 mt-6 flex min-w-0 flex-col-reverse gap-3 pt-1 sm:mx-6 sm:mt-7 sm:flex-row sm:items-center sm:justify-between"
               >
                 @if (store.previousLesson(); as previous) {
                   <a
                     [routerLink]="[coursePath(), 'lessons', previous.id]"
-                    class="inline-flex h-10 items-center gap-1 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    class="inline-flex h-11 w-full items-center justify-center gap-1 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979] sm:w-auto"
                   >
                     <mat-icon aria-hidden="true">arrow_back</mat-icon>{{ 'Previous' | t }}
                   </a>
@@ -375,7 +431,7 @@ type ViewBlock =
 
                 <button
                   type="button"
-                  class="inline-flex h-11 max-w-full items-center justify-center gap-1 rounded-lg bg-[#007979] px-4 font-semibold text-white transition hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50 sm:px-5"
+                  class="cursor-pointer inline-flex h-11 w-full max-w-full items-center justify-center gap-2 rounded-xl bg-[#007979] px-5 font-semibold text-white shadow-sm transition hover:bg-[#006666] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   [disabled]="!canContinue() || store.saving()"
                   (click)="complete()"
                 >
@@ -386,11 +442,11 @@ type ViewBlock =
                 </button>
               </div>
               @if (!canContinue()) {
-                <p class="mt-2 mx-2 text-right text-xs text-slate-500">
+                <p class="mx-4 mt-3 text-center text-xs text-slate-500 sm:mx-6 sm:text-right">
                   {{ 'Answer the quick check to continue.' | t }}
                 </p>
               } @else {
-                <p class="mt-2 mx-2 text-right text-xs text-slate-500">
+                <p class="mx-4 mt-3 text-center text-xs text-slate-500 sm:mx-6 sm:text-right">
                   {{ 'Your progress is saved when you continue.' | t }}
                 </p>
               }
@@ -402,6 +458,7 @@ type ViewBlock =
   `,
 })
 export class LessonPlayerComponent {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
@@ -419,6 +476,8 @@ export class LessonPlayerComponent {
   protected readonly expandedBlocks = signal<Set<number>>(new Set([0]));
   /** Temporarily highlights the section that has just received focus. */
   protected readonly focusedBlock = signal<number | null>(null);
+  /** Sections the learner has opened in this lesson (shown with a tick once closed). */
+  protected readonly visitedBlocks = signal<Set<number>>(new Set([0]));
   private focusHighlightTimer: number | undefined;
   /** First answer per quick check: right or wrong. */
   private readonly firstTry = signal<Record<string, boolean>>({});
@@ -540,6 +599,12 @@ export class LessonPlayerComponent {
   });
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.focusHighlightTimer !== undefined) {
+        window.clearTimeout(this.focusHighlightTimer);
+      }
+    });
+
     this.store.setContext(this.context);
 
     effect(() => {
@@ -555,6 +620,7 @@ export class LessonPlayerComponent {
       this.selected.set({});
       this.firstTry.set({});
       this.expandedBlocks.set(new Set([0]));
+      this.visitedBlocks.set(new Set([0]));
       void this.load(courseId, lessonId);
     });
   }
@@ -568,6 +634,7 @@ export class LessonPlayerComponent {
   /** Add an index and move focus to a newly opened section after its panel animation. */
   protected openBlock(index: number): void {
     this.expandedBlocks.update((current) => new Set(current).add(index));
+    this.visitedBlocks.update((current) => (current.has(index) ? current : new Set(current).add(index)));
 
     // The first section is opened automatically when a lesson loads. Only
     // user-opened sections need the guided focus/scroll transition.
@@ -636,7 +703,7 @@ export class LessonPlayerComponent {
           .replace(/&gt;/gi, '>')
           .replace(/&#39;|&apos;/gi, "'")
           .replace(/&quot;/gi, '"')
-          .replace(/\\s+/g, ' ')
+          .replace(/\s+/g, ' ')
           .trim();
         if (title) {
           return title;
@@ -685,6 +752,25 @@ export class LessonPlayerComponent {
     return headingText.toLocaleLowerCase() === headerText.toLocaleLowerCase()
       ? block.html.slice(match[0].length)
       : block.html;
+  }
+
+  /**
+   * A section is done when its quick check is answered correctly, or, for
+   * other sections, once it has been read and closed (or the lesson is done).
+   */
+  protected isBlockDone(block: ViewBlock, index: number): boolean {
+    if (block.kind === 'check') {
+      return (
+        this.lessonDone() ||
+        block.questions.every((question, questionIndex) =>
+          this.isSolved(this.checkAnswerKey(block.index, questionIndex), question.answer),
+        )
+      );
+    }
+    if (this.expandedBlocks().has(index)) {
+      return false;
+    }
+    return this.lessonDone() || this.visitedBlocks().has(index);
   }
 
   protected checkAnswerKey(blockIndex: number, questionIndex: number): string {

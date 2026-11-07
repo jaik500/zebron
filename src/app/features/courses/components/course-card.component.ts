@@ -31,7 +31,7 @@ import { Course, COURSE_COVERS, COURSE_LEVEL_LABELS, CourseExamRecord, CoursePro
         }
       </div>
 
-      <div class="flex flex-1 flex-col gap-1.5 p-4">
+      <div class="flex min-w-0 flex-1 flex-col gap-1.5 p-4">
         @if (course().program) {
           <span class="truncate text-[11px] font-bold uppercase tracking-wide text-[#007979]">
             {{ course().program }}@if (course().programOrder) { · {{ 'Step {0}' | t: [course().programOrder] }} }

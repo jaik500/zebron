@@ -66,7 +66,7 @@ const WEEKLY_GOAL_MINUTES = 60;
           </section>
         } @else if (store.continueRecord(); as record) {
           <!-- Continue learning -->
-          <section class="grid overflow-hidden rounded-2xl border border-slate-200 bg-white md:grid-cols-[1.1fr_1fr]">
+          <section class="grid overflow-hidden rounded-2xl border border-slate-200 bg-white md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
             <div class="relative min-h-36" [style.background]="coverOf(record)">
               <div class="absolute bottom-4 left-5">
                 <app-progress-ring [percent]="record.percent" [size]="68" color="#ffffff" trackColor="rgba(255,255,255,0.25)" />

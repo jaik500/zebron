@@ -171,8 +171,8 @@ const STATUS: Record<string, { label: string; classes: string }> = {
             </button>
           </header>
 
-          <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
-            <div class="grid gap-3 sm:grid-cols-2">
+          <div class="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden p-4 sm:p-5">
+            <div class="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
               <label class="block text-sm sm:col-span-2">
                 <span class="font-medium text-slate-700">{{ 'What to take' | t }}</span>
                 <select

@@ -198,7 +198,7 @@ import { CourseService } from '../course.service';
       }
 
       @if (store.loading()) {
-        <div class="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[300px_1fr] lg:px-8" aria-hidden="true">
+        <div class="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-8" aria-hidden="true">
           <div class="h-80 animate-pulse rounded-2xl bg-slate-200/70"></div>
           <div class="h-96 animate-pulse rounded-2xl bg-slate-200/70"></div>
         </div>
@@ -207,13 +207,13 @@ import { CourseService } from '../course.service';
           <div class="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
             <p class="flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-800" role="alert">
               <mat-icon class="shrink-0 text-rose-600" aria-hidden="true">error</mat-icon>
-              <span class="flex-1">{{ store.error()! | t }}</span>
+              <span class="min-w-0 flex-1 break-words">{{ store.error()! | t }}</span>
               <button type="button" class="font-semibold underline" (click)="store.clearError()">{{ 'Dismiss' | t }}</button>
             </p>
           </div>
         }
 
-        <div class="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[300px_1fr] lg:px-8">
+        <div class="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-8">
           <!-- Outline -->
           <nav class="self-start rounded-2xl border border-slate-200 bg-white p-3 lg:sticky lg:top-32" [attr.aria-label]="'Course outline' | t">
             <button
@@ -309,7 +309,7 @@ import { CourseService } from '../course.service';
             @if (store.selectedLesson(); as lesson) {
               <div class="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
                 <p class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ 'Lesson' | t }}</p>
-                <div class="mt-2 grid gap-3 sm:grid-cols-[1fr_140px]">
+                <div class="mt-2 grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px]">
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
                     <mat-label>{{ 'Lesson title' | t }}</mat-label>
                     <input matInput [value]="lesson.title" (input)="store.patchLesson(lesson.id, { title: value($event) })" />
@@ -381,7 +381,7 @@ import { CourseService } from '../course.service';
                 </mat-form-field>
 
                 <!-- Program: groups courses into an ordered learning path in the catalog -->
-                <div class="grid gap-4 sm:grid-cols-[1fr_9rem]">
+                <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
                     <mat-label>{{ 'Program (optional)' | t }}</mat-label>
                     <!-- Organization pages list the organization's programs; Zebron pages list Zebron programs. -->

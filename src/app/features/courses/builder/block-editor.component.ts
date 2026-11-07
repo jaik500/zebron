@@ -34,7 +34,7 @@ const MAX_QUESTIONS = 20;
     <section class="rounded-2xl border border-slate-200 bg-white p-4 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-teal-100">
       <header class="mb-3 flex items-center gap-2">
         <mat-icon class="text-[#007979]" aria-hidden="true">{{ meta().icon }}</mat-icon>
-        <h3 class="flex-1 text-sm font-bold text-slate-600">{{ meta().label | t }}</h3>
+        <h3 class="min-w-0 flex-1 break-words text-sm font-bold text-slate-600">{{ meta().label | t }}</h3>
         <button type="button" class="icon-btn" [disabled]="index() === 0" (click)="blockMove.emit(-1)" [attr.aria-label]="'Move up' | t" [matTooltip]="'Move up' | t">
           <mat-icon>arrow_upward</mat-icon>
         </button>

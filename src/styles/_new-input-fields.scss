@@ -183,12 +183,68 @@ mat-form-field.zb-search,
 
 // Mobile: prevent iOS zoom-on-focus (needs >= 16px).
 // Never disable zoom in the viewport meta tag instead.
+// !important: Material's own `.mat-mdc-input-element { font: inherit }` and
+// component styles load after this file and would otherwise win.
 @media (max-width: 767.98px) {
   input:not([type='checkbox']):not([type='radio']):not([type='range']),
   select,
   textarea,
+  [contenteditable='true'],
   .mat-mdc-input-element,
   .mat-mdc-select {
-    font-size: 16px;
+    font-size: 16px !important;
+  }
+
+  // Fields never grow past their container, whatever their content.
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  // A native <select> is as wide as its longest option; cut it off instead.
+  select {
+    text-overflow: ellipsis;
+  }
+
+  // Long words and links wrap inside a textarea instead of pushing it wider.
+  textarea {
+    overflow-wrap: anywhere;
+  }
+}
+
+// Material form fields: let the field shrink inside flex rows and grids
+// (Material gives the infix a 180px width), and wrap long hint/error text.
+.mat-mdc-form-field {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.mat-mdc-form-field-infix {
+  min-width: 0;
+}
+
+.mat-mdc-form-field-hint,
+.mat-mdc-form-field-error {
+  overflow-wrap: anywhere;
+}
+
+// iOS Safari: date and time inputs ignore width: 100% and render wider than
+// their container (and centre the value). Reset them to a normal block field.
+@supports (-webkit-touch-callout: none) {
+  input[type='date'],
+  input[type='datetime-local'],
+  input[type='time'],
+  input[type='month'] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 2.5rem;
+  }
+
+  input::-webkit-date-and-time-value {
+    text-align: left;
   }
 }

@@ -68,7 +68,7 @@ type StepState = 'done' | 'current' | 'retake' | 'locked';
                 <p class="mt-1 text-sm text-white/85">{{ cert.title }}</p>
               </div>
             </div>
-            <div class="grid gap-4 p-6 md:grid-cols-[1fr_16rem]">
+            <div class="grid gap-4 p-6 md:grid-cols-[minmax(0,1fr)_16rem]">
               <div>
                 @if (cert.description || cert.summary) {
                   <p class="whitespace-pre-line text-sm leading-6 text-slate-700">{{ cert.description || cert.summary }}</p>

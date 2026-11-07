@@ -43,7 +43,7 @@ import { CourseStore } from '../course.store';
 
       <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         @if (store.courseLoading()) {
-          <div class="grid gap-5 lg:grid-cols-[1fr_320px]" aria-hidden="true">
+          <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]" aria-hidden="true">
             <div class="h-64 animate-pulse rounded-2xl bg-slate-200/70"></div>
             <div class="h-64 animate-pulse rounded-2xl bg-slate-200/70"></div>
           </div>
@@ -56,7 +56,7 @@ import { CourseStore } from '../course.store';
             </a>
           </div>
         } @else if (store.course(); as course) {
-          <div class="grid gap-5 lg:grid-cols-[1fr_320px]">
+          <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
             <!-- About the course -->
             <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <div class="h-20" [style.background]="cover()" aria-hidden="true"></div>
@@ -64,7 +64,7 @@ import { CourseStore } from '../course.store';
                 <p class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">
                   {{ course.topic }}{{ course.topic && course.providerName ? ' · ' : '' }}{{ course.providerName }}
                 </p>
-                <h1 class="mt-1 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">{{ course.title }}</h1>
+                <h1 class="mt-1 break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">{{ course.title }}</h1>
                 @if (course.summary) {
                   <p class="mt-2 text-base text-slate-600">{{ course.summary }}</p>
                 }

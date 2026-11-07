@@ -123,7 +123,7 @@ const ROLE_LABELS: Record<string, string> = {
 
             <input
               type="search"
-              class="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm sm:max-w-xs"
+              class="h-10 w-full min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm sm:w-auto sm:max-w-xs"
               [placeholder]="'Search people' | t"
               [value]="query()"
               (input)="query.set($any($event.target).value)"
@@ -131,7 +131,7 @@ const ROLE_LABELS: Record<string, string> = {
 
             @if (tab() === 'assignments') {
               <select
-                class="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm"
+                class="h-10 w-full min-w-0 max-w-full truncate rounded-lg border border-slate-300 bg-white px-3 text-sm sm:w-auto sm:max-w-xs"
                 [value]="courseFilter()"
                 (change)="courseFilter.set($any($event.target).value)"
                 [attr.aria-label]="'Course' | t"
@@ -142,7 +142,7 @@ const ROLE_LABELS: Record<string, string> = {
                 }
               </select>
               <select
-                class="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm"
+                class="h-10 w-full min-w-0 max-w-full truncate rounded-lg border border-slate-300 bg-white px-3 text-sm sm:w-auto sm:max-w-xs"
                 [value]="statusFilter()"
                 (change)="statusFilter.set($any($event.target).value)"
                 [attr.aria-label]="'Status' | t"

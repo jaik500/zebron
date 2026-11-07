@@ -124,7 +124,7 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
                   </span>
                 </div>
 
-                <div class="flex flex-1 flex-col gap-3 p-5">
+                <div class="flex min-w-0 flex-1 flex-col gap-3 p-5">
                   @if (row.definition.summary) {
                     <p class="text-sm text-slate-600">{{ row.definition.summary }}</p>
                   }

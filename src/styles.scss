@@ -37,6 +37,10 @@ body {
   // Reset the user agent margin.
   margin: 0;
   height: 100%;
+
+  // Long words and links wrap onto the next line instead of pushing the
+  // page wider (a horizontal scroll bar on phones).
+  overflow-wrap: break-word;
 }
 /* You can add global styles to this file, and also import other style files */
 
