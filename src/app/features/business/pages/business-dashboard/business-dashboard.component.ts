@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 
@@ -109,7 +109,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                        tracking-wider
                        text-[#7ED6D1]"
               >
-                Administration
+                {{ organizationId ? 'Business Operations' : 'Administration' }}
               </p>
 
               
@@ -120,15 +120,20 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                        text-sm
                        text-gray-200"
               >
-                Manage Zebron's business activities, finances, compliance records, and supporting
-                documents.
+                @if (organizationId) {
+                  Manage your organization's business activities, finances, compliance records, and supporting
+                  documents.
+                } @else {
+                  Manage Zebron's business activities, finances, compliance records, and supporting
+                  documents.
+                }
               </p>
             </div>
 
-            <a routerLink="/admin" matButton class="!border-white !text-white">
+            <a [routerLink]="backLink" matButton class="!border-white !text-white">
               <mat-icon> arrow_back </mat-icon>
 
-              Admin Dashboard
+              {{ organizationId ? 'Partner dashboard' : 'Admin Dashboard' }}
             </a>
           </div>
         </div>
@@ -2170,7 +2175,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
 
                         <div class="flex justify-end">
                           <a
-                            routerLink="/admin/business/profile"
+                            [routerLink]="profileLink"
                             matIconButton
                             matTooltip="Edit Business Profile"
                           >
@@ -2295,7 +2300,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                         </p>
 
                         <a
-                          routerLink="/admin/business/profile"
+                          [routerLink]="profileLink"
                           mat-flat-button
                           color="primary"
                           class="mt-5"
@@ -2357,6 +2362,20 @@ export class BusinessDashboardComponent implements OnInit {
   // ============================================================
 
   protected readonly store = inject(BusinessStore);
+
+  /**
+   * Partner portal (/partner/org/:organizationId/business-operations):
+   * the organization's own records. Null on /admin/business (Zebron's own).
+   */
+  protected readonly organizationId = inject(ActivatedRoute).snapshot.paramMap.get('organizationId');
+
+  protected readonly backLink: string[] = this.organizationId
+    ? ['/partner/org', this.organizationId, 'dashboard']
+    : ['/admin'];
+
+  protected readonly profileLink: string[] = this.organizationId
+    ? ['/partner/org', this.organizationId, 'business-operations', 'profile']
+    : ['/admin/business/profile'];
 
   // ============================================================
   // DASHBOARD CARD ORDER
@@ -2625,6 +2644,8 @@ export class BusinessDashboardComponent implements OnInit {
      */
 
     try {
+      this.store.useOrganization(this.organizationId);
+
       await this.store.loadBusinessData();
 
       // Restore the user's dashboard order after the selected

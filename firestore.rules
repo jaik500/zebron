@@ -2315,6 +2315,21 @@ service cloud.firestore {
      * Test Center managers and above can read every question for their
      * organization.
      */
+    /*
+     * Exam-only banks (quizzes.examOnly): learners never read their
+     * questions or answers. They take them only as server-graded exams
+     * (functions/src/quiz-exams.ts, course-exams.ts). Test Center managers
+     * and platform administrators still read them (their own branches).
+     */
+    function quizAllowsBrowserAnswers(quizId) {
+      return quizId is string
+        && quizId != ""
+        && (
+          !exists(/databases/$(database)/documents/quizzes/$(quizId))
+          || get(/databases/$(database)/documents/quizzes/$(quizId)).data.get("examOnly", false) != true
+        );
+    }
+
     match /quizQuestions/{questionId} {
 
       allow get: if isPlatformAdmin()
@@ -2323,11 +2338,13 @@ service cloud.firestore {
           && resource.data.get("scope", "") == "platform"
           && resource.data.get("organizationId", null) == null
           && isPublishedPlatformQuestion(questionId)
+          && quizAllowsBrowserAnswers(resource.data.get("quizId", ""))
         )
         || (
           resource.data.get("organizationId", null) != null
           && isTestCenterMember(resource.data.organizationId)
           && resource.data.get("status", "") == "published"
+          && quizAllowsBrowserAnswers(resource.data.get("quizId", ""))
         )
         || (
           resource.data.get("organizationId", null) != null
@@ -2343,12 +2360,14 @@ service cloud.firestore {
           && isActivePublicPlatformQuiz(
             resource.data.get("quizId", "")
           )
+          && quizAllowsBrowserAnswers(resource.data.get("quizId", ""))
         )
         || (
           isAuthenticated()
           && resource.data.get("organizationId", null) != null
           && isTestCenterMember(resource.data.organizationId)
           && resource.data.get("status", "") == "published"
+          && quizAllowsBrowserAnswers(resource.data.get("quizId", ""))
         )
         || (
           isAuthenticated()
@@ -2386,6 +2405,7 @@ service cloud.firestore {
     // TEST CENTER ATTEMPTS
     // ============================================================
 
+    // Zebron (platform) records (organizationId null): learners read their own.
     match /quizAttempts/{attemptId} {
 
       allow get: if isPlatformAdmin()
@@ -2397,6 +2417,11 @@ service cloud.firestore {
         || (
           resource.data.organizationId != null
           && isOperationalOrganizationAdmin(resource.data.organizationId)
+        )
+        || (
+          isAuthenticated()
+          && resource.data.organizationId == null
+          && resource.data.get("userId", "") == request.auth.uid
         );
 
       allow list: if isPlatformAdmin()
@@ -2410,9 +2435,17 @@ service cloud.firestore {
           isAuthenticated()
           && resource.data.organizationId != null
           && isOperationalOrganizationAdmin(resource.data.organizationId)
+        )
+        || (
+          isAuthenticated()
+          && resource.data.organizationId == null
+          && resource.data.get("userId", "") == request.auth.uid
         );
 
+      // Browsers save practice only. Exam attempts and results are written
+      // by the server (quiz-exams.ts, course-exams.ts) with the Admin SDK.
       allow create: if isAuthenticated()
+        && request.resource.data.get("mode", "") == "practice"
         && (
           (
             request.resource.data.get("organizationId", null) is string
@@ -2443,6 +2476,7 @@ service cloud.firestore {
     // TEST CENTER RESULTS
     // ============================================================
 
+    // Zebron (platform) records (organizationId null): learners read their own.
     match /quizResults/{resultId} {
 
       allow get: if isPlatformAdmin()
@@ -2454,6 +2488,11 @@ service cloud.firestore {
         || (
           resource.data.organizationId != null
           && isOperationalOrganizationAdmin(resource.data.organizationId)
+        )
+        || (
+          isAuthenticated()
+          && resource.data.organizationId == null
+          && resource.data.get("userId", "") == request.auth.uid
         );
 
       allow list: if isPlatformAdmin()
@@ -2467,9 +2506,17 @@ service cloud.firestore {
           isAuthenticated()
           && resource.data.organizationId != null
           && isOperationalOrganizationAdmin(resource.data.organizationId)
+        )
+        || (
+          isAuthenticated()
+          && resource.data.organizationId == null
+          && resource.data.get("userId", "") == request.auth.uid
         );
 
+      // Browsers save practice only. Exam attempts and results are written
+      // by the server (quiz-exams.ts, course-exams.ts) with the Admin SDK.
       allow create: if isAuthenticated()
+        && request.resource.data.get("mode", "") == "practice"
         && (
           (
             request.resource.data.get("organizationId", null) is string
@@ -2595,7 +2642,9 @@ service cloud.firestore {
       /*
        * New posts are written by the browser (CommunityPostService).
        * Authors cannot pre-load engagement, ranking or moderation.
-       * Organization posts require an active membership.
+       * Organization posts: whoever can see that community (active
+       * members, and platform administrators), the same rule as polls
+       * and comments.
        */
       function isValidNewPost() {
         let data = request.resource.data;
@@ -2633,10 +2682,21 @@ service cloud.firestore {
             "viewCount",
             "trendingScore",
             "organizationId",
+            "pollId",
             "createdAt",
             "updatedAt"
           ])
           && data.authorId == request.auth.uid
+          && (
+            data.get("pollId", null) == null
+            || (
+              data.pollId is string
+              && exists(/databases/$(database)/documents/polls/$(data.pollId))
+              && get(/databases/$(database)/documents/polls/$(data.pollId)).data.contextType == "community"
+              && get(/databases/$(database)/documents/polls/$(data.pollId)).data.createdBy == request.auth.uid
+              && get(/databases/$(database)/documents/polls/$(data.pollId)).data.parentId == postId
+            )
+          )
           && data.author is map
           && data.author.get("id", "") == request.auth.uid
           && validPostText(data)
@@ -2647,14 +2707,8 @@ service cloud.firestore {
           && data.viewCount == 0
           && data.get("trendingScore", 0) == 0
           && data.createdAt == request.time
-          && (
-            organizationId == null
-            || (
-              organizationId is string
-              && isOrganizationOperational(organizationId)
-              && isOrganizationMember(organizationId)
-            )
-          );
+          && (organizationId == null || organizationId is string)
+          && canSeeCommunityScope(organizationId);
       }
 
       /* Authors edit the text of their own published posts. */
@@ -5196,6 +5250,321 @@ service cloud.firestore {
       }
     }
 
+    // ============================================================
+    // POLLS (shared: community posts and live sessions)
+    // ============================================================
+
+    /*
+     * polls/{pollId}: one poll model for the community feed and live
+     * sessions. Votes and totals are written only by the castPollVote
+     * Cloud Function (functions/src/polls.ts).
+     *
+     * - Seeing a poll: the same people who see where it lives (the
+     *   community scope, or members of an organization with the Virtual
+     *   Classroom). Drafts only by whoever runs the poll.
+     * - Running a poll: its author (community) or community moderators;
+     *   staff who run live sessions.
+     * - Totals (results/summary): whoever runs the poll, always; everyone
+     *   once it is closed; otherwise after voting (community) or once the
+     *   host reveals them (live).
+     * - Votes: each person reads only their own. Nobody else, including
+     *   the host, can see who picked what.
+     */
+    function pollIsVisibleScope(poll) {
+      return poll.contextType == "community"
+        ? canSeeCommunityScope(poll.get("organizationId", null))
+        : (
+          poll.contextType == "live"
+          && poll.get("organizationId", null) is string
+          && (
+            isPlatformAdmin()
+            || (
+              isOrganizationOperational(poll.organizationId)
+              && hasActiveVirtualClassroom(poll.organizationId)
+              && isOrganizationMember(poll.organizationId)
+            )
+          )
+        );
+    }
+
+    function canRunPoll(poll) {
+      return isAuthenticated()
+        && (
+          poll.contextType == "community"
+            ? (
+              (
+                poll.createdBy == request.auth.uid
+                && canSeeCommunityScope(poll.get("organizationId", null))
+              )
+              || canModerateCommunityScope(poll.get("organizationId", null))
+            )
+            : (
+              poll.contextType == "live"
+              && poll.get("organizationId", null) is string
+              && canRunLiveSessions(poll.organizationId)
+            )
+        );
+    }
+
+    function pollIsClosed(poll) {
+      return poll.status == "closed"
+        || (
+          poll.get("closesAt", null) != null
+          && request.time >= poll.closesAt
+        );
+    }
+
+    function canSeePollResults(pollId) {
+      let poll = get(/databases/$(database)/documents/polls/$(pollId)).data;
+
+      return pollIsVisibleScope(poll)
+        && (
+          canRunPoll(poll)
+          || pollIsClosed(poll)
+          || (
+            poll.resultsVisibility == "afterVote"
+            && isAuthenticated()
+            && exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(request.auth.uid))
+          )
+          || (
+            poll.resultsVisibility == "host"
+            && poll.status != "draft"
+            && poll.get("showResults", false) == true
+          )
+        );
+    }
+
+    /* Option i, when present: { id, text } with short strings. */
+    function validPollOption(options, i) {
+      return options.size() <= i
+        || (
+          options[i] is map
+          && options[i].keys().hasOnly(["id", "text"])
+          && options[i].id is string
+          && options[i].id.size() > 0
+          && options[i].id.size() <= 8
+          && options[i].text is string
+          && options[i].text.size() > 0
+          && options[i].text.size() <= 120
+        );
+    }
+
+    function isValidPoll(data) {
+      return data.keys().hasOnly([
+          "contextType", "organizationId", "parentId", "question", "options",
+          "allowMultiple", "maxChoices", "status", "resultsVisibility",
+          "showResults", "closesAt", "createdBy", "createdByName",
+          "createdAt", "updatedAt"
+        ])
+        && data.contextType in ["community", "live"]
+        && (data.organizationId == null || data.organizationId is string)
+        && data.parentId is string
+        && data.parentId.size() > 0
+        && data.parentId.size() <= 128
+        && data.question is string
+        && data.question.size() > 0
+        && data.question.size() <= 300
+        && data.options is list
+        && data.options.size() >= 2
+        && data.options.size() <= 10
+        && validPollOption(data.options, 0)
+        && validPollOption(data.options, 1)
+        && validPollOption(data.options, 2)
+        && validPollOption(data.options, 3)
+        && validPollOption(data.options, 4)
+        && validPollOption(data.options, 5)
+        && validPollOption(data.options, 6)
+        && validPollOption(data.options, 7)
+        && validPollOption(data.options, 8)
+        && validPollOption(data.options, 9)
+        && data.allowMultiple is bool
+        && data.maxChoices is int
+        && data.maxChoices >= 1
+        && data.maxChoices <= data.options.size()
+        && (data.allowMultiple || data.maxChoices == 1)
+        && data.status in ["draft", "open", "closed"]
+        && data.resultsVisibility in ["afterVote", "host"]
+        && data.showResults is bool
+        && (data.closesAt == null || data.closesAt is timestamp)
+        && data.createdBy is string
+        && data.createdByName is string
+        && data.createdByName.size() <= 120;
+    }
+
+    match /polls/{pollId} {
+      allow get: if pollIsVisibleScope(resource.data)
+        && (resource.data.status != "draft" || canRunPoll(resource.data));
+
+      // Live session boards. Learners' queries must filter status in
+      // ["open", "closed"] so drafts never reach them.
+      allow list: if pollIsVisibleScope(resource.data)
+        && (resource.data.status in ["open", "closed"] || canRunPoll(resource.data));
+
+      allow create: if isAuthenticated()
+        && isValidPoll(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.showResults == false
+        && (
+          request.resource.data.contextType == "community"
+            ? (
+              request.resource.data.status == "open"
+              && request.resource.data.resultsVisibility == "afterVote"
+              && canSeeCommunityScope(request.resource.data.organizationId)
+            )
+            : (
+              request.resource.data.status in ["draft", "open"]
+              && request.resource.data.resultsVisibility == "host"
+              && request.resource.data.organizationId is string
+              && canRunLiveSessions(request.resource.data.organizationId)
+            )
+        );
+
+      // Open, close, reveal the totals or change the closing time. The
+      // question and answers can't change once people may have voted.
+      allow update: if canRunPoll(resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["status", "showResults", "closesAt", "updatedAt"])
+        && (
+          request.resource.data.status == resource.data.status
+          || request.resource.data.status in ["open", "closed"]
+        )
+        && request.resource.data.showResults is bool
+        && (request.resource.data.closesAt == null || request.resource.data.closesAt is timestamp)
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if canRunPoll(resource.data);
+
+      match /results/{documentId} {
+        allow get: if documentId == "summary" && canSeePollResults(pollId);
+        allow list, write: if false;
+      }
+
+      match /votes/{userId} {
+        allow get: if isCurrentUser(userId);
+        allow list, write: if false;
+      }
+    }
+
+    // ============================================================
+    // SHARED DASHBOARD ENGINE
+    // ============================================================
+
+    /*
+     * organizations/{id}/dashboards/{dashboardId}: dashboard layouts and
+     * widget settings, never data (src/app/shared/dashboards). Widgets load
+     * data through each app's own services and these rules, so sharing a
+     * dashboard never shares data.
+     *
+     * - See: members whose role rank >= viewMinRank. List queries filter
+     *   viewMinRank <= the reader's rank.
+     * - Create, edit, delete: managers and above whose rank >= editMinRank.
+     * - The app's default dashboard (isDefault): admins and owners.
+     * - Only shared dashboards for now (personal ones come later).
+     *
+     * organizations/{id}/stats/{appId}: org-wide summaries written only by
+     * Cloud Functions (functions/src/dashboard-stats.ts); managers and above
+     * read them, the same people who can open Team progress.
+     */
+    function dashboardRoleNames() {
+      return ["org_member", "org_staff", "org_manager", "org_admin", "org_owner"];
+    }
+
+    function isValidDashboard(organizationId) {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly([
+          "organizationId", "name", "description", "appId", "scope", "ownerId",
+          "viewMinRole", "viewMinRank", "editMinRole", "editMinRank", "isDefault",
+          "widgets", "templateId", "templateVersion", "createdAt", "updatedAt", "updatedBy"
+        ])
+        && data.organizationId == organizationId
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 80
+        && data.description is string
+        && data.description.size() <= 300
+        && data.appId is string
+        && data.appId.size() > 0
+        && data.appId.size() <= 40
+        && data.scope == "shared"
+        && data.ownerId is string
+        && data.viewMinRole in dashboardRoleNames()
+        && data.editMinRole in dashboardRoleNames()
+        && data.viewMinRank == organizationRoleRank(data.viewMinRole)
+        && data.editMinRank == organizationRoleRank(data.editMinRole)
+        && data.editMinRank >= 3
+        && data.editMinRank >= data.viewMinRank
+        && data.isDefault is bool
+        && data.widgets is list
+        && data.widgets.size() <= 12
+        && data.templateId is string
+        && data.templateId.size() <= 64
+        && data.templateVersion is int
+        && data.updatedBy == request.auth.uid
+        && data.updatedAt == request.time;
+    }
+
+    match /organizations/{organizationId}/dashboards/{dashboardId} {
+      allow get, list: if isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationMember(organizationId)
+          && resource.data.viewMinRank <= organizationRankOf(organizationId)
+        );
+
+      allow create: if isAuthenticated()
+        && isValidDashboard(organizationId)
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && (
+          isPlatformAdmin()
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationManagerOrAbove(organizationId)
+            && request.resource.data.editMinRank <= organizationRankOf(organizationId)
+          )
+        )
+        && (request.resource.data.isDefault == false || isOrganizationAdmin(organizationId));
+
+      allow update: if isAuthenticated()
+        && isValidDashboard(organizationId)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.appId == resource.data.appId
+        && (
+          isPlatformAdmin()
+          || (
+            isOrganizationOperational(organizationId)
+            && isOrganizationManagerOrAbove(organizationId)
+            && resource.data.editMinRank <= organizationRankOf(organizationId)
+            && request.resource.data.editMinRank <= organizationRankOf(organizationId)
+          )
+        )
+        && (
+          request.resource.data.isDefault == resource.data.isDefault
+          || isOrganizationAdmin(organizationId)
+        );
+
+      allow delete: if isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+          && resource.data.editMinRank <= organizationRankOf(organizationId)
+        );
+    }
+
+    match /organizations/{organizationId}/stats/{appId} {
+      allow get: if isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+        );
+
+      allow list, write: if false;
+    }
+
     /*
      * Final exam records: written only by the startCourseExam and
      * submitCourseExam Cloud Functions, which grade on the server.
@@ -5302,6 +5671,203 @@ service cloud.firestore {
     match /outboundMessages/{messageId} {
       allow get, list: if isPlatformAdmin();
       allow create, update, delete: if false;
+    }
+
+    // ============================================================
+    // BUSINESS OPERATIONS
+    // ============================================================
+
+    /*
+     * Two homes for the same records (src/app/features/business):
+     *
+     * - organizations/{organizationId}/businesses|businessTransactions|
+     *   businessActivities|businessCompliance|businessDocuments: an
+     *   organization's own Business Operations (Partner portal). Managers
+     *   and above while the business-operations app is active, and
+     *   platform administrators.
+     * - The top-level collections with the same names: Zebron's own
+     *   business (/admin/business). Platform administrators only.
+     *
+     * Every record except the business itself belongs to a business in
+     * the same home (businessId). The daily compliance scheduler writes
+     * with the Admin SDK and is not subject to these rules.
+     */
+    function hasActiveBusinessOperations(organizationId) {
+      let entitlementPath =
+        /databases/$(database)/documents/organizations/$(organizationId)/applications/business-operations;
+
+      return exists(entitlementPath)
+        && get(entitlementPath).data.get("status", "") == "active";
+    }
+
+    function canManageOrganizationBusiness(organizationId) {
+      return isPlatformAdmin()
+        || (
+          isOrganizationOperational(organizationId)
+          && hasActiveBusinessOperations(organizationId)
+          && isOrganizationManagerOrAbove(organizationId)
+        );
+    }
+
+    /* Optional text field: absent, null, or a string up to max characters. */
+    function businessOptionalText(data, field, max) {
+      return data.get(field, null) == null
+        || (data[field] is string && data[field].size() <= max);
+    }
+
+    function businessRequiredText(data, field, max) {
+      return data.get(field, null) is string
+        && data[field].size() > 0
+        && data[field].size() <= max;
+    }
+
+    function isValidBusiness(data) {
+      return data.keys().hasOnly([
+          "id", "ownerId", "legalName", "tradeName", "entityType", "stateOfFormation",
+          "formationDate", "ein", "registrationNumber", "industry", "naicsCode",
+          "locationId", "address", "status", "createdAt", "updatedAt"
+        ])
+        && businessRequiredText(data, "legalName", 200)
+        && businessRequiredText(data, "entityType", 80)
+        && businessOptionalText(data, "tradeName", 200)
+        && businessOptionalText(data, "ein", 20)
+        && data.status in ["active", "inactive", "closed"]
+        && (data.get("address", null) == null || data.address is map);
+    }
+
+    function isValidBusinessTransaction(data) {
+      return data.keys().hasOnly([
+          "id", "businessId", "type", "date", "amount", "categoryId", "description",
+          "customerId", "vendorId", "paymentMethod", "referenceNumber", "accountId",
+          "status", "recurring", "taxDeductible", "documentId", "activityId", "notes",
+          "createdBy", "createdAt", "updatedAt"
+        ])
+        && data.type in ["revenue", "expense"]
+        && data.amount is number
+        && data.amount >= 0
+        && data.status in ["pending", "completed", "void", "refunded"]
+        && businessOptionalText(data, "description", 1000)
+        && businessOptionalText(data, "notes", 4000);
+    }
+
+    function isValidBusinessActivity(data) {
+      return data.keys().hasOnly([
+          "id", "businessId", "name", "category", "description", "startDate",
+          "endDate", "status", "createdAt", "updatedAt"
+        ])
+        && businessRequiredText(data, "name", 200)
+        && data.status in ["planned", "active", "inactive"]
+        && businessOptionalText(data, "description", 4000);
+    }
+
+    function isValidBusinessCompliance(data) {
+      return data.keys().hasOnly([
+          "id", "businessId", "name", "category", "jurisdiction", "authority",
+          "dueDate", "renewalDate", "status", "notes", "documentId", "completedDate",
+          "automaticMonitoring", "createdAt", "updatedAt"
+        ])
+        && businessRequiredText(data, "name", 200)
+        && data.status in ["current", "upcoming", "action_required", "overdue", "expired", "not_applicable"]
+        && businessOptionalText(data, "notes", 4000);
+    }
+
+    /* folder: where its file must live in Cloud Storage. */
+    function isValidBusinessDocument(data, folder) {
+      return data.keys().hasOnly([
+          "id", "businessId", "name", "category", "description", "fileName", "mimeType",
+          "sizeBytes", "storagePath", "downloadUrl", "uploadedBy", "uploadedAt",
+          "expiresAt", "verified", "status", "notes", "createdAt", "updatedAt"
+        ])
+        && businessRequiredText(data, "name", 200)
+        && data.storagePath is string
+        && data.storagePath.matches(folder + "/" + data.businessId + "/[^/]+")
+        && data.status in ["active", "archived"]
+        && businessOptionalText(data, "notes", 4000);
+    }
+
+    // ---------- An organization's Business Operations ----------
+
+    function organizationBusinessExists(organizationId, businessId) {
+      return businessId is string
+        && exists(/databases/$(database)/documents/organizations/$(organizationId)/businesses/$(businessId));
+    }
+
+    match /organizations/{organizationId}/businesses/{businessId} {
+      allow read, delete: if canManageOrganizationBusiness(organizationId);
+      allow create, update: if canManageOrganizationBusiness(organizationId)
+        && isValidBusiness(request.resource.data);
+    }
+
+    match /organizations/{organizationId}/businessTransactions/{recordId} {
+      allow read, delete: if canManageOrganizationBusiness(organizationId);
+      allow create, update: if canManageOrganizationBusiness(organizationId)
+        && isValidBusinessTransaction(request.resource.data)
+        && organizationBusinessExists(organizationId, request.resource.data.businessId);
+    }
+
+    match /organizations/{organizationId}/businessActivities/{recordId} {
+      allow read, delete: if canManageOrganizationBusiness(organizationId);
+      allow create, update: if canManageOrganizationBusiness(organizationId)
+        && isValidBusinessActivity(request.resource.data)
+        && organizationBusinessExists(organizationId, request.resource.data.businessId);
+    }
+
+    match /organizations/{organizationId}/businessCompliance/{recordId} {
+      allow read, delete: if canManageOrganizationBusiness(organizationId);
+      allow create, update: if canManageOrganizationBusiness(organizationId)
+        && isValidBusinessCompliance(request.resource.data)
+        && organizationBusinessExists(organizationId, request.resource.data.businessId);
+    }
+
+    match /organizations/{organizationId}/businessDocuments/{recordId} {
+      allow read, delete: if canManageOrganizationBusiness(organizationId);
+      allow create, update: if canManageOrganizationBusiness(organizationId)
+        && isValidBusinessDocument(
+          request.resource.data,
+          "organizations/" + organizationId + "/business-documents"
+        )
+        && organizationBusinessExists(organizationId, request.resource.data.businessId);
+    }
+
+    // ---------- Zebron's own Business Operations (/admin/business) ----------
+
+    function platformBusinessExists(businessId) {
+      return businessId is string
+        && exists(/databases/$(database)/documents/businesses/$(businessId));
+    }
+
+    match /businesses/{businessId} {
+      allow read, delete: if isPlatformAdmin();
+      allow create, update: if isPlatformAdmin()
+        && isValidBusiness(request.resource.data);
+    }
+
+    match /businessTransactions/{recordId} {
+      allow read, delete: if isPlatformAdmin();
+      allow create, update: if isPlatformAdmin()
+        && isValidBusinessTransaction(request.resource.data)
+        && platformBusinessExists(request.resource.data.businessId);
+    }
+
+    match /businessActivities/{recordId} {
+      allow read, delete: if isPlatformAdmin();
+      allow create, update: if isPlatformAdmin()
+        && isValidBusinessActivity(request.resource.data)
+        && platformBusinessExists(request.resource.data.businessId);
+    }
+
+    match /businessCompliance/{recordId} {
+      allow read, delete: if isPlatformAdmin();
+      allow create, update: if isPlatformAdmin()
+        && isValidBusinessCompliance(request.resource.data)
+        && platformBusinessExists(request.resource.data.businessId);
+    }
+
+    match /businessDocuments/{recordId} {
+      allow read, delete: if isPlatformAdmin();
+      allow create, update: if isPlatformAdmin()
+        && isValidBusinessDocument(request.resource.data, "business-documents")
+        && platformBusinessExists(request.resource.data.businessId);
     }
 
     // ============================================================

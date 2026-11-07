@@ -29,6 +29,16 @@ export default defineConfig({
     testTimeout: 30_000,
     hookTimeout: 60_000,
 
+    // The integration tests call Cloud Functions code, which uses the
+    // default Firebase Admin app (functions/src/firebase-admin.ts calls
+    // initializeApp() with no options when the module loads). Give that
+    // app the same project and emulator as the tests, so it neither looks
+    // for real Google credentials nor writes to another project's data.
+    env: {
+      GCLOUD_PROJECT: 'zebron-test',
+      FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
+    },
+
     // Reset mocks between tests.
     clearMocks: true,
     restoreMocks: true,

@@ -945,6 +945,7 @@ import { CommunityScopeService } from '../../services/community-scope.service';
                     type="button"
                     class="!text-[#007979]
                            hover:!bg-[#E5F4F4]"
+                    (click)="openPostComposer({ withPoll: true })"
                   >
 
                     <mat-icon>
@@ -1768,7 +1769,7 @@ export class CommunityHomeComponent
   }
 
 
-  openPostComposer(data?: { title?: string; content?: string; tags?: string[] }): void {
+  openPostComposer(data?: { title?: string; content?: string; tags?: string[]; withPoll?: boolean }): void {
 
     this.dialog.open(
       CommunityPostComposerComponent,

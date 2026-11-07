@@ -24,6 +24,7 @@ import { CommunityPostDialogMode } from '../community-post-dialog/community-post
 import { CommunityPostActionsService } from '../../services/community-post-actions.service';
 
 import { AuthService } from '../../../../core/services/auth.service';
+import { PollCardComponent } from '../../../../shared/polls/poll-card.component';
 import { LoggerService } from '../../../../core/services/logger.service';
 
 @Component({
@@ -37,6 +38,7 @@ import { LoggerService } from '../../../../core/services/logger.service';
     MatIconModule,
     MatMenuModule,
     MatTooltipModule,
+    PollCardComponent,
   ],
 
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -290,6 +292,16 @@ import { LoggerService } from '../../../../core/services/logger.service';
 
         </div>
       </button>
+
+      <!-- Poll (outside the button so voting doesn't open the post) -->
+      @if (post().pollId) {
+        <div class="px-5 pb-4">
+          <app-poll-card
+            [pollId]="post().pollId"
+            [canManage]="isAuthor() || canModerate()"
+          />
+        </div>
+      }
 
       <!-- ============================================================
            POST FOOTER

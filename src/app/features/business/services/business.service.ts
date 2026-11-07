@@ -71,35 +71,54 @@ export class BusinessService {
   // COLLECTION REFERENCES
   // ============================================================
 
-  private readonly businessesCollection =
-    collection(
-      firestore,
-      'businesses',
-    );
+  /**
+   * Whose Business Operations these are:
+   *
+   * - an organization id: organizations/{organizationId}/business...
+   *   (Partner portal, private to that organization's managers);
+   * - null: the top-level collections, Zebron's own business
+   *   (platform administrators, /admin/business).
+   *
+   * Set by BusinessStore.useOrganization() before anything loads.
+   */
+  private organizationId: string | null = null;
 
-  private readonly transactionsCollection =
-    collection(
-      firestore,
-      'businessTransactions',
-    );
+  setOrganization(organizationId: string | null): void {
+    this.organizationId = organizationId;
+  }
 
-  private readonly activitiesCollection =
-    collection(
-      firestore,
-      'businessActivities',
-    );
+  private scopedCollection(name: string) {
+    return this.organizationId
+      ? collection(firestore, 'organizations', this.organizationId, name)
+      : collection(firestore, name);
+  }
 
-  private readonly complianceCollection =
-    collection(
-      firestore,
-      'businessCompliance',
-    );
+  /** Storage folder for uploaded documents, in the same scope. */
+  private documentFolder(businessId: string): string {
+    return this.organizationId
+      ? `organizations/${this.organizationId}/business-documents/${businessId}`
+      : `business-documents/${businessId}`;
+  }
 
-  private readonly documentsCollection =
-    collection(
-      firestore,
-      'businessDocuments',
-    );
+  private get businessesCollection() {
+    return this.scopedCollection('businesses');
+  }
+
+  private get transactionsCollection() {
+    return this.scopedCollection('businessTransactions');
+  }
+
+  private get activitiesCollection() {
+    return this.scopedCollection('businessActivities');
+  }
+
+  private get complianceCollection() {
+    return this.scopedCollection('businessCompliance');
+  }
+
+  private get documentsCollection() {
+    return this.scopedCollection('businessDocuments');
+  }
 
   // ============================================================
   // BUSINESS
@@ -137,8 +156,7 @@ export class BusinessService {
   ): Promise<Business | null> {
     const businessRef =
       doc(
-        firestore,
-        'businesses',
+        this.businessesCollection,
         businessId,
       );
 
@@ -195,8 +213,7 @@ export class BusinessService {
   ): Promise<void> {
     await updateDoc(
       doc(
-        firestore,
-        'businesses',
+        this.businessesCollection,
         businessId,
       ),
       {
@@ -316,8 +333,7 @@ export class BusinessService {
   ): Promise<void> {
     const docRef =
       doc(
-        this.firestore,
-        'businessTransactions',
+        this.transactionsCollection,
         id,
       );
 
@@ -414,8 +430,7 @@ export class BusinessService {
 
     await updateDoc(
       doc(
-        firestore,
-        'businessActivities',
+        this.activitiesCollection,
         activityId,
       ),
       {
@@ -434,8 +449,7 @@ export class BusinessService {
   ): Promise<void> {
     await deleteDoc(
       doc(
-        firestore,
-        'businessActivities',
+        this.activitiesCollection,
         activityId,
       ),
     );
@@ -522,8 +536,7 @@ export class BusinessService {
 
     await updateDoc(
       doc(
-        firestore,
-        'businessCompliance',
+        this.complianceCollection,
         requirementId,
       ),
       {
@@ -542,8 +555,7 @@ export class BusinessService {
   ): Promise<void> {
     await deleteDoc(
       doc(
-        firestore,
-        'businessCompliance',
+        this.complianceCollection,
         requirementId,
       ),
     );
@@ -601,7 +613,7 @@ export class BusinessService {
       );
 
     const storagePath =
-      `business-documents/${document.businessId}/${Date.now()}-${safeFileName}`;
+      `${this.documentFolder(document.businessId)}/${Date.now()}-${safeFileName}`;
 
     const storageReference =
       ref(
@@ -783,7 +795,7 @@ export class BusinessService {
         );
 
       replacementStoragePath =
-        `business-documents/${existing.businessId}/${Date.now()}-${safeFileName}`;
+        `${this.documentFolder(existing.businessId)}/${Date.now()}-${safeFileName}`;
 
       const replacementReference =
         ref(

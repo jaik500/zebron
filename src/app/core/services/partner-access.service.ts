@@ -63,6 +63,15 @@ export const PARTNER_PERMISSIONS = {
   /** Dashboard banners: events, cohorts, graduations, shout-outs. */
   'announcements.manage': 'org_manager',
 
+  /** Shared dashboards: create, edit and delete the organization's dashboards. */
+  'dashboards.manage': 'org_manager',
+
+  /** Org-wide learning figures on dashboards (the same data as Team progress). */
+  'learning.insights': 'org_manager',
+
+  /** Business Operations: finances, compliance, documents and their dashboard figures. */
+  'business.manage': 'org_manager',
+
   /** Contracts and billing (planned). */
   'billing.manage': 'org_manager',
 

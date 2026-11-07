@@ -29,6 +29,8 @@ interface QuizForm {
   type: QuizType;
   certificationCode: string;
   active: boolean;
+  /** Exam-only bank (Quiz.examOnly). */
+  examOnly: boolean;
   /** Zebron program ID; '' for no program. */
   programId: string;
 }
@@ -296,6 +298,11 @@ const QUIZ_TYPES: ReadonlyArray<{ value: QuizType; label: string; icon: string }
               <div class="pb-5 md:col-span-2">
                 <mat-checkbox [(ngModel)]="quizForm.active" color="primary">Quiz is active</mat-checkbox>
                 <p class="ml-10 text-xs text-gray-500">Inactive quizzes are hidden from learners and from the organizations' program lists.</p>
+              </div>
+
+              <div class="pb-5 md:col-span-2">
+                <mat-checkbox [(ngModel)]="quizForm.examOnly" color="primary">Exam only</mat-checkbox>
+                <p class="ml-10 text-xs text-gray-500">Learners can only take this quiz as a graded exam (Test Center exam mode or a course final exam). Its questions and answers are never sent to their browser, and results don't show the right answers. Use it for final exams and certifications.</p>
               </div>
             </div>
 
@@ -817,6 +824,7 @@ export class TestCenterAdminComponent implements OnInit {
       type: quiz.type ?? 'course',
       certificationCode: quiz.certificationCode ?? '',
       active: quiz.active === true,
+      examOnly: quiz.examOnly === true,
       programId: quiz.programId ?? '',
     };
     this.showTopicForm.set(false);
@@ -860,6 +868,7 @@ export class TestCenterAdminComponent implements OnInit {
       type: this.quizForm.type,
       certificationCode: this.quizForm.certificationCode,
       active: this.quizForm.active,
+      examOnly: this.quizForm.examOnly,
       programId: this.quizForm.programId || null,
     };
 
@@ -1064,7 +1073,7 @@ export class TestCenterAdminComponent implements OnInit {
   }
 
   private emptyQuizForm(): QuizForm {
-    return { name: '', slug: '', description: '', provider: '', type: 'course', certificationCode: '', active: true, programId: '' };
+    return { name: '', slug: '', description: '', provider: '', type: 'course', certificationCode: '', active: true, examOnly: false, programId: '' };
   }
 
   private emptyTopicForm(): TopicForm {

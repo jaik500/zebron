@@ -5,6 +5,20 @@ export type BusinessStatus =
   | 'inactive'
   | 'closed';
 
+/**
+ * Address kept on the business record itself. Used for organization
+ * businesses (Partner portal): the shared locations collection is
+ * public, so a partner's private address never goes there.
+ */
+export interface BusinessAddress {
+  street: string;
+  city: string;
+  county?: string;
+  state?: string;
+  postalCode?: string;
+  country: string;
+}
+
 export interface Business {
   id: string;
 
@@ -46,6 +60,9 @@ export interface Business {
    * locations/{locationId}
    */
   locationId?: string;
+
+  /** Organization businesses: the address itself (see BusinessAddress). */
+  address?: BusinessAddress;
 
   /**
    * Business lifecycle status.

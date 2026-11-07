@@ -22,6 +22,8 @@ export interface CommunityPostComposerData {
   title?: string;
   content?: string;
   tags?: string[];
+  /** Open with the poll section ready (the feed's Poll button). */
+  withPoll?: boolean;
 }
 
 import {
@@ -53,6 +55,11 @@ import { CommunityUserService } from '../../services/community-user.service';
 
 import { LoggerService } from '../../../../core/services/logger.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { PollEditorComponent } from '../../../../shared/polls/poll-editor.component';
+import { PollDraft, emptyPollDraft, pollDraftProblems } from '../../../../shared/polls/poll.model';
+import { PollService } from '../../../../shared/polls/poll.service';
+import { CommunityPostService } from '../../services/community-post.service';
+import { CommunityScopeService } from '../../services/community-scope.service';
 
 
 @Component({
@@ -68,6 +75,7 @@ import { AuthService } from '../../../../core/services/auth.service';
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    PollEditorComponent,
   ],
 
   template: `
@@ -286,6 +294,48 @@ import { AuthService } from '../../../../core/services/auth.service';
             </mat-hint>
 
           </mat-form-field>
+
+
+          <!-- ================================================== -->
+          <!-- POLL (optional) -->
+          <!-- ================================================== -->
+
+          @if (pollDraft(); as draft) {
+            <section
+              class="min-w-0 rounded-xl border border-[#087F80]/30 bg-[#E5F4F4]/40 p-3"
+              aria-label="Poll"
+            >
+              <div class="mb-3 flex items-center justify-between gap-2">
+                <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-800">
+                  <mat-icon class="!h-5 !w-5 !text-xl !leading-none !text-[#087F80]">poll</mat-icon>
+                  Poll
+                </span>
+                <button
+                  type="button"
+                  class="text-sm font-semibold text-slate-500 hover:text-rose-700 hover:underline"
+                  (click)="pollDraft.set(null)"
+                >
+                  Remove poll
+                </button>
+              </div>
+              <app-poll-editor
+                [draft]="draft"
+                (draftChange)="pollDraft.set($event)"
+              />
+              <p class="mt-2 text-xs text-slate-500">
+                Votes are private. People see the totals after they vote, and everyone sees them once the poll closes.
+              </p>
+            </section>
+          } @else {
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 self-start rounded-lg px-2 py-1 text-sm font-semibold text-[#087F80] hover:bg-[#E5F4F4]"
+              (click)="addPoll()"
+            >
+              <mat-icon class="!h-5 !w-5 !text-xl !leading-none">poll</mat-icon>
+              Add a poll
+            </button>
+          }
 
 
           <!-- ================================================== -->
@@ -641,6 +691,23 @@ export class CommunityPostComposerComponent {
 
   readonly saving = signal(false);
 
+  // ============================================================
+  // POLL
+  // ============================================================
+
+  private readonly pollService = inject(PollService);
+  private readonly postService = inject(CommunityPostService);
+  private readonly scope = inject(CommunityScopeService);
+
+  /** null = no poll on this post. */
+  readonly pollDraft = signal<PollDraft | null>(
+    this.startingText?.withPoll ? emptyPollDraft() : null,
+  );
+
+  addPoll(): void {
+    this.pollDraft.set(emptyPollDraft());
+  }
+
 
   // ============================================================
   // PUBLISH
@@ -856,6 +923,40 @@ export class CommunityPostComposerComponent {
       // Create post
       // --------------------------------------------------------
 
+      // --------------------------------------------------------
+      // Poll (optional): created first, for a post id chosen now,
+      // so the post can point at it (Firestore rules check both).
+      // --------------------------------------------------------
+
+      const pollDraft = this.pollDraft();
+      let newPostId: string | undefined;
+      let pollId: string | undefined;
+
+      if (pollDraft) {
+        const problems = pollDraftProblems(pollDraft);
+
+        if (problems.length) {
+          this.toast.error(`Poll: ${problems[0]}`);
+          return;
+        }
+
+        newPostId = this.postService.newPostId();
+        pollId = await this.pollService.create(
+          {
+            type: 'community',
+            organizationId: this.scope.organizationId(),
+            parentId: newPostId,
+          },
+          pollDraft,
+          {
+            status: 'open',
+            resultsVisibility: 'afterVote',
+            createdBy: firebaseUser?.uid ?? communityUser.id,
+            createdByName: author.displayName,
+          },
+        );
+      }
+
       const postId =
         await this.store.createPost({
 
@@ -875,7 +976,16 @@ export class CommunityPostComposerComponent {
 
           author,
 
+          ...(newPostId && pollId
+            ? { id: newPostId, pollId }
+            : {}),
+
         });
+
+      // The post was refused: remove its poll so no orphan is left behind.
+      if (!postId && pollId) {
+        await this.pollService.remove(pollId).catch(() => undefined);
+      }
 
 
       // --------------------------------------------------------

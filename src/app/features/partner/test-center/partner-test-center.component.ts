@@ -63,6 +63,8 @@ interface CourseForm {
   certificationCode: string;
   programId: string;
   active: boolean;
+  /** Exam-only bank (Quiz.examOnly). */
+  examOnly: boolean;
 }
 
 interface ProgramForm {
@@ -536,6 +538,16 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                   <mat-checkbox [(ngModel)]="form.active" color="primary">
                     {{ 'Quiz is active' | t }}
                   </mat-checkbox>
+                </div>
+
+                <!-- EXAM ONLY -->
+                <div class="pb-5 md:col-span-2">
+                  <mat-checkbox [(ngModel)]="form.examOnly" color="primary">
+                    {{ 'Exam only' | t }}
+                  </mat-checkbox>
+                  <p class="ml-10 text-xs text-gray-500">
+                    {{ 'Learners can only take this quiz as a graded exam (Test Center exam mode or a course final exam). Its questions and answers are never sent to their browser, and results don’t show the right answers. Use it for final exams and certifications.' | t }}
+                  </p>
                 </div>
               </div>
 
@@ -1763,6 +1775,8 @@ export class PartnerTestCenterComponent implements OnInit {
       programId: course.programId ?? '',
 
       active: course.active === true,
+
+      examOnly: course.examOnly === true,
     };
 
     // Close the other forms before editing a quiz.
@@ -1911,6 +1925,8 @@ export class PartnerTestCenterComponent implements OnInit {
           certificationCode: this.form.certificationCode.trim(),
 
           active: this.form.active,
+
+          examOnly: this.form.examOnly,
         });
 
         this.toast.success('Quiz updated.');
@@ -1931,6 +1947,8 @@ export class PartnerTestCenterComponent implements OnInit {
           programId: this.form.programId.trim(),
 
           active: this.form.active,
+
+          examOnly: this.form.examOnly,
         });
 
         this.toast.success('Quiz created.');
@@ -2157,6 +2175,8 @@ export class PartnerTestCenterComponent implements OnInit {
       programId: '',
 
       active: true,
+
+      examOnly: false,
     };
   }
 

@@ -9,6 +9,9 @@ rules_version = '2';
 // Paths in use:
 //   communityChat/{conversationId}/attachments/{file}   chat attachments
 //   qaTasks/{taskId}/documents/{file}                   QA Hub documents
+//   organizations/{organizationId}/business-documents/{businessId}/{file}
+//                                                       an organization's Business Operations documents
+//   business-documents/{businessId}/{file}              Zebron's own Business Operations documents
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -90,6 +93,77 @@ service firebase.storage {
         && request.resource.size <= 25 * 1024 * 1024;
 
       allow delete: if isPlatformAdmin();
+    }
+
+    // ------------------------------------------------------------
+    // BUSINESS OPERATIONS DOCUMENTS
+    // ------------------------------------------------------------
+    // The same people as the Firestore records (see firestore.rules,
+    // BUSINESS OPERATIONS): an organization's managers and above while
+    // its business-operations app is active, and platform administrators.
+    // Uploads up to 25 MB.
+    function organizationRoleRank(role) {
+      return {
+        "org_member": 1,
+        "org_staff": 2,
+        "org_manager": 3,
+        "org_admin": 4,
+        "org_owner": 5
+      }.get(role, 0);
+    }
+
+    // Role from the sign-in token when synced, otherwise from the
+    // active membership document ({uid}_{organizationId}).
+    function organizationRank(organizationId) {
+      let membershipPath =
+        /databases/(default)/documents/organizationMemberships/$(request.auth.uid + "_" + organizationId);
+
+      return request.auth.token.get("zv", 0) == 1
+          && request.auth.token.get("zorg", {}).get(organizationId, "") != ""
+        ? organizationRoleRank(request.auth.token.get("zorg", {}).get(organizationId, ""))
+        : (
+          firestore.exists(membershipPath)
+            && firestore.get(membershipPath).data.get("active", false) == true
+            ? organizationRoleRank(firestore.get(membershipPath).data.get("role", ""))
+            : 0
+        );
+    }
+
+    function canManageOrganizationBusiness(organizationId) {
+      let organizationPath = /databases/(default)/documents/organizations/$(organizationId);
+      let entitlementPath =
+        /databases/(default)/documents/organizations/$(organizationId)/applications/business-operations;
+
+      return signedIn()
+        && (
+          isPlatformAdmin()
+          || (
+            firestore.exists(organizationPath)
+            && firestore.get(organizationPath).data.get(
+              "status",
+              firestore.get(organizationPath).data.get("active", true) == true ? "active" : "suspended"
+            ) == "active"
+            && firestore.exists(entitlementPath)
+            && firestore.get(entitlementPath).data.get("status", "") == "active"
+            && organizationRank(organizationId) >= 3
+          )
+        );
+    }
+
+    match /organizations/{organizationId}/business-documents/{businessId}/{fileName} {
+      allow read, delete: if canManageOrganizationBusiness(organizationId);
+
+      allow create, update: if canManageOrganizationBusiness(organizationId)
+        && request.resource.size > 0
+        && request.resource.size <= 25 * 1024 * 1024;
+    }
+
+    match /business-documents/{businessId}/{fileName} {
+      allow read, delete: if isPlatformAdmin();
+
+      allow create, update: if isPlatformAdmin()
+        && request.resource.size > 0
+        && request.resource.size <= 25 * 1024 * 1024;
     }
 
     // Everything else is closed.

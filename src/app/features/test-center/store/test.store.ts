@@ -1,5 +1,8 @@
 import { correctAnswerValue, isAnswered, isAnswerCorrect } from '../models/question-answers';
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { httpsCallable } from 'firebase/functions';
+
+import { firebaseFunctions } from '../../../core/services/firebase-config';
  
 import { Quiz } from '../models/quiz.model';
 import { TestTopic } from '../models/test-topic.model';
@@ -42,6 +45,16 @@ export class TestStore {
   private readonly organizationContext = inject(OrganizationContextService);
  
   private readonly testResultService = inject(TestResultService);
+
+  /**
+   * Exam mode runs on the server (functions/src/quiz-exams.ts): the
+   * questions arrive without answers and the server grades and records
+   * the result. This is the open attempt.
+   */
+  private examAttemptId: string | null = null;
+
+  /** Exam-only bank: no practice mode, and no answers in the browser. */
+  readonly isExamOnly = computed(() => this.course()?.examOnly === true);
  
   // =====================================================
   // ORGANIZATION
@@ -250,6 +263,11 @@ export class TestStore {
    */
   setCourse(course: Quiz): void {
     this.course.set(course);
+
+    // Exam-only banks can't be practised.
+    if (course.examOnly) {
+      this.mode.set('exam');
+    }
   }
  
   // =====================================================
@@ -349,7 +367,7 @@ export class TestStore {
   }
  
   setMode(mode: TestMode): void {
-    this.mode.set(mode);
+    this.mode.set(this.course()?.examOnly ? 'exam' : mode);
   }
  
   setRandomizeQuestions(value: boolean): void {
@@ -448,6 +466,7 @@ export class TestStore {
    * organizationOverride above).
    */
   resetTest(): void {
+    this.examAttemptId = null;
     this.course.set(null);
  
     this.topics.set([]);
@@ -614,6 +633,104 @@ export class TestStore {
   }
  
   /**
+   * Finish the test and record the result. Practice is graded here and
+   * saved by the browser; an exam is graded and saved by the server.
+   * Returns the result (also in completedResult), or null if there is
+   * nothing to finish. Throws when the result could not be recorded.
+   */
+  async finishTest(): Promise<TestResult | null> {
+    if (this.mode() !== 'exam') {
+      const result = this.completeTest();
+      if (result) {
+        await this.saveCompletedTest(result);
+      }
+      return result;
+    }
+
+    const attemptId = this.examAttemptId;
+    if (!attemptId || this.questions().length === 0) {
+      this.error.set('There is no active exam to finish.');
+      return null;
+    }
+
+    this.loading.set(true);
+    try {
+      const submit = httpsCallable<{ attemptId: string; answers: Record<string, string> }, Omit<TestResult, 'completedAt'> & { completedAt: string }>(
+        firebaseFunctions,
+        'submitQuizExam',
+      );
+      const answers = Object.fromEntries(
+        Object.entries(this.selectedAnswers()).filter(([, answer]) => isAnswered(answer)),
+      );
+      const { data } = await submit({ attemptId, answers });
+      const result: TestResult = { ...data, completedAt: new Date(data.completedAt) };
+
+      this.examAttemptId = null;
+      this.completedResult.set(result);
+      this.error.set('');
+      return result;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /** Start a server-graded exam: questions without answers, attempt recorded. */
+  private async startServerExam(course: Quiz, organizationId: string | null): Promise<boolean> {
+    type ExamQuestion = Pick<TestQuestion, 'id' | 'question' | 'type' | 'options' | 'topicId' | 'difficulty'>;
+    const start = httpsCallable<
+      {
+        quizId: string;
+        organizationId: string | null;
+        topicIds: string[];
+        difficulty: TestDifficulty;
+        questionCount: number;
+        randomizeQuestions: boolean;
+        randomizeAnswers: boolean;
+      },
+      { attemptId: string; examOnly: boolean; questions: ExamQuestion[] }
+    >(firebaseFunctions, 'startQuizExam');
+
+    try {
+      const { data } = await start({
+        quizId: course.id,
+        organizationId,
+        topicIds: this.selectedTopicIds(),
+        difficulty: this.difficulty(),
+        questionCount: this.questionCount(),
+        randomizeQuestions: this.randomizeQuestions(),
+        randomizeAnswers: this.randomizeAnswers(),
+      });
+
+      const questions: TestQuestion[] = data.questions.map((question) => ({
+        ...question,
+        // No answers in the browser during an exam.
+        organizationId: course.scope === 'platform' ? null : organizationId,
+        quizId: course.id,
+        correctAnswer: '',
+        tags: [],
+        sourceType: 'original',
+        status: 'published',
+        createdAt: null as unknown as TestQuestion['createdAt'],
+        updatedAt: null as unknown as TestQuestion['updatedAt'],
+      }));
+
+      this.examAttemptId = data.attemptId;
+      this.questions.set(questions);
+      this.currentQuestionIndex.set(0);
+      this.selectedAnswers.set({});
+      this.completedResult.set(null);
+      return true;
+    } catch (error) {
+      console.error('Failed to start the exam:', error);
+      this.questions.set([]);
+      this.error.set(
+        error instanceof Error && error.message ? error.message : 'We could not start this exam.',
+      );
+      return false;
+    }
+  }
+
+  /**
    * Save the completed test before navigating to results.
    */
   async saveCompletedTest(result: TestResult): Promise<void> {
@@ -689,6 +806,11 @@ export class TestStore {
         return false;
       }
  
+      // Exams: the server picks the questions and keeps the answers.
+      if (this.mode() === 'exam') {
+        return await this.startServerExam(currentCourse, currentCourse.scope === 'platform' ? null : organizationId);
+      }
+
       const loadedQuestions = await this.questionService.getQuestionsForTest(
         currentCourse.scope === 'platform' ? null : organizationId,
         currentCourse.id,
@@ -791,6 +913,12 @@ export class TestStore {
  
     if (!course || topicIds.length === 0) {
       this.availableQuestionCount.set(0);
+      return;
+    }
+
+    // Exam-only questions can't be counted from the browser; the quiz keeps a total.
+    if (course.examOnly) {
+      this.availableQuestionCount.set(course.questionCount ?? 0);
       return;
     }
  

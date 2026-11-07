@@ -2158,6 +2158,10 @@ const selectFeedMode =
 
         author: CommunityPostAuthor;
 
+        id?: string;
+
+        pollId?: string;
+
       }): Promise<string | null> => {
 
         const currentUser =
@@ -2275,6 +2279,10 @@ const selectFeedMode =
 
               tags:
                 input.tags ?? [],
+
+              ...(input.id ? { id: input.id } : {}),
+
+              ...(input.pollId ? { pollId: input.pollId } : {}),
 
             });
 

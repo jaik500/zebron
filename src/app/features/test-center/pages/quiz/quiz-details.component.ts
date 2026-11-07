@@ -332,11 +332,11 @@ import { learnerBaseRoute } from '../../learner-route';
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense" subscriptSizing="dynamic">
                     <mat-label>{{ 'Test mode' | t }}</mat-label>
                     <mat-select [value]="mode()" (selectionChange)="testStore.setMode($event.value)">
-                      @for (option of modeOptions; track option.value) {
+                      @for (option of modeChoices(); track option.value) {
                         <mat-option [value]="option.value">{{ option.label | t }}</mat-option>
                       }
                     </mat-select>
-                    <mat-hint>{{ (mode() === 'practice' ? 'Instant feedback' : 'Feedback at the end') | t }}</mat-hint>
+                    <mat-hint>{{ (testStore.isExamOnly() ? 'Exam only: graded by Zebron' : mode() === 'practice' ? 'Instant feedback' : 'Feedback at the end') | t }}</mat-hint>
                   </mat-form-field>
 
                   <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense" subscriptSizing="dynamic">
@@ -554,7 +554,10 @@ export class QuizDetailsComponent implements OnInit {
 
       // Pass the organization ID from the URL directly to the store.
       await this.testStore.loadTopics(course.id, organizationId);
-      await this.loadQuestionCounts(course, organizationId); // add
+      // Exam-only questions can't be read from the browser; the cached counts are used.
+      if (!course.examOnly) {
+        await this.loadQuestionCounts(course, organizationId);
+      }
     } catch (error) {
       console.error('Failed to load quiz details:', error);
 
@@ -634,8 +637,13 @@ export class QuizDetailsComponent implements OnInit {
 
   readonly modeOptions: { value: TestMode; label: string }[] = [
     { value: 'practice', label: 'Practice' },
-    { value: 'exam', label: 'Exam simulation' },
+    { value: 'exam', label: 'Exam' },
   ];
+
+  /** Exam-only banks can't be practised. */
+  readonly modeChoices = computed(() =>
+    this.testStore.isExamOnly() ? this.modeOptions.filter((option) => option.value === 'exam') : this.modeOptions,
+  );
 
   /**
    * 10/20/50/100 below what's available, then always "All (n)", so a

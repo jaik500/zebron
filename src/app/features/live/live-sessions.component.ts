@@ -12,6 +12,7 @@ import { LoggerService } from '../../core/services/logger.service';
 import { PageTitleService } from '../../core/services/page-title.service';
 import { PartnerAccessService } from '../../core/services/partner-access.service';
 import { OrganizationContextStore } from '../organizations/stores/organization-context.store';
+import { PollBoardComponent } from '../../shared/polls/poll-board.component';
 import {
   LIVE_PROVIDERS,
   LiveProvider,
@@ -50,7 +51,7 @@ const DURATIONS = [30, 45, 60, 90, 120, 180];
   selector: 'app-live-sessions',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgClass, RouterLink, MatIconModule, MatMenuModule, TranslatePipe],
+  imports: [DatePipe, NgClass, RouterLink, MatIconModule, MatMenuModule, TranslatePipe, PollBoardComponent],
   template: `
     <main class="mt-16 min-h-screen bg-slate-50">
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
@@ -209,6 +210,17 @@ const DURATIONS = [30, 45, 60, 90, 120, 180];
                         </button>
                       }
                     </div>
+
+                    <!-- Live polls: in real time while the session is on (hosts run them here too). -->
+                    @if (pollsLive(session)) {
+                      <div class="mt-4 min-w-0 border-t border-slate-100 pt-3">
+                        <p class="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800">
+                          <mat-icon class="!h-5 !w-5 !text-xl !leading-none text-[#007979]" aria-hidden="true">poll</mat-icon>
+                          {{ 'Live polls' | t }}
+                        </p>
+                        <app-poll-board [organizationId]="organizationId" [parentId]="session.id" [canManage]="canRun()" />
+                      </div>
+                    }
                   </div>
                 </div>
               </li>
@@ -222,6 +234,9 @@ const DURATIONS = [30, 45, 60, 90, 120, 180];
       <ng-template matMenuContent let-session="session">
         <button mat-menu-item type="button" (click)="editSession(session)">
           <mat-icon>edit</mat-icon><span>{{ (isPast(session) ? 'Edit / add recording' : 'Edit') | t }}</span>
+        </button>
+        <button mat-menu-item type="button" (click)="pollsFor.set(session)">
+          <mat-icon>poll</mat-icon><span>{{ 'Polls' | t }}</span>
         </button>
         <button mat-menu-item type="button" (click)="openAttendance(session)">
           <mat-icon>fact_check</mat-icon><span>{{ 'Registrations and attendance' | t }}</span>
@@ -353,6 +368,35 @@ const DURATIONS = [30, 45, 60, 90, 120, 180];
       </div>
     }
 
+    <!-- ================= POLLS (prepare ahead, run, review) ================= -->
+    @if (pollsFor(); as session) {
+      <div class="fixed inset-0 z-50 flex items-stretch justify-center bg-slate-900/60 sm:items-center sm:p-6" (click)="pollsFor.set(null)">
+        <section
+          class="flex h-[100dvh] w-full max-w-xl flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[85vh] sm:rounded-2xl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="polls-title"
+          (click)="$event.stopPropagation()"
+        >
+          <header class="flex shrink-0 items-center justify-between bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-5 py-3">
+            <div class="min-w-0">
+              <h2 id="polls-title" class="truncate text-lg font-semibold text-white">{{ 'Polls' | t }}</h2>
+              <p class="truncate text-xs text-white/85">{{ session.title }} · {{ session.startAt | date: 'MMM d, h:mm a' }}</p>
+            </div>
+            <button type="button" (click)="pollsFor.set(null)" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/90 hover:bg-white/15" [attr.aria-label]="'Close' | t">
+              <mat-icon>close</mat-icon>
+            </button>
+          </header>
+          <div class="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+            <p class="mb-3 text-sm text-slate-600">
+              {{ 'Write polls ahead and save them for later, then open them during the session. Answers arrive live; learners see the totals when you show them. Votes are anonymous.' | t }}
+            </p>
+            <app-poll-board [organizationId]="organizationId" [parentId]="session.id" [canManage]="true" />
+          </div>
+        </section>
+      </div>
+    }
+
     <!-- ================= REGISTRATIONS AND ATTENDANCE ================= -->
     @if (attendanceFor(); as session) {
       <div class="fixed inset-0 z-50 flex items-stretch justify-center bg-slate-900/60 sm:items-center sm:p-6" (click)="attendanceFor.set(null)">
@@ -454,6 +498,8 @@ export class LiveSessionsComponent implements OnInit {
 
   // Attendance
   protected readonly attendanceFor = signal<LiveSession | null>(null);
+  /** Session whose polls panel is open (staff). */
+  protected readonly pollsFor = signal<LiveSession | null>(null);
   protected readonly attendees = signal<LiveRegistration[]>([]);
   protected readonly attendanceLoading = signal(false);
   protected readonly attendedCount = computed(() => this.attendees().filter((person) => person.attended).length);
@@ -507,6 +553,16 @@ export class LiveSessionsComponent implements OnInit {
   protected canJoin(session: LiveSession): boolean {
     this.now();
     return canJoinNow(session);
+  }
+
+  /** Polls show on the session card from 15 minutes before the start until 30 minutes after the end. */
+  protected pollsLive(session: LiveSession): boolean {
+    const now = this.now();
+    return (
+      session.status === 'scheduled' &&
+      now >= session.startAt.getTime() - 15 * 60_000 &&
+      now <= sessionEnd(session).getTime() + 30 * 60_000
+    );
   }
 
   protected isLive(session: LiveSession): boolean {

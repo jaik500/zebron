@@ -42,12 +42,17 @@ interface DashboardCard {
 }
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { Dashboard } from '../../../../shared/dashboards/dashboard.model';
+import { DashboardGridComponent } from '../../../../shared/dashboards/dashboard-grid.component';
+import { DashboardService } from '../../../../shared/dashboards/dashboard.service';
+import { injectDashboardContext } from '../../../dashboards/dashboard-context';
+import { setUpDashboards } from '../../../dashboards/dashboard-setup';
 
 @Component({
   selector: 'app-partner-admin',
   standalone: true,
   imports: [
-    TranslatePipe,RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule, AnnouncementBannerComponent],
+    TranslatePipe,RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule, AnnouncementBannerComponent, DashboardGridComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-15">
@@ -455,18 +460,34 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
           @if (canShowOperationalWorkspace() && visibleDashboardCards().length > 0) {
             <section>
-              <div class="mb-5">
-                <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
-                  {{ 'Partner Portal' | t }}
-                </p>
+              <div class="mb-5 flex min-w-0 flex-wrap items-end justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
+                    {{ 'Partner Portal' | t }}
+                  </p>
 
-                <h2 class="mt-1 text-2xl font-bold text-gray-900">{{ 'Your Workspace' | t }}</h2>
+                  <h2 class="mt-1 text-2xl font-bold text-gray-900">{{ 'Your Workspace' | t }}</h2>
 
-                <p class="mt-1 text-sm text-gray-500">
-                  {{ 'Access the resources and services available to you.' | t }}
-                </p>
+                  <p class="mt-1 text-sm text-gray-500">
+                    {{ 'Access the resources and services available to you.' | t }}
+                  </p>
+                </div>
+
+                <!-- Shared Dashboard Engine -->
+                <a
+                  [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'dashboards']"
+                  class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-[#007979]/30 bg-white px-4 text-sm font-semibold text-[#007979] hover:bg-teal-50"
+                >
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px] !leading-none" aria-hidden="true">space_dashboard</mat-icon>
+                  {{ 'Dashboards' | t }}
+                </a>
               </div>
 
+              <!-- The organization's default overview dashboard, when an admin has set one;
+                   otherwise the app cards below. -->
+              @if (workspaceDashboard(); as dashboard) {
+                <app-dashboard-grid [widgets]="dashboard.widgets" [context]="dashboardContext()" />
+              } @else {
               <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 @for (card of visibleDashboardCards(); track card.id) {
                   <div
@@ -559,6 +580,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                   </div>
                 }
               </div>
+              }
             </section>
           }
 
@@ -683,6 +705,15 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 })
 export class PartnerAdminComponent implements OnInit {
   protected readonly organizationStore = inject(OrganizationContextStore);
+
+  // ---------- Shared Dashboard Engine ----------
+  private readonly dashboards = inject(DashboardService);
+  /** The default 'organization' dashboard; replaces the workspace cards when set. */
+  protected readonly workspaceDashboard = signal<Dashboard | null>(null);
+  protected readonly dashboardContext = injectDashboardContext(
+    () => this.organizationStore.selectedOrganizationId() ?? '',
+    () => 'organization',
+  );
 
   private readonly applicationRegistry = inject(ApplicationRegistryService);
 
@@ -1054,8 +1085,25 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
   }
 
 
+  constructor() {
+    setUpDashboards();
+  }
+
   async ngOnInit(): Promise<void> {
     await this.initialize();
+  }
+
+  /**
+   * The organization's default overview dashboard (Dashboards page →
+   * Make this the default). A few reads; failures keep the app cards.
+   */
+  private async loadWorkspaceDashboard(organizationId: string): Promise<void> {
+    try {
+      const list = await this.dashboards.list(organizationId, this.access.role(), this.access.isPlatformAdmin());
+      this.workspaceDashboard.set(list.find((dashboard) => dashboard.isDefault && dashboard.appId === 'organization') ?? null);
+    } catch {
+      this.workspaceDashboard.set(null);
+    }
   }
 
   /** Managers see how many courses wait for their review. */
@@ -1167,6 +1215,7 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
       void this.loadAnnouncements(organizationId);
       void this.loadCoursesInReview(organizationId);
       void this.loadNextLiveSession(organizationId);
+      void this.loadWorkspaceDashboard(organizationId);
     } catch {
       /*
        * OrganizationStore exposes

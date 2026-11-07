@@ -30,6 +30,7 @@ import { CommunityPostViewService } from '../../services/community-post-view.ser
 import { CommunityPostActionsService } from '../../services/community-post-actions.service';
 import { CommunityPostService } from '../../services/community-post.service';
 import { CommunityPostDialogMode } from '../../components/community-post-dialog/community-post-dialog.component';
+import { PollCardComponent } from '../../../../shared/polls/poll-card.component';
 
 @Component({
   selector: 'app-community-post-detail',
@@ -49,6 +50,7 @@ import { CommunityPostDialogMode } from '../../components/community-post-dialog/
     MatTooltipModule,
 
     CommunityCommentComponent,
+    PollCardComponent,
   ],
 
   template: `
@@ -446,6 +448,17 @@ import { CommunityPostDialogMode } from '../../components/community-post-dialog/
               >
                 {{ post.content }}
               </div>
+
+              <!-- Poll -->
+
+              @if (post.pollId) {
+                <div class="mt-5">
+                  <app-poll-card
+                    [pollId]="post.pollId"
+                    [canManage]="isAuthor(post) || canModerate()"
+                  />
+                </div>
+              }
 
               <!-- Tags -->
 

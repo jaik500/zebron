@@ -24,6 +24,9 @@ import { BusinessService } from '../services/business.service';
  * Business Operations Signal Store state.
  */
 interface BusinessState {
+  /** Organization whose Business Operations are loaded (null = Zebron's own, admin). */
+  organizationId: string | null;
+
   businesses: Business[];
 
   selectedBusiness: Business | null;
@@ -57,6 +60,8 @@ interface BusinessState {
  * Initial Business Operations state.
  */
 const initialState: BusinessState = {
+  organizationId: null,
+
   businesses: [],
 
   selectedBusiness: null,
@@ -235,6 +240,24 @@ export const BusinessStore = signalStore(
   // ==========================================================
 
   withMethods((store, businessService = inject(BusinessService)) => ({
+    // ======================================================
+    // SCOPE
+    // ======================================================
+
+    /**
+     * Point Business Operations at an organization (Partner portal)
+     * or at Zebron's own records (null, /admin/business). Call before
+     * loadBusinessData(); switching clears what was loaded so one
+     * organization's records never show in another's page.
+     */
+    useOrganization(organizationId: string | null): void {
+      businessService.setOrganization(organizationId);
+
+      if (store.organizationId() !== organizationId) {
+        patchState(store, { ...initialState, organizationId });
+      }
+    },
+
     // ======================================================
     // LOAD EVERYTHING
     // ======================================================

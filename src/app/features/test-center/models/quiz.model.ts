@@ -55,6 +55,14 @@ export interface Quiz {
 
   active: boolean;
 
+  /**
+   * Exam-only bank: its questions never reach learners' browsers. Learners
+   * take it only as a server-graded exam (Test Center exam mode or a course
+   * final exam), and results don't reveal the right answers. Test Center
+   * managers still see and edit the questions.
+   */
+  examOnly?: boolean;
+
   questionCount: number;
 
   createdAt: Timestamp;

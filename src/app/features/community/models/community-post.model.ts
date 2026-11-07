@@ -162,6 +162,9 @@ trendingScore?: number;
    */
   organizationId?: string | null;
 
+  /** A poll attached to the post (polls/{pollId}). */
+  pollId?: string;
+
   /** Set when the author edits the post. */
   editedAt?: Timestamp;
 

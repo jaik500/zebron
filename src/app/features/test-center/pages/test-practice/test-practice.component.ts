@@ -29,7 +29,9 @@ import { TestStore } from '../../store/test.store';
  *   Practice mode  the answer is checked as soon as it is chosen, with the
  *                  explanation; the first choice is the one that counts.
  *   Exam mode      no feedback until the end; answers can be changed,
- *                  questions skipped and flagged for review.
+ *                  questions skipped and flagged for review. The questions
+ *                  come from the server without answers, and the server
+ *                  grades and records the result (TestStore.finishTest).
  *
  * Keyboard: A–F or 1–6 choose an answer, arrow keys move between questions.
  */
@@ -682,13 +684,11 @@ export class TestPracticeComponent {
       return;
     }
 
-    const result = this.testStore.completeTest();
-    if (!result) {
-      return;
-    }
-
     try {
-      await this.testStore.saveCompletedTest(result);
+      const result = await this.testStore.finishTest();
+      if (!result) {
+        return;
+      }
       await this.router.navigate([this.baseRoute, 'results']);
     } catch (error) {
       console.error('Failed to save Test Center result:', error);

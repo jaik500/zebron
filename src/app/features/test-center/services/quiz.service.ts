@@ -385,6 +385,8 @@ async getQuizBySlug(
       certificationCode?: string;
       imageUrl?: string;
       active: boolean;
+      /** Exam-only bank (see Quiz.examOnly). */
+      examOnly?: boolean;
       programId: string | null;
     },
   ): Promise<string> {
@@ -486,6 +488,8 @@ async getQuizBySlug(
 
       active: course.active === true,
 
+      examOnly: course.examOnly === true,
+
       questionCount: 0,
 
       createdAt: serverTimestamp(),
@@ -522,6 +526,8 @@ async getQuizBySlug(
     certificationCode?: string;
     imageUrl?: string;
     active: boolean;
+    /** Exam-only bank (see Quiz.examOnly). */
+    examOnly?: boolean;
     /** Optional Zebron program (testPrograms, scope 'platform'). */
     programId?: string | null;
   }): Promise<string> {
@@ -587,6 +593,8 @@ async getQuizBySlug(
       imageUrl: course.imageUrl?.trim() || null,
 
       active: course.active === true,
+
+      examOnly: course.examOnly === true,
 
       questionCount: 0,
 
@@ -698,6 +706,7 @@ async getQuizBySlug(
       type?: Quiz['type'];
       certificationCode?: string;
       active?: boolean;
+      examOnly?: boolean;
       /** Zebron program ID, or null for no program. */
       programId?: string | null;
     },
@@ -726,6 +735,7 @@ async getQuizBySlug(
     if (changes.type !== undefined) payload['type'] = changes.type;
     if (changes.certificationCode !== undefined) payload['certificationCode'] = changes.certificationCode.trim() || null;
     if (changes.active !== undefined) payload['active'] = changes.active === true;
+    if (changes.examOnly !== undefined) payload['examOnly'] = changes.examOnly === true;
     if (changes.programId !== undefined) payload['programId'] = changes.programId?.trim() || null;
 
     await updateDoc(doc(firestore, 'quizzes', quizId), payload);

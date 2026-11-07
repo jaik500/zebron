@@ -11,6 +11,7 @@ import { resourceResolver } from './features/resources/resolvers/resource.resolv
 import { AboutComponent } from './features/about/pages/about/about.component';
 import { testCenterOrganizationGuard } from './core/guards/test-center-organization.guard';
 import { leaveCourseBuilderGuard } from './features/courses/builder/leave-course-builder.guard';
+import { leaveDashboardsGuard } from './features/dashboards/leave-dashboards.guard';
 export const routes: Routes = [
     // =====================================================
     // PUBLIC
@@ -931,6 +932,22 @@ export const routes: Routes = [
         ],
     },
     // -----------------------------------------------------
+    // DASHBOARDS (Shared Dashboard Engine; everyone views, managers edit)
+    // -----------------------------------------------------
+    {
+        path: 'partner/org/:organizationId/dashboards',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+        ],
+        canDeactivate: [leaveDashboardsGuard],
+        data: {
+            title: 'Partner | Dashboards',
+            organizationHeader: true,
+        },
+        loadComponent: () => import('./features/dashboards/dashboards-page.component').then((m) => m.DashboardsPageComponent),
+    },
+    // -----------------------------------------------------
     // VIRTUAL CLASSROOM (live sessions; members join, staff schedule)
     // -----------------------------------------------------
     {
@@ -1127,12 +1144,30 @@ export const routes: Routes = [
             authGuard,
             partnerOrganizationGuard,
             applicationAccessGuard,
+            partnerRoleGuard,
         ],
         data: {
             applicationId: 'business-operations',
             title: 'Partner | Business Operations',
+            // Finances and compliance: managers and above (firestore.rules).
+            minimumOrganizationRole: 'org_manager',
         },
         loadComponent: () => import('./features/business/pages/business-dashboard/business-dashboard.component').then((m) => m.BusinessDashboardComponent),
+    },
+    {
+        path: 'partner/org/:organizationId/business-operations/profile',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            applicationAccessGuard,
+            partnerRoleGuard,
+        ],
+        data: {
+            applicationId: 'business-operations',
+            title: 'Partner | Business Profile',
+            minimumOrganizationRole: 'org_manager',
+        },
+        loadComponent: () => import('./features/business/pages/business-profile/business-profile.component').then((m) => m.BusinessProfileComponent),
     },
     // -----------------------------------------------------
     // PARTNER ADMINISTRATION

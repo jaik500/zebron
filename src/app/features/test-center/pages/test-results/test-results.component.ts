@@ -156,11 +156,13 @@ const WEAK_TOPIC = 70;
                       <dt class="text-slate-500">{{ 'Your answer:' | t }}</dt>
                       <dd [ngClass]="item.isCorrect ? 'text-emerald-800' : 'text-rose-800'">{{ answerLabel(item.questionId, item.selectedAnswerId) | t }}</dd>
                     </div>
-                    @if (!item.isCorrect) {
+                    @if (!item.isCorrect && item.correctAnswerId) {
                       <div class="flex flex-wrap gap-1">
                         <dt class="text-slate-500">{{ 'Right answer:' | t }}</dt>
                         <dd class="font-semibold text-emerald-800">{{ answerLabel(item.questionId, item.correctAnswerId) }}</dd>
                       </div>
+                    } @else if (!item.isCorrect && result()?.examOnly) {
+                      <dd class="text-xs text-slate-500">{{ 'The right answers to this exam are kept private.' | t }}</dd>
                     }
                     @if (item.explanation) {
                       <dd class="mt-1 rounded-lg bg-slate-50 p-2 text-slate-700">{{ item.explanation }}</dd>

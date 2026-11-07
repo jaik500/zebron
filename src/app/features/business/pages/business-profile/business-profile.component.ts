@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatCardModule } from '@angular/material/card';
 
@@ -32,7 +32,7 @@ import { BusinessStore } from '../../store/business.store';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
-import { Business } from '../../models/business.model';
+import { Business, BusinessAddress } from '../../models/business.model';
 
 import { Location } from '../../../../core/models/location.model';
 
@@ -111,7 +111,7 @@ import { LocationService } from '../../../../core/services/location.service';
             </div>
 
             <a
-              routerLink="/admin/business"
+              [routerLink]="businessHome"
               mat-stroked-button
               class="!border-white
                      !text-white"
@@ -348,16 +348,22 @@ import { LocationService } from '../../../../core/services/location.service';
             </mat-card-header>
 
             <mat-card-content class="!pt-6">
-              <p
-                class="mb-5
-                       text-sm
-                       leading-6
-                       text-gray-500"
-              >
-                This address is stored in Zebron's centralized
-                <strong>locations</strong> collection. The business record stores only the
-                associated location ID.
-              </p>
+              @if (organizationId) {
+                <p class="mb-5 text-sm leading-6 text-gray-500">
+                  This address is kept on your business record, visible only to your organization's managers.
+                </p>
+              } @else {
+                <p
+                  class="mb-5
+                         text-sm
+                         leading-6
+                         text-gray-500"
+                >
+                  This address is stored in Zebron's centralized
+                  <strong>locations</strong> collection. The business record stores only the
+                  associated location ID.
+                </p>
+              }
 
               <div
                 formGroupName="address"
@@ -531,7 +537,7 @@ import { LocationService } from '../../../../core/services/location.service';
                    sm:flex-row
                    sm:justify-end"
           >
-            <a routerLink="/admin/business" mat-stroked-button type="button"> Cancel </a>
+            <a [routerLink]="businessHome" mat-stroked-button type="button"> Cancel </a>
 
             <button mat-flat-button color="primary" type="submit" [disabled]="store.saving()">
               <mat-icon> save </mat-icon>
@@ -558,6 +564,17 @@ import { LocationService } from '../../../../core/services/location.service';
 })
 export class BusinessProfileComponent implements OnInit {
   private readonly router = inject(Router);
+
+  /**
+   * Partner portal (/partner/org/:organizationId/business-operations/profile):
+   * the organization's own records. Null on /admin/business/profile.
+   */
+  protected readonly organizationId = inject(ActivatedRoute).snapshot.paramMap.get('organizationId');
+
+  /** The Business Operations page this profile belongs to. */
+  protected readonly businessHome: string[] = this.organizationId
+    ? ['/partner/org', this.organizationId, 'business-operations']
+    : ['/admin/business'];
 
   // ============================================================
   // SERVICES
@@ -925,6 +942,8 @@ export class BusinessProfileComponent implements OnInit {
      * loaded its data from the Business Dashboard.
      */
     try {
+      this.store.useOrganization(this.organizationId);
+
       await this.store.loadBusinessData();
 
       const business = this.store.selectedBusiness();
@@ -976,6 +995,24 @@ export class BusinessProfileComponent implements OnInit {
   // ============================================================
 
   private async loadBusinessLocation(business: Business): Promise<void> {
+    // Organization businesses keep their address on the record.
+    if (this.organizationId) {
+      const address = business.address;
+
+      if (address) {
+        this.form.controls.address.patchValue({
+          street: address.street ?? '',
+          city: address.city ?? '',
+          county: address.county ?? '',
+          state: address.state ?? '',
+          postalCode: address.postalCode ?? '',
+          country: address.country ?? 'United States',
+        });
+      }
+
+      return;
+    }
+
     /**
      * A business may legitimately exist without a location,
      * especially if it was created before the centralized
@@ -1190,11 +1227,26 @@ export class BusinessProfileComponent implements OnInit {
 
       const locationData = this.buildLocation(address, city, county, state, postalCode, country);
 
+      // Organization businesses: the address goes on the record
+      // (below), never into the public locations collection.
+      const inlineAddress: BusinessAddress | null = this.organizationId
+        ? {
+            street: address,
+            city,
+            country,
+            ...(county ? { county } : {}),
+            ...(state ? { state } : {}),
+            ...(postalCode ? { postalCode } : {}),
+          }
+        : null;
+
       // --------------------------------------------------------
       // Existing business with existing location
       // --------------------------------------------------------
 
-      if (locationId) {
+      if (inlineAddress) {
+        locationId = undefined;
+      } else if (locationId) {
         await this.locationService.updateLocation(locationId, locationData);
       }
 
@@ -1211,7 +1263,7 @@ export class BusinessProfileComponent implements OnInit {
       // Load the saved location into local state
       // --------------------------------------------------------
 
-      if (locationId) {
+      if (locationId && !inlineAddress) {
         const savedLocation = await this.locationService.getLocationById(locationId);
 
         this.location.set(savedLocation);
@@ -1282,9 +1334,12 @@ export class BusinessProfileComponent implements OnInit {
           : {}),
 
         /**
-         * Centralized address relationship.
+         * Centralized address relationship (Zebron's own business), or
+         * the address itself (organization businesses).
          */
-        locationId,
+        ...(locationId ? { locationId } : {}),
+
+        ...(inlineAddress ? { address: inlineAddress } : {}),
 
         status,
       };
@@ -1311,7 +1366,7 @@ export class BusinessProfileComponent implements OnInit {
 
       this.toast.success('Business profile saved successfully.');
 
-      await this.router.navigate(['/admin/business'], {
+      await this.router.navigate(this.businessHome, {
         queryParams: { tab: 'settings' },
       });
     } catch (error) {

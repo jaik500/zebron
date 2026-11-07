@@ -15,6 +15,7 @@ import {
   QueryConstraint,
   QuerySnapshot,
   serverTimestamp,
+  setDoc,
   startAfter,
   updateDoc,
   where,
@@ -98,6 +99,15 @@ export interface CreateCommunityPostInput {
   authorId: string;
 
   author: CommunityPostAuthor;
+
+  /**
+   * Optional id chosen ahead of time (from newPostId()), so a poll can be
+   * created for the post before the post itself.
+   */
+  id?: string;
+
+  /** Poll attached to the post (polls/{pollId}). */
+  pollId?: string;
 }
 
 
@@ -218,6 +228,35 @@ export class CommunityPostService {
    * The optional authorIds property is used by the Following
    * feed.
    */
+  /**
+   * Newest posts of one community, for dashboards. The organization is
+   * passed in (dashboard pages are not Community URLs, so the scope service
+   * can't tell). Same filters as the Latest feed, so its index serves it.
+   */
+  async getRecentForOrganization(
+    organizationId: string | null,
+    count = 5,
+  ): Promise<CommunityPost[]> {
+    const snapshot = await getDocs(
+      query(
+        this.postsCollection,
+        where('organizationId', '==', organizationId),
+        where('status', '==', 'published'),
+        where('moderationStatus', '==', 'approved'),
+        orderBy('createdAt', 'desc'),
+        limit(Math.min(Math.max(1, count), 10)),
+      ),
+    );
+
+    return snapshot.docs.map(
+      (document) =>
+        ({
+          id: document.id,
+          ...document.data(),
+        }) as CommunityPost,
+    );
+  }
+
   async getPosts(
     options?: GetCommunityPostsOptions,
   ): Promise<CommunityPostPage> {
@@ -1453,6 +1492,11 @@ private findDocumentSnapshot(
    * current MVP and therefore receive an approved moderation
    * status.
    */
+  /** A new post id, for creating a poll before its post. */
+  newPostId(): string {
+    return doc(this.postsCollection).id;
+  }
+
   async createPost(
     input: CreateCommunityPostInput,
   ): Promise<string> {
@@ -1741,6 +1785,10 @@ private findDocumentSnapshot(
       organizationId:
         this.scope.organizationId(),
 
+      ...(input.pollId
+        ? { pollId: input.pollId }
+        : {}),
+
       createdAt:
         serverTimestamp(),
 
@@ -1756,11 +1804,18 @@ private findDocumentSnapshot(
 
     try {
 
+      // A chosen id (posts with a poll) or a new one.
       const documentReference =
-        await addDoc(
-          this.postsCollection,
-          postData,
-        );
+        input.id
+          ? doc(this.postsCollection, input.id)
+          : await addDoc(
+              this.postsCollection,
+              postData,
+            );
+
+      if (input.id) {
+        await setDoc(documentReference, postData);
+      }
 
 
       this.logger.info(

@@ -59,6 +59,12 @@ export interface TestResult {
 
   mode: 'practice' | 'exam';
 
+  /** Who recorded it: the Test Center (browser for practice, server for exams) or a course final exam. */
+  source?: 'test-center' | 'course';
+
+  /** Exam-only bank: right answers and explanations are not included. */
+  examOnly?: boolean;
+
   difficulty: TestQuestionDifficulty | 'mixed';
 
   topicPerformance: TestTopicPerformance[];

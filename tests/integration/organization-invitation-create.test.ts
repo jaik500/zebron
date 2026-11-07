@@ -38,8 +38,14 @@ import {
 describe('Zebron Organization Invitation Creation', () => {
   let testEnv: RulesTestEnvironment;
 
+  /*
+   * The same project as vitest.config.ts (GCLOUD_PROJECT). The callable
+   * reads through the default Firebase Admin app, which may already exist
+   * for that project when this file loads; seeding another project would
+   * leave the callable unable to see the test data.
+   */
   const PROJECT_ID =
-    'zebron-organization-invitation-test';
+    process.env['GCLOUD_PROJECT'] ?? 'zebron-test';
 
   const ORGANIZATION_ID =
     'organization-test-001';

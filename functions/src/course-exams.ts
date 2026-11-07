@@ -29,6 +29,11 @@ import { isPlatformAdministrator } from "./platform-admin-authorization";
  *   users/{uid}/courseExams/{progressId}
  *   users/{uid}/courseExams/{progressId}/attempts/{attemptId}
  *
+ * Each submitted attempt is also written to the Test Center history
+ * (quizAttempts and quizResults, mode exam, source course), so course
+ * exams and Test Center exams appear together in results and reports.
+ * The Test Center's own exam mode uses the same grading (quiz-exams.ts).
+ *
  * progressId is the course id for Zebron courses and
  * "<organizationId>__<courseId>" for organization courses (the same id as
  * the learner's courseProgress record).
@@ -514,6 +519,7 @@ export const submitCourseExam = onCall({ region: REGION }, async (request) => {
   const topics = new Map<string, { name: string; correct: number; total: number }>();
   const missed: string[] = [];
   const graded: Record<string, string> = {};
+  const history: { questionId: string; question: string; topicId: string; answer: string; isCorrect: boolean }[] = [];
   let correct = 0;
 
   for (const id of ids) {
@@ -537,6 +543,7 @@ export const submitCourseExam = onCall({ region: REGION }, async (request) => {
 
     topics.set(topicId, topic);
     graded[id] = answer;
+    history.push({ questionId: id, question: text(question.question), topicId, answer, isCorrect });
   }
 
   const total = [...questions.keys()].filter((id) => ids.includes(id)).length;
@@ -596,6 +603,70 @@ export const submitCourseExam = onCall({ region: REGION }, async (request) => {
     },
     { merge: true },
   );
+
+  // The Test Center history (quizAttempts + quizResults): one place for
+  // every assessment. Course exams never reveal the right answers.
+  const historyAttemptRef = db.collection("quizAttempts").doc();
+  const historyResultRef = db.collection("quizResults").doc();
+  const answeredCount = history.filter((item) => item.answer).length;
+  const historyCommon = {
+    organizationId: context.organizationId,
+    userId: context.uid,
+    quizId: context.exam.quizId,
+    quizName: text(record?.quizName) || text(context.course.title),
+    scope: context.organizationId ? "organization" : "platform",
+    mode: "exam",
+    source: "course",
+    courseId: context.courseId,
+    courseTitle: text(context.course.title),
+    passed,
+  };
+  batch.set(historyAttemptRef, {
+    ...historyCommon,
+    id: historyAttemptRef.id,
+    topicIds: [...topics.keys()],
+    questionIds: ids,
+    questionCount: total,
+    correctCount: correct,
+    score,
+    status: "completed",
+    results: history.map((item) => ({ questionId: item.questionId, selectedAnswer: item.answer, correct: item.isCorrect })),
+    startedAt: attempt.get("startedAt") ?? submittedAt,
+    completedAt: submittedAt,
+  });
+  batch.set(historyResultRef, {
+    ...historyCommon,
+    id: historyResultRef.id,
+    attemptId: historyAttemptRef.id,
+    totalQuestions: total,
+    answeredQuestions: answeredCount,
+    correctAnswers: correct,
+    incorrectAnswers: answeredCount - correct,
+    unansweredQuestions: total - answeredCount,
+    scorePercentage: score,
+    difficulty: "mixed",
+    examOnly: true,
+    topicPerformance: [...topics.entries()].map(([topicId, topic]) => ({
+      topicId,
+      topicName: topic.name,
+      totalQuestions: topic.total,
+      answeredQuestions: history.filter((item) => item.topicId === topicId && item.answer).length,
+      correctAnswers: topic.correct,
+      incorrectAnswers: history.filter((item) => item.topicId === topicId && item.answer && !item.isCorrect).length,
+      percentage: topic.total ? Math.round((topic.correct / topic.total) * 100) : 0,
+    })),
+    questionResults: history.map((item) => ({
+      questionId: item.questionId,
+      question: item.question,
+      topicId: item.topicId,
+      selectedAnswerId: item.answer || null,
+      correctAnswerId: "",
+      isCorrect: item.isCorrect,
+      explanation: "",
+    })),
+    completedAt: submittedAt,
+    createdAt: submittedAt,
+  });
 
   // Count this pass as the next step of any certification path waiting for it.
   if (passed) {

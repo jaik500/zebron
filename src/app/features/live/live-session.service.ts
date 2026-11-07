@@ -12,6 +12,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 
@@ -139,27 +140,39 @@ export class LiveSessionService {
 
   async list(organizationId: string): Promise<LiveSession[]> {
     const snapshot = await getDocs(query(this.sessions(organizationId), orderBy('startAt', 'desc'), limit(200)));
+    return snapshot.docs.map((document) => this.toSession(document.id, document.data()));
+  }
 
-    return snapshot.docs.map((document) => {
-      const data = document.data();
-      const provider = String(data['provider'] ?? 'other') as LiveProvider;
+  /**
+   * The next few sessions, including any that started in the last 6 hours
+   * (dashboards: a few reads instead of the whole list).
+   */
+  async listUpcoming(organizationId: string, count = 5): Promise<LiveSession[]> {
+    const since = Timestamp.fromDate(new Date(Date.now() - 6 * 60 * 60_000));
+    const snapshot = await getDocs(
+      query(this.sessions(organizationId), where('startAt', '>=', since), orderBy('startAt', 'asc'), limit(count)),
+    );
+    return snapshot.docs.map((document) => this.toSession(document.id, document.data()));
+  }
 
-      return {
-        id: document.id,
-        title: str(data['title']),
-        description: str(data['description']),
-        instructorId: str(data['instructorId']) || null,
-        instructorName: str(data['instructorName']),
-        startAt: (data['startAt'] as Timestamp | undefined)?.toDate() ?? new Date(),
-        durationMinutes: Number(data['durationMinutes'] ?? 60),
-        capacity: Number(data['capacity'] ?? 0),
-        provider: LIVE_PROVIDERS.some((item) => item.id === provider) ? provider : 'other',
-        meetingUrl: str(data['meetingUrl']),
-        recordingUrl: str(data['recordingUrl']),
-        status: data['status'] === 'cancelled' ? 'cancelled' : 'scheduled',
-        registeredCount: Number(data['registeredCount'] ?? 0),
-      };
-    });
+  private toSession(id: string, data: Record<string, unknown>): LiveSession {
+    const provider = String(data['provider'] ?? 'other') as LiveProvider;
+
+    return {
+      id,
+      title: str(data['title']),
+      description: str(data['description']),
+      instructorId: str(data['instructorId']) || null,
+      instructorName: str(data['instructorName']),
+      startAt: (data['startAt'] as Timestamp | undefined)?.toDate() ?? new Date(),
+      durationMinutes: Number(data['durationMinutes'] ?? 60),
+      capacity: Number(data['capacity'] ?? 0),
+      provider: LIVE_PROVIDERS.some((item) => item.id === provider) ? provider : 'other',
+      meetingUrl: str(data['meetingUrl']),
+      recordingUrl: str(data['recordingUrl']),
+      status: data['status'] === 'cancelled' ? 'cancelled' : 'scheduled',
+      registeredCount: Number(data['registeredCount'] ?? 0),
+    };
   }
 
   /** Create or update (staff and above). The registration count is kept by the server. */

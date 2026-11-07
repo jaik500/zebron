@@ -38,8 +38,12 @@ export const processBusinessComplianceStatuses = onSchedule(
 
     logger.info(`Business compliance status date: ${today}`);
 
+    // Every Business Operations compliance list: Zebron's own
+    // (businessCompliance) and each organization's
+    // (organizations/{id}/businessCompliance). A collection group
+    // covers both.
     const snapshot = await db
-      .collection("businessCompliance")
+      .collectionGroup("businessCompliance")
       .get();
 
     logger.info(`Found ${snapshot.size} compliance records.`);
