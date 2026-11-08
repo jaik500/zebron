@@ -230,12 +230,19 @@ const CUSTOM_MODEL = '__custom__';
                 </div>
                 <mat-slide-toggle [(ngModel)]="form.sources.organizationArticles" (ngModelChange)="touch()" aria-label="Organization articles"></mat-slide-toggle>
               </div>
-              <div class="flex items-start justify-between gap-4 pt-4">
+              <div class="flex items-start justify-between gap-4 py-4">
                 <div class="min-w-0">
                   <p class="font-medium text-slate-800">Built-in partner portal guides</p>
                   <p class="text-sm text-slate-500">Short how-tos for roles, invitations, Test Center, banners, mailbox, contract, audit log, tickets and profile.</p>
                 </div>
                 <mat-slide-toggle [(ngModel)]="form.sources.builtInGuides" (ngModelChange)="touch()" aria-label="Built-in partner portal guides"></mat-slide-toggle>
+              </div>
+              <div class="flex items-start justify-between gap-4 pt-4">
+                <div class="min-w-0">
+                  <p class="font-medium text-slate-800">Zebron directory</p>
+                  <p class="text-sm text-slate-500">Published resources, bootcamp programs, open jobs, topic pages and blog posts, so it can suggest real services with Call, Directions and Apply buttons. Drafts and pending items are never used.</p>
+                </div>
+                <mat-slide-toggle [(ngModel)]="form.sources.directory" (ngModelChange)="touch()" aria-label="Zebron directory"></mat-slide-toggle>
               </div>
             </div>
             @if (noSources()) {
@@ -351,7 +358,7 @@ export class HelpAssistantSettingsComponent implements OnInit {
   protected readonly noSources = computed(() => {
     this.version();
     const sources = this.form.sources;
-    return !sources.platformArticles && !sources.organizationArticles && !sources.builtInGuides;
+    return !sources.platformArticles && !sources.organizationArticles && !sources.builtInGuides && !sources.directory;
   });
 
   protected readonly previewSuggestions = computed(() => {

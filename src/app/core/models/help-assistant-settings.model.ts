@@ -14,6 +14,8 @@ export interface HelpAssistantSources {
   organizationArticles: boolean;
   /** Built-in partner portal how-to guides. */
   builtInGuides: boolean;
+  /** Zebron's public directory: resources, bootcamp programs, open jobs, topic pages and blog posts. */
+  directory: boolean;
 }
 
 export interface HelpAssistantSettings {
@@ -69,7 +71,7 @@ export const DEFAULT_HELP_ASSISTANT_SETTINGS: HelpAssistantSettings = {
     'How do I contact Zebron support?',
   ],
   extraInstructions: '',
-  sources: { platformArticles: true, organizationArticles: true, builtInGuides: true },
+  sources: { platformArticles: true, organizationArticles: true, builtInGuides: true, directory: true },
 };
 
 function clampInt(value: unknown, range: { min: number; max: number }, fallback: number): number {
@@ -114,6 +116,7 @@ export function normalizeHelpAssistantSettings(raw: unknown): HelpAssistantSetti
       platformArticles: flag(sources['platformArticles'], defaults.sources.platformArticles),
       organizationArticles: flag(sources['organizationArticles'], defaults.sources.organizationArticles),
       builtInGuides: flag(sources['builtInGuides'], defaults.sources.builtInGuides),
+      directory: flag(sources['directory'], defaults.sources.directory),
     },
   };
 

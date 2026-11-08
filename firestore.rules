@@ -4761,7 +4761,8 @@ service cloud.firestore {
         && data.get("suggestions", []) is list && data.get("suggestions", []).size() <= 6
         && data.get("extraInstructions", "") is string && data.get("extraInstructions", "").size() <= 2000
         && data.sources is map
-        && data.sources.keys().hasOnly(["platformArticles", "organizationArticles", "builtInGuides"])
+        && data.sources.keys().hasOnly(["platformArticles", "organizationArticles", "builtInGuides", "directory"])
+        && data.sources.get("directory", true) is bool
         && data.get("updatedBy", request.auth.uid) == request.auth.uid;
     }
 

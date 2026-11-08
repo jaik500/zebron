@@ -18,16 +18,32 @@ import { httpsCallable } from 'firebase/functions';
 import { firebaseFunctions } from '../../../core/services/firebase-config';
 import { HelpAssistantSettingsService } from '../../../core/services/help-assistant-settings.service';
 import { DEFAULT_HELP_ASSISTANT_SETTINGS } from '../../../core/models/help-assistant-settings.model';
+import { PersonalizationService } from '../../../core/services/personalization.service';
+
+/** Call / Directions / Website / Apply buttons for a resource, program or job. */
+interface AssistantCard {
+  type: 'resource' | 'program' | 'job';
+  badges: string[];
+  place: string;
+  phone: string | null;
+  website: string | null;
+  applyUrl: string | null;
+  mapsQuery: string | null;
+}
 
 interface Citation {
   number: number;
   id: string;
-  kind: 'platform_article' | 'organization_article' | 'guide' | 'profile';
+  kind: 'platform_article' | 'organization_article' | 'guide' | 'profile' | 'resource' | 'program' | 'job' | 'topic' | 'blog' | 'safety';
   title: string;
   link: string | null;
   excerpt: string;
   content: string;
+  card?: AssistantCard | null;
 }
+
+/** How many action cards show under one answer. */
+const MAX_CARDS = 3;
 
 interface AssistantReply {
   answer: string;
@@ -101,7 +117,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               @if (settings().welcomeMessage) {
                 <p class="mt-1 whitespace-pre-line text-gray-600">{{ settings().welcomeMessage }}</p>
               } @else {
-              <p class="mt-1 text-gray-600">{{ (organizationId() ? 'I answer from Zebron\\u0027s and your organization\\u0027s help articles, based on what your role can do.' : 'I answer from Zebron\\u0027s help articles, based on what your role can do.') | t }}</p>
+              <p class="mt-1 text-gray-600">{{ (organizationId() ? 'I can find resources, jobs and training on Zebron, and answer questions about your organization based on what your role can do.' : 'I can find resources, jobs and training near you, and answer questions about Zebron.') | t }}</p>
               }
               <div class="mt-3 flex flex-wrap gap-2">
                 @for (suggestion of suggestions(); track suggestion) {
@@ -122,6 +138,54 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               <div class="max-w-[95%] rounded-2xl rounded-bl-sm bg-white px-3 py-2 text-sm text-gray-800 shadow-sm">
                 <p class="whitespace-pre-wrap break-words leading-6">{{ display(message.text) }}</p>
 
+                @if (cardsOf(message.reply); as cards) {
+                  @if (cards.length) {
+                    <ul class="mt-2 space-y-2" [attr.aria-label]="'Suggested places and openings' | t">
+                      @for (citation of cards; track citation.id) {
+                        <li class="rounded-xl border border-gray-200 bg-gray-50 p-2.5">
+                          <a [routerLink]="citation.link" (click)="open.set(false)" class="block text-sm font-semibold leading-snug text-[#032D42] hover:text-[#007979] hover:underline">
+                            {{ citation.title }}
+                          </a>
+                          @if (citation.card!.place || citation.card!.badges.length) {
+                            <p class="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-gray-500">
+                              @if (citation.card!.place) {
+                                <span class="inline-flex items-center gap-0.5"><mat-icon class="!h-3.5 !w-3.5 !text-sm" aria-hidden="true">place</mat-icon>{{ citation.card!.place }}</span>
+                              }
+                              @for (badge of citation.card!.badges; track badge) {
+                                <span class="rounded-full bg-[#E5F4F4] px-1.5 py-px font-semibold text-[#007979]">{{ badge | t }}</span>
+                              }
+                            </p>
+                          }
+                          <div class="mt-2 flex flex-wrap gap-1.5">
+                            @if (citation.card!.phone) {
+                              <a [href]="'tel:' + citation.card!.phone" class="inline-flex items-center gap-1 rounded-lg bg-[#007979] px-2.5 py-1 text-xs font-semibold text-white hover:bg-teal-700">
+                                <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">call</mat-icon>{{ 'Call' | t }}
+                              </a>
+                            }
+                            @if (citation.card!.mapsQuery) {
+                              <a [href]="directions(citation.card!.mapsQuery)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-lg border border-[#007979]/30 bg-white px-2.5 py-1 text-xs font-semibold text-[#007979] hover:bg-teal-50">
+                                <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">directions</mat-icon>{{ 'Directions' | t }}
+                              </a>
+                            }
+                            @if (citation.card!.applyUrl) {
+                              <a [href]="citation.card!.applyUrl" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-lg border border-[#007979]/30 bg-white px-2.5 py-1 text-xs font-semibold text-[#007979] hover:bg-teal-50">
+                                <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">how_to_reg</mat-icon>{{ 'Apply' | t }}
+                              </a>
+                            } @else if (citation.card!.website) {
+                              <a [href]="citation.card!.website" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-lg border border-[#007979]/30 bg-white px-2.5 py-1 text-xs font-semibold text-[#007979] hover:bg-teal-50">
+                                <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">language</mat-icon>{{ 'Website' | t }}
+                              </a>
+                            }
+                            <a [routerLink]="citation.link" (click)="open.set(false)" class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-100">
+                              {{ 'Details' | t }}<mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">arrow_forward</mat-icon>
+                            </a>
+                          </div>
+                        </li>
+                      }
+                    </ul>
+                  }
+                }
+
                 @if (message.reply?.citations?.length) {
                   <div class="mt-2 border-t border-gray-100 pt-2">
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{{ 'Sources' | t }}</p>
@@ -139,7 +203,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                             <div class="mt-1 max-h-60 overflow-y-auto rounded-lg bg-gray-50 p-2 text-xs leading-5 text-gray-700">
                               <p class="whitespace-pre-wrap">{{ citation.content || citation.excerpt }}</p>
                               @if (citation.link) {
-                                <a [routerLink]="citation.link.split('?')[0]" class="mt-2 inline-flex items-center gap-1 font-semibold text-[#007979] hover:underline" (click)="open.set(false)">
+                                <a [routerLink]="citation.link.split('?')[0]" [queryParams]="queryOf(citation.link)" class="mt-2 inline-flex items-center gap-1 font-semibold text-[#007979] hover:underline" (click)="open.set(false)">
                                   {{ 'Open page' | t }}
                                   <mat-icon class="!h-3.5 !w-3.5 !text-sm">arrow_forward</mat-icon>
                                 </a>
@@ -160,7 +224,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 }
 
                 @if (message.reply?.mode === 'search') {
-                  <p class="mt-2 text-[11px] text-gray-400">{{ 'Matched from help articles.' | t }}</p>
+                  <p class="mt-2 text-[11px] text-gray-400">{{ 'Matched from Zebron.' | t }}</p>
                 }
               </div>
             }
@@ -211,6 +275,7 @@ export class SupportAssistantComponent {
   readonly firstName = input<string | null>(null);
 
   private readonly router = inject(Router);
+  private readonly personalization = inject(PersonalizationService);
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
   private readonly assistantSettings = inject(HelpAssistantSettingsService);
@@ -309,11 +374,24 @@ export class SupportAssistantComponent {
 
     try {
       const callable = httpsCallable<
-        { question: string; organizationId: string | null; history: Array<{ role: string; text: string }> },
+        {
+          question: string;
+          organizationId: string | null;
+          history: Array<{ role: string; text: string }>;
+          locationId: string | null;
+          page: string;
+        },
         AssistantReply
       >(firebaseFunctions, 'askSupportAssistant');
 
-      const result = await callable({ question, organizationId: this.organizationId(), history });
+      const result = await callable({
+        question,
+        organizationId: this.organizationId(),
+        history,
+        // The area chosen in the location picker, to favour nearby results.
+        locationId: this.personalization.preferences().locationId ?? null,
+        page: this.router.url.split('?')[0].slice(0, 200),
+      });
 
       this.lastScope.set(result.data.scope);
       this.messages.update((messages) => [...messages, { role: 'assistant', text: result.data.answer, reply: result.data }]);
@@ -346,8 +424,32 @@ export class SupportAssistantComponent {
   }
 
   protected kindLabel(kind: Citation['kind']): string {
-    if (kind === 'profile') return 'Your account';
-    return kind === 'organization_article' ? 'Your org' : kind === 'guide' ? 'Guide' : 'Zebron';
+    const labels: Partial<Record<Citation['kind'], string>> = {
+      profile: 'Your account',
+      organization_article: 'Your org',
+      guide: 'Guide',
+      resource: 'Resource',
+      program: 'Bootcamp',
+      job: 'Job',
+      topic: 'Topic',
+      blog: 'Blog',
+      safety: 'Urgent help',
+    };
+    return labels[kind] ?? 'Zebron';
+  }
+
+  /** Resources, programs and jobs the answer points to, shown as action cards. */
+  protected cardsOf(reply: AssistantReply | undefined): Citation[] {
+    return (reply?.citations ?? []).filter((citation) => !!citation.card && !!citation.link).slice(0, MAX_CARDS);
+  }
+
+  protected directions(query: string): string {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  }
+
+  protected queryOf(link: string): Record<string, string> | null {
+    const search = link.split('?')[1];
+    return search ? Object.fromEntries(new URLSearchParams(search)) : null;
   }
 
   /** Opens Help & Support with the conversation as the ticket details. */

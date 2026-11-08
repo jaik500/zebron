@@ -30,7 +30,7 @@ describe('normalizeHelpAssistantSettings', () => {
     expect(settings.enabled).toBe(false);
     expect(settings.welcomeMessage).toBe('Hello');
     expect(settings.suggestions).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
-    expect(settings.sources).toEqual({ platformArticles: true, organizationArticles: true, builtInGuides: false });
+    expect(settings.sources).toEqual({ platformArticles: true, organizationArticles: true, builtInGuides: false, directory: true });
     expect(normalizeHelpAssistantSettings({ assistantName: '   ' }).assistantName).toBe('Zebron Assistant');
   });
 });

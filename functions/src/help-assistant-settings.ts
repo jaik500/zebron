@@ -22,6 +22,8 @@ export interface HelpAssistantSettings {
     platformArticles: boolean;
     organizationArticles: boolean;
     builtInGuides: boolean;
+    /** Published resources, bootcamp programs, open jobs, topic pages and blog posts. */
+    directory: boolean;
   };
 }
 
@@ -33,7 +35,7 @@ export const DEFAULT_SETTINGS: HelpAssistantSettings = {
   maxSources: 5,
   maxAnswerWords: 180,
   extraInstructions: "",
-  sources: { platformArticles: true, organizationArticles: true, builtInGuides: true },
+  sources: { platformArticles: true, organizationArticles: true, builtInGuides: true, directory: true },
 };
 
 const MODEL_PATTERN = /^gemini-[a-z0-9.-]{1,60}$/;
@@ -64,6 +66,7 @@ export function normalizeSettings(raw: unknown): HelpAssistantSettings {
       platformArticles: flag(sources.platformArticles, defaults.sources.platformArticles),
       organizationArticles: flag(sources.organizationArticles, defaults.sources.organizationArticles),
       builtInGuides: flag(sources.builtInGuides, defaults.sources.builtInGuides),
+      directory: flag(sources.directory, defaults.sources.directory),
     },
   };
 }
