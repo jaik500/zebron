@@ -9,7 +9,8 @@
  *
  * Writes blogPosts/{postId}. Facts checked in November 2026; sources are
  * listed at the end of each post. Cover pictures are in
- * public/images/blog/ and ship with the site.
+ * public/images/blog/ and ship with the site. The food and education posts
+ * also play short clips from public/videos/blog/.
  *
  * Usage (from the project root, same credentials as the other seed scripts):
  *   node scripts/seed-blog-community-posts.mjs              # dry run: lists what would be written
@@ -113,6 +114,8 @@ Find youth programs, community centers and recreation resources near you in the 
     content: `
 SNAP, the program many people still call food stamps, helps tens of millions of Americans buy groceries. Over the past year, a federal law passed in July 2025 (H.R. 1) has changed who has to prove they are working to keep it. If you or someone you care for gets SNAP, here is what changed and how to stay on top of it.
 
+![SNAP changes in 24 seconds (no sound; everything in the video is written below)](/videos/blog/snap-changes-dmv.mp4 "/images/blog/snap-changes-video.jpg")
+
 # What changed
 
 SNAP already had a work rule for some adults without children at home: work, train or volunteer about **80 hours a month**, or lose benefits after three months in a three-year period. The new law widened who has to meet it:
@@ -175,6 +178,8 @@ Find food pantries, meal programs and benefits help near you in [Food resources 
       "Since July 2026, Pell Grants can pay for approved training programs as short as eight weeks. What qualifies, how to tell a strong program from a weak one, and how to apply.",
     content: `
 For 50 years, Pell Grants, the federal money for college that you do not pay back, only covered longer programs: degrees and certificates of at least 15 weeks. That left out many of the fastest routes into a good job. As of **July 1, 2026**, that changed.
+
+![Workforce Pell in 20 seconds (no sound; everything in the video is written below)](/videos/blog/workforce-pell.mp4 "/images/blog/workforce-pell-video.jpg")
 
 # What Workforce Pell covers
 
