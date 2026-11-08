@@ -1,0 +1,10 @@
+Narration script: immigration-help-dmv.mp4 (47.5 s)
+Each line is shown on screen as a caption. To add a voice, record each line so it starts at the time shown and fits before the next one.
+
+[0:00.3]  Looking for immigration help in the DMV? Here is how to find help you can trust.
+[0:05.3]  Some new federal fees rose again on October 16. They are added to the regular fees and cannot be waived, so check the USCIS fee page before you file.
+[0:13.3]  Only a licensed lawyer or a Justice Department accredited representative can give you legal advice. A notario cannot, whatever they call themselves.
+[0:21.3]  Watch for warning signs. Remember that USCIS forms are free to download, and USCIS never asks for gift cards.
+[0:28.8]  Nonprofits across the region offer free or low-cost legal help, and many speak your language. Call ahead to ask what they can help with.
+[0:36.8]  If someone cheated you, report it. Reporting can protect you and others, and a trusted legal aid group can help.
+[0:43.3]  Find trusted legal help near you on Zebron. It is free to use.
