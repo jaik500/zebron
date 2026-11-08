@@ -10,11 +10,13 @@ import {
   getDoc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
   Timestamp,
+  Unsubscribe,
   updateDoc,
   where,
 } from 'firebase/firestore';
@@ -88,6 +90,29 @@ export class BlogService {
 
     const snapshot = await getDocs(query(this.posts(context), ...constraints));
     return snapshot.docs.map((document) => this.toPost(document.id, document.data()));
+  }
+
+  /**
+   * Live feed of the newest published posts in a section: calls onChange
+   * now and again whenever a post is published, edited or unpublished.
+   * Call the returned function to stop listening.
+   */
+  watchPublished(
+    context: BlogContext,
+    count: number,
+    onChange: (posts: BlogPost[]) => void,
+    onError: (error: unknown) => void = () => undefined,
+  ): Unsubscribe {
+    const constraints =
+      context.section === 'organization'
+        ? [where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(count)]
+        : [where('section', '==', context.section), where('status', '==', 'published'), orderBy('publishedAt', 'desc'), limit(count)];
+
+    return onSnapshot(
+      query(this.posts(context), ...constraints),
+      (snapshot) => onChange(snapshot.docs.map((document) => this.toPost(document.id, document.data()))),
+      onError,
+    );
   }
 
   /** Every post in the section, for Review & manage. */
