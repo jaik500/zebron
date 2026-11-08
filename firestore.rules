@@ -4782,6 +4782,70 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // ADMIN QUICK LINKS
+    // ============================================================
+
+    /*
+     * Important links saved from Admin -> Configuration -> Maintenance.
+     * Platform administrators only. Links can be added, edited and removed.
+     */
+    function isValidAdminLink(data) {
+      return data.label is string
+        && data.label.size() > 0
+        && data.label.size() <= 60
+        && data.url is string
+        && data.url.size() <= 2000
+        && data.url.matches('^https?://.+')
+        && data.get("order", 0) is number;
+    }
+
+    match /adminLinks/{linkId} {
+      allow get, list, delete: if isPlatformAdmin();
+      allow create: if isPlatformAdmin()
+        && request.resource.data.keys().hasOnly(["label", "url", "order", "createdAt", "createdBy"])
+        && isValidAdminLink(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isPlatformAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(["label", "url", "updatedAt", "updatedBy"])
+        && isValidAdminLink(request.resource.data)
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedBy == request.auth.uid;
+    }
+
+    // ============================================================
+    // CONTROL CENTER: HEALTH, FEATURES, MONITORING
+    // ============================================================
+
+    /*
+     * systemHealth/connectivity is read by the System Health check to
+     * confirm Firestore is reachable (the document need not exist).
+     */
+    match /systemHealth/{checkId} {
+      allow get: if isPlatformAdmin();
+      allow list, create, update, delete: if false;
+    }
+
+    /*
+     * Feature on/off switches. Read by the app for every visitor (like
+     * systemSettings, never store secrets here); changed by platform admins.
+     */
+    match /featureConfigurations/{featureKey} {
+      allow get, list: if true;
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    /*
+     * Operational events shown in Control Center -> Operational Monitoring.
+     * Platform administrators record, review, acknowledge and resolve them.
+     */
+    match /operationalEvents/{eventId} {
+      allow get, list, create, update: if isPlatformAdmin();
+      allow delete: if false;
+    }
+
+    // ============================================================
     // BLOG
     // ============================================================
 

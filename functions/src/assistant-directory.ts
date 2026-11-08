@@ -383,8 +383,9 @@ export function expandQuery(query: string): string {
 // SAFETY (always first when someone may be in danger)
 // ============================================================
 
-const CRISIS = /\b(suicid|kill (my|him|her)self|want to die|end my life|self[- ]harm|overdos|being abused|abuse[sd]? me|hits? me|domestic violence|in danger|not safe at home|no food (tonight|today)|nowhere to (sleep|stay) tonight|evicted today|sleeping outside)\b/i;
-const CRISIS_FR = /\b(suicid|me tuer|en danger|violence conjugale|me frappe|pas de nourriture ce soir|dormir dehors)\b/i;
+const CRISIS =
+  /(suicid|kill (my|him|her)self|want to die|wanna die|(don'?t|do not|no longer) want to (live|be alive|be here)|no reason to live|better off dead|end (my|it all)|take my (own )?life|hurt(ing)? myself|self[- ]harm|cutting myself|overdos|being abused|abus(e|es|ed|ing) me|(hits?|beats?|hurts?) me\b|domestic violence|in danger|not safe at home|afraid (of|for) my (life|partner|husband|wife|boyfriend|girlfriend)|no food (tonight|today)|nothing to eat|nowhere to (sleep|stay|go) tonight|evicted today|sleeping (outside|in my car))/i;
+const CRISIS_FR = /(suicid|me tuer|envie de mourir|plus envie de vivre|en danger|violence conjugale|me frappe|pas de nourriture ce soir|dormir dehors)/i;
 
 export function isCrisis(question: string): boolean {
   return CRISIS.test(question) || CRISIS_FR.test(question);
@@ -404,3 +405,18 @@ export const SAFETY_SOURCE: DirectorySource = {
   applicationKey: "platform",
   link: "/resources?topic=crisis",
 };
+
+// ============================================================
+// INTENT (what kind of result the question is asking for)
+// ============================================================
+
+const WANTS: Array<[RegExp, DirectorySource["kind"]]> = [
+  [/\b(jobs?|hiring|openings?|positions?|vacanc|employment|work (near|from|for)|emplois?)\b/i, "job"],
+  [/\b(bootcamps?|courses?|classes|training|programs?|certificat|learn|formation)\b/i, "program"],
+];
+
+/** Favour jobs for job questions, programs for training questions. */
+export function intentBoost(question: string): (kind: string) => number {
+  const wanted = WANTS.filter(([pattern]) => pattern.test(question)).map(([, kind]) => kind);
+  return (kind) => (wanted.includes(kind as DirectorySource["kind"]) ? 1.8 : 1);
+}

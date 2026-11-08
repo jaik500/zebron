@@ -14,6 +14,8 @@ import { MatInputModule } from '@angular/material/input';
 
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
+import { AdminLinksComponent } from '../../../../shared/admin-links.component';
+
 import { MaintenanceService } from '../../../../../../core/services/maintenance.service';
 import { NotificationService } from '../../../../../../core/services/notification.service';
 import { ConfirmationService } from '../../../../../../core/services/confirmation.service';
@@ -30,7 +32,8 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
     MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
-  ],
+    AdminLinksComponent
+],
 
   changeDetection: ChangeDetectionStrategy.OnPush,
 
@@ -64,124 +67,11 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
 
       <!-- SUMMARY -->
 
-     <div
-  class="grid grid-cols-3 gap-2
-         sm:grid-cols-3
-         lg:grid-cols-8
-         text-center"
->
-  <!-- RESEND EMAIL -->
+ 
 
-  <mat-card appearance="outlined" class="!rounded-xl">
-    <mat-card-content class="!p-2">
-      <a
-        href="https://resend.com/emails"
-        target="_blank"
-        class="text-sm"
-      >
-        Resend
-      </a>
-    </mat-card-content>
-  </mat-card>
+     <app-admin-links />
 
-  <!-- CLOUDFLARE -->
 
-  <mat-card appearance="outlined" class="!rounded-xl">
-    <mat-card-content class="!p-2">
-      <a
-        href="https://dash.cloudflare.com/login"
-        target="_blank"
-        class="text-sm"
-      >
-        Cloudflare
-      </a>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- FIREBASE -->
-
-  <mat-card appearance="outlined" class="!rounded-xl">
-    <mat-card-content class="!p-2">
-      <a
-        href="https://console.firebase.google.com/project/zebron-2b49f/firestore/databases"
-        target="_blank"
-        class="text-sm"
-      >
-        Firebase
-      </a>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- STRIPE -->
-
-  <mat-card appearance="outlined" class="!rounded-xl">
-    <mat-card-content class="!p-2">
-      <a
-        href="https://dashboard.stripe.com/acct_1U9QlQIpzrAXcYjT/test/dashboard"
-        target="_blank"
-        class="text-sm"
-      >
-        Stripe
-      </a>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- GOOGLE CONSOLE -->
-
-  <mat-card appearance="outlined" class="!rounded-xl">
-    <mat-card-content class="!p-2">
-      <a
-        href="https://search.google.com/search-console/performance/search-analytics?resource_id=sc-domain:zebron.org&utm_source=wnc_756200&utm_medium=gamma&utm_campaign=wnc_756200&utm_content=msg_843500&hl=en-GB#deeplink=pagesimpressions"
-        target="_blank"
-        class="text-sm"
-      >
-        Google Console
-      </a>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- GOOGLE SEARCH -->
-
-  <mat-card appearance="outlined" class="!rounded-xl">
-    <mat-card-content class="!p-2">
-      <a
-        href="https://www.google.com/"
-        target="_blank"
-        class="text-sm"
-      >
-        Google Search
-      </a>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- PLACEHOLDER -->
-
-  <mat-card appearance="outlined" class="!rounded-xl">
-    <mat-card-content class="!p-2">
-      <a
-        href="https://aistudio.google.com/app/apikey"
-        target="_blank"
-        class="text-sm"
-      >
-        Google’s Gemini 2.5 Flash-Lite
-      </a>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- PLACEHOLDER -->
-
-  <mat-card appearance="outlined" class="!rounded-xl">
-    <mat-card-content class="!p-2">
-      <a
-        href="https://www.google.com/"
-        target="_blank"
-        class="text-sm"
-      >
-        Placeholder
-      </a>
-    </mat-card-content>
-  </mat-card>
-</div>
 
       <!-- =====================================================
            STATUS
@@ -192,6 +82,7 @@ import { ConfirmationService } from '../../../../../../core/services/confirmatio
           !rounded-2xl
           !border
           !shadow-none
+          mt-3
         "
       >
         <mat-card-content class="!p-5">

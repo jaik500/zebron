@@ -1,0 +1,96 @@
+import { check, mc, ms, ord, st, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 1,
+  id: "angular21-foundations",
+  title: "Angular 21 Foundations: Tools, Components and Templates",
+  summary: "Course 1 of 6 in the Zebron Angular 21 Developer Program. Install the tools, create an Angular 21 app, and build components with bindings, events and the built-in control flow.",
+  description: "Angular is a framework for building web applications with TypeScript. Angular 21 (released November 2025) is the version Zebron is built on: standalone components, signals, zoneless change detection and Vitest by default.\n\nThis course gets you from an empty computer to a running app you understand: the tools, the project files, components, templates, bindings, events, control flow (`@if`, `@for`, `@switch`) and pipes.\n\n**Before you start:** you should know basic HTML and CSS and be comfortable reading JavaScript. TypeScript is introduced as you go.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Angular 21 Foundations** quiz in the Test Center.",
+  level: "beginner",
+  cover: "navy",
+  outcomes: ["Install Node.js, the Angular CLI and Visual Studio Code, and create an Angular 21 app", "Explain what each file in a new Angular project does", "Build standalone components and use them inside other components", "Use interpolation, property, attribute, class, style and event bindings", "Show and repeat content with @if, @for and @switch, and format values with pipes"],
+  skills: ["Angular CLI", "Components", "Templates", "Data binding", "Control flow", "Pipes"],
+  quiz: {"name": "Angular 21 Foundations", "slug": "angular21-foundations", "description": "Practice questions for Course 1 of the Angular 21 Developer Program: tools, components, bindings and control flow.", "tags": ["angular", "angular-21", "frontend"]},
+  topics: [{"key": "setup", "name": "Tools and project setup", "description": "Node.js, the Angular CLI, VS Code and the files of a new project."}, {"key": "components", "name": "Components", "description": "The @Component decorator, templates, styles, imports and composition."}, {"key": "bindings", "name": "Bindings and events", "description": "Interpolation, property, attribute, class, style and event bindings, @let and template variables."}, {"key": "control-flow", "name": "Control flow and pipes", "description": "@if, @for with track, @switch, @empty and built-in pipes."}],
+  modules: [
+    {
+      id: "setup-and-first-app",
+      title: "Set up and first app",
+      lessons: [
+        {
+          id: "tools-and-first-app",
+          title: "Tools and your first Angular 21 app",
+          minutes: 20,
+          blocks: [
+            text("## What you install\n\n| Tool | Why |\n| --- | --- |\n| **Node.js** (an LTS version, such as 22 or 24) | Runs the Angular CLI, the dev server and the build. Comes with **npm**, the package installer. |\n| **Angular CLI** | The `ng` command: creates projects, serves, generates code, builds and tests. |\n| **Visual Studio Code** | The editor. Add the **Angular Language Service** extension for template errors and autocomplete. |\n| **Git** | Saves versions of your work and pushes it to GitHub. |\n| **Chrome + Angular DevTools** | Inspect components and signals while the app runs. |\n\nCheck Node and install the CLI:\n\n```bash\nnode --version\nnpm install -g @angular/cli\nng version\n```"),
+            text("## Create and run an app\n\n```bash\nng new my-first-app\ncd my-first-app\nng serve\n```\n\n`ng new` asks a few questions: which stylesheet format (CSS, SCSS…), whether to turn on **server-side rendering (SSR)**, and it may offer to configure AI coding tools with Angular's best practices. Open http://localhost:4200 and the page reloads whenever you save a file.\n\nNew Angular 21 projects are **zoneless** (no zone.js) and use **Vitest** for tests. You do not need to switch these on."),
+            text("## The files that matter\n\n```\nmy-first-app/\n  angular.json        how the CLI builds, serves and tests the app\n  package.json        dependencies and npm scripts (npm start → ng serve)\n  tsconfig.json       TypeScript settings (strict mode is on)\n  src/\n    index.html        the single HTML page; <app-root> is where Angular renders\n    main.ts           starts the app: bootstrapApplication(App, appConfig)\n    styles.css        global styles\n    app/\n      app.ts          the root component (class App)\n      app.html        its template\n      app.css         its styles\n      app.config.ts   app-wide providers: router, hydration, HTTP customisation\n      app.routes.ts   the list of pages (routes)\n```\n\nSince Angular 20 the CLI names files without the `.component` suffix (`app.ts`, class `App`). Older projects, and much of Zebron, still use names like `home.component.ts`; both work."),
+            tip("Zebron's repository includes `.vscode/mcp.json`, which starts the **Angular CLI MCP server** (`npx @angular/cli mcp`). AI assistants in VS Code use it to read current Angular documentation, so their suggestions follow Angular 21 rather than older versions."),
+            check("Which command starts the development server with live reload?", ["ng build", "ng serve", "ng new", "npm install"], 1, "ng serve builds the app in memory, serves it on localhost:4200 and reloads the browser when you save."),
+          ],
+        },
+        {
+          id: "components",
+          title: "Components: the building block",
+          minutes: 25,
+          blocks: [
+            text("## Anatomy of a component\n\nA component is a TypeScript class with the `@Component` decorator. It owns a piece of the screen: its template (HTML), its styles and its behaviour.\n\n```ts\nimport { Component } from '@angular/core';\n\n@Component({\n  selector: 'app-greeting',          // the HTML tag: <app-greeting />\n  template: `<h2>Hello, {{ name }}!</h2>`,\n  styles: `h2 { color: #032d42; }`,\n})\nexport class Greeting {\n  name = 'Zebron';\n}\n```\n\n- **selector:** the tag other templates use.\n- **template** or **templateUrl:** the HTML, inline or in a file.\n- **styles** or **styleUrl:** CSS that applies only to this component.\n- Components are **standalone** by default (since Angular 19), so there is no NgModule."),
+            text("## Generate one with the CLI\n\n```bash\nng generate component features/jobs/job-card\n# short form: ng g c features/jobs/job-card\n```\n\nThis creates `job-card.ts`, `job-card.html`, `job-card.css` and `job-card.spec.ts` (a Vitest test).\n\n## Use a component inside another\n\nA component can only use what it **imports**:\n\n```ts\nimport { Component } from '@angular/core';\nimport { JobCard } from './features/jobs/job-card';\n\n@Component({\n  selector: 'app-root',\n  imports: [JobCard],\n  template: `\n    <h1>Open jobs</h1>\n    <app-job-card />\n    <app-job-card />\n  `,\n})\nexport class App {}\n```\n\nIf you forget the import, the compiler reports that `app-job-card` is not a known element."),
+            text("## Change detection strategy\n\nZebron sets `changeDetection: ChangeDetectionStrategy.OnPush` on its components. With signals (Course 2) and zoneless Angular, OnPush means a component re-renders only when its inputs, signals or events change, which keeps large pages fast.\n\n```ts\n@Component({\n  selector: 'app-job-card',\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  templateUrl: './job-card.html',\n})\nexport class JobCard {}\n```"),
+            check("Your template uses <app-job-card /> but the compiler says it is not a known element. What is the usual fix?", ["Add JobCard to the component's imports array", "Add JobCard to index.html", "Restart ng serve", "Rename the selector"], 0, "Standalone components must import every component, directive and pipe their template uses."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "templates",
+      title: "Templates",
+      lessons: [
+        {
+          id: "bindings-and-events",
+          title: "Bindings and events",
+          minutes: 25,
+          blocks: [
+            text("## Showing values\n\n```html\n<p>{{ job.title }} at {{ job.company }}</p>     <!-- interpolation -->\n<img [src]=\"logoUrl\" [alt]=\"job.company\" />   <!-- property binding -->\n<button [disabled]=\"saving\">Save</button>\n<td [attr.colspan]=\"span\">…</td>               <!-- attribute binding -->\n<div [class.active]=\"isActive\">…</div>         <!-- one class -->\n<div [class]=\"{ urgent: isUrgent, closed: isClosed }\">…</div>\n<div [style.width.px]=\"width\">…</div>          <!-- one style with a unit -->\n```\n\n- Use **square brackets** to bind a property to a TypeScript expression.\n- Use `[attr.x]` for attributes that are not DOM properties (`aria-*`, `colspan`, `data-*`).\n- Angular recommends `[class]` and `[style]` bindings over the older `NgClass` and `NgStyle` directives."),
+            text("## Reacting to events\n\n```html\n<button (click)=\"apply()\">Apply</button>\n<input (input)=\"search($any($event.target).value)\" />\n<input #query (keyup.enter)=\"search(query.value)\" />\n```\n\n- **Round brackets** listen to an event and run a statement.\n- `$event` is the DOM event.\n- `#query` is a **template reference variable**: it points to the element so you can read `query.value`.\n- `keyup.enter` is a key filter: the handler runs only for Enter.\n\n## Two-way binding\n\n`[(value)]` combines a property and an event. With forms, `[(ngModel)]` needs `FormsModule` in `imports`. In Course 2 you will see `model()` signals, which make your own components two-way.\n\n## Local values with @let\n\n```html\n@let total = price * quantity;\n<p>Total: {{ total }}</p>\n```"),
+            check("Which binding sets the aria-label attribute?", ["[aria-label]=\"label\"", "[attr.aria-label]=\"label\"", "(aria-label)=\"label\"", "{{ aria-label }}"], 1, "aria-label is an attribute, not a DOM property, so use the attr. prefix."),
+          ],
+        },
+        {
+          id: "control-flow-and-pipes",
+          title: "Control flow and pipes",
+          minutes: 25,
+          blocks: [
+            text("## @if\n\n```html\n@if (jobs.length === 0) {\n  <p>No jobs yet.</p>\n} @else if (jobs.length === 1) {\n  <p>One job.</p>\n} @else {\n  <p>{{ jobs.length }} jobs.</p>\n}\n\n@if (user(); as u) {\n  <p>Signed in as {{ u.name }}</p>\n}\n```\n\n## @for with track\n\n```html\n<ul>\n  @for (job of jobs; track job.id; let i = $index, last = $last) {\n    <li [class.last]=\"last\">{{ i + 1 }}. {{ job.title }}</li>\n  } @empty {\n    <li>No jobs match your search.</li>\n  }\n</ul>\n```\n\n`track` is **required**. It tells Angular how to recognise each item so it can move rows instead of rebuilding them. Track a stable id; use `$index` only for lists that never reorder. Other variables: `$first`, `$last`, `$even`, `$odd`, `$count`."),
+            text("## @switch\n\n```html\n@switch (job.type) {\n  @case ('full-time') { <span>Full time</span> }\n  @case ('contract') { <span>Contract</span> }\n  @default { <span>Other</span> }\n}\n```\n\n## Pipes format values\n\n```html\n{{ job.postedAt | date: 'mediumDate' }}\n{{ job.salary | currency: 'USD' }}\n{{ job.title | uppercase }}\n{{ debugObject | json }}\n```\n\nImport the pipes you use (`DatePipe`, `CurrencyPipe`, `UpperCasePipe`, `JsonPipe`) from `@angular/common`. A **custom pipe** is a class with `@Pipe({ name: 'initials' })` and a `transform()` method.\n\nThe older `*ngIf` and `*ngFor` directives still work, but new code uses the built-in control flow. Migrate with `ng generate @angular/core:control-flow`."),
+            check("Why does @for require track?", ["To sort the list", "So Angular can identify items and update only what changed", "To limit how many items render", "Because @for only works with arrays of numbers"], 1, "track gives each item an identity, so Angular reuses existing DOM rows when the list changes."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("setup", "easy", "Which command creates a new Angular project?", ["ng serve", "ng new my-app", "npm start", "ng generate app"], 1, "ng new scaffolds a new workspace and app."),
+    tf("setup", "easy", "New Angular 21 projects include zone.js by default.", false, "Angular 21 apps are zoneless by default; change detection is driven by signals and events."),
+    mc("setup", "medium", "Which file starts the application with bootstrapApplication()?", ["angular.json", "src/main.ts", "src/index.html", "app.routes.ts"], 1, "main.ts calls bootstrapApplication with the root component and app config."),
+    mc("setup", "medium", "What is the default test runner for new Angular 21 projects?", ["Karma", "Jest", "Vitest", "Mocha"], 2, "Angular 21 made Vitest the default; Karma remains available as an option."),
+    mc("components", "easy", "What does the selector of a component define?", ["The CSS file name", "The HTML tag used to place the component", "The route path", "The class name"], 1, "selector: 'app-job-card' lets templates write <app-job-card />."),
+    tf("components", "easy", "In Angular 21, components are standalone by default, so you do not need an NgModule.", true, "Standalone has been the default since Angular 19."),
+    mc("components", "medium", "A component's template uses another component. Where must that component be listed?", ["In index.html", "In the imports array of the @Component decorator", "In angular.json", "In providers"], 1, "Standalone components import what their templates use."),
+    ms("components", "medium", "Which are valid ways to give a component its HTML and CSS?", ["template", "templateUrl", "styles", "htmlFile"], [0, 1, 2], "template/templateUrl and styles/styleUrl are the decorator properties; htmlFile does not exist."),
+    mc("bindings", "easy", "Which syntax binds a DOM property to a TypeScript value?", ["(src)=\"url\"", "[src]=\"url\"", "{src}=\"url\"", "#src=\"url\""], 1, "Square brackets are property binding."),
+    mc("bindings", "medium", "How do you add the class 'active' only when isActive is true?", ["[class.active]=\"isActive\"", "(class.active)=\"isActive\"", "class=\"{{ active }}\"", "[active]=\"class\""], 0, "A class binding with a single class name toggles that class."),
+    mc("bindings", "medium", "In <input #query (keyup.enter)=\"search(query.value)\">, what is #query?", ["A CSS id", "A template reference variable", "A signal", "A pipe"], 1, "#name creates a template reference variable pointing to the element."),
+    tf("bindings", "medium", "@let declares a local variable inside a template.", true, "@let total = price * quantity; can then be used below it in the template."),
+    mc("control-flow", "easy", "Which block shows content when a @for list is empty?", ["@else", "@empty", "@default", "@none"], 1, "@empty follows a @for block."),
+    mc("control-flow", "medium", "What should you usually track in @for?", ["$index", "A stable unique id such as item.id", "The whole object as JSON", "Nothing; track is optional"], 1, "A stable id lets Angular keep DOM rows when the list changes; track is required."),
+    ms("control-flow", "medium", "Which are built-in control flow blocks?", ["@if", "@for", "@switch", "@loop"], [0, 1, 2], "@loop does not exist."),
+    mc("control-flow", "medium", "Which command migrates *ngIf and *ngFor to the new control flow?", ["ng update control-flow", "ng generate @angular/core:control-flow", "ng add control-flow", "npm run migrate"], 1, "The core package provides a control-flow schematic."),
+    mc("setup", "easy", "Which VS Code extension gives errors and autocomplete inside Angular templates?", ["Prettier", "Angular Language Service", "GitLens", "Live Server"], 1, "The Angular Language Service understands templates."),
+    mc("setup", "medium", "Since Angular 20, what does the CLI name the root component's file?", ["app.component.ts", "app.ts", "root.ts", "main.component.ts"], 1, "The style guide dropped the .component suffix: app.ts with class App."),
+    mc("components", "medium", "Which change detection strategy does Zebron set on its components?", ["Default", "OnPush", "Eager", "Manual"], 1, "OnPush with signals keeps re-rendering limited to what changed."),
+    mc("bindings", "medium", "Which event binding runs only when Enter is pressed?", ["(keyup)", "(keyup.enter)", "(enter)", "(keydown.any)"], 1, "Key filters such as .enter narrow keyboard events."),
+    mc("bindings", "medium", "Which does Angular recommend over the NgClass directive?", ["[class] bindings", "Inline style attributes", "A pipe", "jQuery"], 0, "Class bindings replace most NgClass use."),
+    ms("control-flow", "medium", "Which implicit variables are available inside @for?", ["$index", "$first", "$last", "$parent"], [0, 1, 2], "$parent does not exist; $even, $odd and $count do."),
+  ],
+};

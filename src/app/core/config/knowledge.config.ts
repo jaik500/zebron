@@ -2,6 +2,10 @@ import {
   KnowledgeAudience,
   KnowledgeContentType,
 } from '../models/knowledge-article.model';
+import {
+  catalogApplications,
+  catalogKnowledgeKey,
+} from '../registries/application-catalog';
 
 export interface KnowledgeApplicationDefinition {
   key: string;
@@ -47,6 +51,11 @@ export interface KnowledgeConfiguration {
 export const KNOWLEDGE_CONFIGURATION: KnowledgeConfiguration = {
   enabled: true,
 
+  /*
+   * Built from the application registry (see application-catalog.ts).
+   * "platform" covers Zebron-wide articles. Keys are stored on articles,
+   * so Jobs & Training keeps its older key "jobs".
+   */
   applications: [
     {
       key: 'platform',
@@ -54,36 +63,13 @@ export const KNOWLEDGE_CONFIGURATION: KnowledgeConfiguration = {
       description:
         'Platform-wide documentation, administration, and operational guidance.',
     },
-    {
-      key: 'community',
-      name: 'Community',
-      description:
-        'Documentation and guidance for the Community application.',
-    },
-    {
-      key: 'resources',
-      name: 'Resources',
-      description:
-        'Documentation and guidance for the Resources application.',
-    },
-    {
-      key: 'jobs',
-      name: 'Jobs',
-      description:
-        'Documentation and guidance for the Jobs application.',
-    },
-    {
-      key: 'test-center',
-      name: 'Test Center',
-      description:
-        'Documentation and learning material for the Test Center.',
-    },
-    {
-      key: 'tax-pay',
-      name: 'Tax & Pay',
-      description:
-        'Documentation and administration guidance for Tax & Pay.',
-    },
+    ...catalogApplications()
+      .filter((application) => application.key !== 'core')
+      .map((application) => ({
+        key: catalogKnowledgeKey(application.key),
+        name: application.name,
+        description: `Documentation and guidance for ${application.name}.`,
+      })),
   ],
 
   contentTypes: [

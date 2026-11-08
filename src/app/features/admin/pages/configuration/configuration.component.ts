@@ -1,5 +1,6 @@
 
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,11 +8,12 @@ import { MatTabsModule } from '@angular/material/tabs';
 
 import { LoggerService } from '../../../../core/services/logger.service';
 
-import { ConfigurationOverviewComponent } from './tabs/overview/configuration-overview.component';
+// Overview and Security are live versions kept in admin/shared.
+import { ControlCenterOverviewComponent as ConfigurationOverviewComponent } from '../../shared/control-center-overview.component';
 import { ConfigurationApplicationsComponent } from './tabs/applications/configuration-applications.component';
 import { ConfigurationSettingsComponent } from './tabs/settings/configuration-settings.component';
 
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 
@@ -19,9 +21,29 @@ import { NavigationService } from '../../../../core/services/navigation.service'
 import { AuthService } from '../../../../core/services/auth.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
-import { ConfigurationSecurityComponent } from './tabs/security/configuration-security.component';
+import { SecurityChecksComponent as ConfigurationSecurityComponent } from '../../shared/security-checks.component';
 import { ConfigurationMaintenanceComponent } from './tabs/maintenance/configuration-maintenance.component';
 import { ConfigurationOperationalMonitoringComponent } from './tabs/operational-monitoring/configuration-operational-monitoring.component';
+
+/** Tab addresses, in tab order: /admin/configuration/<tab>. */
+const TABS = [
+  'overview',
+  'applications',
+  'settings',
+  'operational-monitoring',
+  'security',
+  'maintenance',
+] as const;
+
+/** Older or alternative addresses that open an existing tab. */
+const TAB_ALIASES: Record<string, (typeof TABS)[number]> = {
+  monitoring: 'operational-monitoring',
+  audit: 'operational-monitoring',
+  'system-health': 'operational-monitoring',
+  health: 'operational-monitoring',
+  recovery: 'maintenance',
+  links: 'maintenance',
+};
 
 @Component({
   selector: 'app-configuration',
@@ -110,6 +132,8 @@ import { ConfigurationOperationalMonitoringComponent } from './tabs/operational-
         <mat-tab-group
           animationDuration="0ms"
           class="configuration-tabs"
+          [selectedIndex]="selectedIndex()"
+          (selectedIndexChange)="selectTab($event)"
         >
 
           <!-- =================================================
@@ -244,6 +268,24 @@ import { ConfigurationOperationalMonitoringComponent } from './tabs/operational-
 })
 export class ConfigurationComponent {
   private readonly router = inject(Router);
+
+  private readonly tabParam = toSignal(
+    inject(ActivatedRoute).paramMap,
+  );
+
+  /** The tab named in the address; Overview when none or unknown. */
+  protected readonly selectedIndex = computed(() => {
+    const raw = this.tabParam()?.get('tab') ?? 'overview';
+    const tab = TAB_ALIASES[raw] ?? raw;
+    const index = (TABS as readonly string[]).indexOf(tab);
+    return index >= 0 ? index : 0;
+  });
+
+  /** Keeps the address in step with the open tab, so tabs can be linked and bookmarked. */
+  protected selectTab(index: number): void {
+    const tab = TABS[index] ?? 'overview';
+    void this.router.navigate(['/admin/configuration', tab], { replaceUrl: true });
+  }
 
   protected readonly navigationService =
     inject(NavigationService);

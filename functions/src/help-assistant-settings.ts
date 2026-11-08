@@ -30,7 +30,7 @@ export interface HelpAssistantSettings {
 export const DEFAULT_SETTINGS: HelpAssistantSettings = {
   enabled: true,
   aiEnabled: true,
-  model: "gemini-2.5-flash-lite",
+  model: "gemini-3.5-flash-lite",
   hourlyLimit: 40,
   maxSources: 5,
   maxAnswerWords: 180,

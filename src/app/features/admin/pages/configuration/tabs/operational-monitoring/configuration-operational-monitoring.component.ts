@@ -6,7 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ConfigurationSystemHealthComponent } from '../system-health/configuration-system-health.component';
-import { ConfigurationAuditComponent } from '../audit/configuration-audit.component';
+import { AuditHistoryComponent as ConfigurationAuditComponent } from '../../../../shared/audit-history.component';
 
 import { OperationalMonitoringStore } from '../../stores/operational-monitoring.store';
 

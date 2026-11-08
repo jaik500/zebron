@@ -14,32 +14,139 @@ const OUTPUT = path.join(
   'generated-application-inventory.ts',
 );
 
+/**
+ * Every application in src/app/core/registries/application.registry.ts,
+ * with the feature folders (under src/app/features) that implement it.
+ * Keys match the registry, except "jobs", which keeps its older key so
+ * the hand-written manifest in application-implementation-manifests.ts
+ * still merges with it. The script warns when the registry has an
+ * application that is missing here.
+ */
 const APPLICATIONS = {
-  community: {
-    name: 'Community',
-    featureDirectory: 'community',
+  core: {
+    name: 'Zebron Core',
+    featureDirectories: [
+      'home', 'auth', 'profile', 'users', 'organizations', 'apps', 'dashboards',
+      'about', 'contact', 'donate', 'faq', 'privacy', 'terms', 'accessibility',
+      'errors', 'support', 'admin/pages/users', 'admin/pages/organizations',
+      'admin/pages/support', 'admin/pages/qa',
+      'partner/pages', 'partner/announcements', 'partner/audit', 'partner/contract',
+    ],
   },
 
   resources: {
     name: 'Resources',
-    featureDirectory: 'resources',
+    featureDirectories: [
+      'resources', 'resource-finder', 'resource-types', 'categories', 'locations',
+      'submissions', 'admin/pages/resources', 'admin/pages/resource-types',
+      'admin/pages/categories', 'admin/pages/locations', 'admin/pages/submissions',
+      'admin/pages/topics',
+    ],
+  },
+
+  community: {
+    name: 'Community',
+    featureDirectories: ['community', 'admin/pages/community'],
   },
 
   jobs: {
-    name: 'Jobs',
-    featureDirectory: 'jobs',
+    registryKey: 'jobs-training',
+    name: 'Jobs & Training',
+    featureDirectories: ['jobs', 'bootcamps', 'admin/pages/jobs'],
+  },
+
+  learning: {
+    name: 'Learning',
+    featureDirectories: ['partner/learning'],
+  },
+
+  courses: {
+    name: 'Courses',
+    featureDirectories: ['courses'],
+  },
+
+  'virtual-classroom': {
+    name: 'Virtual Classroom',
+    featureDirectories: ['live'],
   },
 
   'test-center': {
     name: 'Test Center',
-    featureDirectory: 'test-center',
+    featureDirectories: [
+      'test-center', 'partner/test-center', 'admin/pages/test-center',
+      'admin/pages/test-questions',
+    ],
   },
 
   'tax-pay': {
     name: 'Tax & Pay',
-    featureDirectory: 'tax-pay-calculator',
+    featureDirectories: ['tax-pay-calculator', 'admin/pages/tax-pay'],
+  },
+
+  content: {
+    name: 'Content',
+    featureDirectories: ['admin/pages/content-operations', 'admin/pages/ai-content'],
+  },
+
+  knowledge: {
+    name: 'Knowledge Center',
+    featureDirectories: ['knowledge', 'partner/knowledge', 'admin/pages/knowledge'],
+  },
+
+  blog: {
+    name: 'Blog',
+    featureDirectories: ['blog'],
+  },
+
+  mailbox: {
+    name: 'Mailbox',
+    featureDirectories: ['partner/mailbox', 'admin/pages/contact'],
+  },
+
+  'business-operations': {
+    name: 'Business Operations',
+    featureDirectories: ['business'],
+  },
+
+  configuration: {
+    name: 'Configuration',
+    featureDirectories: [
+      'admin/pages/configuration', 'admin/pages/admin-dashboard',
+      'admin/pages/help-assistant',
+    ],
   },
 };
+
+/** Registry applications that are switched off and have no code yet. */
+const NOT_BUILT = new Set(['cyber-range']);
+
+/** Warns about registry applications this script does not cover. */
+function checkRegistryCoverage() {
+  const registryPath = path.join(CORE_ROOT, 'registries', 'application.registry.ts');
+  if (!fs.existsSync(registryPath)) return;
+
+  const source = fs.readFileSync(registryPath, 'utf8');
+  const registryKeys = [...source.matchAll(/^\s{4}key:\s*'([^']+)'/gm)].map((m) => m[1]);
+  const covered = new Set(
+    Object.entries(APPLICATIONS).map(([key, app]) => app.registryKey ?? key),
+  );
+  const missing = registryKeys.filter((key) => !covered.has(key) && !NOT_BUILT.has(key));
+
+  if (missing.length > 0) {
+    console.warn(
+      `Warning: these registry applications are not in the inventory: ${missing.join(', ')}. ` +
+        'Add them to APPLICATIONS in scripts/generate-application-inventory.mjs.',
+    );
+  }
+
+  for (const [key, app] of Object.entries(APPLICATIONS)) {
+    for (const directory of app.featureDirectories) {
+      if (!fs.existsSync(path.join(FEATURES_ROOT, directory))) {
+        console.warn(`Warning: ${key} lists a folder that does not exist: src/app/features/${directory}`);
+      }
+    }
+  }
+}
 
 const FILE_TYPE_RULES = [
   {
@@ -173,12 +280,9 @@ function createDependencies(
   applicationKey,
   application,
 ) {
-  const featureRoot = path.join(
-    FEATURES_ROOT,
-    application.featureDirectory,
+  const files = application.featureDirectories.flatMap(
+    (directory) => walk(path.join(FEATURES_ROOT, directory)),
   );
-
-  const files = walk(featureRoot);
 
   return files
     .map((filePath) => {
@@ -356,6 +460,8 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
   )};
 `;
 }
+
+checkRegistryCoverage();
 
 const inventory =
   createInventory();

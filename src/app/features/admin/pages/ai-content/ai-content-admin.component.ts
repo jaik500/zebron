@@ -352,7 +352,7 @@ const TASK_LABELS: Record<string, string> = {
             </label>
             <label class="block text-xs font-semibold text-gray-600">
               Model (empty = the help assistant's model)
-              <input type="text" name="model" [(ngModel)]="settings.model" placeholder="gemini-2.5-flash-lite" class="mt-1 h-9 w-full rounded-lg border border-gray-300 px-2 text-sm font-normal" />
+              <input type="text" name="model" [(ngModel)]="settings.model" placeholder="gemini-3.5-flash-lite" class="mt-1 h-9 w-full rounded-lg border border-gray-300 px-2 text-sm font-normal" />
             </label>
             <fieldset class="rounded-lg border border-gray-200 p-3">
               <legend class="px-1 text-xs font-semibold text-gray-600">Price per million tokens (USD), for estimates</legend>
@@ -432,7 +432,7 @@ export class AiContentAdminComponent implements OnInit {
     const number = (value: unknown, max: number) => Math.min(max, Math.max(0, Number(value) || 0));
     const model = this.settings.model.trim().toLowerCase();
     if (model && !/^gemini-[a-z0-9.-]{1,60}$/.test(model)) {
-      this.toast.error('The model name should look like gemini-2.5-flash-lite.');
+      this.toast.error('The model name should look like gemini-3.5-flash-lite.');
       return;
     }
     this.saving.set(true);

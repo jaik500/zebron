@@ -15,7 +15,7 @@ import {
 import { createHash } from "node:crypto";
 
 import { HelpAssistantSettings, getHelpAssistantSettings } from "./help-assistant-settings";
-import { DirectoryCard, SAFETY_SOURCE, expandQuery, isCrisis, loadDirectory } from "./assistant-directory";
+import { DirectoryCard, SAFETY_SOURCE, expandQuery, intentBoost, isCrisis, loadDirectory } from "./assistant-directory";
 import { isPlatformAdministrator } from "./platform-admin-authorization";
 
 /**
@@ -61,6 +61,10 @@ import { isPlatformAdministrator } from "./platform-admin-authorization";
  */
 
 const REGION = "us-central1";
+
+/** Shown first to anyone who may be in danger, even without the AI. */
+const CRISIS_ANSWER =
+  "If you are in danger, call 911 now. For a suicide or mental health crisis, call or text 988, any time, free. For domestic violence, call 1-800-799-7233. You can also dial 211 for urgent local help. You are not alone.";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 const MAX_QUESTION = 1000;
@@ -158,9 +162,11 @@ const ZEBRON_OVERVIEW: Source = {
     "Knowledge Center (/knowledge): guides and answers about Zebron. Zebron Blog (/blog): career advice, skills and Zebron news. " +
     "Tax & Pay Calculator (/tax-calculator): estimate take-home pay. All apps (/apps) lists everything. " +
     "Creating an account is free: use Register (/register) or Sign in (/login). " +
+    "Know a service that should be listed? Anyone signed in can suggest one with Add a Resource (/submit); the Zebron team reviews it before it appears. " +
+    "Bootcamps (/bootcamps) compares tech training programs; Jobs (/jobs) lists open jobs; Blog (/blog) has guides on health, housing, food, immigration and more. " +
     "Organizations such as schools, nonprofits and companies can apply (/organizations/apply) to use Community, Test Center, Knowledge Center and a private blog with their members, with roles from Member to Owner. " +
     "Questions or partnerships: Contact us (/contact). To support the work: Donate (/donate).",
-  tags: ["zebron", "about", "what is", "help me", "free", "account", "register", "sign up", "resources", "jobs", "training", "organization", "apply", "apps", "start"],
+  tags: ["zebron", "about", "what is", "help me", "free", "account", "register", "sign up", "resources", "jobs", "training", "organization", "apply", "apps", "start", "add resource", "submit", "suggest", "list my service"],
   applicationKey: "platform",
   link: "/apps",
 };
@@ -313,7 +319,21 @@ export const askSupportAssistant = onCall(
       throw new HttpsError("failed-precondition", "The help assistant is turned off right now. Open a support ticket and the Zebron team will help.");
     }
 
-    await enforceRateLimit(scope.uid, scope.isGuest ? Math.min(settings.hourlyLimit, GUEST_HOURLY_LIMIT) : settings.hourlyLimit);
+    // Urgent help is never blocked: someone in crisis gets it even over the hourly limit.
+    try {
+      await enforceRateLimit(scope.uid, scope.isGuest ? Math.min(settings.hourlyLimit, GUEST_HOURLY_LIMIT) : settings.hourlyLimit);
+    } catch (error) {
+      if (!isCrisis(question)) {
+        throw error;
+      }
+      return {
+        answer: CRISIS_ANSWER,
+        mode: "search" as const,
+        citations: [{ number: 1, id: SAFETY_SOURCE.id, kind: SAFETY_SOURCE.kind, title: SAFETY_SOURCE.title, link: SAFETY_SOURCE.link, excerpt: SAFETY_SOURCE.summary, content: `${SAFETY_SOURCE.summary}\n\n${SAFETY_SOURCE.content}`, card: null }],
+        suggestTicket: false,
+        scope: { organizationName: scope.organizationName, role: scope.isGuest ? "Guest" : null },
+      };
+    }
 
     const [candidates, directory] = await Promise.all([
       loadSources(scope, settings),
@@ -324,8 +344,10 @@ export const askSupportAssistant = onCall(
     const areaName = locationId ? directory?.locations.get(locationId) ?? null : null;
 
     // Results in the person's chosen area (or online) come first when equally relevant.
+    // Jobs rank higher for job questions, programs for training questions.
+    const wants = intentBoost(question);
     const boost = (source: Source) =>
-      locationId && source.locationId === locationId ? 1.6 : source.online ? 1.1 : 1;
+      (locationId && source.locationId === locationId ? 1.6 : source.online ? 1.1 : 1) * wants(source.kind);
 
     // Someone who may be in danger always gets urgent help first.
     const crisis = isCrisis(question);
@@ -352,7 +374,7 @@ export const askSupportAssistant = onCall(
       card: source.card ?? null,
     }));
 
-    const apiKey = process.env.GEMINI_API_KEY ?? "";
+    const apiKey = (process.env.GEMINI_API_KEY ?? "").trim();
     let answer: string | null = null;
     let mode: "ai" | "search" = "search";
 
@@ -374,7 +396,7 @@ export const askSupportAssistant = onCall(
     }
 
     if (!answer && crisis) {
-      answer = "If you are in danger, call 911 now. For a suicide or mental health crisis, call or text 988, any time. For domestic violence, call 1-800-799-7233. You can also dial 211 for urgent local help.";
+      answer = CRISIS_ANSWER;
     }
 
     if (!answer) {
@@ -785,9 +807,9 @@ async function generate(
 
   const url = `${GEMINI_BASE_URL}/${encodeURIComponent(settings.model)}:generateContent`;
 
-  const response = await fetch(`${url}?key=${encodeURIComponent(apiKey)}`, {
+  const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: instructions }] },
       contents: [
@@ -797,14 +819,16 @@ async function generate(
       generationConfig: {
         temperature: 0.2,
         // Larger models spend part of the budget on "thinking" before answering.
-        maxOutputTokens: Math.ceil(settings.maxAnswerWords * 2.5) + 150 + (settings.model.includes("lite") ? 0 : 2048),
+        maxOutputTokens: Math.ceil(settings.maxAnswerWords * 2.5) + 150 + (settings.model.includes("lite") ? 1024 : 2048),
       },
     }),
     signal: AbortSignal.timeout(25_000),
   });
 
   if (!response.ok) {
-    throw new Error(`Gemini returned HTTP ${response.status}`);
+    // Google's short reason (e.g. "API key not valid") makes key problems easy to spot in the logs.
+    const reason = await response.text().then((body) => body.replace(/\s+/g, " ").slice(0, 300)).catch(() => "");
+    throw new Error(`Gemini returned HTTP ${response.status}: ${reason}`);
   }
 
   const result = (await response.json()) as {

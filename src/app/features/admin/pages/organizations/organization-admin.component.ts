@@ -10,6 +10,7 @@ import { RouterLink } from '@angular/router';
 import { HotToastService } from '@ngxpert/hot-toast';
 
 import { DeleteConfirmationComponent } from '../../../../shared/components/delete-confirmation/delete-confirmation';
+import { OrganizationAppsPanelComponent } from './organization-apps-panel.component';
 
 import { Organization } from '../../../../core/models/organization.model';
 import { OrganizationMembership } from '../../../../core/models/organization-membership.model';
@@ -37,7 +38,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-organization-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatExpansionModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatExpansionModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, OrganizationAppsPanelComponent],
   template: `
     <div class="min-h-screen bg-gray-50 mt-16">
       <!-- =========================================================
@@ -364,10 +365,17 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 
                   <div class="flex flex-wrap gap-6">
                     <mat-checkbox name="verified" [(ngModel)]="form.verified">Verified organization</mat-checkbox>
-
-                    <mat-checkbox name="active" [(ngModel)]="form.active">Active organization</mat-checkbox>
                   </div>
+
+                  <p class="mt-3 text-xs text-gray-500">
+                    To suspend, reactivate or archive this organization, use the buttons on its card in the list.
+                    Each change asks for a reason and is recorded.
+                  </p>
                 </section>
+
+                @if (editingId()) {
+                  <app-organization-apps-panel [organizationId]="editingId()" />
+                }
 
                 <!-- =================================================
                      ERROR

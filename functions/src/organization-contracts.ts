@@ -933,6 +933,137 @@ export const reviewOrganizationServiceRequest = onCall(
   },
 );
 
+/**
+ * Zebron administrators suspend or resume one of an organization's
+ * applications directly, for example for an unpaid invoice or a terms
+ * violation, without waiting for a request from the organization.
+ * The owners are emailed. Callable name: setOrganizationApplicationStatus
+ */
+export const setOrganizationApplicationStatus = onCall(
+  { region: REGION, secrets: ["RESEND_API_KEY"] },
+  async (request) => {
+    const data = (request.data ?? {}) as Record<string, unknown>;
+    const organizationId = requireId(data.organizationId, "organizationId");
+    const applicationId = requireId(data.applicationId, "applicationId");
+    const action = clean(data.action);
+    const reason = clean(data.reason).slice(0, 1000);
+
+    const caller = await loadCaller(request, null);
+
+    if (!caller.isPlatformAdmin) {
+      throw new HttpsError("permission-denied", "Only Zebron platform administrators can suspend or resume applications.");
+    }
+
+    if (action !== "suspend" && action !== "resume") {
+      throw new HttpsError("invalid-argument", "Action must be suspend or resume.");
+    }
+
+    if (action === "suspend" && !reason) {
+      throw new HttpsError("invalid-argument", "Give a reason for the suspension. The organization's owners will see it.");
+    }
+
+    if (applicationId === "core" || applicationId === "configuration") {
+      throw new HttpsError(
+        "failed-precondition",
+        `${applicationName(applicationId)} cannot be suspended on its own. Suspend the whole organization instead.`,
+      );
+    }
+
+    const organization = await loadOrganization(organizationId);
+    const applicationsRef = db().collection("organizations").doc(organizationId).collection("applications");
+
+    // Course final exams run on the Test Center, as in submitOrganizationServiceRequest.
+    if (action === "suspend" && applicationId === "test-center") {
+      const courses = await applicationsRef.doc("courses").get();
+
+      if (clean(courses.data()?.status) === "active") {
+        throw new HttpsError("failed-precondition", "Courses uses the Test Center for final exams. Suspend Courses first.");
+      }
+    }
+
+    const type: ServiceRequestType = action === "suspend" ? "suspend_application" : "resume_application";
+    const outcome = await carryOut(type, organizationId, applicationId, {}, caller.uid);
+
+    await applicationsRef.doc(applicationId).set(
+      {
+        statusReason: action === "suspend" ? reason : null,
+        statusChangedBy: caller.uid,
+        statusChangedByName: caller.name || null,
+        statusChangedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    const name = applicationName(applicationId);
+
+    await notify(
+      await ownerEmails(organizationId),
+      `[${organization.name}] ${name} ${action === "suspend" ? "suspended" : "is active again"}`,
+      action === "suspend" ?
+        `Zebron has suspended ${name} for ${organization.name}.\n\nReason: ${reason}\n\n` +
+          "Your members cannot use it until it is resumed. Your other applications are not affected. " +
+          `Reply to ${ZEBRON_REQUESTS_INBOX} if you have questions.` :
+        `Zebron has resumed ${name} for ${organization.name}. Your members can use it again.` +
+          (reason ? `\n\nNote: ${reason}` : ""),
+    );
+
+    logger.info("Organization application status set by Zebron.", {
+      organizationId,
+      applicationId,
+      action,
+      actorUid: caller.uid,
+    });
+
+    return { organizationId, applicationId, status: action === "suspend" ? "suspended" : "active", outcome };
+  },
+);
+
+/**
+ * Tells a member why their organization is unavailable. Members cannot
+ * read a suspended or archived organization, so the app asks here before
+ * showing the "organization unavailable" page. Only owners and admins
+ * see the suspension reason. Callable name: getOrganizationAccessStatus
+ */
+export const getOrganizationAccessStatus = onCall({ region: REGION }, async (request) => {
+  const uid = request.auth?.uid;
+
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "You must be signed in.");
+  }
+
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const organizationId = requireId(data.organizationId, "organizationId");
+
+  const [membership, organizationSnapshot] = await Promise.all([
+    db().collection("organizationMemberships").doc(`${uid}_${organizationId}`).get(),
+    db().collection("organizations").doc(organizationId).get(),
+  ]);
+
+  if (!membership.exists || membership.data()?.active !== true) {
+    throw new HttpsError("permission-denied", "You are not a member of this organization.");
+  }
+
+  const organization = organizationSnapshot.data();
+
+  if (!organization) {
+    throw new HttpsError("not-found", "The organization could not be found.");
+  }
+
+  const status = clean(organization.status) || (organization.active === false ? "suspended" : "active");
+  const role = clean(membership.data()?.role);
+  const seesReason = role === "org_owner" || role === "org_admin";
+
+  return {
+    organizationId,
+    name: clean(organization.name) || "Your organization",
+    status,
+    role,
+    reason: seesReason && status === "suspended" ? clean(organization.suspensionReason) || null : null,
+    since: status === "suspended" ? iso(organization.suspendedAt) : status === "archived" ? iso(organization.archivedAt) : null,
+    contactEmail: ZEBRON_REQUESTS_INBOX,
+  };
+});
+
 /** Performs an approved request. Returns a short description for the partner. */
 async function carryOut(
   type: ServiceRequestType,

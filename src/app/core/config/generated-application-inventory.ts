@@ -7,7 +7,7 @@
  * scripts/generate-application-inventory.mjs
  *
  * Generated at:
- * 2026-09-20T17:48:34.668Z
+ * 2026-11-08T17:44:48.856Z
  */
 
 import type {
@@ -16,6 +16,917 @@ import type {
 
 export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
   ApplicationImplementationManifest[] = [
+  {
+    "applicationKey": "core",
+    "applicationName": "Zebron Core",
+    "description": "Zebron Core application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "core.component.about.pages.about.about.component",
+        "applicationKey": "core",
+        "name": "About",
+        "path": "src/app/features/about/pages/about/about.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.accessibility.pages.accessibility.accessibility.component",
+        "applicationKey": "core",
+        "name": "Accessibility",
+        "path": "src/app/features/accessibility/pages/accessibility/accessibility.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.admin.pages.organizations.organization_admin.component",
+        "applicationKey": "core",
+        "name": "Organization Admin",
+        "path": "src/app/features/admin/pages/organizations/organization-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.admin.pages.organizations.organization_application_admin.component",
+        "applicationKey": "core",
+        "name": "Organization Application Admin",
+        "path": "src/app/features/admin/pages/organizations/organization-application-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.admin.pages.organizations.organization_service_requests.component",
+        "applicationKey": "core",
+        "name": "Organization Service Requests",
+        "path": "src/app/features/admin/pages/organizations/organization-service-requests.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.admin.pages.qa.qa_admin.component",
+        "applicationKey": "core",
+        "name": "Qa Admin",
+        "path": "src/app/features/admin/pages/qa/qa-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.admin.pages.support.support_queue.component",
+        "applicationKey": "core",
+        "name": "Support Queue",
+        "path": "src/app/features/admin/pages/support/support-queue.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.admin.pages.users.user_admin.component",
+        "applicationKey": "core",
+        "name": "User Admin",
+        "path": "src/app/features/admin/pages/users/user-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.apps.pages.apps_directory.component",
+        "applicationKey": "core",
+        "name": "Apps Directory",
+        "path": "src/app/features/apps/pages/apps-directory.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.auth.pages.login.login.component",
+        "applicationKey": "core",
+        "name": "Login",
+        "path": "src/app/features/auth/pages/login/login.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.auth.pages.register.register.component",
+        "applicationKey": "core",
+        "name": "Register",
+        "path": "src/app/features/auth/pages/register/register.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.store.contact.stores.contact.store",
+        "applicationKey": "core",
+        "name": "Contact",
+        "path": "src/app/features/contact/stores/contact.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.dashboards.dashboards_page.component",
+        "applicationKey": "core",
+        "name": "Dashboards Page",
+        "path": "src/app/features/dashboards/dashboards-page.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.guard.dashboards.leave_dashboards.guard",
+        "applicationKey": "core",
+        "name": "Leave Dashboards",
+        "path": "src/app/features/dashboards/leave-dashboards.guard.ts",
+        "type": "guard",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.donate.pages.donate.donate.component",
+        "applicationKey": "core",
+        "name": "Donate",
+        "path": "src/app/features/donate/pages/donate/donate.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.errors.pages.not_found.not_found.component",
+        "applicationKey": "core",
+        "name": "Not Found",
+        "path": "src/app/features/errors/pages/not-found/not-found.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.faq.pages.faq.faq.component",
+        "applicationKey": "core",
+        "name": "Faq",
+        "path": "src/app/features/faq/pages/faq/faq.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.home.pages.home.home.component",
+        "applicationKey": "core",
+        "name": "Home",
+        "path": "src/app/features/home/pages/home/home.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.organizations.application.organization_application_form.component",
+        "applicationKey": "core",
+        "name": "Organization Application Form",
+        "path": "src/app/features/organizations/application/organization-application-form.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.organizations.application.organization_application_status.component",
+        "applicationKey": "core",
+        "name": "Organization Application Status",
+        "path": "src/app/features/organizations/application/organization-application-status.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.store.organizations.stores.organization_context.store",
+        "applicationKey": "core",
+        "name": "Organization Context",
+        "path": "src/app/features/organizations/stores/organization-context.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.announcements.announcement_banner.component",
+        "applicationKey": "core",
+        "name": "Announcement Banner",
+        "path": "src/app/features/partner/announcements/announcement-banner.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.announcements.announcement_manager.component",
+        "applicationKey": "core",
+        "name": "Announcement Manager",
+        "path": "src/app/features/partner/announcements/announcement-manager.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.model.partner.announcements.organization_announcement.model",
+        "applicationKey": "core",
+        "name": "Organization Announcement",
+        "path": "src/app/features/partner/announcements/organization-announcement.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.service.partner.announcements.organization_announcement.service",
+        "applicationKey": "core",
+        "name": "Organization Announcement",
+        "path": "src/app/features/partner/announcements/organization-announcement.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.audit.organization_audit_log.component",
+        "applicationKey": "core",
+        "name": "Organization Audit Log",
+        "path": "src/app/features/partner/audit/organization-audit-log.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.service.partner.audit.organization_audit.service",
+        "applicationKey": "core",
+        "name": "Organization Audit",
+        "path": "src/app/features/partner/audit/organization-audit.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.service.partner.contract.contract_pdf.service",
+        "applicationKey": "core",
+        "name": "Contract Pdf",
+        "path": "src/app/features/partner/contract/contract-pdf.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.contract.organization_contract.component",
+        "applicationKey": "core",
+        "name": "Organization Contract",
+        "path": "src/app/features/partner/contract/organization-contract.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.service.partner.contract.organization_contract.service",
+        "applicationKey": "core",
+        "name": "Organization Contract",
+        "path": "src/app/features/partner/contract/organization-contract.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.pages.member_profile.member_profile.component",
+        "applicationKey": "core",
+        "name": "Member Profile",
+        "path": "src/app/features/partner/pages/member-profile/member-profile.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.pages.organization_invitation_acceptance.organization_invitation_acceptance.component",
+        "applicationKey": "core",
+        "name": "Organization Invitation Acceptance",
+        "path": "src/app/features/partner/pages/organization-invitation-acceptance/organization-invitation-acceptance.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.pages.organization_management.organization_management.component",
+        "applicationKey": "core",
+        "name": "Organization Management",
+        "path": "src/app/features/partner/pages/organization-management/organization-management.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.pages.partner_admin.partner_admin.component",
+        "applicationKey": "core",
+        "name": "Partner Admin",
+        "path": "src/app/features/partner/pages/partner-admin/partner-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.pages.partner_onboarding.partner_onboarding.component",
+        "applicationKey": "core",
+        "name": "Partner Onboarding",
+        "path": "src/app/features/partner/pages/partner-onboarding/partner-onboarding.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.pages.partner_portal.partner_portal.component",
+        "applicationKey": "core",
+        "name": "Partner Portal",
+        "path": "src/app/features/partner/pages/partner-portal/partner-portal.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.pages.partner_settings.partner_settings.component",
+        "applicationKey": "core",
+        "name": "Partner Settings",
+        "path": "src/app/features/partner/pages/partner-settings/partner-settings.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.partner.pages.partner_test_questions.partner_test_questions.component",
+        "applicationKey": "core",
+        "name": "Partner Test Questions",
+        "path": "src/app/features/partner/pages/partner-test-questions/partner-test-questions.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.privacy.pages.privacy.privacy.component",
+        "applicationKey": "core",
+        "name": "Privacy",
+        "path": "src/app/features/privacy/pages/privacy/privacy.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.support.assistant.support_assistant.component",
+        "applicationKey": "core",
+        "name": "Support Assistant",
+        "path": "src/app/features/support/assistant/support-assistant.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.support.components.support_ticket_list.component",
+        "applicationKey": "core",
+        "name": "Support Ticket List",
+        "path": "src/app/features/support/components/support-ticket-list.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.support.pages.organization_support.component",
+        "applicationKey": "core",
+        "name": "Organization Support",
+        "path": "src/app/features/support/pages/organization-support.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.support.pages.support_home.component",
+        "applicationKey": "core",
+        "name": "Support Home",
+        "path": "src/app/features/support/pages/support-home.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.support.pages.support_ticket.component",
+        "applicationKey": "core",
+        "name": "Support Ticket",
+        "path": "src/app/features/support/pages/support-ticket.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.service.support.support.service",
+        "applicationKey": "core",
+        "name": "Support",
+        "path": "src/app/features/support/support.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.terms.pages.terms.terms.component",
+        "applicationKey": "core",
+        "name": "Terms",
+        "path": "src/app/features/terms/pages/terms/terms.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.store.users.stores.user.store",
+        "applicationKey": "core",
+        "name": "User",
+        "path": "src/app/features/users/stores/user.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
+  {
+    "applicationKey": "resources",
+    "applicationName": "Resources",
+    "description": "Resources application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "resources.component.admin.pages.categories.category_admin.component",
+        "applicationKey": "resources",
+        "name": "Category Admin",
+        "path": "src/app/features/admin/pages/categories/category-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.admin.pages.locations.location_admin.component",
+        "applicationKey": "resources",
+        "name": "Location Admin",
+        "path": "src/app/features/admin/pages/locations/location-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.admin.pages.resource_types.resource_type_admin.component",
+        "applicationKey": "resources",
+        "name": "Resource Type Admin",
+        "path": "src/app/features/admin/pages/resource-types/resource-type-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.admin.pages.resources.ai_resource_finder.component",
+        "applicationKey": "resources",
+        "name": "Ai Resource Finder",
+        "path": "src/app/features/admin/pages/resources/ai-resource-finder.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.admin.pages.resources.resource_admin.component",
+        "applicationKey": "resources",
+        "name": "Resource Admin",
+        "path": "src/app/features/admin/pages/resources/resource-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.admin.pages.submissions.submission_admin.component",
+        "applicationKey": "resources",
+        "name": "Submission Admin",
+        "path": "src/app/features/admin/pages/submissions/submission-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.admin.pages.topics.topic_admin.component",
+        "applicationKey": "resources",
+        "name": "Topic Admin",
+        "path": "src/app/features/admin/pages/topics/topic-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.store.categories.stores.category.store",
+        "applicationKey": "resources",
+        "name": "Category",
+        "path": "src/app/features/categories/stores/category.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.store.locations.stores.location.store",
+        "applicationKey": "resources",
+        "name": "Location",
+        "path": "src/app/features/locations/stores/location.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.resource_finder.pages.find.find.component",
+        "applicationKey": "resources",
+        "name": "Find",
+        "path": "src/app/features/resource-finder/pages/find/find.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.resource_finder.pages.job.job_finder.component",
+        "applicationKey": "resources",
+        "name": "Job Finder",
+        "path": "src/app/features/resource-finder/pages/job/job-finder.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.resource_finder.pages.training_results.training_results.component",
+        "applicationKey": "resources",
+        "name": "Training Results",
+        "path": "src/app/features/resource-finder/pages/training-results/training-results.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.resource_finder.pages.training.training_finder.component",
+        "applicationKey": "resources",
+        "name": "Training Finder",
+        "path": "src/app/features/resource-finder/pages/training/training-finder.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.store.resource_types.stores.resource_type.store",
+        "applicationKey": "resources",
+        "name": "Resource Type",
+        "path": "src/app/features/resource-types/stores/resource-type.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.resources.components.location_picker.location_picker.component",
+        "applicationKey": "resources",
+        "name": "Location Picker",
+        "path": "src/app/features/resources/components/location-picker/location-picker.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.resources.components.resource_card.resource_card.component",
+        "applicationKey": "resources",
+        "name": "Resource Card",
+        "path": "src/app/features/resources/components/resource-card/resource-card.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.resources.pages.resource_detail.resource_detail.component",
+        "applicationKey": "resources",
+        "name": "Resource Detail",
+        "path": "src/app/features/resources/pages/resource-detail/resource-detail.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.resources.pages.resource_list.resource_list.component",
+        "applicationKey": "resources",
+        "name": "Resource List",
+        "path": "src/app/features/resources/pages/resource-list/resource-list.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.service.resources.resource_topic.service",
+        "applicationKey": "resources",
+        "name": "Resource Topic",
+        "path": "src/app/features/resources/resource-topic.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.store.resources.stores.resource.store",
+        "applicationKey": "resources",
+        "name": "Resource",
+        "path": "src/app/features/resources/stores/resource.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.component.submissions.pages.submit_resource.submit_resource.component",
+        "applicationKey": "resources",
+        "name": "Submit Resource",
+        "path": "src/app/features/submissions/pages/submit-resource/submit-resource.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "resources.store.submissions.stores.submission.store",
+        "applicationKey": "resources",
+        "name": "Submission",
+        "path": "src/app/features/submissions/stores/submission.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
   {
     "applicationKey": "community",
     "applicationName": "Community",
@@ -52,19 +963,6 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "applicationKey": "community",
         "name": "Chat Window",
         "path": "src/app/features/community/chat/components/chat-window/chat-window.component.ts",
-        "type": "component",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "community.component.community.chat.components.new_conversation_dialog.new_conversation_dialog.component",
-        "applicationKey": "community",
-        "name": "New Conversation Dialog",
-        "path": "src/app/features/community/chat/components/new-conversation-dialog/new-conversation-dialog.component.ts",
         "type": "component",
         "required": true,
         "status": "detected",
@@ -230,6 +1128,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
+        "id": "community.component.community.components.community_post_dialog.community_post_dialog.component",
+        "applicationKey": "community",
+        "name": "Community Post Dialog",
+        "path": "src/app/features/community/components/community-post-dialog/community-post-dialog.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
         "id": "community.component.community.components.community_sidebar.community_sidebar.component",
         "applicationKey": "community",
         "name": "Community Sidebar",
@@ -256,36 +1167,10 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "community.model.community.models.community_bookmark.model",
-        "applicationKey": "community",
-        "name": "Community Bookmark",
-        "path": "src/app/features/community/models/community-bookmark.model.ts",
-        "type": "model",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
         "id": "community.model.community.models.community_comment.model",
         "applicationKey": "community",
         "name": "Community Comment",
         "path": "src/app/features/community/models/community-comment.model.ts",
-        "type": "model",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "community.model.community.models.community_conversation.model",
-        "applicationKey": "community",
-        "name": "Community Conversation",
-        "path": "src/app/features/community/models/community-conversation.model.ts",
         "type": "model",
         "required": true,
         "status": "detected",
@@ -312,19 +1197,6 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "applicationKey": "community",
         "name": "Community Follow",
         "path": "src/app/features/community/models/community-follow.model.ts",
-        "type": "model",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "community.model.community.models.community_message.model",
-        "applicationKey": "community",
-        "name": "Community Message",
-        "path": "src/app/features/community/models/community-message.model.ts",
         "type": "model",
         "required": true,
         "status": "detected",
@@ -425,6 +1297,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
+        "id": "community.component.community.pages.community_moderation.community_moderation.component",
+        "applicationKey": "community",
+        "name": "Community Moderation",
+        "path": "src/app/features/community/pages/community-moderation/community-moderation.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
         "id": "community.component.community.pages.community_notifications.community_notifications.component",
         "applicationKey": "community",
         "name": "Community Notifications",
@@ -503,10 +1388,10 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "community.service.community.services.community_message.service",
+        "id": "community.service.community.services.community_moderation.service",
         "applicationKey": "community",
-        "name": "Community Message",
-        "path": "src/app/features/community/services/community-message.service.ts",
+        "name": "Community Moderation",
+        "path": "src/app/features/community/services/community-moderation.service.ts",
         "type": "service",
         "required": true,
         "status": "detected",
@@ -520,6 +1405,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "applicationKey": "community",
         "name": "Community Notification",
         "path": "src/app/features/community/services/community-notification.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "community.service.community.services.community_post_actions.service",
+        "applicationKey": "community",
+        "name": "Community Post Actions",
+        "path": "src/app/features/community/services/community-post-actions.service.ts",
         "type": "service",
         "required": true,
         "status": "detected",
@@ -555,10 +1453,10 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "community.service.community.services.community_ranking.service",
+        "id": "community.service.community.services.community_reaction.service",
         "applicationKey": "community",
-        "name": "Community Ranking",
-        "path": "src/app/features/community/services/community-ranking.service.ts",
+        "name": "Community Reaction",
+        "path": "src/app/features/community/services/community-reaction.service.ts",
         "type": "service",
         "required": true,
         "status": "detected",
@@ -568,10 +1466,10 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "community.service.community.services.community_reaction.service",
+        "id": "community.service.community.services.community_scope.service",
         "applicationKey": "community",
-        "name": "Community Reaction",
-        "path": "src/app/features/community/services/community-reaction.service.ts",
+        "name": "Community Scope",
+        "path": "src/app/features/community/services/community-scope.service.ts",
         "type": "service",
         "required": true,
         "status": "detected",
@@ -659,19 +1557,6 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "community.store.community.store.community_reaction.store",
-        "applicationKey": "community",
-        "name": "Community Reaction",
-        "path": "src/app/features/community/store/community-reaction.store.ts",
-        "type": "store",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
         "id": "community.store.community.store.community.store",
         "applicationKey": "community",
         "name": "Community",
@@ -687,87 +1572,171 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
     ]
   },
   {
-    "applicationKey": "resources",
-    "applicationName": "Resources",
-    "description": "Resources application implementation inventory.",
-    "dependencies": [
-      {
-        "id": "resources.component.resources.components.resource_card.resource_card.component",
-        "applicationKey": "resources",
-        "name": "Resource Card",
-        "path": "src/app/features/resources/components/resource-card/resource-card.component.ts",
-        "type": "component",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "resources.component.resources.components.useful_links.useful_links.component",
-        "applicationKey": "resources",
-        "name": "Useful Links",
-        "path": "src/app/features/resources/components/useful-links/useful-links.component.ts",
-        "type": "component",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "resources.component.resources.pages.resource_detail.resource_detail.component",
-        "applicationKey": "resources",
-        "name": "Resource Detail",
-        "path": "src/app/features/resources/pages/resource-detail/resource-detail.component.ts",
-        "type": "component",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "resources.component.resources.pages.resource_list.resource_list.component",
-        "applicationKey": "resources",
-        "name": "Resource List",
-        "path": "src/app/features/resources/pages/resource-list/resource-list.component.ts",
-        "type": "component",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "resources.store.resources.stores.resource.store",
-        "applicationKey": "resources",
-        "name": "Resource",
-        "path": "src/app/features/resources/stores/resource.store.ts",
-        "type": "store",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      }
-    ]
-  },
-  {
     "applicationKey": "jobs",
-    "applicationName": "Jobs",
-    "description": "Jobs application implementation inventory.",
+    "applicationName": "Jobs & Training",
+    "description": "Jobs & Training application implementation inventory.",
     "dependencies": [
+      {
+        "id": "jobs.component.admin.pages.jobs.job_admin.component",
+        "applicationKey": "jobs",
+        "name": "Job Admin",
+        "path": "src/app/features/admin/pages/jobs/job-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.component.admin.pages.jobs.job_form.job_form.component",
+        "applicationKey": "jobs",
+        "name": "Job Form",
+        "path": "src/app/features/admin/pages/jobs/job-form/job-form.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.component.admin.pages.jobs.job_import.component",
+        "applicationKey": "jobs",
+        "name": "Job Import",
+        "path": "src/app/features/admin/pages/jobs/job-import.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.component.bootcamps.bootcamp_directory.component",
+        "applicationKey": "jobs",
+        "name": "Bootcamp Directory",
+        "path": "src/app/features/bootcamps/bootcamp-directory.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.component.bootcamps.bootcamp_fields.component",
+        "applicationKey": "jobs",
+        "name": "Bootcamp Fields",
+        "path": "src/app/features/bootcamps/bootcamp-fields.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.component.bootcamps.bootcamp_programs_editor.component",
+        "applicationKey": "jobs",
+        "name": "Bootcamp Programs Editor",
+        "path": "src/app/features/bootcamps/bootcamp-programs-editor.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.model.bootcamps.bootcamp.model",
+        "applicationKey": "jobs",
+        "name": "Bootcamp",
+        "path": "src/app/features/bootcamps/bootcamp.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.service.bootcamps.bootcamp.service",
+        "applicationKey": "jobs",
+        "name": "Bootcamp",
+        "path": "src/app/features/bootcamps/bootcamp.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.component.jobs.components.save_job_button.component",
+        "applicationKey": "jobs",
+        "name": "Save Job Button",
+        "path": "src/app/features/jobs/components/save-job-button.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.service.jobs.job_seeker.service",
+        "applicationKey": "jobs",
+        "name": "Job Seeker",
+        "path": "src/app/features/jobs/job-seeker.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.component.jobs.pages.job_board.job_board.component",
+        "applicationKey": "jobs",
+        "name": "Job Board",
+        "path": "src/app/features/jobs/pages/job-board/job-board.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
       {
         "id": "jobs.component.jobs.pages.job_detail.job_detail.component",
         "applicationKey": "jobs",
         "name": "Job Detail",
         "path": "src/app/features/jobs/pages/job-detail/job-detail.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "jobs.component.jobs.pages.my_jobs.my_jobs.component",
+        "applicationKey": "jobs",
+        "name": "My Jobs",
+        "path": "src/app/features/jobs/pages/my-jobs/my-jobs.component.ts",
         "type": "component",
         "required": true,
         "status": "detected",
@@ -792,10 +1761,525 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
     ]
   },
   {
+    "applicationKey": "learning",
+    "applicationName": "Learning",
+    "description": "Learning application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "learning.component.partner.learning.learning_admin.component",
+        "applicationKey": "learning",
+        "name": "Learning Admin",
+        "path": "src/app/features/partner/learning/learning-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "learning.component.partner.learning.team_progress.component",
+        "applicationKey": "learning",
+        "name": "Team Progress",
+        "path": "src/app/features/partner/learning/team-progress.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
+  {
+    "applicationKey": "courses",
+    "applicationName": "Courses",
+    "description": "Courses application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "courses.component.courses.builder.block_editor.component",
+        "applicationKey": "courses",
+        "name": "Block Editor",
+        "path": "src/app/features/courses/builder/block-editor.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.builder.course_builder.component",
+        "applicationKey": "courses",
+        "name": "Course Builder",
+        "path": "src/app/features/courses/builder/course-builder.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.store.courses.builder.course_builder.store",
+        "applicationKey": "courses",
+        "name": "Course Builder",
+        "path": "src/app/features/courses/builder/course-builder.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.builder.course_manage.component",
+        "applicationKey": "courses",
+        "name": "Course Manage",
+        "path": "src/app/features/courses/builder/course-manage.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.guard.courses.builder.leave_course_builder.guard",
+        "applicationKey": "courses",
+        "name": "Leave Course Builder",
+        "path": "src/app/features/courses/builder/leave-course-builder.guard.ts",
+        "type": "guard",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.service.courses.certification.service",
+        "applicationKey": "courses",
+        "name": "Certification",
+        "path": "src/app/features/courses/certification.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.components.course_card.component",
+        "applicationKey": "courses",
+        "name": "Course Card",
+        "path": "src/app/features/courses/components/course-card.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.components.course_header.component",
+        "applicationKey": "courses",
+        "name": "Course Header",
+        "path": "src/app/features/courses/components/course-header.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.components.lesson_media.component",
+        "applicationKey": "courses",
+        "name": "Lesson Media",
+        "path": "src/app/features/courses/components/lesson-media.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.components.progress_ring.component",
+        "applicationKey": "courses",
+        "name": "Progress Ring",
+        "path": "src/app/features/courses/components/progress-ring.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.service.courses.course_access.service",
+        "applicationKey": "courses",
+        "name": "Course Access",
+        "path": "src/app/features/courses/course-access.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.service.courses.course_assignment.service",
+        "applicationKey": "courses",
+        "name": "Course Assignment",
+        "path": "src/app/features/courses/course-assignment.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.model.courses.course.model",
+        "applicationKey": "courses",
+        "name": "Course",
+        "path": "src/app/features/courses/course.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.service.courses.course.service",
+        "applicationKey": "courses",
+        "name": "Course",
+        "path": "src/app/features/courses/course.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.store.courses.course.store",
+        "applicationKey": "courses",
+        "name": "Course",
+        "path": "src/app/features/courses/course.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.certificate_verify.component",
+        "applicationKey": "courses",
+        "name": "Certificate Verify",
+        "path": "src/app/features/courses/pages/certificate-verify.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.certification_detail.component",
+        "applicationKey": "courses",
+        "name": "Certification Detail",
+        "path": "src/app/features/courses/pages/certification-detail.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.certification_exam.component",
+        "applicationKey": "courses",
+        "name": "Certification Exam",
+        "path": "src/app/features/courses/pages/certification-exam.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.certification_list.component",
+        "applicationKey": "courses",
+        "name": "Certification List",
+        "path": "src/app/features/courses/pages/certification-list.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.course_catalog.component",
+        "applicationKey": "courses",
+        "name": "Course Catalog",
+        "path": "src/app/features/courses/pages/course-catalog.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.course_certificate.component",
+        "applicationKey": "courses",
+        "name": "Course Certificate",
+        "path": "src/app/features/courses/pages/course-certificate.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.course_exam.component",
+        "applicationKey": "courses",
+        "name": "Course Exam",
+        "path": "src/app/features/courses/pages/course-exam.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.course_page.component",
+        "applicationKey": "courses",
+        "name": "Course Page",
+        "path": "src/app/features/courses/pages/course-page.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.course_summary.component",
+        "applicationKey": "courses",
+        "name": "Course Summary",
+        "path": "src/app/features/courses/pages/course-summary.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.lesson_player.component",
+        "applicationKey": "courses",
+        "name": "Lesson Player",
+        "path": "src/app/features/courses/pages/lesson-player.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.my_certificates.component",
+        "applicationKey": "courses",
+        "name": "My Certificates",
+        "path": "src/app/features/courses/pages/my-certificates.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.pages.my_learning.component",
+        "applicationKey": "courses",
+        "name": "My Learning",
+        "path": "src/app/features/courses/pages/my-learning.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
+  {
+    "applicationKey": "virtual-classroom",
+    "applicationName": "Virtual Classroom",
+    "description": "Virtual Classroom application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "virtual-classroom.component.live.live_polls_widget.component",
+        "applicationKey": "virtual-classroom",
+        "name": "Live Polls Widget",
+        "path": "src/app/features/live/live-polls-widget.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "virtual-classroom.service.live.live_session.service",
+        "applicationKey": "virtual-classroom",
+        "name": "Live Session",
+        "path": "src/app/features/live/live-session.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "virtual-classroom.component.live.live_sessions.component",
+        "applicationKey": "virtual-classroom",
+        "name": "Live Sessions",
+        "path": "src/app/features/live/live-sessions.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
+  {
     "applicationKey": "test-center",
     "applicationName": "Test Center",
     "description": "Test Center application implementation inventory.",
     "dependencies": [
+      {
+        "id": "test-center.component.admin.pages.test_center.test_center_admin.component",
+        "applicationKey": "test-center",
+        "name": "Test Center Admin",
+        "path": "src/app/features/admin/pages/test-center/test-center-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.component.admin.pages.test_questions.test_question_admin.component",
+        "applicationKey": "test-center",
+        "name": "Test Question Admin",
+        "path": "src/app/features/admin/pages/test-questions/test-question-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.component.partner.test_center.partner_test_center.component",
+        "applicationKey": "test-center",
+        "name": "Partner Test Center",
+        "path": "src/app/features/partner/test-center/partner-test-center.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.component.partner.test_center.test_center_import_dialog.component",
+        "applicationKey": "test-center",
+        "name": "Test Center Import Dialog",
+        "path": "src/app/features/partner/test-center/test-center-import-dialog.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.component.test_center.components.question_answer_editor.component",
+        "applicationKey": "test-center",
+        "name": "Question Answer Editor",
+        "path": "src/app/features/test-center/components/question-answer-editor.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.model.test_center.models.quiz.model",
+        "applicationKey": "test-center",
+        "name": "Quiz",
+        "path": "src/app/features/test-center/models/quiz.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
       {
         "id": "test-center.model.test_center.models.test_attempt.model",
         "applicationKey": "test-center",
@@ -810,10 +2294,10 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "test-center.model.test_center.models.test_course.model",
+        "id": "test-center.model.test_center.models.test_center_learner.model",
         "applicationKey": "test-center",
-        "name": "Test Course",
-        "path": "src/app/features/test-center/models/test-course.model.ts",
+        "name": "Test Center Learner",
+        "path": "src/app/features/test-center/models/test-center-learner.model.ts",
         "type": "model",
         "required": true,
         "status": "detected",
@@ -823,11 +2307,11 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "test-center.service.test_center.models.test_question_bank_file.service",
+        "id": "test-center.model.test_center.models.test_program.model",
         "applicationKey": "test-center",
-        "name": "Test Question Bank File",
-        "path": "src/app/features/test-center/models/test-question-bank-file.service.ts",
-        "type": "service",
+        "name": "Test Program",
+        "path": "src/app/features/test-center/models/test-program.model.ts",
+        "type": "model",
         "required": true,
         "status": "detected",
         "metadata": {
@@ -888,10 +2372,10 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "test-center.component.test_center.pages.course_detail.course_detail.component",
+        "id": "test-center.component.test_center.pages.learner_dashboard.test_center_learner_dashboard.component",
         "applicationKey": "test-center",
-        "name": "Course Detail",
-        "path": "src/app/features/test-center/pages/course-detail/course-detail.component.ts",
+        "name": "Test Center Learner Dashboard",
+        "path": "src/app/features/test-center/pages/learner-dashboard/test-center-learner-dashboard.component.ts",
         "type": "component",
         "required": true,
         "status": "detected",
@@ -901,10 +2385,36 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "test-center.component.test_center.pages.course_list.course_list.component",
+        "id": "test-center.component.test_center.pages.learners.test_center_learners.component",
         "applicationKey": "test-center",
-        "name": "Course List",
-        "path": "src/app/features/test-center/pages/course-list/course-list.component.ts",
+        "name": "Test Center Learners",
+        "path": "src/app/features/test-center/pages/learners/test-center-learners.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.component.test_center.pages.quiz.quiz_details.component",
+        "applicationKey": "test-center",
+        "name": "Quiz Details",
+        "path": "src/app/features/test-center/pages/quiz/quiz-details.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.component.test_center.pages.quiz.quiz_list.component",
+        "applicationKey": "test-center",
+        "name": "Quiz List",
+        "path": "src/app/features/test-center/pages/quiz/quiz-list.component.ts",
         "type": "component",
         "required": true,
         "status": "detected",
@@ -953,11 +2463,11 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "test-center.component.test_center.pages.test_setup.test_setup.component",
+        "id": "test-center.service.test_center.services.quiz.service",
         "applicationKey": "test-center",
-        "name": "Test Setup",
-        "path": "src/app/features/test-center/pages/test-setup/test-setup.component.ts",
-        "type": "component",
+        "name": "Quiz",
+        "path": "src/app/features/test-center/services/quiz.service.ts",
+        "type": "service",
         "required": true,
         "status": "detected",
         "metadata": {
@@ -966,10 +2476,36 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
-        "id": "test-center.service.test_center.services.test_course.service",
+        "id": "test-center.service.test_center.services.test_center_import.service",
         "applicationKey": "test-center",
-        "name": "Test Course",
-        "path": "src/app/features/test-center/services/test-course.service.ts",
+        "name": "Test Center Import",
+        "path": "src/app/features/test-center/services/test-center-import.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.service.test_center.services.test_center_learners.service",
+        "applicationKey": "test-center",
+        "name": "Test Center Learners",
+        "path": "src/app/features/test-center/services/test-center-learners.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.service.test_center.services.test_program.service",
+        "applicationKey": "test-center",
+        "name": "Test Program",
+        "path": "src/app/features/test-center/services/test-program.service.ts",
         "type": "service",
         "required": true,
         "status": "detected",
@@ -996,6 +2532,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "applicationKey": "test-center",
         "name": "Test Question",
         "path": "src/app/features/test-center/services/test-question.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.service.test_center.services.test_result.service",
+        "applicationKey": "test-center",
+        "name": "Test Result",
+        "path": "src/app/features/test-center/services/test-result.service.ts",
         "type": "service",
         "required": true,
         "status": "detected",
@@ -1037,6 +2586,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
     "applicationName": "Tax & Pay",
     "description": "Tax & Pay application implementation inventory.",
     "dependencies": [
+      {
+        "id": "tax-pay.component.admin.pages.tax_pay.tax_pay_admin.component",
+        "applicationKey": "tax-pay",
+        "name": "Tax Pay Admin",
+        "path": "src/app/features/admin/pages/tax-pay/tax-pay-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
       {
         "id": "tax-pay.data.tax_pay_calculator.data.maryland_local_tax_rates.data",
         "applicationKey": "tax-pay",
@@ -1204,6 +2766,1023 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "metadata": {
           "generated": true,
           "source": "filesystem"
+        }
+      }
+    ]
+  },
+  {
+    "applicationKey": "content",
+    "applicationName": "Content",
+    "description": "Content application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "content.component.admin.pages.ai_content.ai_content_admin.component",
+        "applicationKey": "content",
+        "name": "Ai Content Admin",
+        "path": "src/app/features/admin/pages/ai-content/ai-content-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.model.admin.pages.content_operations.models.content_captures.model",
+        "applicationKey": "content",
+        "name": "Content Captures",
+        "path": "src/app/features/admin/pages/content-operations/models/content-captures.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.model.admin.pages.content_operations.models.content_ideas.model",
+        "applicationKey": "content",
+        "name": "Content Ideas",
+        "path": "src/app/features/admin/pages/content-operations/models/content-ideas.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.model.admin.pages.content_operations.models.content_milestones.model",
+        "applicationKey": "content",
+        "name": "Content Milestones",
+        "path": "src/app/features/admin/pages/content-operations/models/content-milestones.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.model.admin.pages.content_operations.models.content_operations.model",
+        "applicationKey": "content",
+        "name": "Content Operations",
+        "path": "src/app/features/admin/pages/content-operations/models/content-operations.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.model.admin.pages.content_operations.models.tools.model",
+        "applicationKey": "content",
+        "name": "Tools",
+        "path": "src/app/features/admin/pages/content-operations/models/tools.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.component.admin.pages.content_operations.pages.captures.content_captures.component",
+        "applicationKey": "content",
+        "name": "Content Captures",
+        "path": "src/app/features/admin/pages/content-operations/pages/captures/content-captures.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.component.admin.pages.content_operations.pages.content_operations.component",
+        "applicationKey": "content",
+        "name": "Content Operations",
+        "path": "src/app/features/admin/pages/content-operations/pages/content-operations.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.component.admin.pages.content_operations.pages.content.content_page.component",
+        "applicationKey": "content",
+        "name": "Content Page",
+        "path": "src/app/features/admin/pages/content-operations/pages/content/content-page.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.component.admin.pages.content_operations.pages.content.create_content.component",
+        "applicationKey": "content",
+        "name": "Create Content",
+        "path": "src/app/features/admin/pages/content-operations/pages/content/create-content.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.component.admin.pages.content_operations.pages.content.edit_content.component",
+        "applicationKey": "content",
+        "name": "Edit Content",
+        "path": "src/app/features/admin/pages/content-operations/pages/content/edit-content.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.component.admin.pages.content_operations.pages.ideas.content_ideas.component",
+        "applicationKey": "content",
+        "name": "Content Ideas",
+        "path": "src/app/features/admin/pages/content-operations/pages/ideas/content-ideas.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.component.admin.pages.content_operations.pages.milestones.content_milestones.component",
+        "applicationKey": "content",
+        "name": "Content Milestones",
+        "path": "src/app/features/admin/pages/content-operations/pages/milestones/content-milestones.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.component.admin.pages.content_operations.pages.tools.content_tools.component",
+        "applicationKey": "content",
+        "name": "Content Tools",
+        "path": "src/app/features/admin/pages/content-operations/pages/tools/content-tools.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.service.admin.pages.content_operations.services.content_capture.service",
+        "applicationKey": "content",
+        "name": "Content Capture",
+        "path": "src/app/features/admin/pages/content-operations/services/content-capture.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.service.admin.pages.content_operations.services.content_idea.service",
+        "applicationKey": "content",
+        "name": "Content Idea",
+        "path": "src/app/features/admin/pages/content-operations/services/content-idea.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.service.admin.pages.content_operations.services.content_milestone.service",
+        "applicationKey": "content",
+        "name": "Content Milestone",
+        "path": "src/app/features/admin/pages/content-operations/services/content-milestone.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "content.service.admin.pages.content_operations.services.content.service",
+        "applicationKey": "content",
+        "name": "Content",
+        "path": "src/app/features/admin/pages/content-operations/services/content.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
+  {
+    "applicationKey": "knowledge",
+    "applicationName": "Knowledge Center",
+    "description": "Knowledge Center application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "knowledge.component.admin.pages.knowledge.components.knowledge_article_editor.knowledge_article_editor.component",
+        "applicationKey": "knowledge",
+        "name": "Knowledge Article Editor",
+        "path": "src/app/features/admin/pages/knowledge/components/knowledge-article-editor/knowledge-article-editor.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.component.admin.pages.knowledge.guide_import.knowledge_guide_import.component",
+        "applicationKey": "knowledge",
+        "name": "Knowledge Guide Import",
+        "path": "src/app/features/admin/pages/knowledge/guide-import/knowledge-guide-import.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.component.admin.pages.knowledge.knowledge_article_page.component",
+        "applicationKey": "knowledge",
+        "name": "Knowledge Article Page",
+        "path": "src/app/features/admin/pages/knowledge/knowledge-article-page.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.component.admin.pages.knowledge.knowledge_center.component",
+        "applicationKey": "knowledge",
+        "name": "Knowledge Center",
+        "path": "src/app/features/admin/pages/knowledge/knowledge-center.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.component.knowledge.public_knowledge_article.component",
+        "applicationKey": "knowledge",
+        "name": "Public Knowledge Article",
+        "path": "src/app/features/knowledge/public-knowledge-article.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.component.knowledge.public_knowledge.component",
+        "applicationKey": "knowledge",
+        "name": "Public Knowledge",
+        "path": "src/app/features/knowledge/public-knowledge.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.service.knowledge.public_knowledge.service",
+        "applicationKey": "knowledge",
+        "name": "Public Knowledge",
+        "path": "src/app/features/knowledge/public-knowledge.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.component.partner.knowledge.knowledge_reports_panel.component",
+        "applicationKey": "knowledge",
+        "name": "Knowledge Reports Panel",
+        "path": "src/app/features/partner/knowledge/knowledge-reports-panel.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.component.partner.knowledge.organization_knowledge_article.component",
+        "applicationKey": "knowledge",
+        "name": "Organization Knowledge Article",
+        "path": "src/app/features/partner/knowledge/organization-knowledge-article.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.component.partner.knowledge.organization_knowledge_editor.component",
+        "applicationKey": "knowledge",
+        "name": "Organization Knowledge Editor",
+        "path": "src/app/features/partner/knowledge/organization-knowledge-editor.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.component.partner.knowledge.organization_knowledge_manager.component",
+        "applicationKey": "knowledge",
+        "name": "Organization Knowledge Manager",
+        "path": "src/app/features/partner/knowledge/organization-knowledge-manager.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.component.partner.knowledge.organization_knowledge.component",
+        "applicationKey": "knowledge",
+        "name": "Organization Knowledge",
+        "path": "src/app/features/partner/knowledge/organization-knowledge.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "knowledge.service.partner.knowledge.organization_knowledge.service",
+        "applicationKey": "knowledge",
+        "name": "Organization Knowledge",
+        "path": "src/app/features/partner/knowledge/organization-knowledge.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
+  {
+    "applicationKey": "blog",
+    "applicationName": "Blog",
+    "description": "Blog application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "blog.service.blog.blog_access.service",
+        "applicationKey": "blog",
+        "name": "Blog Access",
+        "path": "src/app/features/blog/blog-access.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "blog.model.blog.blog.model",
+        "applicationKey": "blog",
+        "name": "Blog",
+        "path": "src/app/features/blog/blog.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "blog.service.blog.blog.service",
+        "applicationKey": "blog",
+        "name": "Blog",
+        "path": "src/app/features/blog/blog.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "blog.store.blog.blog.store",
+        "applicationKey": "blog",
+        "name": "Blog",
+        "path": "src/app/features/blog/blog.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "blog.component.blog.components.blog_card.component",
+        "applicationKey": "blog",
+        "name": "Blog Card",
+        "path": "src/app/features/blog/components/blog-card.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "blog.component.blog.components.blog_header.component",
+        "applicationKey": "blog",
+        "name": "Blog Header",
+        "path": "src/app/features/blog/components/blog-header.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "blog.component.blog.pages.blog_editor.component",
+        "applicationKey": "blog",
+        "name": "Blog Editor",
+        "path": "src/app/features/blog/pages/blog-editor.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "blog.component.blog.pages.blog_feed.component",
+        "applicationKey": "blog",
+        "name": "Blog Feed",
+        "path": "src/app/features/blog/pages/blog-feed.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "blog.component.blog.pages.blog_manage.component",
+        "applicationKey": "blog",
+        "name": "Blog Manage",
+        "path": "src/app/features/blog/pages/blog-manage.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "blog.component.blog.pages.blog_post.component",
+        "applicationKey": "blog",
+        "name": "Blog Post",
+        "path": "src/app/features/blog/pages/blog-post.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
+  {
+    "applicationKey": "mailbox",
+    "applicationName": "Mailbox",
+    "description": "Mailbox application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "mailbox.component.admin.pages.contact.contact_mailbox.component",
+        "applicationKey": "mailbox",
+        "name": "Contact Mailbox",
+        "path": "src/app/features/admin/pages/contact/contact-mailbox.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "mailbox.component.admin.pages.contact.sent.sent_email.component",
+        "applicationKey": "mailbox",
+        "name": "Sent Email",
+        "path": "src/app/features/admin/pages/contact/sent/sent-email.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "mailbox.component.partner.mailbox.organization_mailbox.component",
+        "applicationKey": "mailbox",
+        "name": "Organization Mailbox",
+        "path": "src/app/features/partner/mailbox/organization-mailbox.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "mailbox.service.partner.mailbox.organization_mailbox.service",
+        "applicationKey": "mailbox",
+        "name": "Organization Mailbox",
+        "path": "src/app/features/partner/mailbox/organization-mailbox.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
+  {
+    "applicationKey": "business-operations",
+    "applicationName": "Business Operations",
+    "description": "Business Operations application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "business-operations.component.business.components.activity_dialog.business_activity_dialog.component",
+        "applicationKey": "business-operations",
+        "name": "Business Activity Dialog",
+        "path": "src/app/features/business/components/activity-dialog/business-activity-dialog.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.component.business.components.compliance_dialog.business_compliance_dialog.component",
+        "applicationKey": "business-operations",
+        "name": "Business Compliance Dialog",
+        "path": "src/app/features/business/components/compliance-dialog/business-compliance-dialog.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.component.business.components.document_dialog.business_document_dialog.component",
+        "applicationKey": "business-operations",
+        "name": "Business Document Dialog",
+        "path": "src/app/features/business/components/document-dialog/business-document-dialog.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.component.business.components.transaction_dialog.business_transaction_dialog.component",
+        "applicationKey": "business-operations",
+        "name": "Business Transaction Dialog",
+        "path": "src/app/features/business/components/transaction-dialog/business-transaction-dialog.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.model.business.models.business_activity.model",
+        "applicationKey": "business-operations",
+        "name": "Business Activity",
+        "path": "src/app/features/business/models/business-activity.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.model.business.models.business_compliance.model",
+        "applicationKey": "business-operations",
+        "name": "Business Compliance",
+        "path": "src/app/features/business/models/business-compliance.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.model.business.models.business_document.model",
+        "applicationKey": "business-operations",
+        "name": "Business Document",
+        "path": "src/app/features/business/models/business-document.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.model.business.models.business_transaction.model",
+        "applicationKey": "business-operations",
+        "name": "Business Transaction",
+        "path": "src/app/features/business/models/business-transaction.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.model.business.models.business.model",
+        "applicationKey": "business-operations",
+        "name": "Business",
+        "path": "src/app/features/business/models/business.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.component.business.pages.business_dashboard.business_dashboard.component",
+        "applicationKey": "business-operations",
+        "name": "Business Dashboard",
+        "path": "src/app/features/business/pages/business-dashboard/business-dashboard.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.component.business.pages.business_documents.business_documents.component",
+        "applicationKey": "business-operations",
+        "name": "Business Documents",
+        "path": "src/app/features/business/pages/business-documents/business-documents.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.component.business.pages.business_profile.business_profile.component",
+        "applicationKey": "business-operations",
+        "name": "Business Profile",
+        "path": "src/app/features/business/pages/business-profile/business-profile.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.component.business.pages.business_reports.business_reports.component",
+        "applicationKey": "business-operations",
+        "name": "Business Reports",
+        "path": "src/app/features/business/pages/business-reports/business-reports.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.service.business.services.business_report_export.service",
+        "applicationKey": "business-operations",
+        "name": "Business Report Export",
+        "path": "src/app/features/business/services/business-report-export.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.service.business.services.business.service",
+        "applicationKey": "business-operations",
+        "name": "Business",
+        "path": "src/app/features/business/services/business.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "business-operations.store.business.store.business.store",
+        "applicationKey": "business-operations",
+        "name": "Business",
+        "path": "src/app/features/business/store/business.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
+  {
+    "applicationKey": "configuration",
+    "applicationName": "Configuration",
+    "description": "Configuration application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "configuration.component.admin.pages.admin_dashboard.admin_dashboard.component",
+        "applicationKey": "configuration",
+        "name": "Admin Dashboard",
+        "path": "src/app/features/admin/pages/admin-dashboard/admin-dashboard.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.configuration.components.application_readiness.configuration_application_readiness.component",
+        "applicationKey": "configuration",
+        "name": "Configuration Application Readiness",
+        "path": "src/app/features/admin/pages/configuration/components/application-readiness/configuration-application-readiness.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.configuration.configuration.component",
+        "applicationKey": "configuration",
+        "name": "Configuration",
+        "path": "src/app/features/admin/pages/configuration/configuration.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.model.admin.pages.configuration.models.configuration_feature.model",
+        "applicationKey": "configuration",
+        "name": "Configuration Feature",
+        "path": "src/app/features/admin/pages/configuration/models/configuration-feature.model.ts",
+        "type": "model",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.store.admin.pages.configuration.stores.operational_monitoring.store",
+        "applicationKey": "configuration",
+        "name": "Operational Monitoring",
+        "path": "src/app/features/admin/pages/configuration/stores/operational-monitoring.store.ts",
+        "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.configuration.tabs.applications.configuration_applications.component",
+        "applicationKey": "configuration",
+        "name": "Configuration Applications",
+        "path": "src/app/features/admin/pages/configuration/tabs/applications/configuration-applications.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.configuration.tabs.audit.configuration_audit.component",
+        "applicationKey": "configuration",
+        "name": "Configuration Audit",
+        "path": "src/app/features/admin/pages/configuration/tabs/audit/configuration-audit.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.configuration.tabs.maintenance.configuration_maintenance.component",
+        "applicationKey": "configuration",
+        "name": "Configuration Maintenance",
+        "path": "src/app/features/admin/pages/configuration/tabs/maintenance/configuration-maintenance.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.configuration.tabs.operational_monitoring.configuration_operational_monitoring.component",
+        "applicationKey": "configuration",
+        "name": "Configuration Operational Monitoring",
+        "path": "src/app/features/admin/pages/configuration/tabs/operational-monitoring/configuration-operational-monitoring.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.configuration.tabs.overview.configuration_overview.component",
+        "applicationKey": "configuration",
+        "name": "Configuration Overview",
+        "path": "src/app/features/admin/pages/configuration/tabs/overview/configuration-overview.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.configuration.tabs.security.configuration_security.component",
+        "applicationKey": "configuration",
+        "name": "Configuration Security",
+        "path": "src/app/features/admin/pages/configuration/tabs/security/configuration-security.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.configuration.tabs.settings.configuration_settings.component",
+        "applicationKey": "configuration",
+        "name": "Configuration Settings",
+        "path": "src/app/features/admin/pages/configuration/tabs/settings/configuration-settings.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.configuration.tabs.system_health.configuration_system_health.component",
+        "applicationKey": "configuration",
+        "name": "Configuration System Health",
+        "path": "src/app/features/admin/pages/configuration/tabs/system-health/configuration-system-health.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "configuration.component.admin.pages.help_assistant.help_assistant_settings.component",
+        "applicationKey": "configuration",
+        "name": "Help Assistant Settings",
+        "path": "src/app/features/admin/pages/help-assistant/help-assistant-settings.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
         }
       }
     ]

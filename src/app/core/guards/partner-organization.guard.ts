@@ -5,7 +5,10 @@ import {
   Router,
 } from '@angular/router';
 
+import { httpsCallable } from 'firebase/functions';
+
 import { AuthService } from '../services/auth.service';
+import { firebaseFunctions } from '../services/firebase-config';
 import { PartnerOrganizationContextService } from '../services/partner-organization-context.service';
 
 /**
@@ -58,6 +61,11 @@ export const partnerOrganizationGuard: CanActivateFn = async (
     // Prevent access if the context belongs to another organization.
     if (actualOrganizationId !== organizationId) {
       console.error('PARTNER ORGANIZATION GUARD: CONTEXT MISMATCH');
+
+      if (!context.isPlatformAdmin() && (await isUnavailableOrganization(organizationId))) {
+        return router.createUrlTree(['/organization-unavailable', organizationId]);
+      }
+
       return router.createUrlTree(['/partner']);
     }
 
@@ -94,6 +102,26 @@ export const partnerOrganizationGuard: CanActivateFn = async (
       contextError: context.error(),
     });
 
+    // Members cannot read a suspended or archived organization, so the
+    // context fails to load. Ask the server why and show a clear page.
+    if (!context.isPlatformAdmin() && (await isUnavailableOrganization(organizationId))) {
+      return router.createUrlTree(['/organization-unavailable', organizationId]);
+    }
+
     return router.createUrlTree(['/partner']);
   }
 };
+
+/** True when the caller is a member and the organization is not active. */
+async function isUnavailableOrganization(organizationId: string): Promise<boolean> {
+  try {
+    const call = httpsCallable<{ organizationId: string }, { status: string }>(
+      firebaseFunctions,
+      'getOrganizationAccessStatus',
+    );
+    const { status } = (await call({ organizationId })).data;
+    return status !== 'active' && status !== 'onboarding';
+  } catch {
+    return false;
+  }
+}

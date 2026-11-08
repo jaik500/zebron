@@ -37,7 +37,8 @@ export interface HelpAssistantSettings {
 export const HELP_ASSISTANT_SETTINGS_PATH = { collection: 'platformConfig', id: 'helpAssistant' } as const;
 
 export const HELP_ASSISTANT_MODELS: ReadonlyArray<{ id: string; label: string; description: string }> = [
-  { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite', description: 'Fastest and cheapest. Good for short how-to answers.' },
+  { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite', description: 'Fastest and cheapest. Good for short answers. Recommended.' },
+  { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite (older)', description: 'Only for older API keys: new keys can no longer use it.' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', description: 'Better reasoning; a little slower and costs more.' },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', description: 'Most capable; slowest and most expensive, small free quota.' },
 ];
@@ -58,7 +59,7 @@ export const MODEL_PATTERN = /^gemini-[a-z0-9.-]{1,60}$/;
 export const DEFAULT_HELP_ASSISTANT_SETTINGS: HelpAssistantSettings = {
   enabled: true,
   aiEnabled: true,
-  model: 'gemini-2.5-flash-lite',
+  model: 'gemini-3.5-flash-lite',
   hourlyLimit: 40,
   maxSources: 5,
   maxAnswerWords: 180,

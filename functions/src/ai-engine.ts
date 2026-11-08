@@ -390,7 +390,7 @@ export async function runTask(request: CallableRequest<unknown>, app: string, ta
   const settings = await getAiEngineSettings();
   if (!settings.enabled) throw new HttpsError("failed-precondition", "AI tools are turned off (Admin → AI and content checks).");
 
-  const apiKey = process.env.GEMINI_API_KEY ?? "";
+  const apiKey = (process.env.GEMINI_API_KEY ?? "").trim();
   if (!apiKey) throw new HttpsError("failed-precondition", "The AI key is not set up (GEMINI_API_KEY).");
 
   const db = getFirestore();
@@ -414,9 +414,9 @@ export async function runTask(request: CallableRequest<unknown>, app: string, ta
   let errorCode = "";
 
   try {
-    const response = await fetch(`${GEMINI_BASE_URL}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    const response = await fetch(`${GEMINI_BASE_URL}/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: modelRequest.system }] },
         contents: [{ role: "user", parts: [{ text: modelRequest.prompt }] }],
@@ -426,7 +426,7 @@ export async function runTask(request: CallableRequest<unknown>, app: string, ta
           temperature: 0.3,
           ...(modelRequest.json && !modelRequest.search ? { responseMimeType: "application/json" } : {}),
           // Larger models spend part of the budget on "thinking" first.
-          maxOutputTokens: modelRequest.maxTokens + (model.includes("lite") ? 0 : 2048),
+          maxOutputTokens: modelRequest.maxTokens + (model.includes("lite") ? 1024 : 2048),
         },
       }),
       signal: AbortSignal.timeout(modelRequest.search ? 120_000 : 45_000),

@@ -62,7 +62,9 @@ export const routes: Routes = [
     // -----------------------------------------------------
     {
         path: 'blog',
+        canActivate: [featureGuard],
         data: {
+            featureKey: 'blog',
             blogSection: 'public',
             title: 'Zebron | Blog',
             header: 'Zebron Blog',
@@ -99,7 +101,9 @@ export const routes: Routes = [
     // -----------------------------------------------------
     {
         path: 'courses',
+        canActivate: [featureGuard],
         data: {
+            featureKey: 'courses',
             title: 'Zebron | Courses',
         },
         children: [
@@ -954,9 +958,11 @@ export const routes: Routes = [
             partnerOrganizationGuard,
             // On-demand application: only organizations that requested it.
             applicationAccessGuard,
+            featureGuard,
         ],
         data: {
             applicationId: 'blog',
+            featureKey: 'blog',
             blogSection: 'organization',
             title: 'Partner | Blog',
             organizationHeader: true,
@@ -1016,9 +1022,11 @@ export const routes: Routes = [
             authGuard,
             partnerOrganizationGuard,
             applicationAccessGuard,
+            featureGuard,
         ],
         data: {
             applicationId: 'virtual-classroom',
+            featureKey: 'virtual-classroom',
             title: 'Partner | Virtual Classroom',
             organizationHeader: true,
         },
@@ -1033,10 +1041,12 @@ export const routes: Routes = [
             authGuard,
             partnerOrganizationGuard,
             partnerRoleGuard,
+            featureGuard,
         ],
         // The page shows a card per active capability (and redirects when
         // the Test Center is the only one), so no single application guard.
         data: {
+            featureKey: 'learning',
             minimumOrganizationRole: 'org_staff',
             title: 'Partner | Learning administration',
             organizationHeader: true,
@@ -1051,9 +1061,11 @@ export const routes: Routes = [
             partnerOrganizationGuard,
             partnerRoleGuard,
             applicationAccessGuard,
+            featureGuard,
         ],
         data: {
             applicationId: 'courses',
+            featureKey: 'courses',
             minimumOrganizationRole: 'org_manager',
             title: 'Partner | Team progress',
             organizationHeader: true,
@@ -1070,9 +1082,11 @@ export const routes: Routes = [
             partnerOrganizationGuard,
             // Courses is a Learning capability the organization requests.
             applicationAccessGuard,
+            featureGuard,
         ],
         data: {
             applicationId: 'courses',
+            featureKey: 'courses',
             title: 'Partner | Courses',
             organizationHeader: true,
         },
@@ -1603,7 +1617,14 @@ export const routes: Routes = [
     // ADMIN CONFIGURATION / CONTROL CENTER
     // -----------------------------------------------------
     {
+        // Always open a named tab, so switching tabs keeps the same page.
         path: 'admin/configuration',
+        pathMatch: 'full',
+        redirectTo: '/admin/configuration/overview',
+    },
+    {
+        // A Control Center tab by name, e.g. /admin/configuration/maintenance.
+        path: 'admin/configuration/:tab',
         canActivate: [adminGuard],
         data: {
             title: 'Admin | Configuration',
@@ -1727,6 +1748,15 @@ export const routes: Routes = [
     // IMPORTANT:
     // This route must NOT use featureGuard.
     //
+    {
+        // Members of a suspended, archived or not-yet-active organization.
+        path: 'organization-unavailable/:organizationId',
+        canActivate: [authGuard],
+        data: {
+            title: 'Zebron | Organization unavailable',
+        },
+        loadComponent: () => import('./features/partner/pages/organization-unavailable/organization-unavailable.component').then((m) => m.OrganizationUnavailableComponent),
+    },
     {
         path: 'feature-unavailable',
         data: {

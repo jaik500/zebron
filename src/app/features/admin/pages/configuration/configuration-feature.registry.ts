@@ -1,670 +1,382 @@
 import {
   ConfigurationFeature,
 } from './models/configuration-feature.model';
+import { catalogApplicationName } from '../../../../core/registries/application-catalog';
 
-export const CONFIGURATION_FEATURES: ConfigurationFeature[] = [
-
-  // ============================================================
-  // CORE PLATFORM
-  // ============================================================
-
+/**
+ * Cards on Control Center -> Settings. One card per real admin page,
+ * grouped by application. applicationKey must be a key in the
+ * application registry; the group name comes from there.
+ * Only add a card for a page that exists; the Settings tab shows types
+ * settings, security and maintenance.
+ */
+const CARDS: Omit<ConfigurationFeature, 'applicationName'>[] = [
   {
-    key: 'platform-applications',
+    key: 'applications',
     applicationKey: 'core',
-    applicationName: 'Core Platform',
-    name: 'Applications',
+    name: 'Applications (kill switch)',
     description:
-      'Manage application availability, lifecycle state, and dependencies.',
-    icon: 'apps',
-    type: 'applications',
-    route: '/admin/configuration/applications',
-    keywords: [
-      'applications',
-      'app',
-      'availability',
-      'enabled',
-      'disabled',
-      'maintenance',
-      'dependencies',
-      'lifecycle',
-    ],
-  },
-
-  {
-    key: 'platform-settings',
-    applicationKey: 'core',
-    applicationName: 'Core Platform',
-    name: 'Settings',
-    description:
-      'Manage centralized platform settings and configuration values.',
-    icon: 'settings',
+      'Turn applications on, off or into maintenance for everyone.',
+    icon: 'toggle_on',
     type: 'settings',
-    route: '/admin/configuration/settings',
-    keywords: [
-      'settings',
-      'configuration',
-      'platform',
-      'system',
-      'core',
-    ],
+    route: '/admin/configuration/applications',
+    keywords: ['kill switch', 'enable', 'disable', 'availability', 'applications'],
   },
-
   {
-    key: 'platform-monitoring',
+    key: 'organizations',
     applicationKey: 'core',
-    applicationName: 'Core Platform',
-    name: 'Operational Monitoring',
+    name: 'Organizations',
     description:
-      'Monitor application health, operational events, and diagnostics.',
+      'Edit organizations, suspend or reactivate them, and suspend or resume one of their applications.',
+    icon: 'corporate_fare',
+    type: 'settings',
+    route: '/admin/organizations',
+    keywords: ['organizations', 'partners', 'suspend', 'reactivate', 'archive', 'billing', 'tenants'],
+  },
+  {
+    key: 'partner-requests',
+    applicationKey: 'core',
+    name: 'Partner requests & contract terms',
+    description:
+      'Approve organizations’ requests to add, suspend or retire applications, and edit the partner contract terms.',
+    icon: 'assignment',
+    type: 'settings',
+    route: '/admin/organizations/requests',
+    keywords: ['requests', 'contract', 'terms', 'agreement', 'partners'],
+  },
+  {
+    key: 'organization-applications',
+    applicationKey: 'core',
+    name: 'Organization sign-ups',
+    description:
+      'Review organizations applying to join Zebron.',
+    icon: 'how_to_reg',
+    type: 'settings',
+    route: '/admin/organizations/applications',
+    keywords: ['onboarding', 'applications', 'sign up', 'join'],
+  },
+  {
+    key: 'users',
+    applicationKey: 'core',
+    name: 'Users',
+    description:
+      'Manage people, roles and administrator access.',
+    icon: 'group',
+    type: 'security',
+    route: '/admin/users',
+    keywords: ['users', 'roles', 'admins', 'accounts'],
+  },
+  {
+    key: 'security',
+    applicationKey: 'core',
+    name: 'Security',
+    description:
+      'Check sign-in, administrator access, audit and logging.',
+    icon: 'shield',
+    type: 'security',
+    route: '/admin/configuration/security',
+    keywords: ['security', 'access', 'authentication'],
+  },
+  {
+    key: 'monitoring',
+    applicationKey: 'core',
+    name: 'Monitoring, health & audit trail',
+    description:
+      'System health, operational events, application readiness and the audit trail.',
     icon: 'monitor_heart',
-    type: 'monitoring',
+    type: 'maintenance',
     route: '/admin/configuration/operational-monitoring',
-    keywords: [
-      'monitoring',
-      'health',
-      'events',
-      'diagnostics',
-      'operational',
-      'telemetry',
-      'platform',
-    ],
+    keywords: ['monitoring', 'health', 'audit', 'events', 'errors', 'readiness'],
   },
-
   {
-    key: 'platform-audit',
+    key: 'maintenance',
     applicationKey: 'core',
-    applicationName: 'Core Platform',
-    name: 'Audit',
+    name: 'Maintenance mode & quick links',
     description:
-      'Review administrative and system audit activity.',
-    icon: 'fact_check',
-    type: 'audit',
-    route: '/admin/configuration/audit',
-    keywords: [
-      'audit',
-      'history',
-      'administration',
-      'activity',
-      'security',
-      'logs',
-    ],
-  },
-
-  {
-    key: 'platform-maintenance',
-    applicationKey: 'core',
-    applicationName: 'Core Platform',
-    name: 'Maintenance',
-    description:
-      'Manage platform maintenance operations and maintenance mode.',
+      'Put Zebron into maintenance and keep links to outside services.',
     icon: 'build',
     type: 'maintenance',
     route: '/admin/configuration/maintenance',
-    keywords: [
-      'maintenance',
-      'cache',
-      'operations',
-      'platform',
-      'system',
-    ],
+    keywords: ['maintenance', 'downtime', 'links', 'resend', 'stripe', 'cloudflare'],
   },
-
   {
-    key: 'platform-recovery',
+    key: 'help-assistant',
     applicationKey: 'core',
-    applicationName: 'Core Platform',
-    name: 'Recovery',
+    name: 'Help assistant',
     description:
-      'Perform controlled platform recovery and reset operations.',
-    icon: 'restore',
-    type: 'recovery',
-    route: '/admin/configuration/recovery',
-    keywords: [
-      'recovery',
-      'reset',
-      'restore',
-      'repair',
-      'platform',
-    ],
-  },
-
-  // ============================================================
-  // COMMUNITY
-  // ============================================================
-
-  {
-    key: 'community-settings',
-    applicationKey: 'community',
-    applicationName: 'Community',
-    name: 'Community Settings',
-    description:
-      'Manage Community application behavior and configuration.',
-    icon: 'forum',
+      'Model, sources, limits and instructions for the Ask for help assistant.',
+    icon: 'smart_toy',
     type: 'settings',
-    keywords: [
-      'community',
-      'settings',
-      'posts',
-      'comments',
-      'reactions',
-      'moderation',
-    ],
+    route: '/admin/configuration/help-assistant',
+    keywords: ['assistant', 'chatbot', 'gemini', 'ai', 'help'],
   },
-
   {
-    key: 'community-monitoring',
-    applicationKey: 'community',
-    applicationName: 'Community',
-    name: 'Community Monitoring',
+    key: 'support',
+    applicationKey: 'core',
+    name: 'Support tickets',
     description:
-      'Monitor Community operational health and events.',
-    icon: 'monitor_heart',
-    type: 'monitoring',
-    route: '/admin/configuration/operational-monitoring',
-    keywords: [
-      'community',
-      'monitoring',
-      'health',
-      'events',
-      'posts',
-      'errors',
-    ],
-  },
-
-  {
-    key: 'community-knowledge',
-    applicationKey: 'community',
-    applicationName: 'Community',
-    name: 'Community Knowledge',
-    description:
-      'Manage Community documentation, guides, and troubleshooting articles.',
-    icon: 'menu_book',
-    type: 'knowledge',
-    route: '/admin/knowledge',
-    keywords: [
-      'community',
-      'knowledge',
-      'documentation',
-      'guide',
-      'troubleshooting',
-      'runbook',
-    ],
-  },
-
-  // ============================================================
-  // TAX & PAY
-  // ============================================================
-
-  {
-    key: 'tax-pay-settings',
-    applicationKey: 'tax-pay',
-    applicationName: 'Tax & Pay Calculator',
-    name: 'Tax & Pay Settings',
-    description:
-      'Manage Tax & Pay calculator configuration.',
-    icon: 'payments',
-    type: 'settings',
-    keywords: [
-      'tax',
-      'pay',
-      'calculator',
-      'w2',
-      '1099',
-      'contractor',
-      'settings',
-    ],
-  },
-
-  {
-    key: 'tax-pay-maintenance',
-    applicationKey: 'tax-pay',
-    applicationName: 'Tax & Pay Calculator',
-    name: 'Tax & Pay Maintenance',
-    description:
-      'Manage tax-year and calculator maintenance activities.',
-    icon: 'build',
+      'Answer support tickets from users and organizations.',
+    icon: 'support_agent',
     type: 'maintenance',
-    keywords: [
-      'tax',
-      'pay',
-      'maintenance',
-      'tax year',
-      'rates',
-      'withholding',
-    ],
+    route: '/admin/support',
+    keywords: ['support', 'tickets', 'help desk'],
   },
-
   {
-    key: 'tax-pay-monitoring',
-    applicationKey: 'tax-pay',
-    applicationName: 'Tax & Pay Calculator',
-    name: 'Tax & Pay Monitoring',
+    key: 'qa',
+    applicationKey: 'core',
+    name: 'QA Hub',
     description:
-      'Monitor Tax & Pay calculator health and operational events.',
-    icon: 'monitor_heart',
-    type: 'monitoring',
-    route: '/admin/configuration/operational-monitoring',
-    keywords: [
-      'tax',
-      'pay',
-      'monitoring',
-      'calculator',
-      'health',
-      'errors',
-    ],
+      'Quality checks across the platform.',
+    icon: 'fact_check',
+    type: 'maintenance',
+    route: '/admin/qa',
+    keywords: ['qa', 'quality', 'testing'],
   },
-
   {
-    key: 'tax-pay-knowledge',
-    applicationKey: 'tax-pay',
-    applicationName: 'Tax & Pay Calculator',
-    name: 'Tax & Pay Knowledge',
-    description:
-      'Manage Tax & Pay documentation and troubleshooting guides.',
-    icon: 'menu_book',
-    type: 'knowledge',
-    route: '/admin/knowledge',
-    keywords: [
-      'tax',
-      'pay',
-      'knowledge',
-      'documentation',
-      'calculator',
-      'w2',
-      '1099',
-    ],
-  },
-
-  // ============================================================
-  // RESOURCES
-  // ============================================================
-
-  {
-    key: 'resources-settings',
+    key: 'resources',
     applicationKey: 'resources',
-    applicationName: 'Resources',
-    name: 'Resource Settings',
+    name: 'Resources',
     description:
-      'Manage Resource Center configuration.',
+      'Add, edit and publish resource listings.',
     icon: 'library_books',
     type: 'settings',
-    keywords: [
-      'resources',
-      'settings',
-      'categories',
-      'locations',
-      'resource center',
-    ],
+    route: '/admin/resources',
+    keywords: ['resources', 'listings', 'publish'],
   },
-
   {
-    key: 'resources-monitoring',
+    key: 'submissions',
     applicationKey: 'resources',
-    applicationName: 'Resources',
-    name: 'Resource Monitoring',
+    name: 'Submissions',
     description:
-      'Monitor Resource Center health and operational events.',
-    icon: 'monitor_heart',
-    type: 'monitoring',
-    route: '/admin/configuration/operational-monitoring',
-    keywords: [
-      'resources',
-      'monitoring',
-      'health',
-      'events',
-      'errors',
-    ],
+      'Review resources the public submitted.',
+    icon: 'inbox',
+    type: 'settings',
+    route: '/admin/submissions',
+    keywords: ['submissions', 'add a resource', 'review'],
   },
-
   {
-    key: 'resources-knowledge',
+    key: 'categories',
     applicationKey: 'resources',
-    applicationName: 'Resources',
-    name: 'Resource Knowledge',
+    name: 'Categories',
     description:
-      'Manage Resource Center documentation and support articles.',
-    icon: 'menu_book',
-    type: 'knowledge',
-    route: '/admin/knowledge',
-    keywords: [
-      'resources',
-      'knowledge',
-      'documentation',
-      'guide',
-      'troubleshooting',
-    ],
+      'The categories resources are filed under.',
+    icon: 'category',
+    type: 'settings',
+    route: '/admin/categories',
+    keywords: ['categories', 'taxonomy'],
   },
-
-  // ============================================================
-  // CONTENT
-  // ============================================================
-
   {
-    key: 'content-settings',
+    key: 'resource-types',
+    applicationKey: 'resources',
+    name: 'Resource types',
+    description:
+      'Types such as program, service or clinic.',
+    icon: 'label',
+    type: 'settings',
+    route: '/admin/resource-types',
+    keywords: ['types', 'taxonomy'],
+  },
+  {
+    key: 'topics',
+    applicationKey: 'resources',
+    name: 'Topics',
+    description:
+      'Topic pages and the topics resources belong to.',
+    icon: 'tag',
+    type: 'settings',
+    route: '/admin/topics',
+    keywords: ['topics', 'taxonomy'],
+  },
+  {
+    key: 'locations',
+    applicationKey: 'resources',
+    name: 'Locations',
+    description:
+      'Counties and cities used for search and the area picker.',
+    icon: 'place',
+    type: 'settings',
+    route: '/admin/locations',
+    keywords: ['locations', 'counties', 'areas'],
+  },
+  {
+    key: 'community-topics',
+    applicationKey: 'community',
+    name: 'Community topics',
+    description:
+      'Topics people post under in the Community.',
+    icon: 'forum',
+    type: 'settings',
+    route: '/admin/community/topics',
+    keywords: ['community', 'topics'],
+  },
+  {
+    key: 'community-moderation',
+    applicationKey: 'community',
+    name: 'Community moderation',
+    description:
+      'Review reported posts and comments.',
+    icon: 'gavel',
+    type: 'maintenance',
+    route: '/admin/community/moderation',
+    keywords: ['moderation', 'reports', 'community'],
+  },
+  {
+    key: 'jobs',
+    applicationKey: 'jobs-training',
+    name: 'Jobs',
+    description:
+      'Post, edit and close job listings.',
+    icon: 'work',
+    type: 'settings',
+    route: '/admin/jobs',
+    keywords: ['jobs', 'listings', 'employers'],
+  },
+  {
+    key: 'courses',
+    applicationKey: 'courses',
+    name: 'Courses',
+    description:
+      'Create and edit Zebron courses.',
+    icon: 'auto_stories',
+    type: 'settings',
+    route: '/courses/manage',
+    keywords: ['courses', 'lessons', 'exams'],
+  },
+  {
+    key: 'test-center',
+    applicationKey: 'test-center',
+    name: 'Test Center',
+    description:
+      'Test courses, quizzes and settings.',
+    icon: 'quiz',
+    type: 'settings',
+    route: '/admin/test-center',
+    keywords: ['test center', 'quizzes'],
+  },
+  {
+    key: 'test-questions',
+    applicationKey: 'test-center',
+    name: 'Question bank',
+    description:
+      'Questions used by quizzes and exams.',
+    icon: 'help_center',
+    type: 'settings',
+    route: '/admin/test-center/questions',
+    keywords: ['questions', 'question bank'],
+  },
+  {
+    key: 'tax-pay',
+    applicationKey: 'tax-pay',
+    name: 'Tax & Pay settings',
+    description:
+      'Tax years, rates and calculator settings.',
+    icon: 'calculate',
+    type: 'settings',
+    route: '/admin/tax-pay',
+    keywords: ['tax', 'pay', 'rates', 'withholding'],
+  },
+  {
+    key: 'content-operations',
     applicationKey: 'content',
-    applicationName: 'Content',
-    name: 'Content Settings',
+    name: 'Content & operations',
     description:
-      'Manage Content application behavior and configuration.',
+      'Content, milestones, captures and ideas.',
     icon: 'article',
     type: 'settings',
-    keywords: [
-      'content',
-      'settings',
-      'articles',
-      'pages',
-      'media',
-      'editorial',
-    ],
+    route: '/admin/content-operations',
+    keywords: ['content', 'milestones', 'ideas'],
   },
-
   {
-    key: 'content-monitoring',
+    key: 'ai-content',
     applicationKey: 'content',
-    applicationName: 'Content',
-    name: 'Content Monitoring',
+    name: 'AI & content checks',
     description:
-      'Monitor content processing, publishing activity, and operational events.',
-    icon: 'monitor_heart',
-    type: 'monitoring',
-    route: '/admin/configuration/operational-monitoring',
-    keywords: [
-      'content',
-      'monitoring',
-      'publishing',
-      'health',
-      'events',
-      'errors',
-    ],
+      'AI writing help and the weekly content checks (broken links, stale pages).',
+    icon: 'auto_fix_high',
+    type: 'settings',
+    route: '/admin/ai-content',
+    keywords: ['ai', 'content checks', 'links', 'gemini'],
   },
-
   {
-    key: 'content-knowledge',
-    applicationKey: 'content',
-    applicationName: 'Content',
-    name: 'Content Knowledge',
-    description:
-      'Manage Content documentation, editorial guides, and troubleshooting articles.',
-    icon: 'menu_book',
-    type: 'knowledge',
-    route: '/admin/knowledge',
-    keywords: [
-      'content',
-      'knowledge',
-      'documentation',
-      'guide',
-      'editorial',
-      'troubleshooting',
-    ],
-  },
-
-  // ============================================================
-  // KNOWLEDGE
-  // ============================================================
-
-  {
-    key: 'knowledge-settings',
+    key: 'knowledge',
     applicationKey: 'knowledge',
-    applicationName: 'Knowledge',
-    name: 'Knowledge Settings',
+    name: 'Knowledge Center',
     description:
-      'Manage Knowledge Center behavior and configuration.',
+      'Help articles and guides used by the help assistant.',
     icon: 'menu_book',
     type: 'settings',
-    keywords: [
-      'knowledge',
-      'knowledge center',
-      'settings',
-      'articles',
-      'documentation',
-      'configuration',
-    ],
+    route: '/admin/knowledge',
+    keywords: ['knowledge', 'articles', 'guides', 'help'],
   },
-
   {
-    key: 'knowledge-monitoring',
-    applicationKey: 'knowledge',
-    applicationName: 'Knowledge',
-    name: 'Knowledge Monitoring',
+    key: 'blog',
+    applicationKey: 'blog',
+    name: 'Blog',
     description:
-      'Monitor Knowledge Center publishing, article processing, and operational events.',
-    icon: 'monitor_heart',
-    type: 'monitoring',
-    route: '/admin/configuration/operational-monitoring',
-    keywords: [
-      'knowledge',
-      'monitoring',
-      'articles',
-      'publishing',
-      'health',
-      'errors',
-    ],
+      'Write, schedule and manage public blog posts.',
+    icon: 'rss_feed',
+    type: 'settings',
+    route: '/blog/manage',
+    keywords: ['blog', 'posts', 'le rondpoint'],
   },
-
   {
-    key: 'knowledge-maintenance',
-    applicationKey: 'knowledge',
-    applicationName: 'Knowledge',
-    name: 'Knowledge Maintenance',
+    key: 'internal-blog',
+    applicationKey: 'blog',
+    name: 'Internal blog',
     description:
-      'Manage Knowledge Center maintenance and content lifecycle activities.',
-    icon: 'build',
-    type: 'maintenance',
-    keywords: [
-      'knowledge',
-      'maintenance',
-      'articles',
-      'archive',
-      'restore',
-      'cleanup',
-    ],
+      'Posts for Zebron staff only.',
+    icon: 'lock',
+    type: 'settings',
+    route: '/admin/blog',
+    keywords: ['internal', 'staff', 'blog'],
   },
-
-  // ============================================================
-  // MAILBOX
-  // ============================================================
-
   {
-    key: 'mailbox-settings',
+    key: 'mailbox',
     applicationKey: 'mailbox',
-    applicationName: 'Mailbox',
-    name: 'Mailbox Settings',
+    name: 'Contact mailbox',
     description:
-      'Manage mailbox and email processing configuration.',
+      'Messages sent to Zebron through the contact form and email.',
     icon: 'mail',
     type: 'settings',
-    keywords: [
-      'mailbox',
-      'email',
-      'settings',
-      'inbound',
-      'outbound',
-      'mail processing',
-    ],
+    route: '/admin/contact',
+    keywords: ['mailbox', 'contact', 'email'],
   },
-
   {
-    key: 'mailbox-monitoring',
+    key: 'sent-email',
     applicationKey: 'mailbox',
-    applicationName: 'Mailbox',
-    name: 'Mailbox Monitoring',
+    name: 'Sent email',
     description:
-      'Monitor inbound and outbound email processing and mailbox health.',
-    icon: 'monitor_heart',
-    type: 'monitoring',
-    route: '/admin/configuration/operational-monitoring',
-    keywords: [
-      'mailbox',
-      'email',
-      'monitoring',
-      'inbound',
-      'outbound',
-      'health',
-      'errors',
-    ],
-  },
-
-  {
-    key: 'mailbox-maintenance',
-    applicationKey: 'mailbox',
-    applicationName: 'Mailbox',
-    name: 'Mailbox Maintenance',
-    description:
-      'Manage mailbox maintenance, processing queues, and email cleanup operations.',
-    icon: 'build',
+      'Emails Zebron has sent.',
+    icon: 'outgoing_mail',
     type: 'maintenance',
-    keywords: [
-      'mailbox',
-      'maintenance',
-      'email',
-      'queue',
-      'cleanup',
-      'processing',
-    ],
+    route: '/admin/contact/sent',
+    keywords: ['sent', 'email', 'outbox'],
   },
-
-  // ============================================================
-  // BUSINESS OPERATIONS
-  // ============================================================
-
   {
-    key: 'business-operations-settings',
+    key: 'business',
     applicationKey: 'business-operations',
-    applicationName: 'Business Operations',
-    name: 'Business Operations Settings',
+    name: 'Business operations',
     description:
-      'Manage business operation configuration and administrative settings.',
+      'Business dashboards and operations.',
     icon: 'business_center',
     type: 'settings',
-    keywords: [
-      'business operations',
-      'operations',
-      'settings',
-      'configuration',
-      'business',
-      'processes',
-    ],
+    route: '/admin/business',
+    keywords: ['business', 'operations'],
   },
-
   {
-    key: 'business-operations-monitoring',
+    key: 'business-profile',
     applicationKey: 'business-operations',
-    applicationName: 'Business Operations',
-    name: 'Business Operations Monitoring',
+    name: 'Business profile',
     description:
-      'Monitor business processes, operational workflows, and related events.',
-    icon: 'monitor_heart',
-    type: 'monitoring',
-    route: '/admin/configuration/operational-monitoring',
-    keywords: [
-      'business operations',
-      'operations',
-      'monitoring',
-      'workflows',
-      'processes',
-      'health',
-      'errors',
-    ],
-  },
-
-  {
-    key: 'business-operations-maintenance',
-    applicationKey: 'business-operations',
-    applicationName: 'Business Operations',
-    name: 'Business Operations Maintenance',
-    description:
-      'Manage business operation maintenance and controlled administrative activities.',
-    icon: 'build',
-    type: 'maintenance',
-    keywords: [
-      'business operations',
-      'maintenance',
-      'operations',
-      'processes',
-      'workflows',
-    ],
-  },
-
-  // ============================================================
-  // CONFIGURATION
-  // ============================================================
-
-  {
-    key: 'configuration-settings',
-    applicationKey: 'configuration',
-    applicationName: 'Configuration',
-    name: 'Configuration Settings',
-    description:
-      'Manage application configuration and administrative settings.',
-    icon: 'settings',
+      'Zebron’s own business details.',
+    icon: 'badge',
     type: 'settings',
-    route: '/admin/configuration/settings',
-    keywords: [
-      'configuration',
-      'settings',
-      'application configuration',
-      'administration',
-      'system settings',
-    ],
+    route: '/admin/business/profile',
+    keywords: ['profile', 'company'],
   },
-
-  {
-    key: 'configuration-monitoring',
-    applicationKey: 'configuration',
-    applicationName: 'Configuration',
-    name: 'Configuration Monitoring',
-    description:
-      'Monitor configuration changes, operational events, and configuration-related health.',
-    icon: 'monitor_heart',
-    type: 'monitoring',
-    route: '/admin/configuration/operational-monitoring',
-    keywords: [
-      'configuration',
-      'monitoring',
-      'health',
-      'events',
-      'changes',
-      'diagnostics',
-    ],
-  },
-
-  {
-    key: 'configuration-maintenance',
-    applicationKey: 'configuration',
-    applicationName: 'Configuration',
-    name: 'Configuration Maintenance',
-    description:
-      'Manage configuration maintenance and administrative maintenance activities.',
-    icon: 'build',
-    type: 'maintenance',
-    route: '/admin/configuration/maintenance',
-    keywords: [
-      'configuration',
-      'maintenance',
-      'settings',
-      'administration',
-      'system',
-    ],
-  },
-
-  {
-    key: 'configuration-audit',
-    applicationKey: 'configuration',
-    applicationName: 'Configuration',
-    name: 'Configuration Audit',
-    description:
-      'Review configuration changes and administrative configuration activity.',
-    icon: 'fact_check',
-    type: 'audit',
-    route: '/admin/configuration/audit',
-    keywords: [
-      'configuration',
-      'audit',
-      'history',
-      'changes',
-      'administration',
-      'activity',
-    ],
-  },
-
 ];
+
+export const CONFIGURATION_FEATURES: ConfigurationFeature[] = CARDS.map((card) => ({
+  ...card,
+  applicationName: catalogApplicationName(card.applicationKey),
+}));

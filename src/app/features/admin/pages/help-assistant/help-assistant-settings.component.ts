@@ -133,7 +133,7 @@ const CUSTOM_MODEL = '__custom__';
                   <mat-label>Model name</mat-label>
                   <input matInput [(ngModel)]="form.model" (ngModelChange)="touch()" placeholder="gemini-…" [disabled]="!form.aiEnabled" />
                   @if (!modelValid()) {
-                    <mat-hint class="!text-red-700">Must look like gemini-2.5-flash</mat-hint>
+                    <mat-hint class="!text-red-700">Must look like gemini-3.5-flash-lite</mat-hint>
                   } @else {
                     <mat-hint>Exact Gemini model ID from Google AI Studio</mat-hint>
                   }

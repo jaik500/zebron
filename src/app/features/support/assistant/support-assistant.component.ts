@@ -244,7 +244,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
         </div>
 
         <!-- Input -->
-        <form class="flex items-end gap-2 border-t border-gray-200 bg-white p-3" (ngSubmit)="ask(draft)">
+        <form class="flex items-end gap-2 border-t border-gray-200 bg-white p-3" (ngSubmit)="ask(draft())">
           <textarea
             #input
             rows="1"
@@ -252,11 +252,12 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
             class="max-h-28 min-h-10 flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-base focus:border-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:text-sm"
             [placeholder]="'Ask a question…' | t"
             [attr.aria-label]="'Your question' | t"
-            [(ngModel)]="draft"
+            [ngModel]="draft()"
+            (ngModelChange)="draft.set($event)"
             name="question"
             (keydown.enter)="onEnter($event)"
           ></textarea>
-          <button mat-icon-button type="submit" class="!bg-[#007979] !text-white" [attr.aria-label]="'Send' | t" [disabled]="thinking() || !draft.trim()">
+          <button mat-icon-button type="submit" class="!bg-[#007979] !text-white" [attr.aria-label]="'Send' | t" [disabled]="thinking() || !draft().trim()">
             <mat-icon>send</mat-icon>
           </button>
         </form>
@@ -298,7 +299,8 @@ export class SupportAssistantComponent {
   protected readonly expanded = signal<string | null>(null);
   protected readonly lastScope = signal<AssistantReply['scope'] | null>(null);
 
-  protected draft = '';
+  /** The question being typed; a signal so the box clears as soon as it is sent. */
+  protected readonly draft = signal('');
 
   protected readonly scopeLabel = computed(() => {
     const scope = this.lastScope();
@@ -354,7 +356,7 @@ export class SupportAssistantComponent {
 
     if (!keyboard.shiftKey) {
       keyboard.preventDefault();
-      void this.ask(this.draft);
+      void this.ask(this.draft());
     }
   }
 
@@ -368,7 +370,7 @@ export class SupportAssistantComponent {
     const history = this.messages().map((message) => ({ role: message.role, text: message.text }));
 
     this.messages.update((messages) => [...messages, { role: 'user', text: question }]);
-    this.draft = '';
+    this.draft.set('');
     this.thinking.set(true);
     this.error.set('');
 

@@ -28,242 +28,43 @@ import {
   CONFIGURATION_APPLICATIONS,
 } from '../registries/configuration-application.registry';
 
+import {
+  catalogAdminRoute,
+  catalogApplications,
+  controlDetails,
+  killSwitchDependencies,
+} from '../registries/application-catalog';
+
 // ============================================================
 // DEFAULT FEATURE REGISTRY
 // ============================================================
 
-const DEFAULT_FEATURES: FeatureConfig[] = [
-  // ============================================================
-  // CORE PLATFORM
-  // ============================================================
+/**
+ * One kill switch per application in the registry (see
+ * application-catalog.ts). Saved choices in Firestore
+ * featureConfigurations/{key} override these defaults.
+ */
+const DEFAULT_FEATURES: FeatureConfig[] = catalogApplications().map(
+  (application) => {
+    const details = controlDetails(application.key);
 
-  {
-    id: 'core',
-    key: 'core',
-    name: 'Core Platform',
-    description:
-      'Core Zebron platform services, authentication, authorization, users, access control, and shared functionality.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: false,
-    allowNewUsers: true,
-    core: true,
-    dependencies: [],
-    icon: 'hub',
-    route: null,
-    version: '1.0.0',
+    return {
+      id: application.key,
+      key: application.key,
+      name: application.name,
+      description: application.description,
+      availability: 'enabled',
+      enabled: true,
+      visibleInNavigation: details.showInNavigation ?? true,
+      allowNewUsers: application.key !== 'configuration',
+      core: details.core ?? false,
+      dependencies: killSwitchDependencies(application),
+      icon: application.icon ?? 'apps',
+      route: catalogAdminRoute(application),
+      version: '1.0.0',
+    };
   },
-
-  // ============================================================
-  // RESOURCES
-  // ============================================================
-
-  {
-    id: 'resources',
-    key: 'resources',
-    name: 'Resources',
-    description:
-      'Manage and discover community resources, categories, locations, availability, and organizations.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: true,
-    allowNewUsers: true,
-    core: false,
-    dependencies: ['core'],
-    icon: 'library_books',
-    route: '/resources',
-    version: '1.0.0',
-  },
-
-  // ============================================================
-  // COMMUNITY
-  // ============================================================
-
-  {
-    id: 'community',
-    key: 'community',
-    name: 'Community',
-    description:
-      'Community discussions, posts, comments, reactions, notifications, messaging, and social interactions.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: true,
-    allowNewUsers: true,
-    core: false,
-    dependencies: ['core'],
-    icon: 'groups',
-    route: '/community',
-    version: '1.0.0',
-  },
-
-  // ============================================================
-  // JOBS & TRAINING
-  // ============================================================
-
-  {
-    id: 'jobs-training',
-    key: 'jobs-training',
-    name: 'Jobs & Training',
-    description:
-      'Jobs, training opportunities, bootcamps, career resources, and employment-related functionality.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: true,
-    allowNewUsers: true,
-    core: false,
-    dependencies: ['core'],
-    icon: 'work',
-    route: '/jobs',
-    version: '1.0.0',
-  },
-
-  // ============================================================
-  // TEST CENTER
-  // ============================================================
-
-  {
-    id: 'test-center',
-    key: 'test-center',
-    name: 'Test Center',
-    description:
-      'Test courses, assessments, question banks, practice tests, results, and progress.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: true,
-    allowNewUsers: true,
-    core: false,
-    dependencies: ['core'],
-    icon: 'quiz',
-    route: '/test-center',
-    version: '1.0.0',
-  },
-
-  // ============================================================
-  // TAX & PAY CALCULATOR
-  // ============================================================
-
-  {
-    id: 'tax-pay',
-    key: 'tax-pay',
-    name: 'Tax & Pay Calculator',
-    description:
-      'W-2 and 1099 tax, withholding, contractor, and net-pay calculations.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: true,
-    allowNewUsers: true,
-    core: false,
-    dependencies: ['core'],
-    icon: 'calculate',
-    route: '/tax-calculator',
-    version: '1.0.0',
-  },
-
-  // ============================================================
-  // CONTENT
-  // ============================================================
-
-  {
-    id: 'content',
-    key: 'content',
-    name: 'Content',
-    description:
-      'Editorial content, pages, media, announcements, publishing workflows, and content management.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: true,
-    allowNewUsers: true,
-    core: false,
-    dependencies: ['core'],
-    icon: 'article',
-    route: null,
-    version: '1.0.0',
-  },
-
-  // ============================================================
-  // KNOWLEDGE
-  // ============================================================
-
-  {
-    id: 'knowledge',
-    key: 'knowledge',
-    name: 'Knowledge',
-    description:
-      'Knowledge articles, documentation, guides, FAQs, troubleshooting content, and operational runbooks.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: true,
-    allowNewUsers: true,
-    core: false,
-    dependencies: ['core'],
-    icon: 'menu_book',
-    route: '/admin/knowledge',
-    version: '1.0.0',
-  },
-
-  // ============================================================
-  // MAILBOX
-  // ============================================================
-
-  {
-    id: 'mailbox',
-    key: 'mailbox',
-    name: 'Mailbox',
-    description:
-      'Inbound and outbound email processing, mailbox routing, notifications, and email administration.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: false,
-    allowNewUsers: true,
-    core: false,
-    dependencies: ['core'],
-    icon: 'mail',
-    route: null,
-    version: '1.0.0',
-  },
-
-  // ============================================================
-  // BUSINESS OPERATIONS
-  // ============================================================
-
-  {
-    id: 'business-operations',
-    key: 'business-operations',
-    name: 'Business Operations',
-    description:
-      'Business workflows, operational processes, organizational operations, and administrative business functions.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: true,
-    allowNewUsers: true,
-    core: false,
-    dependencies: ['core'],
-    icon: 'business_center',
-    route: null,
-    version: '1.0.0',
-  },
-
-  // ============================================================
-  // CONFIGURATION
-  // ============================================================
-
-  {
-    id: 'configuration',
-    key: 'configuration',
-    name: 'Configuration',
-    description:
-      'Application configuration, feature availability, system settings, maintenance, security, and administrative controls.',
-    availability: 'enabled',
-    enabled: true,
-    visibleInNavigation: true,
-    allowNewUsers: false,
-    core: true,
-    dependencies: ['core'],
-    icon: 'settings',
-    route: '/admin/configuration',
-    version: '1.0.0',
-  },
-];
+);
 
 
 // ============================================================
