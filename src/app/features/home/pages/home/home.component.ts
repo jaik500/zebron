@@ -6,7 +6,7 @@ import { Params, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
-import { collection, getCountFromServer, query, where } from 'firebase/firestore';
+import { collection, doc, getCountFromServer, getDoc, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
 
 import { firestore } from '../../../../core/services/firebase-config';
 import { LocalizationService } from '../../../../core/services/localization.service';
@@ -72,6 +72,18 @@ const HOME_SPONSOR: {
   postLink: '/blog/bootcamp-spotlight-washington-tech-solutions',
   website: 'https://washingtontechsolutions.com/courses/',
 };
+
+/** One line in a Le RondPoint column. */
+interface RondpointItem {
+  id: string;
+  title: string;
+  detail: string;
+  badge: string;
+  link: string;
+}
+
+/** How many lines each Le RondPoint column shows. */
+const RONDPOINT_ROWS = 4;
 
 interface HomeStat {
   label: keyof HomeText;
@@ -460,74 +472,124 @@ interface HomeStat {
       </section>
 
       <!-- =========================================================
-           FROM THE BLOG (live: new posts appear without a refresh)
+           LE RONDPOINT: what's new on Zebron, all in one place.
+           Blog posts are live; resources, classes and jobs load once.
            ========================================================= -->
 
-      @if (blogLoading() || blogPosts().length) {
-        <section class="bg-gray-50" aria-labelledby="home-blog-title">
+      @if (rondpointHasContent()) {
+        <section class="bg-gray-50" aria-labelledby="home-rondpoint-title">
           <div class="mx-auto max-w-7xl px-5 py-16 sm:px-6 sm:py-14 lg:px-8">
-            <div appReveal class="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p class="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[#007979]">
-                  {{ t().blogEyebrow }}
-                  <span class="inline-flex items-center gap-1 rounded-full bg-[#007979]/10 px-2 py-0.5 text-[10px] tracking-wider">
-                    <span class="relative flex h-1.5 w-1.5">
-                      <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#007979] opacity-60 motion-reduce:animate-none"></span>
-                      <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#007979]"></span>
-                    </span>
-                    {{ t().blogLive }}
+            <div appReveal class="max-w-2xl">
+              <p class="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[#007979]">
+                <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="5" />
+                  <path d="M12 2v5M12 17v5M2 12h5M17 12h5" />
+                </svg>
+                Le RondPoint
+                <span class="inline-flex items-center gap-1 rounded-full bg-[#007979]/10 px-2 py-0.5 text-[10px] tracking-wider">
+                  <span class="relative flex h-1.5 w-1.5">
+                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#007979] opacity-60 motion-reduce:animate-none"></span>
+                    <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#007979]"></span>
                   </span>
-                </p>
-                <h2 id="home-blog-title" class="mt-2 text-3xl font-bold tracking-tight text-[#032D42]">{{ t().blogTitle }}</h2>
-                <p class="mt-2 text-sm text-gray-600">{{ t().blogText }}</p>
-              </div>
-              <a
-                routerLink="/blog"
-                class="inline-flex items-center gap-2 rounded-xl bg-[#032D42] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0b3b52]"
-              >
-                {{ t().blogViewAll }}
-                <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">arrow_forward</mat-icon>
-              </a>
+                  {{ t().blogLive }}
+                </span>
+              </p>
+              <h2 id="home-rondpoint-title" class="mt-2 text-3xl font-bold tracking-tight text-[#032D42]">{{ t().rondpointTitle }}</h2>
+              <p class="mt-2 text-sm text-gray-600">{{ t().rondpointText }}</p>
             </div>
 
-            <div class="mt-8 grid gap-5 md:grid-cols-3" aria-live="polite">
-              @if (blogLoading()) {
-                @for (item of [1, 2, 3]; track item) {
-                  <div class="h-72 animate-pulse rounded-2xl border border-gray-200 bg-white"></div>
+            <!-- From the blog (live) -->
+            @if (blogLoading() || blogPosts().length) {
+              <div class="mt-8 flex items-center justify-between gap-3">
+                <h3 class="flex items-center gap-2 text-base font-bold text-[#032D42]">
+                  <mat-icon aria-hidden="true" class="!h-5 !w-5 !text-[20px] text-[#007979]">article</mat-icon>
+                  {{ t().blogEyebrow }}
+                </h3>
+                <a routerLink="/blog" class="inline-flex items-center gap-1 text-sm font-bold text-[#007979] hover:underline">
+                  {{ t().blogViewAll }}
+                  <mat-icon aria-hidden="true" class="!m-0 !h-4 !w-4 !text-[16px]">arrow_forward</mat-icon>
+                </a>
+              </div>
+              <div class="mt-4 grid gap-5 md:grid-cols-3" aria-live="polite">
+                @if (blogLoading()) {
+                  @for (item of [1, 2, 3]; track item) {
+                    <div class="h-72 animate-pulse rounded-2xl border border-gray-200 bg-white"></div>
+                  }
+                } @else {
+                  @for (post of blogPosts(); track post.id) {
+                    <a
+                      [routerLink]="['/blog', post.id]"
+                      class="home-pop group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#007979]/40"
+                    >
+                      <div class="relative h-40 overflow-hidden" aria-hidden="true">
+                        <div class="absolute inset-0 transition-transform duration-500 group-hover:scale-105" [style.background]="cover(post.cover)">
+                          @if (photo(post); as src) {
+                            <img [src]="src" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover" />
+                          }
+                        </div>
+                        <div class="absolute left-3 top-3 flex gap-1.5">
+                          @if (post.pinned) {
+                            <span class="rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-[#007979]">{{ t().blogPinned }}</span>
+                          }
+                          @if (isNew(post)) {
+                            <span class="rounded-full bg-[#12BFC3] px-2 py-0.5 text-[11px] font-bold text-[#032D42]">{{ t().blogNew }}</span>
+                          }
+                        </div>
+                      </div>
+                      <div class="flex flex-1 flex-col gap-2 p-5">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-[#007979]">{{ post.topic }}</span>
+                        <h3 class="text-lg font-bold leading-snug text-[#032D42] group-hover:text-[#007979]">{{ post.title }}</h3>
+                        @if (post.excerpt) {
+                          <p class="line-clamp-2 text-sm text-gray-600">{{ post.excerpt }}</p>
+                        }
+                        <p class="mt-auto pt-2 text-xs text-gray-500">
+                          {{ post.authorName }} · {{ postDate(post) }} · {{ post.readingMinutes }} {{ t().minRead }}
+                        </p>
+                      </div>
+                    </a>
+                  }
                 }
-              } @else {
-                @for (post of blogPosts(); track post.id) {
-                  <a
-                    [routerLink]="['/blog', post.id]"
-                    class="home-pop group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#007979]/40"
-                  >
-                    <div class="relative h-40 overflow-hidden" aria-hidden="true">
-                      <div class="absolute inset-0 transition-transform duration-500 group-hover:scale-105" [style.background]="cover(post.cover)">
-                        @if (photo(post); as src) {
-                          <img [src]="src" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover" />
-                        }
-                      </div>
-                      <div class="absolute left-3 top-3 flex gap-1.5">
-                        @if (post.pinned) {
-                          <span class="rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-[#007979]">{{ t().blogPinned }}</span>
-                        }
-                        @if (isNew(post)) {
-                          <span class="rounded-full bg-[#12BFC3] px-2 py-0.5 text-[11px] font-bold text-[#032D42]">{{ t().blogNew }}</span>
-                        }
-                      </div>
-                    </div>
-                    <div class="flex flex-1 flex-col gap-2 p-5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#007979]">{{ post.topic }}</span>
-                      <h3 class="text-lg font-bold leading-snug text-[#032D42] group-hover:text-[#007979]">{{ post.title }}</h3>
-                      @if (post.excerpt) {
-                        <p class="line-clamp-2 text-sm text-gray-600">{{ post.excerpt }}</p>
+              </div>
+            }
+
+            <!-- New resources · classes starting soon · new jobs -->
+            <div appReveal class="reveal-group mt-10 grid gap-5 lg:grid-cols-3">
+              @for (column of rondpointColumns(); track column.key) {
+                <div class="flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-5">
+                  <div class="flex items-center justify-between gap-2">
+                    <h3 class="flex min-w-0 items-center gap-2 text-base font-bold text-[#032D42]">
+                      <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E5F4F4] text-[#007979]">
+                        <mat-icon aria-hidden="true" class="!h-[18px] !w-[18px] !text-[18px]">{{ column.icon }}</mat-icon>
+                      </span>
+                      <span class="truncate">{{ t()[column.title] }}</span>
+                    </h3>
+                    <a [routerLink]="column.link" class="shrink-0 text-xs font-bold text-[#007979] hover:underline">{{ t().rondpointSeeAll }}</a>
+                  </div>
+
+                  <ul class="mt-3 flex-1 divide-y divide-gray-100">
+                    @if (rondpointLoading()) {
+                      @for (row of [1, 2, 3]; track row) {
+                        <li class="py-3"><div class="h-10 animate-pulse rounded-md bg-gray-100"></div></li>
                       }
-                      <p class="mt-auto pt-2 text-xs text-gray-500">
-                        {{ post.authorName }} · {{ postDate(post) }} · {{ post.readingMinutes }} {{ t().minRead }}
-                      </p>
-                    </div>
-                  </a>
-                }
+                    } @else {
+                      @for (item of column.items; track item.id) {
+                        <li>
+                          <a [routerLink]="item.link" class="group flex items-start justify-between gap-3 py-3">
+                            <span class="min-w-0">
+                              <span class="block truncate text-sm font-semibold text-[#032D42] group-hover:text-[#007979]">{{ item.title }}</span>
+                              <span class="block truncate text-xs text-gray-500">{{ item.detail }}</span>
+                            </span>
+                            @if (item.badge) {
+                              <span class="shrink-0 rounded-full bg-[#E5F4F4] px-2 py-0.5 text-[11px] font-bold text-[#007979]">{{ item.badge }}</span>
+                            }
+                          </a>
+                        </li>
+                      } @empty {
+                        <li class="py-6 text-center text-sm text-gray-500">{{ t()[column.empty] }}</li>
+                      }
+                    }
+                  </ul>
+                </div>
               }
             </div>
           </div>
@@ -813,6 +875,118 @@ export class HomeComponent {
   }
 
   // =========================================================
+  // LE RONDPOINT: new resources, classes starting soon, new jobs
+  // =========================================================
+
+  private readonly newResources = signal<RondpointItem[]>([]);
+  private readonly upcomingClasses = signal<RondpointItem[]>([]);
+  private readonly newJobs = signal<RondpointItem[]>([]);
+  protected readonly rondpointLoading = signal(true);
+
+  protected readonly rondpointColumns = computed(() => [
+    { key: 'resources', icon: 'volunteer_activism', title: 'rondpointResources' as const, empty: 'rondpointNoResources' as const, link: '/resources', items: this.newResources() },
+    { key: 'classes', icon: 'event', title: 'rondpointClasses' as const, empty: 'rondpointNoClasses' as const, link: '/bootcamps', items: this.upcomingClasses() },
+    { key: 'jobs', icon: 'work', title: 'rondpointJobs' as const, empty: 'rondpointNoJobs' as const, link: '/jobs', items: this.newJobs() },
+  ]);
+
+  /** Show the section while loading, or when anything is there to show. */
+  protected readonly rondpointHasContent = computed(
+    () =>
+      this.blogLoading() ||
+      this.rondpointLoading() ||
+      this.blogPosts().length > 0 ||
+      this.newResources().length + this.upcomingClasses().length + this.newJobs().length > 0,
+  );
+
+  private async loadRondpoint(): Promise<void> {
+    const text = this.t();
+    const locale = this.localization.language() === 'fr' ? 'fr-FR' : 'en-US';
+    const day = (value: Date) => value.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+
+    const resources = async (): Promise<RondpointItem[]> => {
+      const snapshot = await getDocs(
+        query(collection(firestore, 'resources'), where('status', '==', 'published'), orderBy('createdAt', 'desc'), limit(RONDPOINT_ROWS)),
+      );
+      return snapshot.docs.map((document) => {
+        const data = document.data();
+        const added = (data['createdAt'] as { toDate?: () => Date } | undefined)?.toDate?.();
+        const free = (data['cost'] as { free?: boolean } | undefined)?.free === true;
+        return {
+          id: document.id,
+          title: String(data['name'] ?? ''),
+          detail: added ? `${text.rondpointAdded} ${day(added)}` : '',
+          badge: free ? text.rondpointFree : data['online'] === true ? text.rondpointOnline : '',
+          link: `/resources/${data['slug'] ?? document.id}`,
+        };
+      });
+    };
+
+    const classes = async (): Promise<RondpointItem[]> => {
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const snapshot = await getDocs(collection(firestore, 'bootcamps'));
+      const starts: { resourceId: string; program: string; date: string }[] = [];
+      for (const document of snapshot.docs) {
+        const programs = (document.data()['programs'] as { title?: string; starts?: { date?: string }[] }[] | undefined) ?? [];
+        for (const program of programs) {
+          for (const start of program.starts ?? []) {
+            if (start.date && start.date >= today) {
+              starts.push({ resourceId: document.id, program: program.title ?? '', date: start.date });
+            }
+          }
+        }
+      }
+      starts.sort((a, b) => a.date.localeCompare(b.date));
+
+      const items: RondpointItem[] = [];
+      for (const start of starts) {
+        if (items.length >= RONDPOINT_ROWS) {
+          break;
+        }
+        // Only published bootcamp listings can be read (and linked to).
+        const resource = await getDoc(doc(firestore, 'resources', start.resourceId)).catch(() => null);
+        if (!resource?.exists()) {
+          continue;
+        }
+        const [year, month, date] = start.date.split('-').map(Number);
+        items.push({
+          id: `${start.resourceId}-${start.program}-${start.date}`,
+          title: start.program,
+          detail: String(resource.data()['name'] ?? ''),
+          badge: day(new Date(year, month - 1, date)),
+          link: `/resources/${resource.data()['slug'] ?? start.resourceId}`,
+        });
+      }
+      return items;
+    };
+
+    const jobs = async (): Promise<RondpointItem[]> => {
+      const snapshot = await getDocs(
+        query(collection(firestore, 'jobs'), where('status', '==', 'active'), orderBy('createdAt', 'desc'), limit(RONDPOINT_ROWS)),
+      );
+      return snapshot.docs.map((document) => {
+        const data = document.data();
+        const place = (data['location'] as { city?: string; state?: string } | undefined) ?? {};
+        const area = [place.city, place.state].filter(Boolean).join(', ');
+        return {
+          id: document.id,
+          title: String(data['title'] ?? ''),
+          detail: [data['organizationName'], area].filter(Boolean).join(' · '),
+          badge: data['workArrangement'] === 'remote' ? text.rondpointRemote : '',
+          link: `/jobs/${document.id}`,
+        };
+      });
+    };
+
+    // Each column loads on its own, so one problem never hides the others.
+    const [r, c, j] = await Promise.allSettled([resources(), classes(), jobs()]);
+    this.newResources.set(r.status === 'fulfilled' ? r.value : []);
+    this.upcomingClasses.set(c.status === 'fulfilled' ? c.value : []);
+    this.newJobs.set(j.status === 'fulfilled' ? j.value : []);
+    this.rondpointLoading.set(false);
+  }
+
+  // =========================================================
   // FROM THE BLOG (live)
   // =========================================================
 
@@ -832,6 +1006,7 @@ export class HomeComponent {
     afterNextRender(() => {
       this.watchBlog();
       void this.loadStats();
+      void this.loadRondpoint();
 
       let index = 0;
       const timer = window.setInterval(() => {
