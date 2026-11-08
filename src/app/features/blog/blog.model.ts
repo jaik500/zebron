@@ -171,6 +171,9 @@ export function blogDate(value: { toDate(): Date } | null | undefined, locale = 
 /** Largest image the editor uploads (matches storage.rules). */
 export const BLOG_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
+/** Largest video the editor uploads (matches storage.rules). Keep clips short. */
+export const BLOG_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
+
 /** A cover or inline image source the app will show: https or the site's /images/ folder. */
 export function isBlogImageSource(value: string | null | undefined): value is string {
   return !!value && /^(https:\/\/|\/images\/)\S+$/.test(value.trim());

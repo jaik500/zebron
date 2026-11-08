@@ -94,7 +94,8 @@ body {
 .kc-figure {
   margin: 1.25rem 0 1.5rem;
 
-  img {
+  img,
+  video {
     display: block;
     width: 100%;
     height: auto;
@@ -111,4 +112,11 @@ body {
     color: #64748b;
     text-align: center;
   }
+}
+
+.kc-video video {
+  max-height: none;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: #032d42;
 }

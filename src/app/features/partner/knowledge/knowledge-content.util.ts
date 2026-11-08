@@ -8,6 +8,8 @@
  *   ``` fenced code blocks ```
  *   > quote
  *   ![Description](https://... or /images/...)   an image on its own line
+ *   ![Caption](https://.../clip.mp4 "poster.jpg")  a video (.mp4 or .webm; the
+ *                                                  quoted picture is optional)
  *   | Column | Column |   tables: a header row, a separator row
  *   | ------ | -----: |   (:--- left, :---: centre, ---: right), then rows
  *
@@ -46,8 +48,27 @@ function inline(text: string): string {
   return html.replace(/\u0000(\d+)\u0000/g, (_match, index: string) => codes[Number(index)] ?? '');
 }
 
-/** An image line: ![description](https://...) or ![description](/images/...). */
-const IMAGE_LINE = /^!\[([^\]]*)\]\(((?:https:\/\/|\/images\/)[^\s)]+)\)$/;
+/**
+ * A picture or video line: ![description](https://...), ![description](/images/...)
+ * or ![caption](/videos/clip.mp4 "/images/poster.jpg").
+ */
+const IMAGE_LINE =
+  /^!\[([^\]]*)\]\(((?:https:\/\/|\/images\/|\/videos\/)[^\s)"]+)(?:\s+"((?:https:\/\/|\/images\/)[^\s"]+)")?\)$/;
+
+/** .mp4 / .webm, also inside storage download links (…clip.mp4?alt=media). */
+const VIDEO_SOURCE = /\.(mp4|webm)(\?|#|$)/i;
+
+function renderVideo(caption: string, src: string, poster: string | undefined): string {
+  const text = escapeHtml(caption.trim());
+  return (
+    `<figure class="kc-figure kc-video"><video src="${escapeHtml(src)}" controls preload="metadata"` +
+    (poster ? ` poster="${escapeHtml(poster)}"` : '') +
+    (text ? ` title="${text}"` : '') +
+    '></video>' +
+    (text ? `<figcaption>${text}</figcaption>` : '') +
+    '</figure>'
+  );
+}
 
 function renderImage(alt: string, src: string): string {
   const text = escapeHtml(alt.trim());
@@ -166,7 +187,7 @@ export function renderKnowledgeContent(source: string): string {
     if (image) {
       closeParagraph();
       closeList();
-      out.push(renderImage(image[1], image[2]));
+      out.push(VIDEO_SOURCE.test(image[2]) ? renderVideo(image[1], image[2], image[3]) : renderImage(image[1], image[2]));
       continue;
     }
 

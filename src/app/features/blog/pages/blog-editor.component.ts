@@ -27,6 +27,7 @@ import { BlogAccessService, blogContextFromRoute } from '../blog-access.service'
 import {
   BLOG_COVERS,
   BLOG_IMAGE_MAX_BYTES,
+  BLOG_VIDEO_MAX_BYTES,
   BLOG_SECTION_META,
   BLOG_TOPICS,
   BlogCover,
@@ -225,6 +226,17 @@ interface FormatTool {
                   <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">{{ uploading() === 'inline' ? 'hourglass_top' : 'add_photo_alternate' }}</mat-icon>
                 </button>
                 <input #inlineFile type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" (change)="uploadInline($event)" />
+                <button
+                  type="button"
+                  (click)="videoFile.click()"
+                  [disabled]="preview() || !!uploading()"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-40"
+                  [attr.aria-label]="'Insert video' | t"
+                  [title]="'Insert video (MP4 or WebM, up to 50 MB)' | t"
+                >
+                  <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">{{ uploading() === 'video' ? 'hourglass_top' : 'video_library' }}</mat-icon>
+                </button>
+                <input #videoFile type="file" accept="video/mp4,video/webm" class="hidden" (change)="uploadVideo($event)" />
                 <span class="flex-1"></span>
                 <button
                   type="button"
@@ -335,6 +347,7 @@ interface FormatTool {
                 <h2 class="mb-2 font-semibold uppercase tracking-wider">{{ 'Formatting' | t }}</h2>
                 <p># {{ 'Section heading' | t }} · **{{ 'bold' | t }}** · *{{ 'italic' | t }}* · - {{ 'list' | t }} · > {{ 'quote' | t }} · [text](https://…)</p>
                 <p class="mt-1">{{ 'Image' | t }}: ![{{ 'description' | t }}](https://…) {{ 'on its own line' | t }}</p>
+                <p class="mt-1">{{ 'Video' | t }}: ![{{ 'caption' | t }}](https://….mp4) {{ 'on its own line' | t }}</p>
                 <p class="mt-1">{{ 'Table' | t }}: | A | B | {{ 'then' | t }} | --- | --- | {{ 'then one row per line' | t }}</p>
               </section>
             </aside>
@@ -353,7 +366,7 @@ interface FormatTool {
       :host ::ng-deep .blog-preview a { color: #007979; text-decoration: underline; }
       :host ::ng-deep .blog-preview blockquote { border-left: 4px solid #007979; background: #f0fdfa; padding: 0.5rem 1rem; margin: 1rem 0; }
       :host ::ng-deep .blog-preview code { background: #f1f5f9; border-radius: 4px; padding: 0.1rem 0.3rem; }
-      :host ::ng-deep .blog-preview img { max-width: 100%; border-radius: 10px; }
+      :host ::ng-deep .blog-preview img, :host ::ng-deep .blog-preview video { max-width: 100%; border-radius: 10px; }
       :host ::ng-deep .blog-preview pre { background: #0f172a; color: #f8fafc; border-radius: 8px; padding: 1rem; overflow-x: auto; }
     `,
   ],
@@ -381,7 +394,7 @@ export class BlogEditorComponent implements OnInit {
   protected readonly coverImage = signal('');
   protected coverImageAlt = '';
   /** Which upload is running, if any. */
-  protected readonly uploading = signal<'cover' | 'inline' | null>(null);
+  protected readonly uploading = signal<'cover' | 'inline' | 'video' | null>(null);
   protected readonly coverPreview = computed(() => (isBlogImageSource(this.coverImage()) ? this.coverImage().trim() : null));
   protected readonly coverGradient = computed(() => BLOG_COVERS[this.cover()] ?? BLOG_COVERS.teal);
   private readonly blog = inject(BlogService);
@@ -537,21 +550,30 @@ export class BlogEditorComponent implements OnInit {
     }
   }
 
-  /** Upload the chosen file and insert it at the cursor as ![description](url). */
+  /** Upload the chosen picture and insert it at the cursor as ![description](url). */
   protected async uploadInline(event: Event): Promise<void> {
+    await this.insertUpload(event, 'inline', 'Describe the image');
+  }
+
+  /** Upload the chosen video clip and insert it at the cursor as ![caption](url). */
+  protected async uploadVideo(event: Event): Promise<void> {
+    await this.insertUpload(event, 'video', 'Video caption');
+  }
+
+  private async insertUpload(event: Event, kind: 'inline' | 'video', label: string): Promise<void> {
     const textarea = this.editor()?.nativeElement;
     const position = textarea?.selectionStart ?? this.content.length;
-    const url = await this.upload(event, 'inline');
+    const url = await this.upload(event, kind);
     if (!url) {
       return;
     }
 
     const before = this.content.slice(0, position);
-    const line = `${before && !before.endsWith('\n') ? '\n\n' : ''}![${this.i18n.t('Describe the image')}](${url})\n\n`;
+    const line = `${before && !before.endsWith('\n') ? '\n\n' : ''}![${this.i18n.t(label)}](${url})\n\n`;
     this.content = before + line + this.content.slice(position);
   }
 
-  private async upload(event: Event, kind: 'cover' | 'inline'): Promise<string | null> {
+  private async upload(event: Event, kind: 'cover' | 'inline' | 'video'): Promise<string | null> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
@@ -559,20 +581,31 @@ export class BlogEditorComponent implements OnInit {
     if (!file) {
       return null;
     }
-    if (!file.type.startsWith('image/')) {
-      this.toast.error(this.i18n.t('Choose an image file (JPG, PNG, WebP or GIF).'));
-      return null;
-    }
-    if (file.size > BLOG_IMAGE_MAX_BYTES) {
-      this.toast.error(this.i18n.t('That image is larger than 5 MB. Choose a smaller one.'));
-      return null;
+    if (kind === 'video') {
+      if (!/^video\/(mp4|webm)$/.test(file.type)) {
+        this.toast.error(this.i18n.t('Choose an MP4 or WebM video.'));
+        return null;
+      }
+      if (file.size > BLOG_VIDEO_MAX_BYTES) {
+        this.toast.error(this.i18n.t('That video is larger than 50 MB. Choose a shorter clip.'));
+        return null;
+      }
+    } else {
+      if (!file.type.startsWith('image/')) {
+        this.toast.error(this.i18n.t('Choose an image file (JPG, PNG, WebP or GIF).'));
+        return null;
+      }
+      if (file.size > BLOG_IMAGE_MAX_BYTES) {
+        this.toast.error(this.i18n.t('That image is larger than 5 MB. Choose a smaller one.'));
+        return null;
+      }
     }
 
     this.uploading.set(kind);
     try {
       return await this.blog.uploadImage(this.context, file);
     } catch {
-      this.toast.error(this.i18n.t('The image could not be uploaded. Please try again.'));
+      this.toast.error(this.i18n.t(kind === 'video' ? 'The video could not be uploaded. Please try again.' : 'The image could not be uploaded. Please try again.'));
       return null;
     } finally {
       this.uploading.set(null);

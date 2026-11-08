@@ -171,12 +171,17 @@ service firebase.storage {
     // ------------------------------------------------------------
     // BLOG IMAGES
     // ------------------------------------------------------------
-    // Cover photos and pictures inside posts. Images only, up to 5 MB
-    // (the editor's limit). Files are never replaced, only added.
+    // Cover photos, pictures and short video clips in posts: images up
+    // to 5 MB and MP4/WebM videos up to 50 MB (the editor's limits).
+    // Files are never replaced, only added.
     function isBlogImage() {
       return request.resource.size > 0
-        && request.resource.size <= 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && (
+          (request.resource.size <= 5 * 1024 * 1024
+            && request.resource.contentType.matches('image/.*'))
+          || (request.resource.size <= 50 * 1024 * 1024
+            && request.resource.contentType.matches('video/(mp4|webm)'))
+        );
     }
 
     // Public and staff posts: anyone can see the pictures, Zebron
