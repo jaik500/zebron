@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ADMIN_LAYOUT_OPTIONS, AdminBackLinkComponent, AdminLayoutSwitchComponent, adminViewState } from '../../shared/admin-view';
 import { NgClass } from '@angular/common';
@@ -25,10 +25,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { BootcampProgramsEditorComponent } from '../../../bootcamps/bootcamp-programs-editor.component';
+import { resourceKind } from '../../../resources/resource-kinds';
+import { PageTitleService } from '../../../../core/services/page-title.service';
 @Component({
   selector: 'app-resource-admin',
   standalone: true,
-  imports: [AdminBackLinkComponent, AdminLayoutSwitchComponent, NgClass, FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
+  imports: [AdminBackLinkComponent, AdminLayoutSwitchComponent, NgClass, FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, BootcampProgramsEditorComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -260,11 +263,11 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                         class="text-xs font-semibold uppercase
                tracking-wider text-[#007979]"
                       >
-                        Resource details
+                        {{ isBootcamp() ? 'Bootcamp details' : 'Resource details' }}
                       </p>
 
                       <h2 class="mt-1 text-xl font-semibold text-[#032D42]">
-                        {{ editingId() ? 'Edit resource' : 'Create resource' }}
+                        {{ (editingId() ? 'Edit ' : 'Create ') + noun() }}
                       </h2>
 
                       <p class="mt-1 text-sm text-gray-500">
@@ -458,6 +461,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                               id="categoryId"
                               name="categoryId"
                               [(ngModel)]="form.categoryId"
+                              (selectionChange)="syncHeader()"
                               required
                             >
                               <mat-option value="">Select a category</mat-option>
@@ -700,6 +704,15 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                     </section>
 
                     <!-- =================================================
+                 Bootcamp programs (Bootcamps category only)
+                 ================================================= -->
+                    @if (isBootcamp()) {
+                      <section class="border-t border-gray-200 pt-7">
+                        <app-bootcamp-programs-editor [resourceId]="editingId()" />
+                      </section>
+                    }
+
+                    <!-- =================================================
                  Tags
                  ================================================= -->
                     <section class="border-t border-gray-200 pt-7">
@@ -824,8 +837,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                           saving()
                             ? 'Saving...'
                             : editingId()
-                              ? 'Update resource'
-                              : 'Create resource'
+                              ? 'Update ' + noun()
+                              : 'Create ' + noun()
                         }}
                       </button>
                     </div>
@@ -1119,6 +1132,26 @@ export class ResourceAdminComponent implements OnInit {
   private readonly resourceTypeStore = inject(ResourceTypeStore);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(HotToastService);
+  private readonly pageTitle = inject(PageTitleService);
+
+  /** Programs editor, present while editing a bootcamp. */
+  private readonly programsEditor = viewChild(BootcampProgramsEditorComponent);
+
+  /** True when the form's category is a bootcamp category. */
+  protected isBootcamp(): boolean {
+    const category = this.categories().find((item) => item.id === this.form.categoryId);
+    return resourceKind(category).kind === 'bootcamp';
+  }
+
+  /** "bootcamp" or "resource", for titles and buttons. */
+  protected noun(): string {
+    return this.isBootcamp() ? 'bootcamp' : 'resource';
+  }
+
+  /** The universal header says "Bootcamps" while a bootcamp is open. */
+  protected syncHeader(): void {
+    this.pageTitle.setTitle(this.viewState.showForm() && this.isBootcamp() ? 'Bootcamps' : 'Resources');
+  }
 
   protected readonly resources = this.resourceStore.resources;
   protected readonly categories = this.categoryStore.categories;
@@ -1151,6 +1184,7 @@ export class ResourceAdminComponent implements OnInit {
     this.resetForm();
     this.showNewResourceForm.set(true);
     this.viewState.openForm();
+    this.syncHeader();
   }
 
   /** Search text (shared with the toolbar). */
@@ -1459,22 +1493,34 @@ export class ResourceAdminComponent implements OnInit {
     // Save
     // =========================================================
 
+    const programsEditor = this.isBootcamp() ? this.programsEditor() : undefined;
+    const programsProblem = programsEditor?.validate() ?? '';
+    if (programsProblem) {
+      this.toast.error(programsProblem);
+      return;
+    }
+
     this.saving.set(true);
 
     this.error.set(null);
 
     const editingId = this.editingId();
+    const noun = this.isBootcamp() ? 'Bootcamp' : 'Resource';
 
     try {
+      let savedId = editingId;
       if (editingId) {
         await this.resourceStore.updateResource(editingId, resource);
-
-        this.toast.success('Resource updated successfully.');
       } else {
-        await this.resourceStore.createResource(resource);
-
-        this.toast.success('Resource created successfully.');
+        savedId = await this.resourceStore.createResource(resource);
       }
+
+      // Bootcamp programs live in bootcamps/{resourceId}.
+      if (programsEditor && savedId) {
+        await programsEditor.save(savedId, currentUser.id);
+      }
+
+      this.toast.success(editingId ? `${noun} updated successfully.` : `${noun} created successfully.`);
 
       // =======================================================
       // Reset and refresh
@@ -1482,6 +1528,7 @@ export class ResourceAdminComponent implements OnInit {
 
       this.resetForm();
       this.viewState.backToList();
+      this.syncHeader();
 
       await this.loadData();
     } catch (error) {
@@ -1537,6 +1584,7 @@ export class ResourceAdminComponent implements OnInit {
 
       featured: resource.featured,
     };
+    this.syncHeader();
 
     window.scrollTo({
       top: 0,
@@ -1550,6 +1598,7 @@ export class ResourceAdminComponent implements OnInit {
   protected cancelEdit(): void {
     this.resetForm();
     this.viewState.backToList();
+    this.syncHeader();
   }
 
   /**

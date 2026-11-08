@@ -4536,6 +4536,47 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // BOOTCAMPS
+    // ============================================================
+
+    /*
+     * bootcamps/{resourceId}: the programs, start dates and Zebron's take of
+     * a resource in the Bootcamps category. Public (the resource page shows
+     * them); platform admins write.
+     */
+    match /bootcamps/{resourceId} {
+      allow get, list: if true;
+
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    /*
+     * bootcampStats/{resourceId}__{programId}: views and Apply clicks per
+     * program ("_page" counts views of the resource page). Anyone (signed
+     * in or not) may add exactly one to one counter of an existing
+     * resource; only platform admins read them.
+     */
+    match /bootcampStats/{statId} {
+      function addsOne(field) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly([field])
+          && request.resource.data[field] == resource.data[field] + 1;
+      }
+
+      allow read, delete: if isPlatformAdmin();
+
+      allow create: if request.resource.data.keys().hasOnly(["bootcampId", "programId", "views", "applyClicks"])
+        && request.resource.data.bootcampId is string
+        && request.resource.data.programId is string
+        && statId == request.resource.data.bootcampId + "__" + request.resource.data.programId
+        && request.resource.data.views in [0, 1]
+        && request.resource.data.applyClicks in [0, 1]
+        && request.resource.data.views + request.resource.data.applyClicks == 1
+        && exists(/databases/$(database)/documents/resources/$(request.resource.data.bootcampId));
+
+      allow update: if addsOne("views") || addsOne("applyClicks");
+    }
+
+    // ============================================================
     // JOB SEEKERS: SAVED JOBS AND JOB ALERTS
     // ============================================================
 

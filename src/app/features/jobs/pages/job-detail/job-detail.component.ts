@@ -28,7 +28,7 @@ import { CourseService } from '../../../courses/course.service';
          PAGE
          ========================================================= -->
     <main
-      class="min-h-screen
+      class="min-h-screen overflow-x-clip
              bg-gray-50 mt-16"
     >
       <!-- =======================================================

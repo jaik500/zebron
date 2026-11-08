@@ -8,6 +8,7 @@ import { partnerOrganizationGuard } from './core/guards/partner-organization.gua
 import { partnerRoleGuard } from './core/guards/partner-role.guard';
 import { applicationAccessGuard } from './core/guards/application-access.guard';
 import { resourceResolver } from './features/resources/resolvers/resource.resolver';
+import { bootcampDirectoryResolver } from './features/bootcamps/bootcamp-directory.resolver';
 import { AboutComponent } from './features/about/pages/about/about.component';
 import { testCenterOrganizationGuard } from './core/guards/test-center-organization.guard';
 import { leaveCourseBuilderGuard } from './features/courses/builder/leave-course-builder.guard';
@@ -213,6 +214,19 @@ export const routes: Routes = [
             header: 'Resources',
         },
         loadComponent: () => import('./features/resources/pages/resource-list/resource-list.component').then((m) => m.ResourceListComponent),
+    },
+    {
+        path: 'bootcamps',
+        canActivate: [featureGuard],
+        data: {
+            featureKey: 'resources',
+            title: 'Zebron | Bootcamps',
+            header: 'Bootcamps',
+        },
+        resolve: {
+            bootcamps: bootcampDirectoryResolver,
+        },
+        loadComponent: () => import('./features/bootcamps/bootcamp-directory.component').then((m) => m.BootcampDirectoryComponent),
     },
     {
         path: 'resources/:slug',

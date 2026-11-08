@@ -1,1532 +1,767 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
-
-import { CommonModule } from '@angular/common';
-
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
-
-import { Resource } from '../../../../core/models/resource.model';
-import { ResourceType } from '../../../../core/models/resource-type.model';
 
 import { Category } from '../../../../core/models/category.model';
-
 import { Location } from '../../../../core/models/location.model';
+import { Resource } from '../../../../core/models/resource.model';
+import { ResourceType } from '../../../../core/models/resource-type.model';
+import { CategoryService } from '../../../../core/services/category.service';
 import { LocationService } from '../../../../core/services/location.service';
 import { PersonalizationService } from '../../../../core/services/personalization.service';
-
-import { CategoryService } from '../../../../core/services/category.service';
-
-import { AuthService } from '../../../../core/services/auth.service';
-
-import { ResourceCardComponent } from '../../components/resource-card/resource-card.component';
-
-import { UsefulLinksComponent } from '../../components/useful-links/useful-links.component';
-
-import { HotToastService } from '@ngxpert/hot-toast';
+import { ResourceService } from '../../../../core/services/resource.service';
 import { ResourceTypeService } from '../../../../core/services/resource-type.service';
-import { ResourceStore } from '../../stores/resource.store';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatButtonModule } from '@angular/material/button';
+import { BootcampService } from '../../../bootcamps/bootcamp.service';
+import { ResourceCardComponent } from '../../components/resource-card/resource-card.component';
+import { LocationPickerComponent } from '../../components/location-picker/location-picker.component';
+import { resourceKind } from '../../resource-kinds';
+import { POPULAR_SEARCHES, RESOURCE_NEEDS, ResourceNeed, needOf } from '../../resource-needs';
+
+const PAGE_SIZE = 24;
+
+/** The query parameters this page reads and writes. */
+interface DirectoryFilters {
+  q: string;
+  /** A "Search by Category" topic (resource-needs.ts key). */
+  topic: string;
+  category: string;
+  near: string;
+  type: string;
+  free: boolean;
+  online: boolean;
+  verified: boolean;
+  /** "See all resources" from the front door. */
+  all: boolean;
+}
+
+const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type: '', free: false, online: false, verified: false, all: false };
+
+/**
+ * /resources: the public directory of help (legal, health, housing, food,
+ * jobs, education…). Filters live in the address so searches can be shared:
+ * ?q=&category=<slug>&near=<locationId>&type=&free=1&online=1&verified=1.
+ * Bootcamps have their own page, /bootcamps.
+ */
 @Component({
   selector: 'app-resource-list',
-
   standalone: true,
-
-  imports: [
-    CommonModule,
-    RouterLink,
-    MatIconModule,
-    MatMenuModule,
-    ResourceCardComponent,
-    UsefulLinksComponent, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButtonModule],
-
+  imports: [RouterLink, MatIconModule, ResourceCardComponent, LocationPickerComponent],
   template: `
-    <!-- =========================================================
-         Page Header
-         ========================================================= -->
-    <header class="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
-      <div
-        class="relative mx-auto flex max-w-7xl
-               items-start justify-between gap-2
-               p-4
-               sm:items-center sm:gap-4
-               sm:px-6 sm:py-6
-               lg:px-8 lg:py-8"
-      >
-        <!-- =====================================================
-             Header Content
-             ===================================================== -->
-        <div class="min-w-0 flex-1 pr-2 sm:pr-0">
-          <p
-            class="text-md
-                   font-semibold uppercase
-                   tracking-wider
-                   text-white/80
-                   sm:text-xs"
-          >
-            Resource Directory
-          </p>
-
-          <h1
-            class="mt-0.5 text-3xl
-                   font-bold leading-7
-                   tracking-tight text-white
-                   sm:mt-1 sm:text-3xl
-                   sm:leading-9
-                   lg:text-4xl
-                   lg:leading-10"
-          >
-            Find the help you need
-          </h1>
-
-          <p
-            class="mt-1 max-w-3xl
-                   text-md leading-5
-                   text-white/85
-                   sm:mt-2 sm:text-base
-                   sm:leading-6
-                   lg:text-lg
-                   lg:leading-7"
-          >
-            Browse trusted resources, services, organizations, and tools available to help you and
-            your community.
-          </p>
-        </div>
-
-         <!-- Home -->
-          <a
-            routerLink="/"
-            class="inline-flex
-                   shrink-0
-                   items-center
-                   rounded-lg
-                   border
-                   border-gray-300
-                   bg-white
-                   px-3 py-2
-                   text-sm
-                   font-semibold
-                   text-gray-700
-                   shadow-sm
-                   transition
-                   hover:border-[#7ED6D1]
-                   hover:text-[#032D42]"
-          >
-            ← Home
-          </a>
-
-
-        <!-- =====================================================
-             Authentication
-             ===================================================== -->
-        <div class="ml-auto shrink-0">
-          <!-- =================================================
-               Desktop: Authentication / Signed-in User
-               ================================================= -->
-          <div
-            class="hidden items-center
-                   gap-2 sm:flex"
-          >
-            @if (authService.user()) {
-              <!-- Signed-in user -->
-              <span
-                class="max-w-[180px] truncate
-                       text-sm font-semibold
-                       text-white"
-              >
-                Hey, {{ authService.user()?.displayName || 'there' }}
-              </span>
-            } @else {
-              <!-- Login -->
-              <a
-                routerLink="/login"
-                class="inline-flex h-9
-                       items-center justify-center
-                       gap-1.5
-                       rounded-md
-                       border border-white/40
-                       px-3
-                       text-sm font-semibold
-                       text-white
-                       transition
-                       hover:bg-white/10
-                       focus:outline-none
-                       focus:ring-2
-                       focus:ring-white/40"
-              >
-                <mat-icon
-                  aria-hidden="true"
-                  class="!m-0 !h-4 !w-4
-                         !text-[16px]
-                         !leading-4"
-                >
-                  login
-                </mat-icon>
-
-                <span> Login </span>
-              </a>
-
-              <!-- Register -->
-              <a
-                routerLink="/register"
-                class="inline-flex h-9
-                       items-center justify-center
-                       gap-1.5
-                       rounded-md
-                       bg-white
-                       px-3
-                       text-sm font-semibold
-                       text-[#007979]
-                       shadow-sm
-                       transition
-                       hover:bg-gray-100
-                       focus:outline-none
-                       focus:ring-2
-                       focus:ring-white/40"
-              >
-                <mat-icon
-                  aria-hidden="true"
-                  class="!m-0 !h-4 !w-4
-                         !text-[16px]
-                         !leading-4"
-                >
-                  person_add
-                </mat-icon>
-
-                <span> Register </span>
-              </a>
-            }
-
-            <!-- Desktop account menu -->
-            @if (authService.user()) {
-              <button
-                mat-icon-button
-                [matMenuTriggerFor]="accountMenu"
-                aria-label="Account options"
-                title="Account options"
-                class="!flex !h-9 !w-9
-                       !items-center
-                       !justify-center
-                       !rounded-md
-                       !border !border-white/30
-                       !bg-white/10
-                       !text-white
-                       hover:!bg-white/20
-                       focus:!outline-none"
-              >
-                <mat-icon
-                  aria-hidden="true"
-                  class="!m-0 !h-6 !w-6
-                         !text-[24px]
-                         !leading-6"
-                >
-                  more_vert
-                </mat-icon>
-              </button>
-            }
+    <main class="mt-16 min-h-screen overflow-x-clip bg-gray-50">
+      @if (!showResults()) {
+        <!-- ===================== Front door (like 211): search over a photo, then categories ===================== -->
+        <!-- Photo: add public/images/resources-hero.jpg (a licensed photo, about 2000×900). Until then the teal gradient shows. -->
+        <section
+          class="relative bg-[#035e5e] bg-cover bg-center"
+          style="background-image: linear-gradient(90deg, rgba(3, 45, 66, 0.55) 0%, rgba(3, 45, 66, 0.15) 60%, rgba(3, 45, 66, 0) 100%), url('/images/resources-hero.jpg'), linear-gradient(135deg, #007979 0%, #035e5e 55%, #2a835f 100%)"
+        >
+          <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden">
+            <div class="absolute -right-24 -top-24 h-80 w-80 rounded-full border-[48px] border-white/10"></div>
+            <div class="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full border-[56px] border-white/5"></div>
           </div>
 
-          <!-- =================================================
-               Mobile: Greeting + Three-dot Account Menu
-               ================================================= -->
-          <div class="flex items-center gap-1.5 sm:hidden">
-            <!-- @if (authService.user()) {
-              <span
-                class="max-w-[140px] truncate
-                       text-sm font-semibold
-                       text-white"
-              >
-                Hey, {{ authService.user()?.displayName || 'there' }}
-              </span>
-            } -->
+          <div class="relative mx-auto flex min-h-[380px] max-w-6xl items-center px-4 py-10 sm:min-h-[440px] sm:px-6 lg:px-8">
+            <div class="w-full max-w-2xl rounded-2xl bg-[#032D42]/95 p-6 text-white shadow-2xl shadow-black/30 sm:p-8">
+              <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">What do you need help with?</h1>
+              <p class="mt-3 text-lg text-white/85">Search services, programs and places near you</p>
 
-            @if (!authService.user()) {
-              <button
-                mat-icon-button
-                [matMenuTriggerFor]="accountMenu"
-                aria-label="Account options"
-                title="Account options"
-                class="!flex !h-9 !w-9
-                       !items-center
-                       !justify-center
-                       !rounded-md
-                       !border !border-white/30
-                       !bg-white/10
-                       !text-white
-                       hover:!bg-white/20
-                       focus:!outline-none"
-              >
-                <mat-icon
-                  aria-hidden="true"
-                  class="!m-0 !h-6 !w-6
-                         !text-[24px]
-                         !leading-6"
-                >
-                  more_vert
-                </mat-icon>
-              </button>
-            } @else {
-              <button
-                mat-icon-button
-                [matMenuTriggerFor]="accountMenu"
-                aria-label="Account options"
-                title="Account options"
-                class="!flex !h-9 !w-9
-                       !items-center
-                       !justify-center
-                       !rounded-md
-                       !border !border-white/30
-                       !bg-white/10
-                       !text-white
-                       hover:!bg-white/20
-                       focus:!outline-none"
-              >
-                <mat-icon
-                  aria-hidden="true"
-                  class="!m-0 !h-6 !w-6
-                         !text-[24px]
-                         !leading-6"
-                >
-                  more_vert
-                </mat-icon>
-              </button>
-            }
-
-            <mat-menu #accountMenu="matMenu" xPosition="before" yPosition="below">
-              @if (authService.user()) {
-                <a mat-menu-item routerLink="/profile">
-                  <mat-icon aria-hidden="true"> person </mat-icon>
-
-                  <span> Profile </span>
-                </a>
-
-                @if (authService.isAdmin) {
-                  <a mat-menu-item routerLink="/admin">
-                    <mat-icon aria-hidden="true"> admin_panel_settings </mat-icon>
-
-                    <span> Admin Dashboard </span>
-                  </a>
-                }
-              } @else {
-                <a mat-menu-item routerLink="/login">
-                  <mat-icon aria-hidden="true"> login </mat-icon>
-
-                  <span> Login </span>
-                </a>
-
-                <a mat-menu-item routerLink="/register">
-                  <mat-icon aria-hidden="true"> person_add </mat-icon>
-
-                  <span> Register </span>
-                </a>
-              }
-
-              <button mat-menu-item type="button" (click)="signOut()" [disabled]="signingOut()">
-                <mat-icon aria-hidden="true"> logout </mat-icon>
-
-                <span>
-                  @if (signingOut()) {
-                    Signing out...
-                  } @else {
-                    Sign out
-                  }
-                </span>
-              </button>
-            </mat-menu>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- =========================================================
-         Main Content
-         ========================================================= -->
-    <main
-      class="px-2 py-3
-             sm:px-6 sm:py-6
-             lg:px-8"
-    >
-      <div
-        class="mx-auto grid max-w-7xl
-               gap-4
-               lg:grid-cols-[minmax(0,1fr)_280px]
-               lg:gap-6"
-      >
-        <!-- =====================================================
-             Main Resource Directory
-             ===================================================== -->
-        <section class="min-w-0">
-          <!-- ===================================================
-               Browse by Category
-               =================================================== -->
-          <section>
-            <!-- Heading + Mobile Filter Builder -->
-            <div
-              class="flex items-center
-                     justify-between"
-            >
-              <h1
-                class="text-xl
-                       font-semibold
-                       leading-6
-                       text-gray-900
-                       sm:text-lg"
-              >
-                Browse by category
-              </h1>
-
-              <!-- =================================================
-                   Mobile Filter Builder Toggle
-                   ================================================= -->
-              <button
-                type="button"
-                (click)="toggleSearch()"
-                [attr.aria-expanded]="showSearch()"
-                aria-label="Toggle filter builder"
-                [title]="showSearch() ? 'Hide filter builder' : 'Show filter builder'"
-                class="flex min-h-8
-                       shrink-0
-                       items-center
-                       justify-center
-                       rounded-md
-                       text-[#007979]
-                       transition
-                       hover:bg-[#E6F4F3]
-                       focus:outline-none
-                       focus:ring-2
-                       focus:ring-[#007979]/30
-                       sm:hidden"
-              >
-                @if (showSearch()) {
-                  <!-- Show Filter Builder -->
-                  <span
-                    class="rounded-md
-                           bg-[#007979]
-                           px-2.5 py-1
-                           text-[14px]
-                           font-medium
-                           text-white
-                           transition
-                           hover:bg-[#006666]"
-                  >
-                    Show Filters
-                  </span>
-                } @else {
-                  <!-- Filter Builder Icon -->
-                  <mat-icon
-                    aria-hidden="true"
-                    class="!m-0 !h-5 !w-10
-                           !text-[30px]
-                           !leading-5"
-                  >
-                    search
-                  </mat-icon>
-                }
-              </button>
-            </div>
-
-            <!-- =================================================
-                 Category Buttons
-                 ================================================= -->
-            <div
-              class="mt-2 flex flex-wrap
-                     gap-1.5 sm:gap-2"
-            >
-              <!-- All -->
-              <button
-                type="button"
-                (click)="selectCategory('')"
-                [class.bg-[#007979]]="!selectedCategory()"
-                [class.text-white]="!selectedCategory()"
-                [class.bg-gray-100]="selectedCategory()"
-                [class.text-gray-700]="selectedCategory()"
-                class="rounded-full
-                       px-2.5 py-1
-                       text-[14px]
-                       font-medium
-                       leading-4
-                       hover:bg-blue-100
-                       sm:px-3
-                       sm:py-1.5
-                       sm:text-xs"
-              >
-                All
-              </button>
-
-              @for (category of categories(); track category.id) {
-                <button
-                  type="button"
-                  (click)="selectCategory(category.slug)"
-                  [class.bg-[#007979]]="selectedCategory() === category.slug"
-                  [class.text-white]="selectedCategory() === category.slug"
-                  [class.bg-gray-100]="selectedCategory() !== category.slug"
-                  [class.text-gray-700]="selectedCategory() !== category.slug"
-                  class="rounded-full
-                         px-2.5 py-1
-                         text-[14px]
-                         font-medium
-                         leading-4
-                         hover:bg-blue-100
-                         sm:px-3
-                         sm:py-1.5
-                         sm:text-xs"
-                >
-                  {{ category.name }}
-                </button>
-              }
-            </div>
-          </section>
-
-          <!-- ===================================================
-               Personalization
-               =================================================== -->
-
-          <section
-            class="hidden 
-                   mt-4
-                   rounded-xl
-                   border
-                   border-[#007979]/15
-                   bg-white
-                   p-4
-                   sm:block
-                   sm:p-5
-                   sm-block"
-          >
-            <div
-              class="flex items-start
-         justify-between
-         gap-3
-         sm:flex-row
-         sm:items-start
-         sm:justify-between"
-            >
-              <!-- Personalization heading -->
-
-              <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                  <mat-icon
-                    aria-hidden="true"
-                    class="!m-0
-                           !h-5 !w-5
-                           !text-[20px]
-                           text-[#007979]"
-                  >
-                    auto_awesome
-                  </mat-icon>
-
-                  <h2
-                    class="text-base
-                           font-bold
-                           text-[#032D42]
-                           sm:text-lg"
-                  >
-                    Find resources for you
-                  </h2>
-                </div>
-
-                <p
-                  class="mt-1
-                         text-sm
-                         leading-5
-                         text-gray-500"
-                >
-                  Tell us what you need and where you are to see resources that may be more relevant
-                  to you.
-                </p>
-              </div>
-
-              <!-- Clear personalization -->
-              <!-- Personalization actions -->
-              <div
-                class="flex shrink-0
-         items-center gap-3"
-              >
-                <!-- Show / Hide -->
-                <button
-                  type="button"
-                  (click)="togglePersonalization()"
-                  [attr.aria-expanded]="showPersonalization()"
-                  [attr.aria-label]="
-                    showPersonalization()
-                      ? 'Hide personalization options'
-                      : 'Show personalization options'
-                  "
-                  class="inline-flex
-         shrink-0
-         items-center
-         gap-1
-         border-0
-         bg-transparent
-         p-0
-         text-xs
-         font-semibold
-         text-[#007979]
-         transition
-         hover:text-[#032D42]
-         focus:outline-none"
-                >
-                  <mat-icon
-                    aria-hidden="true"
-                    class="!m-0
-             !h-4 !w-4
-             !text-[18px]"
-                  >
-                    {{ showPersonalization() ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}
-                  </mat-icon>
-
-                  <span>
-                    {{ showPersonalization() ? 'Hide' : 'Show' }}
-                  </span>
-                </button>
-
-                <!-- Clear personalization -->
-                @if (hasPersonalization()) {
-                  <button
-                    type="button"
-                    (click)="clearPersonalization()"
-                    class="text-xs
-             font-semibold
-             text-[#007979]
-             hover:text-[#032D42]"
-                  >
-                    Clear
-                  </button>
-                }
-              </div>
-            </div>
-
-            @if (showPersonalization()) {
-              <!-- =================================================
-                 Interests
-                 ================================================= -->
-              <div class="mt-4">
-                <p
-                  class="mb-2
-                       text-sm
-                       font-semibold
-                       text-[#032D42]"
-                >
-                  What are you interested in?
-                </p>
-
-                <div class="flex flex-wrap gap-2">
-                  @for (category of categories(); track category.id) {
-                    <button
-                      type="button"
-                      (click)="togglePersonalizationInterest(category.id)"
-                      [attr.aria-pressed]="isPersonalizationInterestSelected(category.id)"
-                      [class.border-[#007979]]="isPersonalizationInterestSelected(category.id)"
-                      [class.bg-[#007979]/10]="isPersonalizationInterestSelected(category.id)"
-                      [class.text-[#007979]]="isPersonalizationInterestSelected(category.id)"
-                      [class.shadow-sm]="isPersonalizationInterestSelected(category.id)"
-                      [class.border-gray-200]="!isPersonalizationInterestSelected(category.id)"
-                      [class.bg-white]="!isPersonalizationInterestSelected(category.id)"
-                      [class.text-[#032D42]]="!isPersonalizationInterestSelected(category.id)"
-                      class="
-      inline-flex
-      items-center
-      gap-1
-      rounded-lg
-      border
-      px-2.5
-      py-1
-      text-xs
-      font-medium
-      transition-all
-      duration-150
-      hover:border-[#007979]/50
-      hover:bg-[#007979]/5
-      focus:outline-none
-      focus:ring-2
-      focus:ring-[#007979]/20
-    "
-                    >
-                      <span>
-                        {{ category.name }}
-                      </span>
-
-                      @if (isPersonalizationInterestSelected(category.id)) {
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          class="h-3 w-3 shrink-0"
-                          aria-hidden="true"
-                        >
-                          <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" />
-                        </svg>
-                      }
-                    </button>
-                  }
-                </div>
-              </div>
-
-              <!-- =================================================
-     Location
-     ================================================= -->
-              <div class="mt-4">
-
-                <div
-                  class="flex
-           items-end
-           gap-3"
-                >
-                  <!-- Location dropdown -->
-                  <div class="min-w-0 flex-1 max-w-md">
-                    <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-                      <mat-label>Where are you located?</mat-label>
-                      <mat-select
-                      id="personalization-location"
-                      [value]="personalizationService.preferences().locationId ?? ''"
-                      (selectionChange)="selectPersonalizationLocation($event.value || null)"
-                    >
-                      <mat-option value="">Select your location</mat-option>
-
-                      @for (location of locations(); track location.id) {
-                        <mat-option [value]="location.id">
-                          {{ formatPersonalizationLocation(location) }}
-                        </mat-option>
-                      }
-                    </mat-select>
-                    </mat-form-field>
-                  </div>
-
-                  <!-- Clear personalization -->
-                  @if (hasPersonalization()) {
-                    <button
-                      type="button"
-                      (click)="clearPersonalization()"
-                      class="mb-0.5
-               shrink-0
-               text-xs
-               font-semibold
-               text-[#007979]
-               transition
-               hover:text-[#032D42]
-               focus:outline-none
-               focus:ring-2
-               focus:ring-[#007979]/30"
-                    >
-                      Clear
-                    </button>
-                  }
-                </div>
-              </div>
-            }
-          </section>
-
-          <!-- ===================================================
-               Search and Filters
-               =================================================== -->
-          <section
-            class="mt-3
-                   rounded-lg
-                   border
-                   border-[#007979]/15
-                   bg-[#032D42]/80
-                   p-2
-                   shadow-sm
-                   sm:p-2.5"
-          >
-            <!-- =================================================
-                 Primary Filters
-
-                 MOBILE:
-
-                 showSearch() === false
-                   Category + Type
-
-                 showSearch() === true
-                   Search only
-
-                 DESKTOP:
-
-                   Search + Category + Type
-                   all visible on one row.
-                 ================================================= -->
-            <div
-              class="grid
-                     grid-cols-2
-                     gap-1.5
-                     sm:grid-cols-3
-                     sm:gap-2"
-            >
-              <!-- =================================================
-                   Search
-                   ================================================= -->
-              <div
-                [class.hidden]="!showSearch()"
-                class="col-span-2
-                       sm:col-span-1
-                       sm:block"
-              >
-
-                <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--on-dark zb-search" subscriptSizing="dynamic">
-                    <mat-label>Search</mat-label>
-                    <mat-icon matPrefix aria-hidden="true">search</mat-icon>
-                    <input matInput
-                    id="search"
+              <form role="search" (submit)="search($event, heroQuery.value)" class="mt-5 flex flex-col gap-2 sm:flex-row">
+                <label class="min-w-0 flex-[3]">
+                  <span class="sr-only">Search services or programs</span>
+                  <input
+                    #heroQuery
                     type="search"
-                    [value]="searchTerm()"
-                    (input)="onSearch($event)"
-                    placeholder="Search resources..."
+                    placeholder="Search services or programs"
+                    class="h-11 w-full rounded-lg border-0 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#12BFC3]"
                   />
-                  </mat-form-field>
-              </div>
-
-              <!-- =================================================
-                   Category
-                   ================================================= -->
-              <div [class.hidden]="showSearch()" class="sm:block">
-
-                <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense zb-field--on-dark" subscriptSizing="dynamic">
-                  <mat-label>Category</mat-label>
-                  <mat-select
-                  id="category"
-                  [value]="selectedCategory()"
-                  (selectionChange)="onCategoryChange($event.value)"
-                >
-                  <mat-option value="">All categories</mat-option>
-
-                  @for (category of categories(); track category.slug) {
-                    <mat-option [value]="category.slug">
-                      {{ category.name }}
-                    </mat-option>
-                  }
-                </mat-select>
-                </mat-form-field>
-              </div>
-
-              <!-- =================================================
-                   Resource Type
-                   ================================================= -->
-              <div [class.hidden]="showSearch()" class="sm:block">
-
-                <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-field--dense zb-field--on-dark" subscriptSizing="dynamic">
-                  <mat-label>Type</mat-label>
-                  <mat-select
-                  id="resourceType"
-                  [value]="selectedType()"
-                  (selectionChange)="onTypeChange($event.value)"
-                >
-                  <mat-option value="">All types</mat-option>
-
-                  @for (type of resourceTypes(); track type.id) {
-                    <mat-option [value]="type.id">
-                      {{ type.name }}
-                    </mat-option>
-                  }
-                </mat-select>
-                </mat-form-field>
-              </div>
-            </div>
-
-            <!-- =================================================
-                 Secondary Filters + Result Count
-                 ================================================= -->
-            <div
-              class="mt-1.5
-         flex
-         flex-nowrap
-         items-center
-         justify-between
-         gap-2"
-            >
-              <!-- Filter Items -->
-              <div
-                class="flex
-           min-w-0
-           flex-nowrap
-           items-center
-           gap-3"
-              >
-                <!-- Online -->
-                <mat-checkbox
-                  class="zb-checkbox--on-dark shrink-0"
-                  [checked]="onlineOnly()"
-                  (change)="onOnlineChange($event.checked)"
-                >
-                  Online
-                </mat-checkbox>
-
-                <!-- Featured -->
-                <mat-checkbox
-                  class="zb-checkbox--on-dark shrink-0"
-                  [checked]="featuredOnly()"
-                  (change)="onFeaturedChange($event.checked)"
-                >
-                  Featured
-                </mat-checkbox>
-
-                <!-- Clear -->
-                @if (hasActiveFilters()) {
-                  <button
-                    type="button"
-                    (click)="clearFilters()"
-                    class="ml-6
-               shrink-0
-               self-center
-               whitespace-nowrap
-               text-md
-               font-medium
-               text-[#007979]
-               hover:text-[#032D42]
-               sm:text-[14px]"
-                  >
-                    Clear
-                  </button>
-                }
-              </div>
-
-              <!-- Result Count -->
-              @if (!loading()) {
-                <span
-                  class="shrink-0
-             whitespace-nowrap
-             text-[15px]
-             font-bold
-             text-white
-             sm:text-[16px]"
-                >
-                  {{ filteredResources().length }}
-                </span>
-              }
-            </div>
-          </section>
-
-          <!-- ===================================================
-               Loading State
-               =================================================== -->
-          @if (loading()) {
-            <div
-              class="mt-3 grid gap-3
-                     sm:grid-cols-2
-                     lg:grid-cols-3"
-              aria-label="Loading resources"
-            >
-              @for (skeleton of [1, 2, 3, 4, 5, 6]; track skeleton) {
-                <div
-                  class="animate-pulse
-                         rounded-lg
-                         border border-gray-200
-                         bg-white
-                         p-3
-                         shadow-sm"
-                >
-                  <div
-                    class="h-4 w-20
-                           rounded
-                           bg-gray-200"
-                  ></div>
-
-                  <div
-                    class="mt-2 h-5 w-3/4
-                           rounded
-                           bg-gray-200"
-                  ></div>
-
-                  <div
-                    class="mt-2
-                           space-y-1.5"
-                  >
-                    <div
-                      class="h-3 w-full
-                             rounded
-                             bg-gray-200"
-                    ></div>
-
-                    <div
-                      class="h-3 w-5/6
-                             rounded
-                             bg-gray-200"
-                    ></div>
-                  </div>
-
-                  <div
-                    class="mt-3 h-3 w-24
-                           rounded
-                           bg-gray-200"
-                  ></div>
-                </div>
-              }
-            </div>
-          }
-
-          <!-- ===================================================
-               Error
-               =================================================== -->
-          @if (error()) {
-            <p
-              class="mt-3
-                     rounded-md
-                     bg-red-50
-                     px-3 py-2
-                     text-xs
-                     text-red-600"
-            >
-              {{ error() }}
-            </p>
-          }
-
-          <!-- ===================================================
-               No Matching Resources
-               =================================================== -->
-          @if (
-            !loading() && !error() && resources().length > 0 && filteredResources().length === 0
-          ) {
-            <div
-              class="mt-4
-                     rounded-lg
-                     border border-gray-200
-                     bg-white
-                     p-4
-                     text-center
-                     shadow-sm
-                     sm:p-6"
-            >
-              <h2
-                class="text-base
-                       font-semibold
-                       text-gray-900"
-              >
-                No resources found
-              </h2>
-
-              <p
-                class="mt-1
-                       text-xs
-                       text-gray-600
-                       sm:text-sm"
-              >
-                We couldn't find any resources matching your current search or filters.
-              </p>
-
-              @if (hasActiveFilters()) {
-                <button
-                  type="button"
-                  (click)="clearFilters()"
-                  class="mt-3
-                         rounded-md
-                         bg-[#007979]
-                         px-3 py-1.5
-                         text-xs
-                         font-medium
-                         text-white
-                         hover:bg-[#006666]"
-                >
-                  Clear filters
-                </button>
-              }
-            </div>
-          }
-
-          <!-- ===================================================
-               Resource Cards
-               =================================================== -->
-          @if (!loading() && !error() && filteredResources().length > 0) {
-            <div
-              class="mt-10
-                     grid gap-3
-                     sm:grid-cols-2
-                     lg:grid-cols-3"
-            >
-              @for (resource of filteredResources(); track resource.id) {
-                <app-resource-card
-                  [resource]="resource"
-                  [categoryName]="getCategoryName(resource.categoryId)"
+                </label>
+                <app-location-picker
+                  class="flex-[2]"
+                  size="large"
+                  [locations]="locations()"
+                  [value]="filters().near"
+                  [counts]="placeCounts()"
+                  (valueChange)="setNear($event)"
                 />
-              }
-            </div>
-          }
+                <button
+                  type="submit"
+                  class="inline-flex h-11 shrink-0 items-center justify-center gap-1 rounded-lg bg-[#12BFC3] px-5 text-sm font-bold text-[#032D42] transition hover:bg-[#3fd3d6] focus:outline-none focus:ring-2 focus:ring-white"
+                >
+                  Search
+                  <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">search</mat-icon>
+                </button>
+              </form>
 
-          <!-- ===================================================
-               Load More
-               =================================================== -->
-          @if (!loading() && !error() && filteredResources().length > 0 && hasMoreResources()) {
-            <div
-              class="mt-4
-                     flex justify-center"
-            >
-              <button
-                type="button"
-                (click)="loadMoreResources()"
-                [disabled]="loadingMore()"
-                class="rounded-md
-                       bg-[#007979]
-                       px-4 py-2
-                       text-md
-                       font-medium
-                       text-white
-                       transition
-                       hover:bg-[#006666]
-                       disabled:cursor-not-allowed
-                       disabled:opacity-50"
-              >
-                @if (loadingMore()) {
-                  Loading...
-                } @else {
-                  Load more
-                }
-              </button>
+              <p class="mt-5 text-sm leading-6 text-white/85">
+                Need help now? Emergency <a href="tel:911" class="font-semibold text-white underline">911</a> ·
+                Crisis <a href="tel:988" class="font-semibold text-white underline">988</a> ·
+                Outside our area? <a href="https://www.211.org" target="_blank" rel="noopener noreferrer" class="font-semibold text-white underline">Find your local 211</a>.
+              </p>
             </div>
-          }
-
-          <!-- ===================================================
-               Empty Directory
-               =================================================== -->
-          @if (!loading() && !error() && resources().length === 0) {
-            <p
-              class="mt-4
-                     text-center
-                     text-md
-                     text-gray-600"
-            >
-              No resources are currently available.
-            </p>
-          }
+          </div>
         </section>
 
-        <!-- =====================================================
-             Useful Links Sidebar
-             ===================================================== -->
-        <aside
-          class="lg:sticky
-                 lg:top-6
-                 lg:self-start"
-        >
-          <app-useful-links />
-        </aside>
-      </div>
+        <!-- ===================== Search by category ===================== -->
+        <section class="bg-white" aria-labelledby="needs-title">
+          <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+            <h2 id="needs-title" class="text-3xl font-bold tracking-tight text-[#032D42]">Search by Category</h2>
+            <p class="mt-2 text-sm text-gray-600 sm:text-base">Find resources near you, with hours, costs and how to reach them.</p>
+
+            <ul class="mt-8 grid grid-cols-2 gap-x-6 gap-y-7 md:grid-cols-3 lg:grid-cols-4">
+              @for (need of needs(); track need.need.key) {
+                <li>
+                  <a [routerLink]="need.link" [queryParams]="need.query" class="group block focus:outline-none">
+                    <span class="text-lg font-bold text-[#007979] group-hover:underline group-focus-visible:underline">{{ need.need.title }}</span>
+                    @if (need.count) {
+                      <span class="ml-1 text-xs font-semibold text-gray-400">{{ need.count }}</span>
+                    }
+                    <span class="mt-0.5 block text-sm leading-5 text-gray-600">{{ need.need.text }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+
+            <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-gray-100 pt-6 text-sm">
+              <button type="button" (click)="browseAll()" class="inline-flex items-center gap-1 font-bold text-[#007979] hover:underline">
+                See all {{ resources().length || '' }} resources
+                <mat-icon class="!h-5 !w-5 !text-[18px]" aria-hidden="true">arrow_forward</mat-icon>
+              </button>
+              <span class="text-gray-500">Popular:</span>
+              @for (term of popular; track term) {
+                <button type="button" (click)="set('q', term)" class="font-medium text-gray-700 hover:text-[#007979] hover:underline">{{ term }}</button>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- Featured -->
+        @if (featured().length) {
+          <section class="bg-white" aria-labelledby="featured-title">
+            <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+              <p class="text-sm font-bold uppercase tracking-wider text-[#007979]">Featured</p>
+              <h2 id="featured-title" class="mt-1 text-2xl font-bold tracking-tight text-[#032D42]">Trusted places to start</h2>
+              <p class="mt-1 text-sm text-gray-600">Verified by Zebron. Check hours and details before you go.</p>
+              <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                @for (resource of featured(); track resource.id) {
+                  <app-resource-card
+                    [resource]="resource"
+                    [category]="categoryById().get(resource.categoryId)"
+                    [place]="placeOf(resource)"
+                    [programs]="programSummaries().get(resource.id)"
+                  />
+                }
+              </div>
+            </div>
+          </section>
+        }
+
+        <!-- Can't find it -->
+        <section class="mx-auto grid max-w-6xl gap-4 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8">
+          <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <mat-icon class="text-[#007979]" aria-hidden="true">support_agent</mat-icon>
+            <h2 class="mt-2 text-base font-bold text-[#032D42]">Can't find what you need?</h2>
+            <p class="mt-1 text-sm text-gray-600">Dial <a href="tel:211" class="font-semibold text-[#007979] hover:underline">211</a> to talk to someone near you, or ask our assistant (bottom right).</p>
+          </div>
+          <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <mat-icon class="text-[#007979]" aria-hidden="true">add_business</mat-icon>
+            <h2 class="mt-2 text-base font-bold text-[#032D42]">Know a service we're missing?</h2>
+            <p class="mt-1 text-sm text-gray-600">Organizations and neighbors can list services for free.</p>
+            <a routerLink="/submit" class="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[#007979] hover:underline">
+              Suggest a resource
+              <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">arrow_forward</mat-icon>
+            </a>
+          </div>
+          <div class="rounded-2xl bg-gradient-to-br from-[#032D42] to-[#035e5e] p-5 text-white shadow-sm">
+            <mat-icon class="text-[#12BFC3]" aria-hidden="true">verified</mat-icon>
+            <h2 class="mt-2 text-base font-bold">Checked by people</h2>
+            <p class="mt-1 text-sm text-white/80">Zebron verifies listings and shows when they were last checked. Something wrong? Tell us from any resource page.</p>
+          </div>
+        </section>
+      } @else {
+        <!-- ===================== Category / search results ===================== -->
+        <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
+          <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-2 sm:px-6 lg:flex-row lg:items-center lg:gap-4 lg:px-8">
+            <!-- Back, breadcrumb and title on one line -->
+            <div class="flex min-w-0 items-center gap-1 lg:w-[250px] lg:shrink-0">
+              <button
+                type="button"
+                (click)="topics()"
+                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/90 hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+                aria-label="All categories"
+                title="All categories"
+              >
+                <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">arrow_back</mat-icon>
+              </button>
+              <h1 class="min-w-0 truncate text-lg font-bold leading-tight" [attr.title]="heading().text || null">{{ heading().title }}</h1>
+            </div>
+
+            <!-- Search within -->
+            <form
+              role="search"
+              (submit)="$event.preventDefault()"
+              class="flex min-w-0 flex-1 items-center rounded-xl bg-white text-gray-900 shadow-sm"
+            >
+              <label class="flex min-w-0 flex-[3] items-center gap-2 px-3">
+                <mat-icon class="shrink-0 !h-5 !w-5 !text-[20px] text-gray-400" aria-hidden="true">search</mat-icon>
+                <span class="sr-only">Search</span>
+                <input
+                  type="search"
+                  [value]="filters().q"
+                  (input)="set('q', $any($event.target).value)"
+                  [placeholder]="currentNeed() ? 'Search within ' + currentNeed()!.title : 'Search services or programs'"
+                  class="h-9 w-full min-w-0 appearance-none border-0 bg-transparent p-0 text-sm !outline-none placeholder:text-gray-500 focus:ring-0"
+                />
+              </label>
+              <span class="h-6 w-px bg-gray-200" aria-hidden="true"></span>
+              <app-location-picker
+                class="flex-[2]"
+                [locations]="locations()"
+                [value]="filters().near"
+                [counts]="placeCounts()"
+                (valueChange)="setNear($event)"
+              />
+            </form>
+          </div>
+        </header>
+
+        <div class="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8">
+          <div class="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
+            <!-- ===================== Refine (sidebar on desktop, panel on phones) ===================== -->
+            <aside class="lg:block" [class.hidden]="!filtersOpen()" id="resource-refine" aria-label="Refine results">
+              <div class="space-y-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm lg:sticky lg:top-20">
+                <div>
+                  <h2 class="text-sm font-bold text-[#032D42]">Show only</h2>
+                  <div class="mt-2 space-y-1">
+                    @for (option of toggles; track option.key) {
+                      <label class="flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          [checked]="filters()[option.key]"
+                          (change)="toggle(option.key)"
+                          class="h-4 w-4 rounded border-gray-300 text-[#007979] focus:ring-[#007979]"
+                        />
+                        <mat-icon class="!h-4 !w-4 !text-base !leading-none text-gray-400" aria-hidden="true">{{ option.icon }}</mat-icon>
+                        {{ option.label }}
+                      </label>
+                    }
+                  </div>
+                </div>
+
+                @if (resourceTypes().length) {
+                  <div>
+                    <label for="resource-type" class="text-sm font-bold text-[#032D42]">Type</label>
+                    <select
+                      id="resource-type"
+                      (change)="set('type', $any($event.target).value)"
+                      class="mt-2 h-10 w-full cursor-pointer rounded-lg border border-gray-300 bg-white px-2 text-sm focus:border-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
+                    >
+                      <option value="" [selected]="!filters().type">Any type</option>
+                      @for (type of resourceTypes(); track type.id) {
+                        <option [value]="type.slug" [selected]="filters().type === type.slug">{{ type.name }}</option>
+                      }
+                    </select>
+                  </div>
+                }
+
+                <div>
+                  <h2 class="text-sm font-bold text-[#032D42]">Categories</h2>
+                  <ul class="mt-2 max-h-[22rem] space-y-0.5 overflow-y-auto pr-1">
+                    @for (need of needs(); track need.need.key) {
+                      <li>
+                        <a
+                          [routerLink]="need.link"
+                          [queryParams]="need.query"
+                          class="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition {{
+                            currentNeed()?.key === need.need.key ? 'bg-[#007979] font-semibold text-white' : 'text-gray-700 hover:bg-[#E8F4F4] hover:text-[#007979]'
+                          }}"
+                          [attr.aria-current]="currentNeed()?.key === need.need.key ? 'page' : null"
+                        >
+                          <span class="truncate">{{ need.need.title }}</span>
+                          @if (need.count) {
+                            <span class="text-xs {{ currentNeed()?.key === need.need.key ? 'text-white/80' : 'text-gray-400' }}">{{ need.count }}</span>
+                          }
+                        </a>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
+                @if (refined()) {
+                  <button type="button" (click)="clearRefine()" class="w-full rounded-lg border border-gray-300 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    Clear filters
+                  </button>
+                }
+              </div>
+            </aside>
+
+            <!-- ===================== Results ===================== -->
+            <section aria-labelledby="results-count" class="min-w-0">
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p id="results-count" class="text-sm text-gray-600" aria-live="polite">
+                  @if (loading()) {
+                    Loading…
+                  } @else {
+                    <strong class="text-[#032D42]">{{ results().length }}</strong>
+                    {{ results().length === 1 ? 'result' : 'results' }}
+                    @if (nearName()) {
+                      in {{ nearName() }} or online
+                    }
+                  }
+                </p>
+                <button
+                  type="button"
+                  (click)="filtersOpen.set(!filtersOpen())"
+                  class="inline-flex h-9 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-700 lg:hidden"
+                  [attr.aria-expanded]="filtersOpen()"
+                  aria-controls="resource-refine"
+                >
+                  <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">tune</mat-icon>
+                  Filters{{ refinedCount() ? ' (' + refinedCount() + ')' : '' }}
+                </button>
+              </div>
+
+              <!-- Active filters, each removable -->
+              @if (activeChips().length) {
+                <ul class="mb-3 flex flex-wrap gap-2" aria-label="Active filters">
+                  @for (chip of activeChips(); track chip.label) {
+                    <li>
+                      <button
+                        type="button"
+                        (click)="chip.remove()"
+                        class="inline-flex h-8 items-center gap-1 rounded-full border border-[#007979]/30 bg-[#E8F4F4] pl-3 pr-2 text-sm font-medium text-[#035e5e] hover:border-[#007979]"
+                        [attr.aria-label]="'Remove filter: ' + chip.label"
+                      >
+                        {{ chip.label }}
+                        <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">close</mat-icon>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+
+              @if (loading()) {
+                <div class="grid gap-3 sm:grid-cols-2">
+                  @for (item of [1, 2, 3, 4]; track item) {
+                    <div class="h-44 animate-pulse rounded-2xl border border-gray-200 bg-white"></div>
+                  }
+                </div>
+              } @else if (error()) {
+                <div class="rounded-2xl border border-red-200 bg-white p-6 text-center text-sm text-red-700">
+                  {{ error() }}
+                  <button type="button" (click)="load()" class="ml-2 font-semibold underline">Try again</button>
+                </div>
+              } @else if (!results().length) {
+                <div class="rounded-2xl border border-gray-200 bg-white px-6 py-10 text-center shadow-sm">
+                  <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+                    <mat-icon class="text-gray-500" aria-hidden="true">search_off</mat-icon>
+                  </span>
+                  <h2 class="mt-3 text-base font-semibold text-[#032D42]">
+                    {{ currentNeed() ? 'No ' + currentNeed()!.title.toLowerCase() + ' listings yet' : 'Nothing matches' }}{{ nearName() ? ' in ' + nearName() : '' }}
+                  </h2>
+                  <p class="mx-auto mt-1 max-w-md text-sm text-gray-600">
+                    @if (refined()) {
+                      Try removing a filter.
+                    } @else {
+                      We're still adding services. Dial
+                      <a href="tel:211" class="font-semibold text-[#007979] hover:underline">211</a>
+                      to talk to someone near you, or ask our assistant.
+                    }
+                  </p>
+                  <div class="mt-4 flex flex-wrap justify-center gap-2">
+                    @if (refined()) {
+                      <button type="button" (click)="clearRefine()" class="inline-flex h-9 items-center rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]">Clear filters</button>
+                    }
+                    <button type="button" (click)="topics()" class="inline-flex h-9 items-center rounded-lg border border-gray-300 px-3 text-sm font-semibold text-gray-700 hover:border-[#007979] hover:text-[#007979]">All categories</button>
+                    <a routerLink="/submit" class="inline-flex h-9 items-center rounded-lg border border-gray-300 px-3 text-sm font-semibold text-gray-700 hover:border-[#007979] hover:text-[#007979]">Suggest a resource</a>
+                  </div>
+                </div>
+              } @else {
+                <div class="grid gap-3 sm:grid-cols-2">
+                  @for (resource of visible(); track resource.id) {
+                    <app-resource-card
+                      [resource]="resource"
+                      [category]="categoryById().get(resource.categoryId)"
+                      [place]="placeOf(resource)"
+                      [programs]="programSummaries().get(resource.id)"
+                    />
+                  }
+                </div>
+                @if (results().length > visible().length) {
+                  <div class="mt-5 text-center">
+                    <button
+                      type="button"
+                      (click)="limit.set(limit() + pageSize)"
+                      class="inline-flex h-10 items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-[#032D42] hover:border-[#007979] hover:text-[#007979]"
+                    >
+                      Show more ({{ results().length - visible().length }})
+                    </button>
+                  </div>
+                }
+              }
+
+              @if (currentNeed()?.key === 'jobs' || currentNeed()?.key === 'education') {
+                <a routerLink="/bootcamps" class="mt-5 flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#032D42] to-[#035e5e] p-4 text-white shadow-sm hover:shadow-md">
+                  <mat-icon class="text-[#12BFC3]" aria-hidden="true">rocket_launch</mat-icon>
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-bold">Thinking about a tech career?</span>
+                    <span class="block text-xs text-white/80">Compare bootcamps by field, cost, schedule and next class.</span>
+                  </span>
+                  <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                </a>
+              }
+            </section>
+          </div>
+        </div>
+      }
     </main>
   `,
-
-  styles: [],
 })
 export class ResourceListComponent implements OnInit {
-  // =========================================================
-  // Services
-  // =========================================================
-
+  private readonly resourceService = inject(ResourceService);
   private readonly categoryService = inject(CategoryService);
-
   private readonly locationService = inject(LocationService);
-
   private readonly resourceTypeService = inject(ResourceTypeService);
-
-  protected readonly personalizationService = inject(PersonalizationService);
-
+  private readonly bootcampService = inject(BootcampService);
+  private readonly personalization = inject(PersonalizationService);
   private readonly route = inject(ActivatedRoute);
-
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly authService = inject(AuthService);
+  protected readonly pageSize = PAGE_SIZE;
 
-  private readonly toast = inject(HotToastService);
-
-  // =========================================================
-  // Resource State
-  // =========================================================
-
+  protected readonly resources = signal<Resource[]>([]);
   protected readonly categories = signal<Category[]>([]);
-
-  protected readonly showPersonalization = signal(true);
-
-  protected togglePersonalization(): void {
-    this.showPersonalization.update((visible) => !visible);
-  }
-
-  // =========================================================
-  // Personalization State
-  // =========================================================
-
-  /**
-   * Available locations for personalization.
-   */
   protected readonly locations = signal<Location[]>([]);
-
-  /**
-   * Whether the visitor has selected
-   * at least one personalization preference.
-   */
-  protected readonly hasPersonalization = computed(() =>
-    this.personalizationService.hasPreferences(),
-  );
-
-  /**
-   * Prevent duplicate sign-out requests.
-   */
-  protected readonly signingOut = signal(false);
-
-  // =========================================================
-  // Mobile Filter Builder State
-  //
-  // false:
-  //   Category + Type visible on mobile
-  //
-  // true:
-  //   Search visible on mobile
-  //
-  // Desktop:
-  //   Search + Category + Type are always visible.
-  // =========================================================
-
-  protected readonly showSearch = signal(false);
-
-
-  /**
-   * Number of resources loaded per page.
-   */
-  private readonly resourcePageSize = 12;
-
-  // =========================================================
-  // Resource Types
-  // =========================================================
-
   protected readonly resourceTypes = signal<ResourceType[]>([]);
+  protected readonly programSummaries = this.bootcampService.summaries;
+  protected readonly loading = signal(true);
+  protected readonly error = signal('');
 
-  // =========================================================
-  // Selected Category ID
-  // =========================================================
+  protected readonly filters = signal<DirectoryFilters>(EMPTY);
+  protected readonly limit = signal(PAGE_SIZE);
+  protected readonly searchOpen = signal(false);
 
-  protected readonly selectedCategoryId = computed(() => {
-    const slug = this.selectedCategory();
+  protected readonly categoryById = computed(() => new Map(this.categories().map((category) => [category.id, category])));
+  private readonly locationById = computed(() => new Map(this.locations().map((place) => [place.id ?? '', place])));
 
-    if (!slug) {
-      return '';
-    }
+  protected readonly selectedCategory = computed(() => this.categories().find((category) => category.slug === this.filters().category) ?? null);
 
-    const category = this.categories().find((category) => category.slug === slug);
-
-    return category?.id ?? '';
+  protected readonly nearName = computed(() => {
+    const place = this.locationById().get(this.filters().near);
+    return place ? this.placeName(place) : '';
   });
 
-  // =========================================================
-  // Category Name
-  // =========================================================
+  protected readonly anyFilter = computed(() => {
+    const value = this.filters();
+    return !!(value.q || value.topic || value.category || value.near || value.type || value.free || value.online || value.verified);
+  });
 
-  protected getCategoryName(categoryId: string): string {
-    return this.categories().find((category) => category.id === categoryId)?.name ?? '';
+  /** Matching resources: featured first, then the visitor's interests, then verified, then newest. */
+  protected readonly results = computed(() => {
+    const value = this.filters();
+    const words = value.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const categoryId = this.selectedCategory()?.id ?? (value.category ? '__none__' : '');
+    const typeName = this.resourceTypes().find((type) => type.slug === value.type)?.name.toLowerCase();
+    const interests = this.personalization.preferences().interests;
+    const need = this.currentNeed();
+
+    const matches = this.resources().filter((resource) => {
+      if (categoryId && resource.categoryId !== categoryId) return false;
+      if (need && !this.inNeed(resource, need)) return false;
+      if (value.near && resource.locationId !== value.near && !resource.online) return false;
+      if (value.type && resource.resourceType !== value.type && resource.resourceType?.toLowerCase() !== typeName) return false;
+      if (value.free && !resource.cost?.free) return false;
+      if (value.online && !resource.online) return false;
+      if (value.verified && !resource.verified) return false;
+      if (words.length) {
+        const text = [resource.name, resource.description, ...(resource.tags ?? []), this.categoryById().get(resource.categoryId)?.name ?? '']
+          .join(' ')
+          .toLowerCase();
+        if (!words.every((word) => text.includes(word))) return false;
+      }
+      return true;
+    });
+
+    const score = (resource: Resource) =>
+      (resource.featured ? 4 : 0) + (interests.includes(resource.categoryId) ? 2 : 0) + (resource.verified ? 1 : 0);
+    return matches
+      .map((resource, index) => ({ resource, index, score: score(resource) }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map((item) => item.resource);
+  });
+
+  protected readonly visible = computed(() => this.results().slice(0, this.limit()));
+
+  // ----------------------------------------------------------
+  // Front door (shown until the visitor searches or filters)
+  // ----------------------------------------------------------
+
+  protected readonly popular = POPULAR_SEARCHES;
+
+  /** Results instead of the front door once anything is searched or chosen. */
+  protected readonly showResults = computed(() => {
+    const value = this.filters();
+    // The place alone (remembered on this device) keeps the front door.
+    return !!(value.q || value.topic || value.category || value.type || value.free || value.online || value.verified || value.all);
+  });
+
+  /** Topic of each category (first matching topic). */
+  private readonly needByCategory = computed(
+    () => new Map<string, ResourceNeed | undefined>(this.categories().map((category) => [category.id, needOf(category)])),
+  );
+
+  /** In a topic: its category belongs to it, or its text mentions the topic's words. */
+  private inNeed(resource: Resource, need: ResourceNeed): boolean {
+    if (this.needByCategory().get(resource.categoryId) === need) {
+      return true;
+    }
+    const text = [resource.name, resource.description, ...(resource.tags ?? [])].join(' ').toLowerCase();
+    return need.keywords.some((word) => word.length > 3 && text.includes(word));
   }
 
-  // ============================================================
-  // RESOURCE STORE
-  // ============================================================
+  protected readonly currentNeed = computed(() => RESOURCE_NEEDS.find((need) => need.key === this.filters().topic) ?? null);
 
-  private readonly resourceStore = inject(ResourceStore);
-
-  // ============================================================
-  // Resource state
-  // ============================================================
-
-  protected readonly resources = this.resourceStore.resources;
-
-  protected readonly loading = this.resourceStore.loading;
-
-  protected readonly error = this.resourceStore.error;
-
-  protected readonly searchTerm = this.resourceStore.searchTerm;
-
-  protected readonly loadingMore = signal(false);
-
-  // =========================================================
-  // Filtered Resources
-  // =========================================================
-
-  protected readonly filteredResources = this.resourceStore.filteredResources;
-
-  // =========================================================
-  // Active Filters
-  // =========================================================
-
-  protected readonly hasActiveFilters = this.resourceStore.hasActiveFilters;
-
-  // =========================================================
-  // Initialization
-  // =========================================================
-
-  /**
-   * Sign out the current user.
-   */
-  protected async signOut(): Promise<void> {
-    if (this.signingOut()) {
-      return;
+  /** Title, breadcrumb and description of the results page. */
+  protected readonly heading = computed(() => {
+    const need = this.currentNeed();
+    if (need) {
+      return { title: need.title, crumb: need.title, text: need.text };
     }
-
-    this.signingOut.set(true);
-
-    try {
-      await this.authService.logout();
-    } catch (error) {
-      console.error('Sign out failed:', error);
-    } finally {
-      this.signingOut.set(false);
+    const category = this.selectedCategory();
+    if (category) {
+      return { title: category.name, crumb: category.name, text: category.description ?? '' };
     }
+    const q = this.filters().q.trim();
+    if (q) {
+      return { title: `Results for “${q}”`, crumb: 'Search', text: '' };
+    }
+    return { title: 'All resources', crumb: 'All resources', text: 'Every service, program and place listed on Zebron.' };
+  });
+
+  // ----------------------------------------------------------
+  // Refine (filters inside a category)
+  // ----------------------------------------------------------
+
+  protected readonly filtersOpen = signal(false);
+
+  protected readonly toggles: { key: 'free' | 'online' | 'verified'; label: string; icon: string }[] = [
+    { key: 'free', label: 'Free', icon: 'savings' },
+    { key: 'online', label: 'Available online', icon: 'language' },
+    { key: 'verified', label: 'Verified by Zebron', icon: 'verified' },
+  ];
+
+  /** Filters on top of the category or search. */
+  protected readonly refinedCount = computed(() => {
+    const value = this.filters();
+    return [value.free, value.online, value.verified, !!value.type].filter(Boolean).length;
+  });
+  protected readonly refined = computed(() => this.refinedCount() > 0 || !!this.filters().near || (!!this.filters().q && !!(this.filters().topic || this.filters().category)));
+
+  /** Removes the refinements, keeping the category or topic. */
+  protected clearRefine(): void {
+    const value = this.filters();
+    this.personalization.setLocation(null);
+    this.update({ ...EMPTY, topic: value.topic, category: value.category, all: value.all, q: value.topic || value.category ? '' : value.q });
   }
+
+  /** Removable chips for what is applied. */
+  protected readonly activeChips = computed(() => {
+    const value = this.filters();
+    const chips: { label: string; remove: () => void }[] = [];
+    if (value.q && (value.topic || value.category)) chips.push({ label: `“${value.q}”`, remove: () => this.set('q', '') });
+    if (value.near && this.nearName()) chips.push({ label: this.nearName(), remove: () => this.setNear('') });
+    for (const option of this.toggles) {
+      if (value[option.key]) chips.push({ label: option.label, remove: () => this.toggle(option.key) });
+    }
+    if (value.type) {
+      const name = this.resourceTypes().find((type) => type.slug === value.type)?.name ?? value.type;
+      chips.push({ label: name, remove: () => this.set('type', '') });
+    }
+    return chips;
+  });
+
+  /** Back to the front door, keeping the place. */
+  protected topics(): void {
+    this.update({ ...EMPTY, near: this.filters().near });
+  }
+
+  /** Each topic with its link and how many resources it covers. */
+  protected readonly needs = computed(() => {
+    return RESOURCE_NEEDS.map((need) => {
+      const count = this.resources().filter((resource) => this.inNeed(resource, need)).length;
+      if (need.route) {
+        return { need, count, link: need.route, query: {} as Params };
+      }
+      return { need, count, link: '/resources', query: { topic: need.key } as Params };
+    });
+  });
+
+  /** Featured first, then verified. */
+  protected readonly featured = computed(() =>
+    this.resources()
+      .filter((resource) => resource.featured || resource.verified)
+      .sort((a, b) => Number(b.featured) - Number(a.featured))
+      .slice(0, 6),
+  );
 
   ngOnInit(): void {
-    this.syncPersonalizationToStore();
-
-    this.loadResources();
-
-    this.loadCategories();
-
-    this.loadLocations();
-
-    this.loadResourceTypes();
-
-    const category = this.route.snapshot.queryParamMap.get('category');
-
-    if (category) {
-      this.selectedCategory.set(category);
-
-      this.resourceStore.setCategory(this.selectedCategoryId());
-    }
-  }
-
-  // =========================================================
-  // Filter State
-  // =========================================================
-
-  protected readonly selectedType = this.resourceStore.selectedResourceType;
-
-  protected readonly selectedCategory = signal('');
-
-  protected readonly onlineOnly = this.resourceStore.selectedOnlineOnly;
-
-  protected readonly featuredOnly = this.resourceStore.selectedFeaturedOnly;
-
-  // =========================================================
-  // Load Categories
-  // =========================================================
-
-  private async loadCategories(): Promise<void> {
-    try {
-      const categories = await this.categoryService.getActiveCategories();
-
-      this.categories.set(categories);
-    } catch (error) {
-      console.error('Failed to load categories:', error);
-    }
-  }
-
-  // =========================================================
-  // Load Locations
-  // =========================================================
-
-  private async loadLocations(): Promise<void> {
-    try {
-      const locations = await this.locationService.getAllLocations();
-
-      this.locations.set(locations);
-    } catch (error) {
-      console.error('Failed to load locations:', error);
-    }
-  }
-
-  // =========================================================
-  // Search
-  // =========================================================
-
-  protected onSearch(event: Event): void {
-    const input = event.target as HTMLInputElement;
-
-    this.resourceStore.setSearchTerm(input.value);
-  }
-
-  // load more resources
-  protected readonly hasMoreResources = this.resourceStore.hasMore;
-
-  // =========================================================
-  // Toggle Mobile Filter Builder
-  // =========================================================
-
-  protected toggleSearch(): void {
-    this.showSearch.update((visible) => !visible);
-  }
-
-  // =========================================================
-  // Resource Type
-  // =========================================================
-
-  protected onTypeChange(resourceType: string): void {
-    this.resourceStore.setResourceType(resourceType);
-  }
-
-  // =========================================================
-  // Online Filter
-  // =========================================================
-
-  protected onOnlineChange(checked: boolean): void {
-    this.resourceStore.setOnlineOnly(checked);
-  }
-
-  // =========================================================
-  // Featured Filter
-  // =========================================================
-
-  protected onFeaturedChange(checked: boolean): void {
-    this.resourceStore.setFeaturedOnly(checked);
-  }
-
-  // =========================================================
-  // Category Filter
-  // =========================================================
-
-  protected onCategoryChange(category: string): void {
-
-    this.resourceStore.setCategory(category);
-
-    this.router.navigate([], {
-      relativeTo: this.route,
-
-      queryParams: {
-        category: category || null,
-      },
-
-      queryParamsHandling: 'merge',
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      // Bootcamps have their own page.
+      const category = params.get('category') ?? '';
+      if (category && this.isBootcamps(this.categories().find((item) => item.slug === category))) {
+        void this.router.navigate(['/bootcamps'], { replaceUrl: true });
+        return;
+      }
+      this.filters.set({
+        q: params.get('q') ?? '',
+        topic: params.get('topic') ?? '',
+        category,
+        near: params.get('near') ?? this.personalization.preferences().locationId ?? '',
+        type: params.get('type') ?? '',
+        free: params.get('free') === '1',
+        online: params.get('online') === '1',
+        verified: params.get('verified') === '1',
+        all: params.get('all') === '1',
+      });
+      this.limit.set(PAGE_SIZE);
     });
+    void this.load();
   }
 
-  // =========================================================
-  // Clear Filters
-  // =========================================================
+  protected async load(): Promise<void> {
+    this.loading.set(true);
+    this.error.set('');
+    void this.bootcampService.loadSummaries();
+    const [resources, categories, locations, types] = await Promise.all([
+      this.resourceService.getPublishedResources().catch((error) => {
+        console.error('Failed to load resources:', error);
+        this.error.set('Unable to load resources. Please try again.');
+        return [] as Resource[];
+      }),
+      this.categoryService.getActiveCategories().catch(() => [] as Category[]),
+      this.locationService.getAllLocations().catch(() => [] as Location[]),
+      this.resourceTypeService.getActiveResourceTypes().catch(() => [] as ResourceType[]),
+    ]);
+    this.resources.set(resources);
+    this.categories.set(categories);
+    this.locations.set(
+      [...locations].sort((a, b) => this.placeName(a).localeCompare(this.placeName(b))),
+    );
+    this.resourceTypes.set(types);
+    this.loading.set(false);
 
-  protected clearFilters(): void {
-    this.resourceStore.clearFilters();
-
-    this.router.navigate([], {
-      relativeTo: this.route,
-
-      queryParams: {
-        category: null,
-      },
-
-      queryParamsHandling: 'merge',
-    });
-  }
-
-  // =========================================================
-  // Personalization
-  // =========================================================
-
-  /**
-   * Toggle a visitor's personalization interest.
-   */
-  protected togglePersonalizationInterest(interestId: string): void {
-    this.personalizationService.toggleInterest(interestId);
-
-    this.syncPersonalizationToStore();
-  }
-
-  /**
-   * Determine whether an interest is selected.
-   */
-  protected isPersonalizationInterestSelected(interestId: string): boolean {
-    return this.personalizationService.preferences().interests.includes(interestId);
-  }
-
-  /**
-   * Set the visitor's preferred location.
-   */
-  protected selectPersonalizationLocation(locationId: string | null): void {
-    this.personalizationService.setLocation(locationId);
-
-    this.syncPersonalizationToStore();
-  }
-
-  /**
-   * Clear all personalization preferences.
-   */
-  protected clearPersonalization(): void {
-    this.personalizationService.clear();
-
-    this.syncPersonalizationToStore();
-  }
-
-  /**
-   * Format a location for display.
-   */
-  protected formatPersonalizationLocation(location: Location): string {
-    return [location.city, location.state, location.country].filter(Boolean).join(', ');
-  }
-
-  // =========================================================
-  // Format Resource Type
-  // =========================================================
-
-  protected formatResourceType(type: ResourceType | string): string {
-    if (typeof type === 'string') {
-      return type;
-    }
-
-    return type.name;
-  }
-
-  // =========================================================
-  // Load Resources
-  // =========================================================
-
-  private async loadResources(): Promise<void> {
-    await this.resourceStore.loadPublishedResources(this.resourcePageSize);
-  }
-
-  // =========================================================
-  // Load More Resources
-  // =========================================================
-
-  protected async loadMoreResources(): Promise<void> {
-    if (this.loadingMore() || !this.hasMoreResources()) {
-      return;
-    }
-
-    this.loadingMore.set(true);
-
-    try {
-      await this.resourceStore.loadNextPublishedPage(this.resourcePageSize);
-    } finally {
-      this.loadingMore.set(false);
+    // An old link such as /resources?category=bootcamps opens the Bootcamps page.
+    if (this.isBootcamps(this.selectedCategory())) {
+      void this.router.navigate(['/bootcamps'], { replaceUrl: true });
     }
   }
 
-  // =========================================================
-  // Select Category
-  // =========================================================
+  // ----------------------------------------------------------
+  // Filters (kept in the address)
+  // ----------------------------------------------------------
 
-  protected selectCategory(categorySlug: string): void {
-    this.selectedCategory.set(categorySlug);
-
-    this.router.navigate([], {
-      relativeTo: this.route,
-
-      queryParams: {
-        category: categorySlug || null,
-      },
-
-      queryParamsHandling: 'merge',
-    });
+  protected set(key: 'q' | 'category' | 'type' | 'near', value: string): void {
+    this.update({ ...this.filters(), [key]: value });
   }
 
-  private async loadResourceTypes(): Promise<void> {
-    try {
-      const resourceTypes = await this.resourceTypeService.getActiveResourceTypes();
+  /** Front door search: opens the results. */
+  protected search(event: Event, query: string): void {
+    event.preventDefault();
+    this.update({ ...this.filters(), q: query.trim(), all: true });
+  }
 
-      this.resourceTypes.set(resourceTypes);
-    } catch (error) {
-      console.error('Failed to load resource types:', error);
+  /** Resources per place, shown in the "Where?" picker. */
+  protected readonly placeCounts = computed(() => {
+    const counts = new Map<string, number>();
+    for (const resource of this.resources()) {
+      if (resource.locationId) counts.set(resource.locationId, (counts.get(resource.locationId) ?? 0) + 1);
+    }
+    return counts;
+  });
+
+  protected browseAll(): void {
+    this.update({ ...this.filters(), all: true });
+  }
+
+  protected toggle(key: 'free' | 'online' | 'verified'): void {
+    this.update({ ...this.filters(), [key]: !this.filters()[key] });
+  }
+
+  /** "Where are you?" is also remembered on this device. */
+  protected setNear(locationId: string): void {
+    this.personalization.setLocation(locationId || null);
+    this.set('near', locationId);
+  }
+
+  protected clear(): void {
+    this.personalization.setLocation(null);
+    this.update(EMPTY);
+  }
+
+  private update(next: DirectoryFilters): void {
+    const params: Params = {
+      q: next.q || null,
+      topic: next.topic || null,
+      category: next.category || null,
+      near: next.near || null,
+      type: next.type || null,
+      free: next.free ? '1' : null,
+      online: next.online ? '1' : null,
+      verified: next.verified ? '1' : null,
+      all: next.all ? '1' : null,
+    };
+    this.filters.set(next);
+    void this.router.navigate([], { relativeTo: this.route, queryParams: params, replaceUrl: true });
+  }
+
+  protected toggleSearch(input: HTMLInputElement): void {
+    this.searchOpen.update((open) => !open);
+    if (this.searchOpen()) {
+      setTimeout(() => input.focus());
     }
   }
 
-  private syncPersonalizationToStore(): void {
-    const preferences = this.personalizationService.preferences();
+  // ----------------------------------------------------------
+  // Display helpers
+  // ----------------------------------------------------------
 
-    this.resourceStore.setPersonalization(preferences.interests, preferences.locationId ?? '');
+  protected isBootcamps(category: Category | null | undefined): boolean {
+    return !!category && resourceKind(category).kind === 'bootcamp';
+  }
+
+  protected icon(category: Category): string {
+    return resourceKind(category).icon;
+  }
+
+  protected placeName(place: Location): string {
+    return [place.city, place.state].filter(Boolean).join(', ') || place.address || place.country || 'Unnamed place';
+  }
+
+  protected placeOf(resource: Resource): string {
+    const place = resource.locationId ? this.locationById().get(resource.locationId) : undefined;
+    return place ? [place.city, place.state].filter(Boolean).join(', ') : '';
+  }
+
+  protected pill(active: boolean): string {
+    return (
+      'inline-flex h-8 shrink-0 items-center gap-1 rounded-full border px-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-[#007979]/40 ' +
+      (active ? 'border-[#007979] bg-[#007979]/10 font-medium text-[#007979]' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400')
+    );
+  }
+
+  protected selectPill(value: string): string {
+    return (
+      'h-8 shrink-0 cursor-pointer rounded-full border py-0 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-[#007979]/40 ' +
+      (value ? 'border-[#007979] bg-[#007979]/10 font-medium text-[#007979]' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400')
+    );
+  }
+
+  protected categoryChip(active: boolean): string {
+    return (
+      'inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[#007979]/40 ' +
+      (active ? 'border-[#007979] bg-[#007979] text-white shadow-sm' : 'border-gray-200 bg-white text-gray-700 hover:border-[#007979] hover:text-[#007979]')
+    );
   }
 }

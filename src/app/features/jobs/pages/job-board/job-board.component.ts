@@ -47,7 +47,7 @@ const EMPTY: BoardFilters = { q: '', location: '', category: '', type: '', arran
   standalone: true,
   imports: [RouterLink, MatIconModule, SaveJobButtonComponent],
   template: `
-    <main class="min-h-screen bg-gray-50 mt-16">
+    <main class="min-h-screen overflow-x-clip bg-gray-50 mt-16">
       <!-- Search and filters stay in view below the universal header (h-16, fixed). -->
       <div class="sticky top-16 z-40 shadow-sm">
       <!-- Search band under the universal header -->

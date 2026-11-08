@@ -238,6 +238,10 @@ app.get('/sitemap.xml', async (_req, res) => {
     <loc>https://zebron.org/resources</loc>
   </url>
   <url>
+    <loc>https://zebron.org/bootcamps</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://zebron.org/contact</loc>
   </url>
   <url>

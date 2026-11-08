@@ -33,6 +33,13 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Server,
   },
 
+  // Bootcamps directory: rendered on the server with every bootcamp and
+  // its programs (bootcampDirectoryResolver) so Google can read it.
+  {
+    path: 'bootcamps',
+    renderMode: RenderMode.Server,
+  },
+
   {
     path: '**',
     renderMode: RenderMode.Client,

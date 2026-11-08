@@ -46,7 +46,7 @@ const EMPLOYMENT_TYPES: { value: EmploymentType | ''; label: string }[] = [
   standalone: true,
   imports: [RouterLink, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
   template: `
-    <main class="min-h-screen bg-gray-50">
+    <main class="min-h-screen overflow-x-clip bg-gray-50">
       <!-- The universal header shows the page name ("My jobs"). -->
       <h1 class="sr-only">My jobs</h1>
       <div class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white shadow-sm">
