@@ -36,7 +36,7 @@ export const BLOG_COVERS: Record<BlogCover, string> = {
 };
 
 export const BLOG_TOPICS: Record<BlogSection, string[]> = {
-  public: ['Careers', 'Tech skills', 'Employers', 'Zebron news', 'Stories'],
+  public: ['Careers', 'Tech skills', 'Employers', 'Health', 'Housing', 'AI', 'Zebron news', 'Stories'],
   organization: ['Announcements', 'Study tips', 'Community', 'Careers', 'Events'],
   internal: ['Release notes', 'Runbooks', 'Support', 'Announcements', 'Product'],
 };
