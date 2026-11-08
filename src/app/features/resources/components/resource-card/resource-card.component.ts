@@ -7,11 +7,16 @@ import { Category } from '../../../../core/models/category.model';
 import { Resource } from '../../../../core/models/resource.model';
 import { BootcampSummary } from '../../../bootcamps/bootcamp.model';
 import { BootcampFieldsComponent } from '../../../bootcamps/bootcamp-fields.component';
+import { openState } from '../../resource-hours';
 import { resourceKind } from '../../resource-kinds';
 
 /**
- * A resource in the directory: kind icon, name, category, a short
- * description (or, for bootcamps, what it teaches) and quick facts.
+ * A resource in the directory: kind icon, name, category, open now, a short
+ * description (or, for bootcamps, what it teaches), quick facts and the
+ * ways to act right away (Call, Directions, Website).
+ *
+ * The whole card opens the resource page (the title link covers the card);
+ * the action buttons sit above it so they can be used on their own.
  */
 @Component({
   selector: 'app-resource-card',
@@ -19,9 +24,8 @@ import { resourceKind } from '../../resource-kinds';
   imports: [RouterLink, MatIconModule, BootcampFieldsComponent],
   host: { class: 'block' },
   template: `
-    <a
-      [routerLink]="['/resources', resource().slug]"
-      class="group flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]/50"
+    <article
+      class="group relative flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md focus-within:ring-2 focus-within:ring-[#007979]/40"
     >
       <div class="flex items-start gap-3">
         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ kind().tint }}">
@@ -29,14 +33,24 @@ import { resourceKind } from '../../resource-kinds';
         </span>
         <div class="min-w-0 flex-1">
           <h2 class="line-clamp-2 text-[15px] font-semibold leading-5 text-[#032D42] group-hover:text-[#007979]">
-            {{ resource().name }}
+            <!-- This link covers the whole card. -->
+            <a [routerLink]="['/resources', resource().slug]" class="after:absolute after:inset-0 after:rounded-2xl focus:outline-none">
+              {{ resource().name }}
+            </a>
             @if (resource().verified) {
               <mat-icon class="!h-4 !w-4 align-[-3px] !text-base text-green-600" aria-label="Verified">check_circle</mat-icon>
             }
           </h2>
-          @if (category()) {
-            <p class="mt-0.5 truncate text-xs font-medium text-gray-500">{{ category()!.name }}</p>
-          }
+          <p class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs">
+            @if (category()) {
+              <span class="truncate font-medium text-gray-500">{{ category()!.name }}</span>
+            }
+            @if (hours().label) {
+              <span class="font-semibold {{ hours().open === true ? 'text-green-700' : hours().open === false ? 'text-red-600' : 'text-gray-500' }}">
+                {{ hours().label }}
+              </span>
+            }
+          </p>
         </div>
         @if (resource().featured) {
           <span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Featured</span>
@@ -77,12 +91,26 @@ import { resourceKind } from '../../resource-kinds';
             <span class="truncate">{{ place() }}</span>
           </span>
         }
-        <span class="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold text-[#007979] opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true">
-          Details
-          <mat-icon class="!h-4 !w-4 !text-base !leading-none">arrow_forward</mat-icon>
-        </span>
       </div>
-    </a>
+
+      <!-- Act right away (above the card link) -->
+      @if (actions().length) {
+        <div class="relative z-10 mt-3 flex gap-2">
+          @for (action of actions(); track action.label) {
+            <a
+              [href]="action.href"
+              [attr.target]="action.external ? '_blank' : null"
+              [attr.rel]="action.external ? 'noopener noreferrer' : null"
+              [attr.aria-label]="action.label + ': ' + resource().name"
+              class="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-2 text-sm font-semibold text-[#007979] transition hover:border-[#007979] hover:bg-[#E8F4F4] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]/50"
+            >
+              <mat-icon class="!h-[18px] !w-[18px] shrink-0 !text-[18px] !leading-none" aria-hidden="true">{{ action.icon }}</mat-icon>
+              <span class="truncate">{{ action.label }}</span>
+            </a>
+          }
+        </div>
+      }
+    </article>
   `,
 })
 export class ResourceCardComponent {
@@ -90,8 +118,34 @@ export class ResourceCardComponent {
   readonly category = input<Category | null | undefined>(null);
   /** "City, ST" of the resource's location, when it has one. */
   readonly place = input('');
+  /** Full address (street, city, state, ZIP) for Directions; '' when none. */
+  readonly address = input('');
   /** Programs of a bootcamp (fields, next class), when it has any. */
   readonly programs = input<BootcampSummary | null | undefined>(null);
 
   protected readonly kind = computed(() => resourceKind(this.category()));
+
+  /** Open now / closed, from the opening hours. */
+  protected readonly hours = computed(() => openState(this.resource().availability));
+
+  /** Call, Directions and Website, when the resource has them. */
+  protected readonly actions = computed(() => {
+    const resource = this.resource();
+    const list: { label: string; icon: string; href: string; external: boolean }[] = [];
+    if (resource.phone) {
+      list.push({ label: 'Call', icon: 'call', href: `tel:${resource.phone.replace(/[^\d+]/g, '')}`, external: false });
+    }
+    if (this.address()) {
+      list.push({
+        label: 'Directions',
+        icon: 'directions',
+        href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.address())}`,
+        external: true,
+      });
+    }
+    if (resource.website) {
+      list.push({ label: 'Website', icon: 'open_in_new', href: resource.website, external: true });
+    }
+    return list;
+  });
 }

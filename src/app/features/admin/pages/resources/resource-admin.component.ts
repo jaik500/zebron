@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { serverTimestamp } from 'firebase/firestore';
 import { ADMIN_LAYOUT_OPTIONS, AdminBackLinkComponent, AdminLayoutSwitchComponent, adminViewState } from '../../shared/admin-view';
 import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -27,11 +28,47 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { BootcampProgramsEditorComponent } from '../../../bootcamps/bootcamp-programs-editor.component';
 import { resourceKind } from '../../../resources/resource-kinds';
+import { ResourceFormProfile, resourceFormProfile } from '../../../resources/resource-form-profile';
+import { AvailabilityDay } from '../../../../core/models/availability.model';
 import { PageTitleService } from '../../../../core/services/page-title.service';
+import { AiService } from '../../../../core/services/ai.service';
+import { AiResourceFinderComponent } from './ai-resource-finder.component';
+type DayKey = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+interface DayHours {
+  open: boolean;
+  openTime: string;
+  closeTime: string;
+}
+
+const DAYS: { key: DayKey; label: string }[] = [
+  { key: 'monday', label: 'Monday' },
+  { key: 'tuesday', label: 'Tuesday' },
+  { key: 'wednesday', label: 'Wednesday' },
+  { key: 'thursday', label: 'Thursday' },
+  { key: 'friday', label: 'Friday' },
+  { key: 'saturday', label: 'Saturday' },
+  { key: 'sunday', label: 'Sunday' },
+];
+
+/** The opening hours of a resource as form rows (new resources: all closed, 9–5). */
+function hoursFrom(availability: Resource['availability']): Record<DayKey, DayHours> {
+  const rows = {} as Record<DayKey, DayHours>;
+  for (const day of DAYS) {
+    const value = availability?.[day.key];
+    rows[day.key] = {
+      open: value?.open ?? false,
+      openTime: value?.openTime ?? '09:00',
+      closeTime: value?.closeTime ?? '17:00',
+    };
+  }
+  return rows;
+}
+
 @Component({
   selector: 'app-resource-admin',
   standalone: true,
-  imports: [AdminBackLinkComponent, AdminLayoutSwitchComponent, NgClass, FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, BootcampProgramsEditorComponent],
+  imports: [AdminBackLinkComponent, AdminLayoutSwitchComponent, NgClass, FormsModule, RouterLink, MatIconModule, MatDividerModule, MatMenuModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, BootcampProgramsEditorComponent, AiResourceFinderComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -166,6 +203,12 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
             <button mat-menu-item routerLink="/admin">
               <mat-icon>dashboard</mat-icon>
               <span>Dashboard</span>
+            </button>
+
+            <!-- Topics -->
+            <button mat-menu-item routerLink="/admin/topics">
+              <mat-icon>topic</mat-icon>
+              <span>Topics</span>
             </button>
 
             <!-- Categories -->
@@ -495,7 +538,17 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                           </div>
                         </div>
 
+                        <!-- What the form adapts to -->
+                        @if (form.categoryId || form.resourceType) {
+                          <p class="-mt-2 flex flex-wrap items-center gap-1.5 rounded-lg bg-[#E8F4F4] px-3 py-2 text-xs text-[#035e5e]">
+                            <mat-icon class="!h-4 !w-4 !text-base !leading-none" aria-hidden="true">tune</mat-icon>
+                            Showing the fields for <strong>{{ profile().label }}</strong>.
+                            Changing the category or type changes the fields below.
+                          </p>
+                        }
+
                         <!-- Location -->
+                        @if (profile().showLocation) {
                         <div>
 
                           <mat-form-field appearance="outline" class="zb-field">
@@ -519,9 +572,10 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                           </mat-form-field>
 
                           <p class="mt-1.5 text-xs text-gray-500">
-                            Select the location where this resource is available.
+                            {{ profile().locationHint }}
                           </p>
                         </div>
+                        }
 
                         <!-- Description -->
                         <div>
@@ -534,9 +588,27 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                             rows="4"
                             [(ngModel)]="form.description"
                             required
-                            placeholder="Describe this resource."
+                            [placeholder]="profile().descriptionPlaceholder"
                           ></textarea>
                           </mat-form-field>
+                          <div class="-mt-2 flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              (click)="improveDescription()"
+                              [disabled]="improving() || !form.description.trim()"
+                              class="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-[#007979] hover:bg-[#007979]/10 disabled:opacity-50"
+                            >
+                              <mat-icon class="!h-4 !w-4 !text-base !leading-none {{ improving() ? 'animate-spin' : '' }}" aria-hidden="true">{{ improving() ? 'autorenew' : 'auto_awesome' }}</mat-icon>
+                              {{ improving() ? 'Improving…' : 'Improve with AI' }}
+                            </button>
+                            @if (previousDescription() !== null) {
+                              <button type="button" (click)="undoImprove()" class="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium text-gray-600 hover:bg-gray-100">
+                                <mat-icon class="!h-4 !w-4 !text-base !leading-none" aria-hidden="true">undo</mat-icon>
+                                Undo
+                              </button>
+                              <span class="text-xs text-gray-500">Read it through: AI keeps the facts but can still make mistakes.</span>
+                            }
+                          </div>
                         </div>
                       </div>
                     </section>
@@ -574,7 +646,7 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                         <div>
 
                           <mat-form-field appearance="outline" class="zb-field">
-                            <mat-label>Phone</mat-label>
+                            <mat-label>{{ profile().phoneLabel }}</mat-label>
                             <input matInput
                             id="phone"
                             name="phone"
@@ -624,10 +696,10 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                  ================================================= -->
                     <section class="border-t border-gray-200 pt-7">
                       <div class="mb-4">
-                        <h3 class="text-base font-semibold text-gray-900">Availability</h3>
+                        <h3 class="text-base font-semibold text-gray-900">{{ profile().showEventDates ? 'When and how' : 'Availability' }}</h3>
 
                         <p class="mt-1 text-sm text-gray-500">
-                          Tell users how and when this resource can be accessed.
+                          {{ profile().showEventDates ? 'When the event happens and whether people can join online.' : 'Tell users how and when this resource can be accessed.' }}
                         </p>
                       </div>
 
@@ -642,16 +714,19 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                             </span>
                           </span></mat-checkbox>
 
+                        @if (profile().showAlwaysAvailable) {
                         <mat-checkbox class="zb-checkbox--top" name="alwaysAvailable" [(ngModel)]="form.alwaysAvailable"><span>
                             <span class="block text-sm font-semibold text-gray-900">
                               Always available
                             </span>
 
                             <span class="mt-1 block text-xs leading-5 text-gray-500">
-                              No appointment or schedule is required.
+                              {{ profile().form === 'hotline' ? 'Answered 24 hours a day, 7 days a week.' : 'Open 24/7; no schedule.' }}
                             </span>
                           </span></mat-checkbox>
+                        }
 
+                        @if (profile().showAppointment) {
                         <mat-checkbox class="zb-checkbox--top" name="byAppointment" [(ngModel)]="form.byAppointment"><span>
                             <span class="block text-sm font-semibold text-gray-900">
                               By appointment
@@ -661,12 +736,78 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                               Users must schedule an appointment.
                             </span>
                           </span></mat-checkbox>
+                        }
                       </div>
+
+                      <!-- Event date and time -->
+                      @if (profile().showEventDates) {
+                        <div class="mt-5 grid gap-5 sm:grid-cols-2">
+                          <mat-form-field appearance="outline" class="zb-field">
+                            <mat-label>Starts</mat-label>
+                            <input matInput type="datetime-local" name="eventStart" [(ngModel)]="form.eventStart" required />
+                          </mat-form-field>
+                          <mat-form-field appearance="outline" class="zb-field">
+                            <mat-label>Ends (optional)</mat-label>
+                            <input matInput type="datetime-local" name="eventEnd" [(ngModel)]="form.eventEnd" [min]="form.eventStart" />
+                          </mat-form-field>
+                        </div>
+                      }
+
+                      <!-- Opening hours -->
+                      @if (profile().showHours && !form.alwaysAvailable) {
+                        <div class="mt-5 rounded-xl border border-gray-200">
+                          <div class="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-2.5">
+                            <h4 class="text-sm font-semibold text-gray-900">{{ profile().form === 'hotline' ? 'Hours answered' : 'Opening hours' }}</h4>
+                            <span class="text-xs text-gray-500">Leave every day unticked if you don't know.</span>
+                            <button
+                              type="button"
+                              (click)="copyMondayToWeekdays()"
+                              class="ml-auto inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-[#007979] hover:bg-[#007979]/10"
+                            >
+                              <mat-icon class="!h-4 !w-4 !text-base !leading-none" aria-hidden="true">content_copy</mat-icon>
+                              Copy Monday to weekdays
+                            </button>
+                          </div>
+                          <div class="divide-y divide-gray-100">
+                            @for (day of days; track day.key) {
+                              <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
+                                <mat-checkbox class="w-36" [name]="'open-' + day.key" [(ngModel)]="form.hours[day.key].open">
+                                  <span class="text-sm font-medium text-gray-800">{{ day.label }}</span>
+                                </mat-checkbox>
+                                @if (form.hours[day.key].open) {
+                                  <label class="flex items-center gap-2 text-sm text-gray-600">
+                                    <span class="sr-only">{{ day.label }} opens</span>
+                                    <input
+                                      type="time"
+                                      [name]="'opens-' + day.key"
+                                      [(ngModel)]="form.hours[day.key].openTime"
+                                      class="h-9 rounded-lg border border-gray-300 px-2 text-sm focus:border-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
+                                    />
+                                  </label>
+                                  <span class="text-sm text-gray-400" aria-hidden="true">to</span>
+                                  <label class="flex items-center gap-2 text-sm text-gray-600">
+                                    <span class="sr-only">{{ day.label }} closes</span>
+                                    <input
+                                      type="time"
+                                      [name]="'closes-' + day.key"
+                                      [(ngModel)]="form.hours[day.key].closeTime"
+                                      class="h-9 rounded-lg border border-gray-300 px-2 text-sm focus:border-[#007979] focus:outline-none focus:ring-2 focus:ring-[#007979]/20"
+                                    />
+                                  </label>
+                                } @else {
+                                  <span class="text-sm text-gray-400">Closed</span>
+                                }
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
                     </section>
 
                     <!-- =================================================
                  Cost
                  ================================================= -->
+                    @if (profile().showCost) {
                     <section class="border-t border-gray-200 pt-7">
                       <div class="mb-4">
                         <h3 class="text-base font-semibold text-gray-900">Cost</h3>
@@ -690,23 +831,24 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                         <div>
 
                           <mat-form-field appearance="outline" class="zb-field">
-                            <mat-label>Cost description</mat-label>
+                            <mat-label>{{ profile().costLabel }}</mat-label>
                             <input matInput
                             id="costDescription"
                             name="costDescription"
                             type="text"
                             [(ngModel)]="form.costDescription"
-                            placeholder="Free for eligible residents."
+                            [placeholder]="profile().costPlaceholder"
                           />
                           </mat-form-field>
                         </div>
                       </div>
                     </section>
+                    }
 
                     <!-- =================================================
                  Bootcamp programs (Bootcamps category only)
                  ================================================= -->
-                    @if (isBootcamp()) {
+                    @if (profile().showPrograms) {
                       <section class="border-t border-gray-200 pt-7">
                         <app-bootcamp-programs-editor [resourceId]="editingId()" />
                       </section>
@@ -725,13 +867,13 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                       </div>
 
                       <mat-form-field appearance="outline" class="zb-field">
-                        <mat-label>food, assistance, community</mat-label>
+                        <mat-label>Tags</mat-label>
                         <input matInput
                         id="tags"
                         name="tags"
                         type="text"
                         [(ngModel)]="form.tags"
-                        placeholder="food, assistance, community"
+                        [placeholder]="profile().tagsPlaceholder"
                       />
                       </mat-form-field>
 
@@ -770,15 +912,25 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                         </div>
 
                         <div class="grid gap-3 sm:grid-cols-2">
-                          <mat-checkbox class="zb-checkbox--top" name="verified" [(ngModel)]="form.verified"><span>
-                              <span class="block text-sm font-semibold text-gray-900">
-                                Verified
-                              </span>
+                          <div>
+                            <mat-checkbox class="zb-checkbox--top" name="verified" [(ngModel)]="form.verified" (ngModelChange)="form.checkedToday = $event"><span>
+                                <span class="block text-sm font-semibold text-gray-900">
+                                  Verified
+                                </span>
 
-                              <span class="mt-1 block text-xs leading-5 text-gray-500">
-                                Mark this resource as verified.
-                              </span>
-                            </span></mat-checkbox>
+                                <span class="mt-1 block text-xs leading-5 text-gray-500">
+                                  Someone at Zebron confirmed the details with the provider.
+                                  @if (lastVerifiedLabel()) {
+                                    Last checked {{ lastVerifiedLabel() }}.
+                                  }
+                                </span>
+                              </span></mat-checkbox>
+                            @if (form.verified) {
+                              <mat-checkbox class="ml-8 mt-1 block" name="checkedToday" [(ngModel)]="form.checkedToday">
+                                <span class="text-xs font-medium text-gray-700">I checked the details today</span>
+                              </mat-checkbox>
+                            }
+                          </div>
 
                           <mat-checkbox class="zb-checkbox--top" name="featured" [(ngModel)]="form.featured"><span>
                               <span class="block text-sm font-semibold text-gray-900">
@@ -857,6 +1009,18 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                 class="overflow-hidden rounded-2xl border
                  border-gray-200 bg-white shadow-sm"
               >
+                <!-- Find resources with AI -->
+                @if (aiFinderOpen()) {
+                  <app-ai-resource-finder
+                    [categories]="categories()"
+                    [resourceTypes]="resourceTypes()"
+                    [locations]="locations()"
+                    [existing]="resources()"
+                    (added)="loadData()"
+                    (closed)="aiFinderOpen.set(false)"
+                  />
+                }
+
                 <!-- Directory header -->
                 <div
                   class="border-b border-gray-200 bg-[#66BB6A]/80
@@ -882,16 +1046,27 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
                       <!-- View: list, cards, or the form beside the list -->
                       <app-admin-layout-switch [state]="viewState" />
 
-                      @if (!loading()) {
+                      @if (loading()) {
+                        <span class="text-xs text-gray-600"> Loading... </span>
+                      } @else if (viewState.layout() !== 'split') {
+                        <!-- The count is hidden in split view, where space is tight (the search bar shows it). -->
                         <span
                           class="rounded-full bg-white/80 px-2.5 py-1
                            text-xs font-semibold text-gray-600"
                         >
                           {{ resources().length }}
                         </span>
-                      } @else {
-                        <span class="text-xs text-gray-600"> Loading... </span>
                       }
+
+                      <button
+                        type="button"
+                        (click)="aiFinderOpen.set(!aiFinderOpen())"
+                        [attr.aria-expanded]="aiFinderOpen()"
+                        class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#032D42]/20 bg-white px-3 py-2 text-sm font-medium text-[#032D42] shadow-sm transition hover:bg-gray-50"
+                      >
+                        <mat-icon class="!h-[18px] !w-[18px] !text-[18px] !leading-none text-[#007979]" aria-hidden="true">travel_explore</mat-icon>
+                        <span class="hidden sm:inline">Find with AI</span>
+                      </button>
 
                       @if (viewState.layout() !== 'split') {
                         <button
@@ -1282,6 +1457,60 @@ export class ResourceAdminComponent implements OnInit {
 
   protected form = this.createEmptyForm();
 
+  protected readonly days = DAYS;
+
+  /** Admin → Resources → Find with AI panel. */
+  protected readonly aiFinderOpen = signal(false);
+
+  /** When the resource being edited was last verified. */
+  private readonly lastVerifiedAt = signal<Date | null>(null);
+  protected readonly lastVerifiedLabel = computed(() => {
+    const date = this.lastVerifiedAt();
+    return date ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+  });
+
+  // Improve with AI (shared AI engine)
+  private readonly ai = inject(AiService);
+  protected readonly improving = signal(false);
+  protected readonly previousDescription = signal<string | null>(null);
+
+  protected async improveDescription(): Promise<void> {
+    const text = this.form.description.trim();
+    if (!text) return;
+    this.improving.set(true);
+    try {
+      const result = await this.ai.improve('resources', text, `the description of ${this.profile().label.toLowerCase()} "${this.form.name}" in a public directory`);
+      this.previousDescription.set(this.form.description);
+      this.form.description = result.text;
+    } catch (error) {
+      this.toast.error(AiService.message(error));
+    } finally {
+      this.improving.set(false);
+    }
+  }
+
+  protected undoImprove(): void {
+    const previous = this.previousDescription();
+    if (previous !== null) {
+      this.form.description = previous;
+      this.previousDescription.set(null);
+    }
+  }
+
+  /** Which fields to show for the chosen category and resource type. */
+  protected profile(): ResourceFormProfile {
+    const category = this.categories().find((item) => item.id === this.form.categoryId);
+    const type = this.resourceTypes().find((item) => item.id === this.form.resourceType || item.slug === this.form.resourceType);
+    return resourceFormProfile(category, type);
+  }
+
+  protected copyMondayToWeekdays(): void {
+    const monday = this.form.hours.monday;
+    for (const key of ['tuesday', 'wednesday', 'thursday', 'friday'] as const) {
+      this.form.hours[key] = { ...monday };
+    }
+  }
+
   ngOnInit(): void {
     this.loadData();
   }
@@ -1289,7 +1518,7 @@ export class ResourceAdminComponent implements OnInit {
   /**
    * Load resources, categories, and locations for the admin page.
    */
-  private async loadData(): Promise<void> {
+  protected async loadData(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
@@ -1439,18 +1668,50 @@ export class ResourceAdminComponent implements OnInit {
     // Build availability information
     // =========================================================
 
-    const availability = {
-      alwaysAvailable: this.form.alwaysAvailable,
+    const profile = this.profile();
 
-      byAppointment: this.form.byAppointment,
+    if (profile.showEventDates && !this.form.eventStart) {
+      this.toast.error('Add the date and time the event starts.');
+      return;
+    }
+
+    // Hours only when this kind of resource has them and some day is set.
+    const hoursSet = DAYS.some((day) => this.form.hours[day.key].open);
+    const days: Partial<Record<DayKey, AvailabilityDay>> = {};
+    if (profile.showHours && !this.form.alwaysAvailable && hoursSet) {
+      for (const day of DAYS) {
+        const value = this.form.hours[day.key];
+        days[day.key] = value.open
+          ? { open: true, ...(value.openTime ? { openTime: value.openTime } : {}), ...(value.closeTime ? { closeTime: value.closeTime } : {}) }
+          : { open: false };
+      }
+    }
+
+    const availability = {
+      alwaysAvailable: profile.showAlwaysAvailable && this.form.alwaysAvailable,
+
+      byAppointment: profile.showAppointment && this.form.byAppointment,
+
+      ...days,
     };
 
     // =========================================================
     // Build resource
     // =========================================================
 
+    // Form-only fields are not stored as they are.
+    const { hours, eventStart, eventEnd, checkedToday, ...formFields } = this.form;
+    void hours;
+
     const resource = {
-      ...this.form,
+      ...formFields,
+
+      // The verification date: set when someone confirms the details today.
+      ...(this.form.verified && checkedToday ? { lastVerifiedAt: serverTimestamp() as unknown as Resource['lastVerifiedAt'] } : {}),
+
+      eventStart: profile.showEventDates ? eventStart : '',
+
+      eventEnd: profile.showEventDates ? eventEnd : '',
 
       name,
 
@@ -1460,7 +1721,7 @@ export class ResourceAdminComponent implements OnInit {
 
       categoryId,
 
-      locationId,
+      locationId: profile.showLocation ? locationId : '',
 
       organizationId,
 
@@ -1583,7 +1844,16 @@ export class ResourceAdminComponent implements OnInit {
       verified: resource.verified,
 
       featured: resource.featured,
+
+      hours: hoursFrom(resource.availability),
+
+      eventStart: resource.eventStart ?? '',
+
+      eventEnd: resource.eventEnd ?? '',
+
+      checkedToday: false,
     };
+    this.lastVerifiedAt.set(resource.lastVerifiedAt?.toDate() ?? null);
     this.syncHeader();
 
     window.scrollTo({
@@ -1711,6 +1981,8 @@ export class ResourceAdminComponent implements OnInit {
    * Reset the form to its default values.
    */
   private resetForm(): void {
+    this.lastVerifiedAt.set(null);
+    this.previousDescription.set(null);
     this.editingId.set(null);
     this.form = this.createEmptyForm();
   }
@@ -1750,6 +2022,13 @@ export class ResourceAdminComponent implements OnInit {
 
       verified: false,
       featured: false,
+
+      hours: hoursFrom(undefined),
+
+      eventStart: '',
+      eventEnd: '',
+
+      checkedToday: false,
     };
   }
 

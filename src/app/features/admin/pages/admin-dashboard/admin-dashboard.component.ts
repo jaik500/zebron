@@ -1090,6 +1090,22 @@ export class AdminDashboardComponent {
     },
 
     {
+      title: 'AI and content checks',
+      description: 'AI usage and limits, plus weekly checks for broken links, out-of-date listings and duplicates.',
+      route: '/admin/ai-content',
+      actionLabel: 'Open',
+      icon: 'category',
+    },
+
+    {
+      title: 'Topics',
+      description: 'The "Search by Category" topics on Resources, with an introduction, tips and helpful links for each.',
+      route: '/admin/topics',
+      actionLabel: 'Manage topics',
+      icon: 'category',
+    },
+
+    {
       title: 'Resources',
       description: 'Create, edit, publish, and manage resources.',
       route: '/admin/resources',

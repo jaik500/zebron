@@ -17,7 +17,8 @@ import { BootcampService } from '../../../bootcamps/bootcamp.service';
 import { ResourceCardComponent } from '../../components/resource-card/resource-card.component';
 import { LocationPickerComponent } from '../../components/location-picker/location-picker.component';
 import { resourceKind } from '../../resource-kinds';
-import { POPULAR_SEARCHES, RESOURCE_NEEDS, ResourceNeed, needOf } from '../../resource-needs';
+import { POPULAR_SEARCHES, ResourceTopic, needOf } from '../../resource-needs';
+import { ResourceTopicService } from '../../resource-topic.service';
 
 const PAGE_SIZE = 24;
 
@@ -187,7 +188,7 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
             <div class="flex min-w-0 items-center gap-1 lg:w-[250px] lg:shrink-0">
               <button
                 type="button"
-                (click)="topics()"
+                (click)="backToTopics()"
                 class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/90 hover:bg-white/15 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
                 aria-label="All categories"
                 title="All categories"
@@ -322,6 +323,58 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
                 </button>
               </div>
 
+              <!-- About this topic (Admin → Topics) -->
+              @if (currentNeed(); as topic) {
+                @if (topic.intro || topic.tips.length || topic.links.length) {
+                  <section class="mb-4 overflow-hidden rounded-2xl border border-[#007979]/25 bg-white shadow-sm" aria-labelledby="topic-info-title">
+                    <button
+                      type="button"
+                      (click)="topicInfoOpen.set(!topicInfoOpen())"
+                      [attr.aria-expanded]="topicInfoOpen()"
+                      class="flex w-full items-center gap-2 bg-[#E8F4F4] px-4 py-2.5 text-left"
+                    >
+                      <mat-icon class="!h-5 !w-5 !text-[20px] !leading-none text-[#007979]" aria-hidden="true">info</mat-icon>
+                      <h2 id="topic-info-title" class="flex-1 text-sm font-bold text-[#032D42]">About {{ topic.title.toLowerCase() }} help</h2>
+                      <mat-icon class="!h-5 !w-5 !text-[20px] !leading-none text-gray-500 transition-transform {{ topicInfoOpen() ? 'rotate-180' : '' }}" aria-hidden="true">expand_more</mat-icon>
+                    </button>
+                    @if (topicInfoOpen()) {
+                      <div class="space-y-3 px-4 py-4">
+                        @if (topic.intro) {
+                          <p class="whitespace-pre-line text-sm leading-6 text-gray-700 [overflow-wrap:anywhere]">{{ topic.intro }}</p>
+                        }
+                        @if (topic.tips.length) {
+                          <ul class="space-y-1.5 text-sm leading-6 text-gray-700">
+                            @for (tip of topic.tips; track tip) {
+                              <li class="flex gap-2">
+                                <mat-icon class="mt-0.5 !h-4 !w-4 shrink-0 !text-base !leading-none text-amber-500" aria-hidden="true">lightbulb</mat-icon>
+                                <span>{{ tip }}</span>
+                              </li>
+                            }
+                          </ul>
+                        }
+                        @if (topic.links.length) {
+                          <ul class="flex flex-wrap gap-2" aria-label="Helpful links">
+                            @for (link of topic.links; track link.url) {
+                              <li>
+                                <a
+                                  [href]="link.url"
+                                  [attr.target]="link.url.startsWith('http') ? '_blank' : null"
+                                  [attr.rel]="link.url.startsWith('http') ? 'noopener noreferrer' : null"
+                                  class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-300 px-3 text-sm font-semibold text-[#007979] hover:border-[#007979] hover:bg-[#E8F4F4]"
+                                >
+                                  <mat-icon class="!h-4 !w-4 !text-base !leading-none" aria-hidden="true">{{ link.url.startsWith('tel:') ? 'call' : link.url.startsWith('mailto:') ? 'mail' : 'open_in_new' }}</mat-icon>
+                                  {{ link.label }}
+                                </a>
+                              </li>
+                            }
+                          </ul>
+                        }
+                      </div>
+                    }
+                  </section>
+                }
+              }
+
               <!-- Active filters, each removable -->
               @if (activeChips().length) {
                 <ul class="mb-3 flex flex-wrap gap-2" aria-label="Active filters">
@@ -373,7 +426,7 @@ const EMPTY: DirectoryFilters = { q: '', topic: '', category: '', near: '', type
                     @if (refined()) {
                       <button type="button" (click)="clearRefine()" class="inline-flex h-9 items-center rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]">Clear filters</button>
                     }
-                    <button type="button" (click)="topics()" class="inline-flex h-9 items-center rounded-lg border border-gray-300 px-3 text-sm font-semibold text-gray-700 hover:border-[#007979] hover:text-[#007979]">All categories</button>
+                    <button type="button" (click)="backToTopics()" class="inline-flex h-9 items-center rounded-lg border border-gray-300 px-3 text-sm font-semibold text-gray-700 hover:border-[#007979] hover:text-[#007979]">All categories</button>
                     <a routerLink="/submit" class="inline-flex h-9 items-center rounded-lg border border-gray-300 px-3 text-sm font-semibold text-gray-700 hover:border-[#007979] hover:text-[#007979]">Suggest a resource</a>
                   </div>
                 </div>
@@ -463,7 +516,9 @@ export class ResourceListComponent implements OnInit {
     const value = this.filters();
     const words = value.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const categoryId = this.selectedCategory()?.id ?? (value.category ? '__none__' : '');
-    const typeName = this.resourceTypes().find((type) => type.slug === value.type)?.name.toLowerCase();
+    // Resources store the type's id (older ones its slug or name).
+    const chosenType = this.resourceTypes().find((type) => type.slug === value.type);
+    const typeKeys = chosenType ? [chosenType.id, chosenType.slug, chosenType.name.toLowerCase()] : [value.type];
     const interests = this.personalization.preferences().interests;
     const need = this.currentNeed();
 
@@ -471,7 +526,7 @@ export class ResourceListComponent implements OnInit {
       if (categoryId && resource.categoryId !== categoryId) return false;
       if (need && !this.inNeed(resource, need)) return false;
       if (value.near && resource.locationId !== value.near && !resource.online) return false;
-      if (value.type && resource.resourceType !== value.type && resource.resourceType?.toLowerCase() !== typeName) return false;
+      if (value.type && !typeKeys.includes(resource.resourceType) && !typeKeys.includes(resource.resourceType?.toLowerCase())) return false;
       if (value.free && !resource.cost?.free) return false;
       if (value.online && !resource.online) return false;
       if (value.verified && !resource.verified) return false;
@@ -500,6 +555,13 @@ export class ResourceListComponent implements OnInit {
 
   protected readonly popular = POPULAR_SEARCHES;
 
+  /** "Search by Category" topics (Admin → Topics, or the built-in list). */
+  private readonly topicService = inject(ResourceTopicService);
+  protected readonly topics = this.topicService.topics;
+
+  /** Content panel of the open topic: shown by default, can be folded. */
+  protected readonly topicInfoOpen = signal(true);
+
   /** Results instead of the front door once anything is searched or chosen. */
   protected readonly showResults = computed(() => {
     const value = this.filters();
@@ -509,11 +571,14 @@ export class ResourceListComponent implements OnInit {
 
   /** Topic of each category (first matching topic). */
   private readonly needByCategory = computed(
-    () => new Map<string, ResourceNeed | undefined>(this.categories().map((category) => [category.id, needOf(category)])),
+    () => new Map<string, ResourceTopic | undefined>(this.categories().map((category) => [category.id, needOf(category, this.topics())])),
   );
 
   /** In a topic: its category belongs to it, or its text mentions the topic's words. */
-  private inNeed(resource: Resource, need: ResourceNeed): boolean {
+  private inNeed(resource: Resource, need: ResourceTopic): boolean {
+    if (need.categoryIds.length) {
+      return need.categoryIds.includes(resource.categoryId);
+    }
     if (this.needByCategory().get(resource.categoryId) === need) {
       return true;
     }
@@ -521,7 +586,7 @@ export class ResourceListComponent implements OnInit {
     return need.keywords.some((word) => word.length > 3 && text.includes(word));
   }
 
-  protected readonly currentNeed = computed(() => RESOURCE_NEEDS.find((need) => need.key === this.filters().topic) ?? null);
+  protected readonly currentNeed = computed(() => this.topics().find((need) => need.key === this.filters().topic) ?? null);
 
   /** Title, breadcrumb and description of the results page. */
   protected readonly heading = computed(() => {
@@ -583,13 +648,13 @@ export class ResourceListComponent implements OnInit {
   });
 
   /** Back to the front door, keeping the place. */
-  protected topics(): void {
+  protected backToTopics(): void {
     this.update({ ...EMPTY, near: this.filters().near });
   }
 
   /** Each topic with its link and how many resources it covers. */
   protected readonly needs = computed(() => {
-    return RESOURCE_NEEDS.map((need) => {
+    return this.topics().map((need) => {
       const count = this.resources().filter((resource) => this.inNeed(resource, need)).length;
       if (need.route) {
         return { need, count, link: need.route, query: {} as Params };
@@ -634,6 +699,7 @@ export class ResourceListComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
     void this.bootcampService.loadSummaries();
+    void this.topicService.load();
     const [resources, categories, locations, types] = await Promise.all([
       this.resourceService.getPublishedResources().catch((error) => {
         console.error('Failed to load resources:', error);

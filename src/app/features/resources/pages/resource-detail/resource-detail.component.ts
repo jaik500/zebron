@@ -181,6 +181,12 @@ const DAYS: { key: keyof Availability; label: string }[] = [
 
                 <!-- Quick facts -->
                 <ul class="mt-4 flex flex-wrap gap-2 text-sm" aria-label="Quick facts">
+                  @if (item.eventStart) {
+                    <li class="inline-flex items-center gap-1.5 rounded-lg border border-[#007979]/30 bg-[#E8F4F4] px-2.5 py-1 font-semibold text-[#035e5e]">
+                      <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">event</mat-icon>
+                      {{ item.eventStart | date: 'EEE, MMM d, y · h:mm a' }}{{ item.eventEnd ? ' – ' + (item.eventEnd | date: (sameDay(item.eventStart, item.eventEnd) ? 'h:mm a' : 'EEE, MMM d · h:mm a')) : '' }}
+                    </li>
+                  }
                   @if (item.cost) {
                     <li class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 {{ item.cost.free ? 'border-green-200 bg-green-50 text-green-800' : 'border-gray-200 bg-gray-50 text-gray-700' }}">
                       <mat-icon class="!h-4 !w-4 !text-base" aria-hidden="true">payments</mat-icon>
@@ -871,6 +877,11 @@ export class ResourceDetailComponent {
   protected cost = (program: BootcampProgram) => costLabel(program);
   protected starts = (program: BootcampProgram) => openStarts(program).slice(0, 4);
   protected day = (value: string) => dateLabel(value);
+
+  /** True when two "YYYY-MM-DDTHH:mm" values fall on the same day. */
+  protected sameDay(start: string, end: string): boolean {
+    return start.slice(0, 10) === end.slice(0, 10);
+  }
 
   protected financingText(program: BootcampProgram): string {
     const labels: Record<string, string> = {

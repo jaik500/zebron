@@ -198,6 +198,17 @@ import { RouterLink } from '@angular/router';
               </li>
               <li>
                 <a
+                  routerLink="/accessibility"
+                  class="text-sm
+                         text-white/70
+                         transition
+                         hover:text-white"
+                >
+                  Accessibility
+                </a>
+              </li>
+              <li>
+                <a
                   routerLink="/contact"
                   class="text-sm
                          text-white/70

@@ -256,6 +256,18 @@ app.get('/sitemap.xml', async (_req, res) => {
   </url>
   <url>
     <loc>https://zebron.org/find/training</loc>
+  </url>
+  <url>
+    <loc>https://zebron.org/privacy</loc>
+  </url>
+  <url>
+    <loc>https://zebron.org/terms</loc>
+  </url>
+  <url>
+    <loc>https://zebron.org/faq</loc>
+  </url>
+  <url>
+    <loc>https://zebron.org/accessibility</loc>
   </url>`;
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

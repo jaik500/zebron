@@ -357,6 +357,29 @@ export const routes: Routes = [
         },
         loadComponent: () => import('./features/tax-pay-calculator/pages/tax-pay-calculator/tax-pay-calculator.component').then((m) => m.TaxPayCalculatorComponent),
     },
+    // -----------------------------------------------------
+    // POLICIES AND HELP (linked from the footer)
+    // -----------------------------------------------------
+    {
+        path: 'privacy',
+        data: { title: 'Privacy Policy' },
+        loadComponent: () => import('./features/privacy/pages/privacy/privacy.component').then((m) => m.PrivacyComponent),
+    },
+    {
+        path: 'terms',
+        data: { title: 'Terms of Use' },
+        loadComponent: () => import('./features/terms/pages/terms/terms.component').then((m) => m.TermsComponent),
+    },
+    {
+        path: 'faq',
+        data: { title: 'Frequently Asked Questions' },
+        loadComponent: () => import('./features/faq/pages/faq/faq.component').then((m) => m.FaqComponent),
+    },
+    {
+        path: 'accessibility',
+        data: { title: 'Accessibility' },
+        loadComponent: () => import('./features/accessibility/pages/accessibility/accessibility.component').then((m) => m.AccessibilityComponent),
+    },
     // =====================================================
     // AUTHENTICATED USER
     // =====================================================
@@ -1353,6 +1376,30 @@ export const routes: Routes = [
             featureKey: 'resources',
         },
         loadComponent: () => import('./features/admin/pages/resource-types/resource-type-admin.component').then((m) => m.ResourceTypeAdminComponent),
+    },
+    // -----------------------------------------------------
+    // ADMIN AI AND CONTENT CHECKS
+    // -----------------------------------------------------
+    {
+        path: 'admin/ai-content',
+        canActivate: [adminGuard],
+        data: {
+            title: 'Admin | AI and content checks',
+            header: 'AI and content checks',
+        },
+        loadComponent: () => import('./features/admin/pages/ai-content/ai-content-admin.component').then((m) => m.AiContentAdminComponent),
+    },
+    // -----------------------------------------------------
+    // ADMIN TOPICS ("Search by Category" on /resources)
+    // -----------------------------------------------------
+    {
+        path: 'admin/topics',
+        canActivate: [adminGuard],
+        data: {
+            title: 'Admin | Topics',
+            header: 'Topics',
+        },
+        loadComponent: () => import('./features/admin/pages/topics/topic-admin.component').then((m) => m.TopicAdminComponent),
     },
     // -----------------------------------------------------
     // ADMIN CATEGORIES

@@ -192,7 +192,7 @@ import { MatInputModule } from '@angular/material/input';
                 </p>
 
                 <a
-                  routerLink="/submit-resource"
+                  routerLink="/submit"
                   class="mt-3
                          inline-flex
                          text-sm

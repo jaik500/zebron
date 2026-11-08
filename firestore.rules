@@ -4544,6 +4544,63 @@ service cloud.firestore {
      * a resource in the Bootcamps category. Public (the resource page shows
      * them); platform admins write.
      */
+    /*
+     * resourceTopics/{key}: the "Search by Category" topics on /resources
+     * and the introduction, tips and links shown on each topic page.
+     * Public; platform admins write.
+     */
+    /*
+     * AI engine (functions/src/ai-engine.ts) and directory checks
+     * (functions/src/content-checks.ts). Settings are edited by platform
+     * admins; usage and check results are written only by Cloud Functions
+     * and read by platform admins (Admin → AI and content checks).
+     */
+    match /aiEngineConfig/{configId} {
+      allow get: if isPlatformAdmin();
+      allow list: if false;
+
+      allow create, update: if isPlatformAdmin()
+        && configId == "settings"
+        && request.resource.data.keys().hasOnly([
+          "enabled", "monthlyCallLimit", "userDailyLimit", "model",
+          "inputCostPerMillion", "outputCostPerMillion", "updatedAt"
+        ])
+        && request.resource.data.enabled is bool
+        && request.resource.data.monthlyCallLimit is int
+        && request.resource.data.userDailyLimit is int
+        && request.resource.data.model is string
+        && request.resource.data.model.size() <= 70
+        && request.resource.data.inputCostPerMillion is number
+        && request.resource.data.outputCostPerMillion is number;
+
+      allow delete: if false;
+    }
+
+    match /aiUsage/{month} {
+      allow get, list: if isPlatformAdmin();
+      allow write: if false;
+    }
+
+    match /aiUsageLog/{entryId} {
+      allow get, list: if isPlatformAdmin();
+      allow write: if false;
+    }
+
+    match /aiUsageDaily/{entryId} {
+      allow read, write: if false;
+    }
+
+    match /contentChecks/{checkId} {
+      allow get, list: if isPlatformAdmin();
+      allow write: if false;
+    }
+
+    match /resourceTopics/{key} {
+      allow get, list: if true;
+
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
     match /bootcamps/{resourceId} {
       allow get, list: if true;
 

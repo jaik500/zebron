@@ -1,10 +1,12 @@
+import { TOPIC_DRAFTS } from './resource-topic-drafts';
+
 /**
- * "Browse by need" topics on /resources, in the spirit of 211.
+ * The built-in "Search by Category" topics on /resources, in the spirit of
+ * 211. Admins manage the live list in Admin → Topics (resourceTopics);
+ * these are used until topics are saved there, and to seed them.
  *
  * A category belongs to the first topic whose keywords appear in its slug
- * or name, so new categories ("Food pantries", "Financial assistance")
- * join the right topic without code changes. A topic with exactly one
- * category opens it; otherwise it searches for its query.
+ * or name, unless a topic lists its categories explicitly.
  */
 export interface ResourceNeed {
   key: string;
@@ -172,8 +174,74 @@ export const RESOURCE_NEEDS: ResourceNeed[] = [
 /** Searches suggested under the search box. */
 export const POPULAR_SEARCHES = ['Rent help', 'Food pantry', 'Free clinic', 'English classes', 'Immigration lawyer', 'Job training'];
 
-/** The topic a category belongs to, if any. */
-export function needOf(category: { slug?: string; name?: string }): ResourceNeed | undefined {
+/**
+ * The topic a category belongs to: a topic that lists it, else the first
+ * topic (without its own category list) whose keywords match its name.
+ */
+export function needOf<T extends { keywords: string[]; categoryIds?: string[] }>(
+  category: { id?: string; slug?: string; name?: string },
+  topics: T[] = RESOURCE_NEEDS as unknown as T[],
+): T | undefined {
+  const listed = topics.find((topic) => !!category.id && topic.categoryIds?.includes(category.id));
+  if (listed) {
+    return listed;
+  }
   const text = `${category.slug ?? ''} ${category.name ?? ''}`.toLowerCase();
-  return RESOURCE_NEEDS.find((need) => need.keywords.some((word) => text.includes(word)));
+  return topics.find((topic) => !topic.categoryIds?.length && topic.keywords.some((word) => text.includes(word)));
+}
+
+// ============================================================
+// Topics managed in Admin → Topics
+// ============================================================
+
+/** A helpful link on a topic page ("Apply for SNAP", "Call 988"). */
+export interface ResourceTopicLink {
+  label: string;
+  /** https://… or tel:… */
+  url: string;
+}
+
+/**
+ * resourceTopics/{key}: a "Search by Category" topic and the content shown
+ * at the top of its page. Public read; platform admins write.
+ */
+export interface ResourceTopic {
+  /** Also the document id and the ?topic= value, e.g. "food". */
+  key: string;
+  title: string;
+  /** One line under the title in the list. */
+  text: string;
+  /** A short introduction at the top of the topic page. */
+  intro: string;
+  /** Categories in this topic. Empty: matched by keywords instead. */
+  categoryIds: string[];
+  /** Words that place categories and resources in this topic. */
+  keywords: string[];
+  /** A page of its own instead of results, e.g. "/bootcamps". */
+  route: string;
+  /** "Before you reach out" tips. */
+  tips: string[];
+  links: ResourceTopicLink[];
+  order: number;
+  active: boolean;
+}
+
+/** The built-in topics as ResourceTopic records (fallback and seed), with drafted content. */
+export function defaultTopics(): ResourceTopic[] {
+  return RESOURCE_NEEDS.map((need, index) => {
+    const draft = TOPIC_DRAFTS[need.key];
+    return {
+      key: need.key,
+      title: need.title,
+      text: need.text,
+      intro: draft?.intro ?? '',
+      categoryIds: [],
+      keywords: need.keywords,
+      route: need.route ?? '',
+      tips: [...(draft?.tips ?? [])],
+      links: (draft?.links ?? []).map((link) => ({ ...link })),
+      order: index,
+      active: true,
+    };
+  });
 }

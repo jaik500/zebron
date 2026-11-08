@@ -35,6 +35,10 @@ export interface Resource {
 
   online: boolean;
 
+  /** Events only: local date and time, "YYYY-MM-DDTHH:mm". */
+  eventStart?: string;
+  eventEnd?: string;
+
   cost?: CostInformation;
 
   tags: string[];

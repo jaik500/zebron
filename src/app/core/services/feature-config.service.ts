@@ -113,7 +113,7 @@ const DEFAULT_FEATURES: FeatureConfig[] = [
     core: false,
     dependencies: ['core'],
     icon: 'work',
-    route: '/jobs-training',
+    route: '/jobs',
     version: '1.0.0',
   },
 
@@ -155,7 +155,7 @@ const DEFAULT_FEATURES: FeatureConfig[] = [
     core: false,
     dependencies: ['core'],
     icon: 'calculate',
-    route: '/tax-pay-calculator',
+    route: '/tax-calculator',
     version: '1.0.0',
   },
 
