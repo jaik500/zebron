@@ -181,11 +181,12 @@ interface HomeStat {
               </button>
             </form>
 
-            <!-- Actions -->
-            <div class="home-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap" style="--rise-delay: 420ms">
+            <!-- Actions. Phones: two per row (Register + Sign in, or Explore + Blog). -->
+            <div class="home-rise mt-8 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap" style="--rise-delay: 420ms">
               <a
                 routerLink="/resources"
-                class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-1.5 text-sm font-bold text-white shadow-lg shadow-black/10 transition hover:bg-[#008989]"
+                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-1.5 text-sm font-bold text-white shadow-lg shadow-black/10 transition hover:bg-[#008989]"
+                [class.col-span-2]="signedOut()"
               >
                 {{ t().exploreResources }}
                 <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">arrow_forward</mat-icon>
@@ -194,7 +195,7 @@ interface HomeStat {
               @if (signedOut()) {
                 <a
                   routerLink="/register"
-                  class="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-1.5 text-sm font-bold text-[#032D42] shadow-lg shadow-black/10 transition hover:bg-[#E5F4F4]"
+                  class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-white px-4 py-1.5 text-sm font-bold text-[#032D42] shadow-lg shadow-black/10 transition hover:bg-[#E5F4F4]"
                 >
                   <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">person_add</mat-icon>
                   {{ t().register }}
@@ -202,23 +203,16 @@ interface HomeStat {
 
                 <a
                   routerLink="/login"
-                  class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-white/10"
+                  class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-white/10"
                 >
                   <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">login</mat-icon>
                   {{ t().signIn }}
-                </a>
-              } @else {
-                <a
-                  routerLink="/find"
-                  class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-white/10"
-                >
-                  {{ t().findOpportunities }}
                 </a>
               }
 
               <a
                 routerLink="/blog"
-                class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-white/10"
+                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition hover:bg-white/10"
               >
                 <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">article</mat-icon>
                 {{ t().blogLink }}
@@ -226,7 +220,8 @@ interface HomeStat {
 
               <a
                 routerLink="/donate"
-                class="inline-flex items-center justify-center gap-2 rounded-lg border border-[#65CFCF]/50 bg-[#65CFCF]/10 px-4 py-1.5 text-sm font-bold text-[#B9F0ED] transition hover:bg-[#65CFCF]/20"
+                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#65CFCF]/50 bg-[#65CFCF]/10 px-4 py-1.5 text-sm font-bold text-[#B9F0ED] transition hover:bg-[#65CFCF]/20"
+                [class.col-span-2]="!signedOut()"
               >
                 {{ t().donate }}
               </a>
