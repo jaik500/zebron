@@ -1,4 +1,4 @@
-import { Component, DOCUMENT, DestroyRef, afterNextRender, computed, effect, inject, signal } from '@angular/core';
+import { Component, DOCUMENT, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal, viewChild } from '@angular/core';
 
 import { Meta, Title } from '@angular/platform-browser';
 
@@ -48,6 +48,30 @@ const EXPLORE_CARDS: { route: string; icon: string; title: keyof HomeText; text:
   { route: '/tax-calculator', icon: 'calculate', title: 'taxTitle', text: 'taxText', link: 'taxLink' },
   { route: '/organizations/apply', icon: 'business', title: 'organizationTitle', text: 'organizationText', link: 'organizationLink' },
 ];
+
+/**
+ * The sponsored placement on the home page. Set to null to hide it.
+ * Keep it clearly labelled "Sponsored" and link out with rel="sponsored".
+ */
+const HOME_SPONSOR: {
+  title: string;
+  subtitle: string;
+  text: string;
+  video: string;
+  poster: string;
+  videoLabel: string;
+  postLink: string;
+  website: string;
+} | null = {
+  title: 'Washington Tech Solutions',
+  subtitle: 'Cybersecurity Analyst (SOC) Bootcamp · Greenbelt, MD',
+  text: 'Learn how a Security Operations Center works in a hands-on, 24-week, in-person bootcamp for beginners, with labs in Splunk or Elastic, Wireshark and Sysmon, plus free starter courses and certification prep.',
+  video: '/videos/blog/washington-tech-solutions-cybersecurity.mp4',
+  poster: '/images/blog/washington-tech-solutions-cybersecurity.jpg',
+  videoLabel: 'Video: Washington Tech Solutions cybersecurity bootcamp spotlight (no sound)',
+  postLink: '/blog/bootcamp-spotlight-washington-tech-solutions',
+  website: 'https://washingtontechsolutions.com/courses/',
+};
 
 interface HomeStat {
   label: keyof HomeText;
@@ -294,6 +318,64 @@ interface HomeStat {
           </div>
         </div>
       </section>
+
+      <!-- =========================================================
+           SPONSORED (one paid placement, clearly labelled; see HOME_SPONSOR)
+           ========================================================= -->
+
+      @if (sponsor; as ad) {
+        <section class="bg-white" [attr.aria-label]="t().sponsored">
+          <div class="mx-auto max-w-7xl px-5 pb-16 sm:px-6 lg:px-8">
+            <div
+              appReveal
+              class="grid items-center gap-6 overflow-hidden rounded-3xl border border-gray-200 bg-[#032D42] p-4 shadow-lg sm:p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-10"
+            >
+              <div class="relative overflow-hidden rounded-2xl bg-black/20">
+                <video
+                  #sponsorVideo
+                  class="aspect-video w-full"
+                  [src]="ad.video"
+                  [poster]="ad.poster"
+                  [attr.aria-label]="ad.videoLabel"
+                  controls
+                  loop
+                  playsinline
+                  preload="metadata"
+                ></video>
+              </div>
+
+              <div class="min-w-0 pb-2 text-white lg:pb-0">
+                <span class="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-white/70">
+                  <mat-icon aria-hidden="true" class="!h-3.5 !w-3.5 !text-[14px]">campaign</mat-icon>
+                  {{ t().sponsored }}
+                </span>
+                <h2 class="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">{{ ad.title }}</h2>
+                <p class="mt-1 text-sm font-semibold text-[#65CFCF]">{{ ad.subtitle }}</p>
+                <p class="mt-3 text-sm leading-6 text-white/75">{{ ad.text }}</p>
+
+                <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <a
+                    [routerLink]="ad.postLink"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#008989]"
+                  >
+                    {{ t().sponsoredRead }}
+                    <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">arrow_forward</mat-icon>
+                  </a>
+                  <a
+                    [href]="ad.website"
+                    target="_blank"
+                    rel="sponsored noopener"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10"
+                  >
+                    {{ t().sponsoredVisit }}
+                    <mat-icon aria-hidden="true" class="!m-0 !h-5 !w-5 !text-[18px]">open_in_new</mat-icon>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      }
 
       <!-- =========================================================
            HOW IT WORKS
@@ -646,6 +728,10 @@ export class HomeComponent {
 
   protected readonly exploreCards = EXPLORE_CARDS;
 
+  protected readonly sponsor = HOME_SPONSOR;
+
+  private readonly sponsorVideo = viewChild<ElementRef<HTMLVideoElement>>('sponsorVideo');
+
   /** Search placeholder example; changes every few seconds. */
   protected readonly example = signal(POPULAR_SEARCHES[0]);
 
@@ -753,7 +839,34 @@ export class HomeComponent {
         this.example.set(POPULAR_SEARCHES[index]);
       }, 2800);
       this.destroyRef.onDestroy(() => window.clearInterval(timer));
+
+      this.playSponsorWhenVisible();
     });
+  }
+
+  /**
+   * The sponsored clip has no sound: it plays muted while on screen and
+   * pauses when scrolled away. With "reduce motion" it waits for a tap.
+   */
+  private playSponsorWhenVisible(): void {
+    const video = this.sponsorVideo()?.nativeElement;
+    if (!video || typeof IntersectionObserver === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    video.muted = true;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          void video.play().catch(() => undefined);
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(video);
+    this.destroyRef.onDestroy(() => observer.disconnect());
   }
 
   /** Pinned posts first, then the newest; updates as posts are published. */
