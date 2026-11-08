@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="t">
+  <title id="t">A row of colourful city row houses with a large house key and a stack of coins</title>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE68A"/><stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#sky)"/>
+  <circle cx="980" cy="140" r="70" fill="#FFFFFF" opacity="0.55"/>
+  <rect y="520" width="1200" height="110" fill="#032D42"/>
+  <rect y="510" width="1200" height="14" fill="#94A3B8"/>
+  <!-- row houses -->
+  <g>
+    <g transform="translate(80 250)">
+      <rect width="170" height="260" fill="#EF6F5E"/><polygon points="-10,0 180,0 170,-30 0,-30" fill="#B4473A"/>
+      <rect x="25" y="40" width="45" height="60" fill="#FEF3C7"/><rect x="100" y="40" width="45" height="60" fill="#FEF3C7"/>
+      <rect x="25" y="130" width="45" height="60" fill="#FEF3C7"/><rect x="100" y="150" width="50" height="110" fill="#7C2D12"/>
+    </g>
+    <g transform="translate(250 220)">
+      <rect width="170" height="290" fill="#65CFCF"/><polygon points="-6,0 176,0 166,-34 4,-34" fill="#007979"/>
+      <rect x="25" y="40" width="45" height="60" fill="#FFFFFF"/><rect x="100" y="40" width="45" height="60" fill="#FFFFFF"/>
+      <rect x="25" y="130" width="45" height="60" fill="#FFFFFF"/><rect x="100" y="130" width="45" height="60" fill="#FFFFFF"/>
+      <rect x="25" y="200" width="50" height="90" fill="#032D42"/>
+    </g>
+    <g transform="translate(420 260)">
+      <rect width="170" height="250" fill="#5B3FB3"/><polygon points="-6,0 176,0 166,-30 4,-30" fill="#3B2585"/>
+      <rect x="25" y="40" width="45" height="60" fill="#EDE9FE"/><rect x="100" y="40" width="45" height="60" fill="#EDE9FE"/>
+      <rect x="25" y="130" width="45" height="60" fill="#EDE9FE"/><rect x="100" y="140" width="50" height="110" fill="#1E1B4B"/>
+    </g>
+    <g transform="translate(590 230)">
+      <rect width="170" height="280" fill="#FFFFFF"/><polygon points="-6,0 176,0 166,-32 4,-32" fill="#CBD5E1"/>
+      <rect x="25" y="40" width="45" height="60" fill="#BAE6FD"/><rect x="100" y="40" width="45" height="60" fill="#BAE6FD"/>
+      <rect x="25" y="130" width="45" height="60" fill="#BAE6FD"/><rect x="100" y="130" width="45" height="60" fill="#BAE6FD"/>
+      <rect x="25" y="190" width="50" height="90" fill="#007979"/>
+    </g>
+  </g>
+  <!-- key -->
+  <g transform="translate(800 250) rotate(-20)">
+    <circle cx="70" cy="70" r="70" fill="#032D42"/>
+    <circle cx="70" cy="70" r="30" fill="#F59E0B"/>
+    <rect x="130" y="55" width="230" height="30" rx="8" fill="#032D42"/>
+    <rect x="300" y="85" width="22" height="45" fill="#032D42"/><rect x="335" y="85" width="22" height="30" fill="#032D42"/>
+  </g>
+  <!-- coins -->
+  <g transform="translate(940 380)">
+    <ellipse cx="80" cy="120" rx="80" ry="22" fill="#B45309"/><rect y="98" width="160" height="22" fill="#B45309"/><ellipse cx="80" cy="98" rx="80" ry="22" fill="#FCD34D"/>
+    <ellipse cx="80" cy="76" rx="80" ry="22" fill="#B45309"/><rect y="54" width="160" height="22" fill="#B45309"/><ellipse cx="80" cy="54" rx="80" ry="22" fill="#FCD34D"/>
+    <ellipse cx="80" cy="32" rx="80" ry="22" fill="#B45309"/><rect y="10" width="160" height="22" fill="#B45309"/><ellipse cx="80" cy="10" rx="80" ry="22" fill="#FDE68A"/>
+    <text x="80" y="19" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#B45309" text-anchor="middle">$</text>
+  </g>
+  <!-- tree -->
+  <rect x="40" y="430" width="14" height="85" fill="#7C2D12"/><circle cx="47" cy="420" r="38" fill="#2A835F"/>
+</svg>

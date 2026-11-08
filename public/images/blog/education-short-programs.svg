@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="t">
+  <title id="t">A graduation cap on a stack of books beside a laptop showing a certificate and a path of steps</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#007979"/><stop offset="1" stop-color="#2A835F"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1050" cy="560" r="260" fill="#FFFFFF" opacity="0.07"/>
+  <!-- steps -->
+  <g fill="#FFFFFF" opacity="0.18">
+    <rect x="80" y="520" width="160" height="110"/><rect x="240" y="460" width="160" height="170"/><rect x="400" y="400" width="160" height="230"/>
+  </g>
+  <!-- books -->
+  <g transform="translate(150 300)">
+    <rect x="0" y="150" width="330" height="56" rx="8" fill="#EF6F5E"/><rect x="0" y="150" width="20" height="56" fill="#B4473A"/>
+    <rect x="20" y="94" width="300" height="56" rx="8" fill="#F59E0B"/><rect x="20" y="94" width="20" height="56" fill="#B45309"/>
+    <rect x="-10" y="38" width="320" height="56" rx="8" fill="#5B3FB3"/><rect x="-10" y="38" width="20" height="56" fill="#3B2585"/>
+    <g fill="#FFFFFF" opacity="0.7"><rect x="40" y="172" width="260" height="8" rx="4"/><rect x="60" y="116" width="230" height="8" rx="4"/><rect x="30" y="60" width="250" height="8" rx="4"/></g>
+    <!-- cap -->
+    <polygon points="150,-90 330,-30 150,30 -30,-30" fill="#032D42"/>
+    <path d="M60 0 V40 Q150 80 240 40 V0 L150 30 Z" fill="#0B3B52"/>
+    <line x1="150" y1="-30" x2="300" y2="20" stroke="#FCD34D" stroke-width="5"/>
+    <line x1="300" y1="20" x2="300" y2="80" stroke="#FCD34D" stroke-width="5"/>
+    <circle cx="300" cy="86" r="10" fill="#FCD34D"/>
+  </g>
+  <!-- laptop -->
+  <g transform="translate(640 150)">
+    <rect width="420" height="270" rx="18" fill="#032D42"/>
+    <rect x="18" y="18" width="384" height="234" rx="8" fill="#FFFFFF"/>
+    <rect x="-40" y="270" width="500" height="30" rx="14" fill="#0B3B52"/>
+    <!-- certificate -->
+    <rect x="60" y="45" width="300" height="180" rx="6" fill="#FEF3C7" stroke="#F59E0B" stroke-width="5"/>
+    <rect x="110" y="75" width="200" height="16" rx="8" fill="#032D42"/>
+    <rect x="130" y="105" width="160" height="10" rx="5" fill="#94A3B8"/>
+    <rect x="110" y="125" width="200" height="10" rx="5" fill="#94A3B8"/>
+    <circle cx="300" cy="185" r="26" fill="#EF6F5E"/>
+    <polygon points="288,205 280,240 300,228 320,240 312,205" fill="#EF6F5E"/>
+    <rect x="100" y="180" width="120" height="8" rx="4" fill="#007979"/>
+  </g>
+  <!-- star -->
+  <polygon points="1100,90 1112,124 1148,124 1119,145 1130,180 1100,159 1070,180 1081,145 1052,124 1088,124" fill="#FCD34D"/>
+</svg>

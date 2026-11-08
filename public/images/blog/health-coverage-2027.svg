@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="t">
+  <title id="t">A health insurance card, a shield with a medical cross and a calendar with a checked date</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0EA5E9"/><stop offset="1" stop-color="#007979"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E5F4F4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1080" cy="80" r="220" fill="#FFFFFF" opacity="0.08"/>
+  <circle cx="120" cy="600" r="260" fill="#032D42" opacity="0.18"/>
+  <!-- heartbeat line -->
+  <polyline points="0,470 260,470 300,410 340,540 390,360 430,470 1200,470" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round" opacity="0.35"/>
+  <!-- calendar -->
+  <g transform="translate(800 120)">
+    <rect width="260" height="250" rx="22" fill="#FFFFFF"/>
+    <rect width="260" height="70" rx="22" fill="#032D42"/>
+    <rect y="48" width="260" height="22" fill="#032D42"/>
+    <rect x="50" y="-18" width="16" height="44" rx="8" fill="#65CFCF"/>
+    <rect x="194" y="-18" width="16" height="44" rx="8" fill="#65CFCF"/>
+    <g fill="#CBD5E1">
+      <rect x="30" y="95" width="40" height="30" rx="6"/><rect x="85" y="95" width="40" height="30" rx="6"/><rect x="140" y="95" width="40" height="30" rx="6"/><rect x="195" y="95" width="40" height="30" rx="6"/>
+      <rect x="30" y="140" width="40" height="30" rx="6"/><rect x="85" y="140" width="40" height="30" rx="6"/><rect x="195" y="140" width="40" height="30" rx="6"/>
+      <rect x="30" y="185" width="40" height="30" rx="6"/><rect x="85" y="185" width="40" height="30" rx="6"/><rect x="140" y="185" width="40" height="30" rx="6"/><rect x="195" y="185" width="40" height="30" rx="6"/>
+    </g>
+    <rect x="140" y="140" width="40" height="30" rx="6" fill="#F59E0B"/>
+    <circle cx="232" cy="232" r="40" fill="#12BFC3" stroke="#FFFFFF" stroke-width="8"/>
+    <polyline points="214,232 228,246 252,220" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- insurance card -->
+  <g transform="translate(170 210) rotate(-6)">
+    <rect width="440" height="270" rx="26" fill="url(#card)"/>
+    <rect width="440" height="78" rx="26" fill="#007979"/>
+    <rect y="52" width="440" height="26" fill="#007979"/>
+    <circle cx="52" cy="40" r="20" fill="#FFFFFF" opacity="0.9"/>
+    <rect x="86" y="30" width="150" height="20" rx="10" fill="#FFFFFF" opacity="0.85"/>
+    <rect x="40" y="118" width="210" height="18" rx="9" fill="#032D42" opacity="0.8"/>
+    <rect x="40" y="152" width="150" height="14" rx="7" fill="#94A3B8"/>
+    <rect x="40" y="182" width="180" height="14" rx="7" fill="#94A3B8"/>
+    <rect x="40" y="212" width="120" height="14" rx="7" fill="#94A3B8"/>
+    <!-- shield -->
+    <path d="M340 110 L400 132 V178 C400 214 372 238 340 250 C308 238 280 214 280 178 V132 Z" fill="#12BFC3"/>
+    <rect x="331" y="148" width="18" height="62" rx="4" fill="#FFFFFF"/>
+    <rect x="309" y="170" width="62" height="18" rx="4" fill="#FFFFFF"/>
+  </g>
+  <!-- small heart -->
+  <path d="M700 520 c-14 -22 -52 -12 -46 16 c4 18 30 34 46 46 c16 -12 42 -28 46 -46 c6 -28 -32 -38 -46 -16 z" fill="#EF6F5E"/>
+</svg>

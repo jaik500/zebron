@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-import { BLOG_COVERS, BLOG_SECTION_META, BlogPost, blogDate, initialsOf } from '../blog.model';
+import { BLOG_COVERS, BLOG_SECTION_META, BlogPost, blogDate, initialsOf, isBlogImageSource } from '../blog.model';
 
 /** A post in the feed: large (featured) or as a grid card. */
 @Component({
@@ -19,11 +19,21 @@ import { BLOG_COVERS, BLOG_SECTION_META, BlogPost, blogDate, initialsOf } from '
       [class]="featured() ? 'flex-col sm:flex-row' : 'flex-col'"
     >
       <div
-        class="shrink-0"
-        [class]="featured() ? 'h-44 sm:h-auto sm:w-1/2' : 'h-28'"
+        class="relative shrink-0 overflow-hidden"
+        [class]="featured() ? 'h-44 sm:h-auto sm:min-h-56 sm:w-1/2' : 'h-36'"
         [style.background]="cover()"
         aria-hidden="true"
-      ></div>
+      >
+        @if (image(); as src) {
+          <img
+            [src]="src"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        }
+      </div>
 
       <div class="flex min-w-0 flex-1 flex-col gap-2 p-4" [class]="featured() ? 'sm:p-6' : ''">
         <div class="flex items-center justify-between gap-2">
@@ -66,6 +76,7 @@ export class BlogCardComponent {
   readonly featured = input(false);
 
   protected readonly cover = computed(() => BLOG_COVERS[this.post().cover] ?? BLOG_COVERS.teal);
+  protected readonly image = computed(() => (isBlogImageSource(this.post().coverImage) ? this.post().coverImage : null));
   protected readonly section = computed(() => BLOG_SECTION_META[this.post().section]);
   protected readonly initials = computed(() => initialsOf(this.post().authorName));
   protected readonly date = computed(() => blogDate(this.post().publishedAt));

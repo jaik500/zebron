@@ -15,7 +15,7 @@ import { RevealDirective } from '../../../../shared/directives/reveal.directive'
 
 import { HomeText, homeText } from './home.i18n';
 import { BlogService } from '../../../blog/blog.service';
-import { BLOG_COVERS, BlogCover, BlogPost, blogDate } from '../../../blog/blog.model';
+import { BLOG_COVERS, BlogCover, BlogPost, blogDate, isBlogImageSource } from '../../../blog/blog.model';
 import { POPULAR_SEARCHES, RESOURCE_NEEDS } from '../../../resources/resource-needs';
 
 /** How many blog posts the home page shows. */
@@ -145,21 +145,6 @@ interface HomeStat {
               </button>
             </form>
 
-            <!-- Popular topics -->
-            <div class="home-rise mt-4 flex max-w-2xl flex-wrap items-center gap-2" style="--rise-delay: 360ms">
-              <span class="text-xs font-semibold text-white/60">{{ t().popularTopics }}</span>
-              @for (topic of heroTopics; track topic.key) {
-                <a
-                  [routerLink]="topic.link"
-                  [queryParams]="topic.query"
-                  class="group inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/85 transition hover:-translate-y-0.5 hover:border-[#12BFC3]/70 hover:bg-[#12BFC3]/15 hover:text-white"
-                >
-                  <mat-icon aria-hidden="true" class="!m-0 !h-4 !w-4 !text-[15px] text-[#65CFCF] transition group-hover:scale-110">{{ topic.icon }}</mat-icon>
-                  {{ topic.title }}
-                </a>
-              }
-            </div>
-
             <!-- Actions -->
             <div class="home-rise mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap" style="--rise-delay: 420ms">
               <a
@@ -229,9 +214,10 @@ interface HomeStat {
               }
             </div>
 
-            <div class="absolute inset-[30%] flex items-center justify-center rounded-full bg-[#007979] shadow-2xl shadow-[#12BFC3]/30">
+            <div class="absolute inset-[30%] grid place-items-center rounded-full bg-[#007979] shadow-2xl shadow-[#12BFC3]/30">
               <span class="home-pulse absolute inset-0 rounded-full bg-[#12BFC3]/30"></span>
-              <span class="relative text-8xl font-black leading-none text-white" style="transform: scaleX(-1)">e</span>
+              <!-- A lowercase "e" sits low in its line box; the nudge centres it in the circle. -->
+              <span class="relative block h-[1em] text-8xl font-black leading-[1em] text-white" style="transform: translateY(-0.1em) scaleX(-1)">e</span>
             </div>
           </div>
         </div>
@@ -433,8 +419,12 @@ interface HomeStat {
                     [routerLink]="['/blog', post.id]"
                     class="home-pop group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#007979]/40"
                   >
-                    <div class="relative h-32 overflow-hidden" aria-hidden="true">
-                      <div class="absolute inset-0 transition-transform duration-500 group-hover:scale-105" [style.background]="cover(post.cover)"></div>
+                    <div class="relative h-40 overflow-hidden" aria-hidden="true">
+                      <div class="absolute inset-0 transition-transform duration-500 group-hover:scale-105" [style.background]="cover(post.cover)">
+                        @if (photo(post); as src) {
+                          <img [src]="src" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover" />
+                        }
+                      </div>
                       <div class="absolute left-3 top-3 flex gap-1.5">
                         @if (post.pinned) {
                           <span class="rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-[#007979]">{{ t().blogPinned }}</span>
@@ -788,6 +778,10 @@ export class HomeComponent {
   protected isNew(post: BlogPost): boolean {
     const published = post.publishedAt?.toMillis?.();
     return !!published && Date.now() - published < NEW_POST_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  protected photo(post: BlogPost): string | null {
+    return isBlogImageSource(post.coverImage) ? post.coverImage : null;
   }
 
   protected cover(cover: BlogCover): string {

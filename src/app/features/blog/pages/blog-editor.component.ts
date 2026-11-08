@@ -26,12 +26,15 @@ import { renderKnowledgeContent } from '../../partner/knowledge/knowledge-conten
 import { BlogAccessService, blogContextFromRoute } from '../blog-access.service';
 import {
   BLOG_COVERS,
+  BLOG_IMAGE_MAX_BYTES,
   BLOG_SECTION_META,
   BLOG_TOPICS,
   BlogCover,
   BlogPost,
   BlogPostDraft,
+  isBlogImageSource,
 } from '../blog.model';
+import { BlogService } from '../blog.service';
 import { BlogSaveAction, BlogStore } from '../blog.store';
 
 interface FormatTool {
@@ -133,6 +136,70 @@ interface FormatTool {
                 }
               </div>
 
+              <!-- Cover photo -->
+              <div class="mt-3 rounded-lg border border-dashed border-slate-300 p-3">
+                <div class="flex flex-wrap items-center gap-3">
+                  @if (coverPreview(); as src) {
+                    <img [src]="src" alt="" class="h-16 w-28 shrink-0 rounded-md bg-slate-100 object-cover" />
+                  } @else {
+                    <span class="flex h-16 w-28 shrink-0 items-center justify-center rounded-md text-white/90" [style.background]="coverGradient()" aria-hidden="true">
+                      <mat-icon>image</mat-icon>
+                    </span>
+                  }
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-slate-700">{{ 'Cover photo' | t }}</p>
+                    <p class="text-xs text-slate-500">{{ 'JPG, PNG or WebP up to 5 MB. The colour above shows when there is no photo.' | t }}</p>
+                  </div>
+                  <div class="flex gap-2">
+                    <button
+                      type="button"
+                      (click)="coverFile.click()"
+                      [disabled]="uploading()"
+                      class="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-[#007979] hover:text-[#007979] disabled:opacity-50"
+                    >
+                      <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">upload</mat-icon>
+                      {{ (uploading() === 'cover' ? 'Uploading...' : coverImage() ? 'Change' : 'Upload') | t }}
+                    </button>
+                    @if (coverImage()) {
+                      <button
+                        type="button"
+                        (click)="coverImage.set('')"
+                        class="inline-flex h-9 items-center rounded-lg px-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+                      >
+                        {{ 'Remove' | t }}
+                      </button>
+                    }
+                  </div>
+                  <input #coverFile type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" (change)="uploadCover($event)" />
+                </div>
+
+                <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                  <label class="block">
+                    <span class="sr-only">{{ 'Or paste an image address' | t }}</span>
+                    <input
+                      name="coverImage"
+                      [ngModel]="coverImage()"
+                      (ngModelChange)="coverImage.set($event)"
+                      [placeholder]="'Or paste an image address (https://...)' | t"
+                      class="h-9 w-full rounded-lg border border-slate-200 px-2 text-sm outline-none focus:border-[#007979]"
+                    />
+                  </label>
+                  <label class="block">
+                    <span class="sr-only">{{ 'Describe the photo' | t }}</span>
+                    <input
+                      name="coverImageAlt"
+                      [(ngModel)]="coverImageAlt"
+                      maxlength="200"
+                      [placeholder]="'Describe the photo (for screen readers)' | t"
+                      class="h-9 w-full rounded-lg border border-slate-200 px-2 text-sm outline-none focus:border-[#007979]"
+                    />
+                  </label>
+                </div>
+                @if (coverImage() && !coverPreview()) {
+                  <p class="mt-2 text-xs text-rose-700">{{ 'Use an https:// address or a /images/ path.' | t }}</p>
+                }
+              </div>
+
               <!-- Toolbar -->
               <div class="mt-4 flex flex-wrap items-center gap-0.5 border-y border-slate-100 py-1.5" role="toolbar" [attr.aria-label]="'Formatting' | t">
                 @for (tool of tools; track tool.icon) {
@@ -147,6 +214,17 @@ interface FormatTool {
                     <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">{{ tool.icon }}</mat-icon>
                   </button>
                 }
+                <button
+                  type="button"
+                  (click)="inlineFile.click()"
+                  [disabled]="preview() || !!uploading()"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-40"
+                  [attr.aria-label]="'Insert image' | t"
+                  [title]="'Insert image' | t"
+                >
+                  <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">{{ uploading() === 'inline' ? 'hourglass_top' : 'add_photo_alternate' }}</mat-icon>
+                </button>
+                <input #inlineFile type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" (change)="uploadInline($event)" />
                 <span class="flex-1"></span>
                 <button
                   type="button"
@@ -256,6 +334,7 @@ interface FormatTool {
               <section class="rounded-xl border border-slate-200 bg-white p-4 text-xs leading-5 text-slate-500">
                 <h2 class="mb-2 font-semibold uppercase tracking-wider">{{ 'Formatting' | t }}</h2>
                 <p># {{ 'Section heading' | t }} · **{{ 'bold' | t }}** · *{{ 'italic' | t }}* · - {{ 'list' | t }} · > {{ 'quote' | t }} · [text](https://…)</p>
+                <p class="mt-1">{{ 'Image' | t }}: ![{{ 'description' | t }}](https://…) {{ 'on its own line' | t }}</p>
                 <p class="mt-1">{{ 'Table' | t }}: | A | B | {{ 'then' | t }} | --- | --- | {{ 'then one row per line' | t }}</p>
               </section>
             </aside>
@@ -274,6 +353,7 @@ interface FormatTool {
       :host ::ng-deep .blog-preview a { color: #007979; text-decoration: underline; }
       :host ::ng-deep .blog-preview blockquote { border-left: 4px solid #007979; background: #f0fdfa; padding: 0.5rem 1rem; margin: 1rem 0; }
       :host ::ng-deep .blog-preview code { background: #f1f5f9; border-radius: 4px; padding: 0.1rem 0.3rem; }
+      :host ::ng-deep .blog-preview img { max-width: 100%; border-radius: 10px; }
       :host ::ng-deep .blog-preview pre { background: #0f172a; color: #f8fafc; border-radius: 8px; padding: 1rem; overflow-x: auto; }
     `,
   ],
@@ -298,6 +378,13 @@ export class BlogEditorComponent implements OnInit {
   protected readonly existing = signal<BlogPost | null>(null);
   protected readonly preview = signal(false);
   protected readonly cover = signal<BlogCover>('teal');
+  protected readonly coverImage = signal('');
+  protected coverImageAlt = '';
+  /** Which upload is running, if any. */
+  protected readonly uploading = signal<'cover' | 'inline' | null>(null);
+  protected readonly coverPreview = computed(() => (isBlogImageSource(this.coverImage()) ? this.coverImage().trim() : null));
+  protected readonly coverGradient = computed(() => BLOG_COVERS[this.cover()] ?? BLOG_COVERS.teal);
+  private readonly blog = inject(BlogService);
 
   protected title = '';
   protected excerpt = '';
@@ -361,6 +448,8 @@ export class BlogEditorComponent implements OnInit {
     this.topic = post.topic || this.topics[0];
     this.pinned = post.pinned;
     this.cover.set(post.cover);
+    this.coverImage.set(post.coverImage ?? '');
+    this.coverImageAlt = post.coverImageAlt;
 
     if (post.publishAt && post.publishAt.toMillis() > Date.now()) {
       this.when = 'later';
@@ -409,6 +498,8 @@ export class BlogEditorComponent implements OnInit {
       content: this.content,
       topic: this.topic,
       cover: this.cover(),
+      coverImage: this.coverPreview(),
+      coverImageAlt: this.coverImageAlt,
       pinned: this.canPublish() ? this.pinned : (this.existing()?.pinned ?? false),
     };
 
@@ -435,6 +526,56 @@ export class BlogEditorComponent implements OnInit {
       await this.router.navigate([this.context.basePath, id]);
     } else if (action !== 'draft') {
       await this.router.navigateByUrl(this.canPublish() ? `${this.context.basePath}/manage` : this.context.basePath);
+    }
+  }
+
+  /** Upload the chosen file as the cover photo. */
+  protected async uploadCover(event: Event): Promise<void> {
+    const url = await this.upload(event, 'cover');
+    if (url) {
+      this.coverImage.set(url);
+    }
+  }
+
+  /** Upload the chosen file and insert it at the cursor as ![description](url). */
+  protected async uploadInline(event: Event): Promise<void> {
+    const textarea = this.editor()?.nativeElement;
+    const position = textarea?.selectionStart ?? this.content.length;
+    const url = await this.upload(event, 'inline');
+    if (!url) {
+      return;
+    }
+
+    const before = this.content.slice(0, position);
+    const line = `${before && !before.endsWith('\n') ? '\n\n' : ''}![${this.i18n.t('Describe the image')}](${url})\n\n`;
+    this.content = before + line + this.content.slice(position);
+  }
+
+  private async upload(event: Event, kind: 'cover' | 'inline'): Promise<string | null> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+
+    if (!file) {
+      return null;
+    }
+    if (!file.type.startsWith('image/')) {
+      this.toast.error(this.i18n.t('Choose an image file (JPG, PNG, WebP or GIF).'));
+      return null;
+    }
+    if (file.size > BLOG_IMAGE_MAX_BYTES) {
+      this.toast.error(this.i18n.t('That image is larger than 5 MB. Choose a smaller one.'));
+      return null;
+    }
+
+    this.uploading.set(kind);
+    try {
+      return await this.blog.uploadImage(this.context, file);
+    } catch {
+      this.toast.error(this.i18n.t('The image could not be uploaded. Please try again.'));
+      return null;
+    } finally {
+      this.uploading.set(null);
     }
   }
 

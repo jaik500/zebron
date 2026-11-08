@@ -30,6 +30,7 @@ import {
   BLOG_STATUS_META,
   blogDate,
   initialsOf,
+  isBlogImageSource,
 } from '../blog.model';
 import { BlogStore } from '../blog.store';
 
@@ -137,7 +138,19 @@ import { BlogStore } from '../blog.store';
                 <span><b class="text-slate-800">{{ post.authorName }}</b> · {{ date() }} · {{ '{0} min read' | t: [post.readingMinutes] }}</span>
               </div>
 
-              <div class="my-6 h-56 rounded-xl sm:h-72" [style.background]="cover()" aria-hidden="true"></div>
+              @if (image(); as src) {
+                <figure class="my-6">
+                  <img
+                    [src]="src"
+                    [alt]="post.coverImageAlt"
+                    decoding="async"
+                    class="aspect-[1200/630] w-full rounded-xl bg-slate-100 object-cover"
+                    [style.background]="cover()"
+                  />
+                </figure>
+              } @else {
+                <div class="my-6 h-56 rounded-xl sm:h-72" [style.background]="cover()" aria-hidden="true"></div>
+              }
 
               <div #prose class="blog-prose text-[17px] leading-8 text-slate-800" [innerHTML]="html()"></div>
 
@@ -271,6 +284,10 @@ export class BlogPostComponent implements OnInit {
   protected readonly signedIn = computed(() => this.access.signedIn());
   protected readonly html = computed(() => renderKnowledgeContent(this.store.post()?.content ?? ''));
   protected readonly cover = computed(() => BLOG_COVERS[this.store.post()?.cover ?? 'teal'] ?? BLOG_COVERS.teal);
+  protected readonly image = computed(() => {
+    const src = this.store.post()?.coverImage;
+    return isBlogImageSource(src) ? src : null;
+  });
   protected readonly sectionMeta = computed(() => BLOG_SECTION_META[this.store.post()?.section ?? this.context.section]);
   protected readonly statusMeta = computed(() => BLOG_STATUS_META[this.store.post()?.status ?? 'draft']);
   protected readonly initials = computed(() => initialsOf(this.store.post()?.authorName ?? ''));

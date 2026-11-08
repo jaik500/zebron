@@ -7,11 +7,13 @@
  *   **bold**, *italic*, `code`, [link](https://...)
  *   ``` fenced code blocks ```
  *   > quote
+ *   ![Description](https://... or /images/...)   an image on its own line
  *   | Column | Column |   tables: a header row, a separator row
  *   | ------ | -----: |   (:--- left, :---: centre, ---: right), then rows
  *
- * All text is HTML-escaped first, and only https/mailto links are
- * turned into anchors, so the output is safe to bind with [innerHTML].
+ * All text is HTML-escaped first, only https/mailto links are turned
+ * into anchors, and images only load from https or the site's own
+ * /images/ folder, so the output is safe to bind with [innerHTML].
  */
 
 export function escapeHtml(value: string): string {
@@ -42,6 +44,18 @@ function inline(text: string): string {
     );
 
   return html.replace(/\u0000(\d+)\u0000/g, (_match, index: string) => codes[Number(index)] ?? '');
+}
+
+/** An image line: ![description](https://...) or ![description](/images/...). */
+const IMAGE_LINE = /^!\[([^\]]*)\]\(((?:https:\/\/|\/images\/)[^\s)]+)\)$/;
+
+function renderImage(alt: string, src: string): string {
+  const text = escapeHtml(alt.trim());
+  return (
+    `<figure class="kc-figure"><img src="${escapeHtml(src)}" alt="${text}" loading="lazy" decoding="async" />` +
+    (text ? `<figcaption>${text}</figcaption>` : '') +
+    '</figure>'
+  );
 }
 
 /** Splits "| a | b |" into ["a", "b"]; "\\|" stays a literal pipe. */
@@ -148,6 +162,14 @@ export function renderKnowledgeContent(source: string): string {
       continue;
     }
 
+    const image = IMAGE_LINE.exec(trimmed);
+    if (image) {
+      closeParagraph();
+      closeList();
+      out.push(renderImage(image[1], image[2]));
+      continue;
+    }
+
     const heading = /^(#{1,3})\s+(.*)$/.exec(trimmed);
     if (heading) {
       closeParagraph();
@@ -196,6 +218,7 @@ export function renderKnowledgeContent(source: string): string {
 export function knowledgeExcerpt(article: { summary?: string; content: string }, length = 180): string {
   const text = (article.summary?.trim() || article.content)
     .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
     .replace(/[#>*`_[\]()|:-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

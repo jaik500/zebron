@@ -21,7 +21,9 @@ import {
   where,
 } from 'firebase/firestore';
 
-import { firestore } from '../../core/services/firebase-config';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+
+import { firebaseStorage, firestore } from '../../core/services/firebase-config';
 
 import {
   BlogComment,
@@ -59,6 +61,8 @@ export class BlogService {
       content: String(data['content'] ?? ''),
       topic: String(data['topic'] ?? ''),
       cover: (data['cover'] as BlogPost['cover']) ?? 'teal',
+      coverImage: typeof data['coverImage'] === 'string' && data['coverImage'] ? (data['coverImage'] as string) : null,
+      coverImageAlt: String(data['coverImageAlt'] ?? ''),
       pinned: data['pinned'] === true,
       readingMinutes: Number(data['readingMinutes'] ?? 1),
       status: (data['status'] as BlogPost['status']) ?? 'draft',
@@ -70,6 +74,28 @@ export class BlogService {
       publishedAt: (data['publishedAt'] as Timestamp | null) ?? null,
       publishAt: (data['publishAt'] as Timestamp | null) ?? null,
     };
+  }
+
+  // ============================================================
+  // IMAGES
+  // ============================================================
+
+  /**
+   * Upload a photo for a post and return its address. Public and staff
+   * posts use blog-images/; an organization's posts use
+   * organizations/{id}/blog-images/ (see storage.rules).
+   */
+  async uploadImage(context: BlogContext, file: File): Promise<string> {
+    const extension = (file.name.split('.').pop() ?? 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const name = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+    const folder =
+      context.section === 'organization' && context.organizationId
+        ? `organizations/${context.organizationId}/blog-images`
+        : 'blog-images';
+
+    const target = ref(firebaseStorage, `${folder}/${name}`);
+    await uploadBytes(target, file, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
+    return getDownloadURL(target);
   }
 
   // ============================================================

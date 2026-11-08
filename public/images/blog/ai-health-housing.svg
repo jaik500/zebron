@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="t">
+  <title id="t">A computer chip connected by glowing lines to a house, a heart and a chat bubble</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5B3FB3"/><stop offset="1" stop-color="#032D42"/>
+    </linearGradient>
+    <radialGradient id="glow"><stop offset="0" stop-color="#12BFC3" stop-opacity="0.55"/><stop offset="1" stop-color="#12BFC3" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g fill="#FFFFFF" opacity="0.18">
+    <circle cx="90" cy="90" r="4"/><circle cx="240" cy="160" r="3"/><circle cx="1100" cy="520" r="4"/><circle cx="1010" cy="90" r="3"/><circle cx="160" cy="520" r="3"/><circle cx="700" cy="560" r="3"/>
+  </g>
+  <circle cx="600" cy="315" r="250" fill="url(#glow)"/>
+  <!-- links -->
+  <g stroke="#65CFCF" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.85">
+    <path d="M520 290 C420 290 380 200 300 200"/>
+    <path d="M680 290 C780 290 820 200 900 200"/>
+    <path d="M600 410 C600 470 600 470 600 500"/>
+  </g>
+  <g fill="#12BFC3"><circle cx="300" cy="200" r="10"/><circle cx="900" cy="200" r="10"/><circle cx="600" cy="500" r="10"/></g>
+  <!-- chip -->
+  <g transform="translate(500 215)">
+    <g fill="#65CFCF">
+      <rect x="30" y="-24" width="12" height="28" rx="4"/><rect x="66" y="-24" width="12" height="28" rx="4"/><rect x="102" y="-24" width="12" height="28" rx="4"/><rect x="138" y="-24" width="12" height="28" rx="4"/>
+      <rect x="30" y="196" width="12" height="28" rx="4"/><rect x="66" y="196" width="12" height="28" rx="4"/><rect x="102" y="196" width="12" height="28" rx="4"/><rect x="138" y="196" width="12" height="28" rx="4"/>
+      <rect x="-24" y="40" width="28" height="12" rx="4"/><rect x="-24" y="80" width="28" height="12" rx="4"/><rect x="-24" y="120" width="28" height="12" rx="4"/>
+      <rect x="196" y="40" width="28" height="12" rx="4"/><rect x="196" y="80" width="28" height="12" rx="4"/><rect x="196" y="120" width="28" height="12" rx="4"/>
+    </g>
+    <rect width="200" height="200" rx="28" fill="#0B3B52" stroke="#12BFC3" stroke-width="6"/>
+    <text x="100" y="128" font-family="Arial, sans-serif" font-size="78" font-weight="800" fill="#FFFFFF" text-anchor="middle">AI</text>
+  </g>
+  <!-- house -->
+  <g transform="translate(190 110)">
+    <circle cx="110" cy="90" r="105" fill="#FFFFFF"/>
+    <polygon points="110,30 175,85 160,85 160,150 60,150 60,85 45,85" fill="#F59E0B"/>
+    <rect x="96" y="105" width="28" height="45" fill="#7C2D12"/>
+  </g>
+  <!-- heart -->
+  <g transform="translate(790 110)">
+    <circle cx="110" cy="90" r="105" fill="#FFFFFF"/>
+    <path d="M110 150 C 60 115 45 95 50 70 C 56 42 95 38 110 65 C 125 38 164 42 170 70 C 175 95 160 115 110 150 Z" fill="#EF6F5E"/>
+    <polyline points="62,92 92,92 102,74 116,110 128,92 158,92" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linejoin="round"/>
+  </g>
+  <!-- chat bubble -->
+  <g transform="translate(520 470)">
+    <rect width="160" height="100" rx="24" fill="#FFFFFF"/>
+    <polygon points="40,98 30,130 70,98" fill="#FFFFFF"/>
+    <circle cx="50" cy="50" r="10" fill="#5B3FB3"/><circle cx="80" cy="50" r="10" fill="#5B3FB3"/><circle cx="110" cy="50" r="10" fill="#5B3FB3"/>
+  </g>
+</svg>

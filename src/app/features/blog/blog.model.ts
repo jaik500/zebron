@@ -36,7 +36,7 @@ export const BLOG_COVERS: Record<BlogCover, string> = {
 };
 
 export const BLOG_TOPICS: Record<BlogSection, string[]> = {
-  public: ['Careers', 'Tech skills', 'Employers', 'Health', 'Housing', 'AI', 'Zebron news', 'Stories'],
+  public: ['Careers', 'Tech skills', 'Employers', 'Education', 'Health', 'Housing', 'Food', 'Sports', 'Infrastructure', 'AI', 'Zebron news', 'Stories'],
   organization: ['Announcements', 'Study tips', 'Community', 'Careers', 'Events'],
   internal: ['Release notes', 'Runbooks', 'Support', 'Announcements', 'Product'],
 };
@@ -52,6 +52,10 @@ export interface BlogPost {
   content: string;
   topic: string;
   cover: BlogCover;
+  /** Cover photo (https URL or /images/... path). The gradient shows when empty. */
+  coverImage: string | null;
+  /** Describes the cover photo for screen readers. */
+  coverImageAlt: string;
   pinned: boolean;
   readingMinutes: number;
 
@@ -70,7 +74,7 @@ export interface BlogPost {
 
 export type BlogPostDraft = Pick<
   BlogPost,
-  'title' | 'excerpt' | 'content' | 'topic' | 'cover' | 'pinned'
+  'title' | 'excerpt' | 'content' | 'topic' | 'cover' | 'coverImage' | 'coverImageAlt' | 'pinned'
 >;
 
 export interface BlogComment {
@@ -162,4 +166,12 @@ export function blogDate(value: { toDate(): Date } | null | undefined, locale = 
   return date && !Number.isNaN(date.getTime())
     ? date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
     : '';
+}
+
+/** Largest image the editor uploads (matches storage.rules). */
+export const BLOG_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+/** A cover or inline image source the app will show: https or the site's /images/ folder. */
+export function isBlogImageSource(value: string | null | undefined): value is string {
+  return !!value && /^(https:\/\/|\/images\/)\S+$/.test(value.trim());
 }

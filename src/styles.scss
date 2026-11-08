@@ -89,3 +89,26 @@ body {
     text-align: right;
   }
 }
+
+// Images in Knowledge Center articles and blog posts: ![description](url)
+.kc-figure {
+  margin: 1.25rem 0 1.5rem;
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 32rem;
+    object-fit: cover;
+    border-radius: 12px;
+    background: #f1f5f9;
+  }
+
+  figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.85em;
+    line-height: 1.4;
+    color: #64748b;
+    text-align: center;
+  }
+}

@@ -368,6 +368,8 @@ export const BlogStore = signalStore(
               content: draft.content,
               topic: draft.topic,
               cover: draft.cover,
+              coverImage: draft.coverImage?.trim() || null,
+              coverImageAlt: draft.coverImageAlt.trim(),
               pinned: draft.pinned,
               readingMinutes: readingMinutes(draft.content),
               status,

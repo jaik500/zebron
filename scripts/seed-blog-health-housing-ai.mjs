@@ -14,7 +14,10 @@
  *   node scripts/seed-blog-health-housing-ai.mjs --apply --draft
  *        # save them as drafts instead, to review in Blog → Manage first
  *   node scripts/seed-blog-health-housing-ai.mjs --apply --overwrite
- *        # replace posts this script created before (comments and reactions are kept)
+ *        # replace posts this script created before (comments, reactions and the
+ *        # original publish date are kept)
+ *
+ * Cover pictures are in public/images/blog/ and ship with the site.
  */
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
@@ -40,6 +43,8 @@ const POSTS = [
   // ------------------------------------------------------------------
   {
     id: "health-coverage-2027-what-changed-dmv",
+    coverImage: "/images/blog/health-coverage-2027.svg",
+    coverImageAlt: "A health insurance card, a shield with a medical cross and a calendar with a checked date",
     title: "Health coverage in 2027: what changed, and how to keep yours",
     topic: "Health",
     cover: "sky",
@@ -112,6 +117,8 @@ If you need help meeting the 80-hour rule, the same places that help with jobs c
   // ------------------------------------------------------------------
   {
     id: "renting-in-the-dmv-when-rent-outruns-paychecks",
+    coverImage: "/images/blog/renting-in-the-dmv.svg",
+    coverImageAlt: "A row of colourful city row houses with a large house key and a stack of coins",
     title: "Renting in the DMV: when rent outruns your paycheck",
     topic: "Housing",
     cover: "sunrise",
@@ -175,6 +182,8 @@ Working on your income too? Browse [open jobs](https://zebron.org/jobs) and [tec
   // ------------------------------------------------------------------
   {
     id: "ai-health-housing-stay-in-charge",
+    coverImage: "/images/blog/ai-health-housing.svg",
+    coverImageAlt: "A computer chip connected to a house, a heart and a chat bubble",
     title: "AI now helps decide your apartment and your care. Here is how to stay in charge",
     topic: "AI",
     cover: "violet",
@@ -269,7 +278,9 @@ async function main() {
     }
 
     // A minute apart, so the feed shows them in the order listed (last one newest).
-    const publishedAt = DRAFT ? null : Timestamp.fromMillis(now - (POSTS.length - 1 - index) * 60_000);
+    // A post that is already published keeps its original date.
+    const keptDate = existing.exists ? existing.get("publishedAt") : null;
+    const publishedAt = DRAFT ? null : keptDate ?? Timestamp.fromMillis(now - (POSTS.length - 1 - index) * 60_000);
 
     const data = {
       section: "public",
@@ -279,6 +290,8 @@ async function main() {
       content,
       topic: post.topic,
       cover: post.cover,
+      coverImage: post.coverImage ?? null,
+      coverImageAlt: post.coverImageAlt ?? "",
       pinned: false,
       readingMinutes: readingMinutes(content),
       status: DRAFT ? "draft" : "published",

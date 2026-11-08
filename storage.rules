@@ -12,6 +12,8 @@ rules_version = '2';
 //   organizations/{organizationId}/business-documents/{businessId}/{file}
 //                                                       an organization's Business Operations documents
 //   business-documents/{businessId}/{file}              Zebron's own Business Operations documents
+//   blog-images/{file}                                  photos in public and staff blog posts
+//   organizations/{organizationId}/blog-images/{file}   photos in an organization's blog posts
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -164,6 +166,35 @@ service firebase.storage {
       allow create, update: if isPlatformAdmin()
         && request.resource.size > 0
         && request.resource.size <= 25 * 1024 * 1024;
+    }
+
+    // ------------------------------------------------------------
+    // BLOG IMAGES
+    // ------------------------------------------------------------
+    // Cover photos and pictures inside posts. Images only, up to 5 MB
+    // (the editor's limit). Files are never replaced, only added.
+    function isBlogImage() {
+      return request.resource.size > 0
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Public and staff posts: anyone can see the pictures, Zebron
+    // platform administrators (who write those posts) upload them.
+    match /blog-images/{fileName} {
+      allow read: if true;
+      allow create: if isPlatformAdmin() && isBlogImage();
+      allow update: if false;
+      allow delete: if isPlatformAdmin();
+    }
+
+    // An organization's posts: its members can see the pictures, its
+    // staff and above (who write posts) upload them, managers remove them.
+    match /organizations/{organizationId}/blog-images/{fileName} {
+      allow read: if signedIn() && (isPlatformAdmin() || organizationRank(organizationId) >= 1);
+      allow create: if signedIn() && (isPlatformAdmin() || organizationRank(organizationId) >= 2) && isBlogImage();
+      allow update: if false;
+      allow delete: if signedIn() && (isPlatformAdmin() || organizationRank(organizationId) >= 3);
     }
 
     // Everything else is closed.
