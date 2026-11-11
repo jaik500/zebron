@@ -18,7 +18,7 @@ export interface Job {
 
   title: string;
   companyId?: string;
-  organizationId: string;
+  organizationId?: string;
   organizationName: string;
 
   description: string;
@@ -68,6 +68,18 @@ export interface Job {
   createdBy: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+
+  jobOrigin?: JobOrigin;
+
+source?: JobSource;
+
+importedAt?: Timestamp | null;
+
+/**
+ * Controls whether a newly imported listing should
+ * trigger job-alert emails.
+ */
+alertEligibleAt?: Timestamp | null;
 }
 
 // ============================================================
@@ -148,4 +160,24 @@ export interface JobAlert {
   active: boolean;
   createdAt?: Timestamp | null;
   lastSentAt?: Timestamp | null;
+}
+
+export type JobOrigin =
+  | 'platform'
+  | 'organization'
+  | 'external';
+
+export type JobSourceStatus =
+  | 'active'
+  | 'closed'
+  | 'removed'
+  | 'unverified';
+
+export interface JobSource {
+  provider: string;
+  externalJobId: string;
+  sourceUrl: string;
+  importedAt: Timestamp;
+  lastVerifiedAt?: Timestamp | null;
+  status: JobSourceStatus;
 }

@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--
+  Zebron Coding Lab runner.
+
+  Loaded by <app-code-lab> in an iframe with sandbox="allow-scripts" (and
+  NOT allow-same-origin), so this page has an opaque origin: it cannot read
+  Zebron's cookies, storage, IndexedDB (where Firebase keeps the sign-in) or
+  the parent page. The policy below also blocks every network request
+  (fetch, XHR, WebSocket, EventSource, images) and outside scripts.
+
+  Learner code never runs in this page: each run gets a new Web Worker,
+  which the parent can stop at any time and which this page terminates
+  after the time limit, so an endless loop cannot freeze Zebron.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob: data:; worker-src blob: data:; connect-src 'none'; img-src 'none'; style-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Zebron Coding Lab runner</title>
+</head>
+<body>
+<script>
+(() => {
+  'use strict';
+
+  const PARENT = window.parent;
+  const MAX_CODE = 100000;
+  const DEFAULT_TIMEOUT = 5000;
+  const MAX_TIMEOUT = 15000;
+
+  // ------------------------------------------------------------------
+  // Worker code: runs the learner's program and reports back.
+  // Everything here is prefixed __z so it cannot clash with learner names.
+  // ------------------------------------------------------------------
+  const WORKER_SOURCE = String.raw`
+'use strict';
+const __zSend = (message) => self.postMessage(message);
+const __zMaxLines = 500;
+const __zMaxText = 4000;
+let __zLines = 0;
+let __zFailed = false;
+const __logs = [];
+
+function __zFormat(value, depth, seen) {
+  depth = depth || 0;
+  seen = seen || new WeakSet();
+  const type = typeof value;
+  if (value === null) return 'null';
+  if (type === 'undefined') return 'undefined';
+  if (type === 'string') return depth === 0 ? value : JSON.stringify(value);
+  if (type === 'number' || type === 'boolean') return String(value);
+  if (type === 'bigint') return value + 'n';
+  if (type === 'symbol') return value.toString();
+  if (type === 'function') return '[Function ' + (value.name || 'anonymous') + ']';
+  if (value instanceof Error) return value.name + ': ' + value.message;
+  if (value instanceof Date) return isNaN(value) ? 'Invalid Date' : value.toISOString();
+  if (value instanceof RegExp) return String(value);
+  if (seen.has(value)) return '[Circular]';
+  if (depth > 3) return Array.isArray(value) ? '[Array]' : '[Object]';
+  seen.add(value);
+  try {
+    if (Array.isArray(value)) {
+      const items = value.slice(0, 100).map((item) => __zFormat(item, depth + 1, seen));
+      if (value.length > 100) items.push('… ' + (value.length - 100) + ' more');
+      return '[ ' + items.join(', ') + ' ]';
+    }
+    if (value instanceof Map) {
+      const items = Array.from(value).slice(0, 50).map(([k, v]) => __zFormat(k, depth + 1, seen) + ' => ' + __zFormat(v, depth + 1, seen));
+      return 'Map(' + value.size + ') { ' + items.join(', ') + ' }';
+    }
+    if (value instanceof Set) {
+      const items = Array.from(value).slice(0, 50).map((item) => __zFormat(item, depth + 1, seen));
+      return 'Set(' + value.size + ') { ' + items.join(', ') + ' }';
+    }
+    if (typeof value.then === 'function') return 'Promise { … }';
+    const keys = Object.keys(value);
+    const shown = keys.slice(0, 50).map((key) => {
+      const name = /^[A-Za-z_$][\w$]*$/.test(key) ? key : JSON.stringify(key);
+      return name + ': ' + __zFormat(value[key], depth + 1, seen);
+    });
+    if (keys.length > 50) shown.push('… ' + (keys.length - 50) + ' more');
+    const ctor = value.constructor && value.constructor.name;
+    const prefix = ctor && ctor !== 'Object' ? ctor + ' ' : '';
+    return prefix + (shown.length ? '{ ' + shown.join(', ') + ' }' : '{}');
+  } catch (error) {
+    return '[Unreadable value]';
+  } finally {
+    seen.delete(value);
+  }
+}
+
+function __zMessage(error) {
+  if (error instanceof Error) return error.name + ': ' + error.message;
+  return 'Uncaught ' + __zFormat(error);
+}
+
+function __zLine(error, url) {
+  const stack = (error && error.stack) || '';
+  const index = stack.indexOf(url);
+  if (index === -1) return null;
+  const match = stack.slice(index + url.length).match(/^:(\d+)(?::(\d+))?/);
+  return match ? Number(match[1]) : null;
+}
+
+function __zEmit(level, args) {
+  const text = args.map((arg) => (typeof arg === 'string' ? arg : __zFormat(arg))).join(' ').slice(0, __zMaxText);
+  __logs.push(text);
+  __zLines += 1;
+  if (__zLines <= __zMaxLines) {
+    __zSend({ type: 'log', level, text });
+  } else if (__zLines === __zMaxLines + 1) {
+    __zSend({ type: 'log', level: 'warn', text: 'Output limit reached: later lines are not shown.' });
+  }
+}
+
+['log', 'info', 'warn', 'error', 'debug'].forEach((level) => {
+  console[level] = (...args) => __zEmit(level, args);
+});
+console.table = (data) => __zEmit('log', [data]);
+console.clear = () => __zSend({ type: 'clear' });
+
+// Count timers so the run ends when the program has nothing left to do.
+let __zPending = 0;
+const __zTimers = new Set();
+const __zSetTimeout = self.setTimeout.bind(self);
+const __zClearTimeout = self.clearTimeout.bind(self);
+const __zSetInterval = self.setInterval.bind(self);
+const __zClearInterval = self.clearInterval.bind(self);
+self.setTimeout = (fn, ms, ...rest) => {
+  __zPending += 1;
+  const id = __zSetTimeout(() => {
+    __zTimers.delete(id);
+    __zPending -= 1;
+    if (typeof fn === 'function') {
+      try { fn(...rest); } catch (error) { __zReportError(error); }
+    }
+  }, ms);
+  __zTimers.add(id);
+  return id;
+};
+self.clearTimeout = (id) => {
+  if (__zTimers.delete(id)) __zPending -= 1;
+  __zClearTimeout(id);
+};
+self.setInterval = (fn, ms, ...rest) => {
+  __zPending += 1;
+  const id = __zSetInterval(() => {
+    try { fn(...rest); } catch (error) { __zReportError(error); }
+  }, ms);
+  __zTimers.add(id);
+  return id;
+};
+self.clearInterval = (id) => {
+  if (__zTimers.delete(id)) __zPending -= 1;
+  __zClearInterval(id);
+};
+
+let __zUserUrl = '';
+function __zReportError(error) {
+  __zFailed = true;
+  let message = __zMessage(error);
+  if (/Content Security Policy|connect-src|Failed to fetch|NetworkError/i.test(message)) {
+    message += ' (The Coding Lab has no network access.)';
+  }
+  __zSend({ type: 'error', message, line: __zLine(error, __zUserUrl) });
+}
+self.addEventListener('unhandledrejection', (event) => {
+  event.preventDefault();
+  __zReportError(event.reason);
+});
+
+function __zTest(name, check) {
+  try {
+    const result = check();
+    __zSend({ type: 'test', name, passed: !!result });
+  } catch (error) {
+    __zSend({ type: 'test', name, passed: false, message: __zMessage(error) });
+  }
+}
+
+const __zIdle = () => new Promise((resolve) => __zSetTimeout(resolve, 0));
+
+self.onmessage = async (event) => {
+  const { code, tests } = event.data || {};
+  __zUserUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+  try {
+    importScripts(__zUserUrl);
+  } catch (error) {
+    const syntax = error && error.name === 'SyntaxError';
+    const line = __zLine(error, __zUserUrl);
+    __zFailed = true;
+    __zSend({ type: 'error', message: __zMessage(error), line, syntax: syntax && line === null });
+    __zSend({ type: 'finished', status: 'error' });
+    return;
+  }
+  // Let promises and timers finish (the page stops us at the time limit).
+  await __zIdle();
+  while (__zPending > 0) {
+    await new Promise((resolve) => __zSetTimeout(resolve, 15));
+  }
+  await __zIdle();
+  if (tests && tests.length) {
+    const body = tests.map((test) =>
+      '__zTest(' + JSON.stringify(String(test.name)) + ', () => (' + String(test.check) + '));').join('\n');
+    const testsUrl = URL.createObjectURL(new Blob([body], { type: 'text/javascript' }));
+    try {
+      importScripts(testsUrl);
+    } catch (error) {
+      __zSend({ type: 'test', name: 'Tests could not run', passed: false, message: __zMessage(error) });
+    }
+  }
+  __zSend({ type: 'finished', status: __zFailed ? 'error' : 'ok' });
+};
+`;
+
+  function workerUrl(source) {
+    try {
+      return URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+    } catch {
+      return 'data:text/javascript;charset=utf-8,' + encodeURIComponent(source);
+    }
+  }
+
+  const WORKER_URL = workerUrl(WORKER_SOURCE);
+  let current = null;
+
+  function send(message) {
+    PARENT.postMessage({ source: 'zebron-code-runner', ...message }, '*');
+  }
+
+  function stop(status) {
+    if (!current) return;
+    const { worker, timer, runId, started } = current;
+    clearTimeout(timer);
+    worker.terminate();
+    current = null;
+    send({ type: 'done', runId, status, ms: Math.round(performance.now() - started) });
+  }
+
+  /** A syntax error has no line number from importScripts; a separate worker reports it. */
+  function findSyntaxLine(code, runId) {
+    let probe;
+    try {
+      probe = new Worker(workerUrl(code));
+    } catch {
+      return;
+    }
+    const timer = setTimeout(() => probe.terminate(), 1500);
+    probe.onerror = (event) => {
+      event.preventDefault();
+      clearTimeout(timer);
+      probe.terminate();
+      if (event.lineno) send({ type: 'syntax-line', runId, line: event.lineno });
+    };
+  }
+
+  function run({ runId, code, tests, timeoutMs }) {
+    if (current) stop('stopped');
+    if (typeof code !== 'string' || code.length > MAX_CODE) {
+      send({ type: 'error', runId, message: 'The program is too long to run here.' });
+      send({ type: 'done', runId, status: 'error', ms: 0 });
+      return;
+    }
+    const limit = Math.min(Math.max(Number(timeoutMs) || DEFAULT_TIMEOUT, 500), MAX_TIMEOUT);
+    let worker;
+    try {
+      worker = new Worker(WORKER_URL);
+    } catch (error) {
+      send({ type: 'error', runId, message: 'This browser could not start the code runner.' });
+      send({ type: 'done', runId, status: 'error', ms: 0 });
+      return;
+    }
+    const started = performance.now();
+    current = {
+      worker,
+      runId,
+      started,
+      timer: setTimeout(() => {
+        send({ type: 'error', runId, message: 'Stopped after ' + limit / 1000 + ' seconds. Check for a loop that never ends, or a timer that keeps running.' });
+        stop('timeout');
+      }, limit),
+    };
+    worker.onmessage = (event) => {
+      const message = event.data || {};
+      if (!current || current.worker !== worker) return;
+      if (message.type === 'finished') {
+        stop(message.status === 'error' ? 'error' : 'ok');
+        return;
+      }
+      if (message.type === 'error' && message.syntax) findSyntaxLine(code, runId);
+      send({ ...message, runId });
+    };
+    worker.onerror = (event) => {
+      event.preventDefault();
+      if (!current || current.worker !== worker) return;
+      send({ type: 'error', runId, message: event.message || 'The program stopped with an error.', line: event.lineno || null });
+      stop('error');
+    };
+    const cleanTests = Array.isArray(tests)
+      ? tests.slice(0, 20).map((test) => ({ name: String(test.name).slice(0, 200), check: String(test.check).slice(0, 2000) }))
+      : [];
+    worker.postMessage({ code, tests: cleanTests });
+  }
+
+  window.addEventListener('message', (event) => {
+    // Only the page that embeds this runner may control it.
+    if (event.source !== PARENT) return;
+    const data = event.data;
+    if (!data || data.source !== 'zebron-code-lab') return;
+    if (data.type === 'run') run(data);
+    if (data.type === 'stop' && current && current.runId === data.runId) stop('stopped');
+  });
+
+  send({ type: 'ready' });
+})();
+</script>
+</body>
+</html>

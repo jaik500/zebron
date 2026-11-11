@@ -20,7 +20,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 const REGION = "us-central1";
 const TIME_ZONE = "America/New_York";
 const DAY_MS = 24 * 60 * 60 * 1000;
-const DAYS_AFTER_DEADLINE = 5;
+const DAYS_AFTER_DEADLINE = 2;
 const DAYS_WITHOUT_DEADLINE = 60;
 const MAX_JOBS_PER_EMAIL = 10;
 const DEFAULT_APP_BASE_URL = "https://zebron.org";

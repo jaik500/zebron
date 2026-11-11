@@ -2552,3 +2552,12 @@ export {
   syncMyClaims,
 } from "./user-claims";
 export { getControlCenterSummary } from "./control-center-summary";
+
+export {
+  syncUsajobsJobs,
+  triggerUsajobsSync,
+} from './job-aggregation/usajobs';
+
+export {
+  verifyUsajobsCredentials,
+} from './job-aggregation/verify-usajobs';

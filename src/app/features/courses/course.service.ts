@@ -31,6 +31,7 @@ import {
   CourseProgress,
   Lesson,
   LessonBlock,
+  LessonCheckQuestion,
 } from './course.model';
 
 const CATALOG_LIMIT = 100;
@@ -178,13 +179,56 @@ export class CourseService {
             return { type: 'document', url: text(block['url']), title: text(block['title']), caption: text(block['caption']) };
           case 'image':
             return { type: 'image', url: text(block['url']), alt: text(block['alt']), caption: text(block['caption']) };
-          case 'check': {
-            const options = strings(block['options']);
-            const answer = numberOr(block['answer'], -1);
-            return options.length > 1 && answer >= 0 && answer < options.length
-              ? { type: 'check', question: text(block['question']), options, answer, explanation: text(block['explanation']) }
-              : null;
-          }
+        case 'check': {
+  // New format: multiple questions in one Quick Check block.
+  if (Array.isArray(block['questions'])) {
+    const questions: LessonCheckQuestion[] = block['questions']
+      .map((item: unknown): LessonCheckQuestion | null => {
+        if (!item || typeof item !== 'object') {
+          return null;
+        }
+
+        const questionData = item as Record<string, unknown>;
+        const options = strings(questionData['options']);
+        const answer = numberOr(questionData['answer'], -1);
+
+        if (
+          !text(questionData['question']).trim() ||
+          options.length < 2 ||
+          answer < 0 ||
+          answer >= options.length
+        ) {
+          return null;
+        }
+
+        return {
+          question: text(questionData['question']),
+          options,
+          answer,
+          explanation: text(questionData['explanation']),
+        };
+      })
+      .filter((question): question is LessonCheckQuestion => question !== null);
+
+    return questions.length > 0
+      ? { type: 'check', questions }
+      : null;
+  }
+
+  // Legacy format: one question per Quick Check block.
+  const options = strings(block['options']);
+  const answer = numberOr(block['answer'], -1);
+
+  return options.length > 1 && answer >= 0 && answer < options.length
+    ? {
+        type: 'check',
+        question: text(block['question']),
+        options,
+        answer,
+        explanation: text(block['explanation']),
+      }
+    : null;
+}
           default:
             return null;
         }
