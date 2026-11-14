@@ -14,10 +14,6 @@ export const adminGuard: CanActivateFn = async () => {
     );
   }
 
-  console.log('ADMIN GUARD RUNNING');
-  console.log('Current user:', authService.user());
-  console.log('Is admin:', authService.isAdmin);
-
   // Only administrators can access the admin area.
   if (authService.isAdmin) {
     return true;

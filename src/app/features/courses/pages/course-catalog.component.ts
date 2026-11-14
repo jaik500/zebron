@@ -154,14 +154,14 @@ const LEVEL_ORDER: Record<CourseLevel, number> = { beginner: 0, intermediate: 1,
                       type="button"
                       (click)="toggleProgram(program.name)"
                       class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
-                      [attr.aria-expanded]="!collapsed().has(program.name)"
-                      [attr.aria-label]="(collapsed().has(program.name) ? 'Show courses in {0}' : 'Hide courses in {0}') | t: [program.name]"
+                      [attr.aria-expanded]="expanded().has(program.name)"
+                      [attr.aria-label]="(expanded().has(program.name) ? 'Hide courses in {0}' : 'Show courses in {0}') | t: [program.name]"
                     >
-                      <mat-icon>{{ collapsed().has(program.name) ? 'keyboard_arrow_down' : 'keyboard_arrow_up' }}</mat-icon>
+                      <mat-icon>{{ expanded().has(program.name) ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
                     </button>
                   </header>
 
-                  @if (!collapsed().has(program.name)) {
+                  @if (expanded().has(program.name)) {
                     <ol class="grid grid-cols-1 border-t border-slate-100 sm:grid-cols-2">
                       @for (item of program.courses; track item.course.id + (item.course.organizationId ?? '')) {
                         <li class="border-b border-slate-100 sm:odd:border-r">
@@ -274,8 +274,8 @@ export class CourseCatalogComponent {
 
   // ---------- Programs ----------
 
-  /** Programs the learner has closed (all open by default). */
-  protected readonly collapsed = signal<Set<string>>(new Set());
+  /** Programs the learner has opened. All are closed when the Catalog tab opens, so the program list stays short. */
+  protected readonly expanded = signal<Set<string>>(new Set());
 
   /** No search and no topic: show programs, then other courses. */
   protected readonly browsing = computed(() => !this.store.query().trim() && this.store.topic() === 'All');
@@ -336,13 +336,13 @@ export class CourseCatalogComponent {
   );
 
   protected toggleProgram(name: string): void {
-    const next = new Set(this.collapsed());
+    const next = new Set(this.expanded());
     if (next.has(name)) {
       next.delete(name);
     } else {
       next.add(name);
     }
-    this.collapsed.set(next);
+    this.expanded.set(next);
   }
 
   protected levelLabel(course: Course): string {

@@ -98,7 +98,7 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
               [ngClass]="{ 'max-sm:hidden': !mobileSearchOpen() }"
             >
               <mat-form-field appearance="outline" class="zb-field zb-field--flush zb-search" subscriptSizing="dynamic">
-                <mat-label>{{ 'Search courses' | t }}</mat-label>
+                <mat-label>{{ searchLabel() | t }}</mat-label>
                 <mat-icon matPrefix aria-hidden="true">search</mat-icon>
                 <input
                   matInput
@@ -107,7 +107,7 @@ export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificate
                   autocomplete="off"
                   [value]="query()"
                   (input)="queryChange.emit($any($event.target).value)"
-                  [placeholder]="'Courses and skills...' | t"
+                  [placeholder]="searchPlaceholder() | t"
                 />
               </mat-form-field>
             </div>
@@ -171,6 +171,9 @@ export class CourseHeaderComponent {
   readonly backLink = input<string | null>(null);
   readonly showSearch = input(false);
   readonly query = input('');
+  /** Search box label and hint; the course pages keep the defaults. */
+  readonly searchLabel = input('Search courses');
+  readonly searchPlaceholder = input('Courses and skills...');
   readonly activeTab = input<CourseTab | null>(null);
   /** Show the Manage courses tab (course authors). */
   readonly canManage = input(false);

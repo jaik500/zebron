@@ -5151,22 +5151,48 @@ service cloud.firestore {
         && (!existsAfter(coursePath) || getAfter(coursePath).data.status in ["draft", "in_review"]);
     }
 
+    function courseFieldNames() {
+      return [
+        "title", "summary", "description", "topic", "program", "programOrder", "level", "cover",
+        "outcomes", "skills", "modules", "lessonCount", "estimatedMinutes",
+        "status", "providerName", "authorId", "authorName", "organizationId", "id", "finalExam",
+        "review", "createdAt", "updatedAt", "publishedAt"
+      ];
+    }
+
+    /* New courses: every field must be a known course field. */
     function isValidCourse(organizationId) {
+      return request.resource.data.keys().hasOnly(courseFieldNames())
+        && isValidCourseContent(organizationId);
+    }
+
+    /*
+     * Existing courses: only the fields this write changes must be known
+     * course fields. Older fields already on the document (written by
+     * seed scripts, Cloud Functions or earlier app versions) no longer
+     * block every later edit.
+     */
+    function isValidCourseUpdate(organizationId) {
+      return request.resource.data.diff(resource.data).addedKeys()
+          .union(request.resource.data.diff(resource.data).changedKeys())
+          .hasOnly(courseFieldNames())
+        && isValidCourseContent(organizationId);
+    }
+
+    function isValidCourseContent(organizationId) {
       let data = request.resource.data;
 
-      return data.keys().hasOnly([
-          "title", "summary", "description", "topic", "program", "programOrder", "level", "cover",
-          "outcomes", "skills", "modules", "lessonCount", "estimatedMinutes",
-          "status", "providerName", "authorId", "authorName", "organizationId", "id", "finalExam",
-          "review", "createdAt", "updatedAt", "publishedAt"
-        ])
-        && (data.get("review", null) == null || data.review is map)
+      return (data.get("review", null) == null || data.review is map)
         && data.title is string
         && data.title.size() > 0
         && data.title.size() <= 200
         && data.get("program", "") is string
         && data.get("program", "").size() <= 80
-        && (data.get("programOrder", null) == null || data.programOrder is int)
+        && (
+          data.get("programOrder", null) == null
+          || data.programOrder is int
+          || (data.programOrder is float && data.programOrder == math.floor(data.programOrder))
+        )
         && data.get("summary", "") is string
         && data.get("summary", "").size() <= 400
         && data.get("description", "") is string
@@ -5195,11 +5221,28 @@ service cloud.firestore {
         );
     }
 
+    function courseLessonFieldNames() {
+      return ["title", "moduleId", "order", "minutes", "blocks", "updatedAt"];
+    }
+
+    /* New lessons: every field must be a known lesson field. */
     function isValidCourseLesson() {
+      return request.resource.data.keys().hasOnly(courseLessonFieldNames())
+        && isValidCourseLessonContent();
+    }
+
+    /* Existing lessons: only the fields this write changes must be known. */
+    function isValidCourseLessonUpdate() {
+      return request.resource.data.diff(resource.data).addedKeys()
+          .union(request.resource.data.diff(resource.data).changedKeys())
+          .hasOnly(courseLessonFieldNames())
+        && isValidCourseLessonContent();
+    }
+
+    function isValidCourseLessonContent() {
       let data = request.resource.data;
 
-      return data.keys().hasOnly(["title", "moduleId", "order", "minutes", "blocks", "updatedAt"])
-        && data.title is string
+      return data.title is string
         && data.title.size() <= 300
         && data.blocks is list
         && data.blocks.size() <= 60
@@ -5211,8 +5254,11 @@ service cloud.firestore {
 
       allow get, list: if isPlatformAdmin();
 
-      allow create, update: if isPlatformAdmin()
+      allow create: if isPlatformAdmin()
         && isValidCourse(null);
+
+      allow update: if isPlatformAdmin()
+        && isValidCourseUpdate(null);
 
       allow delete: if isPlatformAdmin();
 
@@ -5223,8 +5269,11 @@ service cloud.firestore {
             && isPublishedPlatformCourse(courseId)
           );
 
-        allow create, update: if isPlatformAdmin()
+        allow create: if isPlatformAdmin()
           && isValidCourseLesson();
+
+        allow update: if isPlatformAdmin()
+          && isValidCourseLessonUpdate();
 
         allow delete: if isPlatformAdmin();
       }
@@ -5243,8 +5292,11 @@ service cloud.firestore {
         && isOrganizationMember(organizationId)
         && resource.data.status == "published";
 
-      allow create, update: if canWriteOrganizationCourses(organizationId)
+      allow create: if canWriteOrganizationCourses(organizationId)
         && isValidCourse(organizationId);
+
+      allow update: if canWriteOrganizationCourses(organizationId)
+        && isValidCourseUpdate(organizationId);
 
       // Staff: drafts and courses in review only, never publishing.
       allow create: if canDraftOrganizationCourses(organizationId)
@@ -5252,7 +5304,7 @@ service cloud.firestore {
         && request.resource.data.status in ["draft", "in_review"];
 
       allow update: if canDraftOrganizationCourses(organizationId)
-        && isValidCourse(organizationId)
+        && isValidCourseUpdate(organizationId)
         && resource.data.status in ["draft", "in_review"]
         && request.resource.data.status in ["draft", "in_review"];
 
@@ -5266,15 +5318,22 @@ service cloud.firestore {
         allow get, list: if isAuthenticated()
           && isOpenOrganizationCourse(organizationId, courseId);
 
-        allow create, update: if canWriteOrganizationCourses(organizationId)
+        allow create: if canWriteOrganizationCourses(organizationId)
           && isValidCourseLesson();
+
+        allow update: if canWriteOrganizationCourses(organizationId)
+          && isValidCourseLessonUpdate();
 
         allow delete: if canWriteOrganizationCourses(organizationId);
 
         // Staff: lessons of courses that are not live.
-        allow create, update: if canDraftOrganizationCourses(organizationId)
+        allow create: if canDraftOrganizationCourses(organizationId)
           && isUnpublishedOrganizationCourse(organizationId, courseId)
           && isValidCourseLesson();
+
+        allow update: if canDraftOrganizationCourses(organizationId)
+          && isUnpublishedOrganizationCourse(organizationId, courseId)
+          && isValidCourseLessonUpdate();
 
         allow delete: if canDraftOrganizationCourses(organizationId)
           && isUnpublishedOrganizationCourse(organizationId, courseId);
@@ -5323,6 +5382,54 @@ service cloud.firestore {
         && data.assignedByName is string
         && data.assignedByName.size() <= 120
         && data.assignedAt == request.time;
+    }
+
+    /*
+     * Zebron courses an organization offers its members:
+     *
+     *   organizations/{organizationId}/settings/courses
+     *   { enabledPlatformCourseIds: [courseId, ...], updatedAt, updatedBy }
+     *
+     * The organization's Courses pages hide every other Zebron course.
+     * Members read it; organization admins and owners choose the courses.
+     */
+    match /organizations/{organizationId}/settings/courses {
+
+      function isValidCourseSettings() {
+        let data = request.resource.data;
+
+        return data.keys().hasOnly([
+            "enabledPlatformCourseIds",
+            "updatedAt",
+            "updatedBy"
+          ])
+          && data.enabledPlatformCourseIds is list
+          && data.enabledPlatformCourseIds.size() <= 500
+          && data.updatedAt == request.time
+          && data.updatedBy == request.auth.uid;
+      }
+
+      allow get: if isPlatformAdmin()
+        || (
+          isAuthenticated()
+          && isOrganizationOperational(organizationId)
+          && hasActiveCoursesEntitlement(organizationId)
+          && isOrganizationMember(organizationId)
+        );
+
+      allow list: if false;
+
+      allow create, update: if (
+          isPlatformAdmin()
+          || (
+            isOrganizationOperational(organizationId)
+            && hasActiveCoursesEntitlement(organizationId)
+            && isOrganizationAdmin(organizationId)
+          )
+        )
+        && isValidCourseSettings();
+
+      allow delete: if isPlatformAdmin();
     }
 
     match /organizations/{organizationId}/courseAssignments/{assignmentId} {

@@ -18,6 +18,7 @@ import {
   CertificationStage,
   stepKey,
 } from '../certification.service';
+import { CourseService } from '../course.service';
 import { CourseHeaderComponent } from '../components/course-header.component';
 import { COURSE_COVERS, courseContextFromRoute } from '../course.model';
 import { CourseAccessService } from '../course-access.service';
@@ -37,6 +38,16 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
   'exam-ready': { label: 'Practice exam open', classes: 'bg-sky-100 text-sky-800', icon: 'quiz' },
 };
 
+/** Lower case, accents removed, single spaces: so "securite" finds "Sécurité". */
+function normalize(value: string): string {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /**
  * Certifications tab: every certification with its ordered courses and
  * the learner's standing. Opens the certification page.
@@ -53,6 +64,11 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
         [crumbs]="[{ label: 'Learning', link: context.basePath }, { label: 'Certifications' }]"
         [activeTab]="'certifications'"
         [canManage]="canManage()"
+        [showSearch]="true"
+        [query]="query()"
+        (queryChange)="query.set($event)"
+        searchLabel="Search certifications"
+        searchPlaceholder="Name, vendor, exam code or course..."
       />
 
       <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -83,7 +99,7 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
           }
         </div>
 
-        @if (loading()) {
+        @if (loading() || (context.organizationId && offeredZebron() === null)) {
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2" aria-hidden="true">
             @for (item of [1, 2]; track item) {
               <div class="h-64 animate-pulse rounded-2xl bg-slate-200/70"></div>
@@ -91,6 +107,19 @@ const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: s
           </div>
         } @else if (error()) {
           <p class="rounded-xl bg-rose-50 p-4 text-sm text-rose-700" role="alert">{{ error()! | t }}</p>
+        } @else if (!current().rows.length && searching()) {
+          <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+            <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-400" aria-hidden="true">search_off</mat-icon>
+            <p class="mt-2 text-sm text-slate-600">{{ 'No certifications in this category match your search.' | t }}</p>
+            @if (otherGroup(); as other) {
+              @if (other.rows.length) {
+                <button type="button" (click)="selectCategory(other.kind)" class="mt-2 text-sm font-semibold text-[#007979] underline">
+                  {{ 'Show {0} in {1}' | t: [other.rows.length, (other.title | t)] }}
+                </button>
+              }
+            }
+            <button type="button" (click)="query.set('')" class="ml-3 mt-2 text-sm font-semibold text-[#007979] underline">{{ 'Clear search' | t }}</button>
+          </div>
         } @else if (!current().rows.length) {
           <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
             <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-400" aria-hidden="true">military_tech</mat-icon>
@@ -187,6 +216,25 @@ export class CertificationListComponent {
   protected readonly canManage = computed(() => this.access.canManage(this.context));
 
   private readonly definitions = signal<CertificationDefinition[]>([]);
+
+  /**
+   * On organization pages a Zebron certification is listed only when the
+   * organization offers every Zebron course in it.
+   */
+  private readonly visibleDefinitions = computed(() => {
+    if (!this.context.organizationId) {
+      return this.definitions();
+    }
+    const offered = this.offeredZebron();
+    if (!offered) {
+      return [];
+    }
+    return this.definitions().filter(
+      (definition) =>
+        definition.organizationId !== null ||
+        definition.courses.every((course) => course.organizationId !== null || offered.has(course.courseId)),
+    );
+  });
   private readonly enrollments = signal<Map<string, CertificationEnrollment>>(new Map());
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -194,7 +242,7 @@ export class CertificationListComponent {
   private readonly headerTitle = useLearningHeaderTitle(this.route);
 
   protected readonly rows = computed(() =>
-    this.definitions().map((definition) => {
+    this.visibleDefinitions().map((definition) => {
       const enrollment = this.enrollments().get(definition.key) ?? null;
       const passed = new Set<number>();
       for (const [index, course] of definition.courses.entries()) {
@@ -208,20 +256,50 @@ export class CertificationListComponent {
     }),
   );
 
+  // ---------- Search ----------
+  protected readonly query = signal('');
+  protected readonly searching = computed(() => !!this.query().trim());
+
+  /** Rows matching every word of the search, in any order; the tab counts follow it. */
+  private readonly matchingRows = computed(() => {
+    const words = normalize(this.query()).split(' ').filter(Boolean);
+    if (!words.length) {
+      return this.rows();
+    }
+    return this.rows().filter((row) => {
+      const definition = row.definition;
+      const haystack = normalize(
+        [
+          definition.credentialName,
+          definition.title,
+          definition.summary,
+          definition.providerName,
+          definition.vendor?.name ?? '',
+          definition.vendor?.exam ?? '',
+          definition.vendor?.code ?? '',
+          ...definition.preparesFor,
+          ...definition.courses.map((course) => course.title),
+          this.stage(row).label,
+        ].join(' '),
+      );
+      return words.every((word) => haystack.includes(word));
+    });
+  });
+
   protected readonly groups = computed(() => [
     {
       kind: 'zebron' as const,
       icon: 'military_tech',
       title: 'Zebron Certifications',
       note: 'Earned on Zebron: complete the courses in order, then pass the certification exam on Zebron to receive a Zebron credential anyone can verify.',
-      rows: this.rows().filter((row) => row.definition.kind !== 'exam-prep'),
+      rows: this.matchingRows().filter((row) => row.definition.kind !== 'exam-prep'),
     },
     {
       kind: 'external' as const,
       icon: 'workspace_premium',
       title: 'External Professional Certifications',
       note: 'Industry certifications awarded by their vendors, such as CompTIA and ServiceNow. Zebron prepares you with the same ordered courses, a map of every exam objective and a full practice exam; you book and take the real exam with the vendor.',
-      rows: this.rows().filter((row) => row.definition.kind === 'exam-prep'),
+      rows: this.matchingRows().filter((row) => row.definition.kind === 'exam-prep'),
     },
   ]);
 
@@ -230,6 +308,7 @@ export class CertificationListComponent {
     this.route.snapshot.queryParamMap.get('category') === 'external' ? 'external' : 'zebron',
   );
   protected readonly current = computed(() => this.groups().find((group) => group.kind === this.category())!);
+  protected readonly otherGroup = computed(() => this.groups().find((group) => group.kind !== this.category()) ?? null);
 
   protected selectCategory(kind: 'zebron' | 'external'): void {
     this.category.set(kind);
@@ -241,7 +320,21 @@ export class CertificationListComponent {
     });
   }
 
+  // Zebron courses this organization offers (null on Zebron's pages, or until loaded).
+  private readonly offeredCourseService = inject(CourseService);
+  protected readonly offeredZebron = signal<Set<string> | null>(null);
+
+  private loadOfferedZebron(): void {
+    const organizationId = this.context.organizationId;
+    if (!organizationId) return;
+    this.offeredCourseService
+      .getEnabledPlatformCourseIds(organizationId)
+      .then((ids) => this.offeredZebron.set(ids))
+      .catch(() => this.offeredZebron.set(new Set()));
+  }
+
   constructor() {
+    this.loadOfferedZebron();
     void this.loadDefinitions();
 
     effect(() => {

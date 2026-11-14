@@ -72,6 +72,13 @@ interface BuilderState {
   loading: boolean;
   saving: boolean;
   error: string | null;
+  /**
+   * Ids of the Exam only quizzes the final exam may use, once the builder
+   * has loaded the quiz list (null until then). A final exam on a quiz that
+   * is not Exam only would let learners practise the same questions, with
+   * their answers, before the exam.
+   */
+  examOnlyQuizIds: string[] | null;
 }
 
 const EMPTY_DETAILS: DraftDetails = {
@@ -105,6 +112,7 @@ const initialState: BuilderState = {
   loading: false,
   saving: false,
   error: null,
+  examOnlyQuizIds: null,
 };
 
 const MAX_BLOCKS = 60;
@@ -271,6 +279,15 @@ export const CourseBuilderStore = signalStore(
     ),
 
     problems: computed(() => publishProblems(store.details(), store.modules(), store.lessons())),
+
+    /** Set when the final exam uses a quiz that is not Exam only (blocks publishing and review). */
+    examQuizProblem: computed(() => {
+      const quizId = store.details().finalExam?.quizId;
+      const allowed = store.examOnlyQuizIds();
+      return quizId && allowed && !allowed.includes(quizId)
+        ? 'The final exam must use an Exam only quiz, so learners cannot practise its questions and see the answers first. Tick Exam only on the quiz in the Test Center, or choose another quiz.'
+        : null;
+    }),
   })),
 
   withMethods((store) => {
@@ -317,7 +334,7 @@ export const CourseBuilderStore = signalStore(
       },
 
       async load(organizationId: string | null, providerName: string, courseId: string): Promise<void> {
-        patchState(store, { ...initialState, organizationId, providerName, loading: true });
+        patchState(store, { ...initialState, organizationId, providerName, loading: true, examOnlyQuizIds: store.examOnlyQuizIds() });
 
         try {
           const result = await service.getForEditing(organizationId, courseId);
@@ -373,6 +390,11 @@ export const CourseBuilderStore = signalStore(
         } finally {
           patchState(store, { loading: false });
         }
+      },
+
+      /** The builder page passes the Exam only quizzes once its quiz list has loaded. */
+      setExamOnlyQuizIds(ids: string[] | null): void {
+        patchState(store, { examOnlyQuizIds: ids });
       },
 
       select(selection: BuilderSelection): void {
@@ -538,6 +560,15 @@ export const CourseBuilderStore = signalStore(
           action === 'publish' || action === 'submit' || (action === 'save' && store.details().status === 'published');
         if (goingLive && store.problems().length) {
           patchState(store, { error: store.problems()[0] });
+          return null;
+        }
+
+        // Publishing or submitting needs an Exam only final exam quiz. Saving a
+        // course that is already live is still allowed, so existing courses
+        // can be edited while their quiz is switched to Exam only.
+        const examQuizProblem = store.examQuizProblem();
+        if ((action === 'publish' || action === 'submit') && examQuizProblem) {
+          patchState(store, { error: examQuizProblem });
           return null;
         }
 

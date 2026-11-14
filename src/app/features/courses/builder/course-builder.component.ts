@@ -302,6 +302,12 @@ import { CourseService } from '../course.service';
                 </ul>
               </div>
             }
+            @if (store.examQuizProblem(); as examQuizProblem) {
+              <div class="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900" role="status">
+                <p class="mb-1 font-semibold">{{ 'Final exam' | t }}</p>
+                <p>{{ examQuizProblem | t }}</p>
+              </div>
+            }
           </nav>
 
           <!-- Editor -->
@@ -515,14 +521,16 @@ import { CourseService } from '../course.service';
                         <mat-label>{{ 'Test Center quiz' | t }}</mat-label>
                         <mat-select [value]="finalExam.quizId" (selectionChange)="chooseQuiz($event.value)">
                           @for (quiz of quizzes(); track quiz.id) {
-                            <mat-option [value]="quiz.id">
-                              {{ quiz.name }} · {{ '{0} questions' | t: [quiz.questionCount] }}{{ quiz.organizationId ? '' : ' · Zebron' }}
+                            <mat-option [value]="quiz.id" [disabled]="!quiz.examOnly && quiz.id !== finalExam.quizId">
+                              {{ quiz.name }} · {{ '{0} questions' | t: [quiz.questionCount] }}{{ quiz.organizationId ? '' : ' · Zebron' }}{{ quiz.examOnly ? '' : (' · ' + ('not Exam only' | t)) }}
                             </mat-option>
                           } @empty {
                             <mat-option disabled>{{ (quizzesLoading() ? 'Loading quizzes...' : 'No active quizzes yet. Create one in the Test Center.') | t }}</mat-option>
                           }
                         </mat-select>
-                        @if (context.organizationId) {
+                        @if (store.examQuizProblem(); as examQuizProblem) {
+                          <mat-hint class="!text-amber-800">{{ examQuizProblem | t }}</mat-hint>
+                        } @else if (context.organizationId) {
                           <mat-hint>
                             {{ 'Quizzes are created in' | t }}
                             <a [routerLink]="['/partner/org', context.organizationId, 'test-center']" target="_blank" class="font-semibold text-[#007979] underline">{{ 'Test Center → Structure' | t }}</a>
@@ -785,7 +793,9 @@ export class CourseBuilderComponent {
         this.context.organizationId ? this.quizService.getAvailableQuizzes(this.context.organizationId) : Promise.resolve([]),
         this.quizService.getAvailableQuizzes(null),
       ]);
-      this.quizzes.set([...own, ...platform].sort((a, b) => a.name.localeCompare(b.name)));
+      const quizzes = [...own, ...platform].sort((a, b) => a.name.localeCompare(b.name));
+      this.quizzes.set(quizzes);
+      this.store.setExamOnlyQuizIds(quizzes.filter((quiz) => quiz.examOnly === true).map((quiz) => quiz.id));
     } catch (error) {
       this.logger.error('CourseBuilderComponent', 'Could not load quizzes for the final exam.', error);
     } finally {

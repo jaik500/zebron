@@ -11,6 +11,7 @@ import {
   getCountFromServer,
   query,
   serverTimestamp,
+  setDoc,
   Timestamp,
   where,
   writeBatch,
@@ -293,30 +294,76 @@ export class CourseService {
 
   /**
    * The catalog for a context: Zebron courses, plus the organization's
-   * own courses (listed first) on organization pages.
+   * own courses (listed first) on organization pages. On organization
+   * pages only the Zebron courses the organization's admins enabled are
+   * included (organizations/{id}/settings/courses).
    */
   async listCatalog(context: CourseContext): Promise<Course[]> {
-    const [organizationCourses, platformCourses] = await Promise.all([
+    const [organizationCourses, platformCourses, enabled] = await Promise.all([
       context.organizationId ? this.listPublished(context.organizationId) : Promise.resolve([]),
       this.listPublished(null),
+      context.organizationId ? this.getEnabledPlatformCourseIds(context.organizationId) : Promise.resolve(null),
     ]);
 
-    return [...organizationCourses, ...platformCourses];
+    return [
+      ...organizationCourses,
+      ...(enabled ? platformCourses.filter((course) => enabled.has(course.id)) : platformCourses),
+    ];
   }
 
   /**
    * A course by id. On organization pages the organization's own course
-   * wins; otherwise the Zebron course with that id.
+   * wins; otherwise the Zebron course with that id, when the organization
+   * has enabled it (on Zebron's own pages every Zebron course).
    */
   async getCourse(context: CourseContext, courseId: string): Promise<Course | null> {
     if (context.organizationId) {
-      const organizationCourse = await this.readCourse(context.organizationId, courseId);
+      const [organizationCourse, enabled] = await Promise.all([
+        this.readCourse(context.organizationId, courseId),
+        this.getEnabledPlatformCourseIds(context.organizationId),
+      ]);
       if (organizationCourse) {
         return organizationCourse;
+      }
+      if (!enabled.has(courseId)) {
+        return null;
       }
     }
 
     return this.readCourse(null, courseId);
+  }
+
+  // ============================================================
+  // ZEBRON COURSES OFFERED BY AN ORGANIZATION
+  // ============================================================
+
+  /**
+   * Zebron courses an organization offers its members. Every other Zebron
+   * course is hidden on the organization's Courses pages (they stay open
+   * to everyone on Zebron's own /courses pages). None until an
+   * organization admin chooses some.
+   */
+  async getEnabledPlatformCourseIds(organizationId: string): Promise<Set<string>> {
+    try {
+      const snapshot = await getDoc(doc(firestore, 'organizations', organizationId, 'settings', 'courses'));
+      const ids = snapshot.exists() ? snapshot.data()['enabledPlatformCourseIds'] : null;
+      return new Set(Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : []);
+    } catch (error) {
+      // No access (e.g. not a member): show no Zebron courses.
+      if ((error as { code?: string })?.code === 'permission-denied') {
+        return new Set();
+      }
+      throw error;
+    }
+  }
+
+  /** Organization admins and owners: choose the Zebron courses members see. */
+  async setEnabledPlatformCourseIds(organizationId: string, courseIds: string[], userId: string): Promise<void> {
+    await setDoc(doc(firestore, 'organizations', organizationId, 'settings', 'courses'), {
+      enabledPlatformCourseIds: [...new Set(courseIds)].slice(0, 500),
+      updatedAt: serverTimestamp(),
+      updatedBy: userId,
+    });
   }
 
   private async readCourse(organizationId: string | null, courseId: string): Promise<Course | null> {

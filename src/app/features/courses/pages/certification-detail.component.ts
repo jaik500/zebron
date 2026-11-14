@@ -19,6 +19,7 @@ import {
   certificationStage,
   stepKey,
 } from '../certification.service';
+import { CourseService } from '../course.service';
 import { CourseHeaderComponent } from '../components/course-header.component';
 import { COURSE_COVERS, courseContextFromRoute } from '../course.model';
 import { CourseStore } from '../course.store';
@@ -435,7 +436,21 @@ export class CertificationDetailComponent {
 
   protected readonly doneCount = computed(() => this.steps().filter((step) => step.state === 'done').length);
 
+  // Zebron courses this organization offers (null on Zebron's pages, or until loaded).
+  private readonly offeredCourseService = inject(CourseService);
+  protected readonly offeredZebron = signal<Set<string> | null>(null);
+
+  private loadOfferedZebron(): void {
+    const organizationId = this.context.organizationId;
+    if (!organizationId) return;
+    this.offeredCourseService
+      .getEnabledPlatformCourseIds(organizationId)
+      .then((ids) => this.offeredZebron.set(ids))
+      .catch(() => this.offeredZebron.set(new Set()));
+  }
+
   constructor() {
+    this.loadOfferedZebron();
     this.store.setContext(this.context);
 
     effect(() => {
@@ -468,9 +483,15 @@ export class CertificationDetailComponent {
   }
 
   private courseLink(course: CertificationCourseRef): string {
-    return course.organizationId
-      ? `/partner/org/${encodeURIComponent(course.organizationId)}/courses/${encodeURIComponent(course.courseId)}`
-      : `${this.context.basePath}/${encodeURIComponent(course.courseId)}`;
+    if (course.organizationId) {
+      return `/partner/org/${encodeURIComponent(course.organizationId)}/courses/${encodeURIComponent(course.courseId)}`;
+    }
+    // A Zebron course this organization does not offer opens on Zebron's pages.
+    const offered = this.offeredZebron();
+    if (this.context.organizationId && offered && !offered.has(course.courseId)) {
+      return `/courses/${encodeURIComponent(course.courseId)}`;
+    }
+    return `${this.context.basePath}/${encodeURIComponent(course.courseId)}`;
   }
 
   private async load(userId: string | null): Promise<void> {

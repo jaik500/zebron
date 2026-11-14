@@ -216,11 +216,24 @@ export function progressId(course: Pick<Course, 'id' | 'organizationId'>): strin
   return course.organizationId ? `${course.organizationId}__${course.id}` : course.id;
 }
 
-/** Link to a course from a progress record, kept in the right organization. */
-export function courseLink(progress: Pick<CourseProgress, 'courseId' | 'organizationId'>, context: CourseContext): string {
-  return progress.organizationId
-    ? `/partner/org/${encodeURIComponent(progress.organizationId)}/courses/${encodeURIComponent(progress.courseId)}`
-    : `${context.basePath}/${encodeURIComponent(progress.courseId)}`;
+/**
+ * Link to a course from a progress record, kept in the right organization.
+ * On organization pages a Zebron course the organization does not offer
+ * (offeredZebron) opens on Zebron's own pages, so learners keep their
+ * progress there.
+ */
+export function courseLink(
+  progress: Pick<CourseProgress, 'courseId' | 'organizationId'>,
+  context: CourseContext,
+  offeredZebron: ReadonlySet<string> | null = null,
+): string {
+  if (progress.organizationId) {
+    return `/partner/org/${encodeURIComponent(progress.organizationId)}/courses/${encodeURIComponent(progress.courseId)}`;
+  }
+  if (context.organizationId && offeredZebron && !offeredZebron.has(progress.courseId)) {
+    return `/courses/${encodeURIComponent(progress.courseId)}`;
+  }
+  return `${context.basePath}/${encodeURIComponent(progress.courseId)}`;
 }
 
 export function allLessons(course: Pick<Course, 'modules'> | null): CourseOutlineLesson[] {

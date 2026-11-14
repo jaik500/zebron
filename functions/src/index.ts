@@ -42,6 +42,8 @@ import {
 } from "./organization-onboarding-configuration";
 import { recordEmailUsage } from "./email-usage";
 import { platformMailboxSender } from "./inbound-email";
+import { isPlatformAdministrator } from "./platform-admin-authorization";
+import { isPlatformAdminProfile } from "./user-claims";
 
 
 /**
@@ -153,24 +155,15 @@ async function requireAdmin(
 
   const profileData = profile.data();
 
-  /**
- * Canonical authorization uses platformRole.
- *
- * Legacy compatibility is retained temporarily for
- * existing users whose platformRole has not yet been
- * migrated.
- */
-  const isPlatformAdmin =
-  profileData?.["platformRole"] === "platform-admin" ||
-  (
-    profileData?.["platformRole"] === undefined &&
-    profileData?.["role"] === "admin"
-  );
-
-  if (!isPlatformAdmin) {
+  /*
+   * One definition of a platform administrator for every function:
+   * platformRole "platform-admin", or the legacy role "admin" when
+   * platformRole is absent (platform-admin-authorization.ts).
+   */
+  if (!(await isPlatformAdministrator(request))) {
     throw new HttpsError(
       "permission-denied",
-      "Only platform administrators can send email.",
+      "Only platform administrators can do this.",
     );
   }
 
@@ -209,27 +202,11 @@ export const createUser = onCall(
       throw new HttpsError("permission-denied", "Administrator profile could not be found.");
     }
 
-    const adminData = adminProfile.data();
-
-    /**
- * Authorize the caller using the canonical platform role.
- *
- * Legacy compatibility:
- *   role: "admin" -> treated as platform-admin
- *
- * This allows existing administrator accounts to continue
- * working during the platformRole migration.
- */
-    const callerPlatformRole = adminData?.["platformRole"];
-
-    const callerIsPlatformAdmin =
-  callerPlatformRole === "platform-admin" ||
-  (
-    callerPlatformRole === undefined &&
-    adminData?.["role"] === "admin"
-  );
-
-    if (!callerIsPlatformAdmin) {
+    /*
+     * Same platform administrator check as every other function
+     * (platform-admin-authorization.ts).
+     */
+    if (!(await isPlatformAdministrator(request))) {
       throw new HttpsError(
         "permission-denied",
         "Only platform administrators can create users.",
@@ -402,12 +379,45 @@ export const createUser = onCall(
 );
 
 /**
+ * Platform roles an administrator may assign with updateUser: the
+ * platform roles, or "user" (no platform role), which self-registration
+ * also uses.
+ *
+ * @param {string} value Requested platform role.
+ * @return {boolean} Whether the role can be assigned.
+ */
+function isAssignablePlatformRole(value: string): boolean {
+  return value === "user" || isPlatformRole(value);
+}
+
+/**
+ * Whether a platform administrator other than the given user exists.
+ * Counts both platformRole "platform-admin" and legacy role "admin"
+ * accounts that have no platformRole.
+ *
+ * @param {string} excludedUserId User being demoted.
+ * @return {Promise<boolean>} True when another administrator remains.
+ */
+async function hasAnotherPlatformAdministrator(excludedUserId: string): Promise<boolean> {
+  const users = getDb().collection("users");
+  const [canonical, legacy] = await Promise.all([
+    users.where("platformRole", "==", "platform-admin").limit(5).get(),
+    users.where("role", "==", "admin").limit(50).get(),
+  ]);
+
+  return [...canonical.docs, ...legacy.docs].some(
+    (document) => document.id !== excludedUserId && isPlatformAdminProfile(document.data()),
+  );
+}
+
+/**
  * Update an existing Zebron user.
  *
  * This operation is restricted to administrators.
  *
- * Protected fields such as uid, role, createdAt, and updatedAt
- * cannot be supplied by the client.
+ * Only known profile fields and valid platform roles are accepted.
+ * Administrators cannot remove their own access or demote the last
+ * platform administrator, and email changes also update sign-in.
  */
 export const updateUser = onCall(
   {
@@ -434,30 +444,80 @@ export const updateUser = onCall(
 
     const userId = data.uid.trim();
 
-    /**
-     * These fields are controlled by the backend.
-     *
-     * In particular, clients cannot elevate a user's
-     * administrator role through this function.
+    /*
+     * Only the profile fields the admin Users page edits can be changed
+     * here (see the User model). Authorization fields other than
+     * platformRole (role, ids, timestamps) are always set by the backend.
+     * Unknown fields are ignored.
      */
-    const protectedFields = new Set([
-      "id",
-      "uid",
-      "role",
-      "createdAt",
-      "updatedAt",
+    const editableTextFields = new Set([
+      "displayName",
+      "email",
+      "firstName",
+      "lastName",
+      "preferredName",
+      "phone",
+      "countryOfOrigin",
+      "currentCountry",
+      "city",
+      "state",
+      "postalCode",
+      "preferredLanguage",
+      "bio",
+      "website",
+      "photoUrl",
     ]);
+    const MAX_FIELD_LENGTH = 5000;
 
     const updates: Record<string, unknown> = {};
+    const ignoredFields: string[] = [];
 
     for (const [field, value] of Object.entries(data.profile)) {
-      if (protectedFields.has(field)) {
+      if (value === undefined) {
         continue;
       }
 
-      if (value !== undefined) {
-        updates[field] = value;
+      if (field === "platformRole") {
+        if (typeof value !== "string" || !isAssignablePlatformRole(value)) {
+          throw new HttpsError(
+            "invalid-argument",
+            "Invalid platform role.",
+          );
+        }
+        updates["platformRole"] = value;
+        continue;
       }
+
+      if (!editableTextFields.has(field)) {
+        ignoredFields.push(field);
+        continue;
+      }
+
+      if (value !== null && typeof value !== "string") {
+        throw new HttpsError(
+          "invalid-argument",
+          `The field "${field}" must be text.`,
+        );
+      }
+
+      if (typeof value === "string" && value.length > MAX_FIELD_LENGTH) {
+        throw new HttpsError(
+          "invalid-argument",
+          `The field "${field}" is too long.`,
+        );
+      }
+
+      updates[field] = field === "email" && typeof value === "string" ?
+        value.trim().toLowerCase() :
+        value;
+    }
+
+    if (ignoredFields.length) {
+      logger.warn("updateUser ignored fields that cannot be edited.", {
+        adminUid: admin.uid,
+        targetUserUid: userId,
+        ignoredFields,
+      });
     }
 
     if (Object.keys(updates).length === 0) {
@@ -466,8 +526,6 @@ export const updateUser = onCall(
         "No editable user fields were supplied.",
       );
     }
-
-    updates["updatedAt"] = FieldValue.serverTimestamp();
 
     const userReference = getDb()
       .collection("users")
@@ -481,6 +539,94 @@ export const updateUser = onCall(
         "The requested user could not be found.",
       );
     }
+
+    const existingData = existingUser.data() ?? {};
+
+    /*
+     * Removing platform administrator access.
+     *
+     * - Administrators cannot remove their own access (ask another admin).
+     * - The last platform administrator cannot be demoted, so the admin
+     *   area can never be left without anyone who can manage it.
+     * - The legacy role "admin" is cleared at the same time, so neither
+     *   the app nor any older check still treats the user as an admin.
+     */
+    const wasAdmin = isPlatformAdminProfile(existingData);
+    const staysAdmin = isPlatformAdminProfile({...existingData, ...updates});
+
+    if (wasAdmin && !staysAdmin) {
+      if (userId === admin.uid) {
+        throw new HttpsError(
+          "failed-precondition",
+          "You cannot remove your own administrator access. Ask another platform administrator.",
+        );
+      }
+
+      if (!(await hasAnotherPlatformAdministrator(userId))) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This is the last platform administrator. Make someone else a platform administrator first.",
+        );
+      }
+
+      if (existingData["role"] === "admin") {
+        updates["role"] = "user";
+      }
+    }
+
+    /*
+     * Keep the sign-in email and the profile email the same. The sign-in
+     * account is changed first, so a rejected address (already used,
+     * invalid) leaves the profile unchanged.
+     */
+    const newEmail = updates["email"];
+    const currentEmail = typeof existingData["email"] === "string" ?
+      existingData["email"].trim().toLowerCase() :
+      "";
+
+    if (typeof newEmail === "string" && newEmail !== currentEmail) {
+      if (!newEmail) {
+        throw new HttpsError(
+          "invalid-argument",
+          "An email address is required.",
+        );
+      }
+
+      try {
+        await getAuth().updateUser(userId, {email: newEmail});
+      } catch (error: unknown) {
+        const code = (error as {code?: string})?.code;
+
+        if (code === "auth/email-already-exists") {
+          throw new HttpsError(
+            "already-exists",
+            "Another account already uses this email address.",
+          );
+        }
+
+        if (code === "auth/invalid-email") {
+          throw new HttpsError(
+            "invalid-argument",
+            "The email address is not valid.",
+          );
+        }
+
+        if (code !== "auth/user-not-found") {
+          logger.error("Failed to update the sign-in email.", {
+            error,
+            adminUid: admin.uid,
+            targetUserUid: userId,
+          });
+
+          throw new HttpsError(
+            "internal",
+            "Unable to update the sign-in email.",
+          );
+        }
+      }
+    }
+
+    updates["updatedAt"] = FieldValue.serverTimestamp();
 
     try {
       await userReference.update(updates);

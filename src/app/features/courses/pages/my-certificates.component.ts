@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, untracked, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
@@ -8,6 +8,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { AuthService } from '../../../core/services/auth.service';
 import { useLearningHeaderTitle } from '../../test-center/learner-route';
 
+import { CourseService } from '../course.service';
 import { CourseHeaderComponent } from '../components/course-header.component';
 import { COURSE_COVERS, courseContextFromRoute, courseDate, courseLink, CourseProgress, hasCertificate } from '../course.model';
 import { CourseAccessService } from '../course-access.service';
@@ -103,7 +104,21 @@ export class MyCertificatesComponent {
 
   private readonly headerTitle = useLearningHeaderTitle(this.route);
 
+  // Zebron courses this organization offers (null on Zebron's pages, or until loaded).
+  private readonly offeredCourseService = inject(CourseService);
+  protected readonly offeredZebron = signal<Set<string> | null>(null);
+
+  private loadOfferedZebron(): void {
+    const organizationId = this.context.organizationId;
+    if (!organizationId) return;
+    this.offeredCourseService
+      .getEnabledPlatformCourseIds(organizationId)
+      .then((ids) => this.offeredZebron.set(ids))
+      .catch(() => this.offeredZebron.set(new Set()));
+  }
+
   constructor() {
+    this.loadOfferedZebron();
     this.store.setContext(this.context);
 
     effect(() => {
@@ -113,7 +128,7 @@ export class MyCertificatesComponent {
   }
 
   protected linkFor(record: CourseProgress): string {
-    return courseLink(record, this.context);
+    return courseLink(record, this.context, this.offeredZebron());
   }
 
   protected coverOf(record: CourseProgress): string {

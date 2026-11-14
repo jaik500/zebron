@@ -9,6 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { useLearningHeaderTitle } from '../../test-center/learner-route';
 
 import { CourseCardComponent } from '../components/course-card.component';
+import { CourseService } from '../course.service';
 import { CourseHeaderComponent } from '../components/course-header.component';
 import { ProgressRingComponent } from '../components/progress-ring.component';
 import {
@@ -297,11 +298,11 @@ export class MyLearningComponent {
     }
 
     if (this.examNext()) {
-      return `${courseLink(record, this.context)}/summary`;
+      return `${courseLink(record, this.context, this.offeredZebron())}/summary`;
     }
 
     const lesson = this.nextLesson();
-    return lesson ? `${courseLink(record, this.context)}/lessons/${lesson.id}` : courseLink(record, this.context);
+    return lesson ? `${courseLink(record, this.context, this.offeredZebron())}/lessons/${lesson.id}` : courseLink(record, this.context, this.offeredZebron());
   });
 
   protected readonly otherInProgress = computed(() => this.store.inProgress().slice(1));
@@ -345,7 +346,21 @@ export class MyLearningComponent {
 
   protected readonly assignedOpenCount = computed(() => this.assigned().filter((item) => !item.done).length);
 
+  // Zebron courses this organization offers (null on Zebron's pages, or until loaded).
+  private readonly offeredCourseService = inject(CourseService);
+  protected readonly offeredZebron = signal<Set<string> | null>(null);
+
+  private loadOfferedZebron(): void {
+    const organizationId = this.context.organizationId;
+    if (!organizationId) return;
+    this.offeredCourseService
+      .getEnabledPlatformCourseIds(organizationId)
+      .then((ids) => this.offeredZebron.set(ids))
+      .catch(() => this.offeredZebron.set(new Set()));
+  }
+
   constructor() {
+    this.loadOfferedZebron();
     this.store.setContext(this.context);
     void this.store.loadCatalog();
 
@@ -380,7 +395,7 @@ export class MyLearningComponent {
   }
 
   protected linkFor(record: CourseProgress): string {
-    return courseLink(record, this.context);
+    return courseLink(record, this.context, this.offeredZebron());
   }
 
   protected coverOf(record: CourseProgress): string {

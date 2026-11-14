@@ -1577,7 +1577,13 @@ export class UserAdminComponent implements OnInit {
 
       email: user.email ?? '',
 
-      platformRole: user.platformRole,
+      // "Standard User" in the list is no platform role. Self-registered
+      // accounts store platformRole "user"; legacy administrators have only
+      // role "admin" and are shown (and saved) as Platform Administrator.
+      platformRole:
+        (user.platformRole as string | undefined) === 'user'
+          ? undefined
+          : user.platformRole ?? (user.role === 'admin' ? 'platform-admin' : undefined),
 
       password: '',
       confirmPassword: '',
@@ -1781,7 +1787,12 @@ export class UserAdminComponent implements OnInit {
         website: this.clean(this.form.website),
       };
 
-      await this.userStore.updateUser(editingUser.id, profile);
+      // Send "user" for Standard User: an undefined value is dropped on the
+      // way to the server, so an administrator could never be demoted.
+      await this.userStore.updateUser(editingUser.id, {
+        ...profile,
+        platformRole: this.form.platformRole ?? 'user',
+      } as Partial<User>);
 
       this.toast.success('User updated successfully.');
 

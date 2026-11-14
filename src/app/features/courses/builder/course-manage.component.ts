@@ -15,6 +15,7 @@ import { CourseService } from '../course.service';
 import { CourseAccessService } from '../course-access.service';
 import { CourseAssignment, CourseAssignmentService, dueDateFromInput } from '../course-assignment.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { PartnerAccessService } from '../../../core/services/partner-access.service';
 import { firebaseFunctions } from '../../../core/services/firebase-config';
 import { httpsCallable } from 'firebase/functions';
 
@@ -32,6 +33,16 @@ const STATUS: Record<string, { label: string; classes: string }> = {
   archived: { label: 'Archived', classes: 'bg-slate-100 text-slate-500' },
 };
 
+/** Lower case, accents removed, single spaces: so "Securite" finds "Sécurité". */
+function normalize(value: string): string {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Course authors: every course here, drafts included, and New course. */
 @Component({
   selector: 'app-course-manage',
@@ -45,6 +56,9 @@ const STATUS: Record<string, { label: string; classes: string }> = {
         [crumbs]="[{ label: 'Learning', link: context.basePath }, { label: 'Manage courses' }]"
         [activeTab]="'manage'"
         [canManage]="true"
+        [showSearch]="true"
+        [query]="query()"
+        (queryChange)="query.set($event)"
       />
 
       <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -64,6 +78,61 @@ const STATUS: Record<string, { label: string; classes: string }> = {
             <mat-icon aria-hidden="true">add</mat-icon>{{ 'New course' | t }}
           </a>
         </div>
+
+        @if (context.organizationId) {
+          <section class="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4" aria-labelledby="zebron-courses-title">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-[#007979]" aria-hidden="true">
+              <mat-icon>library_add_check</mat-icon>
+            </span>
+            <div class="min-w-0 flex-1">
+              <h2 id="zebron-courses-title" class="text-sm font-semibold text-slate-900">{{ 'Zebron courses for your members' | t }}</h2>
+              <p class="text-xs text-slate-500">
+                @if (enabledLoading()) {
+                  {{ 'Loading…' | t }}
+                } @else if (enabledIds().size) {
+                  {{ (enabledIds().size === 1 ? '{0} Zebron course is shown to your members, next to your own courses.' : '{0} Zebron courses are shown to your members, next to your own courses.') | t: [enabledIds().size] }}
+                } @else {
+                  {{ 'Your members see only your own courses. Choose Zebron courses to offer them as well.' | t }}
+                }
+              </p>
+            </div>
+            @if (canChooseZebronCourses()) {
+              <button
+                type="button"
+                (click)="openZebronCourses()"
+                class="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[#007979] px-4 text-sm font-semibold text-[#007979] hover:bg-teal-50"
+              >
+                <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">checklist</mat-icon>
+                {{ 'Choose Zebron courses' | t }}
+              </button>
+            } @else {
+              <p class="text-xs text-slate-500">{{ 'Only organization admins and owners can change this.' | t }}</p>
+            }
+          </section>
+        }
+
+        @if (!loading() && !error() && courses().length) {
+          <div class="mb-4 flex justify-end">
+            <select
+              class="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 focus:border-[#007979] focus:outline-none"
+              [attr.aria-label]="'Status' | t"
+              [value]="statusFilter()"
+              (change)="statusFilter.set($any($event.target).value)"
+            >
+              <option value="">{{ 'All statuses' | t }}</option>
+              <option value="draft">{{ 'Draft' | t }}</option>
+              <option value="in_review">{{ 'In review' | t }}</option>
+              <option value="published">{{ 'Published' | t }}</option>
+              <option value="archived">{{ 'Archived' | t }}</option>
+            </select>
+          </div>
+          @if (filtering()) {
+            <p class="mb-2 text-xs text-slate-500" role="status" aria-live="polite">
+              {{ '{0} of {1} courses' | t: [shownCourses().length, courses().length] }}
+              · <button type="button" (click)="clearSearch()" class="font-semibold text-[#007979] underline">{{ 'Clear' | t }}</button>
+            </p>
+          }
+        }
 
         @if (loading()) {
           <div class="flex flex-col gap-2" aria-hidden="true">
@@ -109,7 +178,7 @@ const STATUS: Record<string, { label: string; classes: string }> = {
             <p class="mb-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-700" role="alert">{{ duplicateError()! | t }}</p>
           }
           <ul class="flex flex-col gap-2">
-            @for (course of courses(); track course.id) {
+            @for (course of shownCourses(); track course.id) {
               <li class="flex items-stretch gap-2">
                 <a
                   [routerLink]="[context.basePath, 'manage', course.id]"
@@ -153,6 +222,11 @@ const STATUS: Record<string, { label: string; classes: string }> = {
                   </button>
                 }
               </li>
+            } @empty {
+              <li class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-600">
+                {{ 'No courses match your search.' | t }}
+                <button type="button" (click)="clearSearch()" class="ml-1 font-semibold text-[#007979] underline">{{ 'Clear search' | t }}</button>
+              </li>
             }
           </ul>
         } @else {
@@ -164,6 +238,99 @@ const STATUS: Record<string, { label: string; classes: string }> = {
         }
       </div>
     </main>
+
+    <!-- ================= ZEBRON COURSES ================= -->
+    @if (zebronDialogOpen()) {
+      <div class="fixed inset-0 z-50 flex items-stretch justify-center bg-slate-900/60 sm:items-center sm:p-6" (click)="closeZebronCourses()">
+        <section
+          class="flex h-[100dvh] w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[90vh] sm:rounded-2xl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="zebron-dialog-title"
+          (click)="$event.stopPropagation()"
+          (keydown.escape)="closeZebronCourses()"
+        >
+          <header class="flex shrink-0 items-center justify-between gap-3 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] px-5 py-3">
+            <div class="min-w-0">
+              <h2 id="zebron-dialog-title" class="truncate text-lg font-semibold text-white">{{ 'Zebron courses for your members' | t }}</h2>
+              <p class="truncate text-xs text-white/85">{{ 'Ticked courses appear on your organization\u0027s Courses pages.' | t }}</p>
+            </div>
+            <button type="button" (click)="closeZebronCourses()" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 hover:bg-white/15" [attr.aria-label]="'Close' | t">
+              <mat-icon>close</mat-icon>
+            </button>
+          </header>
+
+          <div class="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 px-5 py-3">
+            <input
+              type="search"
+              class="h-9 min-w-0 flex-1 rounded-lg border border-slate-300 px-3 text-sm"
+              [placeholder]="'Search Zebron courses' | t"
+              [value]="zebronQuery()"
+              (input)="zebronQuery.set($any($event.target).value)"
+            />
+            <button type="button" (click)="selectShownZebron(true)" class="h-9 rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+              {{ 'Select all shown' | t }}
+            </button>
+            <button type="button" (click)="selectShownZebron(false)" class="h-9 rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+              {{ 'Clear shown' | t }}
+            </button>
+          </div>
+
+          <div class="min-h-0 flex-1 overflow-y-auto px-5 py-3">
+            @if (zebronLoading()) {
+              <p class="text-sm text-slate-500">{{ 'Loading Zebron courses…' | t }}</p>
+            } @else if (!shownZebronCourses().length) {
+              <p class="text-sm text-slate-500">{{ 'No Zebron courses match.' | t }}</p>
+            } @else {
+              <ul class="divide-y divide-slate-100 rounded-xl border border-slate-200">
+                @for (course of shownZebronCourses(); track course.id) {
+                  <li>
+                    <label class="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-slate-50">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 shrink-0 accent-[#007979]"
+                        [checked]="zebronSelection().has(course.id)"
+                        (change)="toggleZebron(course.id)"
+                      />
+                      <span class="h-8 w-8 shrink-0 rounded-lg" [style.background]="cover(course)" aria-hidden="true"></span>
+                      <span class="min-w-0 flex-1">
+                        <span class="block truncate text-sm font-medium text-slate-900">{{ course.title }}</span>
+                        <span class="block truncate text-xs text-slate-500">
+                          @if (course.program) {
+                            {{ course.program }}{{ course.programOrder ? ' · ' + ('Step {0}' | t: [course.programOrder]) : '' }} ·
+                          }
+                          {{ course.lessonCount }} {{ (course.lessonCount === 1 ? 'lesson' : 'lessons') | t }} · {{ minutes(course) }}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            }
+            @if (zebronError()) {
+              <p class="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700" role="alert">{{ zebronError()! | t }}</p>
+            }
+          </div>
+
+          <footer class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-5 py-3">
+            <span class="text-xs text-slate-500">{{ '{0} selected' | t: [zebronSelection().size] }}</span>
+            <div class="flex gap-2">
+              <button type="button" (click)="closeZebronCourses()" class="h-10 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                {{ 'Cancel' | t }}
+              </button>
+              <button
+                type="button"
+                (click)="saveZebronCourses()"
+                [disabled]="zebronSaving() || zebronLoading()"
+                class="h-10 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {{ (zebronSaving() ? 'Saving…' : 'Save') | t }}
+              </button>
+            </div>
+          </footer>
+        </section>
+      </div>
+    }
 
     <!-- ================= ASSIGN ================= -->
     @if (assignCourse(); as course) {
@@ -358,6 +525,36 @@ export class CourseManageComponent {
   protected readonly canPublish = computed(() => this.access.canPublish(this.context));
   protected readonly inReview = computed(() => this.courses().filter((course) => course.status === 'in_review'));
 
+  // ---------- Search ----------
+  protected readonly query = signal('');
+  protected readonly statusFilter = signal('');
+  protected readonly filtering = computed(() => !!this.query().trim() || !!this.statusFilter());
+
+  /** Courses matching the search (every word, in any order) and the status filter. */
+  protected readonly shownCourses = computed(() => {
+    const words = normalize(this.query()).split(' ').filter(Boolean);
+    const status = this.statusFilter();
+    return this.courses().filter((course) => {
+      if (status && course.status !== status) {
+        return false;
+      }
+      if (!words.length) {
+        return true;
+      }
+      const haystack = normalize(
+        [course.title, course.summary, course.program, course.topic, ...(course.skills ?? []), course.authorName, STATUS[course.status]?.label ?? '']
+          .filter(Boolean)
+          .join(' '),
+      );
+      return words.every((word) => haystack.includes(word));
+    });
+  });
+
+  protected clearSearch(): void {
+    this.query.set('');
+    this.statusFilter.set('');
+  }
+
   private readonly headerTitle = useLearningHeaderTitle(this.route);
 
   // ---------- Assignments (organization courses, managers and above) ----------
@@ -388,6 +585,120 @@ export class CourseManageComponent {
 
   constructor() {
     void this.load();
+    void this.loadEnabled();
+  }
+
+  // ---------- Zebron courses offered to the organization's members ----------
+  private readonly partnerAccess = inject(PartnerAccessService);
+
+  /** Organization admins and owners (and platform administrators) choose them. */
+  protected readonly canChooseZebronCourses = computed(() => !!this.context.organizationId && this.partnerAccess.isAdmin());
+  protected readonly enabledIds = signal<Set<string>>(new Set());
+  protected readonly enabledLoading = signal(false);
+  protected readonly zebronDialogOpen = signal(false);
+  private readonly zebronCourses = signal<Course[]>([]);
+  protected readonly zebronLoading = signal(false);
+  protected readonly zebronSaving = signal(false);
+  protected readonly zebronError = signal<string | null>(null);
+  protected readonly zebronSelection = signal<Set<string>>(new Set());
+  protected readonly zebronQuery = signal('');
+
+  /** Published Zebron courses, in program and step order, filtered by the dialog's search. */
+  protected readonly shownZebronCourses = computed(() => {
+    const words = normalize(this.zebronQuery()).split(' ').filter(Boolean);
+    return this.zebronCourses()
+      .filter((course) => {
+        if (!words.length) return true;
+        const haystack = normalize([course.title, course.summary, course.program, course.topic, ...(course.skills ?? [])].filter(Boolean).join(' '));
+        return words.every((word) => haystack.includes(word));
+      })
+      .sort(
+        (a, b) =>
+          (a.program || '\uffff').localeCompare(b.program || '\uffff') ||
+          (a.programOrder ?? 0) - (b.programOrder ?? 0) ||
+          a.title.localeCompare(b.title),
+      );
+  });
+
+  private async loadEnabled(): Promise<void> {
+    const organizationId = this.context.organizationId;
+    if (!organizationId) return;
+
+    this.enabledLoading.set(true);
+    try {
+      this.enabledIds.set(await this.service.getEnabledPlatformCourseIds(organizationId));
+    } catch (error) {
+      this.logger.error('CourseManageComponent', 'Could not load the Zebron courses offered to members.', error);
+    } finally {
+      this.enabledLoading.set(false);
+    }
+  }
+
+  protected async openZebronCourses(): Promise<void> {
+    this.zebronSelection.set(new Set(this.enabledIds()));
+    this.zebronQuery.set('');
+    this.zebronError.set(null);
+    this.zebronDialogOpen.set(true);
+
+    if (this.zebronCourses().length) return;
+    this.zebronLoading.set(true);
+    try {
+      this.zebronCourses.set(await this.service.listPublished(null));
+    } catch (error) {
+      this.logger.error('CourseManageComponent', 'Could not load Zebron courses.', error);
+      this.zebronError.set('Zebron courses could not be loaded. Try again.');
+    } finally {
+      this.zebronLoading.set(false);
+    }
+  }
+
+  protected closeZebronCourses(): void {
+    this.zebronDialogOpen.set(false);
+  }
+
+  protected toggleZebron(courseId: string): void {
+    const next = new Set(this.zebronSelection());
+    if (next.has(courseId)) {
+      next.delete(courseId);
+    } else {
+      next.add(courseId);
+    }
+    this.zebronSelection.set(next);
+  }
+
+  protected selectShownZebron(selected: boolean): void {
+    const next = new Set(this.zebronSelection());
+    for (const course of this.shownZebronCourses()) {
+      if (selected) {
+        next.add(course.id);
+      } else {
+        next.delete(course.id);
+      }
+    }
+    this.zebronSelection.set(next);
+  }
+
+  protected async saveZebronCourses(): Promise<void> {
+    const organizationId = this.context.organizationId;
+    const user = this.auth.firebaseUser();
+    if (!organizationId || !user) return;
+
+    // Keep only courses that still exist and are published.
+    const published = new Set(this.zebronCourses().map((course) => course.id));
+    const ids = [...this.zebronSelection()].filter((id) => published.has(id));
+
+    this.zebronSaving.set(true);
+    this.zebronError.set(null);
+    try {
+      await this.service.setEnabledPlatformCourseIds(organizationId, ids, user.uid);
+      this.enabledIds.set(new Set(ids));
+      this.zebronDialogOpen.set(false);
+    } catch (error) {
+      this.logger.error('CourseManageComponent', 'Could not save the Zebron courses offered to members.', error);
+      this.zebronError.set('The selection could not be saved. Try again.');
+    } finally {
+      this.zebronSaving.set(false);
+    }
   }
 
   private async load(): Promise<void> {

@@ -346,7 +346,8 @@ export class AuthService {
    *   role === 'admin'
    *
    * The legacy role is retained temporarily so existing
-   * administrator accounts continue to work during migration.
+   * administrator accounts continue to work during migration,
+   * and is honored only when platformRole is absent.
    */
   get isAdmin(): boolean {
     const user = this.currentUser();
@@ -355,10 +356,14 @@ export class AuthService {
       return false;
     }
 
-    return (
-      user.platformRole === 'platform-admin' ||
-      user.role === 'admin'
-    );
+    // Same rule as the server and the security rules: the legacy role
+    // counts only while platformRole is absent, so a demoted
+    // administrator no longer sees the admin area.
+    if (user.platformRole !== undefined) {
+      return user.platformRole === 'platform-admin';
+    }
+
+    return user.role === 'admin';
   }
 
   /**
