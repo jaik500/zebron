@@ -101,7 +101,7 @@ function normalize(value: string): string {
         @if (canChooseCategories() && settings(); as current) {
           <section class="mb-5 rounded-2xl border border-slate-200 bg-white p-4" aria-labelledby="cert-settings-title">
             <h2 id="cert-settings-title" class="text-sm font-semibold text-slate-900">{{ 'Certifications your members see' | t }}</h2>
-            <p class="mt-0.5 text-xs text-slate-500">{{ 'Your organization\u0027s own certifications are always shown. Switch on Zebron\u0027s catalogues to offer them too.' | t }}</p>
+            <p class="mt-0.5 text-xs text-slate-500">{{ "Your organization\u0027s own certifications are always shown. Switch on Zebron\u0027s catalogues to offer them too." | t }}</p>
             <div class="mt-3 flex flex-wrap gap-x-6 gap-y-2">
               <label class="inline-flex items-center gap-2 text-sm text-slate-700">
                 <input type="checkbox" class="h-4 w-4 accent-[#007979]" [checked]="current.zebron" [disabled]="savingSettings()" (change)="saveSettings({ zebron: $any($event.target).checked, external: current.external })" />
