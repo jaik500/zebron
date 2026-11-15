@@ -16,7 +16,7 @@ import { PartnerOrganizationContextService } from '../../../../core/services/par
 import { PageTitleService } from '../../../../core/services/page-title.service';
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
-import { learnerBaseRoute } from '../../learner-route';
+import { learnerBaseRoute, routeOrganizationId } from '../../learner-route';
 
 @Component({
   selector: 'app-quiz-details',
@@ -450,13 +450,14 @@ export class QuizDetailsComponent implements OnInit {
    * (partner/org/:organizationId/learn/test-center), so this checks
    * the current route, then the parent, then the organization context.
    */
+  /**
+   * The organization in the URL (/partner/org/:organizationId/learn/...).
+   * Zebron's own /test-center pages have none: their quizzes are Zebron
+   * quizzes, open to every signed-in user, so a previously selected
+   * organization is never used there.
+   */
   private resolveOrganizationId(): string | null {
-    return (
-      this.route.snapshot.paramMap.get('organizationId') ??
-      this.route.parent?.snapshot.paramMap.get('organizationId') ??
-      this.organizationContext.organizationId() ??
-      null
-    );
+    return routeOrganizationId(this.route);
   }
 
   readonly organizationId = computed(() => this.resolveOrganizationId());
@@ -499,11 +500,8 @@ export class QuizDetailsComponent implements OnInit {
       this.loading.set(true);
       this.error.set('');
 
-      if (!organizationId) {
-        this.error.set('Please select an organization before loading Test Center topics.');
-        return;
-      }
-
+      // Organization pages look for the organization's quiz first, then a
+      // Zebron quiz; Zebron's pages look for Zebron quizzes only.
       const course = await this.quizService.getQuizBySlug(organizationId, slug);
 
       if (!course) {
