@@ -47,6 +47,8 @@ interface CourseState {
   progressUserId: string | null;
   /** Final exam records by progress id (written by Cloud Functions). */
   exams: Record<string, CourseExamRecord>;
+  /** Progress ids the learner removed from My learning (progress is kept). */
+  hiddenIds: string[];
 
   // Course page and lesson player
   course: Course | null;
@@ -72,6 +74,7 @@ const initialState: CourseState = {
   progressLoaded: false,
   progressUserId: null,
   exams: {},
+  hiddenIds: [],
   course: null,
   courseLoading: false,
   courseError: null,
@@ -125,8 +128,17 @@ export const CourseStore = signalStore(
 
     progressById: computed(() => new Map(store.progress().map((record) => [record.id, record]))),
 
-    /** Not complete yet: lessons left, or the final exam still to pass. */
-    inProgress: computed(() => store.progress().filter((record) => !isCourseComplete(record, store.exams()[record.id]))),
+    /** Not complete yet (lessons left, or the final exam still to pass), and not removed by the learner. */
+    inProgress: computed(() => {
+      const hidden = new Set(store.hiddenIds());
+      return store.progress().filter((record) => !hidden.has(record.id) && !isCourseComplete(record, store.exams()[record.id]));
+    }),
+
+    /** Unfinished courses the learner removed from My learning; they can bring them back. */
+    removed: computed(() => {
+      const hidden = new Set(store.hiddenIds());
+      return store.progress().filter((record) => hidden.has(record.id) && !isCourseComplete(record, store.exams()[record.id]));
+    }),
 
     completed: computed(() => store.progress().filter((record) => isCourseComplete(record, store.exams()[record.id]))),
 
@@ -283,13 +295,15 @@ export const CourseStore = signalStore(
         patchState(store, { progressLoading: true });
 
         try {
-          const [progress, exams] = await Promise.all([
+          const [progress, exams, hiddenIds] = await Promise.all([
             service.listProgress(user.uid),
             service.listExamRecords(user.uid).catch(() => []),
+            service.listHiddenCourses(user.uid).catch(() => [] as string[]),
           ]);
           patchState(store, {
             progress,
             exams: Object.fromEntries(exams.map((exam) => [exam.id, exam])),
+            hiddenIds,
             progressLoaded: true,
             progressUserId: user.uid,
           });
@@ -379,6 +393,12 @@ export const CourseStore = signalStore(
             replaceProgress(record);
           }
 
+          // Continuing a removed course brings it back to My learning.
+          if (store.hiddenIds().includes(id)) {
+            patchState(store, { hiddenIds: store.hiddenIds().filter((item) => item !== id) });
+            service.unhideCourse(user.uid, id).catch((error) => logger.error('CourseStore', 'Could not restore the course to My learning.', error));
+          }
+
           const done = new Set(saved.completedLessonIds);
           const finished = saved.status === 'completed';
           const index = outline.findIndex((item) => item.id === lesson.id);
@@ -416,7 +436,39 @@ export const CourseStore = signalStore(
       },
 
       resetProgress(): void {
-        patchState(store, { progress: [], progressLoaded: false, progressUserId: null, exams: {} });
+        patchState(store, { progress: [], progressLoaded: false, progressUserId: null, exams: {}, hiddenIds: [] });
+      },
+
+      /** Remove an unfinished course from My learning. Progress and certificates are kept. */
+      async hideCourse(id: string): Promise<void> {
+        const user = currentUser();
+        if (!user || store.hiddenIds().includes(id)) {
+          return;
+        }
+        patchState(store, { hiddenIds: [...store.hiddenIds(), id] });
+        try {
+          await service.hideCourse(user.uid, id);
+        } catch (error) {
+          patchState(store, { hiddenIds: store.hiddenIds().filter((item) => item !== id) });
+          logger.error('CourseStore', 'Could not remove the course from My learning.', error);
+          throw new Error('The course could not be removed. Try again.');
+        }
+      },
+
+      /** Put a removed course back on My learning. */
+      async unhideCourse(id: string): Promise<void> {
+        const user = currentUser();
+        if (!user || !store.hiddenIds().includes(id)) {
+          return;
+        }
+        patchState(store, { hiddenIds: store.hiddenIds().filter((item) => item !== id) });
+        try {
+          await service.unhideCourse(user.uid, id);
+        } catch (error) {
+          patchState(store, { hiddenIds: [...store.hiddenIds(), id] });
+          logger.error('CourseStore', 'Could not restore the course.', error);
+          throw new Error('The course could not be restored. Try again.');
+        }
       },
     };
   }),

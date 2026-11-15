@@ -98,6 +98,15 @@ const WEEKLY_GOAL_MINUTES = 60;
                 >
                   {{ 'Course outline' | t }}
                 </a>
+                <button
+                  type="button"
+                  (click)="remove(record)"
+                  class="inline-flex h-10 items-center gap-1 rounded-lg px-3 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                  [title]="'Remove from My learning. Your progress is kept.' | t"
+                >
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">remove_circle_outline</mat-icon>
+                  {{ 'Remove' | t }}
+                </button>
               </div>
             </div>
           </section>
@@ -205,9 +214,10 @@ const WEEKLY_GOAL_MINUTES = 60;
             </div>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               @for (record of otherInProgress(); track record.id) {
+                <div class="relative">
                 <a
                   [routerLink]="linkFor(record)"
-                  class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:shadow-md"
+                  class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 pr-11 transition hover:shadow-md"
                 >
                   <span class="h-14 w-14 shrink-0 rounded-xl" [style.background]="coverOf(record)" aria-hidden="true"></span>
                   <span class="min-w-0 flex-1">
@@ -218,6 +228,56 @@ const WEEKLY_GOAL_MINUTES = 60;
                     <span class="mt-1 block text-xs text-slate-500">{{ '{percent}% complete' | t: { percent: record.percent } }}</span>
                   </span>
                 </a>
+                <button
+                  type="button"
+                  (click)="remove(record)"
+                  class="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  [attr.aria-label]="'Remove {0} from My learning' | t: [record.courseTitle]"
+                  [title]="'Remove from My learning. Your progress is kept.' | t"
+                >
+                  <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">close</mat-icon>
+                </button>
+                </div>
+              }
+            </div>
+          }
+
+          @if (lastRemoved(); as removedRecord) {
+            <div class="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-slate-800 px-4 py-2 text-sm text-white" role="status" aria-live="polite">
+              <span class="min-w-0 flex-1">{{ '{0} was removed from My learning.' | t: [removedRecord.courseTitle] }}</span>
+              <button type="button" (click)="restore(removedRecord)" class="font-semibold text-teal-200 underline">{{ 'Undo' | t }}</button>
+            </div>
+          }
+          @if (removeError()) {
+            <p class="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700" role="alert">{{ removeError()! | t }}</p>
+          }
+
+          @if (store.removed().length) {
+            <div class="mt-4">
+              <button
+                type="button"
+                (click)="showRemoved.set(!showRemoved())"
+                class="inline-flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-[#007979]"
+                [attr.aria-expanded]="showRemoved()"
+              >
+                <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">{{ showRemoved() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                {{ 'Removed courses ({0})' | t: [store.removed().length] }}
+              </button>
+              @if (showRemoved()) {
+                <ul class="mt-2 flex flex-col gap-2">
+                  @for (record of store.removed(); track record.id) {
+                    <li class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                      <span class="h-10 w-10 shrink-0 rounded-lg opacity-60" [style.background]="coverOf(record)" aria-hidden="true"></span>
+                      <span class="min-w-0 flex-1">
+                        <span class="block truncate text-sm font-semibold text-slate-700">{{ record.courseTitle }}</span>
+                        <span class="block text-xs text-slate-500">{{ '{percent}% complete' | t: { percent: record.percent } }}</span>
+                      </span>
+                      <button type="button" (click)="restore(record)" class="h-9 rounded-lg border border-slate-300 px-3 text-xs font-semibold text-[#007979] hover:bg-teal-50">
+                        {{ 'Put back' | t }}
+                      </button>
+                    </li>
+                  }
+                </ul>
               }
             </div>
           }
@@ -306,6 +366,34 @@ export class MyLearningComponent {
   });
 
   protected readonly otherInProgress = computed(() => this.store.inProgress().slice(1));
+
+  // ---------- Removing courses from My learning ----------
+  protected readonly lastRemoved = signal<CourseProgress | null>(null);
+  protected readonly removeError = signal<string | null>(null);
+  protected readonly showRemoved = signal(false);
+
+  /** Hide an unfinished course. Progress is kept; continuing the course brings it back. */
+  protected async remove(record: CourseProgress): Promise<void> {
+    this.removeError.set(null);
+    try {
+      await this.store.hideCourse(record.id);
+      this.lastRemoved.set(record);
+    } catch (error) {
+      this.removeError.set((error as Error).message);
+    }
+  }
+
+  protected async restore(record: CourseProgress): Promise<void> {
+    this.removeError.set(null);
+    try {
+      await this.store.unhideCourse(record.id);
+      if (this.lastRemoved()?.id === record.id) {
+        this.lastRemoved.set(null);
+      }
+    } catch (error) {
+      this.removeError.set((error as Error).message);
+    }
+  }
 
   // ---------- Assigned by the organization ----------
   private readonly assignmentService = inject(CourseAssignmentService);

@@ -5388,9 +5388,12 @@ service cloud.firestore {
      * Zebron courses an organization offers its members:
      *
      *   organizations/{organizationId}/settings/courses
-     *   { enabledPlatformCourseIds: [courseId, ...], updatedAt, updatedBy }
+     *   { enabledPlatformCourseIds: [courseId, ...],
+     *     zebronCertifications, externalCertifications,
+     *     updatedAt, updatedBy }
      *
-     * The organization's Courses pages hide every other Zebron course.
+     * The organization's Courses pages hide every other Zebron course,
+     * and Zebron and external certifications unless switched on.
      * Members read it; organization admins and owners choose the courses.
      */
     match /organizations/{organizationId}/settings/courses {
@@ -5400,11 +5403,15 @@ service cloud.firestore {
 
         return data.keys().hasOnly([
             "enabledPlatformCourseIds",
+            "zebronCertifications",
+            "externalCertifications",
             "updatedAt",
             "updatedBy"
           ])
-          && data.enabledPlatformCourseIds is list
-          && data.enabledPlatformCourseIds.size() <= 500
+          && data.get("enabledPlatformCourseIds", []) is list
+          && data.get("enabledPlatformCourseIds", []).size() <= 500
+          && data.get("zebronCertifications", false) is bool
+          && data.get("externalCertifications", false) is bool
           && data.updatedAt == request.time
           && data.updatedBy == request.auth.uid;
       }
@@ -5935,6 +5942,20 @@ service cloud.firestore {
 
         allow write: if false;
       }
+    }
+
+    /*
+     * Courses a learner removed from My learning (their progress is kept
+     * in courseProgress). Only the learner reads and changes them.
+     */
+    match /users/{userId}/hiddenCourses/{progressId} {
+      allow read: if isCurrentUser(userId);
+
+      allow create, update: if isCurrentUser(userId)
+        && request.resource.data.keys().hasOnly(["hiddenAt"])
+        && request.resource.data.hiddenAt == request.time;
+
+      allow delete: if isCurrentUser(userId);
     }
 
     match /users/{userId}/courseProgress/{progressId} {

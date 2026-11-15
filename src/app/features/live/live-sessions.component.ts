@@ -69,6 +69,15 @@ const DURATIONS = [30, 45, 60, 90, 120, 180];
             <h1 class="text-xl font-semibold">{{ 'Virtual Classroom' | t }}</h1>
             <p class="text-sm text-white/85">{{ 'Live sessions with an instructor. Times are shown in your time zone ({0}).' | t: [timeZone] }}</p>
           </div>
+          @if (hasCourses()) {
+            <a
+              [routerLink]="['/partner/org', organizationId, 'courses']"
+              class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/40 px-3 text-sm font-semibold text-white hover:bg-white/15"
+            >
+              <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">menu_book</mat-icon>
+              {{ 'Courses' | t }}
+            </a>
+          }
           @if (canRun()) {
             <button
               type="button"
@@ -469,6 +478,11 @@ export class LiveSessionsComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly organizationId = this.route.snapshot.paramMap.get('organizationId') ?? '';
+
+  /** Shows the Courses button in the header when the organization has Courses. */
+  protected hasCourses(): boolean {
+    return this.organizationStore.hasActiveApplication('courses');
+  }
   protected readonly timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   protected readonly durations = DURATIONS;
   protected readonly quickCreate = LIVE_PROVIDERS.filter((provider) => provider.createUrl);

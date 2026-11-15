@@ -22,6 +22,7 @@ import { CourseService } from '../course.service';
 import { CourseHeaderComponent } from '../components/course-header.component';
 import { COURSE_COVERS, courseContextFromRoute } from '../course.model';
 import { CourseAccessService } from '../course-access.service';
+import { PartnerAccessService } from '../../../core/services/partner-access.service';
 
 const STAGE: Record<CertificationStage, { label: string; classes: string; icon: string }> = {
   'not-enrolled': { label: 'Not started', classes: 'bg-slate-100 text-slate-700', icon: 'flag' },
@@ -37,6 +38,23 @@ const STAGE: Record<CertificationStage, { label: string; classes: string; icon: 
 const PREP_STAGE: Partial<Record<CertificationStage, { label: string; classes: string; icon: string }>> = {
   'exam-ready': { label: 'Practice exam open', classes: 'bg-sky-100 text-sky-800', icon: 'quiz' },
 };
+
+type CertificationCategory = 'organization' | 'zebron' | 'external';
+
+interface CertificationGroup {
+  kind: CertificationCategory;
+  icon: string;
+  title: string;
+  note: string;
+  rows: CertificationRow[];
+}
+
+interface CertificationRow {
+  definition: CertificationDefinition;
+  enrollment: CertificationEnrollment | null;
+  passed: Set<number>;
+  done: number;
+}
 
 /** Lower case, accents removed, single spaces: so "securite" finds "Sécurité". */
 function normalize(value: string): string {
@@ -79,7 +97,29 @@ function normalize(value: string): string {
           </p>
         </div>
 
-        <!-- Two categories: Zebron certifications and external professional certifications -->
+        <!-- Organization admins: which Zebron certifications members see -->
+        @if (canChooseCategories() && settings(); as current) {
+          <section class="mb-5 rounded-2xl border border-slate-200 bg-white p-4" aria-labelledby="cert-settings-title">
+            <h2 id="cert-settings-title" class="text-sm font-semibold text-slate-900">{{ 'Certifications your members see' | t }}</h2>
+            <p class="mt-0.5 text-xs text-slate-500">{{ 'Your organization\u0027s own certifications are always shown. Switch on Zebron\u0027s catalogues to offer them too.' | t }}</p>
+            <div class="mt-3 flex flex-wrap gap-x-6 gap-y-2">
+              <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" class="h-4 w-4 accent-[#007979]" [checked]="current.zebron" [disabled]="savingSettings()" (change)="saveSettings({ zebron: $any($event.target).checked, external: current.external })" />
+                {{ 'Zebron Certifications' | t }}
+              </label>
+              <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" class="h-4 w-4 accent-[#007979]" [checked]="current.external" [disabled]="savingSettings()" (change)="saveSettings({ zebron: current.zebron, external: $any($event.target).checked })" />
+                {{ 'External Professional Certifications' | t }}
+              </label>
+            </div>
+            @if (settingsError()) {
+              <p class="mt-2 text-xs text-rose-700" role="alert">{{ settingsError()! | t }}</p>
+            }
+          </section>
+        }
+
+        <!-- Categories: the organization's own (on organization pages), Zebron and external -->
+        @if (groups().length > 1) {
         <div class="mb-5 inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1" role="tablist" [attr.aria-label]="'Certification categories' | t">
           @for (group of groups(); track group.kind) {
             <button
@@ -98,8 +138,9 @@ function normalize(value: string): string {
             </button>
           }
         </div>
+        }
 
-        @if (loading() || (context.organizationId && offeredZebron() === null)) {
+        @if (loading() || (context.organizationId && settings() === null)) {
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2" aria-hidden="true">
             @for (item of [1, 2]; track item) {
               <div class="h-64 animate-pulse rounded-2xl bg-slate-200/70"></div>
@@ -123,7 +164,9 @@ function normalize(value: string): string {
         } @else if (!current().rows.length) {
           <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
             <mat-icon class="!h-10 !w-10 !text-[40px] text-slate-400" aria-hidden="true">military_tech</mat-icon>
-            <p class="mt-2 text-sm text-slate-600">{{ 'No certifications in this category yet.' | t }}</p>
+            <p class="mt-2 text-sm text-slate-600">
+              {{ (current().kind === 'organization' ? 'Your organization has no certifications yet.' : 'No certifications in this category yet.') | t }}
+            </p>
           </div>
         } @else {
           @if (current(); as group) {
@@ -216,25 +259,6 @@ export class CertificationListComponent {
   protected readonly canManage = computed(() => this.access.canManage(this.context));
 
   private readonly definitions = signal<CertificationDefinition[]>([]);
-
-  /**
-   * On organization pages a Zebron certification is listed only when the
-   * organization offers every Zebron course in it.
-   */
-  private readonly visibleDefinitions = computed(() => {
-    if (!this.context.organizationId) {
-      return this.definitions();
-    }
-    const offered = this.offeredZebron();
-    if (!offered) {
-      return [];
-    }
-    return this.definitions().filter(
-      (definition) =>
-        definition.organizationId !== null ||
-        definition.courses.every((course) => course.organizationId !== null || offered.has(course.courseId)),
-    );
-  });
   private readonly enrollments = signal<Map<string, CertificationEnrollment>>(new Map());
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -242,7 +266,7 @@ export class CertificationListComponent {
   private readonly headerTitle = useLearningHeaderTitle(this.route);
 
   protected readonly rows = computed(() =>
-    this.visibleDefinitions().map((definition) => {
+    this.definitions().map((definition) => {
       const enrollment = this.enrollments().get(definition.key) ?? null;
       const passed = new Set<number>();
       for (const [index, course] of definition.courses.entries()) {
@@ -286,55 +310,116 @@ export class CertificationListComponent {
     });
   });
 
-  protected readonly groups = computed(() => [
-    {
-      kind: 'zebron' as const,
-      icon: 'military_tech',
-      title: 'Zebron Certifications',
-      note: 'Earned on Zebron: complete the courses in order, then pass the certification exam on Zebron to receive a Zebron credential anyone can verify.',
-      rows: this.matchingRows().filter((row) => row.definition.kind !== 'exam-prep'),
-    },
-    {
-      kind: 'external' as const,
-      icon: 'workspace_premium',
-      title: 'External Professional Certifications',
-      note: 'Industry certifications awarded by their vendors, such as CompTIA and ServiceNow. Zebron prepares you with the same ordered courses, a map of every exam objective and a full practice exam; you book and take the real exam with the vendor.',
-      rows: this.matchingRows().filter((row) => row.definition.kind === 'exam-prep'),
-    },
-  ]);
+  /**
+   * Categories. On organization pages: the organization's own
+   * certifications, plus Zebron and external ones only when an
+   * organization admin switched them on. On Zebron's pages: Zebron and
+   * external.
+   */
+  protected readonly groups = computed(() => {
+    const rows = this.matchingRows();
+    const organizationId = this.context.organizationId;
+    const settings = this.settings();
+    const groups: CertificationGroup[] = [];
 
-  /** The selected category (?category=external), remembered in the URL. */
-  protected readonly category = signal<'zebron' | 'external'>(
-    this.route.snapshot.queryParamMap.get('category') === 'external' ? 'external' : 'zebron',
+    if (organizationId) {
+      groups.push({
+        kind: 'organization',
+        icon: 'corporate_fare',
+        title: 'Your organization',
+        note: 'Certifications created by your organization: complete the courses in order, then pass the certification exam.',
+        rows: rows.filter((row) => row.definition.organizationId !== null),
+      });
+    }
+    if (!organizationId || settings?.zebron) {
+      groups.push({
+        kind: 'zebron',
+        icon: 'military_tech',
+        title: 'Zebron Certifications',
+        note: 'Earned on Zebron: complete the courses in order, then pass the certification exam on Zebron to receive a Zebron credential anyone can verify.',
+        rows: rows.filter((row) => row.definition.organizationId === null && row.definition.kind !== 'exam-prep'),
+      });
+    }
+    if (!organizationId || settings?.external) {
+      groups.push({
+        kind: 'external',
+        icon: 'workspace_premium',
+        title: 'External Professional Certifications',
+        note: 'Industry certifications awarded by their vendors, such as CompTIA and ServiceNow. Zebron prepares you with the same ordered courses, a map of every exam objective and a full practice exam; you book and take the real exam with the vendor.',
+        rows: rows.filter((row) => row.definition.organizationId === null && row.definition.kind === 'exam-prep'),
+      });
+    }
+    return groups;
+  });
+
+  /** The selected category (?category=zebron|external), remembered in the URL. */
+  private readonly requestedCategory = signal<CertificationCategory | null>(
+    (['organization', 'zebron', 'external'] as const).find((kind) => kind === this.route.snapshot.queryParamMap.get('category')) ?? null,
   );
-  protected readonly current = computed(() => this.groups().find((group) => group.kind === this.category())!);
-  protected readonly otherGroup = computed(() => this.groups().find((group) => group.kind !== this.category()) ?? null);
+  /** The requested category when it is shown, otherwise the first one. */
+  protected readonly category = computed<CertificationCategory>(() => {
+    const kinds = this.groups().map((group) => group.kind);
+    const requested = this.requestedCategory();
+    return requested && kinds.includes(requested) ? requested : kinds[0] ?? 'zebron';
+  });
+  protected readonly current = computed(
+    () => this.groups().find((group) => group.kind === this.category()) ?? { kind: this.category(), icon: '', title: '', note: '', rows: [] },
+  );
+  protected readonly otherGroup = computed(
+    () => this.groups().find((group) => group.kind !== this.category() && group.rows.length > 0) ?? null,
+  );
 
-  protected selectCategory(kind: 'zebron' | 'external'): void {
-    this.category.set(kind);
+  protected selectCategory(kind: CertificationCategory): void {
+    this.requestedCategory.set(kind);
+    const first = this.groups()[0]?.kind;
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { category: kind === 'external' ? 'external' : null },
+      queryParams: { category: kind === first ? null : kind },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
   }
 
-  // Zebron courses this organization offers (null on Zebron's pages, or until loaded).
-  private readonly offeredCourseService = inject(CourseService);
-  protected readonly offeredZebron = signal<Set<string> | null>(null);
+  // ---------- Organization settings: Zebron and external certifications ----------
+  private readonly courseService = inject(CourseService);
+  private readonly partnerAccess = inject(PartnerAccessService);
+  /** null on Zebron's pages, or until loaded. */
+  protected readonly settings = signal<{ zebron: boolean; external: boolean } | null>(null);
+  protected readonly savingSettings = signal(false);
+  protected readonly settingsError = signal<string | null>(null);
+  protected readonly canChooseCategories = computed(() => !!this.context.organizationId && this.partnerAccess.isAdmin());
 
-  private loadOfferedZebron(): void {
+  private loadSettings(): void {
     const organizationId = this.context.organizationId;
     if (!organizationId) return;
-    this.offeredCourseService
-      .getEnabledPlatformCourseIds(organizationId)
-      .then((ids) => this.offeredZebron.set(ids))
-      .catch(() => this.offeredZebron.set(new Set()));
+    this.courseService
+      .getCertificationSettings(organizationId)
+      .then((settings) => this.settings.set(settings))
+      .catch(() => this.settings.set({ zebron: false, external: false }));
+  }
+
+  protected async saveSettings(next: { zebron: boolean; external: boolean }): Promise<void> {
+    const organizationId = this.context.organizationId;
+    const user = this.auth.firebaseUser();
+    if (!organizationId || !user) return;
+
+    const previous = this.settings();
+    this.settings.set(next);
+    this.savingSettings.set(true);
+    this.settingsError.set(null);
+    try {
+      await this.courseService.setCertificationSettings(organizationId, next, user.uid);
+    } catch (error) {
+      this.settings.set(previous);
+      this.logger.error('CertificationListComponent', 'Could not save the certification settings.', error);
+      this.settingsError.set('The change could not be saved. Try again.');
+    } finally {
+      this.savingSettings.set(false);
+    }
   }
 
   constructor() {
-    this.loadOfferedZebron();
+    this.loadSettings();
     void this.loadDefinitions();
 
     effect(() => {

@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import {
   collection,
   CollectionReference,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -359,11 +360,51 @@ export class CourseService {
 
   /** Organization admins and owners: choose the Zebron courses members see. */
   async setEnabledPlatformCourseIds(organizationId: string, courseIds: string[], userId: string): Promise<void> {
-    await setDoc(doc(firestore, 'organizations', organizationId, 'settings', 'courses'), {
-      enabledPlatformCourseIds: [...new Set(courseIds)].slice(0, 500),
-      updatedAt: serverTimestamp(),
-      updatedBy: userId,
-    });
+    await setDoc(
+      doc(firestore, 'organizations', organizationId, 'settings', 'courses'),
+      {
+        enabledPlatformCourseIds: [...new Set(courseIds)].slice(0, 500),
+        updatedAt: serverTimestamp(),
+        updatedBy: userId,
+      },
+      { merge: true },
+    );
+  }
+
+  /**
+   * Which Zebron certification categories an organization shows its
+   * members, next to its own certifications. Both off until an
+   * organization admin switches them on (same settings document).
+   */
+  async getCertificationSettings(organizationId: string): Promise<{ zebron: boolean; external: boolean }> {
+    try {
+      const snapshot = await getDoc(doc(firestore, 'organizations', organizationId, 'settings', 'courses'));
+      const data = snapshot.exists() ? snapshot.data() : {};
+      return { zebron: data['zebronCertifications'] === true, external: data['externalCertifications'] === true };
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'permission-denied') {
+        return { zebron: false, external: false };
+      }
+      throw error;
+    }
+  }
+
+  /** Organization admins and owners: show or hide Zebron and external certifications. */
+  async setCertificationSettings(
+    organizationId: string,
+    settings: { zebron: boolean; external: boolean },
+    userId: string,
+  ): Promise<void> {
+    await setDoc(
+      doc(firestore, 'organizations', organizationId, 'settings', 'courses'),
+      {
+        zebronCertifications: settings.zebron,
+        externalCertifications: settings.external,
+        updatedAt: serverTimestamp(),
+        updatedBy: userId,
+      },
+      { merge: true },
+    );
   }
 
   private async readCourse(organizationId: string | null, courseId: string): Promise<Course | null> {
@@ -595,6 +636,23 @@ export class CourseService {
     return snapshot.docs
       .map((document) => this.toProgress(document.id, document.data()))
       .sort((a, b) => (b.updatedAt?.toMillis() ?? 0) - (a.updatedAt?.toMillis() ?? 0));
+  }
+
+  // ---------- Courses the learner removed from My learning ----------
+  // users/{uid}/hiddenCourses/{progressId}: progress is kept; the course
+  // only leaves the In progress list until the learner continues it.
+
+  async listHiddenCourses(userId: string): Promise<string[]> {
+    const snapshot = await getDocs(collection(firestore, 'users', userId, 'hiddenCourses'));
+    return snapshot.docs.map((document) => document.id);
+  }
+
+  async hideCourse(userId: string, id: string): Promise<void> {
+    await setDoc(doc(firestore, 'users', userId, 'hiddenCourses', id), { hiddenAt: serverTimestamp() });
+  }
+
+  async unhideCourse(userId: string, id: string): Promise<void> {
+    await deleteDoc(doc(firestore, 'users', userId, 'hiddenCourses', id));
   }
 
   async getProgress(userId: string, id: string): Promise<CourseProgress | null> {

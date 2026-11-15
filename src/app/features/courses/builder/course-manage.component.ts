@@ -174,6 +174,9 @@ function normalize(value: string): string {
             </section>
           }
 
+          @if (deleteMessage(); as note) {
+            <p class="mb-2 rounded-xl p-3 text-sm" [ngClass]="note.error ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-800'" role="status">{{ note.text | t: [note.title] }}</p>
+          }
           @if (duplicateError()) {
             <p class="mb-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-700" role="alert">{{ duplicateError()! | t }}</p>
           }
@@ -221,6 +224,19 @@ function normalize(value: string): string {
                     {{ 'Assign' | t }}
                   </button>
                 }
+                @if (canDelete(course)) {
+                  <button
+                    type="button"
+                    (click)="askDelete(course)"
+                    [disabled]="deletingId() !== null"
+                    class="inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+                    [attr.aria-label]="'Delete {0}' | t: [course.title]"
+                    [title]="'Delete this course and its lessons' | t"
+                  >
+                    <mat-icon aria-hidden="true">{{ deletingId() === course.id ? 'hourglass_empty' : 'delete' }}</mat-icon>
+                    <span class="hidden sm:inline">{{ 'Delete' | t }}</span>
+                  </button>
+                }
               </li>
             } @empty {
               <li class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-600">
@@ -238,6 +254,44 @@ function normalize(value: string): string {
         }
       </div>
     </main>
+
+    <!-- ================= DELETE ================= -->
+    @if (confirmDelete(); as course) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" (click)="confirmDelete.set(null)">
+        <section
+          class="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="delete-title"
+          aria-describedby="delete-text"
+          (click)="$event.stopPropagation()"
+          (keydown.escape)="confirmDelete.set(null)"
+        >
+          <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600" aria-hidden="true"><mat-icon>delete_forever</mat-icon></span>
+            <div class="min-w-0">
+              <h2 id="delete-title" class="text-lg font-semibold text-slate-900">{{ 'Delete this course?' | t }}</h2>
+              <p id="delete-text" class="mt-1 break-words text-sm text-slate-600">
+                {{ '"{0}" and its {1} lessons will be deleted. This cannot be undone.' | t: [course.title, course.lessonCount] }}
+              </p>
+              @if (course.status === 'published') {
+                <p class="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
+                  {{ 'This course is live. Learners lose access straight away, and assignments and certifications that use it will no longer open it. To keep it for later, unpublish it in the course builder instead.' | t }}
+                </p>
+              }
+            </div>
+          </div>
+          <div class="mt-5 flex justify-end gap-2">
+            <button type="button" (click)="confirmDelete.set(null)" class="h-10 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              {{ 'Cancel' | t }}
+            </button>
+            <button type="button" (click)="deleteCourse(course)" class="h-10 rounded-lg bg-rose-600 px-4 text-sm font-semibold text-white hover:bg-rose-700">
+              {{ 'Delete course' | t }}
+            </button>
+          </div>
+        </section>
+      </div>
+    }
 
     <!-- ================= ZEBRON COURSES ================= -->
     @if (zebronDialogOpen()) {
@@ -709,6 +763,41 @@ export class CourseManageComponent {
       this.error.set('Courses could not be loaded. Try again.');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  // ---------- Delete ----------
+
+  protected readonly confirmDelete = signal<Course | null>(null);
+  protected readonly deletingId = signal<string | null>(null);
+  protected readonly deleteMessage = signal<{ text: string; title: string; error: boolean } | null>(null);
+
+  /**
+   * Same rule as the course builder and firestore.rules: managers and above
+   * (platform administrators for Zebron courses) delete any course; staff
+   * only drafts and courses in review.
+   */
+  protected canDelete(course: Course): boolean {
+    return this.canPublish() || (!!this.context.organizationId && course.status !== 'published');
+  }
+
+  protected askDelete(course: Course): void {
+    this.deleteMessage.set(null);
+    this.confirmDelete.set(course);
+  }
+
+  protected async deleteCourse(course: Course): Promise<void> {
+    this.confirmDelete.set(null);
+    this.deletingId.set(course.id);
+    try {
+      await this.service.deleteCourse(this.context.organizationId, course.id);
+      this.courses.set(this.courses().filter((item) => item.id !== course.id));
+      this.deleteMessage.set({ text: '"{0}" was deleted.', title: course.title, error: false });
+    } catch (error) {
+      this.logger.error('CourseManageComponent', 'Could not delete the course.', error);
+      this.deleteMessage.set({ text: '"{0}" could not be deleted. Try again.', title: course.title, error: true });
+    } finally {
+      this.deletingId.set(null);
     }
   }
 

@@ -369,7 +369,11 @@ export class CertificationDetailComponent {
 
   /** The list, opened on this certification's category. */
   protected readonly listLink = computed(() =>
-    `${this.context.basePath}/certifications${this.definition()?.kind === 'exam-prep' ? '?category=external' : ''}`,
+    `${this.context.basePath}/certifications${
+      this.definition()?.organizationId === null && this.context.organizationId
+        ? `?category=${this.definition()?.kind === 'exam-prep' ? 'external' : 'zebron'}`
+        : this.definition()?.kind === 'exam-prep' ? '?category=external' : ''
+    }`,
   );
 
   protected readonly crumbs = computed(() => {
@@ -496,7 +500,19 @@ export class CertificationDetailComponent {
 
   private async load(userId: string | null): Promise<void> {
     try {
-      const definition = await this.service.getDefinition(this.key);
+      let definition = await this.service.getDefinition(this.key);
+
+      // On organization pages, Zebron and external certifications open only
+      // when an organization admin has switched that category on.
+      if (definition && definition.organizationId === null && this.context.organizationId) {
+        const settings = await this.offeredCourseService
+          .getCertificationSettings(this.context.organizationId)
+          .catch(() => ({ zebron: false, external: false }));
+        if (!(definition.kind === 'exam-prep' ? settings.external : settings.zebron)) {
+          definition = null;
+        }
+      }
+
       this.definition.set(definition);
       if (definition) {
         this.pageTitle.setDocumentTitle(definition.credentialName);
