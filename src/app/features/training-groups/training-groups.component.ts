@@ -15,6 +15,8 @@ import { PartnerMemberService } from '../partner/services/partner-member.service
 import { GroupStaffOption, TrainingGroupFormComponent } from './training-group-form.component';
 import {
   DELIVERY_MODES,
+  OwnRequest,
+  PublicGroupInfo,
   STATUS_LABELS,
   TrainingGroup,
   TrainingGroupService,
@@ -73,6 +75,30 @@ type StatusTab = 'all' | TrainingGroupStatus | 'archived';
       <div class="mx-auto max-w-5xl px-4 py-5 sm:px-6 lg:px-8">
         @if (error()) {
           <p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700" role="alert">{{ error() | t }}</p>
+        }
+
+        <!-- Groups open for enrollment (request to join or apply) -->
+        @if (openGroups().length) {
+          <section class="mb-5 rounded-2xl border border-teal-200 bg-teal-50/60 p-4" aria-labelledby="open-groups-title">
+            <h2 id="open-groups-title" class="flex items-center gap-2 text-base font-semibold text-slate-900">
+              <mat-icon class="text-[#007979]" aria-hidden="true">how_to_reg</mat-icon>
+              {{ 'Open for enrollment' | t }}
+            </h2>
+            <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+              @for (open of openGroups(); track open.groupId) {
+                <li class="rounded-xl border border-slate-200 bg-white p-3">
+                  <p class="font-semibold text-slate-900">{{ open.name }}</p>
+                  <p class="text-xs text-slate-500">
+                    {{ open.startDate ? (open.startDate | date: 'mediumDate') : '…' }} – {{ open.endDate ? (open.endDate | date: 'mediumDate') : '…' }}
+                    @if (open.spotsLeft !== null) { · {{ (open.spotsLeft ? '{0} places left' : 'Full') | t: [open.spotsLeft] }} }
+                  </p>
+                  <a [routerLink]="['/join', organizationId, open.groupId]" class="mt-2 inline-flex h-8 items-center rounded-lg bg-[#007979] px-3 text-xs font-semibold text-white hover:bg-[#006666]">
+                    {{ (open.request ? 'View my request' : open.mode === 'application' ? 'Apply' : 'Ask to join') | t }}
+                  </a>
+                </li>
+              }
+            </ul>
+          </section>
         }
 
         @if (isStaff() && groups().length) {
@@ -135,6 +161,9 @@ type StatusTab = 'all' | TrainingGroupStatus | 'archived';
                   <span class="flex flex-wrap items-center gap-1.5">
                     <span class="rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-[#006666]">{{ 'Cohort' | t }}</span>
                     <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="statusOf(group).classes">{{ statusOf(group).label | t }}</span>
+                    @if (isStaff() && group.pendingRequests) {
+                      <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">{{ '{0} to review' | t: [group.pendingRequests] }}</span>
+                    }
                   </span>
                   <span class="mt-2 block text-base font-semibold text-slate-900">{{ group.name }}</span>
                   @if (group.programName) {
@@ -255,7 +284,19 @@ export class TrainingGroupsComponent implements OnInit {
     await this.load();
   }
 
+  /** Groups taking requests or applications that the user isn't in yet. */
+  protected readonly openGroups = signal<(PublicGroupInfo & { request: OwnRequest | null })[]>([]);
+
+  private async loadOpenGroups(): Promise<void> {
+    try {
+      this.openGroups.set(await this.service.listOpenGroups(this.organizationId));
+    } catch (error) {
+      this.logger.error('TrainingGroupsComponent', 'Could not load groups open for enrollment.', error);
+    }
+  }
+
   private async load(): Promise<void> {
+    void this.loadOpenGroups();
     this.loading.set(true);
     this.error.set('');
     try {

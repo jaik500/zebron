@@ -5617,6 +5617,8 @@ service cloud.firestore {
           "startDate", "endDate", "capacity", "deliveryMode", "location",
           "leadIds", "instructorIds", "manualStatus", "memberCount",
           "reopened", "summaryAt",
+          "enrollmentMode", "enrollmentOpensAt", "enrollmentClosesAt", "waitlistEnabled",
+          "autoApprove", "applicationQuestions", "pendingRequests", "waitlistCount",
           "createdAt", "createdBy", "updatedAt", "updatedBy"
         ])
         && data.organizationId == organizationId
@@ -5643,6 +5645,13 @@ service cloud.firestore {
         && (data.get("manualStatus", null) == null || data.get("manualStatus", null) in ["draft", "cancelled"])
         && data.memberCount is int
         && data.get("reopened", false) is bool
+        && data.get("enrollmentMode", "invite") in ["invite", "request", "application"]
+        && (data.get("enrollmentOpensAt", null) == null || data.get("enrollmentOpensAt", null) is timestamp)
+        && (data.get("enrollmentClosesAt", null) == null || data.get("enrollmentClosesAt", null) is timestamp)
+        && data.get("waitlistEnabled", false) is bool
+        && data.get("autoApprove", false) is bool
+        && data.get("applicationQuestions", []) is list
+        && data.get("applicationQuestions", []).size() <= 5
         && data.updatedAt == request.time
         && data.updatedBy == request.auth.uid;
     }
@@ -5682,6 +5691,8 @@ service cloud.firestore {
         )
         && isValidTrainingGroup(organizationId)
         && request.resource.data.memberCount == 0
+        && request.resource.data.get("pendingRequests", 0) == 0
+        && request.resource.data.get("waitlistCount", 0) == 0
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time;
 
@@ -5703,6 +5714,8 @@ service cloud.firestore {
         )
         && isValidTrainingGroup(organizationId)
         && request.resource.data.get("summaryAt", null) == resource.data.get("summaryAt", null)
+        && request.resource.data.get("pendingRequests", 0) == resource.data.get("pendingRequests", 0)
+        && request.resource.data.get("waitlistCount", 0) == resource.data.get("waitlistCount", 0)
         && request.resource.data.memberCount == resource.data.memberCount
         && request.resource.data.createdBy == resource.data.createdBy
         && request.resource.data.createdAt == resource.data.createdAt;
@@ -5730,6 +5743,24 @@ service cloud.firestore {
             && isTrainingGroupStaff(organizationId, groupId)
           );
 
+        allow write: if false;
+      }
+
+      // Join requests and applications: the person who asked, and the group's staff.
+      // Written only by the enrollment functions.
+      match /requests/{requestUserId} {
+        allow get: if isAuthenticated() && request.auth.uid == requestUserId
+          || isPlatformAdmin()
+          || (trainingGroupsOpen(organizationId) && isTrainingGroupStaff(organizationId, groupId));
+        allow list: if isPlatformAdmin()
+          || (trainingGroupsOpen(organizationId) && isTrainingGroupStaff(organizationId, groupId));
+        allow write: if false;
+      }
+
+      // Who asked, who decided, waitlist moves.
+      match /enrollmentLog/{entryId} {
+        allow get, list: if isPlatformAdmin()
+          || (trainingGroupsOpen(organizationId) && isTrainingGroupStaff(organizationId, groupId));
         allow write: if false;
       }
 

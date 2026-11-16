@@ -21,6 +21,10 @@ import { loadStaffOptions } from './training-groups.component';
 import { TrainingGroupPdfService } from './training-group-pdf.service';
 import {
   DELIVERY_MODES,
+  ENROLLMENT_MODES,
+  EnrollmentLogEntry,
+  JoinRequest,
+  REQUEST_STATUS_LABELS,
   ARCHIVE_AFTER_DAYS,
   ROLE_LABELS,
   STATUS_LABELS,
@@ -297,6 +301,114 @@ interface AddCandidate {
                     </li>
                   }
                 </ul>
+              }
+            </section>
+          }
+
+          <!-- Enrollment: requests, applications, waitlist (staff) -->
+          @if (canSeeRoster() && current.enrollmentMode !== 'invite') {
+            <section class="mt-5 rounded-2xl border border-slate-200 bg-white" aria-labelledby="enrollment-title">
+              <div class="flex flex-wrap items-center gap-2 border-b border-slate-100 px-5 py-3">
+                <h2 id="enrollment-title" class="text-base font-semibold text-slate-900">{{ 'Enrollment' | t }}</h2>
+                <span class="rounded-full bg-teal-50 px-2 text-xs font-semibold text-[#006666]">{{ enrollmentModeLabel(current.enrollmentMode) | t }}</span>
+                @if (current.pendingRequests) {
+                  <span class="rounded-full bg-amber-100 px-2 text-xs font-semibold text-amber-900">{{ '{0} to review' | t: [current.pendingRequests] }}</span>
+                }
+                @if (current.waitlistCount) {
+                  <span class="rounded-full bg-sky-100 px-2 text-xs font-semibold text-sky-900">{{ '{0} waiting' | t: [current.waitlistCount] }}</span>
+                }
+                <button type="button" (click)="copyJoinLink()" class="ml-auto inline-flex h-9 items-center gap-1 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">link</mat-icon>
+                  {{ 'Copy join link' | t }}
+                </button>
+              </div>
+              <div class="px-5 py-3 text-xs text-slate-500">
+                @if (current.enrollmentOpensAt || current.enrollmentClosesAt) {
+                  {{ 'Open from {0} to {1}.' | t: [current.enrollmentOpensAt ? (current.enrollmentOpensAt | date: 'mediumDate') : '…', current.enrollmentClosesAt ? (current.enrollmentClosesAt | date: 'mediumDate') : '…'] }}
+                }
+                {{ (current.enrollmentMode === 'application' ? 'Share the link with prospective learners. Approved applicants receive an organization invitation and join the group when they accept it.' : 'Members can ask to join from Training Groups or with the link.') | t }}
+              </div>
+
+              @if (requestsLoading()) {
+                <p class="px-5 pb-4 text-sm text-slate-500">{{ 'Loading requests…' | t }}</p>
+              } @else {
+                <div class="border-t border-slate-100 px-5 py-3">
+                  <h3 class="text-sm font-semibold text-slate-900">{{ 'To review' | t }} ({{ pendingRequests().length }})</h3>
+                  @for (entry of pendingRequests(); track entry.userId) {
+                    <article class="mt-3 rounded-xl border border-slate-200 p-3">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-semibold text-slate-900">{{ entry.name }}</span>
+                        @if (entry.email) { <span class="text-xs text-slate-500">{{ entry.email }}</span> }
+                        <span class="rounded-full px-2 text-[11px] font-semibold" [class]="entry.isOrganizationMember ? 'bg-emerald-100 text-emerald-900' : 'bg-violet-100 text-violet-900'">{{ (entry.isOrganizationMember ? 'Member' : 'New to the organization') | t }}</span>
+                        @if (entry.createdAt) { <span class="text-xs text-slate-500">{{ entry.createdAt | date: 'medium' }}</span> }
+                      </div>
+                      @for (item of entry.answers; track $index) {
+                        <p class="mt-2 text-xs font-semibold text-slate-600">{{ item.question }}</p>
+                        <p class="whitespace-pre-line text-sm text-slate-800">{{ item.answer || '—' }}</p>
+                      }
+                      @if (canManageMembers() && !locked()) {
+                        <div class="mt-3 flex flex-wrap items-center gap-2">
+                          <input type="text" maxlength="500" class="h-9 min-w-0 flex-1 rounded-lg border border-slate-300 px-3 text-sm" [placeholder]="'Note to the applicant (optional)' | t" [value]="decisionNotes()[entry.userId] ?? ''" (input)="setDecisionNote(entry.userId, $any($event.target).value)" />
+                          <button type="button" (click)="decide(entry, 'approve')" [disabled]="busy()" class="h-9 rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666] disabled:opacity-50">{{ 'Approve' | t }}</button>
+                          <button type="button" (click)="decide(entry, 'decline')" [disabled]="busy()" class="h-9 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50">{{ 'Decline' | t }}</button>
+                        </div>
+                      }
+                    </article>
+                  } @empty {
+                    <p class="mt-1 text-sm text-slate-500">{{ 'Nothing to review.' | t }}</p>
+                  }
+                </div>
+
+                @if (waitlist().length) {
+                  <div class="border-t border-slate-100 px-5 py-3">
+                    <h3 class="text-sm font-semibold text-slate-900">{{ 'Waitlist' | t }} ({{ waitlist().length }})</h3>
+                    <ol class="mt-2 space-y-1 text-sm">
+                      @for (entry of waitlist(); track entry.userId; let position = $index) {
+                        <li class="flex flex-wrap items-center gap-2">
+                          <span class="w-6 text-right font-semibold text-slate-500">{{ position + 1 }}.</span>
+                          <span class="text-slate-900">{{ entry.name }}</span>
+                          @if (!entry.isOrganizationMember) { <span class="text-xs text-slate-500">{{ 'will be invited' | t }}</span> }
+                          @if (canManageMembers() && !locked()) {
+                            <button type="button" (click)="decide(entry, 'decline')" [disabled]="busy()" class="ml-auto h-8 rounded-lg px-2 text-xs font-semibold text-slate-500 hover:bg-rose-50 hover:text-rose-700">{{ 'Remove' | t }}</button>
+                          }
+                        </li>
+                      }
+                    </ol>
+                    <p class="mt-1 text-xs text-slate-500">{{ 'People move up automatically, in this order, when someone is withdrawn.' | t }}</p>
+                  </div>
+                }
+
+                @if (otherRequests().length) {
+                  <details class="border-t border-slate-100 px-5 py-3">
+                    <summary class="cursor-pointer text-sm font-semibold text-slate-900">{{ 'Earlier requests' | t }} ({{ otherRequests().length }})</summary>
+                    <ul class="mt-2 divide-y divide-slate-100 text-sm">
+                      @for (entry of otherRequests(); track entry.userId) {
+                        <li class="flex flex-wrap items-center gap-2 py-1.5">
+                          <span class="text-slate-900">{{ entry.name }}</span>
+                          <span class="rounded-full px-2 text-[11px] font-semibold" [class]="requestBadge(entry).classes">{{ requestBadge(entry).label | t }}</span>
+                          @if (entry.decidedAt) { <span class="text-xs text-slate-500">{{ entry.decidedAt | date: 'mediumDate' }}</span> }
+                        </li>
+                      }
+                    </ul>
+                  </details>
+                }
+
+                @if (enrollmentLog().length) {
+                  <details class="border-t border-slate-100 px-5 py-3">
+                    <summary class="cursor-pointer text-sm font-semibold text-slate-900">{{ 'Enrollment activity' | t }}</summary>
+                    <ul class="mt-2 space-y-1 text-xs text-slate-600">
+                      @for (item of enrollmentLog(); track item.id) {
+                        <li>
+                          <span class="text-slate-500">{{ item.at ? (item.at | date: 'short') : '' }}</span> ·
+                          <span class="font-semibold text-slate-800">{{ item.userName }}</span>
+                          {{ logLabel(item.action) | t }}
+                          @if (item.actorName && item.actorName !== item.userName) { · {{ 'by {0}' | t: [item.actorName] }} }
+                          @if (item.note) { <span class="italic">“{{ item.note }}”</span> }
+                        </li>
+                      }
+                    </ul>
+                  </details>
+                }
               }
             </section>
           }
@@ -719,6 +831,7 @@ export class TrainingGroupDetailComponent implements OnInit {
     if (this.group() && this.canSeeRoster()) {
       await this.loadMembers();
       void this.loadSummary();
+      void this.loadRequests();
     }
     if (this.group() && this.hasCourses()) {
       await this.loadCourses();
@@ -943,6 +1056,106 @@ export class TrainingGroupDetailComponent implements OnInit {
     }
   }
 
+  // ---------- Enrollment ----------
+  protected readonly requests = signal<JoinRequest[]>([]);
+  protected readonly enrollmentLog = signal<EnrollmentLogEntry[]>([]);
+  protected readonly requestsLoading = signal(false);
+  protected readonly decisionNotes = signal<Record<string, string>>({});
+  protected readonly pendingRequests = computed(() =>
+    this.requests().filter((entry) => entry.status === 'pending').sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0)),
+  );
+  protected readonly waitlist = computed(() =>
+    this.requests().filter((entry) => entry.status === 'waitlisted').sort((a, b) => (a.waitlistedAt?.getTime() ?? 0) - (b.waitlistedAt?.getTime() ?? 0)),
+  );
+  protected readonly otherRequests = computed(() =>
+    this.requests().filter((entry) => entry.status !== 'pending' && entry.status !== 'waitlisted').sort((a, b) => (b.decidedAt?.getTime() ?? 0) - (a.decidedAt?.getTime() ?? 0)),
+  );
+
+  private async loadRequests(): Promise<void> {
+    if (this.group()?.enrollmentMode === 'invite') {
+      return;
+    }
+    this.requestsLoading.set(true);
+    try {
+      const [requests, log] = await Promise.all([
+        this.service.listRequests(this.organizationId, this.groupId),
+        this.service.listEnrollmentLog(this.organizationId, this.groupId),
+      ]);
+      this.requests.set(requests);
+      this.enrollmentLog.set(log);
+    } catch (error) {
+      this.logger.error('TrainingGroupDetailComponent', 'Could not load enrollment requests.', error);
+    } finally {
+      this.requestsLoading.set(false);
+    }
+  }
+
+  protected setDecisionNote(userId: string, note: string): void {
+    this.decisionNotes.update((notes) => ({ ...notes, [userId]: note }));
+  }
+
+  protected async decide(entry: JoinRequest, decision: 'approve' | 'decline'): Promise<void> {
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const status = await this.service.decideRequest(this.organizationId, this.groupId, entry.userId, decision, this.decisionNotes()[entry.userId] ?? '');
+      const messages: Record<string, string> = {
+        enrolled: '{0} was added to the group.',
+        invited: '{0} was invited to the organization and will join the group on accepting.',
+        waitlisted: 'The group is full: {0} is on the waitlist.',
+        declined: 'The request from {0} was declined.',
+      };
+      this.notice.set({ text: messages[status] ?? 'Done.', args: [entry.name] });
+      await Promise.all([this.reloadGroup(), this.loadRequests(), status === 'enrolled' ? this.loadMembers() : Promise.resolve()]);
+    } catch (error) {
+      this.logger.error('TrainingGroupDetailComponent', 'Could not decide the request.', error);
+      this.error.set(errorMessage(error, 'The request could not be updated. Try again.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Refresh counters (member count, pending, waitlist) after a server change. */
+  private async reloadGroup(): Promise<void> {
+    const group = await this.service.get(this.organizationId, this.groupId);
+    if (group) {
+      this.group.set(group);
+    }
+  }
+
+  protected async copyJoinLink(): Promise<void> {
+    const link = `${window.location.origin}/join/${this.organizationId}/${this.groupId}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      this.notice.set({ text: 'Join link copied: {0}', args: [link] });
+    } catch {
+      this.notice.set({ text: 'Join link: {0}', args: [link] });
+    }
+  }
+
+  protected enrollmentModeLabel(mode: string): string {
+    return ENROLLMENT_MODES.find((option) => option.value === mode)?.label ?? mode;
+  }
+
+  protected requestBadge(entry: JoinRequest): { label: string; classes: string } {
+    return REQUEST_STATUS_LABELS[entry.status] ?? REQUEST_STATUS_LABELS.pending;
+  }
+
+  protected logLabel(action: string): string {
+    const labels: Record<string, string> = {
+      requested: 'asked to join',
+      applied: 'applied',
+      approved: 'was approved and added',
+      enrolled: 'joined the group',
+      invited: 'was approved and invited to the organization',
+      waitlisted: 'was put on the waitlist',
+      promoted: 'moved up from the waitlist',
+      declined: 'was declined',
+      withdrawn: 'withdrew',
+    };
+    return labels[action] ?? action;
+  }
+
   private async loadMembers(): Promise<void> {
     this.membersLoading.set(true);
     try {
@@ -1057,6 +1270,10 @@ export class TrainingGroupDetailComponent implements OnInit {
       this.group.update((group) => (group ? { ...group, memberCount: result.memberCount } : group));
       this.members.set(this.members().filter((item) => item.userId !== member.userId));
       this.notice.set({ text: '{0} was withdrawn from the group.', args: [member.name] });
+      // A place opened: the waitlist may have moved up.
+      if (this.waitlist().length) {
+        await Promise.all([this.reloadGroup(), this.loadRequests(), this.loadMembers()]);
+      }
     } catch (error) {
       this.logger.error('TrainingGroupDetailComponent', 'Could not withdraw the member.', error);
       this.error.set(errorMessage(error, 'The member could not be withdrawn. Try again.'));

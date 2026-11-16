@@ -5,6 +5,7 @@ import { logger } from "firebase-functions";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 
+import { createOrganizationInvitationOutboxData } from "./organization-email-outbox";
 import { isPlatformAdministrator } from "./platform-admin-authorization";
 
 /**
@@ -36,10 +37,10 @@ const REGION = "us-central1";
 const MAX_PEOPLE_PER_CALL = 100;
 
 const DAY = 24 * 60 * 60 * 1000;
-const LOCKED_MESSAGE = "This group has ended and is locked. An organization admin can reopen it.";
+export const LOCKED_MESSAGE = "This group has ended and is locked. An organization admin can reopen it.";
 
 /** Ended (the whole end day counts) and not reopened by an admin. Same as firestore.rules. */
-function isLocked(group: FirebaseFirestore.DocumentSnapshot, now = Date.now()): boolean {
+export function isLocked(group: FirebaseFirestore.DocumentSnapshot, now = Date.now()): boolean {
   const end = group.get("endDate");
   return !group.get("manualStatus") &&
     end instanceof Timestamp &&
@@ -47,7 +48,7 @@ function isLocked(group: FirebaseFirestore.DocumentSnapshot, now = Date.now()): 
     group.get("reopened") !== true;
 }
 
-const ROLE_RANK: Record<string, number> = {
+export const ROLE_RANK: Record<string, number> = {
   org_member: 1,
   org_staff: 2,
   org_manager: 3,
@@ -95,58 +96,82 @@ export const manageTrainingGroupMembers = onCall({ region: REGION }, async (requ
 
   const callerRank = callerMembership.get("active") === true ? ROLE_RANK[clean(callerMembership.get("role"))] ?? 0 : 0;
 
+  const groupSnapshot = await groupRef.get();
+  if (!groupSnapshot.exists) {
+    throw new HttpsError("not-found", "This training group no longer exists.");
+  }
+  const leadIds = (groupSnapshot.get("leadIds") as string[] | undefined) ?? [];
+  if (!(isAdmin || callerRank >= 4 || (callerRank >= 3 && leadIds.includes(uid)))) {
+    throw new HttpsError("permission-denied", "Only organization admins, owners and this group's leads can change its members.");
+  }
+
+  const result = action === "add" ?
+    await addPeopleToGroup({ organizationId, groupId, userIds, actorUid: uid }) :
+    await removePeopleFromGroup({ organizationId, groupId, userIds });
+  const assignmentsChanged = result.assignmentsChanged;
+
+  // A place opened up: move people up from the waitlist.
+  if (action === "remove" && result.changed) {
+    await promoteFromWaitlist(organizationId, groupId).catch((error) =>
+      logger.error("Could not promote from the waitlist.", { organizationId, groupId, error }),
+    );
+  }
+
+  logger.info("Training group members changed.", { organizationId, groupId, action, changed: result.changed, assignmentsChanged });
+
+  return { changed: result.changed, memberCount: result.memberCount };
+});
+
+// ============================================================
+// SHARED: ADD, WITHDRAW, WAITLIST
+// ============================================================
+
+export interface MemberChange {
+  changed: number;
+  memberCount: number;
+  changedIds: string[];
+  assignmentsChanged: number;
+}
+
+/**
+ * Add active organization members to a group in one transaction (capacity
+ * enforced), then give them the group's courses. Used by leads, by request
+ * approvals, by invitation acceptance and by the waitlist.
+ * Throws resource-exhausted when the group is full.
+ */
+export async function addPeopleToGroup({ organizationId, groupId, userIds, actorUid }: {
+  organizationId: string;
+  groupId: string;
+  userIds: string[];
+  actorUid: string;
+}): Promise<MemberChange> {
+  const db = getFirestore();
+  const organizationRef = db.collection("organizations").doc(organizationId);
+  const groupRef = organizationRef.collection("trainingGroups").doc(groupId);
+
   // People being added must be active members of the organization.
-  const memberships = action === "add" ?
-    await db.getAll(...userIds.map((id) => db.doc(`organizationMemberships/${id}_${organizationId}`))) :
-    [];
-  const notMembers = memberships.filter((membership) => membership.get("active") !== true);
-  // Names and emails for the roster (membership, then profile, then sign-in account).
-  const people = action === "add" && !notMembers.length ? await resolvePeople(userIds, memberships) : new Map<string, Person>();
-  if (notMembers.length) {
+  const memberships = await db.getAll(...userIds.map((id) => db.doc(`organizationMemberships/${id}_${organizationId}`)));
+  if (memberships.some((membership) => membership.get("active") !== true)) {
     throw new HttpsError("failed-precondition", "Only active members of the organization can join a training group.");
   }
+  // Names and emails for the roster (membership, then profile, then sign-in account).
+  const people = await resolvePeople(userIds, memberships);
 
   const result = await db.runTransaction(async (transaction) => {
     const group = await transaction.get(groupRef);
     if (!group.exists) {
       throw new HttpsError("not-found", "This training group no longer exists.");
     }
-
-    const leadIds = (group.get("leadIds") as string[] | undefined) ?? [];
-    const canManage = isAdmin || callerRank >= 4 || (callerRank >= 3 && leadIds.includes(uid));
-    if (!canManage) {
-      throw new HttpsError("permission-denied", "Only organization admins, owners and this group's leads can change its members.");
-    }
     if (isLocked(group)) {
       throw new HttpsError("failed-precondition", LOCKED_MESSAGE);
     }
-
-    const memberRefs = userIds.map((id) => groupRef.collection("members").doc(id));
-    const existing = await Promise.all(memberRefs.map((ref) => transaction.get(ref)));
-    const count = Number(group.get("memberCount") ?? 0);
-
-    if (action === "remove") {
-      const leaving = userIds.filter((_, index) => existing[index].exists);
-      leaving.forEach((id) => {
-        transaction.delete(groupRef.collection("members").doc(id));
-        transaction.set(
-          organizationRef.collection("trainingGroupEnrollments").doc(id),
-          { userId: id, groupIds: FieldValue.arrayRemove(groupId), updatedAt: FieldValue.serverTimestamp() },
-          { merge: true },
-        );
-      });
-      const memberCount = Math.max(0, count - leaving.length);
-      transaction.update(groupRef, { memberCount, updatedAt: FieldValue.serverTimestamp() });
-      return { changed: leaving.length, memberCount, changedIds: leaving, names: [] as [string, string][] };
-    }
-
     if (group.get("manualStatus") === "cancelled") {
       throw new HttpsError("failed-precondition", "This training group was cancelled.");
     }
 
-    const joining = userIds
-      .map((id, index) => ({ id, index }))
-      .filter(({ index }) => !existing[index].exists);
+    const existing = await Promise.all(userIds.map((id) => transaction.get(groupRef.collection("members").doc(id))));
+    const count = Number(group.get("memberCount") ?? 0);
+    const joining = userIds.filter((_, index) => !existing[index].exists);
 
     const capacity = Number(group.get("capacity") ?? 0);
     if (capacity > 0 && count + joining.length > capacity) {
@@ -157,7 +182,7 @@ export const manageTrainingGroupMembers = onCall({ region: REGION }, async (requ
       );
     }
 
-    joining.forEach(({ id }) => {
+    joining.forEach((id) => {
       transaction.set(groupRef.collection("members").doc(id), {
         userId: id,
         organizationId,
@@ -165,7 +190,7 @@ export const manageTrainingGroupMembers = onCall({ region: REGION }, async (requ
         name: people.get(id)?.name || "Member",
         email: people.get(id)?.email || null,
         enrolledAt: FieldValue.serverTimestamp(),
-        enrolledBy: uid,
+        enrolledBy: actorUid,
       });
       transaction.set(
         organizationRef.collection("trainingGroupEnrollments").doc(id),
@@ -176,34 +201,234 @@ export const manageTrainingGroupMembers = onCall({ region: REGION }, async (requ
 
     const memberCount = count + joining.length;
     transaction.update(groupRef, { memberCount, updatedAt: FieldValue.serverTimestamp() });
-    return {
-      changed: joining.length,
-      memberCount,
-      changedIds: joining.map(({ id }) => id),
-      names: joining.map(({ id }) => [id, people.get(id)?.name || "Member"] as [string, string]),
-    };
+    return { changed: joining.length, memberCount, changedIds: joining };
   });
 
   // Group courses follow the roster (outside the transaction: many writes).
   let assignmentsChanged = 0;
   if (result.changedIds.length) {
     try {
+      const names = new Map<string, string>(result.changedIds.map((id) => [id, people.get(id)?.name || "Member"]));
       const courses = await groupRef.collection("courses").get();
       for (const course of courses.docs) {
-        assignmentsChanged += action === "add" ?
-          await assignToPeople(organizationRef, groupId, course.data(), new Map<string, string>(result.names)) :
-          await detachFromPeople(organizationRef, groupId, course.data(), result.changedIds);
+        assignmentsChanged += await assignToPeople(organizationRef, groupId, course.data(), names);
       }
     } catch (error) {
-      logger.error("Could not update group course assignments.", { organizationId, groupId, action, error });
-      throw new HttpsError("internal", "Members were changed, but their group courses could not be updated. Try again.");
+      logger.error("Could not update group course assignments.", { organizationId, groupId, action: "add", error });
+      throw new HttpsError("internal", "Members were added, but their group courses could not be updated. Try again.");
     }
   }
+  return { ...result, assignmentsChanged };
+}
 
-  logger.info("Training group members changed.", { organizationId, groupId, action, changed: result.changed, assignmentsChanged });
+/** Withdraw people from a group and take away their unfinished group courses. */
+export async function removePeopleFromGroup({ organizationId, groupId, userIds }: {
+  organizationId: string;
+  groupId: string;
+  userIds: string[];
+}): Promise<MemberChange> {
+  const db = getFirestore();
+  const organizationRef = db.collection("organizations").doc(organizationId);
+  const groupRef = organizationRef.collection("trainingGroups").doc(groupId);
 
-  return { changed: result.changed, memberCount: result.memberCount };
-});
+  const result = await db.runTransaction(async (transaction) => {
+    const group = await transaction.get(groupRef);
+    if (!group.exists) {
+      throw new HttpsError("not-found", "This training group no longer exists.");
+    }
+    if (isLocked(group)) {
+      throw new HttpsError("failed-precondition", LOCKED_MESSAGE);
+    }
+    const existing = await Promise.all(userIds.map((id) => transaction.get(groupRef.collection("members").doc(id))));
+    const leaving = userIds.filter((_, index) => existing[index].exists);
+    leaving.forEach((id) => {
+      transaction.delete(groupRef.collection("members").doc(id));
+      transaction.set(
+        organizationRef.collection("trainingGroupEnrollments").doc(id),
+        { userId: id, groupIds: FieldValue.arrayRemove(groupId), updatedAt: FieldValue.serverTimestamp() },
+        { merge: true },
+      );
+    });
+    const memberCount = Math.max(0, Number(group.get("memberCount") ?? 0) - leaving.length);
+    transaction.update(groupRef, { memberCount, updatedAt: FieldValue.serverTimestamp() });
+    return { changed: leaving.length, memberCount, changedIds: leaving };
+  });
+
+  let assignmentsChanged = 0;
+  if (result.changedIds.length) {
+    try {
+      const courses = await groupRef.collection("courses").get();
+      for (const course of courses.docs) {
+        assignmentsChanged += await detachFromPeople(organizationRef, groupId, course.data(), result.changedIds);
+      }
+    } catch (error) {
+      logger.error("Could not update group course assignments.", { organizationId, groupId, action: "remove", error });
+      throw new HttpsError("internal", "Members were withdrawn, but their group courses could not be updated. Try again.");
+    }
+  }
+  return { ...result, assignmentsChanged };
+}
+
+/** Record an enrollment event (requests, decisions, waitlist moves) for the group's log. */
+export async function logEnrollment(groupRef: Ref, entry: {
+  action: string;
+  userId: string;
+  userName: string;
+  actorId: string;
+  actorName?: string;
+  note?: string;
+}): Promise<void> {
+  await groupRef.collection("enrollmentLog").add({
+    ...entry,
+    actorName: entry.actorName ?? "",
+    note: entry.note ?? "",
+    at: FieldValue.serverTimestamp(),
+  });
+}
+
+/** Keep the group's pending and waitlist counters in step with its requests. */
+export async function refreshRequestCounts(groupRef: Ref): Promise<void> {
+  const requests = groupRef.collection("requests");
+  const [pending, waitlisted] = await Promise.all([
+    requests.where("status", "==", "pending").count().get(),
+    requests.where("status", "==", "waitlisted").count().get(),
+  ]);
+  await groupRef.update({ pendingRequests: pending.data().count, waitlistCount: waitlisted.data().count });
+}
+
+/**
+ * Invite someone who isn't a member yet, so they join the organization
+ * (as a member) and this group when they accept. Reuses a pending
+ * invitation for the same email when there is one.
+ */
+export async function inviteForGroup({ organizationId, groupId, email, actorUid }: {
+  organizationId: string;
+  groupId: string;
+  email: string;
+  actorUid: string;
+}): Promise<string> {
+  const db = getFirestore();
+  const normalizedEmail = email.trim().toLowerCase();
+  const pending = await db.collection("organizationInvitations")
+    .where("organizationId", "==", organizationId)
+    .where("normalizedEmail", "==", normalizedEmail)
+    .where("status", "==", "pending")
+    .limit(5)
+    .get();
+  const usable = pending.docs.find((invitation) => {
+    const expiresAt = invitation.get("expiresAt");
+    return expiresAt instanceof Timestamp && expiresAt.toMillis() > Date.now();
+  });
+  if (usable) {
+    await usable.ref.update({ trainingGroupId: groupId, updatedAt: FieldValue.serverTimestamp() });
+    return usable.id;
+  }
+
+  const organization = await db.collection("organizations").doc(organizationId).get();
+  const invitationRef = db.collection("organizationInvitations").doc();
+  const expirationDate = new Date(Date.now() + 7 * DAY);
+  const batch = db.batch();
+  batch.create(invitationRef, {
+    id: invitationRef.id,
+    organizationId,
+    email: normalizedEmail,
+    normalizedEmail,
+    role: "org_member",
+    status: "pending",
+    expiresAt: Timestamp.fromDate(expirationDate),
+    createdAt: FieldValue.serverTimestamp(),
+    createdByUserId: actorUid,
+    updatedAt: FieldValue.serverTimestamp(),
+    trainingGroupId: groupId,
+  });
+  batch.create(db.collection("organizationEmailOutbox").doc(), createOrganizationInvitationOutboxData({
+    invitationId: invitationRef.id,
+    organizationId,
+    organizationName: clean(organization.get("name")) || "your organization",
+    recipientEmail: normalizedEmail,
+    role: "org_member",
+    expiresAt: expirationDate,
+  }));
+  await batch.commit();
+  return invitationRef.id;
+}
+
+/**
+ * Fill free places from the waitlist, oldest first: members join straight
+ * away, others are invited to the organization.
+ */
+export async function promoteFromWaitlist(organizationId: string, groupId: string): Promise<number> {
+  const db = getFirestore();
+  const groupRef = db.collection("organizations").doc(organizationId).collection("trainingGroups").doc(groupId);
+  const [group, waiting] = await Promise.all([
+    groupRef.get(),
+    groupRef.collection("requests").where("status", "==", "waitlisted").get(),
+  ]);
+  if (!group.exists || isLocked(group) || group.get("manualStatus")) {
+    return 0;
+  }
+  const capacity = Number(group.get("capacity") ?? 0);
+  let free = capacity > 0 ? capacity - Number(group.get("memberCount") ?? 0) : waiting.size;
+  const queue = waiting.docs.sort((a, b) => millis(a.get("waitlistedAt")) - millis(b.get("waitlistedAt")));
+  let promoted = 0;
+
+  for (const entry of queue) {
+    if (free <= 0) break;
+    const userId = entry.id;
+    const name = clean(entry.get("name")) || "Applicant";
+    const membership = await db.doc(`organizationMemberships/${userId}_${organizationId}`).get();
+    try {
+      if (membership.get("active") === true) {
+        await addPeopleToGroup({ organizationId, groupId, userIds: [userId], actorUid: "waitlist" });
+        await entry.ref.update({ status: "enrolled", decidedAt: FieldValue.serverTimestamp() });
+        await logEnrollment(groupRef, { action: "promoted", userId, userName: name, actorId: "waitlist", note: "Moved up from the waitlist and enrolled." });
+      } else {
+        const invitationId = await inviteForGroup({ organizationId, groupId, email: clean(entry.get("email")), actorUid: "waitlist" });
+        await entry.ref.update({ status: "invited", invitationId, decidedAt: FieldValue.serverTimestamp() });
+        await logEnrollment(groupRef, { action: "promoted", userId, userName: name, actorId: "waitlist", note: "Moved up from the waitlist and invited to the organization." });
+      }
+      free -= 1;
+      promoted += 1;
+    } catch (error) {
+      logger.error("Could not promote a waitlisted person.", { organizationId, groupId, userId, error });
+    }
+  }
+  if (promoted) {
+    await refreshRequestCounts(groupRef);
+  }
+  return promoted;
+}
+
+/**
+ * After someone accepts an organization invitation that came from a group
+ * application: put them in the group, or on its waitlist when it's full.
+ */
+export async function joinGroupAfterInvitation(organizationId: string, groupId: string, userId: string): Promise<void> {
+  const db = getFirestore();
+  const groupRef = db.collection("organizations").doc(organizationId).collection("trainingGroups").doc(groupId);
+  const requestRef = groupRef.collection("requests").doc(userId);
+  const request = await requestRef.get();
+  const name = clean(request.get("name")) || "Applicant";
+  try {
+    await addPeopleToGroup({ organizationId, groupId, userIds: [userId], actorUid: userId });
+    if (request.exists) {
+      await requestRef.update({ status: "enrolled", decidedAt: FieldValue.serverTimestamp() });
+    }
+    await logEnrollment(groupRef, { action: "enrolled", userId, userName: name, actorId: userId, note: "Accepted the organization invitation." });
+  } catch (error) {
+    if (error instanceof HttpsError && error.code === "resource-exhausted" && request.exists) {
+      await requestRef.update({ status: "waitlisted", waitlistedAt: FieldValue.serverTimestamp() });
+      await logEnrollment(groupRef, { action: "waitlisted", userId, userName: name, actorId: userId, note: "The group filled up before the invitation was accepted." });
+    } else {
+      throw error;
+    }
+  }
+  await refreshRequestCounts(groupRef);
+}
+
+function millis(value: unknown): number {
+  return value instanceof Timestamp ? value.toMillis() : Number.MAX_SAFE_INTEGER;
+}
 
 // ============================================================
 // GROUP COURSES
@@ -526,7 +751,7 @@ async function resolvePeople(userIds: string[], memberships: FirebaseFirestore.D
   );
 }
 
-function clean(value: unknown): string {
+export function clean(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 

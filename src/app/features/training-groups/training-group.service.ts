@@ -6,6 +6,9 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -58,6 +61,88 @@ export interface TrainingGroup {
   reopened: boolean;
   /** When the completion summary was last built (null: never). */
   summaryAt: Date | null;
+  /** How people get in: added by leads, request to join (members), or apply by link. */
+  enrollmentMode: EnrollmentMode;
+  enrollmentOpensAt: Date | null;
+  enrollmentClosesAt: Date | null;
+  waitlistEnabled: boolean;
+  /** Request mode only: members join without waiting for approval. */
+  autoApprove: boolean;
+  /** Up to 5 questions shown on the request or application form. */
+  applicationQuestions: string[];
+  /** Kept by the enrollment functions. */
+  pendingRequests: number;
+  waitlistCount: number;
+}
+
+export type EnrollmentMode = 'invite' | 'request' | 'application';
+
+export const ENROLLMENT_MODES: { value: EnrollmentMode; label: string; hint: string }[] = [
+  { value: 'invite', label: 'Invite only', hint: 'Leads add people. Nobody can ask to join.' },
+  { value: 'request', label: 'Request to join', hint: 'Organization members ask to join; a lead approves.' },
+  { value: 'application', label: 'Application', hint: 'Anyone with the link applies; approved applicants are invited to the organization.' },
+];
+
+export type JoinRequestStatus = 'pending' | 'waitlisted' | 'invited' | 'enrolled' | 'declined' | 'withdrawn';
+
+export const REQUEST_STATUS_LABELS: Record<JoinRequestStatus, { label: string; classes: string }> = {
+  pending: { label: 'Waiting for review', classes: 'bg-amber-100 text-amber-900' },
+  waitlisted: { label: 'On the waitlist', classes: 'bg-sky-100 text-sky-900' },
+  invited: { label: 'Invited', classes: 'bg-violet-100 text-violet-900' },
+  enrolled: { label: 'Enrolled', classes: 'bg-emerald-100 text-emerald-900' },
+  declined: { label: 'Declined', classes: 'bg-rose-100 text-rose-900' },
+  withdrawn: { label: 'Withdrawn', classes: 'bg-slate-100 text-slate-700' },
+};
+
+/** A request or application, as the group's staff see it. */
+export interface JoinRequest {
+  userId: string;
+  name: string;
+  email: string | null;
+  type: 'request' | 'application';
+  isOrganizationMember: boolean;
+  answers: { question: string; answer: string }[];
+  status: JoinRequestStatus;
+  createdAt: Date | null;
+  decidedAt: Date | null;
+  decisionNote: string;
+  waitlistedAt: Date | null;
+}
+
+export interface EnrollmentLogEntry {
+  id: string;
+  action: string;
+  userName: string;
+  actorName: string;
+  note: string;
+  at: Date | null;
+}
+
+/** What the join page and the open-groups list show (getTrainingGroupEnrollment). */
+export interface PublicGroupInfo {
+  organizationId: string;
+  organizationName: string;
+  groupId: string;
+  name: string;
+  programName: string;
+  description: string;
+  startDate: string | null;
+  endDate: string | null;
+  deliveryMode: string;
+  location: string;
+  mode: EnrollmentMode;
+  opensAt: string | null;
+  closesAt: string | null;
+  spotsLeft: number | null;
+  waitlistEnabled: boolean;
+  questions: string[];
+  closedReason: string | null;
+}
+
+export interface OwnRequest {
+  status: JoinRequestStatus;
+  createdAt: string | null;
+  decisionNote: string;
 }
 
 /** One person's line in a completion summary. */
@@ -212,6 +297,14 @@ export function newTrainingGroup(organizationId: string, leadId: string): Traini
     memberCount: 0,
     reopened: false,
     summaryAt: null,
+    enrollmentMode: 'invite',
+    enrollmentOpensAt: null,
+    enrollmentClosesAt: null,
+    waitlistEnabled: false,
+    autoApprove: false,
+    applicationQuestions: [],
+    pendingRequests: 0,
+    waitlistCount: 0,
   };
 }
 
@@ -248,6 +341,12 @@ export class TrainingGroupService {
       leadIds: [...new Set(group.leadIds)],
       instructorIds: [...new Set(group.instructorIds)],
       manualStatus: group.manualStatus,
+      enrollmentMode: group.enrollmentMode,
+      enrollmentOpensAt: group.enrollmentOpensAt ? Timestamp.fromDate(group.enrollmentOpensAt) : null,
+      enrollmentClosesAt: group.enrollmentClosesAt ? Timestamp.fromDate(group.enrollmentClosesAt) : null,
+      waitlistEnabled: group.waitlistEnabled,
+      autoApprove: group.enrollmentMode === 'request' && group.autoApprove,
+      applicationQuestions: group.applicationQuestions.map((question) => question.trim()).filter(Boolean).slice(0, 5),
       updatedAt: serverTimestamp(),
       updatedBy: userId,
     };
@@ -261,6 +360,85 @@ export class TrainingGroupService {
     const reference = doc(this.groups(group.organizationId));
     await setDoc(reference, { ...data, memberCount: 0, createdAt: serverTimestamp(), createdBy: userId });
     return reference.id;
+  }
+
+  // ---------- Enrollment (requests, applications, waitlist) ----------
+
+  /** Requests and applications for a group (its staff). */
+  async listRequests(organizationId: string, groupId: string): Promise<JoinRequest[]> {
+    const snapshot = await getDocs(collection(this.groups(organizationId), groupId, 'requests'));
+    const date = (value: unknown) => (value instanceof Timestamp ? value.toDate() : null);
+    return snapshot.docs.map((document) => {
+      const data = document.data();
+      return {
+        userId: document.id,
+        name: str(data['name']) || 'Applicant',
+        email: str(data['email']) || null,
+        type: data['type'] === 'application' ? 'application' : 'request',
+        isOrganizationMember: data['isOrganizationMember'] === true,
+        answers: Array.isArray(data['answers']) ? (data['answers'] as { question: string; answer: string }[]) : [],
+        status: (str(data['status']) || 'pending') as JoinRequestStatus,
+        createdAt: date(data['createdAt']),
+        decidedAt: date(data['decidedAt']),
+        decisionNote: str(data['decisionNote']),
+        waitlistedAt: date(data['waitlistedAt']),
+      };
+    });
+  }
+
+  /** The latest enrollment events for a group (its staff). */
+  async listEnrollmentLog(organizationId: string, groupId: string, max = 50): Promise<EnrollmentLogEntry[]> {
+    const snapshot = await getDocs(
+      query(collection(this.groups(organizationId), groupId, 'enrollmentLog'), orderBy('at', 'desc'), limit(max)),
+    );
+    return snapshot.docs.map((document) => {
+      const data = document.data();
+      return {
+        id: document.id,
+        action: str(data['action']),
+        userName: str(data['userName']),
+        actorName: str(data['actorName']),
+        note: str(data['note']),
+        at: data['at'] instanceof Timestamp ? data['at'].toDate() : null,
+      };
+    });
+  }
+
+  /** A lead approves or declines a request. */
+  async decideRequest(organizationId: string, groupId: string, userId: string, decision: 'approve' | 'decline', note = ''): Promise<string> {
+    const callable = httpsCallable<object, { status: string }>(firebaseFunctions, 'decideTrainingGroupRequest');
+    return (await callable({ organizationId, groupId, userId, decision, note })).data.status;
+  }
+
+  /** The join page: public group details and the caller's own request. */
+  async getEnrollment(organizationId: string, groupId: string): Promise<{
+    group: PublicGroupInfo;
+    isOrganizationMember: boolean;
+    isGroupMember: boolean;
+    request: OwnRequest | null;
+  }> {
+    const callable = httpsCallable<object, {
+      group: PublicGroupInfo;
+      isOrganizationMember: boolean;
+      isGroupMember: boolean;
+      request: OwnRequest | null;
+    }>(firebaseFunctions, 'getTrainingGroupEnrollment');
+    return (await callable({ organizationId, groupId })).data;
+  }
+
+  /** Ask to join or apply (answers in question order), or withdraw. */
+  async submitRequest(organizationId: string, groupId: string, action: 'submit' | 'withdraw', answers: string[] = []): Promise<string> {
+    const callable = httpsCallable<object, { status: string }>(firebaseFunctions, 'submitTrainingGroupRequest');
+    return (await callable({ organizationId, groupId, action, answers })).data.status;
+  }
+
+  /** Groups a member can ask to join now. */
+  async listOpenGroups(organizationId: string): Promise<(PublicGroupInfo & { request: OwnRequest | null })[]> {
+    const callable = httpsCallable<object, { groups: (PublicGroupInfo & { request: OwnRequest | null })[] }>(
+      firebaseFunctions,
+      'listOpenTrainingGroups',
+    );
+    return (await callable({ organizationId })).data.groups;
   }
 
   /** Owners and admins: reopen a completed group, or lock it again. */
@@ -464,6 +642,14 @@ function toGroup(id: string, organizationId: string, data: Record<string, unknow
     memberCount: typeof data['memberCount'] === 'number' ? data['memberCount'] : 0,
     reopened: data['reopened'] === true,
     summaryAt: date(data['summaryAt']),
+    enrollmentMode: data['enrollmentMode'] === 'request' || data['enrollmentMode'] === 'application' ? data['enrollmentMode'] : 'invite',
+    enrollmentOpensAt: date(data['enrollmentOpensAt']),
+    enrollmentClosesAt: date(data['enrollmentClosesAt']),
+    waitlistEnabled: data['waitlistEnabled'] === true,
+    autoApprove: data['autoApprove'] === true,
+    applicationQuestions: Array.isArray(data['applicationQuestions']) ? data['applicationQuestions'].map((question: unknown) => str(question)).filter(Boolean) : [],
+    pendingRequests: typeof data['pendingRequests'] === 'number' ? data['pendingRequests'] : 0,
+    waitlistCount: typeof data['waitlistCount'] === 'number' ? data['waitlistCount'] : 0,
   };
 }
 

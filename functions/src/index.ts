@@ -2684,6 +2684,12 @@ export {
   refreshTrainingGroupSummary,
   summarizeEndedTrainingGroups,
 } from "./training-groups";
+export {
+  decideTrainingGroupRequest,
+  getTrainingGroupEnrollment,
+  listOpenTrainingGroups,
+  submitTrainingGroupRequest,
+} from "./training-group-enrollment";
 export { deleteTestCenterQuiz } from "./test-center-quiz-delete";
 export { castPollVote } from "./polls";
 export { refreshOrganizationStats, refreshDashboardStatsNightly } from "./dashboard-stats";

@@ -8,6 +8,9 @@ import {
   HttpsError,
   onCall,
 } from "firebase-functions/v2/https";
+import * as logger from "firebase-functions/logger";
+
+import { joinGroupAfterInvitation } from "./training-groups";
 
 export const acceptOrganizationInvitation = onCall(
   {
@@ -301,11 +304,36 @@ export const acceptOrganizationInvitation = onCall(
         organizationId,
         membershipId,
         role,
+        // Set when the invitation came from a training group application.
+        trainingGroupId:
+          typeof invitation.trainingGroupId === "string" ?
+            invitation.trainingGroupId :
+            null,
       };
     });
 
     // ------------------------------------------------------------
-    // 5. Return success
+    // 5. Join the training group the invitation was for
+    //    (never blocks accepting the invitation)
+    // ------------------------------------------------------------
+    if (result.trainingGroupId) {
+      try {
+        await joinGroupAfterInvitation(
+          result.organizationId,
+          result.trainingGroupId,
+          uid,
+        );
+      } catch (error) {
+        logger.error("Could not add the new member to their training group.", {
+          organizationId: result.organizationId,
+          trainingGroupId: result.trainingGroupId,
+          error,
+        });
+      }
+    }
+
+    // ------------------------------------------------------------
+    // 6. Return success
     // ------------------------------------------------------------
     return {
       success: true,

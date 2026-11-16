@@ -1067,6 +1067,15 @@ export const routes: Routes = [
         },
         loadComponent: () => import('./features/training-groups/training-group-detail.component').then((m) => m.TrainingGroupDetailComponent),
     },
+    // Join link for a training group (request to join or apply).
+    // Not behind authGuard: the page asks people to sign in and brings them back.
+    {
+        path: 'join/:organizationId/:groupId',
+        data: {
+            title: 'Zebron | Join a training group',
+        },
+        loadComponent: () => import('./features/training-groups/training-group-join.component').then((m) => m.TrainingGroupJoinComponent),
+    },
     // -----------------------------------------------------
     // LEARNING ADMINISTRATION (Courses, Test Center, Virtual Classroom; staff and above)
     // -----------------------------------------------------

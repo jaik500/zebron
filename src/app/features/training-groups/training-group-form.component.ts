@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import {
   DELIVERY_MODES,
+  ENROLLMENT_MODES,
   TRAINING_GROUP_TYPES,
   TrainingGroup,
   TrainingGroupManualStatus,
@@ -160,6 +161,58 @@ const RANK: Record<string, number> = { org_member: 1, org_staff: 2, org_manager:
             <p class="mt-1 text-xs text-slate-500">{{ 'Otherwise the status follows the dates: upcoming, active, then completed. Members don\\u0027t see draft groups.' | t }}</p>
           </fieldset>
 
+          <fieldset class="rounded-xl border border-slate-200 p-3">
+            <legend class="px-1 text-sm font-medium text-slate-700">{{ 'Enrollment' | t }}</legend>
+            <div class="space-y-2">
+              @for (option of enrollmentModes; track option.value) {
+                <label class="flex cursor-pointer items-start gap-2 rounded-lg border p-2 text-sm" [class]="draft().enrollmentMode === option.value ? 'border-[#007979] bg-teal-50' : 'border-slate-200'">
+                  <input type="radio" name="enrollmentMode" class="mt-1 accent-[#007979]" [checked]="draft().enrollmentMode === option.value" (change)="patch({ enrollmentMode: option.value })" />
+                  <span>
+                    <span class="block font-semibold text-slate-900">{{ option.label | t }}</span>
+                    <span class="block text-xs text-slate-500">{{ option.hint | t }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+
+            @if (draft().enrollmentMode !== 'invite') {
+              <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                <label class="block text-sm">
+                  <span class="font-medium text-slate-700">{{ 'Enrollment opens (optional)' | t }}</span>
+                  <input type="date" name="opens" class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" [ngModel]="dateValue(draft().enrollmentOpensAt)" (ngModelChange)="patch({ enrollmentOpensAt: parseDate($event) })" />
+                </label>
+                <label class="block text-sm">
+                  <span class="font-medium text-slate-700">{{ 'Enrollment closes (optional)' | t }}</span>
+                  <input type="date" name="closes" class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm" [ngModel]="dateValue(draft().enrollmentClosesAt)" (ngModelChange)="patch({ enrollmentClosesAt: parseDate($event) })" />
+                </label>
+              </div>
+              <p class="mt-1 text-xs text-slate-500">{{ 'Enrollment closes at the start of the closing day.' | t }}</p>
+
+              <label class="mt-3 flex items-start gap-2 text-sm text-slate-700">
+                <input type="checkbox" name="waitlist" class="mt-0.5 h-4 w-4 accent-[#007979]" [ngModel]="draft().waitlistEnabled" (ngModelChange)="patch({ waitlistEnabled: $event })" />
+                <span>{{ 'Keep a waitlist when the group is full' | t }}<span class="block text-xs text-slate-500">{{ 'When someone is withdrawn, the next person moves up automatically.' | t }}</span></span>
+              </label>
+              @if (draft().enrollmentMode === 'request') {
+                <label class="mt-2 flex items-start gap-2 text-sm text-slate-700">
+                  <input type="checkbox" name="autoApprove" class="mt-0.5 h-4 w-4 accent-[#007979]" [ngModel]="draft().autoApprove" (ngModelChange)="patch({ autoApprove: $event })" />
+                  <span>{{ 'Approve requests automatically' | t }}<span class="block text-xs text-slate-500">{{ 'Members join straight away while places remain.' | t }}</span></span>
+                </label>
+              }
+
+              <label class="mt-3 block text-sm">
+                <span class="font-medium text-slate-700">{{ 'Questions for applicants (optional)' | t }}</span>
+                <textarea
+                  name="questions"
+                  rows="3"
+                  class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  [placeholder]="'One question per line, up to 5. For example: Why do you want to join?' | t"
+                  [ngModel]="questionsText()"
+                  (ngModelChange)="patch({ applicationQuestions: splitQuestions($event) })"
+                ></textarea>
+              </label>
+            }
+          </fieldset>
+
           <div class="grid gap-4 sm:grid-cols-2">
             <fieldset>
               <legend class="text-sm font-medium text-slate-700">{{ 'Leads' | t }}</legend>
@@ -249,6 +302,15 @@ export class TrainingGroupFormComponent {
     if (group.startDate && group.endDate && group.endDate < group.startDate) {
       return 'The end date is before the start date.';
     }
+    if (group.enrollmentOpensAt && group.enrollmentClosesAt && group.enrollmentClosesAt <= group.enrollmentOpensAt) {
+      return 'Enrollment must close after it opens.';
+    }
+    if (group.applicationQuestions.filter((question) => question.trim()).length > 5) {
+      return 'Ask at most 5 questions.';
+    }
+    if (group.applicationQuestions.some((question) => question.length > 200)) {
+      return 'Keep each question under 200 characters.';
+    }
     if (group.capacity > 0 && group.capacity < group.memberCount) {
       return 'The capacity is lower than the number of members already in the group.';
     }
@@ -257,6 +319,15 @@ export class TrainingGroupFormComponent {
     }
     return null;
   });
+
+  protected readonly enrollmentModes = ENROLLMENT_MODES;
+
+  /** The questions as typed, one per line (blank lines are dropped when saving). */
+  protected readonly questionsText = computed(() => this.draft().applicationQuestions.join('\n'));
+
+  protected splitQuestions(text: string): string[] {
+    return text.split('\n');
+  }
 
   protected patch(change: Partial<TrainingGroup>): void {
     this.edits.set({ ...this.edits(), ...change });

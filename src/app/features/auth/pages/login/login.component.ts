@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Location } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { HotToastService } from '@ngxpert/hot-toast';
@@ -306,7 +306,17 @@ const ADMIN_TOAST_ID = 'admin-login-prompt';
 export class LoginComponent implements OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly location = inject(Location);
+
+  /**
+   * Where to go after signing in: ?returnUrl=/join/... from pages that
+   * need a signed-in user. Only paths inside Zebron are accepted.
+   */
+  private returnUrl(): string | null {
+    const value = this.route.snapshot.queryParamMap.get('returnUrl') ?? '';
+    return value.startsWith('/') && !value.startsWith('//') && !value.includes('\\') ? value : null;
+  }
 
   /**
    * Cancel (×): return to the page the person came from, or the home
@@ -376,8 +386,13 @@ export class LoginComponent implements OnDestroy {
         return;
       }
 
-      // Regular users go directly to the public resource directory.
-      await this.router.navigate(['/']);
+      // Regular users return to the page that sent them here, or the home page.
+      const returnUrl = this.returnUrl();
+      if (returnUrl) {
+        await this.router.navigateByUrl(returnUrl);
+      } else {
+        await this.router.navigate(['/']);
+      }
     } catch (error) {
       console.error('Login failed:', error);
       this.error.set('Unable to sign in. Please check your email and password.');
