@@ -1,6 +1,7 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
+import { ApplicationAccessService } from '../../core/services/application-access.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PartnerAccessService } from '../../core/services/partner-access.service';
 import { PartnerOrganizationContextService } from '../../core/services/partner-organization-context.service';
@@ -29,6 +30,11 @@ export class BlogAccessService {
   private readonly auth = inject(AuthService);
   private readonly partnerAccess = inject(PartnerAccessService);
   private readonly organizationContext = inject(PartnerOrganizationContextService);
+  private readonly applicationAccess = inject(ApplicationAccessService);
+
+  /** Whether the user can open each organization's blog ("uid:orgId" -> allowed). */
+  private readonly organizationBlogAccess = signal<Record<string, boolean>>({});
+  private readonly checking = new Set<string>();
 
   readonly signedIn = computed(() => this.auth.firebaseUser() !== null);
 
@@ -65,6 +71,28 @@ export class BlogAccessService {
     return this.signedIn();
   }
 
+  /** Known result, or false while the check runs (the tab appears once it's allowed). */
+  private organizationBlogAllowed(organizationId: string): boolean {
+    const uid = this.auth.firebaseUser()?.uid;
+    if (!uid) {
+      return false;
+    }
+    const key = `${uid}:${organizationId}`;
+    const known = this.organizationBlogAccess()[key];
+    if (known === undefined && !this.checking.has(key)) {
+      this.checking.add(key);
+      this.applicationAccess
+        .checkAccess(uid, organizationId, 'blog')
+        .then((result) => result.allowed)
+        .catch(() => false)
+        .then((allowed) => {
+          this.checking.delete(key);
+          this.organizationBlogAccess.update((access) => ({ ...access, [key]: allowed }));
+        });
+    }
+    return known === true;
+  }
+
   /** Sections this person can read, as header tabs, plus Review & manage. */
   tabs(context: BlogContext | null): BlogTab[] {
     const tabs: BlogTab[] = [
@@ -76,7 +104,14 @@ export class BlogAccessService {
       context?.section === 'organization' ? context.organizationId : selected?.id ?? null;
     const organizationName = selected?.id === organizationId ? selected?.name?.trim() ?? '' : '';
 
-    if (organizationId && this.signedIn()) {
+    // The organization blog is an on-demand application: only show the tab when
+    // the organization has it (otherwise the route would bounce to the dashboard).
+    const showOrganization =
+      !!organizationId &&
+      this.signedIn() &&
+      (context?.section === 'organization' || this.organizationBlogAllowed(organizationId));
+
+    if (organizationId && showOrganization) {
       tabs.push({
         key: 'organization',
         label: organizationName || 'Organization',

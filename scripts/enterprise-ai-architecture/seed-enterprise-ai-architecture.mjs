@@ -1,71 +1,60 @@
 /**
  * Enterprise AI Architecture
+ * Program: Enterprise AI & Solutions Architecture, step 9
  *
- * Dry run:
- * node scripts/enterprise-ai-architecture/seed-enterprise-ai-architecture.mjs
+ * Dry run (checks the content, writes nothing):
+ *   node scripts/enterprise-ai-architecture/seed-enterprise-ai-architecture.mjs
+ * Create the course:
+ *   node scripts/enterprise-ai-architecture/seed-enterprise-ai-architecture.mjs --apply
+ * Update an existing course (keeps its status, publish date and final exam):
+ *   node scripts/enterprise-ai-architecture/seed-enterprise-ai-architecture.mjs --apply --overwrite
  *
- * Apply:
- * node scripts/enterprise-ai-architecture/seed-enterprise-ai-architecture.mjs --apply
+ * Lesson text uses the light Markdown lessons support: # / ## / ### headings,
+ * - and 1. lists, **bold**, *italic*, `code`, ``` code blocks, > quotes and
+ * | tables |. Each text block is one section in the lesson player; its first
+ * heading is the section title.
  */
 
-import {
-  applicationDefault,
-  initializeApp,
-} from 'firebase-admin/app';
-
-import {
-  FieldValue,
-  getFirestore,
-} from 'firebase-admin/firestore';
-
-const PROJECT_ID = process.env.GCLOUD_PROJECT || 'zebron-2b49f';
-const APPLY = process.argv.includes('--apply');
-const OVERWRITE = process.argv.includes('--overwrite');
-
-initializeApp({
-  credential: applicationDefault(),
-  projectId: PROJECT_ID,
-});
-
-const db = getFirestore();
+import { runCourseSeed } from '../lib/write-zebron-course.mjs';
 
 const COURSE = {
-  id: 'enterprise-ai-architecture',
-  title: 'Enterprise AI Architecture',
-  subtitle: 'Architect secure, scalable, and production-ready AI solutions for enterprise environments.',
-  description:
-    'Learn to design enterprise AI architectures, select appropriate models, structure AI data platforms, implement RAG and multi-agent systems, integrate enterprise applications, and establish security and governance controls.',
-  level: 'advanced',
-  language: 'en',
-  category: 'Artificial Intelligence',
-  program: 'Enterprise AI & Solutions Architecture',
+  id: "enterprise-ai-architecture",
+  title: "Enterprise AI Architecture",
+  summary: "Architect secure, scalable, and production-ready AI solutions for enterprise environments.",
+  description: "Learn to design enterprise AI architectures, select appropriate models, structure AI data platforms, implement RAG and multi-agent systems, integrate enterprise applications, and establish security and governance controls.",
+  topic: "Artificial Intelligence",
+  program: "Enterprise AI & Solutions Architecture",
   programOrder: 9,
-  status: 'draft',
-  cover: 'ai-architecture',
-  tags: [
-    'Enterprise AI',
-    'AI Architecture',
-    'Solution Architecture',
-    'RAG',
-    'Multi-Agent Systems',
-    'Cloud Architecture',
-    'AI Governance',
-    'Enterprise Integration',
+  level: "advanced",
+  cover: "slate",
+  outcomes: [
+    "Translate business requirements into enterprise AI architectures",
+    "Apply AI solution patterns and a reference architecture",
+    "Choose models and design the data and RAG architecture around them",
+    "Design integrations, multi-agent systems, and cloud deployment for AI",
+    "Build security and governance into an AI solution from the start",
+  ],
+  skills: [
+    "Enterprise AI architecture",
+    "Solution architecture",
+    "Model selection",
+    "Data architecture",
+    "RAG architecture",
+    "API and integration design",
+    "Multi-agent architecture",
+    "AI security and governance",
   ],
 };
 
 const MODULES = [
-  // =========================================================
-  // MODULE 1: ENTERPRISE AI ARCHITECTURE FUNDAMENTALS
-  // =========================================================
   {
-    id: 'enterprise-ai-fundamentals',
-    title: 'Enterprise AI Architecture Fundamentals',
+    id: "enterprise-ai-fundamentals",
+    title: "Enterprise AI Architecture Fundamentals",
     lessons: [
       {
-        id: 'understanding-enterprise-ai-architecture',
-        title: 'Understanding Enterprise AI Architecture',
-        minutes: 18,
+        id: "understanding-enterprise-ai-architecture",
+        title: "Understanding Enterprise AI Architecture",
+        minutes: 7,
         blocks: [
           {
             type: 'text',
@@ -87,6 +76,7 @@ An enterprise AI architecture commonly includes:
 Provides interfaces through which employees, customers, and other authorized users interact with AI capabilities.
 
 Examples include:
+
 - Enterprise chat applications.
 - Virtual assistants.
 - AI-enabled business applications.
@@ -96,6 +86,7 @@ Examples include:
 Coordinates AI workflows, agent activities, application logic, and business processes.
 
 Examples include:
+
 - AI agents.
 - Workflow engines.
 - Prompt orchestration.
@@ -105,6 +96,7 @@ Examples include:
 Contains the AI models responsible for generating responses, classifying information, extracting data, or performing other intelligent tasks.
 
 Examples include:
+
 - Large language models.
 - Embedding models.
 - Classification models.
@@ -114,6 +106,7 @@ Examples include:
 Provides the information required by AI systems.
 
 Examples include:
+
 - Enterprise databases.
 - Document repositories.
 - Knowledge bases.
@@ -124,6 +117,7 @@ Examples include:
 Provides the computing and networking resources required to operate AI workloads.
 
 Examples include:
+
 - Cloud infrastructure.
 - GPU computing.
 - Container platforms.
@@ -134,6 +128,7 @@ Examples include:
 Applies controls across all architecture layers.
 
 Examples include:
+
 - Identity and access management.
 - Encryption.
 - Data protection.
@@ -152,6 +147,7 @@ The architect must consider data access, identity, integration, model performanc
 A financial institution wants an AI assistant that helps employees answer questions about internal policies.
 
 The architecture might include:
+
 1. An employee portal as the experience layer.
 2. An orchestration service that manages requests.
 3. An LLM that generates responses.
@@ -163,26 +159,26 @@ The architecture must ensure that employees only receive information they are au
 
 ## Key Takeaway
 
-Enterprise AI architecture connects AI capabilities to business systems, organizational data, infrastructure, security, and operational processes.`
+Enterprise AI architecture connects AI capabilities to business systems, organizational data, infrastructure, security, and operational processes.`,
           },
           {
             type: 'check',
-            question: 'What distinguishes enterprise AI architecture from a standalone AI application?',
+            question: "What distinguishes enterprise AI architecture from a standalone AI application?",
             options: [
-              'It only focuses on selecting the most powerful LLM.',
-              'It integrates AI with enterprise systems, data, infrastructure, security, and governance.',
-              'It eliminates the need for existing business applications.',
-              'It requires every organization to train its own foundation model.'
+              "It eliminates the need for existing business applications.",
+              "It integrates AI with enterprise systems, data, infrastructure, security, and governance.",
+              "It requires every organization to train its own foundation model.",
+              "It only focuses on selecting the most powerful LLM.",
             ],
             answer: 1,
-            explanation: 'Enterprise AI architecture addresses the complete environment required to operate AI securely and reliably within an organization.'
-          }
-        ]
+            explanation: "Enterprise AI architecture addresses the complete environment required to operate AI securely and reliably within an organization.",
+          },
+        ],
       },
       {
-        id: 'business-requirements-and-ai-architecture',
-        title: 'Translating Business Requirements into AI Architecture',
-        minutes: 20,
+        id: "business-requirements-and-ai-architecture",
+        title: "Translating Business Requirements into AI Architecture",
+        minutes: 7,
         blocks: [
           {
             type: 'text',
@@ -199,6 +195,7 @@ Enterprise architects translate organizational objectives into technical require
 Start by understanding what the organization wants to improve.
 
 Examples:
+
 - Reduce customer support response times.
 - Automate document processing.
 - Improve enterprise search.
@@ -230,6 +227,7 @@ End users focus on usability and accuracy.
 Functional requirements describe what the AI solution must do.
 
 Examples:
+
 - Accept natural-language questions.
 - Retrieve relevant enterprise documents.
 - Generate answers with supporting references.
@@ -272,6 +270,7 @@ Consider an employee knowledge assistant.
 Architecture should include measurable outcomes.
 
 Examples:
+
 - Average response time.
 - Retrieval relevance.
 - Answer accuracy.
@@ -289,26 +288,26 @@ An architect evaluates these tradeoffs against business requirements.
 
 ## Key Takeaway
 
-The architect's responsibility is to translate business needs into measurable technical requirements and defensible architecture decisions.`
+The architect's responsibility is to translate business needs into measurable technical requirements and defensible architecture decisions.`,
           },
           {
             type: 'check',
-            question: 'A business requests an AI assistant to reduce the time employees spend searching for policies. What should the architect do first?',
+            question: "A business requests an AI assistant to reduce the time employees spend searching for policies. What should the architect do first?",
             options: [
-              'Immediately select the largest available LLM.',
-              'Purchase additional GPU infrastructure.',
-              'Clarify the business problem, stakeholders, requirements, and success measures.',
-              'Begin developing a custom foundation model.'
+              "Select a foundation model and run a proof of concept on sample policies.",
+              "Design the vector database and ingestion pipeline for the policy documents.",
+              "Estimate GPU and hosting costs for the expected number of employees.",
+              "Clarify the business problem, stakeholders, requirements, and success measures.",
             ],
-            answer: 2,
-            explanation: 'Architecture should begin with understanding the business problem and defining requirements before selecting technologies.'
-          }
-        ]
+            answer: 3,
+            explanation: "Architecture should begin with understanding the business problem and defining requirements before selecting technologies.",
+          },
+        ],
       },
       {
-        id: 'enterprise-ai-architecture-quality-attributes',
-        title: 'Enterprise AI Quality Attributes and Architecture Drivers',
-        minutes: 19,
+        id: "enterprise-ai-architecture-quality-attributes",
+        title: "Enterprise AI Quality Attributes and Architecture Drivers",
+        minutes: 7,
         blocks: [
           {
             type: 'text',
@@ -327,6 +326,7 @@ Scalability is the ability to handle increasing workloads.
 An AI application may initially support 100 users but eventually need to support 50,000.
 
 Architectural considerations include:
+
 - Horizontal application scaling.
 - Request queues.
 - Load balancing.
@@ -338,6 +338,7 @@ Architectural considerations include:
 Availability measures whether the solution is accessible when users need it.
 
 Architectural approaches include:
+
 - Redundant infrastructure.
 - Health checks.
 - Failover mechanisms.
@@ -361,6 +362,7 @@ Architects should measure end-to-end response time rather than model response ti
 Reliability concerns whether the solution performs consistently under expected operating conditions.
 
 AI reliability also includes:
+
 - Handling malformed inputs.
 - Managing model timeouts.
 - Detecting unavailable tools.
@@ -372,6 +374,7 @@ AI reliability also includes:
 Security must be incorporated into every architecture layer.
 
 Important controls include:
+
 - Authentication.
 - Authorization.
 - Encryption.
@@ -384,6 +387,7 @@ Important controls include:
 Enterprise AI systems must be understandable and maintainable over time.
 
 Good practices include:
+
 - Modular services.
 - Documented interfaces.
 - Versioned prompts.
@@ -396,6 +400,7 @@ Good practices include:
 Observability helps teams understand system behavior.
 
 Useful measurements include:
+
 - Request volume.
 - Error rates.
 - Response latency.
@@ -427,36 +432,32 @@ The architect must evaluate the performance improvement against the security and
 
 ## Key Takeaway
 
-Quality attributes such as scalability, availability, security, reliability, and observability are major drivers of enterprise AI architecture decisions.`
+Quality attributes such as scalability, availability, security, reliability, and observability are major drivers of enterprise AI architecture decisions.`,
           },
           {
             type: 'check',
-            question: 'An enterprise AI assistant must support thousands of concurrent users. Which quality attribute is most directly associated with handling increasing workloads?',
+            question: "An enterprise AI assistant must support thousands of concurrent users. Which quality attribute is most directly associated with handling increasing workloads?",
             options: [
-              'Maintainability',
-              'Scalability',
-              'Auditability',
-              'Portability'
+              "Scalability",
+              "Auditability",
+              "Portability",
+              "Maintainability",
             ],
-            answer: 1,
-            explanation: 'Scalability describes a system’s ability to handle increasing workloads by expanding available resources and capacity.'
-          }
-        ]
-      }
-    ]
+            answer: 0,
+            explanation: "Scalability describes a system’s ability to handle increasing workloads by expanding available resources and capacity.",
+          },
+        ],
+      },
+    ],
   },
-
-  // =========================================================
-  // MODULE 2: AI SOLUTION ARCHITECTURE PATTERNS
-  // =========================================================
   {
-    id: 'ai-solution-architecture-patterns',
-    title: 'AI Solution Architecture Patterns',
+    id: "ai-solution-architecture-patterns",
+    title: "AI Solution Architecture Patterns",
     lessons: [
       {
-        id: 'centralized-and-distributed-ai-architectures',
-        title: 'Centralized and Distributed AI Architectures',
-        minutes: 20,
+        id: "centralized-and-distributed-ai-architectures",
+        title: "Centralized and Distributed AI Architectures",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -496,6 +497,7 @@ Business applications send requests through this gateway.
 A distributed architecture allows individual departments, applications, or business units to operate separate AI services.
 
 For example:
+
 - Finance operates a financial document assistant.
 - Human Resources operates an employee policy assistant.
 - Customer Support operates a customer service agent.
@@ -519,6 +521,7 @@ For example:
 A hybrid architecture combines centralized governance with distributed implementation.
 
 For example:
+
 - A central AI platform manages approved models, identity integration, security standards, and monitoring.
 - Individual departments build their own AI applications using those shared capabilities.
 
@@ -536,26 +539,26 @@ The central platform provides shared controls while individual business units ma
 
 ## Key Takeaway
 
-Centralized architecture emphasizes shared control, distributed architecture emphasizes autonomy, and hybrid architecture balances enterprise governance with local flexibility.`
+Centralized architecture emphasizes shared control, distributed architecture emphasizes autonomy, and hybrid architecture balances enterprise governance with local flexibility.`,
           },
           {
             type: 'check',
-            question: 'An enterprise wants departments to build their own AI applications while enforcing centralized model approval, security, and monitoring. Which architecture pattern is most appropriate?',
+            question: "An enterprise wants departments to build their own AI applications while enforcing centralized model approval, security, and monitoring. Which architecture pattern is most appropriate?",
             options: [
-              'Fully centralized architecture',
-              'Fully distributed architecture',
-              'Hybrid architecture',
-              'Single-user architecture'
+              "Fully distributed architecture",
+              "Single-user architecture",
+              "Hybrid architecture",
+              "Fully centralized architecture",
             ],
             answer: 2,
-            explanation: 'A hybrid architecture combines centralized governance and shared services with distributed application development.'
-          }
-        ]
+            explanation: "A hybrid architecture combines centralized governance and shared services with distributed application development.",
+          },
+        ],
       },
       {
-        id: 'microservices-and-event-driven-ai',
-        title: 'Microservices and Event-Driven AI Architectures',
-        minutes: 21,
+        id: "microservices-and-event-driven-ai",
+        title: "Microservices and Event-Driven AI Architectures",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -619,6 +622,7 @@ The workflow does not require every service to execute synchronously.
 Message brokers help services exchange events and messages.
 
 They can support:
+
 - Asynchronous processing.
 - Message buffering.
 - Retry mechanisms.
@@ -650,26 +654,26 @@ Idempotency means that repeating an operation does not create unintended duplica
 
 ## Key Takeaway
 
-Microservices separate application responsibilities, while event-driven architecture enables loosely coupled asynchronous communication between services.`
+Microservices separate application responsibilities, while event-driven architecture enables loosely coupled asynchronous communication between services.`,
           },
           {
             type: 'check',
-            question: 'An organization uploads thousands of documents that must be processed, embedded, and indexed without keeping users waiting. Which pattern is most appropriate?',
+            question: "An organization uploads thousands of documents that must be processed, embedded, and indexed without keeping users waiting. Which pattern is most appropriate?",
             options: [
-              'Synchronous processing for every document',
-              'Event-driven asynchronous processing',
-              'A single shared database transaction',
-              'Direct browser-to-model communication'
+              "Event-driven asynchronous processing",
+              "A single shared database transaction",
+              "Direct browser-to-model communication",
+              "Synchronous processing for every document",
             ],
-            answer: 1,
-            explanation: 'Event-driven asynchronous processing allows document processing and indexing to occur independently of the user request.'
-          }
-        ]
+            answer: 0,
+            explanation: "Event-driven asynchronous processing allows document processing and indexing to occur independently of the user request.",
+          },
+        ],
       },
       {
-        id: 'rag-and-agentic-architecture-patterns',
-        title: 'RAG and Agentic Architecture Patterns',
-        minutes: 22,
+        id: "rag-and-agentic-architecture-patterns",
+        title: "RAG and Agentic Architecture Patterns",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -722,6 +726,7 @@ A typical agent architecture includes:
 - Monitoring and audit logging.
 
 For example, an IT support agent may:
+
 1. Understand a user's issue.
 2. Search a knowledge base.
 3. Check an incident record.
@@ -746,36 +751,32 @@ Use both when the solution needs enterprise knowledge and controlled workflow ex
 
 ## Key Takeaway
 
-RAG provides knowledge grounding, while agentic architecture enables goal-oriented reasoning and tool execution.`
+RAG provides knowledge grounding, while agentic architecture enables goal-oriented reasoning and tool execution.`,
           },
           {
             type: 'check',
-            question: 'An enterprise solution must retrieve internal policies and then use approved tools to initiate a business workflow. Which architecture is most suitable?',
+            question: "An enterprise solution must retrieve internal policies and then use approved tools to initiate a business workflow. Which architecture is most suitable?",
             options: [
-              'RAG only, without application orchestration',
-              'A static document website',
-              'An agentic architecture integrated with RAG',
-              'A standalone embedding model'
+              "RAG only, without application orchestration",
+              "An agentic architecture integrated with RAG",
+              "A standalone embedding model",
+              "A static document website",
             ],
-            answer: 2,
-            explanation: 'Combining RAG with agentic orchestration enables the solution to retrieve enterprise knowledge and use approved tools to execute workflows.'
-          }
-        ]
-      }
-    ]
+            answer: 1,
+            explanation: "Combining RAG with agentic orchestration enables the solution to retrieve enterprise knowledge and use approved tools to execute workflows.",
+          },
+        ],
+      },
+    ],
   },
-
-  // =========================================================
-  // MODULE 3: ENTERPRISE AI REFERENCE ARCHITECTURE
-  // =========================================================
   {
-    id: 'enterprise-ai-reference-architecture',
-    title: 'Enterprise AI Reference Architecture',
+    id: "enterprise-ai-reference-architecture",
+    title: "Enterprise AI Reference Architecture",
     lessons: [
       {
-        id: 'enterprise-ai-reference-architecture-layers',
-        title: 'Enterprise AI Reference Architecture Layers',
-        minutes: 21,
+        id: "enterprise-ai-reference-architecture-layers",
+        title: "Enterprise AI Reference Architecture Layers",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -794,6 +795,7 @@ It helps organizations standardize how AI solutions are designed and implemented
 Provides user-facing interfaces.
 
 Examples:
+
 - Employee portals.
 - Customer applications.
 - Chat interfaces.
@@ -804,6 +806,7 @@ Examples:
 Provides controlled access to enterprise AI services.
 
 Responsibilities include:
+
 - API authentication.
 - Request validation.
 - Rate limiting.
@@ -815,6 +818,7 @@ Responsibilities include:
 Coordinates model calls, retrieval, agents, and business workflows.
 
 Responsibilities include:
+
 - Prompt construction.
 - Model selection.
 - Tool execution.
@@ -826,6 +830,7 @@ Responsibilities include:
 Provides access to approved AI models.
 
 Responsibilities include:
+
 - Model invocation.
 - Model version management.
 - Model routing.
@@ -836,6 +841,7 @@ Responsibilities include:
 Provides information used by AI solutions.
 
 Examples:
+
 - Enterprise databases.
 - Document repositories.
 - Vector stores.
@@ -847,6 +853,7 @@ Examples:
 Connects AI services to enterprise systems.
 
 Examples:
+
 - IT service management platforms.
 - ERP systems.
 - CRM systems.
@@ -858,6 +865,7 @@ Examples:
 Provides the runtime environment.
 
 Examples:
+
 - Cloud platforms.
 - Container services.
 - Compute resources.
@@ -869,6 +877,7 @@ Examples:
 Security and governance operate across all layers.
 
 They include:
+
 - Identity management.
 - Data classification.
 - Encryption.
@@ -879,6 +888,7 @@ They include:
 ## Why Use a Reference Architecture?
 
 It helps organizations:
+
 - Reduce duplicated design effort.
 - Establish reusable patterns.
 - Improve consistency.
@@ -896,26 +906,26 @@ Each application uses the same approved architectural foundation.
 
 ## Key Takeaway
 
-A reference architecture provides a reusable blueprint for designing consistent, secure, and scalable enterprise AI solutions.`
+A reference architecture provides a reusable blueprint for designing consistent, secure, and scalable enterprise AI solutions.`,
           },
           {
             type: 'check',
-            question: 'What is the primary purpose of an enterprise AI reference architecture?',
+            question: "What is the primary purpose of an enterprise AI reference architecture?",
             options: [
-              'To force every application to use the same user interface.',
-              'To provide reusable architectural components, standards, and design patterns.',
-              'To eliminate all application integrations.',
-              'To replace business requirements with technology standards.'
+              "To provide reusable architectural components, standards, and design patterns.",
+              "To force every application to use the same user interface.",
+              "To replace business requirements with technology standards.",
+              "To eliminate all application integrations.",
             ],
-            answer: 1,
-            explanation: 'A reference architecture establishes reusable patterns and common architectural standards that improve consistency and governance.'
-          }
-        ]
+            answer: 0,
+            explanation: "A reference architecture establishes reusable patterns and common architectural standards that improve consistency and governance.",
+          },
+        ],
       },
       {
-        id: 'enterprise-ai-gateways-and-model-routing',
-        title: 'Enterprise AI Gateways and Model Routing',
-        minutes: 22,
+        id: "enterprise-ai-gateways-and-model-routing",
+        title: "Enterprise AI Gateways and Model Routing",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -998,6 +1008,7 @@ Sensitive information should not be exposed simply because a request passes thro
 An enterprise assistant receives a request to summarize a document.
 
 The gateway evaluates:
+
 - Application identity.
 - User permissions.
 - Data classification.
@@ -1008,26 +1019,26 @@ It then routes the request to an approved summarization model.
 
 ## Key Takeaway
 
-An enterprise AI gateway standardizes model access, routing, monitoring, usage controls, and policy enforcement across applications.`
+An enterprise AI gateway standardizes model access, routing, monitoring, usage controls, and policy enforcement across applications.`,
           },
           {
             type: 'check',
-            question: 'Why might an enterprise use an AI gateway instead of allowing every application to connect directly to model providers?',
+            question: "Why might an enterprise use an AI gateway instead of allowing every application to connect directly to model providers?",
             options: [
-              'To eliminate the need for authentication.',
-              'To centralize model access, routing, monitoring, and policy enforcement.',
-              'To ensure every request uses the largest model.',
-              'To remove application-level authorization.'
+              "To remove application-level authorization.",
+              "To ensure every request uses the largest model.",
+              "To centralize model access, routing, monitoring, and policy enforcement.",
+              "To eliminate the need for authentication.",
             ],
-            answer: 1,
-            explanation: 'An AI gateway provides a consistent control point for model access, usage policies, routing, and monitoring.'
-          }
-        ]
+            answer: 2,
+            explanation: "An AI gateway provides a consistent control point for model access, usage policies, routing, and monitoring.",
+          },
+        ],
       },
       {
-        id: 'designing-reusable-enterprise-ai-services',
-        title: 'Designing Reusable Enterprise AI Services',
-        minutes: 20,
+        id: "designing-reusable-enterprise-ai-services",
+        title: "Designing Reusable Enterprise AI Services",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -1098,6 +1109,7 @@ Design services to support multiple applications without introducing unnecessary
 ## Example: Shared Retrieval Service
 
 An organization operates three AI applications:
+
 - HR policy assistant.
 - IT support assistant.
 - Procurement assistant.
@@ -1113,6 +1125,7 @@ Not every AI capability needs to become a separate microservice.
 Too many small services increase operational complexity.
 
 Architects should consider:
+
 - Business boundaries.
 - Scaling requirements.
 - Security boundaries.
@@ -1121,36 +1134,32 @@ Architects should consider:
 
 ## Key Takeaway
 
-Reusable AI services reduce duplication and improve consistency, but their boundaries should be based on genuine business and technical responsibilities.`
+Reusable AI services reduce duplication and improve consistency, but their boundaries should be based on genuine business and technical responsibilities.`,
           },
           {
             type: 'check',
-            question: 'Three enterprise applications need document retrieval. What is a potential benefit of creating a shared retrieval service?',
+            question: "Three enterprise applications need document retrieval. What is a potential benefit of creating a shared retrieval service?",
             options: [
-              'Each application must build its own retrieval engine.',
-              'The organization can standardize retrieval interfaces and shared controls.',
-              'The applications no longer need authorization.',
-              'The service must contain every enterprise business process.'
+              "The service must contain every enterprise business process.",
+              "Each application must build its own retrieval engine.",
+              "The organization can standardize retrieval interfaces and shared controls.",
+              "The applications no longer need authorization.",
             ],
-            answer: 1,
-            explanation: 'A shared retrieval service can reduce duplicated development while providing standardized interfaces and consistent security controls.'
-          }
-        ]
-      }
-    ]
+            answer: 2,
+            explanation: "A shared retrieval service can reduce duplicated development while providing standardized interfaces and consistent security controls.",
+          },
+        ],
+      },
+    ],
   },
-
-  // =========================================================
-  // MODULE 4: MODEL SELECTION AND MODEL ARCHITECTURE
-  // =========================================================
   {
-    id: 'model-selection-and-model-architecture',
-    title: 'Model Selection and Model Architecture',
+    id: "model-selection-and-model-architecture",
+    title: "Model Selection and Model Architecture",
     lessons: [
       {
-        id: 'evaluating-enterprise-ai-models',
-        title: 'Evaluating Enterprise AI Models',
-        minutes: 22,
+        id: "evaluating-enterprise-ai-models",
+        title: "Evaluating Enterprise AI Models",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -1169,6 +1178,7 @@ The most powerful model is not necessarily the best model for every enterprise w
 Determine whether the model supports the required tasks.
 
 Examples:
+
 - Text generation.
 - Reasoning.
 - Classification.
@@ -1182,6 +1192,7 @@ Examples:
 Evaluate model outputs using representative business scenarios.
 
 Consider:
+
 - Correctness.
 - Completeness.
 - Relevance.
@@ -1198,6 +1209,7 @@ Latency may influence user experience, especially for interactive applications.
 ### 4. Cost
 
 Evaluate:
+
 - Input token pricing.
 - Output token pricing.
 - Hosting expenses.
@@ -1213,6 +1225,7 @@ A larger context window may be useful for lengthy documents, but it does not aut
 ### 6. Security and Data Handling
 
 Review:
+
 - Data retention policies.
 - Data processing locations.
 - Encryption.
@@ -1247,26 +1260,26 @@ Using an expensive reasoning model for every ticket may provide little additiona
 
 ## Key Takeaway
 
-Model selection should be based on measurable workload requirements, security, performance, cost, and operational constraints.`
+Model selection should be based on measurable workload requirements, security, performance, cost, and operational constraints.`,
           },
           {
             type: 'check',
-            question: 'An organization must classify a high volume of support tickets at low cost. What should guide model selection?',
+            question: "An organization must classify a high volume of support tickets at low cost. What should guide model selection?",
             options: [
-              'Always select the model with the largest parameter count.',
-              'Select a model based only on its popularity.',
-              'Evaluate classification quality, throughput, latency, and cost against the workload.',
-              'Choose a model without testing it.'
+              "Choose a model without testing it.",
+              "Always select the model with the largest parameter count.",
+              "Select a model based only on its popularity.",
+              "Evaluate classification quality, throughput, latency, and cost against the workload.",
             ],
-            answer: 2,
-            explanation: 'Model selection should be based on measured performance and cost for the actual business workload.'
-          }
-        ]
+            answer: 3,
+            explanation: "Model selection should be based on measured performance and cost for the actual business workload.",
+          },
+        ],
       },
       {
-        id: 'foundation-models-fine-tuning-and-specialized-models',
-        title: 'Foundation Models, Fine-Tuning, and Specialized Models',
-        minutes: 23,
+        id: "foundation-models-fine-tuning-and-specialized-models",
+        title: "Foundation Models, Fine-Tuning, and Specialized Models",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -1283,6 +1296,7 @@ Three important approaches are foundation models, fine-tuning, and specialized m
 A foundation model is trained on broad datasets and can support multiple downstream tasks.
 
 Examples of capabilities include:
+
 - Text generation.
 - Summarization.
 - Question answering.
@@ -1297,6 +1311,7 @@ Organizations can consume foundation models through hosted APIs or deploy suppor
 Fine-tuning adapts a pretrained model using additional training data.
 
 It can help a model learn:
+
 - Domain-specific terminology.
 - Desired output formats.
 - Specialized response patterns.
@@ -1311,6 +1326,7 @@ For changing knowledge, RAG may be more appropriate.
 Specialized models are designed or optimized for particular tasks.
 
 Examples include:
+
 - Fraud detection models.
 - Document classification models.
 - Image recognition models.
@@ -1336,6 +1352,7 @@ These approaches can also be combined.
 An organization wants an assistant that answers questions about internal policies.
 
 A suitable design might use:
+
 - A foundation model for language understanding and response generation.
 - RAG to retrieve current policies.
 - Fine-tuning only if additional domain-specific behavior is justified.
@@ -1343,6 +1360,7 @@ A suitable design might use:
 ## Important Considerations
 
 Fine-tuning introduces additional responsibilities:
+
 - Dataset preparation.
 - Data quality review.
 - Training costs.
@@ -1352,26 +1370,26 @@ Fine-tuning introduces additional responsibilities:
 
 ## Key Takeaway
 
-Foundation models provide broad capabilities, fine-tuning adapts model behavior, and specialized models optimize particular tasks. RAG provides access to external knowledge without requiring that knowledge to be embedded into model weights.`
+Foundation models provide broad capabilities, fine-tuning adapts model behavior, and specialized models optimize particular tasks. RAG provides access to external knowledge without requiring that knowledge to be embedded into model weights.`,
           },
           {
             type: 'check',
-            question: 'An organization needs an AI assistant to answer questions using frequently updated internal policy documents. Which approach is generally most appropriate for supplying that knowledge?',
+            question: "An organization needs an AI assistant to answer questions using frequently updated internal policy documents. Which approach is generally most appropriate for supplying that knowledge?",
             options: [
-              'Fine-tune the model every time a policy changes.',
-              'Use RAG to retrieve current policy documents.',
-              'Increase the model temperature.',
-              'Replace the model with a database.'
+              "Use RAG to retrieve current policy documents.",
+              "Replace the model with a database.",
+              "Fine-tune the model every time a policy changes.",
+              "Increase the model temperature.",
             ],
-            answer: 1,
-            explanation: 'RAG retrieves current external knowledge at query time, avoiding the need to retrain or fine-tune a model whenever documents change.'
-          }
-        ]
+            answer: 0,
+            explanation: "RAG retrieves current external knowledge at query time, avoiding the need to retrain or fine-tune a model whenever documents change.",
+          },
+        ],
       },
       {
-        id: 'model-deployment-and-serving-architectures',
-        title: 'Model Deployment and Serving Architectures',
-        minutes: 22,
+        id: "model-deployment-and-serving-architectures",
+        title: "Model Deployment and Serving Architectures",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -1428,6 +1446,7 @@ A self-hosted model runs within infrastructure managed by the organization or it
 A hybrid architecture combines hosted and self-hosted models.
 
 For example:
+
 - Sensitive workloads may use approved private infrastructure.
 - General-purpose workloads may use hosted model APIs.
 - High-volume classification may use a smaller internally hosted model.
@@ -1478,37 +1497,32 @@ The architecture uses a shared gateway to enforce access policies and monitor co
 
 ## Key Takeaway
 
-Model deployment decisions should balance control, security, cost, performance, scalability, and operational responsibility.`
+Model deployment decisions should balance control, security, cost, performance, scalability, and operational responsibility.`,
           },
           {
             type: 'check',
-            question: 'Which is a major operational responsibility introduced by self-hosting an enterprise AI model?',
+            question: "Which is a major operational responsibility introduced by self-hosting an enterprise AI model?",
             options: [
-              'Eliminating all model monitoring.',
-              'Managing compute capacity, model serving, availability, and maintenance.',
-              'Removing the need for application authentication.',
-              'Guaranteeing that model outputs are always correct.'
+              "Eliminating all model monitoring.",
+              "Managing compute capacity, model serving, availability, and maintenance.",
+              "Removing the need for application authentication.",
+              "Guaranteeing that model outputs are always correct.",
             ],
             answer: 1,
-            explanation: 'Self-hosting gives the organization more deployment control but also makes it responsible for infrastructure, serving, scaling, availability, and maintenance.'
-          }
-        ]
-      }
-    ]
+            explanation: "Self-hosting gives the organization more deployment control but also makes it responsible for infrastructure, serving, scaling, availability, and maintenance.",
+          },
+        ],
+      },
+    ],
   },
-
-
-  // =========================================================
-  // MODULE 5: DATA ARCHITECTURE FOR ENTERPRISE AI
-  // =========================================================
   {
-    id: 'data-architecture-enterprise-ai',
-    title: 'Data Architecture for Enterprise AI',
+    id: "data-architecture-enterprise-ai",
+    title: "Data Architecture for Enterprise AI",
     lessons: [
       {
-        id: 'enterprise-ai-data-foundations',
-        title: 'Enterprise AI Data Foundations',
-        minutes: 21,
+        id: "enterprise-ai-data-foundations",
+        title: "Enterprise AI Data Foundations",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -1544,6 +1558,7 @@ For example, an enterprise IT assistant might retrieve information from ServiceN
 Structured data follows a defined schema.
 
 Examples:
+
 - Employee records.
 - Asset inventories.
 - Financial transactions.
@@ -1557,6 +1572,7 @@ Structured data is commonly stored in relational databases and other systems wit
 Unstructured data does not follow a consistent tabular structure.
 
 Examples:
+
 - PDF documents.
 - Word documents.
 - Emails.
@@ -1608,6 +1624,7 @@ Poor data quality can negatively affect retrieval relevance and AI response qual
 An organization wants an AI assistant to answer questions about employee benefits.
 
 The architecture may retrieve information from:
+
 - An HR database.
 - A benefits document repository.
 - An employee policy knowledge base.
@@ -1616,26 +1633,26 @@ The data pipeline extracts and indexes the documents while maintaining their sou
 
 ## Key Takeaway
 
-Enterprise AI depends on well-designed data architecture that makes trustworthy, relevant, and authorized information available to AI applications.`
+Enterprise AI depends on well-designed data architecture that makes trustworthy, relevant, and authorized information available to AI applications.`,
           },
           {
             type: 'check',
-            question: 'An enterprise AI assistant provides incorrect answers because its source documents contain outdated information. Which data quality dimension is most directly affected?',
+            question: "An enterprise AI assistant provides incorrect answers because its source documents contain outdated information. Which data quality dimension is most directly affected?",
             options: [
-              'Availability',
-              'Timeliness',
-              'Network throughput',
-              'Model temperature'
+              "Timeliness",
+              "Network throughput",
+              "Availability",
+              "Model temperature",
             ],
-            answer: 1,
-            explanation: 'Timeliness concerns whether information is current enough for its intended business use.'
-          }
-        ]
+            answer: 0,
+            explanation: "Timeliness concerns whether information is current enough for its intended business use.",
+          },
+        ],
       },
       {
-        id: 'enterprise-data-platforms-and-storage',
-        title: 'Enterprise Data Platforms and Storage',
-        minutes: 22,
+        id: "enterprise-data-platforms-and-storage",
+        title: "Enterprise Data Platforms and Storage",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -1652,12 +1669,14 @@ No single database technology is appropriate for every AI use case.
 Relational databases organize information into tables with defined relationships.
 
 Examples include:
+
 - PostgreSQL.
 - Microsoft SQL Server.
 - MySQL.
 - Oracle Database.
 
 They are useful for:
+
 - Transactional records.
 - Customer information.
 - Inventory.
@@ -1669,12 +1688,14 @@ They are useful for:
 A data warehouse stores structured and transformed information optimized for analytics.
 
 Examples include:
+
 - Snowflake.
 - Google BigQuery.
 - Amazon Redshift.
 - Microsoft Fabric Warehouse.
 
 They support:
+
 - Business intelligence.
 - Historical analysis.
 - Reporting.
@@ -1686,6 +1707,7 @@ They support:
 A data lake stores large volumes of data in its original or transformed formats.
 
 It can support:
+
 - Structured datasets.
 - Semi-structured data.
 - Documents.
@@ -1698,6 +1720,7 @@ It can support:
 Object storage is commonly used for documents, images, audio, backups, and other unstructured information.
 
 Examples include:
+
 - Amazon S3.
 - Azure Blob Storage.
 - Google Cloud Storage.
@@ -1709,6 +1732,7 @@ Vector databases store and retrieve vector representations of information.
 They are particularly useful for semantic search and RAG applications.
 
 Examples include:
+
 - Pinecone.
 - Weaviate.
 - Milvus.
@@ -1753,26 +1777,26 @@ Storage design should account for:
 
 ## Key Takeaway
 
-Enterprise AI architectures frequently combine relational databases, data warehouses, data lakes, object storage, and vector databases to support different data requirements.`
+Enterprise AI architectures frequently combine relational databases, data warehouses, data lakes, object storage, and vector databases to support different data requirements.`,
           },
           {
             type: 'check',
-            question: 'An enterprise needs to retrieve documents based on semantic similarity rather than exact keyword matches. Which storage technology is particularly suitable?',
+            question: "An enterprise needs to retrieve documents based on semantic similarity rather than exact keyword matches. Which storage technology is particularly suitable?",
             options: [
-              'Relational database without vector capabilities',
-              'Vector database',
-              'Traditional file server only',
-              'Transactional message queue'
+              "Relational database without vector capabilities",
+              "Transactional message queue",
+              "Traditional file server only",
+              "Vector database",
             ],
-            answer: 1,
-            explanation: 'Vector databases support similarity search over embeddings, making them useful for semantic retrieval.'
-          }
-        ]
+            answer: 3,
+            explanation: "Vector databases support similarity search over embeddings, making them useful for semantic retrieval.",
+          },
+        ],
       },
       {
-        id: 'data-governance-lineage-and-access',
-        title: 'Data Governance, Lineage, and Access Control',
-        minutes: 23,
+        id: "data-governance-lineage-and-access",
+        title: "Data Governance, Lineage, and Access Control",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -1789,6 +1813,7 @@ Data governance establishes the policies and responsibilities that control how o
 Every important enterprise dataset should have an identified owner.
 
 Data owners are responsible for defining:
+
 - Appropriate business use.
 - Data quality expectations.
 - Access requirements.
@@ -1840,6 +1865,7 @@ The AI system must preserve those authorization boundaries.
 One approach is to enforce permissions when information is retrieved.
 
 The retrieval service evaluates:
+
 - User identity.
 - Group membership.
 - Document permissions.
@@ -1872,36 +1898,32 @@ The retrieval service checks the employee's permissions and returns only authori
 
 ## Key Takeaway
 
-Enterprise data governance must preserve ownership, lineage, classification, and access permissions throughout AI data processing and retrieval.`
+Enterprise data governance must preserve ownership, lineage, classification, and access permissions throughout AI data processing and retrieval.`,
           },
           {
             type: 'check',
-            question: 'Why should an enterprise RAG system enforce document permissions during retrieval?',
+            question: "Why should an enterprise RAG system enforce document permissions during retrieval?",
             options: [
-              'To make every document publicly available.',
-              'To ensure users only receive information they are authorized to access.',
-              'To eliminate the need for identity management.',
-              'To increase the model temperature.'
+              "To ensure users only receive information they are authorized to access.",
+              "To increase the model temperature.",
+              "To make every document publicly available.",
+              "To eliminate the need for identity management.",
             ],
-            answer: 1,
-            explanation: 'Retrieval-time authorization prevents the AI system from exposing information that the requesting user is not permitted to access.'
-          }
-        ]
-      }
-    ]
+            answer: 0,
+            explanation: "Retrieval-time authorization prevents the AI system from exposing information that the requesting user is not permitted to access.",
+          },
+        ],
+      },
+    ],
   },
-
-  // =========================================================
-  // MODULE 6: RAG AND KNOWLEDGE ARCHITECTURE
-  // =========================================================
   {
-    id: 'rag-and-knowledge-architecture',
-    title: 'RAG and Knowledge Architecture',
+    id: "rag-and-knowledge-architecture",
+    title: "RAG and Knowledge Architecture",
     lessons: [
       {
-        id: 'rag-architecture-fundamentals',
-        title: 'RAG Architecture Fundamentals',
-        minutes: 22,
+        id: "rag-architecture-fundamentals",
+        title: "RAG Architecture Fundamentals",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -1980,26 +2002,26 @@ The model generates an answer based on the retrieved content.
 
 ## Key Takeaway
 
-RAG connects enterprise knowledge sources to language models, allowing AI applications to generate responses grounded in retrieved organizational information.`
+RAG connects enterprise knowledge sources to language models, allowing AI applications to generate responses grounded in retrieved organizational information.`,
           },
           {
             type: 'check',
-            question: 'What is the primary purpose of retrieval in a RAG architecture?',
+            question: "What is the primary purpose of retrieval in a RAG architecture?",
             options: [
-              'To permanently retrain the language model.',
-              'To retrieve relevant external information that can ground the model response.',
-              'To replace identity and access management.',
-              'To eliminate the need for a language model.'
+              "To store every conversation for later model training.",
+              "To choose which language model handles each request.",
+              "To retrieve relevant information that grounds the model's response.",
+              "To fine-tune the model on the organization's documents.",
             ],
-            answer: 1,
-            explanation: 'Retrieval supplies relevant external information to the language model as context for generating a grounded response.'
-          }
-        ]
+            answer: 2,
+            explanation: "Retrieval supplies relevant external information to the language model as context for generating a grounded response.",
+          },
+        ],
       },
       {
-        id: 'document-ingestion-chunking-and-embeddings',
-        title: 'Document Ingestion, Chunking, and Embeddings',
-        minutes: 23,
+        id: "document-ingestion-chunking-and-embeddings",
+        title: "Document Ingestion, Chunking, and Embeddings",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -2016,6 +2038,7 @@ This process typically includes document ingestion, text extraction, normalizati
 Ingestion collects information from approved source systems.
 
 Sources may include:
+
 - PDF files.
 - Word documents.
 - HTML pages.
@@ -2029,6 +2052,7 @@ Sources may include:
 The ingestion pipeline extracts usable text from source documents.
 
 Depending on the source, extraction may require:
+
 - PDF parsing.
 - HTML parsing.
 - Optical character recognition.
@@ -2094,26 +2118,26 @@ When a user asks a question, the retrieval service can locate relevant sections 
 
 ## Key Takeaway
 
-Document ingestion, thoughtful chunking, embeddings, and metadata provide the foundation for effective enterprise knowledge retrieval.`
+Document ingestion, thoughtful chunking, embeddings, and metadata provide the foundation for effective enterprise knowledge retrieval.`,
           },
           {
             type: 'check',
-            question: 'Why should a RAG ingestion pipeline preserve document metadata when creating chunks?',
+            question: "Why should a RAG ingestion pipeline preserve document metadata when creating chunks?",
             options: [
-              'Metadata is only useful for changing model temperature.',
-              'Metadata supports source tracking, filtering, authorization, and citations.',
-              'Metadata eliminates the need for embeddings.',
-              'Metadata guarantees that every answer is correct.'
+              "Metadata guarantees that every answer is correct.",
+              "Metadata supports source tracking, filtering, authorization, and citations.",
+              "Metadata is only useful for changing model temperature.",
+              "Metadata eliminates the need for embeddings.",
             ],
             answer: 1,
-            explanation: 'Metadata helps retrieval systems filter content, enforce access restrictions, identify source documents, and provide traceability.'
-          }
-        ]
+            explanation: "Metadata helps retrieval systems filter content, enforce access restrictions, identify source documents, and provide traceability.",
+          },
+        ],
       },
       {
-        id: 'retrieval-ranking-and-grounded-generation',
-        title: 'Retrieval, Ranking, and Grounded Generation',
-        minutes: 24,
+        id: "retrieval-ranking-and-grounded-generation",
+        title: "Retrieval, Ranking, and Grounded Generation",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -2138,6 +2162,7 @@ Top-K retrieval selects a defined number of the highest-ranked results.
 For example, a system may retrieve the five most relevant chunks.
 
 The correct value depends on:
+
 - Document size.
 - Query complexity.
 - Context window.
@@ -2163,6 +2188,7 @@ This can improve the quality of the final context supplied to the language model
 The application combines retrieved passages into a controlled context.
 
 The context should:
+
 - Include relevant source material.
 - Preserve useful document references.
 - Avoid unnecessary duplication.
@@ -2182,6 +2208,7 @@ For example, the model may be instructed to state that the knowledge base does n
 Enterprise AI applications should provide traceability where possible.
 
 A response may identify:
+
 - Source document.
 - Article title.
 - Section.
@@ -2191,6 +2218,7 @@ A response may identify:
 ## Evaluation
 
 RAG systems should be tested for:
+
 - Retrieval relevance.
 - Context precision.
 - Context recall.
@@ -2200,36 +2228,32 @@ RAG systems should be tested for:
 
 ## Key Takeaway
 
-Effective RAG requires more than vector search. Retrieval, ranking, context construction, grounded generation, and evaluation must work together.`
+Effective RAG requires more than vector search. Retrieval, ranking, context construction, grounded generation, and evaluation must work together.`,
           },
           {
             type: 'check',
-            question: 'What is the main purpose of reranking in a RAG pipeline?',
+            question: "What is the main purpose of reranking in a RAG pipeline?",
             options: [
-              'To reorder retrieved results based on their relevance to the query.',
-              'To permanently change the source documents.',
-              'To disable semantic search.',
-              'To replace all model security controls.'
+              "To replace all model security controls.",
+              "To permanently change the source documents.",
+              "To disable semantic search.",
+              "To reorder retrieved results based on their relevance to the query.",
             ],
-            answer: 0,
-            explanation: 'Reranking evaluates an initial retrieval result set and reorders it so that the most relevant passages are prioritized.'
-          }
-        ]
-      }
-    ]
+            answer: 3,
+            explanation: "Reranking evaluates an initial retrieval result set and reorders it so that the most relevant passages are prioritized.",
+          },
+        ],
+      },
+    ],
   },
-
-    // =========================================================
-  // MODULE 7: ENTERPRISE INTEGRATION AND API ARCHITECTURE
-  // =========================================================
   {
-    id: 'enterprise-integration-and-api-architecture',
-    title: 'Enterprise Integration and API Architecture',
+    id: "enterprise-integration-and-api-architecture",
+    title: "Enterprise Integration and API Architecture",
     lessons: [
       {
-        id: 'enterprise-integration-patterns',
-        title: 'Enterprise Integration Patterns',
-        minutes: 22,
+        id: "enterprise-integration-patterns",
+        title: "Enterprise Integration Patterns",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -2258,10 +2282,12 @@ An enterprise architect must determine how these systems exchange information se
 Two systems communicate directly.
 
 Advantages:
+
 - Simple to implement.
 - Appropriate for small integrations.
 
 Disadvantages:
+
 - Creates tight coupling.
 - Becomes difficult to maintain as integrations grow.
 
@@ -2270,6 +2296,7 @@ Disadvantages:
 Applications communicate through defined APIs.
 
 Advantages:
+
 - Standardized interfaces.
 - Reusable capabilities.
 - Centralized authorization.
@@ -2282,6 +2309,7 @@ Systems publish events when something happens.
 Other systems subscribe and react to those events.
 
 Examples:
+
 - A customer account is created.
 - An employee changes departments.
 - A service request is approved.
@@ -2320,26 +2348,26 @@ The AI model should not bypass the enterprise application's authorization and bu
 
 ## Key Takeaway
 
-Enterprise integration architecture establishes how AI solutions communicate with existing applications while preserving security, reliability, and maintainability.`
+Enterprise integration architecture establishes how AI solutions communicate with existing applications while preserving security, reliability, and maintainability.`,
           },
           {
             type: 'check',
-            question: 'Which integration pattern allows applications to communicate through reusable, standardized interfaces?',
+            question: "Which integration pattern allows applications to communicate through reusable, standardized interfaces?",
             options: [
-              'Direct database modification.',
-              'API-based integration.',
-              'Manual file copying.',
-              'Unrestricted model access.'
+              "Manual file copying.",
+              "API-based integration.",
+              "Unrestricted model access.",
+              "Direct database modification.",
             ],
             answer: 1,
-            explanation: 'API-based integration provides standardized interfaces that support reuse, authorization, versioning, and controlled communication.'
-          }
-        ]
+            explanation: "API-based integration provides standardized interfaces that support reuse, authorization, versioning, and controlled communication.",
+          },
+        ],
       },
       {
-        id: 'api-design-versioning-and-security',
-        title: 'API Design, Versioning, and Security',
-        minutes: 24,
+        id: "api-design-versioning-and-security",
+        title: "API Design, Versioning, and Security",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -2457,26 +2485,26 @@ The model should not receive unrestricted access to create or modify records.
 
 ## Key Takeaway
 
-Secure API architecture provides a controlled boundary between AI applications and enterprise systems.`
+Secure API architecture provides a controlled boundary between AI applications and enterprise systems.`,
           },
           {
             type: 'check',
-            question: 'What is the primary purpose of API versioning?',
+            question: "What is the primary purpose of API versioning?",
             options: [
-              'To eliminate authentication.',
-              'To prevent all API requests.',
-              'To support API evolution while managing compatibility.',
-              'To provide unrestricted database access.'
+              "To provide unrestricted database access.",
+              "To eliminate authentication.",
+              "To prevent all API requests.",
+              "To support API evolution while managing compatibility.",
             ],
-            answer: 2,
-            explanation: 'API versioning allows interfaces to evolve while giving existing consumers a controlled path to maintain compatibility.'
-          }
-        ]
+            answer: 3,
+            explanation: "API versioning allows interfaces to evolve while giving existing consumers a controlled path to maintain compatibility.",
+          },
+        ],
       },
       {
-        id: 'integration-resilience-and-orchestration',
-        title: 'Integration Resilience and Orchestration',
-        minutes: 25,
+        id: "integration-resilience-and-orchestration",
+        title: "Integration Resilience and Orchestration",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -2564,36 +2592,32 @@ Use correlation IDs to trace a transaction across multiple services.
 
 ## Key Takeaway
 
-Reliable enterprise AI integration requires resilience, orchestration, observability, and controlled failure recovery.`
+Reliable enterprise AI integration requires resilience, orchestration, observability, and controlled failure recovery.`,
           },
           {
             type: 'check',
-            question: 'Which resilience pattern temporarily stops requests to a service that is repeatedly failing?',
+            question: "Which resilience pattern temporarily stops requests to a service that is repeatedly failing?",
             options: [
-              'Circuit breaker.',
-              'API versioning.',
-              'Data normalization.',
-              'Model fine-tuning.'
+              "Model fine-tuning.",
+              "Data normalization.",
+              "Circuit breaker.",
+              "API versioning.",
             ],
-            answer: 0,
-            explanation: 'A circuit breaker prevents repeated calls to an unhealthy service and gives it time to recover.'
-          }
-        ]
-      }
-    ]
+            answer: 2,
+            explanation: "A circuit breaker prevents repeated calls to an unhealthy service and gives it time to recover.",
+          },
+        ],
+      },
+    ],
   },
-
-  // =========================================================
-  // MODULE 8: MULTI-AGENT ENTERPRISE ARCHITECTURE
-  // =========================================================
   {
-    id: 'multi-agent-enterprise-architecture',
-    title: 'Multi-Agent Enterprise Architecture',
+    id: "multi-agent-enterprise-architecture",
+    title: "Multi-Agent Enterprise Architecture",
     lessons: [
       {
-        id: 'multi-agent-architecture-fundamentals',
-        title: 'Multi-Agent Architecture Fundamentals',
-        minutes: 24,
+        id: "multi-agent-architecture-fundamentals",
+        title: "Multi-Agent Architecture Fundamentals",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -2688,26 +2712,26 @@ Additional agents introduce:
 
 ## Key Takeaway
 
-Multi-agent architecture can divide complex enterprise AI workflows into specialized responsibilities, but additional complexity must be justified by business value.`
+Multi-agent architecture can divide complex enterprise AI workflows into specialized responsibilities, but additional complexity must be justified by business value.`,
           },
           {
             type: 'check',
-            question: 'What is the primary architectural benefit of assigning specialized responsibilities to multiple agents?',
+            question: "What is the primary architectural benefit of assigning specialized responsibilities to multiple agents?",
             options: [
-              'Eliminating all security controls.',
-              'Giving every agent unrestricted access.',
-              'Separating complex workflows into specialized responsibilities.',
-              'Removing the need for orchestration.'
+              "Letting every agent share one set of tools and permissions.",
+              "Removing the need for a coordinator or orchestration layer.",
+              "Separating complex workflows into specialized responsibilities.",
+              "Running the same task in parallel to pick the best answer.",
             ],
             answer: 2,
-            explanation: 'Specialized agents can divide complex workflows into manageable responsibilities with clearer boundaries and ownership.'
-          }
-        ]
+            explanation: "Specialized agents can divide complex workflows into manageable responsibilities with clearer boundaries and ownership.",
+          },
+        ],
       },
       {
-        id: 'agent-coordination-and-workflow-orchestration',
-        title: 'Agent Coordination and Workflow Orchestration',
-        minutes: 25,
+        id: "agent-coordination-and-workflow-orchestration",
+        title: "Agent Coordination and Workflow Orchestration",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -2800,26 +2824,26 @@ Define what happens when:
 
 ## Key Takeaway
 
-Multi-agent orchestration requires explicit coordination, structured workflow state, failure handling, and human approval where appropriate.`
+Multi-agent orchestration requires explicit coordination, structured workflow state, failure handling, and human approval where appropriate.`,
           },
           {
             type: 'check',
-            question: 'Which coordination pattern uses a central agent to assign work to specialized agents?',
+            question: "Which coordination pattern uses a central agent to assign work to specialized agents?",
             options: [
-              'Unmanaged collaboration.',
-              'Supervisor pattern.',
-              'Point-to-point database access.',
-              'Static document storage.'
+              "Unmanaged collaboration.",
+              "Point-to-point database access.",
+              "Static document storage.",
+              "Supervisor pattern.",
             ],
-            answer: 1,
-            explanation: 'The supervisor pattern uses a central coordinator to assign tasks, track progress, and combine results.'
-          }
-        ]
+            answer: 3,
+            explanation: "The supervisor pattern uses a central coordinator to assign tasks, track progress, and combine results.",
+          },
+        ],
       },
       {
-        id: 'agent-security-observability-and-governance',
-        title: 'Agent Security, Observability, and Governance',
-        minutes: 26,
+        id: "agent-security-observability-and-governance",
+        title: "Agent Security, Observability, and Governance",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -2913,38 +2937,32 @@ Establish:
 
 ## Key Takeaway
 
-Enterprise multi-agent systems require identity, least privilege, controlled tools, observability, human oversight, and governance.`
+Enterprise multi-agent systems require identity, least privilege, controlled tools, observability, human oversight, and governance.`,
           },
           {
             type: 'check',
-            question: 'What is the most appropriate security principle when assigning permissions to enterprise agents?',
+            question: "What is the most appropriate security principle when assigning permissions to enterprise agents?",
             options: [
-              'Give every agent administrator access.',
-              'Allow agents to modify their own permissions.',
-              'Share one unrestricted identity across all agents.',
-              'Apply least privilege based on each agent responsibility.'
+              "Share one unrestricted identity across all agents.",
+              "Apply least privilege based on each agent responsibility.",
+              "Allow agents to modify their own permissions.",
+              "Give every agent administrator access.",
             ],
-            answer: 3,
-            explanation: 'Least privilege limits each agent to the minimum permissions required for its assigned responsibilities.'
-          }
-        ]
-      }
-    ]
+            answer: 1,
+            explanation: "Least privilege limits each agent to the minimum permissions required for its assigned responsibilities.",
+          },
+        ],
+      },
+    ],
   },
-
-
-
-  // =========================================================
-  // MODULE 9: CLOUD ARCHITECTURE FOR ENTERPRISE AI
-  // =========================================================
   {
-    id: 'cloud-architecture-enterprise-ai',
-    title: 'Cloud Architecture for Enterprise AI',
+    id: "cloud-architecture-enterprise-ai",
+    title: "Cloud Architecture for Enterprise AI",
     lessons: [
       {
-        id: 'cloud-platforms-and-ai-infrastructure',
-        title: 'Cloud Platforms and AI Infrastructure',
-        minutes: 22,
+        id: "cloud-platforms-and-ai-infrastructure",
+        title: "Cloud Platforms and AI Infrastructure",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -2973,6 +2991,7 @@ Each provides services for AI development, model hosting, data processing, and e
 Compute resources execute applications and AI workloads.
 
 Examples include:
+
 - Virtual machines.
 - Containers.
 - Kubernetes clusters.
@@ -2990,6 +3009,7 @@ Networking connects applications, models, databases, and enterprise systems.
 ### Managed AI Services
 
 Cloud providers offer managed services for:
+
 - Model inference.
 - Model training.
 - Embedding generation.
@@ -3007,6 +3027,7 @@ However, not every AI application requires dedicated GPUs. Applications using ho
 ## Cloud Architecture Decisions
 
 Architects should evaluate:
+
 - Workload requirements.
 - Security and compliance.
 - Geographic deployment.
@@ -3017,26 +3038,26 @@ Architects should evaluate:
 
 ## Key Takeaway
 
-Cloud platforms provide the infrastructure and managed capabilities needed to build and operate enterprise AI solutions at scale.`
+Cloud platforms provide the infrastructure and managed capabilities needed to build and operate enterprise AI solutions at scale.`,
           },
           {
             type: 'check',
-            question: 'Which infrastructure component is particularly important for accelerating many large-model training and inference workloads?',
+            question: "Which infrastructure component is particularly important for accelerating many large-model training and inference workloads?",
             options: [
-              'GPU compute',
-              'DNS records',
-              'Email storage',
-              'Desktop monitors'
+              "Email storage",
+              "DNS records",
+              "Desktop monitors",
+              "GPU compute",
             ],
-            answer: 0,
-            explanation: 'GPUs accelerate many machine learning computations, although not every AI workload requires dedicated GPU infrastructure.'
-          }
-        ]
+            answer: 3,
+            explanation: "GPUs accelerate many machine learning computations, although not every AI workload requires dedicated GPU infrastructure.",
+          },
+        ],
       },
       {
-        id: 'cloud-networking-and-deployment-patterns',
-        title: 'Cloud Networking and Deployment Patterns',
-        minutes: 23,
+        id: "cloud-networking-and-deployment-patterns",
+        title: "Cloud Networking and Deployment Patterns",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -3105,6 +3126,7 @@ Serverless services allow organizations to execute code without managing the und
 AI services should be designed to handle infrastructure failures.
 
 Possible approaches include:
+
 - Multiple availability zones.
 - Load balancing.
 - Health checks.
@@ -3119,26 +3141,26 @@ Important considerations include recovery time objectives (RTO) and recovery poi
 
 ## Key Takeaway
 
-Secure cloud networking, appropriate deployment patterns, high availability, and disaster recovery are essential parts of production enterprise AI architecture.`
+Secure cloud networking, appropriate deployment patterns, high availability, and disaster recovery are essential parts of production enterprise AI architecture.`,
           },
           {
             type: 'check',
-            question: 'Why might an enterprise use private network connectivity for an AI application?',
+            question: "Why might an enterprise use private network connectivity for an AI application?",
             options: [
-              'To make every service publicly accessible.',
-              'To reduce exposure of sensitive services and data to public networks.',
-              'To eliminate authentication.',
-              'To prevent internal services from communicating.'
+              "To reduce exposure of sensitive services and data to public networks.",
+              "To prevent internal services from communicating.",
+              "To eliminate authentication.",
+              "To make every service publicly accessible.",
             ],
-            answer: 1,
-            explanation: 'Private connectivity can reduce public network exposure and support controlled communication between sensitive enterprise services.'
-          }
-        ]
+            answer: 0,
+            explanation: "Private connectivity can reduce public network exposure and support controlled communication between sensitive enterprise services.",
+          },
+        ],
       },
       {
-        id: 'cloud-cost-optimization-and-capacity-planning',
-        title: 'Cloud Cost Optimization and Capacity Planning',
-        minutes: 22,
+        id: "cloud-cost-optimization-and-capacity-planning",
+        title: "Cloud Cost Optimization and Capacity Planning",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -3168,6 +3190,7 @@ Common cost drivers include:
 Capacity planning estimates the resources required to support expected workloads.
 
 Consider:
+
 - Number of users.
 - Requests per user.
 - Average request size.
@@ -3191,6 +3214,7 @@ Caching must preserve data freshness and authorization requirements.
 ## Infrastructure Optimization
 
 Organizations can evaluate:
+
 - Autoscaling.
 - Reserved capacity.
 - Serverless execution.
@@ -3205,6 +3229,7 @@ FinOps is a collaborative approach to managing cloud spending.
 It brings together finance, engineering, and business teams.
 
 AI cost governance should include:
+
 - Cost allocation.
 - Budgets.
 - Usage monitoring.
@@ -3222,36 +3247,32 @@ The result is lower operating cost without sacrificing required business outcome
 
 ## Key Takeaway
 
-Enterprise AI cost optimization requires visibility into model usage, infrastructure consumption, capacity requirements, and business value.`
+Enterprise AI cost optimization requires visibility into model usage, infrastructure consumption, capacity requirements, and business value.`,
           },
           {
             type: 'check',
-            question: 'An enterprise AI application uses an expensive reasoning model for simple classification tasks. What is a sensible optimization?',
+            question: "An enterprise AI application uses an expensive reasoning model for simple classification tasks. What is a sensible optimization?",
             options: [
-              'Route every request to a larger model.',
-              'Use an appropriately capable, lower-cost model for classification.',
-              'Disable cost monitoring.',
-              'Increase the number of unnecessary model calls.'
+              "Route every request to a larger model.",
+              "Increase the number of unnecessary model calls.",
+              "Disable cost monitoring.",
+              "Use an appropriately capable, lower-cost model for classification.",
             ],
-            answer: 1,
-            explanation: 'Model routing can match workload complexity to model capability and cost.'
-          }
-        ]
-      }
-    ]
+            answer: 3,
+            explanation: "Model routing can match workload complexity to model capability and cost.",
+          },
+        ],
+      },
+    ],
   },
-
-  // =========================================================
-  // MODULE 10: ENTERPRISE AI SECURITY AND GOVERNANCE
-  // =========================================================
   {
-    id: 'enterprise-ai-security-governance',
-    title: 'Enterprise AI Security and Governance',
+    id: "enterprise-ai-security-governance",
+    title: "Enterprise AI Security and Governance",
     lessons: [
       {
-        id: 'enterprise-ai-threat-modeling',
-        title: 'Enterprise AI Threat Modeling',
-        minutes: 23,
+        id: "enterprise-ai-threat-modeling",
+        title: "Enterprise AI Threat Modeling",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -3287,6 +3308,7 @@ Applications should treat retrieved content as untrusted data rather than automa
 ## Sensitive Data Exposure
 
 An AI system may expose:
+
 - Personal information.
 - Financial records.
 - Credentials.
@@ -3300,6 +3322,7 @@ Data classification, access controls, and output validation help reduce this ris
 An agent may have access to tools that perform business actions.
 
 Examples include:
+
 - Creating incidents.
 - Updating customer records.
 - Initiating payments.
@@ -3312,6 +3335,7 @@ High-impact actions may require human approval.
 ## Model and Supply Chain Risks
 
 Organizations should evaluate:
+
 - Model provider security.
 - Model provenance.
 - Third-party dependencies.
@@ -3334,26 +3358,26 @@ A practical process includes:
 
 ## Key Takeaway
 
-Enterprise AI threat modeling must consider the complete AI application, including its data, models, prompts, tools, integrations, and users.`
+Enterprise AI threat modeling must consider the complete AI application, including its data, models, prompts, tools, integrations, and users.`,
           },
           {
             type: 'check',
-            question: 'An AI agent can modify production infrastructure. Which control is most appropriate for reducing the risk of unauthorized changes?',
+            question: "An AI agent can modify production infrastructure. Which control is most appropriate for reducing the risk of unauthorized changes?",
             options: [
-              'Give the agent unrestricted administrator access.',
-              'Apply least privilege and require approval for high-impact actions.',
-              'Disable audit logging.',
-              'Allow the model to bypass application authorization.'
+              "Disable audit logging.",
+              "Apply least privilege and require approval for high-impact actions.",
+              "Give the agent unrestricted administrator access.",
+              "Allow the model to bypass application authorization.",
             ],
             answer: 1,
-            explanation: 'Least privilege limits the agent to necessary permissions, while approval controls add oversight for high-impact operations.'
-          }
-        ]
+            explanation: "Least privilege limits the agent to necessary permissions, while approval controls add oversight for high-impact operations.",
+          },
+        ],
       },
       {
-        id: 'identity-access-and-data-protection',
-        title: 'Identity, Access Management, and Data Protection',
-        minutes: 22,
+        id: "identity-access-and-data-protection",
+        title: "Identity, Access Management, and Data Protection",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -3370,6 +3394,7 @@ An AI assistant should not gain access to information simply because it can gene
 Authentication establishes the identity of a user or service.
 
 Common enterprise approaches include:
+
 - Single sign-on.
 - Multi-factor authentication.
 - OAuth 2.0.
@@ -3423,6 +3448,7 @@ They should not be embedded in frontend code, prompts, or source repositories.
 Multi-tenant AI platforms must prevent one organization from accessing another organization's information.
 
 Controls may include:
+
 - Tenant-scoped data queries.
 - Tenant-aware authorization.
 - Isolated storage.
@@ -3439,26 +3465,26 @@ The retrieval service verifies membership and document permissions before return
 
 ## Key Takeaway
 
-Identity, authorization, encryption, secrets management, and tenant isolation must be enforced throughout the enterprise AI architecture.`
+Identity, authorization, encryption, secrets management, and tenant isolation must be enforced throughout the enterprise AI architecture.`,
           },
           {
             type: 'check',
-            question: 'In a multi-tenant AI platform, what is the purpose of tenant isolation?',
+            question: "In a multi-tenant AI platform, what is the purpose of tenant isolation?",
             options: [
-              'To allow every tenant to read all other tenant records.',
-              'To prevent unauthorized access to information belonging to other organizations.',
-              'To eliminate authentication.',
-              'To share all credentials across organizations.'
+              "To prevent unauthorized access to information belonging to other organizations.",
+              "To eliminate authentication.",
+              "To share all credentials across organizations.",
+              "To allow every tenant to read all other tenant records.",
             ],
-            answer: 1,
-            explanation: "Tenant isolation ensures that one organization's users and applications cannot access another organization's protected information."
-          }
-        ]
+            answer: 0,
+            explanation: "Tenant isolation ensures that one organization's users and applications cannot access another organization's protected information.",
+          },
+        ],
       },
       {
-        id: 'ai-governance-compliance-and-human-oversight',
-        title: 'AI Governance, Compliance, and Human Oversight',
-        minutes: 24,
+        id: "ai-governance-compliance-and-human-oversight",
+        title: "AI Governance, Compliance, and Human Oversight",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -3487,6 +3513,7 @@ An enterprise governance program may define:
 ## AI Risk Management
 
 Organizations should evaluate risks according to:
+
 - Potential harm.
 - Likelihood.
 - Business impact.
@@ -3515,6 +3542,7 @@ Governance should cover:
 Human oversight is particularly important when AI decisions may have significant consequences.
 
 Examples include:
+
 - Employment decisions.
 - Financial decisions.
 - Healthcare recommendations.
@@ -3526,6 +3554,7 @@ Human review should be meaningful and supported by sufficient information.
 ## Documentation and Auditability
 
 Organizations should maintain records of:
+
 - Model versions.
 - Data sources.
 - Prompts and configurations.
@@ -3539,6 +3568,7 @@ Organizations should maintain records of:
 Organizations may use established risk management and governance frameworks as references.
 
 Examples include:
+
 - NIST AI Risk Management Framework.
 - ISO/IEC 42001.
 - Applicable privacy and data protection regulations.
@@ -3547,36 +3577,32 @@ Framework selection should reflect the organization's industry, jurisdiction, an
 
 ## Key Takeaway
 
-Enterprise AI governance establishes accountability and lifecycle controls so that AI systems remain appropriate, secure, transparent, and manageable.`
+Enterprise AI governance establishes accountability and lifecycle controls so that AI systems remain appropriate, secure, transparent, and manageable.`,
           },
           {
             type: 'check',
-            question: 'Why should an organization maintain AI model and configuration version records?',
+            question: "Why should an organization maintain AI model and configuration version records?",
             options: [
-              'To eliminate the need for testing.',
-              'To support traceability, audits, change management, and incident investigation.',
-              'To allow unapproved production changes.',
-              'To guarantee that a model never produces an error.'
+              "To allow unapproved production changes.",
+              "To eliminate the need for testing.",
+              "To support traceability, audits, change management, and incident investigation.",
+              "To guarantee that a model never produces an error.",
             ],
-            answer: 1,
-            explanation: 'Version records help organizations understand which model and configuration produced an outcome and support controlled change management.'
-          }
-        ]
-      }
-    ]
+            answer: 2,
+            explanation: "Version records help organizations understand which model and configuration produced an outcome and support controlled change management.",
+          },
+        ],
+      },
+    ],
   },
-
-  // =========================================================
-  // MODULE 11: ENTERPRISE AI SOLUTIONS ARCHITECTURE CAPSTONE
-  // =========================================================
   {
-    id: 'enterprise-ai-architecture-capstone',
-    title: 'Enterprise AI Solutions Architecture Capstone',
+    id: "enterprise-ai-architecture-capstone",
+    title: "Enterprise AI Solutions Architecture Capstone",
     lessons: [
       {
-        id: 'capstone-business-discovery-and-requirements',
-        title: 'Capstone: Business Discovery and Requirements',
-        minutes: 24,
+        id: "capstone-business-discovery-and-requirements",
+        title: "Capstone: Business Discovery and Requirements",
+        minutes: 5,
         blocks: [
           {
             type: 'text',
@@ -3589,6 +3615,7 @@ You are the enterprise solutions architect for a large organization.
 Leadership wants to introduce an AI-powered employee assistant.
 
 The assistant should help employees:
+
 - Search internal policies.
 - Find IT support instructions.
 - Understand business procedures.
@@ -3602,6 +3629,7 @@ The solution must support multiple departments and enforce existing access permi
 Start by documenting measurable outcomes.
 
 Potential objectives include:
+
 - Reduce time spent searching for information.
 - Improve employee self-service.
 - Reduce repetitive support requests.
@@ -3636,6 +3664,7 @@ Examples:
 ## Step 4: Define Nonfunctional Requirements
 
 Define requirements for:
+
 - Availability.
 - Response latency.
 - Scalability.
@@ -3661,26 +3690,26 @@ Create a requirements matrix connecting each business requirement to an architec
 
 ## Key Takeaway
 
-A successful enterprise AI architecture begins with business discovery, stakeholder alignment, measurable requirements, and explicit acceptance criteria.`
+A successful enterprise AI architecture begins with business discovery, stakeholder alignment, measurable requirements, and explicit acceptance criteria.`,
           },
           {
             type: 'check',
-            question: 'What should an enterprise architect establish before selecting the AI technology for the capstone solution?',
+            question: "What should an enterprise architect establish before selecting the AI technology for the capstone solution?",
             options: [
-              'The largest available model.',
-              'Business objectives, stakeholders, requirements, and success measures.',
-              'The final user interface colors.',
-              'A production deployment without testing.'
+              "The prompt templates and agent roles the solution will use.",
+              "Business objectives, stakeholders, requirements, and success measures.",
+              "The model, vector database, and cloud provider for the solution.",
+              "A prototype built on production data to show stakeholders early.",
             ],
             answer: 1,
-            explanation: 'Architecture decisions should be driven by business needs and measurable requirements rather than technology selection alone.'
-          }
-        ]
+            explanation: "Architecture decisions should be driven by business needs and measurable requirements rather than technology selection alone.",
+          },
+        ],
       },
       {
-        id: 'capstone-target-architecture-and-security',
-        title: 'Capstone: Target Architecture and Security Design',
-        minutes: 25,
+        id: "capstone-target-architecture-and-security",
+        title: "Capstone: Target Architecture and Security Design",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -3765,6 +3794,7 @@ The AI model should not receive unrestricted direct database access.
 ## Architecture Deliverables
 
 Produce:
+
 - Logical architecture diagram.
 - Component descriptions.
 - Data flow.
@@ -3774,26 +3804,26 @@ Produce:
 
 ## Key Takeaway
 
-A target architecture connects experience, identity, orchestration, models, knowledge, integrations, infrastructure, and security into one coherent design.`
+A target architecture connects experience, identity, orchestration, models, knowledge, integrations, infrastructure, and security into one coherent design.`,
           },
           {
             type: 'check',
-            question: 'Why should enterprise integrations be mediated through controlled APIs and services rather than unrestricted model access to databases?',
+            question: "Why should enterprise integrations be mediated through controlled APIs and services rather than unrestricted model access to databases?",
             options: [
-              'To allow models to bypass authorization.',
-              'To enforce validation, authorization, business rules, and auditability.',
-              'To eliminate integration documentation.',
-              'To prevent monitoring.'
+              "To give the model the same access as the user's database role.",
+              "To let the model write queries directly and reduce response time.",
+              "To enforce validation, authorization, business rules, and auditability.",
+              "To avoid having to document each integration separately.",
             ],
-            answer: 1,
-            explanation: 'Controlled APIs and services enforce business rules and security policies while providing a traceable integration boundary.'
-          }
-        ]
+            answer: 2,
+            explanation: "Controlled APIs and services enforce business rules and security policies while providing a traceable integration boundary.",
+          },
+        ],
       },
       {
-        id: 'capstone-architecture-validation-and-presentation',
-        title: 'Capstone: Architecture Validation and Presentation',
-        minutes: 26,
+        id: "capstone-architecture-validation-and-presentation",
+        title: "Capstone: Architecture Validation and Presentation",
+        minutes: 6,
         blocks: [
           {
             type: 'text',
@@ -3812,6 +3842,7 @@ Evaluate the design against its quality attributes.
 ### Performance
 
 Test:
+
 - Response latency.
 - Concurrent requests.
 - Retrieval performance.
@@ -3820,6 +3851,7 @@ Test:
 ### Reliability
 
 Test:
+
 - Model provider outages.
 - Integration failures.
 - Database unavailability.
@@ -3829,6 +3861,7 @@ Test:
 ### Security
 
 Validate:
+
 - Authentication.
 - Authorization.
 - Tenant isolation.
@@ -3839,6 +3872,7 @@ Validate:
 ### AI Quality
 
 Evaluate:
+
 - Answer relevance.
 - Grounding.
 - Citation accuracy.
@@ -3849,6 +3883,7 @@ Evaluate:
 ### Cost
 
 Estimate:
+
 - Model consumption.
 - Infrastructure.
 - Storage.
@@ -3913,341 +3948,27 @@ Produce an enterprise AI architecture proposal that includes:
 
 ## Key Takeaway
 
-Enterprise AI solutions architecture requires the ability to connect business strategy, technology design, security, governance, implementation, and operational readiness.`
+Enterprise AI solutions architecture requires the ability to connect business strategy, technology design, security, governance, implementation, and operational readiness.`,
           },
           {
             type: 'check',
-            question: 'What is the primary purpose of architecture validation before production deployment?',
+            question: "What is the primary purpose of architecture validation before production deployment?",
             options: [
-              'To confirm the solution meets its functional, quality, security, and operational requirements.',
-              'To avoid documenting architecture decisions.',
-              'To eliminate stakeholder reviews.',
-              'To deploy without testing.'
+              "To confirm the solution meets functional, quality, security, and operational needs.",
+              "To choose the vendors and models used in the production environment.",
+              "To freeze the design so no further changes are needed after launch.",
+              "To show stakeholders a polished demo before the budget is approved.",
             ],
             answer: 0,
-            explanation: 'Architecture validation provides evidence that the proposed solution meets its requirements and is ready for controlled production operation.'
-          }
-        ]
-      }
-    ]
-  }
-]
+            explanation: "Architecture validation provides evidence that the proposed solution meets its requirements and is ready for controlled production operation.",
+          },
+        ],
+      },
+    ],
+  },
+];
 
-// =========================================================
-// COURSE VALIDATION
-// =========================================================
-
-function validateCourse() {
-  const errors = [];
-
-  if (MODULES.length !== 11) {
-    errors.push(
-      `Expected 11 modules, found ${MODULES.length}.`
-    );
-  }
-
-  const moduleIds = new Set();
-  const lessonIds = new Set();
-
-  let totalLessons = 0;
-  let totalMinutes = 0;
-
-  for (const [moduleIndex, module] of MODULES.entries()) {
-    if (!module.id || !module.title) {
-      errors.push(
-        `Module ${moduleIndex + 1} is missing an ID or title.`
-      );
-    }
-
-    if (moduleIds.has(module.id)) {
-      errors.push(`Duplicate module ID: ${module.id}`);
-    }
-
-    moduleIds.add(module.id);
-
-    if (!Array.isArray(module.lessons)) {
-      errors.push(
-        `Module ${module.id} does not contain a lessons array.`
-      );
-      continue;
-    }
-
-    for (const [lessonIndex, lesson] of module.lessons.entries()) {
-      totalLessons++;
-
-      if (!lesson.id || !lesson.title) {
-        errors.push(
-          `Invalid lesson in module ${module.id}, position ${lessonIndex + 1}.`
-        );
-      }
-
-      if (lessonIds.has(lesson.id)) {
-        errors.push(`Duplicate lesson ID: ${lesson.id}`);
-      }
-
-      lessonIds.add(lesson.id);
-
-      if (
-        !Number.isFinite(lesson.minutes) ||
-        lesson.minutes <= 0
-      ) {
-        errors.push(
-          `Invalid duration for lesson ${lesson.id}.`
-        );
-      } else {
-        totalMinutes += lesson.minutes;
-      }
-
-      if (!Array.isArray(lesson.blocks) || lesson.blocks.length === 0) {
-        errors.push(
-          `Lesson ${lesson.id} has no content blocks.`
-        );
-        continue;
-      }
-
-      const checks = lesson.blocks.filter(
-        block => block.type === 'check'
-      );
-
-      if (checks.length !== 1) {
-        errors.push(
-          `Lesson ${lesson.id} must contain exactly one Quick Check.`
-        );
-      }
-
-      for (const block of lesson.blocks) {
-        if (block.type === 'text') {
-          if (
-            typeof block.text !== 'string' ||
-            block.text.trim().length === 0
-          ) {
-            errors.push(
-              `Lesson ${lesson.id} contains an empty text block.`
-            );
-          }
-        }
-
-        if (block.type === 'check') {
-          if (
-            typeof block.question !== 'string' ||
-            !block.question.trim()
-          ) {
-            errors.push(
-              `Quick Check in ${lesson.id} has no question.`
-            );
-          }
-
-          if (
-            !Array.isArray(block.options) ||
-            block.options.length !== 4
-          ) {
-            errors.push(
-              `Quick Check in ${lesson.id} must have four options.`
-            );
-          }
-
-          if (
-            !Number.isInteger(block.answer) ||
-            block.answer < 0 ||
-            block.answer > 3
-          ) {
-            errors.push(
-              `Quick Check in ${lesson.id} has an invalid answer index.`
-            );
-          }
-
-          if (
-            typeof block.explanation !== 'string' ||
-            !block.explanation.trim()
-          ) {
-            errors.push(
-              `Quick Check in ${lesson.id} has no explanation.`
-            );
-          }
-        }
-      }
-    }
-  }
-
-  if (totalLessons !== 33) {
-    errors.push(
-      `Expected 33 lessons, found ${totalLessons}.`
-    );
-  }
-
-  if (errors.length > 0) {
-    console.error('\nCOURSE VALIDATION FAILED\n');
-
-    for (const error of errors) {
-      console.error(`- ${error}`);
-    }
-
-    throw new Error(
-      `Course validation failed with ${errors.length} error(s).`
-    );
-  }
-
-  console.log('\nCOURSE VALIDATION PASSED');
-  console.log('------------------------------');
-  console.log(`Modules: ${MODULES.length}`);
-  console.log(`Lessons: ${totalLessons}`);
-  console.log(`Quick Checks: ${totalLessons}`);
-  console.log(`Duration: ${totalMinutes} minutes`);
-  console.log(
-    `Duration: ${(totalMinutes / 60).toFixed(2)} hours`
-  );
-
-  return {
-    totalModules: MODULES.length,
-    totalLessons,
-    totalMinutes,
-  };
-}
-
-// =========================================================
-// FIRESTORE SEEDING
-// =========================================================
-
-async function seedCourse() {
-  console.log('\nENTERPRISE AI ARCHITECTURE SEED');
-  console.log('================================');
-
-  const totals = validateCourse();
-
-  console.log(`Course: ${COURSE.title}`);
-  console.log(`Course ID: ${COURSE.id}`);
-  console.log(`Project: ${PROJECT_ID}`);
-
-  console.log(
-    `Mode: ${APPLY ? 'APPLY' : 'DRY RUN'}`
-  );
-
-  const courseRef = db.collection('courses').doc(COURSE.id);
-
-  const existingCourse = await courseRef.get();
-
-  if (existingCourse.exists && !OVERWRITE) {
-    throw new Error(
-      `Course "${COURSE.id}" already exists. ` +
-      'Use --overwrite if you intentionally want to replace it.'
-    );
-  }
-
-  const existingLessonsSnapshot = await courseRef
-    .collection('lessons')
-    .get();
-
-  if (existingLessonsSnapshot.size > 0 && !OVERWRITE) {
-    throw new Error(
-      `Found ${existingLessonsSnapshot.size} existing lessons. ` +
-      'Use --overwrite if you intentionally want to replace them.'
-    );
-  }
-
-  if (!APPLY) {
-    console.log('\nDRY RUN COMPLETE');
-    console.log('------------------------------');
-    console.log('No Firestore changes were made.');
-    console.log('Run with --apply to write the course.');
-    return;
-  }
-
-  const batch = db.batch();
-
-  const courseData = {
-    ...COURSE,
-
-    modules: MODULES.map((module, moduleIndex) => ({
-  id: module.id,
-  title: module.title,
-  order: moduleIndex + 1,
-
-  lessons: module.lessons.map((lesson, lessonIndex) => ({
-    id: lesson.id,
-    title: lesson.title,
-    order: lessonIndex + 1,
-    minutes: lesson.minutes,
-    hasCheck: lesson.blocks.some(block => block.type === 'check'),
-  })),
-})),
-
-    totalModules: totals.totalModules,
-    totalLessons: totals.totalLessons,
-    totalMinutes: totals.totalMinutes,
-
-    status: 'draft',
-
-    createdAt: existingCourse.exists
-      ? existingCourse.data().createdAt || FieldValue.serverTimestamp()
-      : FieldValue.serverTimestamp(),
-
-    updatedAt: FieldValue.serverTimestamp(),
-  };
-
-  batch.set(courseRef, courseData, { merge: true });
-
-  if (OVERWRITE) {
-    existingLessonsSnapshot.docs.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-  }
-
-  let lessonOrder = 0;
-
-  for (const [moduleIndex, module] of MODULES.entries()) {
-    for (const lesson of module.lessons) {
-      lessonOrder++;
-
-      const lessonRef = courseRef
-        .collection('lessons')
-        .doc(lesson.id);
-
-      const lessonData = {
-        id: lesson.id,
-        title: lesson.title,
-
-        moduleId: module.id,
-        moduleTitle: module.title,
-
-        order: lessonOrder,
-        moduleOrder: moduleIndex + 1,
-
-        minutes: lesson.minutes,
-        blocks: lesson.blocks,
-
-        status: 'draft',
-
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      };
-
-      batch.set(lessonRef, lessonData, { merge: true });
-    }
-  }
-
-  await batch.commit();
-
-  console.log('\nCOURSE SEEDED SUCCESSFULLY');
-  console.log('------------------------------');
-  console.log(`Course: ${COURSE.title}`);
-  console.log(`Modules: ${totals.totalModules}`);
-  console.log(`Lessons: ${totals.totalLessons}`);
-  console.log(`Quick Checks: ${totals.totalLessons}`);
-  console.log(`Duration: ${totals.totalMinutes} minutes`);
-  console.log('Status: draft');
-  console.log('\nFirestore location:');
-  console.log(`courses/${COURSE.id}`);
-  console.log(
-    `courses/${COURSE.id}/lessons/{lessonId}`
-  );
-}
-
-// =========================================================
-// EXECUTION
-// =========================================================
-
-seedCourse().catch(error => {
-  console.error('\nCOURSE SEED FAILED');
-  console.error(error);
-  process.exitCode = 1;
+runCourseSeed({ course: COURSE, modules: MODULES, script: 'scripts/enterprise-ai-architecture/seed-enterprise-ai-architecture.mjs' }).catch((error) => {
+  console.error('\nSEED FAILED:', error);
+  process.exit(1);
 });

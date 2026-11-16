@@ -1,58 +1,32 @@
-// ============================================================
-// EMBEDDINGS, VECTOR DATABASES & RAG
-// SECTION 1 OF 3
-// Course configuration and modules 1–3
-// ============================================================
+/**
+ * Embeddings, Vector Databases & RAG
+ * Program: Enterprise AI & Solutions Architecture, step 7
+ *
+ * Dry run (checks the content, writes nothing):
+ *   node scripts/embeddings-rag/seed-embeddings-rag.mjs
+ * Create the course:
+ *   node scripts/embeddings-rag/seed-embeddings-rag.mjs --apply
+ * Update an existing course (keeps its status, publish date and final exam):
+ *   node scripts/embeddings-rag/seed-embeddings-rag.mjs --apply --overwrite
+ *
+ * Lesson text uses the light Markdown lessons support: # / ## / ### headings,
+ * - and 1. lists, **bold**, *italic*, `code`, ``` code blocks, > quotes and
+ * | tables |. Each text block is one section in the lesson player; its first
+ * heading is the section title.
+ */
 
-import { applicationDefault, initializeApp } from "firebase-admin/app";
-
-import {
-  FieldValue,
-  getFirestore,
-} from "firebase-admin/firestore";
-
-const PROJECT_ID = process.env.GCLOUD_PROJECT || "zebron-2b49f";
-
-initializeApp({
-  credential: applicationDefault(),
-  projectId: PROJECT_ID,
-});
-
-const db = getFirestore();
-
-const APPLY = process.argv.includes("--apply");
-const OVERWRITE = process.argv.includes("--overwrite");
+import { runCourseSeed } from '../lib/write-zebron-course.mjs';
 
 const COURSE = {
   id: "embeddings-vector-databases-rag",
-
   title: "Embeddings, Vector Databases & RAG",
-
-  summary:
-    "Learn how AI applications represent information as vectors, perform semantic search, use vector databases, and build Retrieval-Augmented Generation systems.",
-
-  description:
-    "This course introduces vector embeddings, similarity search, vector database architecture, document processing, and Retrieval-Augmented Generation. Learners explore how enterprise AI systems retrieve relevant information from organizational knowledge sources and use it to generate grounded responses.",
-
+  summary: "Learn how AI applications represent information as vectors, perform semantic search, use vector databases, and build Retrieval-Augmented Generation systems.",
+  description: "This course introduces vector embeddings, similarity search, vector database architecture, document processing, and Retrieval-Augmented Generation. Learners explore how enterprise AI systems retrieve relevant information from organizational knowledge sources and use it to generate grounded responses.",
   topic: "Artificial Intelligence",
-
   program: "Enterprise AI & Solutions Architecture",
-
   programOrder: 7,
-
   level: "intermediate",
-
-  language: "en",
-
-  organizationId: null,
-
-  status: "draft",
-
-  cover: {
-    type: "gradient",
-    value: "purple",
-  },
-
+  cover: "violet",
   outcomes: [
     "Explain how embeddings represent information numerically.",
     "Understand semantic similarity and vector search.",
@@ -66,7 +40,6 @@ const COURSE = {
     "Evaluate RAG quality and security.",
     "Design an enterprise knowledge assistant using RAG.",
   ],
-
   skills: [
     "AI Embeddings",
     "Vector Representations",
@@ -84,27 +57,18 @@ const COURSE = {
 };
 
 const MODULES = [
-
-  // ----------------------------------------------------------
-  // MODULE 1
-  // ----------------------------------------------------------
-
   {
     id: "introduction-to-embeddings",
     title: "Introduction to Embeddings",
-
     lessons: [
-
       {
         id: "what-are-ai-embeddings",
         title: "What Are AI Embeddings?",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# What Are AI Embeddings?
+            type: 'text',
+            text: `# What Are AI Embeddings?
 
 AI embeddings are numerical representations of information.
 
@@ -176,40 +140,30 @@ Instead of searching only for matching keywords, an AI application can use embed
 
 ## Key Principle
 
-Embeddings transform information into numerical representations that make similarity-based retrieval possible.
-            `,
+Embeddings transform information into numerical representations that make similarity-based retrieval possible.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary purpose of an AI embedding?",
-
+            type: 'check',
+            question: "What is the primary purpose of an AI embedding?",
             options: [
-              "To encrypt a document",
-              "To represent information numerically for machine processing",
-              "To replace a relational database",
-              "To increase the size of an AI model",
+              "To translate text into a single standard language",
+              "To encrypt documents before they are stored",
+              "To compress documents so they take less storage space",
+              "To represent meaning numerically so similar items are close together",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Embeddings represent information as numerical vectors that AI systems can use for similarity comparisons and retrieval.",
+            answer: 3,
+            explanation: "Embeddings represent information as numerical vectors that AI systems can use for similarity comparisons and retrieval.",
           },
         ],
       },
-
       {
         id: "how-embedding-models-work",
         title: "How Embedding Models Work",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# How Embedding Models Work
+            type: 'text',
+            text: `# How Embedding Models Work
 
 An embedding model converts input information into a numerical vector.
 
@@ -265,40 +219,30 @@ The application compares the query vector against stored document vectors to ide
 
 ## Key Principle
 
-An embedding model converts information into vectors that allow applications to compare semantic relationships.
-            `,
+An embedding model converts information into vectors that allow applications to compare semantic relationships.`,
           },
-
           {
-            type: "check",
-            question:
-              "What does embedding dimensionality describe?",
-
+            type: 'check',
+            question: "What does embedding dimensionality describe?",
             options: [
-              "The number of documents in a database",
-              "The number of numerical values in a vector",
-              "The size of a user's browser window",
               "The number of users accessing an application",
+              "The size of a user's browser window",
+              "The number of numerical values in a vector",
+              "The number of documents in a database",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Embedding dimensionality is the number of numerical components contained in an embedding vector.",
+            answer: 2,
+            explanation: "Embedding dimensionality is the number of numerical components contained in an embedding vector.",
           },
         ],
       },
-
       {
         id: "choosing-an-embedding-model",
         title: "Choosing an Embedding Model",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Choosing an Embedding Model
+            type: 'text',
+            text: `# Choosing an Embedding Model
 
 Embedding models differ in performance, dimensionality, language support, cost, and intended use.
 
@@ -365,52 +309,36 @@ Before choosing a model, evaluate:
 
 ## Key Principle
 
-Choose an embedding model based on measurable application requirements, not simply model popularity.
-            `,
+Choose an embedding model based on measurable application requirements, not simply model popularity.`,
           },
-
           {
-            type: "check",
-            question:
-              "Which factor should be considered when selecting an embedding model?",
-
+            type: 'check',
+            question: "Which factor should be considered when selecting an embedding model?",
             options: [
-              "Only the model's name",
-              "Retrieval quality, language support, cost, and governance",
               "The color of the model's user interface",
               "The number of employees in the organization only",
+              "Only the model's name",
+              "Retrieval quality, language support, cost, and governance",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Embedding model selection should consider performance, language support, cost, and organizational requirements.",
+            answer: 3,
+            explanation: "Embedding model selection should consider performance, language support, cost, and organizational requirements.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 2
-  // ----------------------------------------------------------
-
   {
     id: "understanding-vector-representations",
     title: "Understanding Vector Representations",
-
     lessons: [
-
       {
         id: "vectors-and-vector-spaces",
         title: "Vectors and Vector Spaces",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Vectors and Vector Spaces
+            type: 'text',
+            text: `# Vectors and Vector Spaces
 
 A vector is an ordered collection of numerical values.
 
@@ -468,40 +396,30 @@ The application then searches for documents that are mathematically similar to t
 
 ## Key Principle
 
-Vectors provide the mathematical foundation for comparing information represented by embedding models.
-            `,
+Vectors provide the mathematical foundation for comparing information represented by embedding models.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is a vector in the context of AI embeddings?",
-
+            type: 'check',
+            question: "What is a vector in the context of AI embeddings?",
             options: [
-              "An ordered collection of numerical values",
-              "A database password",
-              "A programming language",
-              "A network connection",
+              "A single similarity score",
+              "A ranked list of keywords",
+              "An ordered list of numbers",
+              "A table of document IDs",
             ],
-
-            answer: 0,
-
-            explanation:
-              "A vector is an ordered collection of numbers used to represent information mathematically.",
+            answer: 2,
+            explanation: "A vector is an ordered collection of numbers used to represent information mathematically.",
           },
         ],
       },
-
       {
         id: "semantic-similarity",
         title: "Understanding Semantic Similarity",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Understanding Semantic Similarity
+            type: 'text',
+            text: `# Understanding Semantic Similarity
 
 Semantic similarity measures how closely two pieces of information relate in meaning.
 
@@ -557,40 +475,30 @@ Semantic search should be evaluated using realistic user queries and known relev
 
 ## Key Principle
 
-Semantic similarity helps applications retrieve information based on meaning rather than requiring exact keyword matches.
-            `,
+Semantic similarity helps applications retrieve information based on meaning rather than requiring exact keyword matches.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is a major advantage of semantic search?",
-
+            type: 'check',
+            question: "What is a major advantage of semantic search?",
             options: [
-              "It requires exact keyword matches",
               "It can identify related information even when different words are used",
-              "It guarantees every retrieved document is correct",
               "It eliminates the need for document management",
+              "It guarantees every retrieved document is correct",
+              "It requires exact keyword matches",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Semantic search identifies related information based on meaning, even when the wording differs.",
+            answer: 0,
+            explanation: "Semantic search identifies related information based on meaning, even when the wording differs.",
           },
         ],
       },
-
       {
         id: "embedding-similarity-limitations",
         title: "Limitations of Embedding Representations",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Limitations of Embedding Representations
+            type: 'text',
+            text: `# Limitations of Embedding Representations
 
 Embeddings are powerful, but they have limitations.
 
@@ -640,52 +548,36 @@ Evaluate their behavior using representative and diverse test cases.
 
 Do not rely exclusively on vector similarity.
 
-Combine embeddings with metadata, business rules, access controls, and retrieval evaluation.
-            `,
+Combine embeddings with metadata, business rules, access controls, and retrieval evaluation.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why is it important to retain original documents when using embeddings?",
-
+            type: 'check',
+            question: "Why is it important to retain original documents when using embeddings?",
             options: [
+              "Vector databases cannot store metadata",
+              "Original documents prevent vector searches",
               "Embeddings always contain the complete original document",
               "Embeddings do not preserve every original detail in a reconstructable form",
-              "Original documents prevent vector searches",
-              "Vector databases cannot store metadata",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Embeddings are numerical representations and should not replace the original source documents needed for verification and retrieval.",
+            answer: 3,
+            explanation: "Embeddings are numerical representations and should not replace the original source documents needed for verification and retrieval.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 3
-  // ----------------------------------------------------------
-
   {
     id: "similarity-search-and-distance-metrics",
     title: "Similarity Search and Distance Metrics",
-
     lessons: [
-
       {
         id: "cosine-similarity",
         title: "Understanding Cosine Similarity",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Understanding Cosine Similarity
+            type: 'text',
+            text: `# Understanding Cosine Similarity
 
 Cosine similarity is a mathematical measure used to compare the orientation of two vectors.
 
@@ -735,40 +627,30 @@ A score of 0.90 does not mean there is a 90% probability that the document is co
 
 ## Enterprise Application
 
-Cosine similarity can be used in knowledge retrieval systems to identify articles related to employee questions.
-            `,
+Cosine similarity can be used in knowledge retrieval systems to identify articles related to employee questions.`,
           },
-
           {
-            type: "check",
-            question:
-              "What does cosine similarity primarily measure?",
-
+            type: 'check',
+            question: "What does cosine similarity primarily measure?",
             options: [
-              "The angle-based relationship between two vectors",
               "The number of documents in a collection",
               "The size of an embedding model",
+              "The angle-based relationship between two vectors",
               "The network latency of an API",
             ],
-
-            answer: 0,
-
-            explanation:
-              "Cosine similarity measures the cosine of the angle between two vectors and is commonly used to compare embeddings.",
+            answer: 2,
+            explanation: "Cosine similarity measures the cosine of the angle between two vectors and is commonly used to compare embeddings.",
           },
         ],
       },
-
       {
         id: "euclidean-distance-and-dot-product",
         title: "Euclidean Distance and Dot Product",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Euclidean Distance and Dot Product
+            type: 'text',
+            text: `# Euclidean Distance and Dot Product
 
 Several mathematical methods can be used to compare vectors.
 
@@ -788,9 +670,9 @@ The Euclidean distance is:
 
 sqrt((4 - 1)^2 + (6 - 2)^2)
 
-sqrt(9 + 16)
+\`sqrt(9 + 16)\`
 
-sqrt(25) = 5
+\`sqrt(25)\` = 5
 
 A smaller distance means the points are closer together.
 
@@ -834,40 +716,30 @@ The appropriate metric depends on:
 
 ## Enterprise Principle
 
-Do not assume that one similarity metric is universally best. Test retrieval performance using the actual application data.
-            `,
+Do not assume that one similarity metric is universally best. Test retrieval performance using the actual application data.`,
           },
-
           {
-            type: "check",
-            question:
-              "What does Euclidean distance measure?",
-
+            type: 'check',
+            question: "What does Euclidean distance measure?",
             options: [
+              "The number of database records",
               "The straight-line distance between vectors",
               "The number of tokens in a document",
-              "The number of database records",
               "The probability of an AI response being correct",
             ],
-
-            answer: 0,
-
-            explanation:
-              "Euclidean distance measures the straight-line distance between two points in a vector space.",
+            answer: 1,
+            explanation: "Euclidean distance measures the straight-line distance between two points in a vector space.",
           },
         ],
       },
-
       {
         id: "nearest-neighbor-search",
         title: "Nearest Neighbor and Approximate Nearest Neighbor Search",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Nearest Neighbor and Approximate Nearest Neighbor Search
+            type: 'text',
+            text: `# Nearest Neighbor and Approximate Nearest Neighbor Search
 
 Nearest neighbor search identifies vectors that are closest to a query vector.
 
@@ -929,66 +801,36 @@ The vector database uses an ANN index to identify relevant chunks efficiently.
 
 ## Key Principle
 
-Approximate nearest neighbor search helps vector databases retrieve similar vectors efficiently at large scale.
-            `,
+Approximate nearest neighbor search helps vector databases retrieve similar vectors efficiently at large scale.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why are Approximate Nearest Neighbor algorithms useful?",
-
+            type: 'check',
+            question: "Why are Approximate Nearest Neighbor algorithms useful?",
             options: [
+              "They guarantee every search result is factually correct",
               "They eliminate the need for embeddings",
               "They help retrieve similar vectors efficiently at scale",
-              "They guarantee every search result is factually correct",
               "They replace application authorization",
             ],
-
-            answer: 1,
-
-            explanation:
-              "ANN algorithms reduce search costs by finding highly similar vector candidates without necessarily comparing every stored vector.",
+            answer: 2,
+            explanation: "ANN algorithms reduce search costs by finding highly similar vector candidates without necessarily comparing every stored vector.",
           },
         ],
       },
     ],
   },
-
-];
-
-// ============================================================
-// END OF SECTION 1
-// Section 2 will add modules 4–7.
-// Section 3 will add modules 8–11 and Firestore seeding logic.
-// ============================================================
-// ============================================================
-// SECTION 2 OF 3
-// Modules 4–7
-// ============================================================
-
-MODULES.push(
-
-  // ----------------------------------------------------------
-  // MODULE 4
-  // ----------------------------------------------------------
-
   {
     id: "introduction-to-vector-databases",
     title: "Introduction to Vector Databases",
-
     lessons: [
-
       {
         id: "what-is-a-vector-database",
         title: "What Is a Vector Database?",
-        minutes: 20,
-
+        minutes: 6,
         blocks: [
           {
-            type: "text",
-            text: `
-# What Is a Vector Database?
+            type: 'text',
+            text: `# What Is a Vector Database?
 
 A vector database is a database designed to store, index, and retrieve numerical vectors.
 
@@ -1022,6 +864,7 @@ A typical vector record may contain:
 
 Example:
 
+\`\`\`json
 {
   "id": "knowledge-article-001",
   "content": "Instructions for requesting replacement hardware.",
@@ -1031,6 +874,7 @@ Example:
     "department": "IT"
   }
 }
+\`\`\`
 
 The vector values are illustrative.
 
@@ -1064,40 +908,30 @@ An organization may use:
 
 ## Key Principle
 
-A vector database makes it practical to search large collections of information using vector similarity.
-            `,
+A vector database makes it practical to search large collections of information using vector similarity.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary purpose of a vector database?",
-
+            type: 'check',
+            question: "What is the primary purpose of a vector database?",
             options: [
-              "To manage operating system processes",
-              "To store and retrieve numerical vectors using similarity search",
-              "To replace every relational database",
-              "To train every AI model automatically",
+              "To train embedding models on the stored documents",
+              "To store vectors and find the most similar ones quickly",
+              "To store documents and search them by exact keywords",
+              "To join tables of structured business records",
             ],
-
             answer: 1,
-
-            explanation:
-              "Vector databases store and index embeddings so applications can retrieve semantically similar information.",
+            explanation: "Vector databases store and index embeddings so applications can retrieve semantically similar information.",
           },
         ],
       },
-
       {
         id: "vector-database-data-model",
         title: "Understanding the Vector Database Data Model",
-        minutes: 20,
-
+        minutes: 7,
         blocks: [
           {
-            type: "text",
-            text: `
-# Understanding the Vector Database Data Model
+            type: 'text',
+            text: `# Understanding the Vector Database Data Model
 
 A vector database record commonly contains a vector and additional information that helps identify and retrieve the original content.
 
@@ -1135,6 +969,7 @@ Metadata describes the content.
 
 Example:
 
+\`\`\`json
 {
   "documentId": "IT-POL-001",
   "department": "IT",
@@ -1142,6 +977,7 @@ Example:
   "status": "published",
   "classification": "internal"
 }
+\`\`\`
 
 Metadata can support filtering and governance.
 
@@ -1161,6 +997,7 @@ For example:
 
 ## Example Record
 
+\`\`\`json
 {
   "id": "IT-POL-001-chunk-03",
   "content": "Replacement hardware requests require manager approval.",
@@ -1172,6 +1009,7 @@ For example:
   },
   "embedding": [0.12, 0.43, -0.21]
 }
+\`\`\`
 
 ## Enterprise Design Consideration
 
@@ -1181,40 +1019,30 @@ Poor metadata can make it difficult to enforce access controls, filter results, 
 
 ## Key Principle
 
-A vector record is more useful when it contains both the embedding and the metadata required to manage and retrieve the original information.
-            `,
+A vector record is more useful when it contains both the embedding and the metadata required to manage and retrieve the original information.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why is metadata important in a vector database?",
-
+            type: 'check',
+            question: "Why is metadata important in a vector database?",
             options: [
-              "It replaces the embedding vector",
               "It supports filtering, identification, and content management",
               "It automatically encrypts every document",
               "It prevents the need for source documents",
+              "It replaces the embedding vector",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Metadata provides descriptive information that helps applications filter, identify, govern, and manage vector records.",
+            answer: 0,
+            explanation: "Metadata provides descriptive information that helps applications filter, identify, govern, and manage vector records.",
           },
         ],
       },
-
       {
         id: "vector-database-platforms",
         title: "Exploring Vector Database Platforms",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Exploring Vector Database Platforms
+            type: 'text',
+            text: `# Exploring Vector Database Platforms
 
 Several technologies can support vector storage and similarity search.
 
@@ -1278,52 +1106,36 @@ Consider how it integrates with identity management, document storage, applicati
 
 ## Key Principle
 
-Do not select a vector database simply because it is popular. Select the platform that satisfies the actual enterprise requirements.
-            `,
+Do not select a vector database simply because it is popular. Select the platform that satisfies the actual enterprise requirements.`,
           },
-
           {
-            type: "check",
-            question:
-              "Which technology allows PostgreSQL to support vector similarity search?",
-
+            type: 'check',
+            question: "Which technology allows PostgreSQL to support vector similarity search?",
             options: [
-              "pgvector",
-              "GlideRecord",
-              "Angular Material",
               "Firebase Hosting",
+              "Angular Material",
+              "GlideRecord",
+              "pgvector",
             ],
-
-            answer: 0,
-
-            explanation:
-              "pgvector is a PostgreSQL extension that adds vector data types and similarity search capabilities.",
+            answer: 3,
+            explanation: "pgvector is a PostgreSQL extension that adds vector data types and similarity search capabilities.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 5
-  // ----------------------------------------------------------
-
   {
     id: "vector-database-architecture",
     title: "Vector Database Architecture",
-
     lessons: [
-
       {
         id: "vector-indexing-and-storage",
         title: "Vector Indexing and Storage",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Vector Indexing and Storage
+            type: 'text',
+            text: `# Vector Indexing and Storage
 
 Vector databases use indexing techniques to make similarity search efficient.
 
@@ -1393,40 +1205,30 @@ Indexing approaches involve trade-offs between:
 
 ## Key Principle
 
-Vector indexing allows applications to perform similarity searches efficiently as the volume of stored embeddings increases.
-            `,
+Vector indexing allows applications to perform similarity searches efficiently as the volume of stored embeddings increases.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary purpose of a vector index?",
-
+            type: 'check',
+            question: "What is the primary purpose of a vector index?",
             options: [
-              "To improve the efficiency of similarity searches",
-              "To replace document metadata",
               "To authenticate application users",
+              "To replace document metadata",
+              "To improve the efficiency of similarity searches",
               "To generate AI responses",
             ],
-
-            answer: 0,
-
-            explanation:
-              "Vector indexes organize embeddings to make similarity searches more efficient.",
+            answer: 2,
+            explanation: "Vector indexes organize embeddings to make similarity searches more efficient.",
           },
         ],
       },
-
       {
         id: "metadata-filtering-and-hybrid-search",
         title: "Metadata Filtering and Hybrid Search",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Metadata Filtering and Hybrid Search
+            type: 'text',
+            text: `# Metadata Filtering and Hybrid Search
 
 Vector similarity is powerful, but it is not always sufficient by itself.
 
@@ -1444,11 +1246,13 @@ An employee asks:
 
 The application may restrict retrieval to:
 
+\`\`\`json
 {
   "department": "IT",
   "status": "published",
   "classification": "internal"
 }
+\`\`\`
 
 The database searches within the eligible records.
 
@@ -1500,40 +1304,30 @@ The ranking strategy should be evaluated against realistic queries.
 
 ## Enterprise Principle
 
-Use vector search for semantic relevance, metadata filtering for controlled scope, and keyword search when exact terms matter.
-            `,
+Use vector search for semantic relevance, metadata filtering for controlled scope, and keyword search when exact terms matter.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary advantage of hybrid search?",
-
+            type: 'check',
+            question: "What is the primary advantage of hybrid search?",
             options: [
-              "It combines different retrieval approaches, such as keyword and vector search",
-              "It eliminates the need for document metadata",
               "It automatically grants access to restricted documents",
+              "It combines different retrieval approaches, such as keyword and vector search",
               "It replaces the embedding model",
+              "It eliminates the need for document metadata",
             ],
-
-            answer: 0,
-
-            explanation:
-              "Hybrid search combines lexical and semantic retrieval signals to improve the identification of relevant information.",
+            answer: 1,
+            explanation: "Hybrid search combines lexical and semantic retrieval signals to improve the identification of relevant information.",
           },
         ],
       },
-
       {
         id: "vector-database-scalability",
         title: "Vector Database Scalability and Operations",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Vector Database Scalability and Operations
+            type: 'text',
+            text: `# Vector Database Scalability and Operations
 
 Enterprise vector databases must support reliable operation as data volume and user demand increase.
 
@@ -1610,52 +1404,36 @@ This requires document lifecycle management, not just vector insertion.
 
 ## Key Principle
 
-A production vector database is an operational enterprise service that requires monitoring, maintenance, security, and recovery planning.
-            `,
+A production vector database is an operational enterprise service that requires monitoring, maintenance, security, and recovery planning.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why is document lifecycle management important for vector databases?",
-
+            type: 'check',
+            question: "Why is document lifecycle management important for vector databases?",
             options: [
               "It ensures that outdated or deleted content is handled appropriately",
-              "It automatically trains the embedding model",
               "It eliminates database backups",
+              "It automatically trains the embedding model",
               "It prevents users from performing searches",
             ],
-
             answer: 0,
-
-            explanation:
-              "Vector records must be updated or removed when source documents change, expire, or are deleted.",
+            explanation: "Vector records must be updated or removed when source documents change, expire, or are deleted.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 6
-  // ----------------------------------------------------------
-
   {
     id: "document-processing-and-chunking",
     title: "Document Processing and Chunking",
-
     lessons: [
-
       {
         id: "document-ingestion",
         title: "Document Ingestion for AI Retrieval",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Document Ingestion for AI Retrieval
+            type: 'text',
+            text: `# Document Ingestion for AI Retrieval
 
 Document ingestion is the process of bringing information into an AI retrieval system.
 
@@ -1733,40 +1511,30 @@ The ingestion system retrieves approved HR documents, extracts the text, records
 
 ## Key Principle
 
-Good retrieval starts with high-quality source documents and a controlled ingestion process.
-            `,
+Good retrieval starts with high-quality source documents and a controlled ingestion process.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is document ingestion?",
-
+            type: 'check',
+            question: "What is document ingestion?",
             options: [
-              "The process of deleting source documents",
-              "The process of bringing and preparing information for an AI retrieval system",
               "The process of training every language model",
+              "The process of bringing and preparing information for an AI retrieval system",
               "The process of replacing the original document repository",
+              "The process of deleting source documents",
             ],
-
             answer: 1,
-
-            explanation:
-              "Document ingestion prepares information from approved sources so it can be indexed and retrieved by an AI application.",
+            explanation: "Document ingestion prepares information from approved sources so it can be indexed and retrieved by an AI application.",
           },
         ],
       },
-
       {
         id: "document-chunking-strategies",
         title: "Document Chunking Strategies",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Document Chunking Strategies
+            type: 'text',
+            text: `# Document Chunking Strategies
 
 Document chunking divides large documents into smaller sections.
 
@@ -1835,40 +1603,30 @@ Instead of embedding the entire handbook as one record, the ingestion pipeline d
 
 ## Key Principle
 
-Choose a chunking strategy that preserves useful meaning while supporting accurate and efficient retrieval.
-            `,
+Choose a chunking strategy that preserves useful meaning while supporting accurate and efficient retrieval.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the purpose of document chunking?",
-
+            type: 'check',
+            question: "What is the purpose of document chunking?",
             options: [
-              "To divide large documents into smaller retrievable sections",
-              "To encrypt all document content",
-              "To remove all document metadata",
               "To increase the number of model parameters",
+              "To divide large documents into smaller retrievable sections",
+              "To remove all document metadata",
+              "To encrypt all document content",
             ],
-
-            answer: 0,
-
-            explanation:
-              "Chunking divides large documents into smaller sections that can be embedded and retrieved more precisely.",
+            answer: 1,
+            explanation: "Chunking divides large documents into smaller sections that can be embedded and retrieved more precisely.",
           },
         ],
       },
-
       {
         id: "chunk-overlap-and-metadata",
         title: "Chunk Overlap and Metadata Preservation",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Chunk Overlap and Metadata Preservation
+            type: 'text',
+            text: `# Chunk Overlap and Metadata Preservation
 
 Chunking can introduce problems when important context appears at the boundary between two sections.
 
@@ -1880,11 +1638,8 @@ Chunk overlap repeats a portion of one chunk in the next chunk.
 
 Example:
 
-Chunk 1:
-Tokens 1–500.
-
-Chunk 2:
-Tokens 450–950.
+- **Chunk 1:** Tokens 1–500.
+- **Chunk 2:** Tokens 450–950.
 
 The second chunk repeats the final 50 tokens of the first chunk.
 
@@ -1945,52 +1700,36 @@ This is possible only if the retrieval system preserves source information.
 
 ## Key Principle
 
-Chunking should preserve both meaningful content and the metadata needed to trace each result back to its source.
-            `,
+Chunking should preserve both meaningful content and the metadata needed to trace each result back to its source.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is a major purpose of chunk overlap?",
-
+            type: 'check',
+            question: "What is a major purpose of chunk overlap?",
             options: [
-              "To preserve context between adjacent chunks",
               "To eliminate metadata",
               "To prevent vector searches",
               "To increase the embedding model's dimensions",
+              "To preserve context between adjacent chunks",
             ],
-
-            answer: 0,
-
-            explanation:
-              "Overlap repeats some content between neighboring chunks to reduce context loss at chunk boundaries.",
+            answer: 3,
+            explanation: "Overlap repeats some content between neighboring chunks to reduce context loss at chunk boundaries.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 7
-  // ----------------------------------------------------------
-
   {
     id: "introduction-to-retrieval-augmented-generation",
     title: "Introduction to Retrieval-Augmented Generation",
-
     lessons: [
-
       {
         id: "what-is-rag",
         title: "What Is Retrieval-Augmented Generation?",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# What Is Retrieval-Augmented Generation?
+            type: 'text',
+            text: `# What Is Retrieval-Augmented Generation?
 
 Retrieval-Augmented Generation (RAG) is an architecture that combines information retrieval with language model generation.
 
@@ -2058,40 +1797,30 @@ RAG is useful for:
 
 ## Key Principle
 
-RAG connects language models to relevant external knowledge at the time a question is answered.
-            `,
+RAG connects language models to relevant external knowledge at the time a question is answered.`,
           },
-
           {
-            type: "check",
-            question:
-              "What distinguishes RAG from a language model that only uses its existing learned knowledge?",
-
+            type: 'check',
+            question: "What distinguishes RAG from a language model that only uses its existing learned knowledge?",
             options: [
               "RAG retrieves external information and supplies it as context",
-              "RAG requires no language model",
               "RAG eliminates all model errors",
               "RAG automatically retrains the model for every question",
+              "RAG requires no language model",
             ],
-
             answer: 0,
-
-            explanation:
-              "RAG retrieves relevant external information and provides it to the model to support response generation.",
+            explanation: "RAG retrieves relevant external information and provides it to the model to support response generation.",
           },
         ],
       },
-
       {
         id: "rag-architecture-components",
         title: "Core Components of a RAG Architecture",
-        minutes: 20,
-
+        minutes: 9,
         blocks: [
           {
-            type: "text",
-            text: `
-# Core Components of a RAG Architecture
+            type: 'text',
+            text: `# Core Components of a RAG Architecture
 
 A RAG application consists of several components that work together.
 
@@ -2143,6 +1872,7 @@ The application manages:
 
 ## Architecture Flow
 
+\`\`\`text
 Data Sources
     |
     v
@@ -2176,6 +1906,7 @@ Language Model
     |
     v
 Response
+\`\`\`
 
 ## Enterprise Architecture Consideration
 
@@ -2185,40 +1916,30 @@ Do not assume that the model can safely determine which documents a user is allo
 
 ## Key Principle
 
-RAG is a complete application architecture, not simply a connection between an LLM and a vector database.
-            `,
+RAG is a complete application architecture, not simply a connection between an LLM and a vector database.`,
           },
-
           {
-            type: "check",
-            question:
-              "Which component is responsible for converting documents and queries into numerical vectors?",
-
+            type: 'check',
+            question: "Which component is responsible for converting documents and queries into numerical vectors?",
             options: [
+              "Authentication service",
               "Embedding model",
               "User interface",
-              "Authentication service",
               "Audit log",
             ],
-
-            answer: 0,
-
-            explanation:
-              "The embedding model converts document content and user queries into numerical vectors for similarity-based retrieval.",
+            answer: 1,
+            explanation: "The embedding model converts document content and user queries into numerical vectors for similarity-based retrieval.",
           },
         ],
       },
-
       {
         id: "rag-vs-fine-tuning",
         title: "RAG vs. Fine-Tuning",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# RAG vs. Fine-Tuning
+            type: 'text',
+            text: `# RAG vs. Fine-Tuning
 
 RAG and fine-tuning are two different approaches to adapting AI applications.
 
@@ -2284,65 +2005,36 @@ Fine-tuning may be considered if the organization also needs specialized model b
 
 ## Key Principle
 
-Use RAG when the application needs external knowledge at request time. Consider fine-tuning when the model's behavior itself needs additional adaptation.
-            `,
+Use RAG when the application needs external knowledge at request time. Consider fine-tuning when the model's behavior itself needs additional adaptation.`,
           },
-
           {
-            type: "check",
-            question:
-              "Which approach is generally more appropriate when an AI application needs access to frequently updated company policies?",
-
+            type: 'check',
+            question: "Which approach is generally more appropriate when an AI application needs access to frequently updated company policies?",
             options: [
               "RAG",
+              "Increasing the browser cache",
               "Fine-tuning alone",
               "Replacing the database with prompts",
-              "Increasing the browser cache",
             ],
-
             answer: 0,
-
-            explanation:
-              "RAG can retrieve updated policy documents at request time without requiring the model to be retrained whenever the documents change.",
+            explanation: "RAG can retrieve updated policy documents at request time without requiring the model to be retrained whenever the documents change.",
           },
         ],
       },
     ],
   },
-
-);
-
-// ============================================================
-// END OF SECTION 2
-// Section 3 will add modules 8–11 and Firestore seeding logic.
-// ============================================================
-// ============================================================
-// SECTION 3 OF 3
-// Modules 8–11
-// ============================================================
-
-MODULES.push(
-
-  // ----------------------------------------------------------
-  // MODULE 8
-  // ----------------------------------------------------------
-
   {
     id: "building-a-rag-pipeline",
     title: "Building a RAG Pipeline",
-
     lessons: [
-
       {
         id: "query-processing-and-retrieval",
         title: "Query Processing and Retrieval",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Query Processing and Retrieval
+            type: 'text',
+            text: `# Query Processing and Retrieval
 
 Query processing is the stage where a user's question is prepared for retrieval.
 
@@ -2401,40 +2093,30 @@ A retrieval system should never rely on the language model to decide whether a u
 
 ## Key Principle
 
-Query processing connects the user's question to the relevant information stored in the retrieval system.
-            `,
+Query processing connects the user's question to the relevant information stored in the retrieval system.`,
           },
-
           {
-            type: "check",
-            question:
-              "What happens after a user query is converted into an embedding?",
-
+            type: 'check',
+            question: "What happens after a user query is converted into an embedding?",
             options: [
               "The application automatically publishes a document",
-              "The retrieval system searches for similar document vectors",
               "The model is retrained",
+              "The retrieval system searches for similar document vectors",
               "The user's permissions are automatically increased",
             ],
-
-            answer: 1,
-
-            explanation:
-              "The query embedding is compared against stored document embeddings to identify relevant content.",
+            answer: 2,
+            explanation: "The query embedding is compared against stored document embeddings to identify relevant content.",
           },
         ],
       },
-
       {
         id: "context-construction-and-generation",
         title: "Context Construction and Response Generation",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Context Construction and Response Generation
+            type: 'text',
+            text: `# Context Construction and Response Generation
 
 After retrieving relevant documents, the application must prepare the information for the language model.
 
@@ -2472,11 +2154,8 @@ Answer the user's question using only the supplied reference information.
 
 If the reference information does not contain the answer, explain that the information is unavailable.
 
-User question:
-What is the process for requesting a replacement laptop?
-
-Reference information:
-Employees must submit a hardware replacement request through the IT service catalog. Manager approval is required.
+- **User question:** What is the process for requesting a replacement laptop?
+- **Reference information:** Employees must submit a hardware replacement request through the IT service catalog. Manager approval is required.
 
 Include the document source in your response."
 
@@ -2498,40 +2177,30 @@ Too much context can increase cost, latency, and irrelevant information.
 
 ## Enterprise Recommendation
 
-Retrieve enough relevant information to answer the question, but avoid sending unnecessary documents to the model.
-            `,
+Retrieve enough relevant information to answer the question, but avoid sending unnecessary documents to the model.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the purpose of context construction in RAG?",
-
+            type: 'check',
+            question: "What is the purpose of context construction in RAG?",
             options: [
+              "To replace document storage",
               "To organize retrieved information for the language model",
               "To permanently retrain the model",
-              "To replace document storage",
               "To remove authentication requirements",
             ],
-
-            answer: 0,
-
-            explanation:
-              "Context construction prepares the retrieved information and user question for the language model.",
+            answer: 1,
+            explanation: "Context construction prepares the retrieved information and user question for the language model.",
           },
         ],
       },
-
       {
         id: "end-to-end-rag-pipeline",
         title: "Understanding the End-to-End RAG Pipeline",
-        minutes: 25,
-
+        minutes: 10,
         blocks: [
           {
-            type: "text",
-            text: `
-# Understanding the End-to-End RAG Pipeline
+            type: 'text',
+            text: `# Understanding the End-to-End RAG Pipeline
 
 A RAG pipeline combines document ingestion, embedding generation, retrieval, and language model generation.
 
@@ -2564,6 +2233,7 @@ The query process runs when a user asks a question.
 
 ## Architecture Example
 
+\`\`\`text
 Document Repository
     |
     v
@@ -2606,6 +2276,7 @@ Response Validation
     |
     v
 User Interface
+\`\`\`
 
 ## Failure Handling
 
@@ -2629,52 +2300,36 @@ The query pipeline retrieves and uses that knowledge to answer questions.
 
 ## Key Principle
 
-A successful RAG application requires reliable coordination between all pipeline components.
-            `,
+A successful RAG application requires reliable coordination between all pipeline components.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the difference between the ingestion pipeline and the query pipeline?",
-
+            type: 'check',
+            question: "What is the difference between the ingestion pipeline and the query pipeline?",
             options: [
-              "Ingestion prepares documents; the query pipeline retrieves information for user questions",
-              "Both pipelines only train language models",
-              "The query pipeline stores every original document",
-              "Ingestion is only responsible for user authentication",
+              "Both prepare documents, but only ingestion uses embeddings",
+              "Ingestion trains the model; the query pipeline stores documents",
+              "Ingestion answers questions; the query pipeline prepares documents",
+              "Ingestion prepares documents; the query pipeline answers questions",
             ],
-
-            answer: 0,
-
-            explanation:
-              "The ingestion pipeline prepares and indexes documents, while the query pipeline retrieves relevant information when a user submits a question.",
+            answer: 3,
+            explanation: "The ingestion pipeline prepares and indexes documents, while the query pipeline retrieves relevant information when a user submits a question.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 9
-  // ----------------------------------------------------------
-
   {
     id: "advanced-retrieval-techniques",
     title: "Advanced Retrieval Techniques",
-
     lessons: [
-
       {
         id: "query-expansion-and-rewriting",
         title: "Query Expansion and Query Rewriting",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Query Expansion and Query Rewriting
+            type: 'text',
+            text: `# Query Expansion and Query Rewriting
 
 Users do not always ask questions using the terminology found in enterprise documents.
 
@@ -2739,40 +2394,30 @@ The system may rewrite the question using approved terminology such as:
 
 ## Key Principle
 
-Query expansion and rewriting can improve retrieval coverage, but the transformed query must preserve the user's original intent.
-            `,
+Query expansion and rewriting can improve retrieval coverage, but the transformed query must preserve the user's original intent.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary purpose of query rewriting?",
-
+            type: 'check',
+            question: "What is the primary purpose of query rewriting?",
             options: [
-              "To reformulate a question to improve retrieval",
-              "To delete the original question",
               "To retrain the embedding model",
+              "To delete the original question",
+              "To reformulate a question to improve retrieval",
               "To bypass document authorization",
             ],
-
-            answer: 0,
-
-            explanation:
-              "Query rewriting reformulates the original question to help the retrieval system identify relevant information.",
+            answer: 2,
+            explanation: "Query rewriting reformulates the original question to help the retrieval system identify relevant information.",
           },
         ],
       },
-
       {
         id: "reranking-and-retrieval-quality",
         title: "Reranking and Retrieval Quality",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Reranking and Retrieval Quality
+            type: 'text',
+            text: `# Reranking and Retrieval Quality
 
 Initial vector retrieval identifies candidate documents.
 
@@ -2842,40 +2487,30 @@ It should be used when the improvement in retrieval quality justifies the additi
 
 ## Key Principle
 
-Retrieval quality is not determined only by finding similar vectors. Ranking the most useful results is equally important.
-            `,
+Retrieval quality is not determined only by finding similar vectors. Ranking the most useful results is equally important.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary purpose of reranking in a RAG pipeline?",
-
+            type: 'check',
+            question: "What is the primary purpose of reranking in a RAG pipeline?",
             options: [
-              "To reorder retrieved candidates based on relevance",
-              "To replace document ingestion",
-              "To create new user accounts",
               "To remove the original documents",
+              "To replace document ingestion",
+              "To reorder retrieved candidates based on relevance",
+              "To create new user accounts",
             ],
-
-            answer: 0,
-
-            explanation:
-              "Reranking evaluates candidate results and reorders them so the most relevant content can be selected.",
+            answer: 2,
+            explanation: "Reranking evaluates candidate results and reorders them so the most relevant content can be selected.",
           },
         ],
       },
-
       {
         id: "parent-child-and-multi-stage-retrieval",
         title: "Parent-Child and Multi-Stage Retrieval",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Parent-Child and Multi-Stage Retrieval
+            type: 'text',
+            text: `# Parent-Child and Multi-Stage Retrieval
 
 Some retrieval systems use multiple document representations to balance precision and context.
 
@@ -2940,52 +2575,36 @@ The application must verify that the user can access the complete content being 
 
 ## Key Principle
 
-Advanced retrieval techniques balance precise matching with sufficient context.
-            `,
+Advanced retrieval techniques balance precise matching with sufficient context.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the main advantage of parent-child retrieval?",
-
+            type: 'check',
+            question: "What is the main advantage of parent-child retrieval?",
             options: [
-              "It combines precise retrieval of smaller chunks with broader parent context",
-              "It eliminates the need for metadata",
-              "It automatically trains the language model",
-              "It replaces the vector database with a browser",
+              "It ranks documents by how recently their parent was updated",
+              "It stores each document twice so retrieval keeps working during outages",
+              "It removes the need for metadata filters by grouping related chunks",
+              "It matches small chunks precisely, then supplies the larger parent context",
             ],
-
-            answer: 0,
-
-            explanation:
-              "Parent-child retrieval can use smaller chunks for precise matching while retrieving a larger section to preserve context.",
+            answer: 3,
+            explanation: "Parent-child retrieval can use smaller chunks for precise matching while retrieving a larger section to preserve context.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 10
-  // ----------------------------------------------------------
-
   {
     id: "rag-security-evaluation-and-optimization",
     title: "RAG Security, Evaluation, and Optimization",
-
     lessons: [
-
       {
         id: "rag-security-and-access-control",
         title: "RAG Security and Access Control",
-        minutes: 25,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# RAG Security and Access Control
+            type: 'text',
+            text: `# RAG Security and Access Control
 
 Enterprise RAG systems may process confidential organizational information.
 
@@ -3059,41 +2678,30 @@ An HR employee should not receive confidential Finance documents merely because 
 
 ## Key Principle
 
-Authorization must be enforced before restricted content reaches the language model.
-            `,
+Authorization must be enforced before restricted content reaches the language model.`,
           },
-
           {
-            type: "check",
-            question:
-              "Where should document access authorization be enforced in an enterprise RAG system?",
-
+            type: 'check',
+            question: "Where should document access authorization be enforced in an enterprise RAG system?",
             options: [
-              "Only in the language model prompt",
-              "In trusted application and retrieval controls before restricted content is supplied to the model",
-              "Only in the browser",
-              "After confidential information has already been returned",
+              "In the system prompt, by telling the model which documents to ignore",
+              "In the user interface, by hiding answers the user should not see",
+              "After generation, by removing restricted facts from the response",
+              "In trusted retrieval controls, before restricted content reaches the model",
             ],
-
-            answer: 1,
-
-            explanation:
-              "The application must enforce document permissions before retrieving and supplying restricted information to the language model.",
+            answer: 3,
+            explanation: "The application must enforce document permissions before retrieving and supplying restricted information to the language model.",
           },
         ],
       },
-
       {
         id: "evaluating-rag-quality",
         title: "Evaluating RAG Quality",
-
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Evaluating RAG Quality
+            type: 'text',
+            text: `# Evaluating RAG Quality
 
 A RAG application must be evaluated at both the retrieval and generation stages.
 
@@ -3134,14 +2742,9 @@ Create a collection of representative questions with known relevant documents an
 
 Example:
 
-Question:
-"What is the company's laptop replacement procedure?"
-
-Expected source:
-"IT Hardware Replacement Policy."
-
-Expected answer:
-Employees submit a hardware replacement request through the IT service catalog and obtain manager approval.
+- **Question:** "What is the company's laptop replacement procedure?"
+- **Expected source:** "IT Hardware Replacement Policy."
+- **Expected answer:** Employees submit a hardware replacement request through the IT service catalog and obtain manager approval.
 
 ## Human Evaluation
 
@@ -3162,40 +2765,30 @@ Evaluate the system after:
 
 ## Key Principle
 
-Measure retrieval quality and answer quality separately so problems can be identified and corrected.
-            `,
+Measure retrieval quality and answer quality separately so problems can be identified and corrected.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why should retrieval and generation be evaluated separately?",
-
+            type: 'check',
+            question: "Why should retrieval and generation be evaluated separately?",
             options: [
               "Because poor answers can result from either incorrect retrieval or incorrect generation",
+              "Because vector databases generate all final answers",
               "Because retrieval and generation are identical operations",
               "Because evaluation is unnecessary for production systems",
-              "Because vector databases generate all final answers",
             ],
-
             answer: 0,
-
-            explanation:
-              "Separate evaluation helps identify whether a problem originates from retrieving the wrong information or generating an incorrect response.",
+            explanation: "Separate evaluation helps identify whether a problem originates from retrieving the wrong information or generating an incorrect response.",
           },
         ],
       },
-
       {
         id: "rag-performance-and-cost-optimization",
         title: "RAG Performance and Cost Optimization",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# RAG Performance and Cost Optimization
+            type: 'text',
+            text: `# RAG Performance and Cost Optimization
 
 Enterprise RAG systems must balance retrieval quality, response speed, scalability, and operating costs.
 
@@ -3259,52 +2852,36 @@ Optimization should not weaken authorization, data isolation, or answer quality.
 
 ## Key Principle
 
-A successful RAG system is not simply accurate. It must also be operationally efficient, secure, and affordable.
-            `,
+A successful RAG system is not simply accurate. It must also be operationally efficient, secure, and affordable.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is one way to reduce unnecessary model token consumption in a RAG application?",
-
+            type: 'check',
+            question: "What is one way to reduce unnecessary model token consumption in a RAG application?",
             options: [
-              "Send every document to the model",
               "Select only relevant retrieved context",
               "Disable retrieval filtering",
+              "Send every document to the model",
               "Increase chunk overlap without evaluation",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Selecting only relevant retrieved context reduces unnecessary tokens and can improve response quality.",
+            answer: 0,
+            explanation: "Selecting only relevant retrieved context reduces unnecessary tokens and can improve response quality.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 11
-  // ----------------------------------------------------------
-
   {
     id: "practical-enterprise-rag-project",
     title: "Practical Enterprise RAG Project",
-
     lessons: [
-
       {
         id: "designing-an-enterprise-knowledge-assistant",
         title: "Designing an Enterprise Knowledge Assistant",
-        minutes: 25,
-
+        minutes: 9,
         blocks: [
           {
-            type: "text",
-            text: `
-# Designing an Enterprise Knowledge Assistant
+            type: 'text',
+            text: `# Designing an Enterprise Knowledge Assistant
 
 In this lesson, you will design a RAG-based enterprise knowledge assistant.
 
@@ -3345,6 +2922,7 @@ The assistant must:
 
 ## Proposed Architecture
 
+\`\`\`text
 Employee
     |
     v
@@ -3376,6 +2954,7 @@ Validated Answer
     |
     v
 Employee
+\`\`\`
 
 ## Supporting Services
 
@@ -3402,40 +2981,30 @@ Before implementing the solution, decide:
 
 ## Key Principle
 
-An enterprise knowledge assistant should retrieve trusted information while respecting organizational access controls.
-            `,
+An enterprise knowledge assistant should retrieve trusted information while respecting organizational access controls.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is a critical requirement for an enterprise knowledge assistant?",
-
+            type: 'check',
+            question: "What is a critical requirement for an enterprise knowledge assistant?",
             options: [
               "Every employee must access every document",
               "The application must enforce document-level access permissions",
               "The AI model must control all user permissions",
               "Source references should always be removed",
             ],
-
             answer: 1,
-
-            explanation:
-              "Enterprise knowledge assistants must enforce access permissions so users only receive information they are authorized to access.",
+            explanation: "Enterprise knowledge assistants must enforce access permissions so users only receive information they are authorized to access.",
           },
         ],
       },
-
       {
         id: "implementing-an-enterprise-rag-workflow",
         title: "Implementing an Enterprise RAG Workflow",
-        minutes: 25,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Implementing an Enterprise RAG Workflow
+            type: 'text',
+            text: `# Implementing an Enterprise RAG Workflow
 
 This lesson translates the architecture into an implementation plan.
 
@@ -3518,40 +3087,30 @@ Expand only after security and retrieval quality have been evaluated.
 
 ## Key Principle
 
-Build the RAG workflow incrementally and validate each stage before expanding to production.
-            `,
+Build the RAG workflow incrementally and validate each stage before expanding to production.`,
           },
-
           {
-            type: "check",
-            question:
-              "What should happen before expanding an enterprise RAG solution to production users?",
-
+            type: 'check',
+            question: "What should happen before expanding an enterprise RAG solution to production users?",
             options: [
-              "Disable document permissions",
               "Evaluate security, retrieval quality, and operational readiness",
-              "Remove all source references",
+              "Disable document permissions",
               "Allow unrestricted model access to company systems",
+              "Remove all source references",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Security, retrieval quality, and operational readiness should be evaluated before expanding a RAG solution to production.",
+            answer: 0,
+            explanation: "Security, retrieval quality, and operational readiness should be evaluated before expanding a RAG solution to production.",
           },
         ],
       },
-
       {
         id: "enterprise-rag-capstone",
         title: "Capstone: Build an Enterprise RAG Architecture",
-        minutes: 30,
-
+        minutes: 6,
         blocks: [
           {
-            type: "text",
-            text: `
-# Capstone: Build an Enterprise RAG Architecture
+            type: 'text',
+            text: `# Capstone: Build an Enterprise RAG Architecture
 
 This final project brings together the concepts covered throughout the course.
 
@@ -3639,291 +3198,27 @@ RAG enables organizations to connect language models to their own knowledge.
 
 However, successful enterprise RAG requires much more than embeddings and a vector database.
 
-It requires secure data ingestion, retrieval architecture, access control, evaluation, monitoring, and governance.
-            `,
+It requires secure data ingestion, retrieval architecture, access control, evaluation, monitoring, and governance.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary objective of the enterprise RAG capstone?",
-
+            type: 'check',
+            question: "What is the primary objective of the enterprise RAG capstone?",
             options: [
-              "Create an unrestricted chatbot",
               "Design a secure knowledge retrieval and generation architecture",
+              "Create an unrestricted chatbot",
               "Replace all organizational databases",
               "Train a language model without using external knowledge",
             ],
-
-            answer: 1,
-
-            explanation:
-              "The capstone demonstrates how to design a secure, scalable, and governed RAG architecture using enterprise knowledge sources.",
+            answer: 0,
+            explanation: "The capstone demonstrates how to design a secure, scalable, and governed RAG architecture using enterprise knowledge sources.",
           },
         ],
       },
     ],
   },
+];
 
-);
-
-// ============================================================
-// FIRESTORE SEEDING LOGIC
-// ============================================================
-
-function validateCourse() {
-  const moduleCount = MODULES.length;
-
-  const lessons = MODULES.flatMap((module) => module.lessons);
-
-  const lessonCount = lessons.length;
-
-  const quickCheckCount = lessons.reduce(
-    (total, lesson) =>
-      total +
-      lesson.blocks.filter((block) => block.type === "check").length,
-    0
-  );
-
-  const estimatedMinutes = lessons.reduce(
-    (total, lesson) => total + lesson.minutes,
-    0
-  );
-
-  if (moduleCount !== 11) {
-    throw new Error(
-      `Expected 11 modules, found ${moduleCount}.`
-    );
-  }
-
-  if (lessonCount !== 33) {
-    throw new Error(
-      `Expected 33 lessons, found ${lessonCount}.`
-    );
-  }
-
-  if (quickCheckCount !== 33) {
-    throw new Error(
-      `Expected 33 Quick Checks, found ${quickCheckCount}.`
-    );
-  }
-
-  const moduleIds = new Set();
-  const lessonIds = new Set();
-
-  for (const module of MODULES) {
-    if (!module.id || !module.title || !module.lessons.length) {
-      throw new Error(`Invalid module: ${module.id}`);
-    }
-
-    if (moduleIds.has(module.id)) {
-      throw new Error(`Duplicate module ID: ${module.id}`);
-    }
-
-    moduleIds.add(module.id);
-
-    for (const lesson of module.lessons) {
-      if (!lesson.id || !lesson.title || !lesson.blocks.length) {
-        throw new Error(
-          `Invalid lesson in module ${module.id}: ${lesson.id}`
-        );
-      }
-
-      if (lessonIds.has(lesson.id)) {
-        throw new Error(`Duplicate lesson ID: ${lesson.id}`);
-      }
-
-      lessonIds.add(lesson.id);
-
-      const checks = lesson.blocks.filter(
-        (block) => block.type === "check"
-      );
-
-      if (checks.length !== 1) {
-        throw new Error(
-          `Lesson ${lesson.id} must contain exactly one Quick Check.`
-        );
-      }
-
-      for (const check of checks) {
-        if (
-          !check.question ||
-          !Array.isArray(check.options) ||
-          check.options.length < 2 ||
-          !Number.isInteger(check.answer) ||
-          check.answer < 0 ||
-          check.answer >= check.options.length ||
-          !check.explanation
-        ) {
-          throw new Error(
-            `Invalid Quick Check in lesson ${lesson.id}.`
-          );
-        }
-      }
-    }
-  }
-
-  return {
-    moduleCount,
-    lessonCount,
-    quickCheckCount,
-    estimatedMinutes,
-  };
-}
-
-function buildCourseDocument(stats) {
-  return {
-    ...COURSE,
-
-    modules: MODULES.map((module, moduleIndex) => ({
-      id: module.id,
-      title: module.title,
-      order: moduleIndex + 1,
-
-      lessons: module.lessons.map((lesson, lessonIndex) => ({
-        id: lesson.id,
-        title: lesson.title,
-        order: lessonIndex + 1,
-        estimatedMinutes: lesson.minutes,
-      })),
-    })),
-
-    moduleCount: stats.moduleCount,
-    lessonCount: stats.lessonCount,
-    quickCheckCount: stats.quickCheckCount,
-    estimatedMinutes: stats.estimatedMinutes,
-
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  };
-}
-
-function buildLessonDocument(
-  module,
-  lesson,
-  moduleIndex,
-  lessonIndex
-) {
-  return {
-    id: lesson.id,
-    courseId: COURSE.id,
-
-    moduleId: module.id,
-    moduleTitle: module.title,
-    moduleOrder: moduleIndex + 1,
-
-    title: lesson.title,
-    order: lessonIndex + 1,
-
-    estimatedMinutes: lesson.minutes,
-
-    blocks: lesson.blocks,
-
-    status: "draft",
-
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  };
-}
-
-async function seedCourse() {
-  const stats = validateCourse();
-
-  console.log("\nCourse validation successful.");
-  console.log(`Modules: ${stats.moduleCount}`);
-  console.log(`Lessons: ${stats.lessonCount}`);
-  console.log(`Quick Checks: ${stats.quickCheckCount}`);
-  console.log(`Estimated minutes: ${stats.estimatedMinutes}`);
-
-  const courseRef = db.collection("courses").doc(COURSE.id);
-
-  const existingCourse = await courseRef.get();
-
-  if (existingCourse.exists && !OVERWRITE) {
-    console.log(`\nCourse ${COURSE.id} already exists.`);
-
-    console.log(
-      "Use --overwrite only if you intentionally want to replace its seeded content."
-    );
-
-    return;
-  }
-
-  if (!APPLY) {
-    console.log("\nDRY RUN — no Firestore writes performed.");
-
-    console.log("\nCourse details:");
-
-    console.log(
-      JSON.stringify(
-        {
-          id: COURSE.id,
-          title: COURSE.title,
-          status: COURSE.status,
-          language: COURSE.language,
-          modules: stats.moduleCount,
-          lessons: stats.lessonCount,
-          quickChecks: stats.quickCheckCount,
-          estimatedMinutes: stats.estimatedMinutes,
-        },
-        null,
-        2
-      )
-    );
-
-    console.log(
-      "\nTo write this course to Firebase, run:"
-    );
-
-    console.log(
-      "node scripts/embeddings-rag/seed-embeddings-rag.mjs --apply"
-    );
-
-    return;
-  }
-
-  const batch = db.batch();
-
-  batch.set(
-    courseRef,
-    buildCourseDocument(stats),
-    { merge: false }
-  );
-
-  let lessonWriteCount = 0;
-
-  MODULES.forEach((module, moduleIndex) => {
-    module.lessons.forEach((lesson, lessonIndex) => {
-      const lessonRef = courseRef
-        .collection("lessons")
-        .doc(lesson.id);
-
-      batch.set(
-        lessonRef,
-        buildLessonDocument(
-          module,
-          lesson,
-          moduleIndex,
-          lessonIndex
-        ),
-        { merge: false }
-      );
-
-      lessonWriteCount++;
-    });
-  });
-
-  await batch.commit();
-
-  console.log("\nCourse successfully seeded!");
-  console.log(`Course ID: ${COURSE.id}`);
-  console.log(`Modules: ${stats.moduleCount}`);
-  console.log(`Lessons written: ${lessonWriteCount}`);
-  console.log(`Quick Checks: ${stats.quickCheckCount}`);
-  console.log("Course status: draft");
-}
-
-seedCourse().catch((error) => {
-  console.error("\nCourse seeding failed:", error);
+runCourseSeed({ course: COURSE, modules: MODULES, script: 'scripts/embeddings-rag/seed-embeddings-rag.mjs' }).catch((error) => {
+  console.error('\nSEED FAILED:', error);
   process.exit(1);
 });

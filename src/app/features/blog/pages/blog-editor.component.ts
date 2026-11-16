@@ -122,18 +122,30 @@ interface FormatTool {
               ></textarea>
 
               <!-- Cover -->
-              <div class="mt-3 flex flex-wrap items-center gap-2">
+              <!-- Phones: one line of colours, with More to show them all -->
+              <div class="mt-3 flex items-center gap-2 sm:flex-wrap" [class.flex-wrap]="showAllCovers()">
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ 'Cover' | t }}</span>
                 @for (option of covers; track option.key) {
                   <button
                     type="button"
                     (click)="cover.set(option.key)"
-                    class="h-8 w-12 rounded-md ring-offset-2 transition focus:outline-none focus:ring-2 focus:ring-[#007979]"
-                    [ngClass]="cover() === option.key ? 'ring-2 ring-[#032D42]' : ''"
+                    class="h-8 w-10 shrink-0 rounded-md ring-offset-2 transition focus:outline-none focus:ring-2 focus:ring-[#007979] sm:w-12"
+                    [ngClass]="[cover() === option.key ? 'ring-2 ring-[#032D42]' : '', showAllCovers() || phoneCovers().has(option.key) ? '' : 'hidden sm:block']"
                     [style.background]="option.value"
                     [attr.aria-pressed]="cover() === option.key"
                     [attr.aria-label]="'Cover {0}' | t: [$index + 1]"
                   ></button>
+                }
+                @if (covers.length > phoneCoverCount) {
+                  <button
+                    type="button"
+                    (click)="showAllCovers.set(!showAllCovers())"
+                    class="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-md px-2 text-xs font-semibold text-[#007979] hover:bg-teal-50 sm:hidden"
+                    [attr.aria-expanded]="showAllCovers()"
+                  >
+                    {{ (showAllCovers() ? 'Less' : 'More') | t }}
+                    <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">{{ showAllCovers() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
                 }
               </div>
 
@@ -147,27 +159,33 @@ interface FormatTool {
                       <mat-icon>image</mat-icon>
                     </span>
                   }
-                  <div class="min-w-0 flex-1">
+                  <!-- Phones: the details go below the image and buttons -->
+                  <div class="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
                     <p class="text-sm font-semibold text-slate-700">{{ 'Cover photo' | t }}</p>
                     <p class="text-xs text-slate-500">{{ 'JPG, PNG or WebP up to 5 MB. The colour above shows when there is no photo.' | t }}</p>
                   </div>
-                  <div class="flex gap-2">
+                  <div class="ml-auto flex gap-2 sm:ml-0">
                     <button
                       type="button"
                       (click)="coverFile.click()"
                       [disabled]="uploading()"
-                      class="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-[#007979] hover:text-[#007979] disabled:opacity-50"
+                      [attr.aria-label]="(uploading() === 'cover' ? 'Uploading...' : coverImage() ? 'Change' : 'Upload') | t"
+                      [title]="(coverImage() ? 'Change' : 'Upload') | t"
+                      class="inline-flex h-9 w-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white text-sm sm:w-auto sm:px-3 font-semibold text-slate-700 transition hover:border-[#007979] hover:text-[#007979] disabled:opacity-50"
                     >
                       <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">upload</mat-icon>
-                      {{ (uploading() === 'cover' ? 'Uploading...' : coverImage() ? 'Change' : 'Upload') | t }}
+                      <span class="hidden sm:inline">{{ (uploading() === 'cover' ? 'Uploading...' : coverImage() ? 'Change' : 'Upload') | t }}</span>
                     </button>
                     @if (coverImage()) {
                       <button
                         type="button"
                         (click)="coverImage.set('')"
-                        class="inline-flex h-9 items-center rounded-lg px-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+                        [attr.aria-label]="'Remove' | t"
+                        [title]="'Remove' | t"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-rose-700 hover:bg-rose-50 sm:w-auto sm:px-2"
                       >
-                        {{ 'Remove' | t }}
+                        <mat-icon class="!h-[18px] !w-[18px] !text-[18px] sm:!hidden" aria-hidden="true">delete</mat-icon>
+                        <span class="hidden sm:inline">{{ 'Remove' | t }}</span>
                       </button>
                     }
                   </div>
@@ -391,6 +409,17 @@ export class BlogEditorComponent implements OnInit {
   protected readonly existing = signal<BlogPost | null>(null);
   protected readonly preview = signal(false);
   protected readonly cover = signal<BlogCover>('teal');
+  /** Phones show this many colours on one line (the chosen one is always among them). */
+  protected readonly phoneCoverCount = 4;
+  protected readonly showAllCovers = signal(false);
+  protected readonly phoneCovers = computed(() => {
+    const keys = this.covers.slice(0, this.phoneCoverCount).map((option) => option.key);
+    const chosen = this.cover();
+    if (!keys.includes(chosen)) {
+      keys[keys.length - 1] = chosen;
+    }
+    return new Set<BlogCover>(keys);
+  });
   protected readonly coverImage = signal('');
   protected coverImageAlt = '';
   /** Which upload is running, if any. */

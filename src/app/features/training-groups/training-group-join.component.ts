@@ -131,7 +131,7 @@ import {
                 @for (question of group.questions; track $index) {
                   <label class="block text-sm">
                     <span class="font-medium text-slate-700">{{ question }}</span>
-                    <textarea [name]="'answer' + $index" rows="3" maxlength="2000" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" [ngModel]="answers()[$index] ?? ''" (ngModelChange)="setAnswer($index, $event)"></textarea>
+                    <textarea [name]="'answer' + $index" rows="3" maxlength="2000" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" [ngModel]="answerAt($index)" (ngModelChange)="setAnswer($index, $event)"></textarea>
                   </label>
                 }
                 <button type="submit" [disabled]="busy()" class="h-10 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666] disabled:opacity-50">
@@ -166,6 +166,10 @@ export class TrainingGroupJoinComponent {
   protected readonly isGroupMember = signal(false);
   protected readonly request = signal<OwnRequest | null>(null);
   protected readonly answers = signal<string[]>([]);
+
+  protected answerAt(index: number): string {
+    return this.answers()[index] ?? '';
+  }
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 

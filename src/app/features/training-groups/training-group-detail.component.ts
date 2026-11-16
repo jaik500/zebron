@@ -82,7 +82,7 @@ interface AddCandidate {
   template: `
     <main class="mt-16 min-h-screen bg-slate-50">
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-4 sm:px-6 lg:px-8">
+        <div class="mx-auto flex max-w-5xl items-center gap-2 px-4 py-4 sm:flex-wrap sm:gap-3 sm:px-6 lg:px-8">
           <a
             [routerLink]="['/partner/org', organizationId, 'training-groups']"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 hover:bg-white/15 hover:text-white"
@@ -100,20 +100,24 @@ interface AddCandidate {
               type="button"
               (click)="downloadPdf()"
               [disabled]="pdfBusy()"
-              class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-3 text-sm font-semibold text-[#007979] hover:bg-white/90 disabled:opacity-60"
+              [attr.aria-label]="(pdfBusy() ? 'Preparing…' : 'Download PDF') | t"
+              [title]="'Download PDF' | t"
+              class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-white text-sm sm:w-auto sm:px-3 font-semibold text-[#007979] hover:bg-white/90 disabled:opacity-60"
             >
               <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">picture_as_pdf</mat-icon>
-              {{ (pdfBusy() ? 'Preparing…' : 'Download PDF') | t }}
+              <span class="hidden sm:inline">{{ (pdfBusy() ? 'Preparing…' : 'Download PDF') | t }}</span>
             </button>
           }
           @if (group() && canEdit() && (!locked() || access.isAdmin())) {
             <button
               type="button"
               (click)="openEdit()"
-              class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/40 px-3 text-sm font-semibold text-white hover:bg-white/15"
+              [attr.aria-label]="'Edit' | t"
+              [title]="'Edit' | t"
+              class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-white/40 text-sm sm:w-auto sm:px-3 font-semibold text-white hover:bg-white/15"
             >
               <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">edit</mat-icon>
-              {{ 'Edit' | t }}
+              <span class="hidden sm:inline">{{ 'Edit' | t }}</span>
             </button>
           }
         </div>
@@ -271,21 +275,23 @@ interface AddCandidate {
               } @else {
                 <ul class="divide-y divide-slate-100">
                   @for (item of courses(); track item.key) {
-                    <li class="flex flex-wrap items-center gap-3 px-5 py-3">
+                    <li class="flex items-center gap-3 px-5 py-3 sm:flex-wrap">
                       <mat-icon class="shrink-0 text-[#007979]" aria-hidden="true">{{ item.lessonId ? 'article' : 'school' }}</mat-icon>
                       <span class="min-w-0 flex-1">
                         <a [routerLink]="['/partner/org', organizationId, 'courses', item.courseId]" class="block truncate text-sm font-semibold text-slate-900 hover:text-[#007979] hover:underline">{{ item.courseTitle }}</a>
                         <span class="block truncate text-xs text-slate-500">
                           {{ item.lessonTitle ? ('Lesson: {0}' | t: [item.lessonTitle]) : ('Whole course' | t) }}
-                          @if (item.dueAt) { · {{ 'Due {0}' | t: [item.dueAt | date: 'mediumDate'] }} }
-                          @if (item.required) { · {{ 'Required' | t }} }
+                          <span class="hidden sm:inline">
+                            @if (item.dueAt) { · {{ 'Due {0}' | t: [item.dueAt | date: 'mediumDate'] }} }
+                            @if (item.required) { · {{ 'Required' | t }} }
+                          </span>
                         </span>
                         @if (item.note) {
                           <span class="mt-0.5 block truncate text-xs italic text-slate-500">“{{ item.note }}”</span>
                         }
                       </span>
                       @if (progressFor(item); as count) {
-                        <span class="text-xs text-slate-600">
+                        <span class="hidden text-xs text-slate-600 sm:inline">
                           {{ '{0} of {1} done' | t: [count.done, count.total] }}
                           @if (count.overdue) {
                             <span class="ml-1 rounded-full bg-rose-100 px-1.5 font-semibold text-rose-800">{{ '{0} overdue' | t: [count.overdue] }}</span>
@@ -293,9 +299,15 @@ interface AddCandidate {
                         </span>
                       }
                       @if (canManageMembers() && !locked()) {
-                        <span class="flex gap-1">
-                          <button type="button" (click)="openCourse(item)" [disabled]="busy()" class="h-8 rounded-lg px-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50" [attr.aria-label]="'Change {0}' | t: [item.courseTitle]">{{ 'Change' | t }}</button>
-                          <button type="button" (click)="removeCourse.set(item)" [disabled]="busy()" class="h-8 rounded-lg px-2 text-xs font-semibold text-slate-500 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50" [attr.aria-label]="'Remove {0} from the group' | t: [item.courseTitle]">{{ 'Remove' | t }}</button>
+                        <span class="flex shrink-0 gap-1">
+                          <button type="button" (click)="openCourse(item)" [disabled]="busy()" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50 sm:w-auto sm:px-2" [attr.aria-label]="'Change {0}' | t: [item.courseTitle]" [title]="'Change' | t">
+                            <mat-icon class="!h-[18px] !w-[18px] !text-[18px] sm:!hidden" aria-hidden="true">edit</mat-icon>
+                            <span class="hidden sm:inline">{{ 'Change' | t }}</span>
+                          </button>
+                          <button type="button" (click)="removeCourse.set(item)" [disabled]="busy()" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold text-slate-500 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50 sm:w-auto sm:px-2" [attr.aria-label]="'Remove {0} from the group' | t: [item.courseTitle]" [title]="'Remove' | t">
+                            <mat-icon class="!h-[18px] !w-[18px] !text-[18px] sm:!hidden" aria-hidden="true">delete</mat-icon>
+                            <span class="hidden sm:inline">{{ 'Remove' | t }}</span>
+                          </button>
                         </span>
                       }
                     </li>
@@ -348,7 +360,7 @@ interface AddCandidate {
                       }
                       @if (canManageMembers() && !locked()) {
                         <div class="mt-3 flex flex-wrap items-center gap-2">
-                          <input type="text" maxlength="500" class="h-9 min-w-0 flex-1 rounded-lg border border-slate-300 px-3 text-sm" [placeholder]="'Note to the applicant (optional)' | t" [value]="decisionNotes()[entry.userId] ?? ''" (input)="setDecisionNote(entry.userId, $any($event.target).value)" />
+                          <input type="text" maxlength="500" class="h-9 min-w-0 flex-1 rounded-lg border border-slate-300 px-3 text-sm" [placeholder]="'Note to the applicant (optional)' | t" [value]="noteFor(entry.userId)" (input)="setDecisionNote(entry.userId, $any($event.target).value)" />
                           <button type="button" (click)="decide(entry, 'approve')" [disabled]="busy()" class="h-9 rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666] disabled:opacity-50">{{ 'Approve' | t }}</button>
                           <button type="button" (click)="decide(entry, 'decline')" [disabled]="busy()" class="h-9 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50">{{ 'Decline' | t }}</button>
                         </div>
@@ -1090,6 +1102,10 @@ export class TrainingGroupDetailComponent implements OnInit {
     }
   }
 
+  protected noteFor(userId: string): string {
+    return this.decisionNotes()[userId] ?? '';
+  }
+
   protected setDecisionNote(userId: string, note: string): void {
     this.decisionNotes.update((notes) => ({ ...notes, [userId]: note }));
   }
@@ -1159,12 +1175,40 @@ export class TrainingGroupDetailComponent implements OnInit {
   private async loadMembers(): Promise<void> {
     this.membersLoading.set(true);
     try {
-      this.members.set(await this.service.listMembers(this.organizationId, this.groupId));
+      const members = await this.service.listMembers(this.organizationId, this.groupId);
+      this.members.set(members);
+      // Members added before names were recorded show as "Member": fill them in from the directory.
+      if (members.some((member) => !this.hasRealName(member)) && this.canManageMembers()) {
+        void this.fillMemberNames();
+      }
     } catch (error) {
       this.logger.error('TrainingGroupDetailComponent', 'Could not load the members.', error);
       this.error.set('The members could not be loaded. Try again.');
     } finally {
       this.membersLoading.set(false);
+    }
+  }
+
+  private hasRealName(member: TrainingGroupMember): boolean {
+    return Boolean(member.name) && member.name !== 'Member' && member.name !== member.email;
+  }
+
+  private async fillMemberNames(): Promise<void> {
+    try {
+      const people = new Map((await this.service.loadDirectory(this.organizationId)).map((person) => [person.userId, person]));
+      this.members.update((members) =>
+        members
+          .map((member) => {
+            const person = people.get(member.userId);
+            if (!person || this.hasRealName(member)) {
+              return member;
+            }
+            return { ...member, name: person.name, email: member.email || person.email || null };
+          })
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
+    } catch (error) {
+      this.logger.error('TrainingGroupDetailComponent', 'Could not look up member names.', error);
     }
   }
 

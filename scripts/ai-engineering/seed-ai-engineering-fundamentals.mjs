@@ -1,2504 +1,2428 @@
-// ================================================
-// AI ENGINEERING FUNDAMENTALS & LLMs
-// SECTION 1 OF 3
-// ================================================
+/**
+ * AI Engineering Fundamentals & LLMs
+ * Program: Enterprise AI & Solutions Architecture, step 5
+ *
+ * Dry run (checks the content, writes nothing):
+ *   node scripts/ai-engineering/seed-ai-engineering-fundamentals.mjs
+ * Create the course:
+ *   node scripts/ai-engineering/seed-ai-engineering-fundamentals.mjs --apply
+ * Update an existing course (keeps its status, publish date and final exam):
+ *   node scripts/ai-engineering/seed-ai-engineering-fundamentals.mjs --apply --overwrite
+ *
+ * Lesson text uses the light Markdown lessons support: # / ## / ### headings,
+ * - and 1. lists, **bold**, *italic*, `code`, ``` code blocks, > quotes and
+ * | tables |. Each text block is one section in the lesson player; its first
+ * heading is the section title.
+ */
 
-import {
-  applicationDefault,
-  initializeApp,
-} from "firebase-admin/app";
+import { runCourseSeed } from '../lib/write-zebron-course.mjs';
 
-import {
-  FieldValue,
-  getFirestore,
-} from "firebase-admin/firestore";
-
-const PROJECT_ID =
-  process.env.GCLOUD_PROJECT || "zebron-2b49f";
-
-initializeApp({
-  credential: applicationDefault(),
-  projectId: PROJECT_ID,
-});
-
-const db = getFirestore();
-
-const COURSE_ID = "ai-engineering-fundamentals-llms";
-
-const args = process.argv.slice(2);
-
-const APPLY = args.includes("--apply");
-const OVERWRITE = args.includes("--overwrite");
-
-// ================================================
-// CONTENT HELPERS
-// ================================================
-
-const text = (value) => ({
-  type: "text",
-  text: value.trim(),
-});
-
-const check = (
-  question,
-  options,
-  answer,
-  explanation
-) => ({
-  type: "check",
-  question,
-  options,
-  answer,
-  explanation,
-});
-
-const lesson = (
-  id,
-  title,
-  minutes,
-  content,
-  question,
-  options,
-  answer,
-  explanation
-) => ({
-  id,
-  title,
-  minutes,
-  blocks: [
-    text(content),
-    check(question, options, answer, explanation),
+const COURSE = {
+  id: "ai-engineering-fundamentals-llms",
+  title: "AI Engineering Fundamentals & LLMs",
+  summary: "Understanding Machine Learning, Transformers, and Large Language Models",
+  description: "Build a strong foundation in artificial intelligence, machine learning, deep learning, and large language models.\n\nExplore neural networks, transformer architecture, attention mechanisms, model training, inference, tokenization, context windows, and AI model providers.\n\nLearn how to connect Python applications to LLM APIs, implement structured outputs and tool calling, evaluate model quality, and monitor performance.\n\nThrough a practical enterprise AI project, learn how to design and integrate an AI-powered application using secure backend architecture.\n\nThis course prepares learners for advanced study in prompt engineering, retrieval-augmented generation, AI agents, and enterprise AI architecture.",
+  topic: "Artificial Intelligence and AI Engineering",
+  program: "Enterprise AI & Solutions Architecture",
+  programOrder: 5,
+  level: "beginner",
+  cover: "teal",
+  outcomes: [
+    "Explain how AI, machine learning, and deep learning relate",
+    "Describe how neural networks, transformers, and attention work",
+    "Explain how LLMs generate text, and the role of tokens and context windows",
+    "Compare hosted and self-hosted models and choose one for a use case",
+    "Call LLM APIs securely and evaluate model performance",
   ],
-});
+  skills: [
+    "Machine learning basics",
+    "Neural networks",
+    "Transformers",
+    "Large language models",
+    "Tokens and context windows",
+    "LLM APIs",
+    "Model selection",
+    "Model evaluation",
+  ],
+};
 
-const moduleData = (id, title, lessons) => ({
-  id,
-  title,
-  lessons,
-});
+const MODULES = [
+  {
+    id: "introduction-to-artificial-intelligence",
+    title: "Introduction to Artificial Intelligence",
+    lessons: [
+      {
+        id: "understanding-artificial-intelligence",
+        title: "Understanding Artificial Intelligence",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding Artificial Intelligence
 
-// ================================================
-// COURSE MODULES
-// ================================================
+Artificial intelligence (AI) is the field of computer science that builds systems able to perform tasks we usually associate with human intelligence: understanding language, recognizing images, making predictions, planning, and making decisions.
 
-const MODULES = [];
+## Rules versus learning
 
-// ================================================
-// MODULE 1 — INTRODUCTION TO ARTIFICIAL INTELLIGENCE
-// ================================================
+Early AI systems were mostly **rule-based**. Experts wrote explicit rules, such as "if the invoice total is over $10,000, route it to a manager". Rule-based systems are predictable and easy to explain, but they break when situations aren't covered by the rules.
 
-MODULES.push(
-  moduleData(
-    "introduction-to-artificial-intelligence",
-    "Introduction to Artificial Intelligence",
-    [
-      lesson(
-        "understanding-artificial-intelligence",
-        "Understanding Artificial Intelligence",
-        14,
-        `
-Artificial Intelligence (AI) is a field of computer
-science focused on creating systems that perform tasks
-normally associated with human intelligence.
+Most modern AI **learns from data** instead. Rather than writing every rule, engineers give a model many examples and let it find the patterns. A spam filter, for example, learns what spam looks like from thousands of labelled emails.
 
-These tasks may include:
+| Approach | Strengths | Weaknesses |
+| --- | --- | --- |
+| Rule-based | Predictable, explainable, no training data needed | Brittle; hard to maintain as rules multiply |
+| Learned from data | Handles messy, varied input; improves with data | Needs good data; harder to explain; can be wrong in surprising ways |
 
-- Understanding language.
-- Recognizing images.
-- Identifying patterns.
-- Making predictions.
-- Generating content.
-- Supporting decisions.
-- Solving complex problems.
+Real systems often combine both: a model classifies a support ticket, and business rules decide who may approve the action.
 
-AI systems use different techniques depending
-on the problem they are designed to solve.
+## Where AI is used today
 
-Examples include:
+- **Language:** chat assistants, summarization, translation, drafting.
+- **Vision:** document scanning, defect detection, medical image support.
+- **Prediction:** demand forecasting, fraud detection, churn risk.
+- **Recommendation:** products, courses, or articles a user may like.
+- **Automation:** routing requests, extracting data from forms, triaging incidents.
 
-Image Recognition:
-Identifying objects in photographs.
+## What AI is not
 
-Natural Language Processing:
-Understanding and generating human language.
+AI systems don't understand the world the way people do. A language model predicts likely text; it doesn't check facts unless it is connected to sources that let it. Treat AI output as a strong draft or a recommendation that your application validates, not as guaranteed truth.
 
-Recommendation Systems:
-Suggesting products, courses, or content.
+## Key points
 
-Fraud Detection:
-Identifying potentially suspicious transactions.
-
-Generative AI:
-Creating text, images, audio, and other content.
-
-AI is not a single technology.
-
-It is a broad field containing multiple approaches,
-algorithms, models, and engineering disciplines.
-
-An AI engineer must understand both the capabilities
-and limitations of the systems being developed.
-        `,
-        "What is the primary objective of artificial intelligence?",
-        [
-          "To create systems capable of performing tasks associated with intelligence",
-          "To replace every database",
-          "To eliminate all software development",
-          "To make every computer operate without electricity"
+- AI covers systems that perform tasks associated with human intelligence.
+- Modern AI mostly learns patterns from data rather than following hand-written rules.
+- Combine models with rules, validation, and human oversight in business systems.`,
+          },
+          {
+            type: 'check',
+            question: "What is the main difference between rule-based systems and machine learning systems?",
+            options: [
+              "Rule-based systems can only process images, while machine learning handles text",
+              "Rule-based systems follow hand-written rules; machine learning systems learn patterns from data",
+              "Machine learning systems are always easier to explain than rule-based systems",
+              "Rule-based systems need training data; machine learning systems do not",
+            ],
+            answer: 1,
+            explanation: "Rule-based systems follow rules people write. Machine learning systems learn patterns from examples, which makes them flexible but harder to explain.",
+          },
         ],
-        0,
-        "AI focuses on building systems that perform tasks commonly associated with human intelligence."
-      ),
+      },
+      {
+        id: "types-of-artificial-intelligence",
+        title: "Types and Categories of Artificial Intelligence",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Types and Categories of Artificial Intelligence
 
-      lesson(
-        "types-of-artificial-intelligence",
-        "Types and Categories of Artificial Intelligence",
-        15,
-        `
-AI can be classified in several ways.
+AI is classified in several ways. Knowing the common terms helps you read vendor claims critically and describe solutions accurately.
 
-One common conceptual classification describes
-three levels of capability.
+## By capability
 
-Narrow AI:
+| Category | Meaning | Status |
+| --- | --- | --- |
+| **Narrow AI** | Performs specific tasks, such as translation or fraud detection | Every AI system in use today |
+| **General AI (AGI)** | Would match human ability across almost any intellectual task | Not achieved; actively debated |
+| **Superintelligence** | Would exceed human ability in nearly every area | Hypothetical |
 
-Systems designed to perform specific tasks.
+Even very capable language models are considered narrow AI: they are trained for language tasks and can fail at things a person finds easy.
 
-Examples include:
+## By technique
 
-- Image classification.
-- Voice assistants.
-- Fraud detection.
-- Recommendation systems.
-- Language models.
+- **Rule-based / symbolic AI:** logic and explicit rules written by experts.
+- **Machine learning:** models learn from data (covered in the next module).
+- **Deep learning:** machine learning with large neural networks.
+- **Generative AI:** models that create new text, images, audio, video, or code.
 
-Artificial General Intelligence (AGI):
+## By task
 
-A theoretical form of AI that could perform
-a broad range of intellectual tasks across domains
-with general capability.
+| Task | Example |
+| --- | --- |
+| Classification | Is this ticket about hardware, software, or access? |
+| Regression | How many tickets will arrive next week? |
+| Clustering | Which customers behave similarly? |
+| Generation | Draft a reply to this customer |
+| Recommendation | Which course should this learner take next? |
+| Detection | Is this login attempt unusual? |
 
-Artificial Superintelligence (ASI):
+Most enterprise projects are a combination: for example, classify an incoming request, retrieve related documents, and generate a draft reply.
 
-A hypothetical form of AI that would substantially
-exceed human capabilities across many intellectual areas.
+## Predictive versus generative AI
 
-Today's widely deployed AI systems are generally
-considered specialized or narrow AI.
+- **Predictive AI** outputs a label, number, or score. Its output can be checked against a known answer.
+- **Generative AI** produces new content. Quality is harder to measure, so it needs evaluation, grounding in trusted data, and review.
 
-Another classification focuses on functionality:
+## Key points
 
-Reactive Systems:
-Respond to current inputs without maintaining
-a persistent model of past experiences.
-
-Limited-Memory Systems:
-Use information from previous observations
-or stored context to support decisions.
-
-These classifications help distinguish current
-AI capabilities from theoretical future systems.
-        `,
-        "Which category best describes an AI system designed to perform a specific task such as image classification?",
-        [
-          "Artificial General Intelligence",
-          "Artificial Narrow Intelligence",
-          "Artificial Superintelligence",
-          "Human-level universal intelligence"
+- All AI in production today is narrow AI.
+- Describe a solution by the technique it uses and the task it performs.
+- Generative output needs more validation than a predictive score.`,
+          },
+          {
+            type: 'check',
+            question: "Which category describes every AI system in production today, including large language models?",
+            options: [
+              "Symbolic AI only",
+              "General AI",
+              "Superintelligence",
+              "Narrow AI",
+            ],
+            answer: 3,
+            explanation: "Today's systems, however capable, are built for specific kinds of tasks and are classed as narrow AI. General AI has not been achieved.",
+          },
         ],
-        1,
-        "Artificial Narrow Intelligence refers to systems designed for specific tasks or limited domains."
-      ),
+      },
+      {
+        id: "ai-ml-dl-generative-ai",
+        title: "Understanding AI, Machine Learning, Deep Learning, and Generative AI",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding AI, Machine Learning, Deep Learning, and Generative AI
 
-      lesson(
-        "ai-ml-dl-generative-ai",
-        "Understanding AI, Machine Learning, Deep Learning, and Generative AI",
-        16,
-        `
-Artificial Intelligence is the broad field.
+These four terms are often used interchangeably, but they describe different, nested ideas.
 
-Machine Learning (ML) is a subset of AI in which
-systems learn patterns from data to make predictions
-or decisions.
+\`\`\`text
+Artificial intelligence
+  └─ Machine learning
+       └─ Deep learning
+            └─ Large language models and most modern generative AI
+\`\`\`
 
-Deep Learning (DL) is a subset of machine learning
-that uses neural networks with multiple layers.
+## Artificial intelligence
 
-Generative AI is a category of AI systems designed
-to generate new content.
+The whole field: any technique that lets computers perform tasks associated with intelligence, including rules, search, and learning.
 
-Examples include:
+## Machine learning (ML)
 
-- Text generation.
-- Image generation.
-- Audio generation.
-- Video generation.
-- Code generation.
+A subset of AI in which systems **learn patterns from data** to make predictions or decisions. Examples: predicting which customers will cancel a subscription, or detecting fraudulent transactions. Many ML models are small and fast and work on tables of data.
 
-The relationship can be understood as:
+## Deep learning (DL)
 
-Artificial Intelligence
-    |
-    v
-Machine Learning
-    |
-    v
-Deep Learning
+A subset of ML that uses **neural networks with many layers**. Deep learning shines with unstructured data such as images, audio, and text, where hand-crafting features is impractical. It typically needs more data and computing power than classic ML.
 
-Generative AI overlaps with these areas and often
-uses deep learning models.
+## Generative AI
 
-Large Language Models are a major category
-of generative AI focused on language tasks.
+AI that **creates new content**: text, images, audio, video, or code. Most modern generative AI is built on deep learning. **Large language models (LLMs)** are generative models specialised in language.
 
-Understanding these relationships is important
-when evaluating AI solutions and selecting
-the right technology for a business problem.
-        `,
-        "Which statement correctly describes the relationship between machine learning and AI?",
-        [
-          "Machine learning is a subset of AI",
-          "AI is a subset of machine learning",
-          "They are completely unrelated",
-          "Machine learning only applies to databases"
+## Choosing the right tool
+
+| Problem | Often a good fit |
+| --- | --- |
+| Predict a number or category from a table of data | Classic machine learning |
+| Recognize objects in photos | Deep learning (computer vision) |
+| Summarize documents or draft replies | Generative AI / LLMs |
+| Apply a fixed policy, such as approval limits | Rules, not AI |
+
+A common mistake is using an LLM for everything. If a simple model or a rule solves the problem reliably and cheaply, prefer it.
+
+## Key points
+
+- AI ⊃ machine learning ⊃ deep learning; LLMs are deep learning models that generate language.
+- Classic ML suits structured data; deep learning suits images, audio, and text.
+- Match the technique to the problem instead of defaulting to the largest model.`,
+          },
+          {
+            type: 'check',
+            question: "How is deep learning related to machine learning?",
+            options: [
+              "Deep learning is a rule-based alternative to machine learning",
+              "Deep learning is a subset of machine learning that uses many-layered neural networks",
+              "Machine learning is a subset of deep learning",
+              "They are separate fields with no overlap",
+            ],
+            answer: 1,
+            explanation: "Deep learning is one kind of machine learning: it learns from data using neural networks with many layers.",
+          },
         ],
-        0,
-        "Machine learning is one approach within the broader field of artificial intelligence."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+  {
+    id: "understanding-machine-learning",
+    title: "Understanding Machine Learning",
+    lessons: [
+      {
+        id: "machine-learning-fundamentals",
+        title: "Machine Learning Fundamentals",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Machine Learning Fundamentals
 
-// ================================================
-// MODULE 2 — UNDERSTANDING MACHINE LEARNING
-// ================================================
+Machine learning lets a system learn patterns from examples instead of following explicit rules. The result of training is a **model**: a function that takes input and produces a prediction.
 
-MODULES.push(
-  moduleData(
-    "understanding-machine-learning",
-    "Understanding Machine Learning",
-    [
-      lesson(
-        "machine-learning-fundamentals",
-        "Machine Learning Fundamentals",
-        15,
-        `
-Machine Learning enables systems to learn patterns
-from data instead of relying exclusively on
-explicitly programmed rules.
+## Key vocabulary
 
-A machine learning model is trained using data.
+| Term | Meaning | Example |
+| --- | --- | --- |
+| **Features** | The input values the model uses | Ticket length, product, time of day |
+| **Label** | The correct answer for a training example | "Hardware" |
+| **Training** | Adjusting the model so its predictions match the labels | Learning from 50,000 past tickets |
+| **Inference** | Using the trained model on new data | Classifying today's tickets |
+| **Parameters** | Internal values learned in training | Weights in a model |
 
-During training, the model adjusts its internal
-parameters to learn relationships within the data.
+## The workflow
 
-After training, the model can make predictions
-or decisions using new inputs.
+1. **Define the problem** and how success will be measured.
+2. **Collect and clean data.** Most project time goes here.
+3. **Split the data** into training, validation, and test sets.
+4. **Train** candidate models on the training set.
+5. **Tune** using the validation set.
+6. **Evaluate** once on the untouched test set.
+7. **Deploy** and **monitor**, because data changes over time.
 
-Example:
+## Overfitting and underfitting
 
-A bank wants to identify potentially fraudulent
-transactions.
+- **Overfitting:** the model memorizes the training data, including its noise, and performs poorly on new data. Sign: high training accuracy, low test accuracy.
+- **Underfitting:** the model is too simple to capture the pattern and performs poorly everywhere.
 
-It provides historical transaction data,
-including examples of fraudulent and legitimate
-transactions.
+Holding back test data the model never sees in training is how you detect overfitting.
 
-A machine learning model learns patterns
-associated with fraud.
+## Data quality matters most
 
-When a new transaction arrives, the model
-can estimate whether it appears suspicious.
+A model can only learn what is in its data. Missing values, wrong labels, or data that doesn't represent real users lead to poor or biased models. "Garbage in, garbage out" is especially true in ML.
 
-Important concepts include:
+## Measuring performance
 
-Dataset:
-The collection of information used in training
-and evaluating a model.
+For classification, **accuracy** is the share of correct predictions, but it can mislead when classes are unbalanced. If 1% of transactions are fraud, a model that always says "not fraud" is 99% accurate and useless. **Precision** and **recall** tell you how many flagged cases were real, and how many real cases were caught.
 
-Features:
-Input variables used by the model.
+## Key points
 
-Labels:
-Expected outputs in supervised learning.
-
-Training:
-The process of learning patterns from data.
-
-Inference:
-Using a trained model to generate predictions.
-
-Machine learning is used in finance, healthcare,
-manufacturing, cybersecurity, and many other industries.
-        `,
-        "What is inference in machine learning?",
-        [
-          "The process of training a model from scratch",
-          "Using a trained model to generate predictions",
-          "Deleting the training dataset",
-          "Writing an application user interface"
+- A model maps features to predictions; training learns its parameters from labelled data.
+- Keep a separate test set to detect overfitting.
+- Data quality and the right metric matter more than the choice of algorithm.`,
+          },
+          {
+            type: 'check',
+            question: "A model scores 98% on its training data but 61% on the test data. What is the most likely problem?",
+            options: [
+              "Overfitting: it memorized the training data instead of learning general patterns",
+              "The test set is too large to be useful",
+              "The model needs fewer features to reach 98% on the test set",
+              "Underfitting: the model is too simple to learn anything",
+            ],
+            answer: 0,
+            explanation: "A large gap between training and test performance is the classic sign of overfitting.",
+          },
         ],
-        1,
-        "Inference is the process of using a trained model to produce predictions or outputs."
-      ),
+      },
+      {
+        id: "supervised-unsupervised-learning",
+        title: "Supervised and Unsupervised Learning",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Supervised and Unsupervised Learning
 
-      lesson(
-        "supervised-unsupervised-learning",
-        "Supervised and Unsupervised Learning",
-        16,
-        `
-Machine learning approaches differ based on
-how training data is organized.
+Machine learning approaches differ in what the training data contains.
 
-Supervised Learning:
+## Supervised learning
 
-The model learns from labeled examples.
+The model learns from **labelled examples**: each input comes with the correct answer.
 
-Each training example includes inputs
-and an expected output.
+\`\`\`text
+Input: "My laptop won't turn on"   →   Label: Hardware
+Input: "Reset my VPN password"     →   Label: Access
+\`\`\`
 
-Example:
+Two main kinds of supervised task:
 
-An email classification model learns from emails
-labeled as spam or legitimate.
+- **Classification** predicts a category: spam or not spam, ticket category, approve or reject.
+- **Regression** predicts a number: delivery time, next month's sales, house price.
 
-Common supervised learning tasks include:
+Supervised learning is the most common approach in business, but labels can be expensive: someone has to mark thousands of examples correctly.
 
-Classification:
-Predicting a category.
+## Unsupervised learning
 
-Regression:
-Predicting a numerical value.
+The data has **no labels**. The model looks for structure on its own.
 
-Unsupervised Learning:
+- **Clustering** groups similar items, such as customer segments or similar support tickets.
+- **Dimensionality reduction** compresses many features into fewer, for visualization or speed.
+- **Anomaly detection** finds items that don't fit normal patterns, such as unusual logins.
 
-The model works with data that does not contain
-explicit target labels.
+Results need human interpretation: a clustering algorithm finds groups, but people decide what they mean.
 
-It attempts to discover patterns or structure.
+## Semi-supervised and self-supervised learning
 
-Example:
+- **Semi-supervised:** a few labelled examples plus many unlabelled ones.
+- **Self-supervised:** the data supplies its own labels. LLMs are pretrained this way: the "label" for each position in a text is simply the next word. This is why they can learn from huge amounts of unlabelled text.
 
-A retailer groups customers based on purchasing
-behavior without predefined customer categories.
+## Choosing an approach
 
-Common unsupervised learning tasks include:
+| Question | Approach |
+| --- | --- |
+| Do you have examples with correct answers? | Supervised |
+| Do you want to discover groups or unusual cases? | Unsupervised |
+| Do you have huge amounts of raw text or images? | Self-supervised pretraining (usually done by model providers) |
 
-Clustering:
-Grouping similar observations.
+## Key points
 
-Dimensionality Reduction:
-Reducing the number of variables while preserving
-important information.
-
-The choice depends on the business problem
-and the available data.
-        `,
-        "Which learning approach uses labeled examples during training?",
-        [
-          "Unsupervised learning",
-          "Supervised learning",
-          "Reinforcement learning",
-          "Random processing"
+- Supervised learning needs labelled data and predicts categories or numbers.
+- Unsupervised learning finds structure such as clusters and anomalies.
+- LLM pretraining is self-supervised: the next token is the label.`,
+          },
+          {
+            type: 'check',
+            question: "A team wants to group customers into segments without any predefined categories. Which approach fits?",
+            options: [
+              "Supervised classification",
+              "Supervised regression",
+              "Unsupervised learning, such as clustering",
+              "Reinforcement learning with rewards",
+            ],
+            answer: 2,
+            explanation: "With no labels and the goal of discovering groups, clustering, an unsupervised technique, is the natural choice.",
+          },
         ],
-        1,
-        "Supervised learning trains models using examples that include expected outputs or labels."
-      ),
+      },
+      {
+        id: "reinforcement-learning",
+        title: "Introduction to Reinforcement Learning",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Introduction to Reinforcement Learning
 
-      lesson(
-        "reinforcement-learning",
-        "Introduction to Reinforcement Learning",
-        15,
-        `
-Reinforcement Learning (RL) is a machine learning
-approach in which an agent learns through interaction
-with an environment.
+Reinforcement learning (RL) trains an **agent** to make a sequence of decisions by trial and error. Instead of labelled answers, the agent receives **rewards** or penalties for its actions and learns which behavior earns the most reward over time.
 
-The agent takes actions and receives feedback
-in the form of rewards or penalties.
+## The core loop
 
-Important concepts include:
+\`\`\`text
+Agent observes the state  →  chooses an action  →  environment changes
+        ↑                                                   │
+        └──────────── receives a reward ←───────────────────┘
+\`\`\`
 
-Agent:
-The learner or decision-making system.
+| Term | Meaning | Example (warehouse robot) |
+| --- | --- | --- |
+| Agent | The learner making decisions | The robot's controller |
+| Environment | Everything the agent interacts with | The warehouse |
+| State | The current situation | Robot position, shelf locations |
+| Action | A choice the agent makes | Move left, pick item |
+| Reward | Feedback signal | +10 for a delivered item, −1 per wasted move |
+| Policy | The agent's strategy | Which action to take in each state |
 
-Environment:
-The system or world in which the agent operates.
+## Exploration versus exploitation
 
-State:
-The current situation observed by the agent.
+The agent must balance **exploring** new actions that might be better with **exploiting** actions it already knows work. Too little exploration and it never finds better strategies; too much and it wastes effort.
 
-Action:
-A decision made by the agent.
+## Where RL is used
 
-Reward:
-Feedback indicating the value of an action.
+- Robotics and control systems.
+- Game playing.
+- Resource scheduling and optimization.
+- **Training language models:** reinforcement learning from human feedback (RLHF) and related methods use human or AI preferences as rewards to make model answers more helpful and safer.
 
-Policy:
-A strategy used by the agent to choose actions.
+## Challenges
 
-Example:
+- Designing a reward that captures what you really want. A badly designed reward gets "gamed": the agent finds a shortcut that scores well but doesn't solve the real problem.
+- Many trials are needed, so training often happens in simulation.
+- Behavior can be hard to predict in situations it hasn't experienced.
 
-A robot learns to navigate a warehouse.
+For most business applications you won't train RL agents yourself, but you will use models shaped by it, and the idea of rewards and policies helps you understand AI agents later in the program.
 
-It receives positive rewards for reaching
-the correct destination and penalties
-for collisions or inefficient movement.
+## Key points
 
-Over time, it learns a policy that improves
-its behavior.
-
-Reinforcement learning is used in areas such as:
-
-- Robotics.
-- Game-playing systems.
-- Resource optimization.
-- Control systems.
-
-Reinforcement learning differs from supervised
-learning because it learns through interaction
-and reward feedback rather than relying exclusively
-on labeled input-output examples.
-        `,
-        "What provides feedback to an agent in reinforcement learning?",
-        [
-          "Rewards and penalties",
-          "HTML templates",
-          "Database table names",
-          "API documentation"
+- RL learns from rewards through trial and error, not from labelled answers.
+- The agent balances exploring new actions with exploiting known good ones.
+- RLHF uses preference-based rewards to fine-tune language models.`,
+          },
+          {
+            type: 'check',
+            question: "In reinforcement learning, what does the agent learn from?",
+            options: [
+              "Rewards and penalties received after its actions",
+              "Clusters it discovers in unlabelled data",
+              "A labelled answer for every example",
+              "Rules written by domain experts",
+            ],
+            answer: 0,
+            explanation: "RL agents learn by acting and receiving rewards or penalties, gradually improving their policy.",
+          },
         ],
-        0,
-        "An agent receives rewards or penalties from its environment to guide learning."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+  {
+    id: "deep-learning-fundamentals",
+    title: "Deep Learning Fundamentals",
+    lessons: [
+      {
+        id: "understanding-deep-learning",
+        title: "Understanding Deep Learning",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding Deep Learning
 
-// ================================================
-// MODULE 3 — DEEP LEARNING FUNDAMENTALS
-// ================================================
+Deep learning is machine learning with **neural networks that have many layers**. "Deep" refers to the number of layers between input and output.
 
-MODULES.push(
-  moduleData(
-    "deep-learning-fundamentals",
-    "Deep Learning Fundamentals",
-    [
-      lesson(
-        "understanding-deep-learning",
-        "Understanding Deep Learning",
-        16,
-        `
-Deep Learning is a subset of machine learning
-that uses neural networks containing multiple
-computational layers.
+## Why layers matter
 
-These networks can learn complex patterns
-from large amounts of data.
+Each layer transforms its input into a slightly more useful representation. In an image model:
 
-Deep learning is particularly useful for:
+1. Early layers detect edges and simple textures.
+2. Middle layers combine those into shapes and parts.
+3. Later layers recognize whole objects, such as "invoice" or "damaged part".
 
-- Image recognition.
-- Speech recognition.
-- Natural language processing.
-- Computer vision.
-- Generative AI.
+Language models work similarly: early layers capture word pieces and grammar; deeper layers capture meaning, context, and relationships across a whole passage.
 
-Traditional machine learning may require
-engineers to manually identify useful features.
+The key advantage is that the network **learns these features itself**. In classic machine learning, engineers often had to design features by hand.
 
-Deep learning models can learn many features
-automatically from training data.
+## What deep learning needs
 
-However, deep learning often requires:
+| Requirement | Why |
+| --- | --- |
+| Large datasets | Many parameters need many examples to learn well |
+| Specialized hardware | GPUs and similar chips run the matrix arithmetic in parallel |
+| Careful training | Choices such as learning rate and regularization affect results |
 
-- Large datasets.
-- Significant computational resources.
-- Model training time.
-- Careful evaluation.
-- Appropriate infrastructure.
+## Strengths
 
-Graphics Processing Units (GPUs) are frequently
-used to accelerate deep learning computations.
+- Excellent with unstructured data: images, audio, text, video.
+- One architecture can be adapted to many tasks.
+- Performance keeps improving with more data and compute, up to a point.
 
-Deep learning has contributed significantly
-to modern language models, image generators,
-and other advanced AI systems.
-        `,
-        "What distinguishes deep learning from many traditional machine learning approaches?",
-        [
-          "It uses neural networks with multiple computational layers",
-          "It never requires training data",
-          "It only works with spreadsheets",
-          "It cannot process images"
+## Limitations
+
+- **Hard to interpret:** it's difficult to explain why a network made a particular prediction.
+- **Data- and compute-hungry:** training large models is expensive.
+- **Can fail unexpectedly** on inputs unlike its training data.
+- **Can absorb bias** present in training data.
+
+For structured business data, such as rows in a table, classic models like gradient-boosted trees often match or beat deep learning with far less cost.
+
+## Key points
+
+- Deep learning uses many-layered neural networks that learn features automatically.
+- It excels at unstructured data but needs lots of data and compute.
+- Its predictions are hard to explain, so testing and monitoring are essential.`,
+          },
+          {
+            type: 'check',
+            question: "What is a key advantage of deep learning compared with classic machine learning?",
+            options: [
+              "Its predictions are always easy to explain",
+              "It only works on structured tables of data",
+              "It learns useful features automatically instead of relying on hand-designed ones",
+              "It needs less data and computing power",
+            ],
+            answer: 2,
+            explanation: "Deep networks learn their own feature representations layer by layer, which is why they work so well on images, audio, and text.",
+          },
         ],
-        0,
-        "Deep learning uses multi-layer neural networks to learn complex patterns from data."
-      ),
+      },
+      {
+        id: "training-neural-networks",
+        title: "How Neural Networks Learn",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# How Neural Networks Learn
 
-      lesson(
-        "training-neural-networks",
-        "How Neural Networks Learn",
-        17,
-        `
-A neural network learns by adjusting its internal
-parameters to reduce prediction errors.
+Training a neural network means adjusting its **weights** (parameters) so that its predictions get closer to the correct answers. It happens in a repeated loop.
 
-The learning process commonly involves:
+## The training loop
 
-1. Forward Pass:
+1. **Forward pass:** input flows through the layers and the network produces a prediction.
+2. **Loss calculation:** a **loss function** measures how wrong the prediction is. Lower is better.
+3. **Backpropagation:** the network calculates how much each weight contributed to the error, producing **gradients**.
+4. **Weight update:** an **optimizer** (such as gradient descent or Adam) nudges each weight in the direction that reduces the loss.
 
-Input data moves through the network
-to generate a prediction.
+This repeats over many **batches** of examples. One full pass over the training data is an **epoch**; training usually runs many epochs.
 
-2. Loss Calculation:
+## Gradient descent, intuitively
 
-A loss function measures how different
-the prediction is from the expected result.
+Imagine standing on a hillside in fog and wanting to reach the valley. You feel the slope under your feet and take a step downhill. The gradient is the slope; the **learning rate** is the size of your step.
 
-3. Backpropagation:
+- Too large a learning rate: you overshoot the valley and bounce around.
+- Too small: progress is painfully slow.
 
-The network calculates gradients that indicate
-how its parameters contributed to the error.
+## Watching training
 
-4. Optimization:
+Engineers track the loss on both training and validation data:
 
-An optimizer updates model parameters
-to reduce the loss.
+| Pattern | Meaning | Response |
+| --- | --- | --- |
+| Both losses fall | Learning well | Continue |
+| Training loss falls, validation rises | Overfitting | Stop early, add data, or regularize |
+| Both stay high | Underfitting | Larger model, better features, longer training |
 
-This process repeats over many training examples.
+## Regularization
 
-Important concepts include:
+Techniques that reduce overfitting:
 
-Weights:
-Parameters that influence connections
-between neurons.
+- **Dropout:** randomly ignore some neurons during training.
+- **Weight decay:** penalize very large weights.
+- **Early stopping:** stop when validation loss stops improving.
+- **More or augmented data.**
 
-Biases:
-Additional parameters that adjust neuron outputs.
+## Key points
 
-Loss Function:
-A mathematical measure of prediction error.
-
-Learning Rate:
-A parameter controlling the size of updates
-during optimization.
-
-Epoch:
-One complete pass through the training dataset.
-
-Training quality depends on data quality,
-model design, optimization, and evaluation.
-        `,
-        "What is the primary purpose of backpropagation?",
-        [
-          "To calculate gradients used to update network parameters",
-          "To delete training data",
-          "To convert Python into JavaScript",
-          "To publish an API"
+- Training repeats: forward pass, loss, backpropagation, weight update.
+- The learning rate controls step size; it must be neither too large nor too small.
+- Compare training and validation loss to spot overfitting.`,
+          },
+          {
+            type: 'check',
+            question: "What is backpropagation used for during training?",
+            options: [
+              "Splitting the dataset into training and test sets",
+              "Choosing the network's architecture before training",
+              "Running the finished model on new data in production",
+              "Calculating gradients that show how each weight should change to reduce the error",
+            ],
+            answer: 3,
+            explanation: "Backpropagation computes the gradient of the loss with respect to each weight, which the optimizer then uses to update the weights.",
+          },
         ],
-        0,
-        "Backpropagation calculates gradients that help an optimizer update neural network parameters."
-      ),
+      },
+      {
+        id: "deep-learning-use-cases",
+        title: "Deep Learning Applications and Use Cases",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Deep Learning Applications and Use Cases
 
-      lesson(
-        "deep-learning-use-cases",
-        "Deep Learning Applications and Use Cases",
-        15,
-        `
-Deep learning powers many modern AI applications.
+Deep learning powers most of the AI features people use every day. Knowing the main families helps you recognize which kind of model fits a business problem.
 
-Computer Vision:
+## Computer vision
 
-Analyzes images and video.
+Models that analyze images and video.
 
-Examples:
+- **Classification:** is this a photo of a damaged or undamaged part?
+- **Object detection:** where are the vehicles in this camera frame?
+- **Document understanding:** extract fields from scanned invoices and forms.
+- **Medical imaging support:** highlight areas for a radiologist to review.
 
-- Object detection.
-- Facial image analysis.
-- Medical image classification.
-- Manufacturing defect detection.
+## Speech and audio
 
-Natural Language Processing:
+- **Speech-to-text** for meeting transcripts and call centers.
+- **Text-to-speech** for accessible content and voice assistants.
+- **Audio classification** such as detecting machine faults by sound.
 
-Processes human language.
+## Natural language processing
 
-Examples:
+- Classification and sentiment analysis of tickets, reviews, and emails.
+- Translation and summarization.
+- Question answering and chat assistants, now dominated by large language models.
 
-- Translation.
-- Text classification.
-- Sentiment analysis.
-- Language generation.
+## Recommendation and personalization
 
-Speech and Audio:
+Deep models learn from user behavior to suggest products, content, or next steps, such as the next course for a learner.
 
-Processes spoken language and sound.
+## Time series and forecasting
 
-Examples:
+Demand forecasting, capacity planning, and anomaly detection on metrics, although classic statistical models are often strong competitors.
 
-- Speech recognition.
-- Voice generation.
-- Audio classification.
+## Generative applications
 
-Recommendation Systems:
+- Drafting text and code.
+- Creating and editing images.
+- Generating synthetic data for testing, used carefully.
 
-Identify patterns in user behavior
-to recommend relevant content or products.
+## Choosing whether to use deep learning
 
-Generative AI:
+| Ask | If yes |
+| --- | --- |
+| Is the data unstructured (images, audio, free text)? | Deep learning is a strong candidate |
+| Is there a pretrained model for this task? | Start there instead of training from scratch |
+| Do mistakes have serious consequences? | Plan for human review and monitoring |
+| Is the data a small table of numbers? | Try simpler models first |
 
-Creates new content based on learned patterns.
+## Key points
 
-Examples include text, images, audio, and code.
-
-Enterprise architects should evaluate whether
-deep learning is appropriate for a business problem.
-
-Some tasks may be better served by traditional
-machine learning, deterministic software,
-or rule-based automation.
-        `,
-        "Which is an example of a computer vision application?",
-        [
-          "Detecting defects in manufacturing images",
-          "Approving a database transaction",
-          "Creating an HTTP header",
-          "Managing a network password"
+- Vision, speech, language, recommendation, and generation are the main deep learning families.
+- Start from pretrained models whenever possible.
+- High-stakes uses need human review and ongoing monitoring.`,
+          },
+          {
+            type: 'check',
+            question: "A company wants to extract fields from thousands of scanned invoices. Which deep learning area applies?",
+            options: [
+              "Audio classification",
+              "Computer vision and document understanding",
+              "Reinforcement learning for robotics",
+              "Time series forecasting",
+            ],
+            answer: 1,
+            explanation: "Reading fields from scanned documents is a computer vision task, often called document understanding.",
+          },
         ],
-        0,
-        "Computer vision systems analyze visual information, including images and video."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+  {
+    id: "neural-networks-transformers",
+    title: "Neural Networks and Transformers",
+    lessons: [
+      {
+        id: "neural-network-architecture",
+        title: "Neural Network Architecture",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Neural Network Architecture
 
-// ================================================
-// MODULE 4 — NEURAL NETWORKS AND TRANSFORMERS
-// ================================================
+A neural network is a model loosely inspired by neurons in the brain. In practice it is a stack of mathematical operations with adjustable numbers called **weights**.
 
-MODULES.push(
-  moduleData(
-    "neural-networks-transformers",
-    "Neural Networks and Transformers",
-    [
-      lesson(
-        "neural-network-architecture",
-        "Neural Network Architecture",
-        16,
-        `
-A neural network is a computational model
-inspired by simplified concepts of biological neurons.
+## Layers
 
-A basic neural network contains:
+| Layer | Role |
+| --- | --- |
+| **Input layer** | Receives the data, such as pixel values or token embeddings |
+| **Hidden layers** | Transform the data step by step into more useful representations |
+| **Output layer** | Produces the result: class probabilities, a number, or the next token |
 
-Input Layer:
-Receives the input data.
+## What a single neuron does
 
-Hidden Layers:
-Transform information through learned operations.
+Each neuron:
 
-Output Layer:
-Produces the model's prediction or result.
+1. Multiplies each input by a weight.
+2. Adds the results plus a **bias**.
+3. Passes the total through an **activation function**.
 
-Each neuron receives values, applies weights
-and biases, and uses an activation function.
+\`\`\`text
+output = activation(w1·x1 + w2·x2 + w3·x3 + b)
+\`\`\`
 
-Common activation functions include:
+Activation functions such as **ReLU** (which turns negative values into 0) add non-linearity. Without them, stacking layers would be no more powerful than a single layer.
 
-ReLU:
-Often used in hidden layers.
+## Common architectures
 
-Sigmoid:
-Produces values between zero and one.
+| Architecture | Best known for |
+| --- | --- |
+| Feedforward (fully connected) | Simple tabular and classification tasks |
+| Convolutional neural networks (CNNs) | Images, by detecting local patterns |
+| Recurrent neural networks (RNNs, LSTMs) | Sequences, before transformers took over |
+| **Transformers** | Language, and increasingly images, audio, and code |
 
-Tanh:
-Produces values between negative one and one.
+## Parameters and size
 
-The number of layers, neurons, connections,
-and other design choices contribute to
-the network architecture.
+The weights and biases are the model's **parameters**. A small classifier might have thousands; large language models have billions. More parameters can capture more complex patterns but cost more to train and run.
 
-Different architectures are suited to different tasks.
+## Output layers for different tasks
 
-For example:
+- **Classification:** a softmax layer turns scores into probabilities that add up to 1.
+- **Regression:** a single number.
+- **Language models:** a probability for every token in the vocabulary, used to choose the next token.
 
-Convolutional Neural Networks (CNNs)
-have historically been important in image processing.
+## Key points
 
-Recurrent Neural Networks (RNNs)
-were developed to process sequential information.
-
-Transformers have become central to modern
-language models and many other AI systems.
-        `,
-        "Which layer of a neural network receives the original input data?",
-        [
-          "Output layer",
-          "Input layer",
-          "Loss layer",
-          "Optimization layer"
+- Networks are layers of neurons that apply weights, a bias, and an activation function.
+- Non-linear activations let deep networks learn complex patterns.
+- Transformers are the dominant architecture for modern language models.`,
+          },
+          {
+            type: 'check',
+            question: "Why do neural networks use activation functions such as ReLU?",
+            options: [
+              "To reduce the number of parameters to zero",
+              "To convert text into tokens before processing",
+              "To store the training data inside the network",
+              "To add non-linearity so stacked layers can learn complex patterns",
+            ],
+            answer: 3,
+            explanation: "Without non-linear activations, many layers would collapse into the equivalent of one linear layer and couldn't model complex relationships.",
+          },
         ],
-        1,
-        "The input layer receives the data that enters the neural network."
-      ),
+      },
+      {
+        id: "attention-mechanism",
+        title: "Understanding the Attention Mechanism",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding the Attention Mechanism
 
-      lesson(
-        "attention-mechanism",
-        "Understanding the Attention Mechanism",
-        17,
-        `
-Attention is a mechanism that helps neural networks
-determine which parts of an input are important
-when processing information.
+Attention lets a model decide **which parts of the input matter most** when processing each piece of it. It is the key idea behind transformers and modern language models.
 
-In language processing, the meaning of a word
-can depend on other words in the same sentence.
+## The intuition
 
-Example:
+Read this sentence:
 
-"The bank approved the loan."
+> The technician replaced the server's power supply because **it** was overheating.
 
-The word bank refers to a financial institution.
+To understand "it", you look back and connect it to "power supply". Attention does the same: for every token, the model calculates how strongly it should relate to every other token, then builds a representation that blends in the most relevant ones.
 
-In another sentence:
+## How it works, simply
 
-"The boat reached the river bank."
+For each token the model creates three vectors:
 
-The surrounding words provide different context.
+| Vector | Role |
+| --- | --- |
+| **Query** | What this token is looking for |
+| **Key** | What each token offers |
+| **Value** | The information each token contributes |
 
-Attention mechanisms allow models to calculate
-relationships between elements in a sequence.
+The model compares a token's query with every key to get **attention scores**, turns them into weights that sum to 1, and takes a weighted mix of the values.
 
-Transformers use attention to process relationships
-between tokens.
+## Multi-head attention
 
-Important concepts include:
+Transformers run several attention "heads" in parallel. Different heads can learn different relationships: one may track grammar, another which noun a pronoun refers to, another long-range topic links.
 
-Query:
-Represents what information a position is seeking.
+## Why attention was a breakthrough
 
-Key:
-Represents information used to determine relevance.
+- **Long-range context:** any token can directly relate to any other, however far apart.
+- **Parallel processing:** all tokens are processed together, unlike older recurrent networks that read one token at a time. This made training on huge datasets practical.
 
-Value:
-Represents the information that can be combined.
+## The cost
 
-Attention scores help determine how much
-different positions contribute to the result.
+Standard attention compares every token with every other, so its cost grows roughly with the **square** of the input length. This is one reason context windows have limits and long prompts cost more. Many newer models use optimizations to stretch this further.
 
-Attention is a foundational concept for understanding
-modern large language models.
-        `,
-        "What does an attention mechanism help a model determine?",
-        [
-          "Which parts of the input are relevant to processing a particular position",
-          "How much storage a database requires",
-          "Which HTTP status code to return",
-          "How to compile a Python application"
+## Key points
+
+- Attention weighs how relevant each token is to every other token.
+- Queries, keys, and values produce a weighted mix of relevant information.
+- Attention enables long-range context and parallel training, at a cost that grows with input length.`,
+          },
+          {
+            type: 'check',
+            question: "What does the attention mechanism help a model determine?",
+            options: [
+              "The order in which documents are stored in a database",
+              "Which parts of the input are most relevant to each token it processes",
+              "How many tokens the model may accept in one request",
+              "Which training examples to remove before fine-tuning",
+            ],
+            answer: 1,
+            explanation: "Attention computes how strongly each token should relate to the others, so the model can focus on the most relevant context.",
+          },
         ],
-        0,
-        "Attention helps a model determine the relevance of different parts of its input."
-      ),
+      },
+      {
+        id: "transformer-architecture",
+        title: "Understanding the Transformer Architecture",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding the Transformer Architecture
 
-      lesson(
-        "transformer-architecture",
-        "Understanding the Transformer Architecture",
-        18,
-        `
-The Transformer is a neural network architecture
-introduced in the research paper
-"Attention Is All You Need" in 2017.
+The transformer was introduced in the 2017 research paper "Attention Is All You Need". It replaced recurrent networks for language tasks and is the foundation of today's large language models.
 
-Transformers use attention mechanisms
-to process relationships between tokens.
+## The building blocks
 
-A traditional Transformer architecture contains
-encoder and decoder components.
+A transformer is a stack of identical **blocks**. Each block contains:
 
-Encoder:
+1. **Multi-head self-attention:** every token gathers information from the other tokens it finds relevant.
+2. **Feed-forward network:** a small neural network applied to each token's representation.
+3. **Residual connections and normalization:** shortcuts and scaling that keep training stable in very deep stacks.
 
-Processes input information into representations.
+Before the first block, tokens are converted to **embeddings** (vectors), and **positional information** is added so the model knows word order. Attention on its own has no sense of order.
 
-Decoder:
+## Encoders and decoders
 
-Uses representations and previously generated
-tokens to produce output.
+| Variant | What it does | Examples of use |
+| --- | --- | --- |
+| **Encoder-only** | Reads the whole input to build a rich representation | Classification, search embeddings |
+| **Decoder-only** | Generates text one token at a time, attending only to earlier tokens | Chat assistants and most LLMs |
+| **Encoder-decoder** | Encodes an input, then decodes an output | Translation, summarization |
 
-Modern language models use different Transformer
-designs depending on their objectives.
+Most popular LLMs are **decoder-only**: they predict the next token given everything before it.
 
-Encoder-only models:
-Often used for language understanding tasks.
+## Why transformers scale so well
 
-Decoder-only models:
-Commonly used for autoregressive text generation.
+- Attention processes all tokens in parallel, so training uses GPUs efficiently.
+- Performance has kept improving as models, data, and compute grow, which is why model sizes increased so quickly.
+- The same architecture works for text, code, images, and audio once inputs are turned into tokens.
 
-Encoder-decoder models:
-Often used for sequence-to-sequence tasks.
+## A simplified flow
 
-Transformers support parallel processing
-of input positions during training,
-unlike many traditional recurrent architectures.
+\`\`\`text
+Text → tokens → embeddings + positions
+     → [attention → feed-forward] × N blocks
+     → probabilities for the next token
+\`\`\`
 
-Their ability to model relationships across sequences
-has made them important in modern AI systems.
+## Key points
 
-Understanding Transformer architecture provides
-the foundation for learning how large language models
-are built and used.
-        `,
-        "Which architecture is foundational to many modern large language models?",
-        [
-          "Transformer",
-          "Relational database",
-          "Operating system kernel",
-          "Binary search tree"
+- Transformers stack blocks of self-attention and feed-forward layers.
+- Positional information supplies word order.
+- Decoder-only transformers, which predict the next token, power most LLMs.`,
+          },
+          {
+            type: 'check',
+            question: "What do most large language models use to generate text?",
+            options: [
+              "An encoder-only transformer that classifies whole documents",
+              "A rule engine that selects prewritten sentences",
+              "A recurrent network that reads one character at a time",
+              "A decoder-only transformer that predicts the next token from the tokens before it",
+            ],
+            answer: 3,
+            explanation: "Most LLMs are decoder-only transformers: they repeatedly predict the next token based on all previous tokens.",
+          },
         ],
-        0,
-        "Transformer architectures underpin many modern large language models."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+  {
+    id: "large-language-models",
+    title: "Large Language Models (LLMs)",
+    lessons: [
+      {
+        id: "understanding-large-language-models",
+        title: "Understanding Large Language Models",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding Large Language Models
 
-// END OF SECTION 1
-// ================================================
-// MODULE 5 — LARGE LANGUAGE MODELS (LLMs)
-// ================================================
+A large language model (LLM) is a transformer trained on very large amounts of text, and often code and other data, to process and generate language.
 
-MODULES.push(
-  moduleData(
-    "large-language-models",
-    "Large Language Models (LLMs)",
-    [
-      lesson(
-        "understanding-large-language-models",
-        "Understanding Large Language Models",
-        16,
-        `
-A Large Language Model (LLM) is an AI model trained
-on large amounts of text and other data to process
-and generate language.
+## What LLMs can do
 
-LLMs can perform tasks such as:
+- Answer questions and explain concepts.
+- Summarize, translate, and rewrite text.
+- Classify and extract information from documents.
+- Draft emails, reports, and code.
+- Follow multi-step instructions and call tools when connected to them.
 
-- Answering questions.
-- Summarizing documents.
-- Generating code.
-- Translating languages.
-- Extracting information.
-- Drafting business communications.
-- Supporting conversational applications.
+## How they work, in one sentence
 
-LLMs learn statistical patterns and relationships
-from their training data.
+An LLM repeatedly predicts the most suitable **next token** given everything before it. Capabilities such as summarizing or answering questions emerge from doing this extremely well after training on vast, varied text.
 
-They do not retrieve facts from a perfect database
-of everything they have learned.
+## What "large" means
 
-Their responses are generated using learned patterns
-and the context provided during inference.
+"Large" refers to the number of **parameters**, often billions, and the size of the training data. Larger models tend to handle more complex reasoning and instructions, but cost more and respond more slowly.
 
-Examples of LLM families include:
+## Important limitations
 
-- GPT models.
-- Claude models.
-- Gemini models.
-- Llama models.
-- Mistral models.
+| Limitation | What it means for your application |
+| --- | --- |
+| **Knowledge cut-off** | The model doesn't know about events after its training data ends |
+| **Hallucinations** | It can state false information fluently and confidently |
+| **No built-in access to your data** | It only knows your documents if you supply them in the request |
+| **Non-determinism** | The same prompt can produce different answers |
+| **Context limits** | It can only consider a limited amount of text per request |
 
-Organizations can access models through APIs,
-host models themselves, or use managed AI platforms.
+## Using LLMs responsibly in business
 
-An AI engineer must evaluate models based on
-capability, cost, latency, security, and business needs.
-        `,
-        "What is a primary capability of a large language model?",
-        [
-          "Generating and processing human language",
-          "Replacing all enterprise databases",
-          "Automatically guaranteeing factual accuracy",
-          "Eliminating the need for software architecture"
+- Provide trusted context (for example with retrieval-augmented generation) instead of relying on the model's memory.
+- Validate structured output before acting on it.
+- Keep a person in the loop for decisions with real consequences.
+- Protect personal and confidential data you send to a model.
+
+## Key points
+
+- LLMs are large transformers trained to predict the next token.
+- They are versatile but can be wrong, out of date, and inconsistent.
+- Ground them in trusted data and validate their output.`,
+          },
+          {
+            type: 'check',
+            question: "Why might an LLM give outdated answers about recent events?",
+            options: [
+              "It deletes older information each time it is used",
+              "It always searches the internet but ignores new results",
+              "Its knowledge comes from training data that ends at a cut-off date",
+              "It can only read text written in the current year",
+            ],
+            answer: 2,
+            explanation: "A model only knows what was in its training data, which stops at a cut-off date, unless current information is supplied in the request.",
+          },
         ],
-        0,
-        "LLMs process and generate language using patterns learned during training."
-      ),
+      },
+      {
+        id: "llm-training-lifecycle",
+        title: "How Large Language Models Are Trained",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# How Large Language Models Are Trained
 
-      lesson(
-        "llm-training-lifecycle",
-        "How Large Language Models Are Trained",
-        17,
-        `
-Training a large language model involves several
-stages and substantial computational resources.
+Training an LLM happens in stages. Each stage shapes a different part of the model's behavior.
 
-Pretraining:
+## 1. Pretraining
 
-The model learns general patterns from large datasets.
+The model reads an enormous amount of text (web pages, books, code, articles) and learns to predict the next token. This is **self-supervised**: the text itself provides the answers.
 
-During pretraining, the model commonly learns
-to predict the next token in a sequence.
+- Teaches grammar, facts, reasoning patterns, and coding conventions.
+- Requires thousands of specialized chips running for weeks or months.
+- Produces a **base model** that continues text but doesn't reliably follow instructions.
 
-Supervised Fine-Tuning:
+## 2. Instruction tuning (supervised fine-tuning)
 
-The model is trained using curated examples
-of desired inputs and outputs.
+The base model is trained on curated examples of instructions paired with good responses. It learns to behave like an assistant: answer the question, follow the requested format, ask for clarification when needed.
 
-This helps align the model's behavior
-with specific instructions and tasks.
+## 3. Preference alignment
 
-Preference Optimization:
+People, or other models, compare responses and indicate which is better. Techniques such as reinforcement learning from human feedback (RLHF) use these preferences to make the model more helpful, honest, and safe, for example by declining harmful requests.
 
-Additional training can help the model produce
-responses that better reflect human preferences.
+## 4. Evaluation and safety testing
 
-Different models use different training methods.
+Before release, models are tested on benchmarks, red-teamed for harmful behavior, and checked for bias and reliability.
 
-Training infrastructure may include:
+## What this means for you
 
-- GPUs and accelerators.
-- Distributed computing.
-- Large datasets.
-- Model optimization techniques.
-- Data quality controls.
+| Stage | Done by | Your role |
+| --- | --- | --- |
+| Pretraining | Model providers | Choose a suitable model |
+| Instruction tuning and alignment | Model providers | Understand default behavior and limits |
+| Customization | You, optionally | Prompting, retrieval, or fine-tuning for your use case |
 
-Important distinction:
+Most organizations **never pretrain** a model. They select a provider's model and adapt it, usually with prompts and retrieval first, and fine-tuning only when that isn't enough.
 
-Training changes model parameters.
+## Key points
 
-Inference uses an existing trained model
-to generate outputs.
-
-Most developers using commercial LLM APIs
-perform inference rather than training
-the underlying foundation model.
-        `,
-        "What happens during model inference?",
-        [
-          "A trained model is used to generate an output",
-          "The entire model is trained from scratch",
-          "All model parameters are deleted",
-          "The training dataset is automatically replaced"
+- Pretraining teaches general language; instruction tuning teaches assistant behavior; alignment improves helpfulness and safety.
+- Pretraining is extremely expensive and done by providers.
+- Enterprises adapt existing models rather than training their own from scratch.`,
+          },
+          {
+            type: 'check',
+            question: "Which training stage teaches a base model to follow instructions like an assistant?",
+            options: [
+              "Instruction tuning on examples of instructions and good responses",
+              "Deployment to a production API",
+              "Pretraining on large amounts of raw text",
+              "Tokenization of the training data",
+            ],
+            answer: 0,
+            explanation: "Pretraining produces a base model that continues text; instruction tuning on curated examples teaches it to follow instructions.",
+          },
         ],
-        0,
-        "Inference uses an already trained model to process inputs and generate outputs."
-      ),
+      },
+      {
+        id: "foundation-models",
+        title: "Foundation Models and Specialized Models",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Foundation Models and Specialized Models
 
-      lesson(
-        "foundation-models",
-        "Foundation Models and Specialized Models",
-        16,
-        `
-A foundation model is a model trained on broad data
-that can support many downstream tasks.
+A **foundation model** is trained on broad data and can be adapted to many tasks. LLMs are the best-known foundation models, but there are also foundation models for images, speech, and code.
 
-Foundation models can be adapted through:
+## Ways to adapt a foundation model
 
-Prompting:
-Providing instructions and context at inference time.
+| Method | How it works | Cost and effort | Use when |
+| --- | --- | --- | --- |
+| **Prompting** | Give instructions and examples in the request | Lowest | Always start here |
+| **Retrieval-augmented generation (RAG)** | Fetch relevant documents and include them in the prompt | Moderate | The model needs your organization's knowledge |
+| **Fine-tuning** | Further train the model on your examples | Higher | You need a consistent style, format, or specialized behavior that prompting can't achieve |
+| **Training from scratch** | Build a new model | Very high | Rarely justified outside research and large providers |
 
-Fine-Tuning:
-Updating model parameters using additional training data.
+A practical rule: **prompt first, add retrieval for knowledge, fine-tune for behavior.** Fine-tuning is not a good way to teach a model facts that change; retrieval keeps knowledge current and traceable.
 
-Retrieval-Augmented Generation:
-Providing relevant external information
-during inference.
+## Specialized models
 
-Specialized Models:
+Not every task needs a large general model:
 
-Models designed or adapted for particular tasks.
+- **Small language models** run faster and cheaper and can be hosted privately.
+- **Embedding models** turn text into vectors for search and RAG.
+- **Domain models** are tuned for fields such as code, medicine, or law.
+- **Classifiers** handle narrow tasks such as spam or sentiment very efficiently.
 
-Examples include:
+## Choosing between them
 
-- Code generation.
-- Medical image analysis.
-- Speech recognition.
-- Document classification.
-- Embedding generation.
+- Use a large general model when tasks are varied or need complex reasoning.
+- Use smaller or specialized models for high-volume, well-defined tasks where speed and cost matter.
+- Many production systems combine both: a small model routes or classifies, a larger model handles the hard cases.
 
-Model selection depends on the use case.
+## Key points
 
-Consider:
-
-A company building a customer support assistant
-may use a general-purpose language model.
-
-A company processing specialized documents
-may benefit from a model adapted for that domain.
-
-A foundation model is not automatically
-the best choice for every enterprise task.
-
-Evaluate accuracy, privacy, cost, latency,
-deployment requirements, and operational constraints.
-        `,
-        "What is a foundation model?",
-        [
-          "A broadly trained model that can support multiple downstream tasks",
-          "A database table containing customer records",
-          "A model that can only perform one fixed operation",
-          "A replacement for an operating system"
+- Foundation models are broadly trained and adaptable.
+- Adapt them with prompting, then retrieval, then fine-tuning if needed.
+- Smaller specialized models often beat large ones on cost and speed for narrow tasks.`,
+          },
+          {
+            type: 'check',
+            question: "An assistant must answer questions using company policies that change every month. What should you use first?",
+            options: [
+              "Fine-tuning the model on this month's policies",
+              "Training a new model from scratch on the policies",
+              "Retrieval-augmented generation that supplies the current policies with each request",
+              "A larger model, because it will already know the policies",
+            ],
+            answer: 2,
+            explanation: "Retrieval keeps changing knowledge current and traceable. Fine-tuning bakes in a snapshot that goes out of date.",
+          },
         ],
-        0,
-        "Foundation models are broadly trained and can be adapted or prompted for many different tasks."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+  {
+    id: "how-llms-generate-responses",
+    title: "How LLMs Generate Responses",
+    lessons: [
+      {
+        id: "llm-inference-process",
+        title: "Understanding the LLM Inference Process",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding the LLM Inference Process
 
-// ================================================
-// MODULE 6 — HOW LLMs GENERATE RESPONSES
-// ================================================
+**Inference** is what happens when a trained model produces an answer. Understanding the steps explains latency, cost, and some of the model's behavior.
 
-MODULES.push(
-  moduleData(
-    "how-llms-generate-responses",
-    "How LLMs Generate Responses",
-    [
-      lesson(
-        "llm-inference-process",
-        "Understanding the LLM Inference Process",
-        16,
-        `
-Inference is the process through which a trained
-language model generates an output.
+## Step by step
 
-A typical text-generation workflow is:
+1. **Receive the request:** instructions, conversation history, any retrieved documents, and the user's message.
+2. **Tokenize:** split the text into tokens.
+3. **Process the prompt:** run all input tokens through the network in parallel. This is called the *prefill* stage.
+4. **Generate one token:** the model outputs probabilities for every possible next token and one is selected.
+5. **Repeat:** the new token is appended and the model generates the next one, until it produces an end token or reaches the maximum length.
+6. **Detokenize and return** the text, often streamed to the user as it is produced.
 
-1. Receive the input prompt.
-2. Convert text into tokens.
-3. Convert tokens into model representations.
-4. Process the input through the model.
-5. Calculate possible next-token probabilities.
-6. Select or sample the next token.
-7. Repeat until generation stops.
+\`\`\`text
+Prompt tokens → [model] → next token → append → [model] → next token → …
+\`\`\`
 
-Example prompt:
+## Why this matters
 
-"What is artificial intelligence?"
+| Observation | Explanation |
+| --- | --- |
+| Long answers take longer | Output is generated one token at a time |
+| Streaming feels faster | Users see the first tokens while the rest are generated |
+| Long prompts raise cost | Every input token is processed and billed |
+| Output tokens usually cost more | Each one needs its own pass through the model |
+| Answers can vary | Token selection involves sampling (next lesson) |
 
-The model processes the input and predicts
-a likely sequence of response tokens.
+## Measuring speed
 
-The generated response is constructed
-one token at a time.
+- **Time to first token:** how long before the response starts.
+- **Tokens per second:** how fast the rest arrives.
+- **Total latency:** what the user experiences end to end, including retrieval and your own code.
 
-Important concepts include:
+## Reducing latency
 
-Input Prompt:
-The instructions and information provided to the model.
+- Keep prompts focused; don't send unnecessary history or documents.
+- Set a sensible maximum output length.
+- Stream responses in chat interfaces.
+- Use a smaller model for simple steps.
 
-Tokenization:
-Converting text into tokens.
+## Key points
 
-Logits:
-Raw numerical scores produced by the model
-for possible next tokens.
-
-Sampling:
-Selecting the next token based on a probability distribution.
-
-Decoding:
-The process used to convert model outputs
-into generated text.
-
-Understanding inference helps engineers
-design applications that use LLMs effectively.
-        `,
-        "What does an LLM generally predict during autoregressive text generation?",
-        [
-          "The next token in a sequence",
-          "The next database record",
-          "The next HTTP status code",
-          "The next operating system update"
+- Inference processes the prompt, then generates output one token at a time.
+- Output length drives latency; input and output tokens drive cost.
+- Stream responses and trim prompts to improve the user experience.`,
+          },
+          {
+            type: 'check',
+            question: "Why do long answers take longer to generate than short ones?",
+            options: [
+              "Long answers are always checked by a person before delivery",
+              "The model generates output one token at a time, each needing its own step",
+              "The model rereads its training data for every sentence",
+              "Long answers must be translated before they are returned",
+            ],
+            answer: 1,
+            explanation: "Generation is sequential: each new token requires another pass through the model, so more tokens means more time.",
+          },
         ],
-        0,
-        "Autoregressive language models generate text by predicting successive next tokens."
-      ),
+      },
+      {
+        id: "probability-temperature-sampling",
+        title: "Probability, Temperature, and Sampling",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Probability, Temperature, and Sampling
 
-      lesson(
-        "probability-temperature-sampling",
-        "Probability, Temperature, and Sampling",
-        17,
-        `
-Language models calculate probability distributions
-over possible next tokens.
+At each step an LLM produces a probability for every possible next token. **Sampling settings** decide how one is chosen.
 
-The model uses these probabilities to generate text.
+## An example
 
-Temperature is a generation parameter
-that influences the distribution used during sampling.
+After "The server is", the model might predict:
 
-Lower temperature:
+| Next token | Probability |
+| --- | --- |
+| down | 0.42 |
+| running | 0.31 |
+| overloaded | 0.12 |
+| purple | 0.0001 |
 
-Generally makes output more predictable
-and concentrates probability on higher-scoring tokens.
+Always picking the highest-probability token (**greedy decoding**) gives consistent but sometimes repetitive output. Sampling picks according to the probabilities, which adds variety.
 
-Higher temperature:
+## Temperature
 
-Generally increases randomness and allows
-less likely tokens to be selected more often.
+Temperature reshapes the probabilities before sampling:
 
-Example:
+- **Low (around 0–0.3):** the top tokens dominate. Output is focused and consistent. Good for extraction, classification, and structured data.
+- **Medium (around 0.5–0.8):** balanced. Good for most writing and conversation.
+- **High (around 1 and above):** flatter probabilities and more surprising choices. Useful for brainstorming; risky for facts.
 
-A technical support assistant may use a lower
-temperature to encourage consistent responses.
+Even at temperature 0, outputs may vary slightly between calls on some platforms, so don't rely on perfect repetition.
 
-A creative writing application may use a higher
-temperature to encourage varied outputs.
+## Other sampling controls
 
-Other generation settings may include:
+- **Top-p (nucleus sampling):** only consider the smallest set of tokens whose probabilities add up to *p*, such as 0.9.
+- **Top-k:** only consider the *k* most likely tokens.
+- **Maximum tokens:** caps the output length.
+- **Stop sequences:** end generation when a specific string appears.
 
-Top-k:
-Limits sampling to a specified number
-of high-probability tokens.
+Change one setting at a time; temperature and top-p interact.
 
-Top-p:
-Uses a cumulative probability threshold
-to select a candidate set of tokens.
+## Choosing settings by task
 
-These settings influence generation behavior.
+| Task | Suggested temperature |
+| --- | --- |
+| Extract fields as JSON | 0–0.2 |
+| Classify tickets | 0–0.2 |
+| Answer support questions from documents | 0.2–0.5 |
+| Draft marketing copy | 0.7–0.9 |
+| Brainstorm ideas | 0.9–1.0 |
 
-They do not guarantee factual accuracy,
-reasoning quality, or consistency.
-        `,
-        "What is the general effect of increasing temperature during text generation?",
-        [
-          "It generally increases randomness in sampled outputs",
-          "It guarantees correct answers",
-          "It permanently retrains the model",
-          "It eliminates all possible hallucinations"
+Some newer models fix or ignore certain sampling settings, so check your provider's documentation.
+
+## Key points
+
+- The model outputs probabilities; sampling selects the next token.
+- Low temperature gives consistent output; high temperature gives variety.
+- Use low temperature for structured or factual tasks.`,
+          },
+          {
+            type: 'check',
+            question: "Which temperature setting suits extracting invoice fields into JSON?",
+            options: [
+              "A low temperature, around 0 to 0.2",
+              "The highest temperature the model allows",
+              "Temperature has no effect on structured output",
+              "A high temperature, around 1.0",
+            ],
+            answer: 0,
+            explanation: "Extraction needs consistent, predictable output, so a low temperature that favors the most likely tokens is best.",
+          },
         ],
-        0,
-        "Higher temperature generally produces more varied and less predictable sampled outputs."
-      ),
+      },
+      {
+        id: "hallucinations-context-grounding",
+        title: "Understanding Hallucinations and Context Grounding",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding Hallucinations and Context Grounding
 
-      lesson(
-        "hallucinations-context-grounding",
-        "Understanding Hallucinations and Context Grounding",
-        17,
-        `
-An AI hallucination occurs when a model generates
-information that is false, unsupported,
-or presented with unjustified confidence.
+A **hallucination** is output that is false, unsupported by the provided information, or stated with confidence it doesn't deserve: an invented policy, a fake citation, a wrong number.
 
-Hallucinations can occur because language models
-generate responses based on learned patterns
-rather than guaranteed access to verified facts.
+## Why hallucinations happen
 
-Examples include:
+- The model generates **plausible** text, not verified facts.
+- It may lack the information, because the facts are private, recent, or obscure.
+- The prompt is ambiguous, or asks for something the model can't know.
+- High temperature encourages less likely continuations.
+- Long or conflicting context can confuse it.
 
-- Invented citations.
-- Incorrect technical explanations.
-- Nonexistent software functions.
-- Fabricated company information.
-- Incorrect dates or statistics.
+## Grounding
 
-Ways to reduce hallucination risk include:
+**Grounding** means giving the model trusted information to base its answer on, and instructing it to stay within that information.
 
-1. Provide relevant source material.
-2. Use retrieval-augmented generation.
-3. Require structured outputs.
-4. Validate important facts.
-5. Use appropriate tools and APIs.
-6. Apply domain-specific evaluation.
-7. Require human review for high-impact decisions.
+\`\`\`text
+Answer using only the policy excerpts below.
+If the answer is not in the excerpts, say "I can't find that in the policy."
+Cite the section number for each statement.
 
-Context grounding means giving a model relevant
-information that should inform its response.
+Excerpts:
+[Section 4.2] Employees may carry over up to 5 unused vacation days...
+\`\`\`
 
-For example, a company assistant can retrieve
-an approved internal policy before answering
-an employee's question.
+Retrieval-augmented generation (RAG) automates this by searching your documents for relevant passages for every question.
 
-Grounding can improve reliability,
-but it does not eliminate every error.
+## Other ways to reduce hallucinations
 
-Enterprise AI systems should include appropriate
-verification and accountability controls.
-        `,
-        "What is a hallucination in generative AI?",
-        [
-          "A response containing false or unsupported information",
-          "A successfully validated database transaction",
-          "A secure API authentication method",
-          "A method for compressing images"
+| Technique | Effect |
+| --- | --- |
+| Ask for citations to the provided sources | Makes claims checkable |
+| Allow "I don't know" explicitly | Removes pressure to invent an answer |
+| Lower temperature | Fewer unlikely continuations |
+| Validate structured output | Catches invalid values and formats |
+| Use tools for facts and calculations | Lookups and code are more reliable than recall |
+| Human review for high-stakes output | Catches what automation misses |
+
+## Measure it
+
+Build a test set of questions with known answers, including questions the documents *can't* answer, and check how often the system invents something. Re-run it whenever you change prompts, models, or data.
+
+## Key points
+
+- Hallucinations are fluent but unsupported or false output.
+- Grounding in trusted sources is the main defence.
+- Allow "I don't know", require citations, validate, and measure.`,
+          },
+          {
+            type: 'check',
+            question: "Which approach most directly reduces hallucinations about a company's internal policies?",
+            options: [
+              "Raising the temperature so the model explores more answers",
+              "Asking the model to answer from memory with more confidence",
+              "Grounding the answer in retrieved policy excerpts and allowing \"I don't know\"",
+              "Removing the instructions so the model has fewer constraints",
+            ],
+            answer: 2,
+            explanation: "Supplying trusted excerpts and permitting the model to say it can't find an answer keeps responses tied to real sources.",
+          },
         ],
-        0,
-        "An AI hallucination is generated information that is false, unsupported, or misleadingly presented as factual."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+  {
+    id: "tokens-context-windows-model-parameters",
+    title: "Tokens, Context Windows, and Model Parameters",
+    lessons: [
+      {
+        id: "understanding-tokens",
+        title: "Understanding Tokens and Tokenization",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding Tokens and Tokenization
 
-// ================================================
-// MODULE 7 — TOKENS, CONTEXT WINDOWS, AND PARAMETERS
-// ================================================
+Language models don't read characters or whole words. They read **tokens**: chunks of text defined by the model's tokenizer.
 
-MODULES.push(
-  moduleData(
-    "tokens-context-windows-model-parameters",
-    "Tokens, Context Windows, and Model Parameters",
-    [
-      lesson(
-        "understanding-tokens",
-        "Understanding Tokens and Tokenization",
-        15,
-        `
-Language models process text using tokens.
+## What a token can be
 
-A token is a unit of text recognized
-by a model's tokenizer.
+- A whole common word: \`server\`
+- Part of a word: \`config\` + \`uration\`
+- A space plus a word: \` the\`
+- Punctuation or a symbol: \`{\`, \`.\`
+- Part of a number: \`20\` + \`26\`
 
-Tokens may represent:
+For English text, a rough rule of thumb is that **one token is about four characters, or three-quarters of a word**. Other languages, code, and unusual words often use more tokens per word.
 
-- Whole words.
-- Parts of words.
-- Punctuation.
-- Spaces or other text patterns.
+## Why tokens matter
 
-For example, a long technical word may be divided
-into several tokens.
+| Area | Impact |
+| --- | --- |
+| **Cost** | Providers bill per input and output token |
+| **Context limits** | The context window is measured in tokens |
+| **Latency** | More output tokens take longer to generate |
+| **Behavior** | Models can struggle with tasks like counting letters, because they see tokens rather than characters |
 
-Tokenization converts text into a sequence
-of token identifiers.
+## Counting tokens
 
-The number of tokens is not always equal
-to the number of words or characters.
+Each model family has its own tokenizer, so the same text can produce different counts. Use the provider's tokenizer library or token-counting endpoint for accurate numbers, especially when you are close to limits.
 
-Token counts matter because they influence:
+\`\`\`python
+# Rough estimate only; use the provider's tokenizer for exact counts
+def estimate_tokens(text: str) -> int:
+    return max(1, len(text) // 4)
+\`\`\`
 
-- Model input limits.
-- Output limits.
-- API costs.
-- Processing time.
-- Context usage.
+## Practical tips
 
-For example, an API provider may charge
-based on input and output tokens.
+- Don't send whole documents when a relevant excerpt will do.
+- Trim long conversation histories or summarize older turns.
+- Ask for concise output when you don't need detail.
+- Remember that JSON keys, whitespace, and formatting all use tokens.
+- Watch the usage figures returned by the API to monitor real costs.
 
-AI engineers should understand token usage
-when estimating application costs.
+## Key points
 
-They should also account for system instructions,
-conversation history, retrieved documents,
-and generated responses.
-        `,
-        "Why is tokenization important when building LLM applications?",
-        [
-          "It determines how text is represented for model processing and affects usage limits and costs",
-          "It automatically verifies every generated fact",
-          "It replaces the need for an API",
-          "It determines database permissions"
+- Tokens are the units models read and generate; roughly four characters of English each.
+- Tokens drive cost, context limits, and latency.
+- Use the provider's tokenizer for exact counts.`,
+          },
+          {
+            type: 'check',
+            question: "Why do token counts matter for an AI application's budget?",
+            options: [
+              "Tokens are a one-time licence fee paid when the model is chosen",
+              "Tokens only affect cost when images are included",
+              "Providers bill for input and output tokens, so longer prompts and answers cost more",
+              "Only the number of requests is billed, not their length",
+            ],
+            answer: 2,
+            explanation: "Most APIs price usage per token, so the length of prompts and responses directly determines cost.",
+          },
         ],
-        0,
-        "Tokenization converts text into model-readable units and influences context limits and usage costs."
-      ),
+      },
+      {
+        id: "context-windows",
+        title: "Understanding Context Windows",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding Context Windows
 
-      lesson(
-        "context-windows",
-        "Understanding Context Windows",
-        16,
-        `
-A context window is the amount of token information
-a model can process within a particular request.
+The **context window** is the maximum number of tokens a model can consider in one request: everything you send **plus** everything it generates.
 
-The context may include:
+## What uses the context window
 
-- System instructions.
-- Developer instructions.
-- User messages.
+- System and developer instructions.
 - Conversation history.
-- Retrieved documents.
-- Tool outputs.
-- Other input information.
+- Retrieved documents or tool results.
+- The user's current message.
+- The model's response.
 
-Generated output also consumes tokens
-within the model's supported limits.
+\`\`\`text
+[instructions][history][documents][user message] + [response] ≤ context window
+\`\`\`
 
-A larger context window allows more information
-to be considered in a single interaction.
+If the total exceeds the limit, the request fails or older content must be dropped.
 
-However, a larger context window does not mean
-the model will always use every detail accurately.
+## Bigger isn't automatically better
 
-Poorly structured or irrelevant context
-can reduce response quality.
+Context windows have grown from a few thousand tokens to hundreds of thousands or more in some models. Large windows are useful, but:
 
-Enterprise applications should manage context
-carefully.
+- **Cost** rises with every token you send.
+- **Latency** rises with input size.
+- **Quality** can drop: models may overlook details buried in the middle of very long inputs.
 
-Common strategies include:
+Sending only the most relevant information usually gives better and cheaper answers than sending everything.
 
-- Summarizing conversation history.
-- Retrieving only relevant documents.
-- Removing duplicate information.
-- Limiting unnecessary tool outputs.
-- Monitoring token consumption.
+## Managing context in practice
 
-Context management is particularly important
-for document analysis, AI assistants,
-and retrieval-augmented generation systems.
-        `,
-        "What does a context window represent?",
-        [
-          "The amount of token information a model can process in a request",
-          "The number of databases connected to an application",
-          "The physical size of a GPU",
-          "The number of users registered in a system"
+| Technique | How it helps |
+| --- | --- |
+| Retrieval (RAG) | Sends only the passages relevant to the question |
+| Conversation trimming | Keeps the most recent turns |
+| Summarizing history | Replaces old turns with a short summary |
+| Chunking long documents | Processes them piece by piece, then combines results |
+| Reserving output space | Leaves room for the answer you expect |
+
+## A budgeting example
+
+For a model with a 32,000-token window:
+
+| Part | Budget |
+| --- | --- |
+| Instructions | 1,000 |
+| History | 4,000 |
+| Retrieved documents | 20,000 |
+| User message | 1,000 |
+| Reserved for the answer | 4,000 |
+| Safety margin | 2,000 |
+
+## Key points
+
+- The context window covers both the input and the generated output.
+- Large windows raise cost and latency, and don't guarantee better answers.
+- Send the most relevant content and reserve room for the response.`,
+          },
+          {
+            type: 'check',
+            question: "What counts toward a model's context window?",
+            options: [
+              "The instructions, history, documents, user message, and the generated response",
+              "Only the model's response",
+              "Only documents retrieved from a database",
+              "Only the user's latest message",
+            ],
+            answer: 0,
+            explanation: "The window covers everything the model processes in one request, including the tokens it generates.",
+          },
         ],
-        0,
-        "A context window defines the token capacity available to a model for processing input and generating output."
-      ),
+      },
+      {
+        id: "model-parameters-architecture",
+        title: "Model Parameters, Size, and Capabilities",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Model Parameters, Size, and Capabilities
 
-      lesson(
-        "model-parameters-architecture",
-        "Model Parameters, Size, and Capabilities",
-        16,
-        `
-Model parameters are numerical values learned
-during model training.
+**Parameters** are the numbers a model learns during training: the weights and biases inside its network. A model's size is usually described by its parameter count, such as 8 billion or 70 billion.
 
-They influence how a neural network processes
-information and produces outputs.
+## What size affects
 
-A model with billions of parameters
-may require substantial computing resources.
+| Larger models tend to | Smaller models tend to |
+| --- | --- |
+| Handle complex reasoning and instructions better | Respond faster |
+| Know more about a wider range of topics | Cost less per token |
+| Need more memory and compute | Run on modest hardware, even on-device |
+| Respond more slowly | Work well for narrow, well-defined tasks |
 
-However, parameter count alone does not determine
-model quality.
+Size isn't everything. Training data quality, training methods, and fine-tuning can let a well-trained smaller model beat a larger one on specific tasks.
 
-Other important factors include:
+## Architecture variations
 
-- Training data quality.
-- Model architecture.
-- Training methods.
-- Context window.
-- Inference optimization.
-- Tool support.
-- Evaluation results.
+- **Dense models** use all their parameters for every token.
+- **Mixture-of-experts (MoE) models** contain many expert sub-networks but only activate a few for each token, giving the capacity of a large model with lower cost per token.
+- **Multimodal models** accept images, audio, or video as well as text.
+- **Reasoning-focused models** spend extra computation "thinking" before answering, which helps with multi-step problems but adds latency and cost.
 
-Model size can affect:
+## Model settings are not parameters
 
-Memory requirements:
-How much memory is needed to load the model.
+Don't confuse learned parameters with the **generation settings** you send in a request, such as temperature, top-p, and maximum tokens. Those control how the model generates text, not what it has learned.
 
-Inference performance:
-How efficiently the model can generate outputs.
+## Choosing a size
 
-Deployment cost:
-The infrastructure required to operate the model.
+1. Define the task and the quality bar.
+2. Test a small and a large model on realistic examples.
+3. Pick the smallest model that meets the quality bar, then consider speed and cost.
+4. Re-evaluate when new models are released; capabilities change quickly.
 
-Some systems use quantization to reduce
-the numerical precision used to represent parameters.
+## Key points
 
-Quantization can reduce memory requirements
-and improve inference efficiency, sometimes
-with tradeoffs in output quality.
-
-Enterprise architects must evaluate the overall
-performance and operational requirements
-rather than selecting a model based only on size.
-        `,
-        "What are model parameters?",
-        [
-          "Learned numerical values that influence a neural network's behavior",
-          "API passwords stored in a configuration file",
-          "Database table names",
-          "HTTP request headers"
+- Parameters are learned weights; parameter count describes model size.
+- Larger models are more capable but slower and costlier.
+- Mixture-of-experts, multimodal, and reasoning models trade capacity, speed, and cost differently.
+- Choose the smallest model that meets your quality requirements.`,
+          },
+          {
+            type: 'check',
+            question: "What is a reasonable strategy for choosing a model size?",
+            options: [
+              "Always choose the model with the most parameters",
+              "Choose by the number of parameters listed in marketing material",
+              "Pick the smallest model that meets the quality bar on realistic tests",
+              "Always choose the smallest model to minimize cost",
+            ],
+            answer: 2,
+            explanation: "Testing on your own examples and choosing the smallest model that meets requirements balances quality, speed, and cost.",
+          },
         ],
-        0,
-        "Model parameters are learned numerical values that determine how a neural network processes information."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+  {
+    id: "ai-model-providers",
+    title: "OpenAI and Other Model Providers",
+    lessons: [
+      {
+        id: "understanding-model-providers",
+        title: "Understanding AI Model Providers",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Understanding AI Model Providers
 
-// ================================================
-// MODULE 8 — OPENAI AND OTHER MODEL PROVIDERS
-// ================================================
+Model providers make trained models available through APIs and managed platforms, so you can use them without training or hosting them yourself.
 
-MODULES.push(
-  moduleData(
-    "ai-model-providers",
-    "OpenAI and Other Model Providers",
-    [
-      lesson(
-        "understanding-model-providers",
-        "Understanding AI Model Providers",
-        15,
-        `
-AI model providers offer access to trained models
-through APIs, managed platforms, and other services.
+## Types of providers
 
-Examples include:
+| Type | Examples | What you get |
+| --- | --- | --- |
+| **Model developers with APIs** | OpenAI, Anthropic, Google, Mistral, Cohere | Direct API access to their own models |
+| **Cloud AI platforms** | Amazon Bedrock, Azure AI Foundry, Google Vertex AI | Several providers' models inside your cloud account, with its security, networking, and billing |
+| **Open-weight model sources** | Meta Llama, Mistral, Qwen, others via Hugging Face | Models you can download and run yourself |
+| **Inference hosts** | Various specialized platforms | Hosted versions of open-weight models |
 
-OpenAI:
-Provides models and APIs for language,
-reasoning, and other AI capabilities.
+The landscape changes quickly: new models and versions appear every few months, and older ones are retired.
 
-Anthropic:
-Provides Claude model families and related services.
+## What to compare
 
-Google:
-Provides Gemini models and AI development services.
+- **Quality** on your actual tasks, not only public benchmarks.
+- **Price** per input and output token, and any minimum commitments.
+- **Speed:** time to first token and throughput.
+- **Context window** and supported input types (text, images, audio).
+- **Features:** structured outputs, tool calling, batch processing, fine-tuning.
+- **Data handling:** whether your data is stored or used for training, data residency, retention.
+- **Compliance:** certifications and contractual terms your organization requires.
+- **Reliability:** rate limits, uptime commitments, and support.
 
-Microsoft:
-Provides enterprise AI services and access
-to models through its cloud ecosystem.
+## Avoiding lock-in
 
-AWS:
-Provides managed AI and machine learning services
-through Amazon Bedrock and related technologies.
+- Wrap model calls in your own service layer instead of calling a provider directly from everywhere.
+- Keep prompts, evaluations, and test sets portable.
+- Re-run your evaluations when switching models; behavior differs even for the same prompt.
 
-Other providers and open model ecosystems
-offer additional deployment options.
+## Key points
 
-Organizations should evaluate providers based on:
-
-- Model capabilities.
-- Security controls.
-- Data handling policies.
-- Availability.
-- Pricing.
-- Latency.
-- Regional deployment requirements.
-- Integration capabilities.
-- Service-level commitments.
-
-Selecting a provider is an architectural decision,
-not simply a matter of choosing the most popular model.
-        `,
-        "What should an enterprise consider when selecting an AI model provider?",
-        [
-          "Security, capability, cost, availability, and integration requirements",
-          "Only the provider's logo",
-          "Only the programming language used by the provider",
-          "Whether the provider has the largest website"
+- Providers include model developers, cloud platforms, and open-weight model sources.
+- Compare quality on your tasks, price, speed, features, and data handling.
+- A thin abstraction layer and portable evaluations make switching providers easier.`,
+          },
+          {
+            type: 'check',
+            question: "Why might an enterprise access models through a cloud AI platform rather than directly from a model developer?",
+            options: [
+              "Because cloud platforms guarantee the models never make mistakes",
+              "To use the models inside its existing cloud security, networking, and billing",
+              "To avoid evaluating models before using them",
+              "Because model developers do not offer APIs",
+            ],
+            answer: 1,
+            explanation: "Cloud AI platforms let organizations reach several providers' models while keeping their existing cloud controls and contracts.",
+          },
         ],
-        0,
-        "Enterprise model selection should consider technical, security, financial, and operational requirements."
-      ),
+      },
+      {
+        id: "hosted-vs-self-hosted-models",
+        title: "Hosted Models Versus Self-Hosted Models",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Hosted Models Versus Self-Hosted Models
 
-      lesson(
-        "hosted-vs-self-hosted-models",
-        "Hosted Models Versus Self-Hosted Models",
-        16,
-        `
-Organizations can access AI models in different ways.
+Organizations can use a model in two broad ways: call a **hosted** model through a provider's API, or **self-host** a model on infrastructure they control.
 
-Hosted Models:
+## Hosted models
 
-A provider operates the model infrastructure
-and exposes access through a managed service or API.
+The provider runs the model; you send requests over an API.
 
-Potential advantages:
+**Advantages**
+- Fast to start: no GPUs or model operations to manage.
+- Access to the most capable proprietary models.
+- The provider handles scaling, updates, and availability.
 
-- Reduced infrastructure management.
-- Faster implementation.
-- Managed scaling.
-- Access to provider-supported models.
+**Considerations**
+- Data leaves your environment, so review retention, training use, and residency terms.
+- Costs grow with usage.
+- You depend on the provider's rate limits, pricing, and model retirement schedule.
 
-Potential considerations:
+## Self-hosted models
 
-- Usage-based costs.
-- Provider dependency.
-- Data handling requirements.
-- Network latency.
-- Service availability.
+You run an open-weight model on your own servers or cloud account.
 
-Self-Hosted Models:
+**Advantages**
+- Full control over where data is processed.
+- Predictable costs at high, steady volume.
+- Freedom to customize and fine-tune deeply.
 
-An organization deploys and operates models
-within infrastructure it controls.
+**Considerations**
+- You manage GPUs, scaling, monitoring, security patches, and upgrades.
+- Open-weight models may trail the best proprietary models on hard tasks.
+- Requires specialist skills to run efficiently.
 
-Potential advantages:
+## Comparison
 
-- Greater deployment control.
-- More customization options.
-- Potentially different data governance arrangements.
+| Factor | Hosted | Self-hosted |
+| --- | --- | --- |
+| Time to start | Hours | Weeks |
+| Operations effort | Low | High |
+| Data control | Contractual | Technical |
+| Cost at low volume | Low | High (idle GPUs) |
+| Cost at very high volume | Can be high | Can be lower |
+| Access to frontier models | Yes | Limited to open-weight models |
 
-Potential considerations:
+## A middle path
 
-- Infrastructure costs.
-- GPU availability.
-- Model maintenance.
-- Security responsibilities.
-- Scaling complexity.
-- Operational expertise.
+Cloud AI platforms let you run models inside your cloud account, with private networking and your existing security controls, without operating the model servers yourself. Many enterprises start there.
 
-Some organizations use a hybrid approach.
+## Key points
 
-The correct choice depends on business requirements,
-data sensitivity, regulatory obligations,
-performance, and total cost of ownership.
-        `,
-        "What is a major responsibility associated with self-hosting an AI model?",
-        [
-          "Managing the model infrastructure and operational environment",
-          "Eliminating all infrastructure costs",
-          "Avoiding all security responsibilities",
-          "Guaranteeing unlimited model capacity"
+- Hosted models are quick to adopt and the provider runs them; self-hosting gives control but adds operational work.
+- Decide based on data requirements, volume, skills, and model quality needs.
+- Cloud AI platforms offer a managed option inside your own cloud environment.`,
+          },
+          {
+            type: 'check',
+            question: "Which responsibility does an organization take on when it self-hosts a model?",
+            options: [
+              "Running and maintaining the model's infrastructure, scaling, and updates",
+              "Paying the provider per token for every request",
+              "Accepting the provider's data retention and usage terms",
+              "Waiting for the provider to release model updates",
+            ],
+            answer: 0,
+            explanation: "Self-hosting gives control over data and infrastructure, but the organization must operate everything the provider would otherwise run.",
+          },
         ],
-        0,
-        "Self-hosting requires the organization to operate and maintain the model infrastructure."
-      ),
+      },
+      {
+        id: "model-selection-strategy",
+        title: "Choosing the Right AI Model for an Enterprise",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Choosing the Right AI Model for an Enterprise
 
-      lesson(
-        "model-selection-strategy",
-        "Choosing the Right AI Model for an Enterprise",
-        17,
-        `
-Selecting an AI model requires understanding
-the business problem and its technical requirements.
+There is no single best model. The right choice depends on the task, its quality bar, and constraints such as cost, speed, and data handling.
 
-Start with the use case.
+## Start with the use case
 
-Examples:
+| Use case | What matters most |
+| --- | --- |
+| Customer support answers | Accuracy grounded in documents, tone, latency |
+| Ticket classification | Consistency, low cost at high volume |
+| Contract summarization | Long context, accuracy, data protection |
+| Code assistance | Coding ability, tool use |
+| Internal analytics questions | Reasoning, structured output, access control |
 
-Customer Support:
-Requires reliable responses and appropriate
-access to approved information.
+## Define requirements before testing
 
-Document Processing:
-Requires strong extraction and structured output
-capabilities.
+- **Quality:** what does a good answer look like, and what error rate is acceptable?
+- **Latency:** how fast must responses arrive?
+- **Volume and budget:** requests per day and cost per request.
+- **Context:** how much text each request needs.
+- **Data:** confidentiality, residency, and retention requirements.
+- **Features:** structured output, tool calling, images, fine-tuning.
 
-Software Development:
-May benefit from models optimized for code generation.
+## Evaluate with your own data
 
-Complex Analysis:
-May require models with stronger reasoning capabilities.
+1. Build a test set of 50–200 realistic examples with expected answers or grading criteria.
+2. Run two or three candidate models with the same prompts.
+3. Score results with automatic checks where possible, plus human review.
+4. Record cost and latency alongside quality.
 
-Evaluate candidate models using:
+| Model | Quality score | Avg latency | Cost per 1,000 requests |
+| --- | --- | --- | --- |
+| Large model A | 92% | 3.1 s | $18.00 |
+| Medium model B | 89% | 1.2 s | $4.50 |
+| Small model C | 78% | 0.6 s | $0.90 |
 
-Accuracy:
-How well the model performs the required task.
+If the requirement is 85%, model B may be the best choice.
 
-Latency:
-How quickly the model responds.
+## Combine models
 
-Cost:
-The expense of processing expected workloads.
+Many systems route requests: a small model handles simple, frequent cases and escalates harder ones to a larger model.
 
-Context Capacity:
-The amount of information the model can process.
+## Revisit regularly
 
-Security:
-How data is protected and handled.
+Models improve and prices drop quickly. Keep your test set and re-run it when new models appear or a provider retires a version.
 
-Reliability:
-How consistently the service operates.
+## Key points
 
-Integration:
-How easily the model connects to existing systems.
-
-Governance:
-Whether the solution satisfies organizational
-and regulatory requirements.
-
-A good selection process uses representative tests
-rather than relying exclusively on demonstrations
-or vendor marketing.
-        `,
-        "What is the best way to compare AI models for a specific enterprise use case?",
-        [
-          "Evaluate them against representative business requirements and measurable criteria",
-          "Choose the model with the longest name",
-          "Select the most expensive model automatically",
-          "Use the first model found online"
+- Choose by use case and explicit requirements, not by leaderboard position.
+- Compare candidates on your own examples for quality, latency, and cost.
+- Routing between models and regular re-evaluation keep costs and quality in balance.`,
+          },
+          {
+            type: 'check',
+            question: "What is the most reliable way to compare candidate models for a business use case?",
+            options: [
+              "Choose the model ranked highest on public leaderboards",
+              "Choose the newest model released by the largest provider",
+              "Choose the model with the largest context window",
+              "Test them on representative examples from the use case and score quality, latency, and cost",
+            ],
+            answer: 3,
+            explanation: "Public benchmarks don't reflect your data or requirements. Testing on realistic examples shows which model meets your bar at an acceptable cost.",
+          },
         ],
-        0,
-        "Models should be evaluated using representative workloads and measurable technical and business criteria."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+  {
+    id: "working-with-llm-apis",
+    title: "Working with LLM APIs",
+    lessons: [
+      {
+        id: "llm-api-fundamentals",
+        title: "Introduction to LLM APIs",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Introduction to LLM APIs
 
-// END OF SECTION 2
-// ================================================
-// MODULE 9 — WORKING WITH LLM APIs
-// ================================================
+An LLM API lets your application send text (and sometimes images or files) to a hosted model and receive a generated response.
 
-MODULES.push(
-  moduleData(
-    "working-with-llm-apis",
-    "Working with LLM APIs",
-    [
-      lesson(
-        "llm-api-fundamentals",
-        "Introduction to LLM APIs",
-        16,
-        `
-LLM APIs allow applications to communicate with
-hosted language models.
+## Anatomy of a request
 
-Instead of operating a model directly, an application
-sends a request to a provider's API.
+| Part | Purpose |
+| --- | --- |
+| **Endpoint** | The provider's URL for generating responses |
+| **API key** | Authenticates your application; sent in a header |
+| **Model** | Which model and version to use |
+| **Messages or input** | Instructions, conversation history, and the user's message |
+| **Settings** | Maximum output tokens, temperature, response format, tools |
 
-The provider processes the request and returns
-a generated response.
+Messages usually carry a **role**:
 
-A typical workflow:
+- **System or developer:** instructions that set behavior and rules.
+- **User:** the end user's input.
+- **Assistant:** earlier model responses in the conversation.
 
-1. The application receives a user question.
-2. The backend constructs a model request.
-3. The backend authenticates with the provider.
-4. The request is sent to the LLM API.
-5. The provider generates a response.
-6. The backend processes the response.
-7. The application returns the result to the user.
+## Anatomy of a response
 
-Python applications can communicate with LLM APIs
-using HTTP libraries or provider-specific SDKs.
+- The generated text, or structured content such as JSON or tool calls.
+- A **stop reason**: finished normally, hit the token limit, or requested a tool.
+- **Usage:** input and output token counts, used for cost tracking.
+- A request ID, useful when contacting support.
 
-Common request information includes:
+## Stateless by default
 
-- Model identifier.
-- Instructions.
-- User input.
-- Generation settings.
-- Optional tools.
-- Output format requirements.
+Most LLM APIs don't remember earlier requests. To continue a conversation, your application sends the relevant history each time, or uses a provider feature that stores conversation state.
 
-API credentials must be protected.
+## Errors to handle
 
-Do not expose privileged API keys in Angular
-components or browser JavaScript.
+| Status | Meaning | Response |
+| --- | --- | --- |
+| 400 | Invalid request | Fix the request; don't retry unchanged |
+| 401 / 403 | Authentication or permission problem | Check keys and access |
+| 429 | Rate limit | Wait and retry with backoff |
+| 500–503 | Provider problem | Retry with backoff; consider a fallback model |
 
-Use secure backend services and secrets management.
-        `,
-        "Where should an application's privileged LLM API key be stored?",
-        [
-          "In public frontend JavaScript",
-          "In secure backend configuration or a secrets manager",
-          "Inside a public Git repository",
-          "In an HTML comment"
+## Security basics
+
+- Keep API keys on the server, in environment variables or a secret manager.
+- Never expose a privileged key in a browser or mobile app.
+- Log usage, but don't log sensitive prompt content unnecessarily.
+
+## Key points
+
+- Requests specify the model, role-tagged messages, and settings; responses include text, stop reason, and usage.
+- APIs are usually stateless, so you send the conversation history.
+- Keep keys server-side and handle rate limits and errors.`,
+          },
+          {
+            type: 'check',
+            question: "Where should an application store the API key for an LLM provider?",
+            options: [
+              "In the frontend environment file shipped to browsers",
+              "In backend configuration such as environment variables or a secrets manager",
+              "In the browser's local storage after sign-in",
+              "In the source code so every developer has it",
+            ],
+            answer: 1,
+            explanation: "Keys must stay on the server. Anything shipped to a browser or committed to code can be extracted and misused.",
+          },
         ],
-        1,
-        "Privileged API credentials should be stored securely on the backend or in a secrets manager."
-      ),
+      },
+      {
+        id: "python-llm-api-integration",
+        title: "Connecting Python Applications to LLM APIs",
+        minutes: 9,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Connecting Python Applications to LLM APIs
 
-      lesson(
-        "python-llm-api-integration",
-        "Connecting Python Applications to LLM APIs",
-        18,
-        `
-Python can connect to hosted language models
-through provider SDKs or HTTP requests.
+Python applications call LLMs either through the provider's **SDK** or with plain HTTP requests. SDKs handle authentication, retries, and response parsing for you.
 
-A typical integration requires:
+## Typical setup
 
-1. Installing the provider SDK.
-2. Configuring authentication.
-3. Creating a client.
-4. Sending instructions and user input.
-5. Receiving the generated response.
-6. Handling errors and usage information.
+\`\`\`bash
+pip install <provider-sdk> python-dotenv
+\`\`\`
 
-Example using an environment variable:
+Store the key in an environment variable, never in code:
 
+\`\`\`bash
+export MODEL_API_KEY="..."
+\`\`\`
+
+## A provider-neutral service function
+
+Each provider's SDK differs slightly, so wrap calls in one function your application uses everywhere:
+
+\`\`\`python
 import os
+import requests
 
-api_key = os.environ["AI_API_KEY"]
+API_URL = os.environ["MODEL_API_URL"]
+API_KEY = os.environ["MODEL_API_KEY"]
+MODEL = os.environ.get("MODEL_NAME", "example-model")
 
-The application should retrieve credentials
-from a secure environment rather than hardcoding them.
+class ModelError(Exception):
+    pass
 
-A conceptual integration workflow:
-
-from provider_sdk import Client
-
-client = Client(
-    api_key=api_key
-)
-
-response = client.generate(
-    model="MODEL_NAME",
-    input="Explain enterprise architecture."
-)
-
-print(response)
-
-The exact SDK and method names depend
-on the selected provider.
-
-Production applications should also implement:
-
-- Request timeouts.
-- Error handling.
-- Usage tracking.
-- Retry policies.
-- Logging.
-- Cost monitoring.
-
-An LLM integration is a backend dependency
-and should be managed like other enterprise services.
-        `,
-        "Why should an application use environment variables or a secrets manager for API credentials?",
-        [
-          "To protect credentials from being exposed in source code",
-          "To automatically train the model",
-          "To increase the model's context window",
-          "To eliminate network latency"
+def generate(instructions: str, user_message: str, max_tokens: int = 500) -> str:
+    payload = {
+        "model": MODEL,
+        "max_tokens": max_tokens,
+        "messages": [
+            {"role": "system", "content": instructions},
+            {"role": "user", "content": user_message},
         ],
-        0,
-        "Secure configuration helps keep sensitive credentials out of application source code and public repositories."
-      ),
+    }
+    try:
+        response = requests.post(
+            API_URL,
+            json=payload,
+            headers={"Authorization": f"Bearer {API_KEY}"},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException as error:
+        raise ModelError(f"Model request failed: {error}") from error
 
-      lesson(
-        "llm-structured-outputs-tools",
-        "Structured Outputs and Tool Calling",
-        18,
-        `
-LLM applications often need responses
-that follow a predictable structure.
+    data = response.json()
+    return extract_text(data)   # provider-specific parsing in one place
+\`\`\`
 
-Structured outputs allow applications
-to request information in formats such as JSON.
+The field names in the payload and response vary by provider; check their documentation and keep the differences inside this one module.
 
-Example:
+## Good practices
 
+- **Timeouts** on every call; generation can take tens of seconds.
+- **Retries with backoff** for 429 and 5xx errors only.
+- **Log** model name, token usage, latency, and errors.
+- **Limit input size** before sending it.
+- **Validate output** before using it.
+- **Test** your code with a fake \`generate()\` so unit tests don't call the real API.
+
+## Async for many requests
+
+When processing many items, asynchronous calls or the provider's batch API improve throughput. Respect rate limits by limiting concurrency.
+
+## Key points
+
+- Use the provider SDK or HTTP, with the key in the environment.
+- Wrap model calls in one service function so the rest of the code doesn't depend on a provider.
+- Add timeouts, selective retries, logging, and output validation.`,
+          },
+          {
+            type: 'check',
+            question: "Why wrap all model calls in a single service function such as generate()?",
+            options: [
+              "So the API key can be passed to the browser more easily",
+              "Because it removes the need for timeouts and error handling",
+              "Because model APIs only accept requests from functions named generate",
+              "So provider-specific details stay in one place and the rest of the code is easy to test and change",
+            ],
+            answer: 3,
+            explanation: "A single wrapper isolates SDK and payload differences, makes testing with a fake easy, and simplifies switching providers.",
+          },
+        ],
+      },
+      {
+        id: "llm-structured-outputs-tools",
+        title: "Structured Outputs and Tool Calling",
+        minutes: 7,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Structured Outputs and Tool Calling
+
+Applications often need model output they can process reliably, not free-form prose. Two features help: **structured outputs** and **tool calling**.
+
+## Structured outputs
+
+You ask the model to return data in a defined format, usually JSON that matches a schema:
+
+\`\`\`json
 {
-  "category": "technical_support",
-  "priority": "high",
-  "summary": "Database connection failure"
+  "type": "object",
+  "properties": {
+    "category": {"type": "string", "enum": ["Hardware", "Software", "Access"]},
+    "priority": {"type": "integer", "minimum": 1, "maximum": 4},
+    "summary": {"type": "string"}
+  },
+  "required": ["category", "priority", "summary"]
 }
+\`\`\`
 
-Structured output is useful for:
+Many providers can **enforce** a schema so the response always parses. Even then, validate the values: a valid category can still be the wrong one.
 
-- Data extraction.
-- Classification.
-- Workflow automation.
-- Form population.
-- Enterprise integrations.
+\`\`\`python
+import json
 
-Tool calling allows a model to request
-that an application execute an available operation.
+result = json.loads(model_text)
+if result["category"] not in {"Hardware", "Software", "Access"}:
+    raise ValueError("Unexpected category")
+\`\`\`
 
-Example:
+## Tool calling
 
-A user asks:
+With tool calling (also called function calling), you describe functions the model may request, such as \`look_up_order(order_id)\`. The flow:
 
-"What is the status of my job application?"
+1. Your app sends the user's message plus tool descriptions.
+2. The model replies with a **tool call**: the tool name and JSON arguments.
+3. **Your code** validates the arguments, checks the user is allowed, and runs the function.
+4. You send the result back; the model writes the final answer.
 
-The model may request a tool named:
+The model never runs code itself. Your application stays in control.
 
-get_application_status
+## Safety rules for tools
 
-The backend executes the authorized operation
-and returns the result to the model.
+- Give each tool the narrowest permissions possible.
+- Validate every argument on the server.
+- Check the **user's** authorization, not just that the model asked.
+- Require confirmation for actions that change data or spend money.
+- Log every tool call.
 
-The model can then formulate a response.
+## When to use which
 
-Important security principle:
+| Need | Use |
+| --- | --- |
+| Extract or classify into fixed fields | Structured outputs |
+| Look up live data or take an action | Tool calling |
+| Both: decide, then act | Tool calling with structured arguments |
 
-The model should not directly receive unrestricted
-access to databases or enterprise systems.
+## Key points
 
-The application must validate tool requests,
-authenticate the user, enforce authorization,
-and validate operation parameters.
-
-Tool calling does not mean the model itself
-has unrestricted permission to execute actions.
-        `,
-        "What is an important security responsibility when implementing LLM tool calling?",
-        [
-          "Allow every tool to access all databases",
-          "Validate tool requests and enforce authorization in the backend",
-          "Trust every model-generated argument",
-          "Disable authentication"
+- Structured outputs return JSON that matches a schema; still validate the values.
+- Tool calling lets the model request functions that your code runs.
+- Enforce permissions and validation in your code, not in the prompt.`,
+          },
+          {
+            type: 'check',
+            question: "In tool calling, who actually executes the requested function?",
+            options: [
+              "The application's own code, after validating the arguments and permissions",
+              "The model provider's database",
+              "The language model, directly on the provider's servers",
+              "The end user's browser",
+            ],
+            answer: 0,
+            explanation: "The model only proposes a call. Your application decides whether to run it, validates it, and executes it.",
+          },
         ],
-        1,
-        "The backend must validate tool requests and enforce permissions before executing operations."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+  {
+    id: "model-evaluation-performance",
+    title: "Model Evaluation and Performance",
+    lessons: [
+      {
+        id: "evaluating-model-quality",
+        title: "Evaluating AI Model Quality",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Evaluating AI Model Quality
 
-// ================================================
-// MODULE 10 — MODEL EVALUATION AND PERFORMANCE
-// ================================================
+A demo that works on five examples proves very little. **Evaluation** measures how well an AI feature performs across realistic cases, and keeps measuring as prompts, models, and data change.
 
-MODULES.push(
-  moduleData(
-    "model-evaluation-performance",
-    "Model Evaluation and Performance",
-    [
-      lesson(
-        "evaluating-model-quality",
-        "Evaluating AI Model Quality",
-        16,
-        `
-AI model evaluation determines how well a model
-performs a particular task.
+## Build an evaluation set
 
-A model that performs well in a demonstration
-may perform poorly in real business scenarios.
+Collect examples that represent real use:
 
-Evaluation should use representative examples
-from the intended application.
+- Common requests.
+- Edge cases: ambiguous, incomplete, very long, or unusual inputs.
+- Questions the system **shouldn't** answer, or where it should say "I don't know".
+- Known past failures.
 
-Important evaluation dimensions include:
+For each, record the expected answer or the criteria a good answer must meet.
 
-Accuracy:
-How often the model produces correct results.
+## Ways to score
 
-Precision:
-How many predicted positive results are actually positive.
+| Method | Good for | Watch out for |
+| --- | --- | --- |
+| **Exact or rule-based checks** | Classification, extraction, JSON validity | Only works when answers are well defined |
+| **Reference comparison** | Answers with a known correct version | Different wording can still be correct |
+| **Model-graded (LLM as judge)** | Scaling review of open-ended answers | Needs its own validation against human judgment |
+| **Human review** | Nuanced quality, tone, safety | Slow and costly; use a clear rubric |
+| **User feedback** | Real-world satisfaction | Biased toward users who respond |
 
-Recall:
-How many actual positive cases the model identifies.
+## What to measure
 
-F1 Score:
-A combined measure of precision and recall.
+- **Correctness:** is the answer right?
+- **Groundedness:** is it supported by the provided sources?
+- **Completeness and relevance:** does it answer the actual question?
+- **Format:** does it follow the required structure?
+- **Safety:** does it avoid harmful or disallowed content and protect data?
+- **Consistency:** similar inputs, similar quality.
 
-For generative AI, additional evaluation dimensions
-may include:
+## Make it a habit
 
-- Relevance.
-- Completeness.
-- Factual consistency.
-- Instruction following.
-- Output format compliance.
-- Safety.
-- Grounding in source material.
+1. Run the evaluation before every change to prompts, models, or retrieval.
+2. Compare against the previous version, not just an absolute score.
+3. Add new failures from production to the set.
 
-Example:
+This is **regression testing for AI**: it stops an improvement in one area from quietly breaking another.
 
-A document extraction model is expected to identify
-invoice numbers, dates, and payment amounts.
+## Key points
 
-Its evaluation should compare extracted values
-against verified reference data.
-
-Evaluation should be repeated when prompts,
-models, datasets, or application workflows change.
-        `,
-        "Why should AI models be evaluated using representative business examples?",
-        [
-          "To understand how they perform in the intended real-world use case",
-          "To guarantee that they will never make mistakes",
-          "To eliminate the need for testing",
-          "To increase their parameter count automatically"
+- Evaluate on a realistic set that includes edge cases and unanswerable questions.
+- Combine automatic checks, model grading, and human review.
+- Re-run evaluations on every change and grow the set from real failures.`,
+          },
+          {
+            type: 'check',
+            question: "Why should an evaluation set include questions the system should not answer?",
+            options: [
+              "Because models answer those questions faster",
+              "To make the overall score look higher",
+              "To reduce the number of examples that need human review",
+              "To check that the system admits it doesn't know instead of inventing an answer",
+            ],
+            answer: 3,
+            explanation: "Unanswerable questions test whether the system hallucinates. A trustworthy system declines or says it can't find the answer.",
+          },
         ],
-        0,
-        "Representative evaluation examples reveal how well a model performs under realistic application conditions."
-      ),
+      },
+      {
+        id: "llm-performance-latency-cost",
+        title: "Model Performance, Latency, and Cost",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Model Performance, Latency, and Cost
 
-      lesson(
-        "llm-performance-latency-cost",
-        "Model Performance, Latency, and Cost",
-        16,
-        `
-Enterprise AI applications must balance performance,
-response time, and operating costs.
+Production AI features must be good enough, fast enough, and affordable at scale. These goals pull against each other, so you manage them together.
 
-Latency:
+## Key metrics
 
-The time required for a request to produce
-a response.
+| Metric | Meaning |
+| --- | --- |
+| **Latency** | Time from request to complete response |
+| **Time to first token** | Time until the response starts appearing |
+| **Throughput** | Requests or tokens processed per second |
+| **Cost per request** | Input tokens × input price + output tokens × output price |
+| **Error rate** | Share of requests that fail or time out |
 
-Throughput:
+## Estimating cost
 
-The amount of work a system can process
-during a given period.
+\`\`\`text
+Requests per day:        20,000
+Average input tokens:    1,500
+Average output tokens:   300
+Input price:             $1.00 per million tokens
+Output price:            $4.00 per million tokens
 
-Token Consumption:
+Daily input cost  = 20,000 × 1,500 / 1,000,000 × $1.00 = $30.00
+Daily output cost = 20,000 × 300   / 1,000,000 × $4.00 = $24.00
+Daily total       = $54.00, about $1,620 per month
+\`\`\`
 
-The number of input and output tokens processed.
+Prices here are illustrative; check current provider pricing.
 
-Cost:
+## Levers to improve speed and cost
 
-The expense associated with model usage
-and supporting infrastructure.
+- **Right-size the model:** use a smaller model where quality allows.
+- **Trim prompts:** send only relevant context and history.
+- **Cap output length** and ask for concise answers.
+- **Cache** answers to repeated questions, and use provider prompt caching for repeated instructions.
+- **Batch** non-urgent work through batch APIs, often at a discount.
+- **Route** simple requests to cheap models and hard ones to capable models.
+- **Stream** responses so users see progress immediately.
 
-Performance can be influenced by:
+## Plan for limits
 
-- Model size.
-- Input length.
-- Output length.
-- Network conditions.
-- Provider capacity.
-- Infrastructure configuration.
-- Concurrent requests.
+- Providers enforce rate limits on requests and tokens per minute.
+- Queue and throttle background jobs.
+- Set budgets and alerts so a bug or traffic spike doesn't create a surprise bill.
 
-Ways to improve efficiency include:
+## Key points
 
-- Selecting an appropriate model.
-- Reducing unnecessary prompt content.
-- Limiting output length.
-- Caching appropriate results.
-- Using asynchronous processing.
-- Monitoring token usage.
-- Routing simple tasks to less expensive models.
-
-For example, a simple classification task
-may not require the most expensive model available.
-
-Model selection should reflect actual workload needs.
-        `,
-        "What does latency measure in an AI application?",
-        [
-          "The time required for a request to produce a response",
-          "The number of database tables",
-          "The number of model parameters only",
-          "The size of an organization's workforce"
+- Track latency, throughput, cost per request, and errors.
+- Cost scales with tokens, so prompt size and output length matter.
+- Right-sizing, trimming, caching, batching, and routing keep performance and cost in balance.`,
+          },
+          {
+            type: 'check',
+            question: "Which change usually reduces both cost and latency without changing the model?",
+            options: [
+              "Raising the temperature to generate answers faster",
+              "Removing timeouts from API calls",
+              "Sending only the relevant context instead of whole documents and long histories",
+              "Increasing the maximum output tokens",
+            ],
+            answer: 2,
+            explanation: "Fewer input tokens are cheaper and faster to process. Temperature doesn't speed generation, and higher token limits add cost.",
+          },
         ],
-        0,
-        "Latency measures the time taken for a request to receive a response."
-      ),
+      },
+      {
+        id: "responsible-ai-model-monitoring",
+        title: "Responsible AI and Model Monitoring",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Responsible AI and Model Monitoring
 
-      lesson(
-        "responsible-ai-model-monitoring",
-        "Responsible AI and Model Monitoring",
-        17,
-        `
-Responsible AI involves developing and operating
-AI systems in ways that address safety, fairness,
-privacy, accountability, and transparency.
+Responsible AI means designing and operating AI systems so they are safe, fair, private, transparent, and accountable. It continues after launch through monitoring.
 
-Important considerations include:
+## Core principles
 
-Bias:
-Models may produce different outcomes
-for different groups or circumstances.
+| Principle | In practice |
+| --- | --- |
+| **Safety** | Prevent harmful outputs and unsafe actions |
+| **Fairness** | Check that quality doesn't differ unfairly across groups of users |
+| **Privacy** | Minimize personal data sent to models; control retention |
+| **Transparency** | Tell users when they are interacting with AI and how it is used |
+| **Accountability** | Name owners, keep records, and provide a way to report problems |
+| **Human oversight** | Keep people in the loop for consequential decisions |
 
-Privacy:
-Applications must protect personal
-and confidential information.
+## Risks specific to LLMs
 
-Transparency:
-Organizations should communicate
-appropriate information about AI usage.
+- Hallucinated facts presented confidently.
+- Prompt injection: instructions hidden in user input or documents that try to override your rules.
+- Leakage of confidential data in responses.
+- Biased or inappropriate content.
+- Over-reliance: users trusting output without checking it.
 
-Security:
-AI applications must protect models,
-data, integrations, and users.
+## What to monitor in production
 
-Human Oversight:
-Important decisions may require review
-by qualified people.
+- **Quality:** sampled reviews, user feedback, and automated evaluation scores over time.
+- **Safety:** flagged or blocked content, injection attempts.
+- **Operational health:** latency, error rates, timeouts, rate limits.
+- **Cost:** token usage by feature and by customer.
+- **Drift:** changes in the kinds of questions users ask, or in model behavior after a provider update.
 
-Model Monitoring:
+## Responding to problems
 
-AI systems should be monitored after deployment.
+1. Define thresholds and alerts for each metric.
+2. Keep an incident process: who investigates, who can disable a feature.
+3. Version prompts and configurations so you can roll back.
+4. Add every incident to your evaluation set.
 
-Monitor:
+## Governance
 
-- Response quality.
-- Error rates.
-- Latency.
-- Token consumption.
-- Cost.
-- Safety-related events.
-- User feedback.
-- Changes in input data.
+Document each AI system: its purpose, data sources, model, known limitations, evaluation results, and owner. Regulations and internal policies increasingly require this.
 
-Model behavior may change when application
-requirements, prompts, providers, or underlying
-models change.
+## Key points
 
-Establish evaluation processes and escalation
-procedures for unexpected behavior.
-
-AI governance should be integrated into
-the solution lifecycle rather than added
-only after deployment.
-        `,
-        "What is an important component of responsible AI deployment?",
-        [
-          "Ignoring model errors after deployment",
-          "Monitoring model behavior and maintaining appropriate human oversight",
-          "Removing all security controls",
-          "Allowing AI systems to make every decision without review"
+- Responsible AI covers safety, fairness, privacy, transparency, accountability, and oversight.
+- Monitor quality, safety, operations, cost, and drift after launch.
+- Version configurations, alert on thresholds, and feed incidents back into evaluation.`,
+          },
+          {
+            type: 'check',
+            question: "Why must AI features be monitored after launch, even if they passed evaluation?",
+            options: [
+              "Evaluation results are only valid for the first hour after deployment",
+              "User behavior, data, and provider models change over time, which can lower quality",
+              "Monitoring replaces the need for evaluation before launch",
+              "Providers require monitoring before they release model updates",
+            ],
+            answer: 1,
+            explanation: "Real usage and model updates drift away from what was tested, so ongoing monitoring catches problems evaluation couldn't foresee.",
+          },
         ],
-        1,
-        "Responsible AI includes ongoing monitoring, accountability, and appropriate human oversight."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+  {
+    id: "practical-ai-engineering-project",
+    title: "Practical AI Engineering Project",
+    lessons: [
+      {
+        id: "designing-an-ai-application",
+        title: "Project: Designing an AI-Powered Application",
+        minutes: 7,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Project: Designing an AI-Powered Application
 
-// ================================================
-// MODULE 11 — PRACTICAL AI ENGINEERING PROJECT
-// ================================================
+In this project you design the **Zebron Enterprise Assistant**, an assistant that answers employee questions about internal processes and services.
 
-MODULES.push(
-  moduleData(
-    "practical-ai-engineering-project",
-    "Practical AI Engineering Project",
-    [
-      lesson(
-        "designing-an-ai-application",
-        "Project: Designing an AI-Powered Application",
-        18,
-        `
-Your final project begins with designing
-an AI-powered enterprise application.
+## Business requirement
 
-Scenario:
-
-Zebron Enterprise Assistant.
-
-Business Requirement:
-
-An organization wants an AI assistant
-that can answer employee questions about
-internal processes and services.
-
-The assistant should:
+Employees spend time searching intranet pages and waiting for help-desk replies. The assistant should:
 
 - Accept natural-language questions.
-- Connect to an LLM.
-- Generate useful responses.
-- Provide structured results where required.
-- Support backend integration.
-- Protect sensitive information.
+- Answer from approved internal content, with sources.
+- Return structured results where the request needs them, such as a ticket draft.
+- Respect each employee's access permissions.
+- Protect confidential and personal information.
 
-Proposed architecture:
+## Proposed architecture
 
-Angular Frontend
-        |
-        v
-Python Backend API
-        |
-        v
-Authentication and Authorization
-        |
-        v
-LLM Integration Service
-        |
-        v
-AI Model Provider
-        |
-        v
-Response Processing
-        |
-        v
-Frontend
+\`\`\`text
+Angular frontend
+   ↓  HTTPS, signed-in user
+Python backend API (FastAPI)
+   ├─ Authentication and authorization
+   ├─ Input validation and rate limits
+   ├─ Retrieval of approved documents the user may see
+   ├─ LLM integration service (provider SDK, timeouts, retries)
+   ├─ Output validation
+   └─ Logging and monitoring
+   ↓
+AI model provider
+\`\`\`
 
-The backend should manage API credentials
-and control access to the model provider.
+The backend owns the API credentials and all business rules. The browser never calls the model provider directly.
 
-Before implementation, document:
+## Document before you build
 
-1. Business requirements.
-2. Intended users.
-3. Supported use cases.
-4. Security requirements.
-5. Model selection criteria.
-6. Expected response times.
-7. Usage and cost expectations.
+| Item | Example decision |
+| --- | --- |
+| Users | All employees; HR content limited to HR staff |
+| Use cases | Policy questions, IT how-to, ticket drafting |
+| Out of scope | Legal advice, salary data, actions in HR systems |
+| Quality bar | 90% correct on a 100-question evaluation set |
+| Latency | First token under 2 seconds; full answer under 10 |
+| Data handling | No personal data in prompts; 30-day log retention |
+| Model choice | Medium model; re-evaluate quarterly |
+| Budget | Under $500 per month at 2,000 questions per day |
 
-A good AI engineering project starts
-with a clearly defined problem.
-        `,
-        "What should be established before selecting an LLM for an enterprise application?",
-        [
-          "Business requirements and technical constraints",
-          "The application's logo",
-          "The number of frontend buttons",
-          "The database's display color"
+## Risks to plan for
+
+- Answers that sound right but aren't: ground answers and show sources.
+- Users seeing content they shouldn't: filter retrieval by permissions.
+- Prompt injection from documents: treat retrieved text as data, not instructions.
+
+## Key points
+
+- Start from the business problem, users, scope, and success measures.
+- Keep credentials, permissions, and validation in the backend.
+- Record decisions on quality, latency, data, model, and budget before building.`,
+          },
+          {
+            type: 'check',
+            question: "In the proposed architecture, why does the frontend call the backend instead of the model provider?",
+            options: [
+              "The backend protects the API credentials and enforces permissions and validation",
+              "Calling the provider directly would make answers less accurate",
+              "Model providers only accept requests from Angular applications",
+              "The backend is required to translate questions into another language",
+            ],
+            answer: 0,
+            explanation: "Routing through the backend keeps keys secret and gives one controlled place for authorization, validation, and logging.",
+          },
         ],
-        0,
-        "Model selection should follow an understanding of business requirements and technical constraints."
-      ),
+      },
+      {
+        id: "building-an-ai-api",
+        title: "Project: Building an AI-Powered Python API",
+        minutes: 8,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Project: Building an AI-Powered Python API
 
-      lesson(
-        "building-an-ai-api",
-        "Project: Building an AI-Powered Python API",
-        20,
-        `
-The next project step is to expose AI functionality
-through a backend API.
+The next step is a backend endpoint that the frontend calls to ask the assistant a question.
 
-Use Python and FastAPI.
+## The endpoint
 
-A conceptual architecture:
-
+\`\`\`text
 POST /api/v1/assistant/chat
+\`\`\`
 
 Request:
 
+\`\`\`json
+{"message": "How do I request a new laptop?"}
+\`\`\`
+
+Response:
+
+\`\`\`json
 {
-  "message": "Explain enterprise risk management"
-}
-
-Backend workflow:
-
-1. Receive the request.
-2. Authenticate the caller.
-3. Validate the input.
-4. Apply request limits.
-5. Construct the model request.
-6. Call the LLM provider.
-7. Process the response.
-8. Return the result.
-
-Example response:
-
-{
-  "answer": "Enterprise risk management...",
+  "answer": "Submit a Hardware Request in the IT portal...",
+  "sources": [{"title": "IT Equipment Policy", "section": "3.1"}],
   "model": "selected-model",
   "status": "completed"
 }
+\`\`\`
 
-The backend should implement:
+## A FastAPI sketch
 
-- Secure API credentials.
-- Input validation.
-- Request timeouts.
-- Error handling.
-- Logging.
-- Usage monitoring.
+\`\`\`python
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
-The frontend should communicate with
-the backend API rather than calling a privileged
-model provider directly.
+app = FastAPI()
 
-This separation provides a controlled location
-for security, integration, and business logic.
-        `,
-        "Why should the Angular frontend call the backend API instead of directly using a privileged LLM API key?",
-        [
-          "The backend protects credentials and enforces application controls",
-          "Angular cannot send HTTP requests",
-          "The LLM only accepts database connections",
-          "The frontend automatically trains the model"
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+class ChatResponse(BaseModel):
+    answer: str
+    sources: list[dict]
+    model: str
+    status: str
+
+@app.post("/api/v1/assistant/chat", response_model=ChatResponse)
+def chat(request: ChatRequest, user=Depends(current_user)):
+    enforce_rate_limit(user)
+    passages = search_documents(request.message, allowed_for=user)
+    try:
+        reply = generate_answer(request.message, passages)
+    except ModelError:
+        raise HTTPException(status_code=503, detail="The assistant is unavailable. Try again shortly.")
+    log_usage(user, reply)
+    return ChatResponse(answer=reply.text, sources=reply.sources, model=reply.model, status="completed")
+\`\`\`
+
+\`current_user\`, \`search_documents\`, \`generate_answer\`, and \`log_usage\` are your own functions. Pydantic validates the request size and shape automatically.
+
+## Checklist
+
+- **Authentication:** every request comes from a signed-in user.
+- **Authorization:** retrieval only returns documents the user may see.
+- **Validation:** limit message length; validate model output.
+- **Resilience:** timeouts, retries for temporary errors, a clear message on failure.
+- **Limits:** per-user rate limits protect budget and availability.
+- **Observability:** log latency, tokens, errors, and model version, without storing sensitive text unnecessarily.
+- **Tests:** unit tests with a fake model, plus the evaluation set from earlier lessons.
+
+## Key points
+
+- Expose AI through a validated, authenticated backend endpoint.
+- Filter retrieved content by the user's permissions before it reaches the model.
+- Handle failures gracefully and log what you need to operate the service.`,
+          },
+          {
+            type: 'check',
+            question: "Why does the endpoint pass the user to search_documents(..., allowed_for=user)?",
+            options: [
+              "To make the search run faster for frequent users",
+              "Because FastAPI requires a user for every function call",
+              "So the model can greet the user by name",
+              "So retrieval only returns documents the user is permitted to see",
+            ],
+            answer: 3,
+            explanation: "Filtering retrieval by permissions prevents the assistant from revealing content the user isn't allowed to access.",
+          },
         ],
-        0,
-        "The backend protects provider credentials and provides a trusted location for validation and authorization."
-      ),
+      },
+      {
+        id: "ai-engineering-capstone",
+        title: "Final Assessment: AI Engineering Fundamentals",
+        minutes: 6,
+        blocks: [
+          {
+            type: 'text',
+            text: `# Final Assessment: AI Engineering Fundamentals
 
-      lesson(
-        "ai-engineering-capstone",
-        "Final Assessment: AI Engineering Fundamentals",
-        20,
-        `
-Congratulations on completing AI Engineering
-Fundamentals and Large Language Models.
+Congratulations on completing AI Engineering Fundamentals and Large Language Models. Use this review to confirm you can explain each area in your own words.
 
-Review the major concepts:
+## Concept review
 
-Artificial Intelligence:
-Understand the broader field and its applications.
+| Area | You should be able to explain |
+| --- | --- |
+| **AI, ML, deep learning** | How they nest, and when each fits a problem |
+| **Learning approaches** | Supervised, unsupervised, self-supervised, reinforcement |
+| **Neural networks** | Layers, weights, activations, and the training loop |
+| **Transformers** | Attention, and why decoder-only models generate text |
+| **LLMs** | Pretraining, instruction tuning, alignment, and limitations |
+| **Inference** | Tokenization, next-token generation, sampling, temperature |
+| **Context** | Tokens, context windows, and managing what you send |
+| **Providers** | Hosted versus self-hosted, comparing providers, avoiding lock-in |
+| **APIs** | Requests, roles, errors, structured outputs, tool calling |
+| **Evaluation** | Test sets, scoring methods, regression testing |
+| **Operations** | Latency, cost, monitoring, and responsible AI |
 
-Machine Learning:
-Understand supervised, unsupervised,
-and reinforcement learning.
+## Scenario practice
 
-Deep Learning:
-Understand neural networks and training.
+For each scenario, decide what you would do and why:
 
-Transformers:
-Understand attention and modern model architecture.
+1. A support assistant sometimes invents refund rules. *(Ground answers in policy documents, allow "I don't know", evaluate with unanswerable questions.)*
+2. A classification feature costs too much at 500,000 requests a day. *(Test a smaller model, trim prompts, batch, and cache.)*
+3. Developers want to call the model directly from the browser to save time. *(Refuse: keys and permissions belong in the backend.)*
+4. A provider announces a new model version. *(Re-run the evaluation set before switching.)*
 
-Large Language Models:
-Understand foundation models and language generation.
+## Engineering mindset
 
-Inference:
-Understand tokenization, next-token prediction,
-and response generation.
+- The model is one component; validation, permissions, and monitoring make it safe to use.
+- Measure quality instead of judging by a few demos.
+- Choose the simplest model and design that meet the requirements.
 
-Context Management:
-Understand tokens and context windows.
+## What comes next
 
-Model Providers:
-Understand hosted and self-hosted options.
+The next courses build on this foundation: prompt engineering and structured outputs, embeddings and retrieval-augmented generation, and AI agents that use tools.
 
-LLM APIs:
-Understand authentication, requests,
-structured outputs, and tool calling.
+## Key points
 
-Evaluation:
-Understand quality, latency, cost,
-and responsible AI monitoring.
-
-Practical Engineering:
-Understand how to integrate an LLM
-into a secure backend application.
-
-Your next learning stage will explore
-prompt engineering, structured interactions,
-embeddings, vector databases, and retrieval-augmented
-generation.
-
-The objective is to move from understanding AI
-to designing and implementing production-oriented
-AI applications.
-        `,
-        "Which capability is most important when moving from basic LLM usage toward enterprise AI engineering?",
-        [
-          "Connecting models to secure applications with evaluation, monitoring, and governance",
-          "Using the largest model for every task",
-          "Removing backend services",
-          "Ignoring model costs"
+- Review every concept area and practise applying it to scenarios.
+- Treat the model as one part of a secure, measured, maintainable system.`,
+          },
+          {
+            type: 'check',
+            question: "A provider releases a new model version. What should you do before switching production to it?",
+            options: [
+              "Re-run your evaluation set and compare results with the current model",
+              "Switch only if the new model has a larger context window",
+              "Ask the model whether it is better than the previous version",
+              "Switch immediately, because newer models are always better",
+            ],
+            answer: 0,
+            explanation: "Behavior changes between versions. Re-running your evaluations shows whether the new model meets your requirements before users depend on it.",
+          },
         ],
-        0,
-        "Enterprise AI engineering combines model integration with security, evaluation, monitoring, and governance."
-      ),
-    ]
-  )
-);
+      },
+    ],
+  },
+];
 
-// ================================================
-// COURSE METADATA
-// ================================================
-
-const COURSE = {
-  id: COURSE_ID,
-
-  title: "AI Engineering Fundamentals & LLMs",
-
-  subtitle:
-    "Understanding Machine Learning, Transformers, and Large Language Models",
-
-  description: `
-Build a strong foundation in artificial intelligence,
-machine learning, deep learning, and large language models.
-
-Explore neural networks, transformer architecture,
-attention mechanisms, model training, inference,
-tokenization, context windows, and AI model providers.
-
-Learn how to connect Python applications to LLM APIs,
-implement structured outputs and tool calling,
-evaluate model quality, and monitor performance.
-
-Through a practical enterprise AI project,
-learn how to design and integrate an AI-powered
-application using secure backend architecture.
-
-This course prepares learners for advanced study
-in prompt engineering, retrieval-augmented generation,
-AI agents, and enterprise AI architecture.
-  `.trim(),
-
-  level: "beginner",
-  status: "draft",
-  language: "en",
-
-  topic: "Artificial Intelligence and AI Engineering",
-  cover: "teal",
-
-  program: "Enterprise AI & Solutions Architecture",
-  programOrder: 5,
-
-  estimatedMinutes: MODULES.reduce(
-    (total, currentModule) =>
-      total +
-      currentModule.lessons.reduce(
-        (moduleTotal, currentLesson) =>
-          moduleTotal + currentLesson.minutes,
-        0
-      ),
-    0
-  ),
-
-  modules: MODULES.map((currentModule, moduleIndex) => ({
-    id: currentModule.id,
-    title: currentModule.title,
-    order: moduleIndex + 1,
-
-    lessons: currentModule.lessons.map(
-      (currentLesson, lessonIndex) => ({
-        id: currentLesson.id,
-        title: currentLesson.title,
-        order: lessonIndex + 1,
-        duration: currentLesson.minutes,
-      })
-    ),
-  })),
-
-  createdAt: FieldValue.serverTimestamp(),
-  updatedAt: FieldValue.serverTimestamp(),
-};
-
-// ================================================
-// VALIDATION
-// ================================================
-
-const allLessons = MODULES.flatMap(
-  (currentModule) => currentModule.lessons
-);
-
-const totalLessons = allLessons.length;
-
-const totalQuickChecks = allLessons.reduce(
-  (total, currentLesson) =>
-    total +
-    currentLesson.blocks.filter(
-      (block) => block.type === "check"
-    ).length,
-  0
-);
-
-const moduleIds = MODULES.map(
-  (currentModule) => currentModule.id
-);
-
-const lessonIds = allLessons.map(
-  (currentLesson) => currentLesson.id
-);
-
-if (MODULES.length !== 11) {
-  throw new Error(
-    `Expected 11 modules, found ${MODULES.length}.`
-  );
-}
-
-if (totalLessons !== 33) {
-  throw new Error(
-    `Expected 33 lessons, found ${totalLessons}.`
-  );
-}
-
-if (totalQuickChecks !== 33) {
-  throw new Error(
-    `Expected 33 Quick Checks, found ${totalQuickChecks}.`
-  );
-}
-
-if (new Set(moduleIds).size !== moduleIds.length) {
-  throw new Error("Duplicate module IDs detected.");
-}
-
-if (new Set(lessonIds).size !== lessonIds.length) {
-  throw new Error("Duplicate lesson IDs detected.");
-}
-
-for (const currentLesson of allLessons) {
-  const quickChecks = currentLesson.blocks.filter(
-    (block) => block.type === "check"
-  );
-
-  if (quickChecks.length !== 1) {
-    throw new Error(
-      `Lesson ${currentLesson.id} must contain exactly one Quick Check.`
-    );
-  }
-
-  for (const currentCheck of quickChecks) {
-    if (
-      !Array.isArray(currentCheck.options) ||
-      currentCheck.answer < 0 ||
-      currentCheck.answer >= currentCheck.options.length
-    ) {
-      throw new Error(
-        `Invalid Quick Check in lesson ${currentLesson.id}.`
-      );
-    }
-  }
-}
-
-console.log("\nCourse validation successful.");
-console.log(`Modules: ${MODULES.length}`);
-console.log(`Lessons: ${totalLessons}`);
-console.log(`Quick Checks: ${totalQuickChecks}`);
-console.log(`Estimated minutes: ${COURSE.estimatedMinutes}`);
-
-// ================================================
-// FIRESTORE SEEDING
-// ================================================
-
-async function seedCourse() {
-  const courseRef = db
-    .collection("courses")
-    .doc(COURSE_ID);
-
-  const existingCourse = await courseRef.get();
-
-  if (existingCourse.exists && !OVERWRITE) {
-    console.log(`\nCourse "${COURSE_ID}" already exists.`);
-
-    console.log(
-      "No changes were made. Use --overwrite to replace the seeded course."
-    );
-
-    return;
-  }
-
-  if (!APPLY) {
-    console.log("\nDRY RUN — no Firestore writes performed.");
-
-    console.log("\nCourse details:");
-
-    console.log(
-      JSON.stringify(
-        {
-          id: COURSE.id,
-          title: COURSE.title,
-          status: COURSE.status,
-          language: COURSE.language,
-          modules: MODULES.length,
-          lessons: totalLessons,
-          quickChecks: totalQuickChecks,
-          estimatedMinutes: COURSE.estimatedMinutes,
-        },
-        null,
-        2
-      )
-    );
-
-    console.log("\nTo write this course to Firebase, run:");
-
-    console.log(
-      "node scripts/ai-engineering/seed-ai-engineering-fundamentals.mjs --apply"
-    );
-
-    return;
-  }
-
-  const batch = db.batch();
-
-  batch.set(courseRef, COURSE);
-
-  for (const currentModule of MODULES) {
-    for (const [lessonIndex, currentLesson] of
-      currentModule.lessons.entries()) {
-      const lessonRef = courseRef
-        .collection("lessons")
-        .doc(currentLesson.id);
-
-      batch.set(lessonRef, {
-        id: currentLesson.id,
-        courseId: COURSE_ID,
-        moduleId: currentModule.id,
-        moduleTitle: currentModule.title,
-        title: currentLesson.title,
-        order: lessonIndex + 1,
-        duration: currentLesson.minutes,
-        blocks: currentLesson.blocks,
-        status: "draft",
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-    }
-  }
-
-  await batch.commit();
-
-  console.log("\nCourse successfully saved to Firestore.");
-  console.log(`Course ID: ${COURSE_ID}`);
-  console.log(`Modules: ${MODULES.length}`);
-  console.log(`Lessons: ${totalLessons}`);
-  console.log(`Quick Checks: ${totalQuickChecks}`);
-  console.log(`Estimated minutes: ${COURSE.estimatedMinutes}`);
-}
-
-// ================================================
-// EXECUTE
-// ================================================
-
-seedCourse()
-  .then(() => {
-    console.log("\nSeeding process completed.");
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error("\nSeeding failed:", error);
-    process.exit(1);
-  });
-
-// END OF SECTION 3
+runCourseSeed({ course: COURSE, modules: MODULES, script: 'scripts/ai-engineering/seed-ai-engineering-fundamentals.mjs' }).catch((error) => {
+  console.error('\nSEED FAILED:', error);
+  process.exit(1);
+});

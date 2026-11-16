@@ -3,6 +3,7 @@ import { NgClass } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
@@ -48,7 +49,7 @@ function normalize(value: string): string {
   selector: 'app-course-manage',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent],
+  imports: [NgClass, RouterLink, MatIconModule, MatMenuModule, TranslatePipe, CourseHeaderComponent],
   template: `
     <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
@@ -187,7 +188,7 @@ function normalize(value: string): string {
                   [routerLink]="[context.basePath, 'manage', course.id]"
                   class="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-[#007979] hover:shadow-sm"
                 >
-                  <span class="h-14 w-14 shrink-0 rounded-xl" [style.background]="cover(course)" aria-hidden="true"></span>
+                  <span class="hidden h-14 w-14 shrink-0 rounded-xl sm:block" [style.background]="cover(course)" aria-hidden="true"></span>
                   <span class="min-w-0 flex-1">
                     <span class="flex flex-wrap items-center gap-2">
                       <span class="truncate font-semibold text-slate-900">{{ course.title }}</span>
@@ -200,13 +201,45 @@ function normalize(value: string): string {
                       }
                     </span>
                   </span>
-                  <mat-icon class="shrink-0 text-slate-400" aria-hidden="true">edit</mat-icon>
+                  <mat-icon class="!hidden shrink-0 text-slate-400 sm:!inline-block" aria-hidden="true">edit</mat-icon>
+                  <!-- Phones: the actions live in a menu inside the card -->
+                  <button
+                    type="button"
+                    class="-mr-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 sm:hidden"
+                    [matMenuTriggerFor]="courseMenu"
+                    (click)="$event.preventDefault(); $event.stopPropagation()"
+                    [attr.aria-label]="'Actions for {0}' | t: [course.title]"
+                  >
+                    <mat-icon aria-hidden="true">more_vert</mat-icon>
+                  </button>
                 </a>
+                <mat-menu #courseMenu="matMenu" xPosition="before">
+                  <a mat-menu-item [routerLink]="[context.basePath, 'manage', course.id]">
+                    <mat-icon aria-hidden="true">edit</mat-icon>
+                    <span>{{ 'Edit' | t }}</span>
+                  </a>
+                  <button mat-menu-item type="button" (click)="duplicate(course)" [disabled]="duplicatingId() !== null">
+                    <mat-icon aria-hidden="true">content_copy</mat-icon>
+                    <span>{{ 'Duplicate' | t }}</span>
+                  </button>
+                  @if (canAssign() && course.status === 'published') {
+                    <button mat-menu-item type="button" (click)="openAssign(course)">
+                      <mat-icon aria-hidden="true">assignment_ind</mat-icon>
+                      <span>{{ 'Assign' | t }}</span>
+                    </button>
+                  }
+                  @if (canDelete(course)) {
+                    <button mat-menu-item type="button" (click)="askDelete(course)" [disabled]="deletingId() !== null" class="!text-rose-700">
+                      <mat-icon class="!text-rose-700" aria-hidden="true">delete</mat-icon>
+                      <span>{{ 'Delete' | t }}</span>
+                    </button>
+                  }
+                </mat-menu>
                 <button
                   type="button"
                   (click)="duplicate(course)"
                   [disabled]="duplicatingId() !== null"
-                  class="inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-[#007979] hover:bg-teal-50 hover:text-[#007979] disabled:opacity-50"
+                  class="hidden shrink-0 sm:inline-flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-[#007979] hover:bg-teal-50 hover:text-[#007979] disabled:opacity-50"
                   [attr.aria-label]="'Duplicate {0}' | t: [course.title]"
                   [title]="'Copy this course and its lessons into a new draft' | t"
                 >
@@ -217,7 +250,7 @@ function normalize(value: string): string {
                   <button
                     type="button"
                     (click)="openAssign(course)"
-                    class="inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-[#007979] transition hover:border-[#007979] hover:bg-teal-50"
+                    class="hidden shrink-0 sm:inline-flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-[#007979] transition hover:border-[#007979] hover:bg-teal-50"
                     [attr.aria-label]="'Assign {0}' | t: [course.title]"
                   >
                     <mat-icon aria-hidden="true">assignment_ind</mat-icon>
@@ -229,7 +262,7 @@ function normalize(value: string): string {
                     type="button"
                     (click)="askDelete(course)"
                     [disabled]="deletingId() !== null"
-                    class="inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+                    class="hidden shrink-0 sm:inline-flex flex-col items-center justify-center gap-0.5 rounded-2xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
                     [attr.aria-label]="'Delete {0}' | t: [course.title]"
                     [title]="'Delete this course and its lessons' | t"
                   >

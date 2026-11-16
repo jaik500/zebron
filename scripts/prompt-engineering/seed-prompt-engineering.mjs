@@ -1,58 +1,32 @@
-// ============================================================
-// PROMPT ENGINEERING & STRUCTURED OUTPUTS
-// Section 1 of 3
-// Course configuration and modules 1–3
-// ============================================================
+/**
+ * Prompt Engineering & Structured Outputs
+ * Program: Enterprise AI & Solutions Architecture, step 6
+ *
+ * Dry run (checks the content, writes nothing):
+ *   node scripts/prompt-engineering/seed-prompt-engineering.mjs
+ * Create the course:
+ *   node scripts/prompt-engineering/seed-prompt-engineering.mjs --apply
+ * Update an existing course (keeps its status, publish date and final exam):
+ *   node scripts/prompt-engineering/seed-prompt-engineering.mjs --apply --overwrite
+ *
+ * Lesson text uses the light Markdown lessons support: # / ## / ### headings,
+ * - and 1. lists, **bold**, *italic*, `code`, ``` code blocks, > quotes and
+ * | tables |. Each text block is one section in the lesson player; its first
+ * heading is the section title.
+ */
 
-import { applicationDefault, initializeApp } from "firebase-admin/app";
-
-import {
-  FieldValue,
-  getFirestore,
-} from "firebase-admin/firestore";
-
-const PROJECT_ID = process.env.GCLOUD_PROJECT || "zebron-2b49f";
-
-initializeApp({
-  credential: applicationDefault(),
-  projectId: PROJECT_ID,
-});
-
-const db = getFirestore();
-
-const APPLY = process.argv.includes("--apply");
-const OVERWRITE = process.argv.includes("--overwrite");
+import { runCourseSeed } from '../lib/write-zebron-course.mjs';
 
 const COURSE = {
   id: "prompt-engineering-structured-outputs",
-
   title: "Prompt Engineering & Structured Outputs",
-
-  summary:
-    "Learn how to design effective AI prompts, control model behavior, generate structured outputs, and build reliable AI-powered applications.",
-
-  description:
-    "This course introduces the principles and practical techniques of prompt engineering. Learners explore prompt structure, system instructions, few-shot prompting, structured JSON outputs, schema validation, function calling, prompt security, and evaluation. The course culminates in an enterprise-focused prompt engineering project.",
-
+  summary: "Learn how to design effective AI prompts, control model behavior, generate structured outputs, and build reliable AI-powered applications.",
+  description: "This course introduces the principles and practical techniques of prompt engineering. Learners explore prompt structure, system instructions, few-shot prompting, structured JSON outputs, schema validation, function calling, prompt security, and evaluation. The course culminates in an enterprise-focused prompt engineering project.",
   topic: "Artificial Intelligence",
-
   program: "Enterprise AI & Solutions Architecture",
-
   programOrder: 6,
-
   level: "beginner",
-
-  language: "en",
-
-  organizationId: null,
-
-  status: "draft",
-
-  cover: {
-    type: "gradient",
-    value: "indigo",
-  },
-
+  cover: "sunrise",
   outcomes: [
     "Explain the principles of prompt engineering.",
     "Design clear and effective prompts for large language models.",
@@ -65,7 +39,6 @@ const COURSE = {
     "Evaluate and improve prompt quality.",
     "Build an enterprise-ready prompt engineering workflow.",
   ],
-
   skills: [
     "Prompt Engineering",
     "Large Language Models",
@@ -82,25 +55,18 @@ const COURSE = {
 };
 
 const MODULES = [
-  // ----------------------------------------------------------
-  // MODULE 1
-  // ----------------------------------------------------------
-
   {
     id: "introduction-to-prompt-engineering",
     title: "Introduction to Prompt Engineering",
-
     lessons: [
       {
         id: "what-is-prompt-engineering",
         title: "What Is Prompt Engineering?",
-        minutes: 15,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# What Is Prompt Engineering?
+            type: 'text',
+            text: `# What Is Prompt Engineering?
 
 Prompt engineering is the process of designing and refining instructions given to an artificial intelligence model to produce useful, accurate, and relevant responses.
 
@@ -157,40 +123,30 @@ The prompt must clearly define the assistant's responsibilities and limitations.
 
 ## Key Principle
 
-A good prompt does not simply ask a question. It provides the model with enough context and direction to perform a specific task.
-            `,
+A good prompt does not simply ask a question. It provides the model with enough context and direction to perform a specific task.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary purpose of prompt engineering?",
-
+            type: 'check',
+            question: "What is the primary purpose of prompt engineering?",
             options: [
-              "To train a language model from scratch",
-              "To design instructions that guide an AI model toward useful outputs",
-              "To replace databases",
-              "To increase computer processing speed",
+              "To design instructions that guide a model toward useful outputs",
+              "To retrain a model on an organization's own documents",
+              "To reduce how many tokens a model can generate",
+              "To choose which model to use for each request",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Prompt engineering focuses on designing and refining instructions that guide an AI model toward relevant and useful responses.",
+            answer: 0,
+            explanation: "Prompt engineering focuses on designing and refining instructions that guide an AI model toward relevant and useful responses.",
           },
         ],
       },
-
       {
         id: "how-prompts-influence-ai-responses",
         title: "How Prompts Influence AI Responses",
-        minutes: 15,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# How Prompts Influence AI Responses
+            type: 'text',
+            text: `# How Prompts Influence AI Responses
 
 Large language models generate responses based on the input they receive and the patterns learned during training.
 
@@ -250,40 +206,30 @@ Prompt B gives the model more direction and establishes important limitations.
 
 A better prompt can improve consistency, but it does not guarantee factual accuracy.
 
-Enterprise applications should combine prompting with validation, access controls, monitoring, and human review where appropriate.
-            `,
+Enterprise applications should combine prompting with validation, access controls, monitoring, and human review where appropriate.`,
           },
-
           {
-            type: "check",
-            question:
-              "Which prompt element provides background information about the task?",
-
+            type: 'check',
+            question: "Which prompt element provides background information about the task?",
             options: [
               "Context",
               "Output formatting",
-              "Temperature",
               "Tokenization",
+              "Temperature",
             ],
-
             answer: 0,
-
-            explanation:
-              "Context provides the background information that helps the model understand the environment and purpose of the task.",
+            explanation: "Context provides the background information that helps the model understand the environment and purpose of the task.",
           },
         ],
       },
-
       {
         id: "prompt-engineering-use-cases",
         title: "Enterprise Use Cases for Prompt Engineering",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Enterprise Use Cases for Prompt Engineering
+            type: 'text',
+            text: `# Enterprise Use Cases for Prompt Engineering
 
 Prompt engineering is especially valuable when AI models are integrated into business applications.
 
@@ -342,51 +288,36 @@ When introducing prompt-driven automation, consider:
 - Auditability.
 - Model limitations.
 
-The objective is not simply to generate text. It is to produce outputs that can be safely used within business processes.
-            `,
+The objective is not simply to generate text. It is to produce outputs that can be safely used within business processes.`,
           },
-
           {
-            type: "check",
-            question:
-              "Which is an appropriate enterprise use case for prompt engineering?",
-
+            type: 'check',
+            question: "Which is an appropriate enterprise use case for prompt engineering?",
             options: [
-              "Automatically bypassing security controls",
-              "Extracting structured information from invoices",
-              "Giving an AI unrestricted access to every database",
               "Replacing all human approval processes",
+              "Extracting structured information from invoices",
+              "Automatically bypassing security controls",
+              "Giving an AI unrestricted access to every database",
             ],
-
             answer: 1,
-
-            explanation:
-              "Prompt engineering can guide AI systems to extract information from documents. The resulting data should still be validated before being used in business processes.",
+            explanation: "Prompt engineering can guide AI systems to extract information from documents. The resulting data should still be validated before being used in business processes.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 2
-  // ----------------------------------------------------------
-
   {
     id: "anatomy-of-an-effective-prompt",
     title: "Anatomy of an Effective Prompt",
-
     lessons: [
       {
         id: "prompt-components",
         title: "The Core Components of a Prompt",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# The Core Components of a Prompt
+            type: 'text',
+            text: `# The Core Components of a Prompt
 
 An effective prompt can contain several components that work together to guide an AI model.
 
@@ -440,59 +371,40 @@ Example:
 
 ## Putting It Together
 
-Role:
-You are an enterprise solutions architect.
-
-Task:
-Review the proposed architecture.
-
-Context:
-The application uses Angular and Firebase.
-
-Constraints:
-Preserve the existing authentication architecture.
-
-Output:
-Provide a table of risks and recommendations.
+- **Role:** You are an enterprise solutions architect.
+- **Task:** Review the proposed architecture.
+- **Context:** The application uses Angular and Firebase.
+- **Constraints:** Preserve the existing authentication architecture.
+- **Output:** Provide a table of risks and recommendations.
 
 ## Practical Recommendation
 
 Not every prompt requires every component.
 
-Simple questions may need only a task and context. Complex enterprise workflows often benefit from explicit roles, constraints, examples, and output requirements.
-            `,
+Simple questions may need only a task and context. Complex enterprise workflows often benefit from explicit roles, constraints, examples, and output requirements.`,
           },
-
           {
-            type: "check",
-            question:
-              "Which prompt component defines what the AI model must accomplish?",
-
+            type: 'check',
+            question: "Which prompt component defines what the AI model must accomplish?",
             options: [
               "Role",
               "Task",
               "Context",
               "Output format",
             ],
-
             answer: 1,
-
-            explanation:
-              "The task specifies the action or objective the model is expected to complete.",
+            explanation: "The task specifies the action or objective the model is expected to complete.",
           },
         ],
       },
-
       {
         id: "writing-clear-instructions",
         title: "Writing Clear and Specific Instructions",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Writing Clear and Specific Instructions
+            type: 'text',
+            text: `# Writing Clear and Specific Instructions
 
 Clear instructions reduce ambiguity and help AI models produce more relevant responses.
 
@@ -551,40 +463,30 @@ Rewrite this prompt:
 
 A more useful instruction might be:
 
-"Summarize the supplied employee record. Extract the employee's department, job title, start date, and employment status. Do not infer information that is not present."
-            `,
+"Summarize the supplied employee record. Extract the employee's department, job title, start date, and employment status. Do not infer information that is not present."`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the main advantage of using specific action verbs in prompts?",
-
+            type: 'check',
+            question: "What is the main advantage of using specific action verbs in prompts?",
             options: [
-              "They increase the model's training data",
-              "They communicate the intended task more clearly",
               "They eliminate the need for validation",
               "They guarantee correct answers",
+              "They increase the model's training data",
+              "They communicate the intended task more clearly",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Specific action verbs make the requested operation clearer and reduce ambiguity.",
+            answer: 3,
+            explanation: "Specific action verbs make the requested operation clearer and reduce ambiguity.",
           },
         ],
       },
-
       {
         id: "providing-context-and-background",
         title: "Providing Context and Background Information",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Providing Context and Background Information
+            type: 'text',
+            text: `# Providing Context and Background Information
 
 Context helps an AI model understand the circumstances surrounding a request.
 
@@ -626,51 +528,36 @@ Large documents may need to be summarized, divided into sections, or retrieved s
 
 Provide relevant context, not unlimited context.
 
-Excessive irrelevant information can make prompts more expensive and less focused.
-            `,
+Excessive irrelevant information can make prompts more expensive and less focused.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why should prompts include relevant background information?",
-
+            type: 'check',
+            question: "Why should prompts include relevant background information?",
             options: [
-              "To eliminate the model's context window",
-              "To help the model understand the business situation and requirements",
-              "To guarantee that the model never makes mistakes",
               "To avoid using output formats",
+              "To help the model understand the business situation and requirements",
+              "To eliminate the model's context window",
+              "To guarantee that the model never makes mistakes",
             ],
-
             answer: 1,
-
-            explanation:
-              "Relevant background information helps the model interpret the request and produce responses aligned with the intended business context.",
+            explanation: "Relevant background information helps the model interpret the request and produce responses aligned with the intended business context.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 3
-  // ----------------------------------------------------------
-
   {
     id: "prompting-techniques-and-strategies",
     title: "Prompting Techniques and Strategies",
-
     lessons: [
       {
         id: "zero-shot-prompting",
         title: "Zero-Shot Prompting",
-        minutes: 15,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Zero-Shot Prompting
+            type: 'text',
+            text: `# Zero-Shot Prompting
 
 Zero-shot prompting asks an AI model to complete a task without providing examples of the expected answer.
 
@@ -716,40 +603,30 @@ For more complex tasks, examples may improve consistency.
 
 A service desk could use zero-shot prompting to classify incoming support tickets based on a predefined set of categories.
 
-The classification should still be validated before automatically updating a production incident record.
-            `,
+The classification should still be validated before automatically updating a production incident record.`,
           },
-
           {
-            type: "check",
-            question:
-              "What distinguishes zero-shot prompting from other prompting techniques?",
-
+            type: 'check',
+            question: "What distinguishes zero-shot prompting from other prompting techniques?",
             options: [
+              "It requires a vector database",
               "It requires hundreds of examples",
               "It provides no task examples to the model",
               "It retrains the language model",
-              "It requires a vector database",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Zero-shot prompting provides instructions without giving the model examples of the expected input-output behavior.",
+            answer: 2,
+            explanation: "Zero-shot prompting provides instructions without giving the model examples of the expected input-output behavior.",
           },
         ],
       },
-
       {
         id: "one-shot-and-few-shot-prompting",
         title: "One-Shot and Few-Shot Prompting",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# One-Shot and Few-Shot Prompting
+            type: 'text',
+            text: `# One-Shot and Few-Shot Prompting
 
 One-shot and few-shot prompting provide examples to demonstrate how a model should perform a task.
 
@@ -761,8 +638,7 @@ Example:
 
 "Classify support tickets using the following example.
 
-Ticket: My invoice contains an incorrect charge.
-Category: Billing
+Ticket: My invoice contains an incorrect charge. Category: Billing
 
 Now classify:
 
@@ -776,19 +652,15 @@ Few-shot prompting provides multiple examples.
 
 Example:
 
-Ticket: My invoice contains an incorrect charge.
-Category: Billing
+Ticket: My invoice contains an incorrect charge. Category: Billing
 
-Ticket: My password reset link is not working.
-Category: Account Access
+Ticket: My password reset link is not working. Category: Account Access
 
-Ticket: My laptop will not connect to Wi-Fi.
-Category: Technical Support
+Ticket: My laptop will not connect to Wi-Fi. Category: Technical Support
 
 Now classify:
 
-Ticket: I cannot access the company VPN.
-Category: ?
+Ticket: I cannot access the company VPN. Category: ?
 
 ## Why Examples Matter
 
@@ -810,40 +682,30 @@ Poor examples can teach the model the wrong pattern. Contradictory examples can 
 
 A company can provide approved examples of incident classifications to help an AI assistant follow its service desk conventions.
 
-Examples should be reviewed and updated as business rules change.
-            `,
+Examples should be reviewed and updated as business rules change.`,
           },
-
           {
-            type: "check",
-            question:
-              "How many examples does few-shot prompting typically provide?",
-
+            type: 'check',
+            question: "How many examples does few-shot prompting typically provide?",
             options: [
-              "No examples",
-              "Exactly one example",
               "Multiple examples",
+              "No examples",
               "It requires retraining the model",
+              "Exactly one example",
             ],
-
-            answer: 2,
-
-            explanation:
-              "Few-shot prompting provides multiple examples to demonstrate the expected task behavior.",
+            answer: 0,
+            explanation: "Few-shot prompting provides multiple examples to demonstrate the expected task behavior.",
           },
         ],
       },
-
       {
         id: "step-by-step-prompting",
         title: "Step-by-Step Prompting and Task Decomposition",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Step-by-Step Prompting and Task Decomposition
+            type: 'text',
+            text: `# Step-by-Step Prompting and Task Decomposition
 
 Complex tasks can be easier to manage when divided into smaller, clearly defined steps.
 
@@ -896,64 +758,36 @@ For enterprise systems, focus on verifiable outputs, explicit criteria, traceabl
 
 ## Practical Application
 
-A ServiceNow workflow could separate incident summarization, category recommendation, and knowledge article retrieval into distinct operations.
-            `,
+A ServiceNow workflow could separate incident summarization, category recommendation, and knowledge article retrieval into distinct operations.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary benefit of task decomposition?",
-
+            type: 'check',
+            question: "What is the primary benefit of task decomposition?",
             options: [
-              "It eliminates all AI errors",
-              "It divides complex tasks into smaller, manageable operations",
               "It removes the need for business requirements",
+              "It divides complex tasks into smaller, manageable operations",
+              "It eliminates all AI errors",
               "It automatically increases model intelligence",
             ],
-
             answer: 1,
-
-            explanation:
-              "Task decomposition makes complex workflows easier to manage, validate, and maintain by dividing them into smaller operations.",
+            explanation: "Task decomposition makes complex workflows easier to manage, validate, and maintain by dividing them into smaller operations.",
           },
         ],
       },
     ],
   },
-];
-
-// ============================================================
-// END OF SECTION 1
-// Section 2 will add modules 4–7.
-// Section 3 will add modules 8–11 and the seed logic.
-// ============================================================
-// ============================================================
-// SECTION 2 OF 3
-// Modules 4–7
-// ============================================================
-
-MODULES.push(
-
-  // ----------------------------------------------------------
-  // MODULE 4
-  // ----------------------------------------------------------
-
   {
     id: "few-shot-and-example-based-prompting",
     title: "Few-Shot and Example-Based Prompting",
-
     lessons: [
       {
         id: "designing-effective-examples",
         title: "Designing Effective Prompt Examples",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Designing Effective Prompt Examples
+            type: 'text',
+            text: `# Designing Effective Prompt Examples
 
 Examples demonstrate how an AI model should interpret information and produce responses.
 
@@ -975,18 +809,15 @@ Suppose an organization wants an AI model to classify ServiceNow incidents.
 
 Example 1:
 
-Input: "My laptop will not start."
-Output: {"category": "Hardware", "priority": "3"}
+Input: "My laptop will not start." Output: {"category": "Hardware", "priority": "3"}
 
 Example 2:
 
-Input: "I cannot access my company email."
-Output: {"category": "Software", "priority": "3"}
+Input: "I cannot access my company email." Output: {"category": "Software", "priority": "3"}
 
 Example 3:
 
-Input: "The entire company network is unavailable."
-Output: {"category": "Network", "priority": "1"}
+Input: "The entire company network is unavailable." Output: {"category": "Network", "priority": "1"}
 
 The model can use these examples to understand the expected classification pattern.
 
@@ -1010,40 +841,30 @@ Examples should represent different types of inputs, including:
 
 Maintain approved prompt examples as part of application configuration.
 
-This makes it easier to review, update, and test prompts without changing application code.
-            `,
+This makes it easier to review, update, and test prompts without changing application code.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is an important characteristic of a good few-shot example?",
-
+            type: 'check',
+            question: "What is an important characteristic of a good few-shot example?",
             options: [
+              "It should always be extremely long",
+              "It should contradict other examples",
               "It should contain unrelated information",
               "It should demonstrate accurate and representative behavior",
-              "It should contradict other examples",
-              "It should always be extremely long",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Effective examples should accurately represent the expected behavior and provide consistent guidance to the model.",
+            answer: 3,
+            explanation: "Effective examples should accurately represent the expected behavior and provide consistent guidance to the model.",
           },
         ],
       },
-
       {
         id: "example-selection-and-diversity",
         title: "Example Selection and Diversity",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Example Selection and Diversity
+            type: 'text',
+            text: `# Example Selection and Diversity
 
 Selecting examples is an important part of building reliable prompts.
 
@@ -1099,40 +920,30 @@ Select examples covering:
 - Building access.
 - Incomplete requests.
 
-The goal is to represent the real range of requests the application may encounter.
-            `,
+The goal is to represent the real range of requests the application may encounter.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why should few-shot examples include edge cases?",
-
+            type: 'check',
+            question: "Why should few-shot examples include edge cases?",
             options: [
-              "To make every prompt longer",
-              "To demonstrate how unusual or incomplete inputs should be handled",
-              "To eliminate the need for testing",
-              "To increase the model's training data",
+              "To make the model's outputs longer and more detailed",
+              "To reduce the number of examples needed",
+              "To show how unusual or incomplete inputs should be handled",
+              "To teach the model new facts it did not know",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Edge cases help demonstrate expected behavior when the model receives unusual, ambiguous, or incomplete inputs.",
+            answer: 2,
+            explanation: "Edge cases help demonstrate expected behavior when the model receives unusual, ambiguous, or incomplete inputs.",
           },
         ],
       },
-
       {
         id: "few-shot-prompt-maintenance",
         title: "Maintaining and Improving Prompt Examples",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Maintaining and Improving Prompt Examples
+            type: 'text',
+            text: `# Maintaining and Improving Prompt Examples
 
 Prompt examples should be treated as maintainable application assets.
 
@@ -1189,51 +1000,36 @@ Useful metadata includes:
 
 ## Key Principle
 
-Prompts are part of the application logic. They should be tested, reviewed, versioned, and maintained.
-            `,
+Prompts are part of the application logic. They should be tested, reviewed, versioned, and maintained.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the purpose of prompt regression testing?",
-
+            type: 'check',
+            question: "What is the purpose of prompt regression testing?",
             options: [
-              "To delete old prompts",
-              "To verify that prompt changes do not break previously successful scenarios",
-              "To retrain the AI model",
-              "To increase the context window",
+              "To check that every prompt fits within the context window",
+              "To compare the cost of different models on the same prompt",
+              "To measure how quickly the model responds after a change",
+              "To verify that prompt changes don't break scenarios that worked",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Regression testing checks whether changes to prompts negatively affect scenarios that previously worked correctly.",
+            answer: 3,
+            explanation: "Regression testing checks whether changes to prompts negatively affect scenarios that previously worked correctly.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 5
-  // ----------------------------------------------------------
-
   {
     id: "system-instructions-and-role-based-prompting",
     title: "System Instructions and Role-Based Prompting",
-
     lessons: [
       {
         id: "system-instructions",
         title: "Understanding System Instructions",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Understanding System Instructions
+            type: 'text',
+            text: `# Understanding System Instructions
 
 System instructions establish high-level behavior and operating rules for an AI assistant.
 
@@ -1279,40 +1075,30 @@ System instructions are not a security boundary.
 
 They cannot replace authentication, authorization, database permissions, or server-side validation.
 
-An application must enforce access controls independently of the AI model.
-            `,
+An application must enforce access controls independently of the AI model.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary purpose of a system instruction?",
-
+            type: 'check',
+            question: "What is the primary purpose of a system instruction?",
             options: [
-              "To define the assistant's overall behavior and operating rules",
-              "To store the application's database",
-              "To authenticate users",
-              "To replace API authorization",
+              "To store the conversation history between sessions",
+              "To hold the user's question for the current turn",
+              "To define the assistant's overall behavior and rules",
+              "To pass tool results back to the model",
             ],
-
-            answer: 0,
-
-            explanation:
-              "System instructions establish the assistant's general role, responsibilities, and behavioral constraints.",
+            answer: 2,
+            explanation: "System instructions establish the assistant's general role, responsibilities, and behavioral constraints.",
           },
         ],
       },
-
       {
         id: "role-based-prompting",
         title: "Role-Based Prompting",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Role-Based Prompting
+            type: 'text',
+            text: `# Role-Based Prompting
 
 Role-based prompting assigns a specific perspective or responsibility to an AI model.
 
@@ -1339,17 +1125,10 @@ A role should be combined with a clearly defined task.
 
 Example:
 
-Role:
-"You are an enterprise cybersecurity analyst."
-
-Task:
-"Review the supplied access control policy and identify missing security requirements."
-
-Constraints:
-"Only use the supplied policy and requirements."
-
-Output:
-"Return a table of findings, risks, and recommendations."
+- **Role:** "You are an enterprise cybersecurity analyst."
+- **Task:** "Review the supplied access control policy and identify missing security requirements."
+- **Constraints:** "Only use the supplied policy and requirements."
+- **Output:** "Return a table of findings, risks, and recommendations."
 
 ## Role Limitations
 
@@ -1368,40 +1147,30 @@ For example:
 - Security assistant.
 - Procurement assistant.
 
-Each assistant can have different instructions and approved information sources.
-            `,
+Each assistant can have different instructions and approved information sources.`,
           },
-
           {
-            type: "check",
-            question:
-              "What does role-based prompting primarily establish?",
-
+            type: 'check',
+            question: "What does role-based prompting primarily establish?",
             options: [
+              "A permanent change to model training",
+              "The user's authentication credentials",
               "A database connection",
               "The perspective or responsibility the model should adopt",
-              "The user's authentication credentials",
-              "A permanent change to model training",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Role-based prompting gives the model a defined perspective or responsibility for the task.",
+            answer: 3,
+            explanation: "Role-based prompting gives the model a defined perspective or responsibility for the task.",
           },
         ],
       },
-
       {
         id: "prompt-templates-and-reusability",
         title: "Prompt Templates and Reusability",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Prompt Templates and Reusability
+            type: 'text',
+            text: `# Prompt Templates and Reusability
 
 Prompt templates allow organizations to reuse standardized instructions across multiple requests.
 
@@ -1453,51 +1222,36 @@ However, prompt configuration must be protected from unauthorized modification.
 
 ## Enterprise Example
 
-A ServiceNow integration could use one approved incident-summary template for all supported business units, while passing the appropriate incident information at runtime.
-            `,
+A ServiceNow integration could use one approved incident-summary template for all supported business units, while passing the appropriate incident information at runtime.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is a major benefit of prompt templates?",
-
+            type: 'check',
+            question: "What is a major benefit of prompt templates?",
             options: [
-              "They eliminate all model limitations",
               "They support consistent and reusable instructions",
               "They automatically train the model",
               "They replace application configuration",
+              "They eliminate all model limitations",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Prompt templates allow applications to reuse standardized instructions and maintain consistent behavior.",
+            answer: 0,
+            explanation: "Prompt templates allow applications to reuse standardized instructions and maintain consistent behavior.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 6
-  // ----------------------------------------------------------
-
   {
     id: "structured-outputs-and-json",
     title: "Structured Outputs and JSON",
-
     lessons: [
       {
         id: "introduction-to-structured-outputs",
         title: "Introduction to Structured Outputs",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Introduction to Structured Outputs
+            type: 'text',
+            text: `# Introduction to Structured Outputs
 
 AI models commonly generate natural language responses.
 
@@ -1513,12 +1267,14 @@ This is readable, but an application may need to extract individual fields.
 
 ## Structured JSON Response
 
+\`\`\`json
 {
   "incidentNumber": "INC0012345",
   "category": "Network",
   "priority": "2",
   "impact": "Multiple employees affected"
 }
+\`\`\`
 
 The information is now represented as named fields.
 
@@ -1550,40 +1306,30 @@ Structured data can be used to:
 
 Valid JSON does not automatically mean the information is correct.
 
-An application must validate both the structure and the business meaning of the returned data.
-            `,
+An application must validate both the structure and the business meaning of the returned data.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why are structured outputs useful in enterprise applications?",
-
+            type: 'check',
+            question: "Why are structured outputs useful in enterprise applications?",
             options: [
-              "They eliminate the need for databases",
-              "They make AI responses easier for applications to process",
               "They guarantee factual accuracy",
               "They prevent all security attacks",
+              "They make AI responses easier for applications to process",
+              "They eliminate the need for databases",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Structured outputs organize information into predictable fields that software can process and validate.",
+            answer: 2,
+            explanation: "Structured outputs organize information into predictable fields that software can process and validate.",
           },
         ],
       },
-
       {
         id: "json-fundamentals-for-ai",
         title: "JSON Fundamentals for AI Applications",
-        minutes: 20,
-
+        minutes: 6,
         blocks: [
           {
-            type: "text",
-            text: `
-# JSON Fundamentals for AI Applications
+            type: 'text',
+            text: `# JSON Fundamentals for AI Applications
 
 JSON stands for JavaScript Object Notation.
 
@@ -1595,11 +1341,13 @@ A JSON object contains key-value pairs.
 
 Example:
 
+\`\`\`json
 {
   "name": "Enterprise Support",
   "active": true,
   "priority": 2
 }
+\`\`\`
 
 ## JSON Data Types
 
@@ -1618,6 +1366,7 @@ An array contains an ordered collection of values.
 
 Example:
 
+\`\`\`json
 {
   "categories": [
     "Hardware",
@@ -1625,6 +1374,7 @@ Example:
     "Network"
   ]
 }
+\`\`\`
 
 ## Nested JSON
 
@@ -1632,6 +1382,7 @@ Objects can contain other objects.
 
 Example:
 
+\`\`\`json
 {
   "incident": {
     "number": "INC0012345",
@@ -1641,6 +1392,7 @@ Example:
     }
   }
 }
+\`\`\`
 
 ## Common JSON Errors
 
@@ -1656,40 +1408,30 @@ Incorrect JSON can contain:
 
 An Angular application can receive JSON from a Firebase Cloud Function and use the returned fields to update a user interface.
 
-The application should still validate the response before using it.
-            `,
+The application should still validate the response before using it.`,
           },
-
           {
-            type: "check",
-            question:
-              "Which of the following is a valid JSON data type?",
-
+            type: 'check',
+            question: "Which of the following is a valid JSON data type?",
             options: [
-              "Function",
               "Class",
+              "Function",
               "Boolean",
               "Interface",
             ],
-
             answer: 2,
-
-            explanation:
-              "JSON supports strings, numbers, booleans, null, objects, and arrays. Functions, classes, and interfaces are not JSON data types.",
+            explanation: "JSON supports strings, numbers, booleans, null, objects, and arrays. Functions, classes, and interfaces are not JSON data types.",
           },
         ],
       },
-
       {
         id: "designing-json-output-prompts",
         title: "Designing Prompts for JSON Responses",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Designing Prompts for JSON Responses
+            type: 'text',
+            text: `# Designing Prompts for JSON Responses
 
 When an application expects JSON, the prompt should clearly describe the required structure.
 
@@ -1710,12 +1452,14 @@ Do not include additional fields."
 
 ## Expected Output
 
+\`\`\`json
 {
   "category": "Network",
   "priority": "2",
   "summary": "Users cannot access the internal network.",
   "affectedService": "Corporate Network"
 }
+\`\`\`
 
 ## Define Field Requirements
 
@@ -1747,51 +1491,36 @@ This helps constrain the model's response.
 
 A prompt asking for valid JSON does not guarantee valid JSON.
 
-Use model-supported structured output features when available, then validate the response in application code.
-            `,
+Use model-supported structured output features when available, then validate the response in application code.`,
           },
-
           {
-            type: "check",
-            question:
-              "What should a prompt specify when requesting structured JSON output?",
-
+            type: 'check',
+            question: "What should a prompt specify when requesting structured JSON output?",
             options: [
-              "Only the general subject",
-              "Field names, expected types, and allowed values",
               "The model's training dataset",
+              "Field names, expected types, and allowed values",
+              "Only the general subject",
               "The user's browser configuration",
             ],
-
             answer: 1,
-
-            explanation:
-              "Clearly defining fields, types, and allowed values helps the application receive more predictable structured responses.",
+            explanation: "Clearly defining fields, types, and allowed values helps the application receive more predictable structured responses.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 7
-  // ----------------------------------------------------------
-
   {
     id: "schema-validation-and-reliable-responses",
     title: "Schema Validation and Reliable Responses",
-
     lessons: [
       {
         id: "understanding-json-schemas",
         title: "Understanding JSON Schemas",
-        minutes: 20,
-
+        minutes: 7,
         blocks: [
           {
-            type: "text",
-            text: `
-# Understanding JSON Schemas
+            type: 'text',
+            text: `# Understanding JSON Schemas
 
 A JSON Schema defines the expected structure and validation rules for a JSON document.
 
@@ -1810,6 +1539,7 @@ A schema may require:
 
 ## Example Schema
 
+\`\`\`json
 {
   "type": "object",
   "properties": {
@@ -1839,6 +1569,7 @@ A schema may require:
   ],
   "additionalProperties": false
 }
+\`\`\`
 
 ## What the Schema Does
 
@@ -1860,40 +1591,30 @@ Schemas help applications:
 
 Schema validation checks structure and defined constraints.
 
-It does not prove that the model's statements are factually correct.
-            `,
+It does not prove that the model's statements are factually correct.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary purpose of a JSON Schema?",
-
+            type: 'check',
+            question: "What is the primary purpose of a JSON Schema?",
             options: [
-              "To train a language model",
+              "To describe how JSON data should be displayed",
+              "To compress JSON so it uses fewer tokens",
+              "To convert JSON data into a database table automatically",
               "To define and validate the expected structure of JSON data",
-              "To encrypt an API response",
-              "To authenticate a user",
             ],
-
-            answer: 1,
-
-            explanation:
-              "JSON Schema defines expected properties, data types, required fields, and validation constraints.",
+            answer: 3,
+            explanation: "JSON Schema defines expected properties, data types, required fields, and validation constraints.",
           },
         ],
       },
-
       {
         id: "validating-ai-generated-json",
         title: "Validating AI-Generated JSON",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Validating AI-Generated JSON
+            type: 'text',
+            text: `# Validating AI-Generated JSON
 
 AI-generated JSON should be validated before it is used by an application.
 
@@ -1905,10 +1626,12 @@ Check whether the response is valid JSON.
 
 For example, this is invalid:
 
+\`\`\`json
 {
   "category": "Network",
   "priority": 2,
 }
+\`\`\`
 
 The trailing comma makes the example invalid JSON.
 
@@ -1951,40 +1674,30 @@ If validation fails, the application should:
 
 ## Enterprise Principle
 
-Treat AI output as untrusted input until it has passed the application's validation and authorization controls.
-            `,
+Treat AI output as untrusted input until it has passed the application's validation and authorization controls.`,
           },
-
           {
-            type: "check",
-            question:
-              "What should an application do when AI-generated JSON fails validation?",
-
+            type: 'check',
+            question: "What should an application do when AI-generated JSON fails validation?",
             options: [
+              "Reject or safely handle the invalid response",
               "Process it anyway",
               "Ignore all validation rules",
-              "Reject or safely handle the invalid response",
               "Automatically grant additional permissions",
             ],
-
-            answer: 2,
-
-            explanation:
-              "Invalid AI output should not be processed as trusted application data. The application should reject it or handle it through a controlled error workflow.",
+            answer: 0,
+            explanation: "Invalid AI output should not be processed as trusted application data. The application should reject it or handle it through a controlled error workflow.",
           },
         ],
       },
-
       {
         id: "handling-missing-and-unexpected-data",
         title: "Handling Missing and Unexpected Data",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Handling Missing and Unexpected Data
+            type: 'text',
+            text: `# Handling Missing and Unexpected Data
 
 AI applications frequently receive incomplete or ambiguous information.
 
@@ -1998,9 +1711,11 @@ The model should not invent a service name.
 
 An application may represent the missing value as:
 
+\`\`\`json
 {
   "affectedService": null
 }
+\`\`\`
 
 ## Unexpected Values
 
@@ -2044,64 +1759,36 @@ Examples include:
 
 ## Practical Principle
 
-Define how the application behaves when the model cannot provide a valid answer. Safe failure is better than silently accepting unreliable information.
-            `,
+Define how the application behaves when the model cannot provide a valid answer. Safe failure is better than silently accepting unreliable information.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the safest approach when a required value cannot be determined?",
-
+            type: 'check',
+            question: "What is the safest approach when a required value cannot be determined?",
             options: [
-              "Invent a likely value",
+              "Use the most likely value based on similar records",
+              "Use an empty string for every missing value",
               "Use an explicitly defined missing-value representation",
-              "Delete the entire record",
-              "Ignore the application schema",
+              "Leave the field out and let the client guess",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Applications should define how missing information is represented, such as null, and handle it through approved business rules.",
+            answer: 2,
+            explanation: "Applications should define how missing information is represented, such as null, and handle it through approved business rules.",
           },
         ],
       },
     ],
   },
-
-);
-
-// ============================================================
-// END OF SECTION 2
-// Section 3 will add modules 8–11 and the seed logic.
-// ============================================================
-// ============================================================
-// SECTION 3 OF 3
-// Modules 8–11
-// ============================================================
-
-MODULES.push(
-
-  // ----------------------------------------------------------
-  // MODULE 8
-  // ----------------------------------------------------------
-
   {
     id: "function-calling-and-tool-use",
     title: "Function Calling and Tool Use",
-
     lessons: [
       {
         id: "introduction-to-function-calling",
         title: "Introduction to Function Calling",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Introduction to Function Calling
+            type: 'text',
+            text: `# Introduction to Function Calling
 
 Function calling allows an AI model to identify when an external function or tool should be used to complete a task.
 
@@ -2117,9 +1804,7 @@ An AI assistant may determine that it needs incident information.
 
 It can request a function such as:
 
-getIncident({
-  incidentNumber: "INC0012345"
-})
+getIncident({ incidentNumber: "INC0012345" })
 
 The application executes the function and returns the result.
 
@@ -2158,40 +1843,30 @@ Function calling can support:
 
 Never execute arbitrary operations simply because the model requested them.
 
-The application must independently validate inputs, permissions, and business rules.
-            `,
+The application must independently validate inputs, permissions, and business rules.`,
           },
-
           {
-            type: "check",
-            question:
-              "Who is responsible for executing a function requested by an AI model?",
-
+            type: 'check',
+            question: "Who is responsible for executing a function requested by an AI model?",
             options: [
               "The model automatically executes it",
-              "The application that implements the function",
-              "The user's browser automatically executes it",
               "The database executes every model response",
+              "The user's browser automatically executes it",
+              "The application that implements the function",
             ],
-
-            answer: 1,
-
-            explanation:
-              "The model requests a function call, but the application is responsible for validating and executing the actual function.",
+            answer: 3,
+            explanation: "The model requests a function call, but the application is responsible for validating and executing the actual function.",
           },
         ],
       },
-
       {
         id: "defining-tools-and-function-schemas",
         title: "Defining Tools and Function Schemas",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Defining Tools and Function Schemas
+            type: 'text',
+            text: `# Defining Tools and Function Schemas
 
 AI tools should have clearly defined names, descriptions, and input parameters.
 
@@ -2209,12 +1884,14 @@ Retrieve an incident record using its incident number.
 
 Parameters:
 
+\`\`\`json
 {
   "incidentNumber": {
     "type": "string",
     "description": "The incident number to retrieve"
   }
 }
+\`\`\`
 
 ## Why Descriptions Matter
 
@@ -2254,40 +1931,30 @@ A good enterprise tool should:
 
 A function schema describes the expected interface. It does not provide security by itself.
 
-The backend must enforce all relevant permissions and validation rules.
-            `,
+The backend must enforce all relevant permissions and validation rules.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why should an AI tool have a clearly defined parameter schema?",
-
+            type: 'check',
+            question: "Why should an AI tool have a clearly defined parameter schema?",
             options: [
+              "To change the model's training data",
               "To eliminate the need for authentication",
               "To define the expected inputs and their structure",
               "To automatically execute database operations",
-              "To change the model's training data",
             ],
-
-            answer: 1,
-
-            explanation:
-              "A parameter schema describes the expected inputs so the application can validate and process tool calls consistently.",
+            answer: 2,
+            explanation: "A parameter schema describes the expected inputs so the application can validate and process tool calls consistently.",
           },
         ],
       },
-
       {
         id: "building-safe-tool-integrations",
         title: "Building Safe Tool Integrations",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Building Safe Tool Integrations
+            type: 'text',
+            text: `# Building Safe Tool Integrations
 
 Tool integrations allow AI assistants to interact with enterprise systems.
 
@@ -2358,51 +2025,36 @@ Before the incident is created, the backend should verify:
 
 ## Key Principle
 
-AI tools should extend controlled application capabilities, not bypass enterprise security controls.
-            `,
+AI tools should extend controlled application capabilities, not bypass enterprise security controls.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the most important security principle when integrating AI tools with enterprise systems?",
-
+            type: 'check',
+            question: "What is the most important security principle when integrating AI tools with enterprise systems?",
             options: [
-              "Allow the model unrestricted access",
-              "Trust every tool call automatically",
               "Enforce authentication, authorization, and server-side validation",
-              "Disable audit logging",
+              "Let the model decide which records it needs to access",
+              "Describe each tool clearly so the model always calls it correctly",
+              "Validate tool arguments in the prompt before each call",
             ],
-
-            answer: 2,
-
-            explanation:
-              "Enterprise integrations must independently enforce security controls before executing model-requested operations.",
+            answer: 0,
+            explanation: "Enterprise integrations must independently enforce security controls before executing model-requested operations.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 9
-  // ----------------------------------------------------------
-
   {
     id: "prompt-security-and-injection-attacks",
     title: "Prompt Security and Injection Attacks",
-
     lessons: [
       {
         id: "understanding-prompt-injection",
         title: "Understanding Prompt Injection",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Understanding Prompt Injection
+            type: 'text',
+            text: `# Understanding Prompt Injection
 
 Prompt injection is an attack in which malicious or untrusted content attempts to manipulate an AI model's behavior.
 
@@ -2452,40 +2104,30 @@ The application should treat retrieved documents as untrusted reference content 
 
 ## Key Principle
 
-Prompt injection is an application security concern. It cannot be solved reliably through prompt wording alone.
-            `,
+Prompt injection is an application security concern. It cannot be solved reliably through prompt wording alone.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is prompt injection?",
-
+            type: 'check',
+            question: "What is prompt injection?",
             options: [
-              "A method of increasing model training speed",
-              "An attempt to manipulate an AI model through malicious instructions",
-              "A technique for compressing JSON",
               "A method of encrypting prompts",
+              "A technique for compressing JSON",
+              "An attempt to manipulate an AI model through malicious instructions",
+              "A method of increasing model training speed",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Prompt injection involves malicious or untrusted instructions intended to manipulate model behavior.",
+            answer: 2,
+            explanation: "Prompt injection involves malicious or untrusted instructions intended to manipulate model behavior.",
           },
         ],
       },
-
       {
         id: "defending-against-prompt-injection",
         title: "Defending Against Prompt Injection",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Defending Against Prompt Injection
+            type: 'text',
+            text: `# Defending Against Prompt Injection
 
 Prompt injection requires multiple defensive controls.
 
@@ -2546,40 +2188,30 @@ A secure AI application combines:
 
 ## Important Principle
 
-The AI model should never become the only security enforcement layer in an enterprise application.
-            `,
+The AI model should never become the only security enforcement layer in an enterprise application.`,
           },
-
           {
-            type: "check",
-            question:
-              "Which approach provides the strongest foundation for defending enterprise AI applications against prompt injection?",
-
+            type: 'check',
+            question: "Which approach provides the strongest foundation for defending enterprise AI applications against prompt injection?",
             options: [
-              "Using one long system prompt",
-              "Allowing the model to approve its own permissions",
-              "Combining application security controls, validation, restricted tools, and monitoring",
-              "Disabling all user input",
+              "Application controls, validation, restricted tools, and monitoring",
+              "Hiding the system prompt so attackers cannot read it",
+              "A detailed system prompt telling the model to ignore injections",
+              "A second model that rewrites user input before it is processed",
             ],
-
-            answer: 2,
-
-            explanation:
-              "A defense-in-depth approach combines multiple independent controls rather than relying on prompt wording alone.",
+            answer: 0,
+            explanation: "A defense-in-depth approach combines multiple independent controls rather than relying on prompt wording alone.",
           },
         ],
       },
-
       {
         id: "data-protection-and-responsible-prompting",
         title: "Data Protection and Responsible Prompting",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Data Protection and Responsible Prompting
+            type: 'text',
+            text: `# Data Protection and Responsible Prompting
 
 Enterprise prompts may contain sensitive business information.
 
@@ -2633,51 +2265,36 @@ AI applications should also consider:
 
 ## Enterprise Principle
 
-Responsible prompt engineering considers not only the response quality but also the privacy, security, and business impact of the information supplied to the model.
-            `,
+Responsible prompt engineering considers not only the response quality but also the privacy, security, and business impact of the information supplied to the model.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is data minimization in AI applications?",
-
+            type: 'check',
+            question: "What is data minimization in AI applications?",
             options: [
               "Sending every available record to the model",
-              "Providing only the information necessary for the task",
               "Removing all application security controls",
               "Storing API credentials in prompts",
+              "Providing only the information necessary for the task",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Data minimization reduces unnecessary exposure by providing only the information required to complete the task.",
+            answer: 3,
+            explanation: "Data minimization reduces unnecessary exposure by providing only the information required to complete the task.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 10
-  // ----------------------------------------------------------
-
   {
     id: "prompt-evaluation-and-optimization",
     title: "Prompt Evaluation and Optimization",
-
     lessons: [
       {
         id: "measuring-prompt-quality",
         title: "Measuring Prompt Quality",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Measuring Prompt Quality
+            type: 'text',
+            text: `# Measuring Prompt Quality
 
 A prompt should be evaluated using measurable criteria rather than relying only on whether an individual response looks good.
 
@@ -2732,40 +2349,30 @@ For example, a compliance analysis may need a qualified reviewer to determine wh
 
 ## Key Principle
 
-Evaluate prompts using repeatable tests and clearly defined business requirements.
-            `,
+Evaluate prompts using repeatable tests and clearly defined business requirements.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why should prompts be evaluated using representative test datasets?",
-
+            type: 'check',
+            question: "Why should prompts be evaluated using representative test datasets?",
             options: [
               "To eliminate the need for application monitoring",
               "To compare prompt performance across known scenarios",
-              "To increase the model's training data",
               "To avoid defining expected outcomes",
+              "To increase the model's training data",
             ],
-
             answer: 1,
-
-            explanation:
-              "Representative datasets allow developers to compare prompt behavior against known expected results.",
+            explanation: "Representative datasets allow developers to compare prompt behavior against known expected results.",
           },
         ],
       },
-
       {
         id: "prompt-optimization-techniques",
         title: "Prompt Optimization Techniques",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Prompt Optimization Techniques
+            type: 'text',
+            text: `# Prompt Optimization Techniques
 
 Prompt optimization improves the quality, efficiency, and reliability of AI responses.
 
@@ -2813,40 +2420,30 @@ A longer prompt is not automatically better.
 
 Excessive instructions can increase cost and complexity.
 
-The goal is to find the simplest prompt that consistently meets the application's requirements.
-            `,
+The goal is to find the simplest prompt that consistently meets the application's requirements.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the main goal of prompt optimization?",
-
+            type: 'check',
+            question: "What is the main goal of prompt optimization?",
             options: [
-              "Make every prompt as long as possible",
-              "Improve response quality and efficiency while meeting requirements",
-              "Remove all validation",
-              "Increase the number of model parameters",
+              "Improve quality and efficiency while meeting requirements",
+              "Make prompts as short as possible to reduce cost",
+              "Add more examples until every output looks correct",
+              "Switch to a larger model when results are weak",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Prompt optimization aims to improve performance, reliability, and efficiency without introducing unnecessary complexity.",
+            answer: 0,
+            explanation: "Prompt optimization aims to improve performance, reliability, and efficiency without introducing unnecessary complexity.",
           },
         ],
       },
-
       {
         id: "prompt-versioning-and-monitoring",
         title: "Prompt Versioning and Production Monitoring",
-        minutes: 20,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Prompt Versioning and Production Monitoring
+            type: 'text',
+            text: `# Prompt Versioning and Production Monitoring
 
 Prompts used in production applications should be managed as controlled application assets.
 
@@ -2906,51 +2503,36 @@ For example:
 
 Prompts should have clear owners, defined environments, and controlled deployment processes.
 
-This is particularly important when AI behavior supports critical business workflows.
-            `,
+This is particularly important when AI behavior supports critical business workflows.`,
           },
-
           {
-            type: "check",
-            question:
-              "Why is prompt versioning important in production systems?",
-
+            type: 'check',
+            question: "Why is prompt versioning important in production systems?",
             options: [
-              "It eliminates model hallucinations",
-              "It supports traceability, testing, and rollback",
-              "It replaces source control",
               "It prevents every API failure",
+              "It supports traceability, testing, and rollback",
+              "It eliminates model hallucinations",
+              "It replaces source control",
             ],
-
             answer: 1,
-
-            explanation:
-              "Prompt versioning makes it possible to trace changes, compare performance, investigate issues, and restore previous versions.",
+            explanation: "Prompt versioning makes it possible to trace changes, compare performance, investigate issues, and restore previous versions.",
           },
         ],
       },
     ],
   },
-
-  // ----------------------------------------------------------
-  // MODULE 11
-  // ----------------------------------------------------------
-
   {
     id: "practical-enterprise-prompt-engineering-project",
     title: "Practical Enterprise Prompt Engineering Project",
-
     lessons: [
       {
         id: "designing-an-enterprise-ai-assistant",
         title: "Designing an Enterprise AI Assistant",
-        minutes: 25,
-
+        minutes: 6,
         blocks: [
           {
-            type: "text",
-            text: `
-# Designing an Enterprise AI Assistant
+            type: 'text',
+            text: `# Designing an Enterprise AI Assistant
 
 In this lesson, you will design a conceptual AI assistant for an enterprise IT service desk.
 
@@ -2992,6 +2574,7 @@ The solution should support:
 
 ## Expected Output
 
+\`\`\`json
 {
   "summary": "Users cannot access the corporate VPN.",
   "category": "Network",
@@ -3001,6 +2584,7 @@ The solution should support:
   ],
   "requiresHumanReview": true
 }
+\`\`\`
 
 ## Architecture
 
@@ -3015,40 +2599,30 @@ A possible architecture includes:
 
 ## Important Design Principle
 
-The AI assistant recommends actions. The application controls whether those actions are permitted.
-            `,
+The AI assistant recommends actions. The application controls whether those actions are permitted.`,
           },
-
           {
-            type: "check",
-            question:
-              "What should control whether an AI assistant can modify an enterprise incident record?",
-
+            type: 'check',
+            question: "What should control whether an AI assistant can modify an enterprise incident record?",
             options: [
               "The model's natural language response",
               "Application authorization and business rules",
-              "The prompt's writing style",
               "The number of examples in the prompt",
+              "The prompt's writing style",
             ],
-
             answer: 1,
-
-            explanation:
-              "The application must enforce authorization and business rules independently of the model's recommendations.",
+            explanation: "The application must enforce authorization and business rules independently of the model's recommendations.",
           },
         ],
       },
-
       {
         id: "implementing-structured-prompt-workflows",
         title: "Implementing Structured Prompt Workflows",
-        minutes: 25,
-
+        minutes: 7,
         blocks: [
           {
-            type: "text",
-            text: `
-# Implementing Structured Prompt Workflows
+            type: 'text',
+            text: `# Implementing Structured Prompt Workflows
 
 The next step is to convert the assistant design into a repeatable application workflow.
 
@@ -3100,6 +2674,7 @@ Allow an authorized analyst to review the recommendation before a sensitive acti
 
 ## Example Application Flow
 
+\`\`\`text
 Angular UI
     |
     v
@@ -3119,45 +2694,36 @@ Output Validation
     |
     v
 Angular UI
+\`\`\`
 
 ## Implementation Considerations
 
 Keep provider credentials, authorization checks, and sensitive operations on the backend.
 
-Do not expose secrets in Angular environment files or browser code.
-            `,
+Do not expose secrets in Angular environment files or browser code.`,
           },
-
           {
-            type: "check",
-            question:
-              "Where should AI provider credentials and sensitive authorization checks be handled?",
-
+            type: 'check',
+            question: "Where should AI provider credentials and sensitive authorization checks be handled?",
             options: [
-              "In publicly accessible Angular browser code",
-              "In the backend",
-              "Inside the prompt",
               "In a user-editable HTML field",
+              "In publicly accessible Angular browser code",
+              "Inside the prompt",
+              "In the backend",
             ],
-
-            answer: 1,
-
-            explanation:
-              "Sensitive credentials and authorization logic should be handled on a trusted backend rather than exposed in browser code.",
+            answer: 3,
+            explanation: "Sensitive credentials and authorization logic should be handled on a trusted backend rather than exposed in browser code.",
           },
         ],
       },
-
       {
         id: "enterprise-prompt-engineering-capstone",
         title: "Capstone: Build an Enterprise Prompt Engineering Solution",
-        minutes: 30,
-
+        minutes: 5,
         blocks: [
           {
-            type: "text",
-            text: `
-# Capstone: Build an Enterprise Prompt Engineering Solution
+            type: 'text',
+            text: `# Capstone: Build an Enterprise Prompt Engineering Solution
 
 This final lesson brings together the concepts covered throughout the course.
 
@@ -3235,256 +2801,27 @@ Your solution should demonstrate:
 
 Prompt engineering is more than writing good instructions.
 
-In enterprise AI engineering, it is the disciplined design, testing, governance, and integration of model behavior into secure business applications.
-            `,
+In enterprise AI engineering, it is the disciplined design, testing, governance, and integration of model behavior into secure business applications.`,
           },
-
           {
-            type: "check",
-            question:
-              "What is the primary objective of the capstone project?",
-
+            type: 'check',
+            question: "What is the primary objective of the capstone project?",
             options: [
-              "Build a chatbot without security controls",
               "Design a secure, validated, and governed enterprise AI workflow",
               "Train a new language model from scratch",
               "Replace the organization's IT service management platform",
+              "Build a chatbot without security controls",
             ],
-
-            answer: 1,
-
-            explanation:
-              "The capstone combines prompt design, structured outputs, validation, security, integration, and governance into an enterprise solution.",
+            answer: 0,
+            explanation: "The capstone combines prompt design, structured outputs, validation, security, integration, and governance into an enterprise solution.",
           },
         ],
       },
     ],
   },
+];
 
-);
-
-// ============================================================
-// FIRESTORE SEEDING LOGIC
-// ============================================================
-
-function validateCourse() {
-  const moduleCount = MODULES.length;
-
-  const lessons = MODULES.flatMap((module) => module.lessons);
-
-  const lessonCount = lessons.length;
-
-  const quickCheckCount = lessons.reduce(
-    (total, lesson) =>
-      total +
-      lesson.blocks.filter((block) => block.type === "check").length,
-    0
-  );
-
-  const estimatedMinutes = lessons.reduce(
-    (total, lesson) => total + lesson.minutes,
-    0
-  );
-
-  if (moduleCount !== 11) {
-    throw new Error(
-      `Expected 11 modules, found ${moduleCount}.`
-    );
-  }
-
-  if (lessonCount !== 33) {
-    throw new Error(
-      `Expected 33 lessons, found ${lessonCount}.`
-    );
-  }
-
-  if (quickCheckCount !== 33) {
-    throw new Error(
-      `Expected 33 Quick Checks, found ${quickCheckCount}.`
-    );
-  }
-
-  for (const module of MODULES) {
-    if (!module.id || !module.title || !module.lessons.length) {
-      throw new Error(`Invalid module: ${module.id}`);
-    }
-
-    for (const lesson of module.lessons) {
-      if (!lesson.id || !lesson.title || !lesson.blocks.length) {
-        throw new Error(
-          `Invalid lesson in module ${module.id}: ${lesson.id}`
-        );
-      }
-
-      const checks = lesson.blocks.filter(
-        (block) => block.type === "check"
-      );
-
-      if (checks.length !== 1) {
-        throw new Error(
-          `Lesson ${lesson.id} must contain exactly one Quick Check.`
-        );
-      }
-    }
-  }
-
-  return {
-    moduleCount,
-    lessonCount,
-    quickCheckCount,
-    estimatedMinutes,
-  };
-}
-
-function buildCourseDocument(stats) {
-  return {
-    ...COURSE,
-
-    modules: MODULES.map((module, moduleIndex) => ({
-      id: module.id,
-      title: module.title,
-      order: moduleIndex + 1,
-
-      lessons: module.lessons.map((lesson, lessonIndex) => ({
-        id: lesson.id,
-        title: lesson.title,
-        order: lessonIndex + 1,
-        estimatedMinutes: lesson.minutes,
-      })),
-    })),
-
-    moduleCount: stats.moduleCount,
-    lessonCount: stats.lessonCount,
-    quickCheckCount: stats.quickCheckCount,
-    estimatedMinutes: stats.estimatedMinutes,
-
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  };
-}
-
-function buildLessonDocument(module, lesson, moduleIndex, lessonIndex) {
-  return {
-    id: lesson.id,
-    courseId: COURSE.id,
-
-    moduleId: module.id,
-    moduleTitle: module.title,
-    moduleOrder: moduleIndex + 1,
-
-    title: lesson.title,
-    order: lessonIndex + 1,
-
-    estimatedMinutes: lesson.minutes,
-
-    blocks: lesson.blocks,
-
-    status: "draft",
-
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  };
-}
-
-async function seedCourse() {
-  const stats = validateCourse();
-
-  console.log("\nCourse validation successful.");
-  console.log(`Modules: ${stats.moduleCount}`);
-  console.log(`Lessons: ${stats.lessonCount}`);
-  console.log(`Quick Checks: ${stats.quickCheckCount}`);
-  console.log(`Estimated minutes: ${stats.estimatedMinutes}`);
-
-  const courseRef = db.collection("courses").doc(COURSE.id);
-
-  const existingCourse = await courseRef.get();
-
-  if (existingCourse.exists && !OVERWRITE) {
-    console.log(
-      `\nCourse ${COURSE.id} already exists.`
-    );
-
-    console.log(
-      "Use --overwrite only if you intentionally want to replace its seeded content."
-    );
-
-    return;
-  }
-
-  if (!APPLY) {
-    console.log("\nDRY RUN — no Firestore writes performed.");
-
-    console.log("\nCourse details:");
-    console.log(
-      JSON.stringify(
-        {
-          id: COURSE.id,
-          title: COURSE.title,
-          status: COURSE.status,
-          language: COURSE.language,
-          modules: stats.moduleCount,
-          lessons: stats.lessonCount,
-          quickChecks: stats.quickCheckCount,
-          estimatedMinutes: stats.estimatedMinutes,
-        },
-        null,
-        2
-      )
-    );
-
-    console.log(
-      "\nTo write this course to Firebase, run:"
-    );
-
-    console.log(
-      "node scripts/prompt-engineering/seed-prompt-engineering.mjs --apply"
-    );
-
-    return;
-  }
-
-  const batch = db.batch();
-
-  batch.set(
-    courseRef,
-    buildCourseDocument(stats),
-    { merge: false }
-  );
-
-  let lessonWriteCount = 0;
-
-  MODULES.forEach((module, moduleIndex) => {
-    module.lessons.forEach((lesson, lessonIndex) => {
-      const lessonRef = courseRef
-        .collection("lessons")
-        .doc(lesson.id);
-
-      batch.set(
-        lessonRef,
-        buildLessonDocument(
-          module,
-          lesson,
-          moduleIndex,
-          lessonIndex
-        ),
-        { merge: false }
-      );
-
-      lessonWriteCount++;
-    });
-  });
-
-  await batch.commit();
-
-  console.log("\nCourse successfully seeded!");
-  console.log(`Course ID: ${COURSE.id}`);
-  console.log(`Modules: ${stats.moduleCount}`);
-  console.log(`Lessons written: ${lessonWriteCount}`);
-  console.log(`Quick Checks: ${stats.quickCheckCount}`);
-  console.log("Course status: draft");
-}
-
-seedCourse().catch((error) => {
-  console.error("\nCourse seeding failed:", error);
+runCourseSeed({ course: COURSE, modules: MODULES, script: 'scripts/prompt-engineering/seed-prompt-engineering.mjs' }).catch((error) => {
+  console.error('\nSEED FAILED:', error);
   process.exit(1);
 });

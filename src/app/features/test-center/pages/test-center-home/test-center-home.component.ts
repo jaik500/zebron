@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
@@ -52,10 +53,11 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
           <!-- Left: Test Center branding -->
           <div class="flex min-w-0 shrink-0 items-center gap-3 text-white">
             <a
-              [routerLink]="['/partner/org', organizationId(), 'dashboard']"
+              [href]="fallbackBackUrl()"
+              (click)="goBack($event)"
               class="flex min-w-0 shrink-0 items-center gap-3 rounded-lg text-white transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              [attr.aria-label]="'Back to organization dashboard' | t"
-              [title]="'Back to organization dashboard' | t"
+              [attr.aria-label]="'Back' | t"
+              [title]="'Back' | t"
             >
               <div
                 class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 sm:flex"
@@ -122,7 +124,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
           <div class="grid gap-2 sm:gap-3" [class]="browseGridClass()">
             <!-- Certifications -->
             <a
-              [routerLink]="['/partner/org', organizationId, 'courses', 'certifications']"
+              [routerLink]="certificationsRoute()"
               [queryParams]="{ type: 'certification' }"
               class="group rounded-xl border border-gray-200 bg-white p-2 sm:p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#12BFC3] hover:bg-[#E5F4F4] hover:shadow-md"
             >
@@ -444,6 +446,33 @@ private readonly questionService = inject(TestQuestionService); // add
     this.route.parent?.snapshot.paramMap.get('organizationId') ??
     null,
 );
+
+  private readonly location = inject(Location);
+
+  /** Where Back goes when the Test Center was opened directly (no earlier page in Zebron). */
+  readonly fallbackBackUrl = computed(() => {
+    const organizationId = this.organizationId();
+    return organizationId ? `/partner/org/${organizationId}/dashboard` : '/';
+  });
+
+  readonly certificationsRoute = computed(() => {
+    const organizationId = this.organizationId();
+    return organizationId ? ['/partner/org', organizationId, 'courses', 'certifications'] : ['/courses', 'certifications'];
+  });
+
+  /** Back to the page the learner came from; the dashboard (or home) if there is none. */
+  goBack(event: MouseEvent): void {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) {
+      return; // let the browser open the link in a new tab/window
+    }
+    event.preventDefault();
+    const navigationId = (window.history.state as { navigationId?: number } | null)?.navigationId ?? 0;
+    if (navigationId > 1) {
+      this.location.back();
+    } else {
+      void this.router.navigateByUrl(this.fallbackBackUrl());
+    }
+  }
 
   readonly learnerBaseRoute = computed(() => {
     const organizationId = this.organizationId();
