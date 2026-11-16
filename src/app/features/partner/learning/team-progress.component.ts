@@ -14,6 +14,7 @@ import {
   TeamMemberRow,
 } from '../../courses/course-assignment.service';
 import { downloadCsv as saveCsv } from '../../../shared/csv-download';
+import { GroupFilter, TrainingGroupService } from '../../training-groups/training-group.service';
 
 type Tab = 'assignments' | 'people';
 type StatusFilter = 'all' | 'open' | 'overdue' | 'not_started' | 'in_progress' | 'completed';
@@ -81,7 +82,7 @@ const ROLE_LABELS: Record<string, string> = {
           <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div class="rounded-2xl border border-slate-200 bg-white p-4">
               <dt class="text-xs text-slate-500">{{ 'Assignments' | t }}</dt>
-              <dd class="text-2xl font-semibold text-slate-900">{{ report.assignments.length }}</dd>
+              <dd class="text-2xl font-semibold text-slate-900">{{ summary().assignments }}</dd>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-4">
               <dt class="text-xs text-slate-500">{{ 'Completed' | t }}</dt>
@@ -129,6 +130,20 @@ const ROLE_LABELS: Record<string, string> = {
               [value]="query()"
               (input)="query.set($any($event.target).value)"
             />
+
+            @if (groupFilter(); as filter) {
+              <select
+                class="h-10 w-full min-w-0 max-w-full truncate rounded-lg border border-slate-300 bg-white px-3 text-sm sm:w-auto sm:max-w-xs"
+                [value]="groupId()"
+                (change)="groupId.set($any($event.target).value)"
+                [attr.aria-label]="'Training group' | t"
+              >
+                <option value="">{{ 'All training groups' | t }}</option>
+                @for (group of filter.groups; track group.id) {
+                  <option [value]="group.id">{{ group.name }}</option>
+                }
+              </select>
+            }
 
             @if (tab() === 'assignments') {
               <select
@@ -286,6 +301,15 @@ export class TeamProgressComponent implements OnInit {
   protected readonly courseFilter = signal('');
   protected readonly statusFilter = signal<StatusFilter>('all');
 
+  // Training group filter (shown when the organization has Training Groups).
+  private readonly groups = inject(TrainingGroupService);
+  protected readonly groupFilter = signal<GroupFilter | null>(null);
+  protected readonly groupId = signal('');
+  private inGroup(userId: string): boolean {
+    const groupId = this.groupId();
+    return !groupId || !!this.groupFilter()?.members.get(groupId)?.has(userId);
+  }
+
   private readonly locale = computed(() => (this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US'));
 
   /** Courses that have assignments, plus published ones. */
@@ -305,11 +329,14 @@ export class TeamProgressComponent implements OnInit {
 
   protected readonly summary = computed(() => {
     const report = this.data();
-    const rows = report?.assignments ?? [];
+    const rows = (report?.assignments ?? []).filter((row) => this.inGroup(row.userId));
     return {
+      assignments: rows.length,
       completed: rows.filter((row) => row.status === 'completed').length,
       overdue: rows.filter((row) => this.isRowOverdue(row)).length,
-      certificates: (report?.members ?? []).reduce((total, member) => total + member.certificates, 0),
+      certificates: (report?.members ?? [])
+        .filter((member) => this.inGroup(member.userId))
+        .reduce((total, member) => total + member.certificates, 0),
     };
   });
 
@@ -320,6 +347,7 @@ export class TeamProgressComponent implements OnInit {
 
     return (this.data()?.assignments ?? [])
       .filter((row) => !term || row.userName.toLowerCase().includes(term))
+      .filter((row) => this.inGroup(row.userId))
       .filter((row) => !course || row.courseId === course)
       .filter((row) => {
         switch (status) {
@@ -344,12 +372,15 @@ export class TeamProgressComponent implements OnInit {
   protected readonly shownMembers = computed(() => {
     const term = this.query().trim().toLowerCase();
     return (this.data()?.members ?? []).filter(
-      (member) => !term || `${member.name} ${member.email ?? ''}`.toLowerCase().includes(term),
+      (member) =>
+        this.inGroup(member.userId) && (!term || `${member.name} ${member.email ?? ''}`.toLowerCase().includes(term)),
     );
   });
 
   async ngOnInit(): Promise<void> {
     this.pageTitle.setDocumentTitle(this.i18n.t('Team progress'));
+
+    void this.groups.loadGroupFilter(this.organizationId).then((filter) => this.groupFilter.set(filter));
 
     try {
       this.data.set(await this.service.teamProgress(this.organizationId));

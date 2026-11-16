@@ -110,6 +110,7 @@ const COURSE_TYPE_META: Record<string, { label: string; icon: string }> = {
 // ============================================================
 
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { QuizDeleteDialogComponent } from '../../../features/test-center/components/quiz-delete-dialog.component';
 
 @Component({
   selector: 'app-partner-test-center',
@@ -126,6 +127,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
     MatIconModule,
     MatMenuModule,
     MatDivider,
+    QuizDeleteDialogComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -900,6 +902,9 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                                   <a mat-menu-item [routerLink]="['/partner/org', context.organizationId(), 'test-center', 'questions']" [queryParams]="{ quizId: quiz.id }">
                                     <mat-icon>quiz</mat-icon><span>{{ 'Manage questions' | t }}</span>
                                   </a>
+                                  <button mat-menu-item type="button" (click)="quizToDelete.set(quiz)" class="!text-rose-700">
+                                    <mat-icon class="!text-rose-700">delete</mat-icon><span>{{ 'Delete quiz' | t }}</span>
+                                  </button>
                                 </mat-menu>
                               }
                             </div>
@@ -972,6 +977,10 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
         }
       </main>
     </div>
+
+    @if (quizToDelete(); as quiz) {
+      <app-quiz-delete-dialog [quiz]="quiz" (closed)="quizDeleteClosed(quiz, $event)" />
+    }
   `,
 })
 export class PartnerTestCenterComponent implements OnInit {
@@ -1004,6 +1013,16 @@ export class PartnerTestCenterComponent implements OnInit {
   // ============================================================
 
   protected readonly courses = signal<Quiz[]>([]);
+  /** The quiz whose Delete dialog is open. */
+  protected readonly quizToDelete = signal<Quiz | null>(null);
+
+  protected quizDeleteClosed(quiz: Quiz, deleted: boolean): void {
+    this.quizToDelete.set(null);
+    if (deleted) {
+      this.courses.update((list) => list.filter((item) => item.id !== quiz.id));
+      this.toast.success('Quiz deleted.');
+    }
+  }
 
   protected readonly loadingCourses = signal(false);
 

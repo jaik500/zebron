@@ -5556,6 +5556,229 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // TRAINING GROUPS (cohorts and other groups of learners)
+    // ============================================================
+
+    /*
+     * organizations/{id}/trainingGroups/{groupId}: a cohort or another
+     * group of learners going through training together.
+     *   .../members/{uid}                          the roster
+     *   organizations/{id}/trainingGroupEnrollments/{uid}   { groupIds }
+     *
+     * The roster, the per-person index and memberCount are written only by
+     * manageTrainingGroupMembers (capacity). Leads (leadIds) are managers
+     * who run a group; instructors (instructorIds) see its roster.
+     *
+     * - Owners and admins: everything.
+     * - Managers: create groups (leading them), edit the groups they lead.
+     * - Staff and above: see every group; rosters of groups they lead or
+     *   instruct (managers: all rosters).
+     * - Members: their own groups and their own place in them; no roster.
+     */
+    function hasActiveTrainingGroups(organizationId) {
+      let entitlementPath =
+        /databases/$(database)/documents/organizations/$(organizationId)/applications/training-groups;
+
+      return exists(entitlementPath)
+        && get(entitlementPath).data.get("status", "") == "active";
+    }
+
+    function trainingGroupsOpen(organizationId) {
+      return isOrganizationOperational(organizationId)
+        && hasActiveTrainingGroups(organizationId);
+    }
+
+    function isTrainingGroupStaff(organizationId, groupId) {
+      let group = get(/databases/$(database)/documents/organizations/$(organizationId)/trainingGroups/$(groupId)).data;
+
+      return isOrganizationManagerOrAbove(organizationId)
+        || (
+          isOrganizationStaffOrAbove(organizationId)
+          && (
+            group.get("leadIds", []).hasAny([request.auth.uid])
+            || group.get("instructorIds", []).hasAny([request.auth.uid])
+          )
+        );
+    }
+
+    // Ended (the whole end day counts), not reopened: locked for everyone but owners and admins.
+    function isTrainingGroupLocked(group) {
+      return group.get("manualStatus", null) == null
+        && group.get("endDate", null) != null
+        && request.time >= group.endDate + duration.value(1, "d")
+        && group.get("reopened", false) != true;
+    }
+
+    function isValidTrainingGroup(organizationId) {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly([
+          "organizationId", "name", "type", "description", "programName",
+          "startDate", "endDate", "capacity", "deliveryMode", "location",
+          "leadIds", "instructorIds", "manualStatus", "memberCount",
+          "reopened", "summaryAt",
+          "createdAt", "createdBy", "updatedAt", "updatedBy"
+        ])
+        && data.organizationId == organizationId
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 150
+        && data.type in ["cohort"]
+        && data.get("description", "") is string
+        && data.get("description", "").size() <= 5000
+        && data.get("programName", "") is string
+        && data.get("programName", "").size() <= 150
+        && (data.get("startDate", null) == null || data.get("startDate", null) is timestamp)
+        && (data.get("endDate", null) == null || data.get("endDate", null) is timestamp)
+        && data.capacity is int
+        && data.capacity >= 0
+        && data.capacity <= 10000
+        && data.deliveryMode in ["online", "in_person", "hybrid"]
+        && data.get("location", "") is string
+        && data.get("location", "").size() <= 300
+        && data.leadIds is list
+        && data.leadIds.size() <= 20
+        && data.instructorIds is list
+        && data.instructorIds.size() <= 50
+        && (data.get("manualStatus", null) == null || data.get("manualStatus", null) in ["draft", "cancelled"])
+        && data.memberCount is int
+        && data.get("reopened", false) is bool
+        && data.updatedAt == request.time
+        && data.updatedBy == request.auth.uid;
+    }
+
+    match /organizations/{organizationId}/trainingGroups/{groupId} {
+      allow get: if isPlatformAdmin()
+        || (
+          trainingGroupsOpen(organizationId)
+          && (
+            isOrganizationStaffOrAbove(organizationId)
+            || (
+              isOrganizationMember(organizationId)
+              && exists(/databases/$(database)/documents/organizations/$(organizationId)/trainingGroups/$(groupId)/members/$(request.auth.uid))
+            )
+          )
+        );
+
+      allow list: if isPlatformAdmin()
+        || (
+          trainingGroupsOpen(organizationId)
+          && isOrganizationStaffOrAbove(organizationId)
+        );
+
+      // Managers create groups they lead; owners and admins any group.
+      allow create: if (
+          isPlatformAdmin()
+          || (
+            trainingGroupsOpen(organizationId)
+            && (
+              isOrganizationAdmin(organizationId)
+              || (
+                isOrganizationManagerOrAbove(organizationId)
+                && request.resource.data.leadIds.hasAny([request.auth.uid])
+              )
+            )
+          )
+        )
+        && isValidTrainingGroup(organizationId)
+        && request.resource.data.memberCount == 0
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+
+      // memberCount is kept by manageTrainingGroupMembers.
+      allow update: if (
+          isPlatformAdmin()
+          || (
+            trainingGroupsOpen(organizationId)
+            && (
+              isOrganizationAdmin(organizationId)
+              || (
+                isOrganizationManagerOrAbove(organizationId)
+                && resource.data.get("leadIds", []).hasAny([request.auth.uid])
+                && !isTrainingGroupLocked(resource.data)
+                && request.resource.data.get("reopened", false) == resource.data.get("reopened", false)
+              )
+            )
+          )
+        )
+        && isValidTrainingGroup(organizationId)
+        && request.resource.data.get("summaryAt", null) == resource.data.get("summaryAt", null)
+        && request.resource.data.memberCount == resource.data.memberCount
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      // Withdraw everyone first, so no roster is left behind.
+      allow delete: if (
+          isPlatformAdmin()
+          || (trainingGroupsOpen(organizationId) && isOrganizationAdmin(organizationId))
+        )
+        && resource.data.get("memberCount", 0) == 0;
+
+      match /members/{userId} {
+        allow get: if isPlatformAdmin()
+          || (
+            trainingGroupsOpen(organizationId)
+            && (
+              isCurrentUser(userId)
+              || isTrainingGroupStaff(organizationId, groupId)
+            )
+          );
+
+        allow list: if isPlatformAdmin()
+          || (
+            trainingGroupsOpen(organizationId)
+            && isTrainingGroupStaff(organizationId, groupId)
+          );
+
+        allow write: if false;
+      }
+
+      // Completion summary (refreshTrainingGroupSummary and the daily job).
+      match /summary/{summaryId} {
+        allow get: if isPlatformAdmin()
+          || (
+            trainingGroupsOpen(organizationId)
+            && isTrainingGroupStaff(organizationId, groupId)
+          );
+
+        allow write: if false;
+      }
+
+      // Courses assigned to the whole group (manageTrainingGroupCourses).
+      match /courses/{courseKey} {
+        allow get, list: if isPlatformAdmin()
+          || (
+            trainingGroupsOpen(organizationId)
+            && (
+              isOrganizationStaffOrAbove(organizationId)
+              || (
+                isOrganizationMember(organizationId)
+                && exists(/databases/$(database)/documents/organizations/$(organizationId)/trainingGroups/$(groupId)/members/$(request.auth.uid))
+              )
+            )
+          );
+
+        allow write: if false;
+      }
+    }
+
+    match /organizations/{organizationId}/trainingGroupEnrollments/{userId} {
+      allow get: if isPlatformAdmin()
+        || (
+          trainingGroupsOpen(organizationId)
+          && (isCurrentUser(userId) || isOrganizationStaffOrAbove(organizationId))
+        );
+
+      allow list: if isPlatformAdmin()
+        || (
+          trainingGroupsOpen(organizationId)
+          && isOrganizationStaffOrAbove(organizationId)
+        );
+
+      allow write: if false;
+    }
+
+    // ============================================================
     // POLLS (shared: community posts and live sessions)
     // ============================================================
 

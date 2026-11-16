@@ -216,6 +216,28 @@ export const APPLICATION_DEFINITIONS: ApplicationDefinition[] = [
     enabled: true,
   },
 
+  {
+    id: 'training-groups',
+    key: 'training-groups',
+    name: 'Training Groups',
+    description:
+      'Cohorts and other groups of learners: dates, capacity, leads and instructors, members, and progress by group.',
+    category: 'learning',
+    icon: 'groups',
+    route: '/partner/org/:organizationId/training-groups',
+    availability: 'available',
+    requiresOrganization: true,
+    requiresApproval: false,
+    autoProvision: false,
+    provisioningStrategy: 'default',
+    parent: 'learning',
+    dependencies: ['core'],
+    permissions: [],
+    features: [],
+    version: 1,
+    enabled: true,
+  },
+
   // ===========================================================================
   // Test Center
   // ===========================================================================

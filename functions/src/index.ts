@@ -2678,6 +2678,13 @@ export {
 } from "./support-tickets";
 export { askSupportAssistant } from "./support-assistant";
 export { registerForLiveSession } from "./live-sessions";
+export {
+  manageTrainingGroupCourses,
+  manageTrainingGroupMembers,
+  refreshTrainingGroupSummary,
+  summarizeEndedTrainingGroups,
+} from "./training-groups";
+export { deleteTestCenterQuiz } from "./test-center-quiz-delete";
 export { castPollVote } from "./polls";
 export { refreshOrganizationStats, refreshDashboardStatsNightly } from "./dashboard-stats";
 export { startQuizExam, submitQuizExam } from "./quiz-exams";

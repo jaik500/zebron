@@ -22,6 +22,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { downloadCsv } from '../../../../shared/csv-download';
+import { GroupFilter, TrainingGroupService } from '../../../training-groups/training-group.service';
 
 @Component({
   selector: 'app-test-center-learners',
@@ -181,7 +182,10 @@ import { downloadCsv } from '../../../../shared/csv-download';
         </div>
 
         <!-- Search and Filters -->
-        <div class="grid grid-cols-1 gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4 md:grid-cols-[minmax(0,1fr)_220px] md:px-6">
+        <div
+          class="grid grid-cols-1 gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4 md:px-6"
+          [class]="groupFilter() ? 'md:grid-cols-[minmax(0,1fr)_220px_220px]' : 'md:grid-cols-[minmax(0,1fr)_220px]'"
+        >
 
           <mat-form-field appearance="outline" class="zb-field zb-field--flush w-full sm:max-w-xs zb-search" subscriptSizing="dynamic">
             <mat-label>{{ 'Search learners' | t }}</mat-label>
@@ -207,6 +211,18 @@ import { downloadCsv } from '../../../../shared/csv-download';
             <mat-option value="inactive">{{ 'Inactive membership' | t }}</mat-option>
           </mat-select>
           </mat-form-field>
+
+          @if (groupFilter(); as filter) {
+            <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+              <mat-label>{{ 'Training group' | t }}</mat-label>
+              <mat-select [ngModel]="groupId()" (ngModelChange)="groupId.set($event)">
+                <mat-option value="">{{ 'All training groups' | t }}</mat-option>
+                @for (group of filter.groups; track group.id) {
+                  <mat-option [value]="group.id">{{ group.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
 
         </div>
 
@@ -485,14 +501,22 @@ export class TestCenterLearnersComponent {
   readonly statusFilter = signal('all');
   readonly expandedUserId = signal<string | null>(null);
 
+  // Training group filter (shown when the organization has Training Groups).
+  private readonly trainingGroups = inject(TrainingGroupService);
+  readonly groupFilter = signal<GroupFilter | null>(null);
+  readonly groupId = signal('');
+
   readonly filteredLearners = computed(() => {
     const search = this.search()
       .trim()
       .toLowerCase();
 
     const status = this.statusFilter();
+    const groupId = this.groupId();
+    const groupMembers = groupId ? this.groupFilter()?.members.get(groupId) : null;
 
     return this.learners()
+      .filter(learner => !groupMembers || groupMembers.has(learner.userId))
       .filter(learner => {
         const matchesSearch =
           !search ||
@@ -548,6 +572,10 @@ export class TestCenterLearnersComponent {
 
     this.loading.set(true);
     this.error.set(null);
+
+    void this.trainingGroups
+      .loadGroupFilter(organizationId)
+      .then(filter => this.groupFilter.set(filter));
 
     this.learnersService
       .getLearners(organizationId)

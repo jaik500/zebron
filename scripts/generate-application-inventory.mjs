@@ -70,6 +70,11 @@ const APPLICATIONS = {
     featureDirectories: ['live'],
   },
 
+  'training-groups': {
+    name: 'Training Groups',
+    featureDirectories: ['training-groups'],
+  },
+
   'test-center': {
     name: 'Test Center',
     featureDirectories: [

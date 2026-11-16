@@ -20,6 +20,7 @@ import { TestProgramService } from '../../../test-center/services/test-program.s
 import { QuizService } from '../../../test-center/services/quiz.service';
 import { TestQuestionService } from '../../../test-center/services/test-question.service';
 import { TestTopicService } from '../../../test-center/services/test-topic.service';
+import { QuizDeleteDialogComponent } from '../../../test-center/components/quiz-delete-dialog.component';
 
 interface QuizForm {
   name: string;
@@ -81,6 +82,7 @@ const QUIZ_TYPES: ReadonlyArray<{ value: QuizType; label: string; icon: string }
     MatInputModule,
     MatMenuModule,
     MatSelectModule,
+    QuizDeleteDialogComponent,
   ],
   template: `
     <div class="mt-16 min-h-screen bg-gray-50">
@@ -485,6 +487,7 @@ const QUIZ_TYPES: ReadonlyArray<{ value: QuizType; label: string; icon: string }
                       <button mat-menu-item type="button" (click)="startNewTopic(quiz)" [disabled]="!quiz.active"><mat-icon>topic</mat-icon><span>Add topic</span></button>
                       <a mat-menu-item routerLink="/admin/test-center/questions" [queryParams]="{ quizId: quiz.id }"><mat-icon>quiz</mat-icon><span>Manage questions</span></a>
                       <a mat-menu-item [routerLink]="['/test-center/quiz-details', quiz.slug]"><mat-icon>visibility</mat-icon><span>View as learner</span></a>
+                      <button mat-menu-item type="button" (click)="quizToDelete.set(quiz)" class="!text-rose-700"><mat-icon class="!text-rose-700">delete</mat-icon><span>Delete quiz</span></button>
                     </mat-menu>
                   </div>
 
@@ -537,6 +540,10 @@ const QUIZ_TYPES: ReadonlyArray<{ value: QuizType; label: string; icon: string }
         </section>
       </main>
     </div>
+
+    @if (quizToDelete(); as quiz) {
+      <app-quiz-delete-dialog [quiz]="quiz" (closed)="quizDeleteClosed(quiz, $event)" />
+    }
   `,
 })
 export class TestCenterAdminComponent implements OnInit {
@@ -553,6 +560,16 @@ export class TestCenterAdminComponent implements OnInit {
 
   /** Zebron quizzes (scope 'platform'), inactive ones included. */
   protected readonly quizzes = signal<Quiz[]>([]);
+  /** The quiz whose Delete dialog is open. */
+  protected readonly quizToDelete = signal<Quiz | null>(null);
+
+  protected quizDeleteClosed(quiz: Quiz, deleted: boolean): void {
+    this.quizToDelete.set(null);
+    if (deleted) {
+      this.quizzes.update((list) => list.filter((item) => item.id !== quiz.id));
+      this.toast.success('Quiz deleted.');
+    }
+  }
   protected readonly topics = signal<TestTopic[]>([]);
   /** Zebron programs (testPrograms with scope 'platform'), inactive ones included. */
   protected readonly programs = signal<TestProgram[]>([]);

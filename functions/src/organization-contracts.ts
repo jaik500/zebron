@@ -1393,6 +1393,7 @@ function applicationName(applicationId: string): string {
     "learning": "Learning (Courses and Test Center)",
     "courses": "Courses",
     "virtual-classroom": "Virtual Classroom",
+    "training-groups": "Training Groups",
     "blog": "Blog",
     "knowledge": "Knowledge Center",
     "configuration": "Configuration",

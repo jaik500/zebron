@@ -878,7 +878,7 @@ export class OrganizationContractComponent implements OnInit {
 
   /**
    * What OK requests: "learning" (Courses, with Test Center) or
-   * "test-center", plus "virtual-classroom" when newly chosen.
+   * "test-center", plus "virtual-classroom" and "training-groups" when newly chosen.
    */
   protected readonly pickerRequest = computed<string[]>(() => {
     const picker = this.capabilityPicker();
@@ -894,6 +894,10 @@ export class OrganizationContractComponent implements OnInit {
 
     if (isNew('virtual-classroom')) {
       requests.push('virtual-classroom');
+    }
+
+    if (isNew('training-groups')) {
+      requests.push('training-groups');
     }
 
     return requests;
@@ -937,6 +941,14 @@ export class OrganizationContractComponent implements OnInit {
           checked: owned('virtual-classroom'),
           locked: owned('virtual-classroom'),
           note: owned('virtual-classroom') ? 'Already part of your organization.' : null,
+        },
+        {
+          id: 'training-groups',
+          name: 'Training Groups',
+          description: 'Cohorts and other groups of learners: dates, capacity, leads, instructors and members.',
+          checked: owned('training-groups'),
+          locked: owned('training-groups'),
+          note: owned('training-groups') ? 'Already part of your organization.' : null,
         },
       ],
     });

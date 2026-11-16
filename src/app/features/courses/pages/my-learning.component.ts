@@ -25,6 +25,7 @@ import {
 import { CourseAssignment, CourseAssignmentService, isOverdue } from '../course-assignment.service';
 import { CourseAccessService } from '../course-access.service';
 import { CourseStore } from '../course.store';
+import { STATUS_LABELS, TrainingGroup, TrainingGroupService, groupStatus } from '../../training-groups/training-group.service';
 
 /** Minutes a week the streak card counts toward. */
 const WEEKLY_GOAL_MINUTES = 60;
@@ -168,6 +169,35 @@ const WEEKLY_GOAL_MINUTES = 60;
                       @if (item.assignment.note && !item.done) {
                         <span class="mt-1 block truncate text-xs italic text-slate-500">“{{ item.assignment.note }}” · {{ item.assignment.assignedByName }}</span>
                       }
+                    </span>
+                    <mat-icon class="shrink-0 text-slate-400" aria-hidden="true">chevron_right</mat-icon>
+                  </a>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (signedIn() && myGroups().length) {
+          <!-- Training groups (cohorts) this learner belongs to -->
+          <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-4" aria-labelledby="my-groups-title">
+            <h2 id="my-groups-title" class="flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <mat-icon class="text-[#007979]" aria-hidden="true">groups</mat-icon>
+              {{ (myGroups().length === 1 ? 'Your training group' : 'Your training groups') | t }}
+            </h2>
+            <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+              @for (group of myGroups(); track group.id) {
+                <li>
+                  <a
+                    [routerLink]="['/partner/org', group.organizationId, 'training-groups', group.id]"
+                    class="flex items-center gap-3 rounded-xl border border-slate-200 p-3 transition hover:border-[#007979]/40 hover:shadow-sm"
+                  >
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-sm font-semibold text-slate-900">{{ group.name }}</span>
+                      <span class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                        <span class="rounded-full px-1.5 font-semibold" [class]="groupBadge(group).classes">{{ groupBadge(group).label | t }}</span>
+                        {{ groupDates(group) }}
+                      </span>
                     </span>
                     <mat-icon class="shrink-0 text-slate-400" aria-hidden="true">chevron_right</mat-icon>
                   </a>
@@ -458,8 +488,41 @@ export class MyLearningComponent {
       untracked(() => {
         void this.store.loadProgress();
         void this.loadAssignments(user?.uid ?? null);
+        void this.loadMyGroups(user?.uid ?? null);
       });
     });
+  }
+
+  // ---------- Training groups (organization pages) ----------
+  private readonly trainingGroups = inject(TrainingGroupService);
+  protected readonly myGroups = signal<TrainingGroup[]>([]);
+
+  /** The learner's own groups; none without Training Groups (or on Zebron's pages). */
+  private async loadMyGroups(userId: string | null): Promise<void> {
+    const organizationId = this.context.organizationId;
+    if (!organizationId || !userId) {
+      this.myGroups.set([]);
+      return;
+    }
+    try {
+      this.myGroups.set(
+        (await this.trainingGroups.listMine(organizationId, userId)).filter((group) => group.manualStatus !== 'cancelled'),
+      );
+    } catch {
+      this.myGroups.set([]);
+    }
+  }
+
+  protected groupBadge(group: TrainingGroup): { label: string; classes: string } {
+    return STATUS_LABELS[groupStatus(group)];
+  }
+
+  protected groupDates(group: TrainingGroup): string {
+    const format = (date: Date) => date.toLocaleDateString(this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    if (!group.startDate && !group.endDate) {
+      return '';
+    }
+    return `${group.startDate ? format(group.startDate) : '…'} – ${group.endDate ? format(group.endDate) : '…'}`;
   }
 
   /** Courses or lessons the organization asked this learner to take. */

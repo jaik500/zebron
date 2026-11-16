@@ -979,9 +979,12 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
   /** Learning describes only what the organization has. */
   private cardDescription(applicationId: string, description: string): string {
     if (applicationId === 'learning' && !this.organizationStore.hasActiveApplication('courses')) {
-      return this.organizationStore.hasActiveApplication('test-center')
-        ? 'Quizzes and exams for your students: practice tests, results and retakes.'
-        : 'Live sessions with an instructor: schedule, register and join.';
+      if (this.organizationStore.hasActiveApplication('test-center')) {
+        return 'Quizzes and exams for your students: practice tests, results and retakes.';
+      }
+      return this.organizationStore.hasActiveApplication('virtual-classroom')
+        ? 'Live sessions with an instructor: schedule, register and join.'
+        : 'Cohorts and other groups of learners going through training together.';
     }
 
     return description;
@@ -1009,9 +1012,12 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
       const organizationId = this.organizationStore.selectedOrganizationId();
 
       if (organizationId) {
-        return this.organizationStore.hasActiveApplication('test-center')
-          ? ['/partner/org', organizationId, 'learn', 'test-center']
-          : ['/partner/org', organizationId, 'live'];
+        if (this.organizationStore.hasActiveApplication('test-center')) {
+          return ['/partner/org', organizationId, 'learn', 'test-center'];
+        }
+        return this.organizationStore.hasActiveApplication('virtual-classroom')
+          ? ['/partner/org', organizationId, 'live']
+          : ['/partner/org', organizationId, 'training-groups'];
       }
     }
 
@@ -1047,7 +1053,9 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
     if (
       card.id === 'learning' &&
       this.access.isStaffOrAbove() &&
-      (this.organizationStore.hasActiveApplication('courses') || this.organizationStore.hasActiveApplication('virtual-classroom'))
+      (this.organizationStore.hasActiveApplication('courses') ||
+        this.organizationStore.hasActiveApplication('virtual-classroom') ||
+        this.organizationStore.hasActiveApplication('training-groups'))
     ) {
       return ['/partner/org', this.organizationStore.selectedOrganizationId(), 'learning', 'manage'];
     }

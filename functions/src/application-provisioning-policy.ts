@@ -118,6 +118,18 @@ export const APPLICATION_PROVISIONING_POLICIES = {
   },
 
   /**
+   * Training Groups: cohorts and other groups of learners (a Learning
+   * capability). Works on its own; groups can follow courses later.
+   */
+  "training-groups": {
+    applicationId: "training-groups",
+    provisioningStrategy: "default",
+    autoProvision: true,
+    enabled: true,
+    dependencies: ["core"],
+  },
+
+  /**
    * Knowledge application.
    */
   // On demand: organizations get the blog only after requesting it.

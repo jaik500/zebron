@@ -65,6 +65,7 @@ interface RoleGroup {
 }
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { GroupFilter, TrainingGroupService } from '../../../training-groups/training-group.service';
 
 @Component({
   selector: 'app-organization-management',
@@ -316,6 +317,34 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
           }
 
           </div>
+
+          <!-- APPLICATION SETTINGS: the same pages as the gears on the dashboard cards -->
+          @if (applicationSettings().length) {
+            <section class="mb-8" aria-labelledby="application-settings-title">
+              <h3 id="application-settings-title" class="text-lg font-bold text-gray-900">{{ 'Application settings' | t }}</h3>
+              <p class="mt-1 text-sm text-gray-500">{{ 'Manage each application your organization uses. These are the same pages as the gear on each dashboard card.' | t }}</p>
+
+              <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                @for (item of applicationSettings(); track item.id) {
+                  <a
+                    [routerLink]="item.route"
+                    class="flex h-full items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
+                  >
+                    <span class="flex min-w-0 items-center gap-3">
+                      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-[#007979]">
+                        <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+                      </span>
+                      <span class="min-w-0">
+                        <span class="block font-semibold text-gray-900">{{ item.title | t }}</span>
+                        <span class="mt-0.5 block text-sm text-gray-600">{{ item.description | t }}</span>
+                      </span>
+                    </span>
+                    <mat-icon class="shrink-0 text-[#007979]" aria-hidden="true">settings</mat-icon>
+                  </a>
+                }
+              </div>
+            </section>
+          }
 
           <!-- DASHBOARD BANNERS: managers and above -->
           @if (canManageAnnouncements()) {
@@ -834,7 +863,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
             @if (membersDirectoryExpanded()) {
               <div id="organization-members-directory-panel" class="border-t border-gray-100 p-5 sm:p-6">
                 <div class="mb-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-                  <div>
+                  <div class="flex flex-wrap gap-x-4">
 
                     <mat-form-field appearance="outline" class="zb-field w-full sm:max-w-xs zb-search">
                       <mat-label>{{ 'Search regular members' | t }}</mat-label>
@@ -847,6 +876,18 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                       [placeholder]="'Search by name or email' | t"
                     />
                     </mat-form-field>
+
+                    @if (groupFilter(); as filter) {
+                      <mat-form-field appearance="outline" class="zb-field w-full sm:max-w-xs">
+                        <mat-label>{{ 'Training group' | t }}</mat-label>
+                        <mat-select [value]="groupId()" (selectionChange)="groupId.set($event.value)">
+                          <mat-option value="">{{ 'All training groups' | t }}</mat-option>
+                          @for (group of filter.groups; track group.id) {
+                            <mat-option [value]="group.id">{{ group.name }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                    }
                   </div>
                   <p class="text-sm text-gray-500">{{ '{0} regular member(s)' | t: [filteredRegularMembers().length] }}</p>
                 </div>
@@ -964,6 +1005,68 @@ export class OrganizationManagementComponent implements OnInit {
 
   /** Contract & Billing: managers and above. */
   protected readonly canManageBilling = computed(() => this.access.can('billing.manage'));
+
+  /**
+   * Settings for each active application the person can manage. Same pages
+   * and the same role rules as the gears on the dashboard cards
+   * (PartnerAdminComponent.settingsRoute); keep the two in step.
+   */
+  protected readonly applicationSettings = computed(() => {
+    const organizationId = this.organizationStore.selectedOrganizationId();
+    if (!organizationId) {
+      return [];
+    }
+    const active = (id: string) => this.organizationStore.hasActiveApplication(id);
+    const base = ['/partner/org', organizationId];
+    const items: { id: string; icon: string; title: string; description: string; route: string[] }[] = [];
+
+    if (this.access.isStaffOrAbove() && (active('courses') || active('virtual-classroom') || active('training-groups'))) {
+      items.push({
+        id: 'learning',
+        icon: 'school',
+        title: 'Learning administration',
+        description: 'Courses, assignments, team progress, the Virtual Classroom and Training Groups.',
+        route: [...base, 'learning', 'manage'],
+      });
+    }
+    if (this.access.isStaffOrAbove() && active('training-groups')) {
+      items.push({
+        id: 'training-groups',
+        icon: 'groups',
+        title: 'Training Groups',
+        description: 'Cohorts: dates, capacity, leads, instructors and members.',
+        route: [...base, 'training-groups'],
+      });
+    }
+    if (this.access.can('testCenter.settings') && active('test-center')) {
+      items.push({
+        id: 'test-center',
+        icon: 'quiz',
+        title: 'Test Center',
+        description: 'Programs, quizzes, topics, questions and linked Zebron quizzes.',
+        route: [...base, 'test-center'],
+      });
+    }
+    if (this.access.can('knowledge.manage') && active('knowledge')) {
+      items.push({
+        id: 'knowledge',
+        icon: 'menu_book',
+        title: 'Knowledge Center',
+        description: 'Write, review and publish your organization\u0027s articles.',
+        route: [...base, 'knowledge', 'manage'],
+      });
+    }
+    if (this.access.isManagerOrAbove() && active('blog')) {
+      items.push({
+        id: 'blog',
+        icon: 'article',
+        title: 'Blog',
+        description: 'Review, schedule and publish posts.',
+        route: [...base, 'blog', 'manage'],
+      });
+    }
+    return items;
+  });
 
   /** Organization mailbox: managers and above. */
   /** Mailbox is on demand: shown once the organization has it. */
@@ -1111,10 +1214,18 @@ export class OrganizationManagementComponent implements OnInit {
     });
   });
 
+  // Training group filter on Organization Members (when the organization has Training Groups).
+  private readonly trainingGroups = inject(TrainingGroupService);
+  protected readonly groupFilter = signal<GroupFilter | null>(null);
+  protected readonly groupId = signal('');
+
   protected readonly filteredRegularMembers = computed(() => {
     const search = this.regularMemberSearch().trim().toLowerCase();
+    const groupId = this.groupId();
+    const groupMembers = groupId ? this.groupFilter()?.members.get(groupId) : null;
     return this.members()
       .filter((member) => member.role === 'org_member')
+      .filter((member) => !groupMembers || groupMembers.has(member.userId))
       .filter((member) => !search || this.memberSearchText(member).includes(search))
       .sort((a, b) => this.memberName(a).localeCompare(this.memberName(b)));
   });
@@ -1156,6 +1267,10 @@ export class OrganizationManagementComponent implements OnInit {
 
     this.membersLoading.set(true);
     this.memberError.set('');
+
+    if (this.organizationStore.hasActiveApplication('training-groups') && this.access.isStaffOrAbove()) {
+      void this.trainingGroups.loadGroupFilter(organizationId).then((filter) => this.groupFilter.set(filter));
+    }
 
     try {
       const [result] = await Promise.all([

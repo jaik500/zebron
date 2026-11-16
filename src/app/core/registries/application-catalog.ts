@@ -71,6 +71,10 @@ const CONTROL_DETAILS: Record<string, ApplicationControlDetails> = {
     keywords: ['virtual classroom', 'live', 'live sessions', 'classes', 'polls', 'video'],
     adminRoute: null,
   },
+  'training-groups': {
+    keywords: ['training groups', 'cohorts', 'cohort', 'bootcamp', 'groups', 'enrollment', 'instructors', 'capacity'],
+    adminRoute: null,
+  },
   'test-center': {
     keywords: ['test', 'test center', 'testing', 'courses', 'questions', 'question banks', 'topics', 'assessments', 'practice', 'results', 'progress'],
     adminRoute: '/test-center',

@@ -1033,6 +1033,41 @@ export const routes: Routes = [
         loadComponent: () => import('./features/live/live-sessions.component').then((m) => m.LiveSessionsComponent),
     },
     // -----------------------------------------------------
+    // TRAINING GROUPS (cohorts; staff and above see all, members their own)
+    // -----------------------------------------------------
+    {
+        path: 'partner/org/:organizationId/training-groups',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            applicationAccessGuard,
+            featureGuard,
+        ],
+        data: {
+            applicationId: 'training-groups',
+            featureKey: 'training-groups',
+            title: 'Partner | Training Groups',
+            organizationHeader: true,
+        },
+        loadComponent: () => import('./features/training-groups/training-groups.component').then((m) => m.TrainingGroupsComponent),
+    },
+    {
+        path: 'partner/org/:organizationId/training-groups/:groupId',
+        canActivate: [
+            authGuard,
+            partnerOrganizationGuard,
+            applicationAccessGuard,
+            featureGuard,
+        ],
+        data: {
+            applicationId: 'training-groups',
+            featureKey: 'training-groups',
+            title: 'Partner | Training Group',
+            organizationHeader: true,
+        },
+        loadComponent: () => import('./features/training-groups/training-group-detail.component').then((m) => m.TrainingGroupDetailComponent),
+    },
+    // -----------------------------------------------------
     // LEARNING ADMINISTRATION (Courses, Test Center, Virtual Classroom; staff and above)
     // -----------------------------------------------------
     {

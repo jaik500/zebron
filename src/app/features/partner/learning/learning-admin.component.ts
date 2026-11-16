@@ -13,6 +13,7 @@ import { Course } from '../../courses/course.model';
 import { OrganizationContextStore } from '../../organizations/stores/organization-context.store';
 import { QuizService } from '../../test-center/services/quiz.service';
 import { LiveSessionService, sessionEnd } from '../../live/live-session.service';
+import { TrainingGroupService, groupStatus } from '../../training-groups/training-group.service';
 
 /**
  * Learning administration: one page with a card for each capability the
@@ -54,7 +55,7 @@ import { LiveSessionService, sessionEnd } from '../../live/live-session.service'
         </div>
       </header>
 
-      <div class="mx-auto grid grid-cols-1 max-w-6xl gap-4 px-4 py-6 sm:px-6 md:grid-cols-2 lg:px-8" [class]="cardCount() === 3 ? 'xl:grid-cols-3' : ''">
+      <div class="mx-auto grid grid-cols-1 max-w-6xl gap-4 px-4 py-6 sm:px-6 md:grid-cols-2 lg:px-8" [class]="cardCount() >= 3 ? 'xl:grid-cols-3' : ''">
         <!-- ================= COURSES ================= -->
         @if (hasCourses()) {
         <section class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="courses-card-title">
@@ -189,6 +190,38 @@ import { LiveSessionService, sessionEnd } from '../../live/live-session.service'
             </div>
           </section>
         }
+
+        @if (hasGroups()) {
+          <section class="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="groups-card-title">
+            <div class="flex items-center gap-3">
+              <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-[#007979]"><mat-icon aria-hidden="true">groups</mat-icon></span>
+              <div>
+                <h2 id="groups-card-title" class="text-lg font-semibold text-slate-900">{{ 'Training Groups' | t }}</h2>
+                <p class="text-sm text-slate-500">{{ 'Cohorts: dates, capacity, leads, instructors and members.' | t }}</p>
+              </div>
+            </div>
+
+            <dl class="mt-4 grid grid-cols-2 gap-2 text-center">
+              <div class="rounded-xl bg-slate-50 p-3">
+                <dt class="text-xs text-slate-500">{{ 'Active or upcoming' | t }}</dt>
+                <dd class="text-2xl font-semibold text-slate-900">{{ loadingGroups() ? '–' : currentGroups() }}</dd>
+              </div>
+              <div class="rounded-xl bg-slate-50 p-3">
+                <dt class="text-xs text-slate-500">{{ 'Learners in them' | t }}</dt>
+                <dd class="text-2xl font-semibold text-slate-900">{{ loadingGroups() ? '–' : groupLearners() }}</dd>
+              </div>
+            </dl>
+
+            <p class="mt-3 text-xs text-slate-500">{{ 'Managers create groups and lead them; instructors see their groups\u0027 members.' | t }}</p>
+
+            <div class="mt-auto flex flex-wrap gap-2 pt-4">
+              <a [routerLink]="['/partner/org', organizationId, 'training-groups']" class="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]">
+                <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">groups</mat-icon>
+                {{ 'Manage training groups' | t }}
+              </a>
+            </div>
+          </section>
+        }
       </div>
     </main>
   `,
@@ -216,7 +249,14 @@ export class LearningAdminComponent implements OnInit {
   protected readonly hasCourses = signal(false);
   protected readonly hasTestCenter = signal(false);
   protected readonly hasLive = signal(false);
-  protected readonly cardCount = computed(() => [this.hasCourses(), this.hasTestCenter(), this.hasLive()].filter(Boolean).length);
+  private readonly groupService = inject(TrainingGroupService);
+  protected readonly hasGroups = signal(false);
+  protected readonly loadingGroups = signal(true);
+  protected readonly currentGroups = signal(0);
+  protected readonly groupLearners = signal(0);
+  protected readonly cardCount = computed(
+    () => [this.hasCourses(), this.hasTestCenter(), this.hasLive(), this.hasGroups()].filter(Boolean).length,
+  );
   protected readonly upcomingSessions = signal(0);
   protected readonly upcomingRegistrations = signal(0);
   protected readonly loadingLive = signal(true);
@@ -241,9 +281,10 @@ export class LearningAdminComponent implements OnInit {
     this.hasCourses.set(this.organizationStore.hasActiveApplication('courses'));
     this.hasTestCenter.set(this.organizationStore.hasActiveApplication('test-center'));
     this.hasLive.set(this.organizationStore.hasActiveApplication('virtual-classroom'));
+    this.hasGroups.set(this.organizationStore.hasActiveApplication('training-groups'));
 
     // Only the Test Center: its settings are the whole administration.
-    if (!this.hasCourses() && !this.hasLive()) {
+    if (!this.hasCourses() && !this.hasLive() && !this.hasGroups()) {
       await this.router.navigate(['/partner/org', this.organizationId, 'test-center'], { replaceUrl: true });
       return;
     }
@@ -256,6 +297,23 @@ export class LearningAdminComponent implements OnInit {
     }
     if (this.hasLive()) {
       void this.loadLive();
+    }
+    if (this.hasGroups()) {
+      void this.loadGroups();
+    }
+  }
+
+  private async loadGroups(): Promise<void> {
+    try {
+      const current = (await this.groupService.list(this.organizationId)).filter((group) =>
+        ['active', 'upcoming'].includes(groupStatus(group)),
+      );
+      this.currentGroups.set(current.length);
+      this.groupLearners.set(current.reduce((total, group) => total + group.memberCount, 0));
+    } catch (error) {
+      this.logger.error('LearningAdminComponent', 'Could not count training groups.', error);
+    } finally {
+      this.loadingGroups.set(false);
     }
   }
 
