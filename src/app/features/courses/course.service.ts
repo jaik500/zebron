@@ -181,6 +181,21 @@ export class CourseService {
             return { type: 'document', url: text(block['url']), title: text(block['title']), caption: text(block['caption']) };
           case 'image':
             return { type: 'image', url: text(block['url']), alt: text(block['alt']), caption: text(block['caption']) };
+          case 'code':
+            return {
+              type: 'code',
+              id: text(block['id']) || 'code',
+              language: 'javascript',
+              title: text(block['title']),
+              instructions: text(block['instructions']),
+              starter: text(block['starter']),
+              tests: (Array.isArray(block['tests']) ? block['tests'] : [])
+                .filter((test): test is Record<string, unknown> => !!test && typeof test === 'object')
+                .map((test) => ({ name: text(test['name']), code: text(test['code']) }))
+                .filter((test) => test.code.trim()),
+              hints: strings(block['hints']),
+              solution: text(block['solution']),
+            };
         case 'check': {
   // New format: multiple questions in one Quick Check block.
   if (Array.isArray(block['questions'])) {

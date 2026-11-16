@@ -113,6 +113,13 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/courses/pages/my-learning.component').then((m) => m.MyLearningComponent),
             },
             {
+                // Zebron Coding Lab: projects and exercises (lessons run code in place).
+                path: 'coding-lab',
+                canActivate: [authGuard],
+                data: { title: 'Zebron | Coding Lab' },
+                loadComponent: () => import('./features/coding-lab/coding-lab-page.component').then((m) => m.CodingLabPageComponent),
+            },
+            {
                 path: 'catalog',
                 data: { title: 'Zebron | Course catalog' },
                 loadComponent: () => import('./features/courses/pages/course-catalog.component').then((m) => m.CourseCatalogComponent),
@@ -1139,6 +1146,12 @@ export const routes: Routes = [
                 path: '',
                 pathMatch: 'full',
                 loadComponent: () => import('./features/courses/pages/my-learning.component').then((m) => m.MyLearningComponent),
+            },
+            {
+                // Zebron Coding Lab: projects and exercises (lessons run code in place).
+                path: 'coding-lab',
+                data: { title: 'Partner | Coding Lab' },
+                loadComponent: () => import('./features/coding-lab/coding-lab-page.component').then((m) => m.CodingLabPageComponent),
             },
             {
                 path: 'catalog',

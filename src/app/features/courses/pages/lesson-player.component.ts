@@ -23,14 +23,20 @@ import { PageTitleService } from '../../../core/services/page-title.service';
 import { renderKnowledgeContent } from '../../partner/knowledge/knowledge-content.util';
 import { useLearningHeaderTitle } from '../../test-center/learner-route';
 
+import { CodeLabComponent } from '../../coding-lab/code-lab.component';
+import { CodeExercise, CODE_LANGUAGES } from '../../coding-lab/code-lab.model';
 import { CourseHeaderComponent } from '../components/course-header.component';
 import { LessonMediaComponent } from '../components/lesson-media.component';
 import { courseContextFromRoute, LessonBlock } from '../course.model';
 import { CourseStore } from '../course.store';
 
 /** A lesson block prepared for display. */
+/** Text, or a runnable code example (```js fences) inside a text section. */
+type TextPart = { kind: 'html'; html: string } | { kind: 'example'; exercise: CodeExercise };
+
 type ViewBlock =
-  | { kind: 'text'; html: string }
+  | { kind: 'text'; html: string; parts: TextPart[] }
+  | { kind: 'code'; id: string; exercise: CodeExercise }
   | { kind: 'tip'; html: string }
   | {
       kind: 'media';
@@ -68,6 +74,7 @@ type ViewBlock =
     TranslatePipe,
     CourseHeaderComponent,
     LessonMediaComponent,
+    CodeLabComponent,
   ],
   template: `
     <main class="mt-16 min-h-screen w-full min-w-0 overflow-x-clip bg-slate-50">
@@ -196,7 +203,7 @@ type ViewBlock =
 
               <div class="mt-4 w-full min-w-0 sm:mt-5">
                 <mat-accordion class="block w-full min-w-0" [multi]="true">
-                  @for (block of blocks(); track $index) {
+                  @for (block of blocks(); track $index; let blockIndex = $index) {
                     <mat-expansion-panel
                       [attr.id]="'lesson-block-' + $index"
                       class="!m-0 !w-full !min-w-0 !scroll-mt-32 !overflow-hidden !rounded-none !border-0 !border-t !border-slate-200 !bg-white !shadow-none transition-colors last:!border-b [&_.mat-expansion-panel-body]:!p-0"
@@ -253,6 +260,8 @@ type ViewBlock =
 
                       <div class="ml-[18px] min-w-0 border-l-2 border-teal-200 pb-5 pt-3 sm:ml-[26px] sm:pt-4">
                         @if (block.kind === 'text') {
+                          @for (part of block.parts; track $index; let partIndex = $index) {
+                            @if (part.kind === 'html') {
                           <div
                             class="min-w-0 break-words pl-2 pr-4 [overflow-wrap:anywhere] text-[1.0625rem] leading-7 text-slate-800 sm:pl-3 sm:pr-6
                               [&_.kc-table-wrap]:!-ml-2 [&_.kc-table-wrap]:!-mr-4 [&_.kc-table-wrap]:!mb-4 [&_.kc-table-wrap]:!rounded-none [&_.kc-table-wrap]:!border-x-0
@@ -272,8 +281,28 @@ type ViewBlock =
                               [&_pre]:-ml-2 [&_pre]:-mr-4 [&_pre]:mb-4 [&_pre]:overflow-x-auto [&_pre]:bg-slate-900 [&_pre]:py-3 [&_pre]:pl-2 [&_pre]:pr-4 [&_pre]:text-slate-50 sm:[&_pre]:-ml-3 sm:[&_pre]:-mr-6 sm:[&_pre]:pl-3 sm:[&_pre]:pr-6
                               [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-inherit
                               [&>*:last-child]:mb-0"
-                            [innerHTML]="blockContentHtml(block, $index)"
+                            [innerHTML]="partHtml(block, part.html, partIndex, blockIndex)"
                           ></div>
+                            } @else if (part.kind === 'example') {
+                              <!-- Runnable example: Run opens it in the Coding Lab panel -->
+                              @if (openExamples().has(blockIndex + ':' + partIndex)) {
+                                <div class="my-3 pl-2 pr-4 sm:pl-3 sm:pr-6">
+                                  <app-code-lab [exercise]="part.exercise" mode="example" [autoRun]="true" [editorHeight]="exampleHeight(part.exercise.starter)" [labPath]="labPath()" />
+                                </div>
+                              } @else {
+                                <div class="group relative mb-4 -ml-2 -mr-4 bg-slate-900 sm:-ml-3 sm:-mr-6">
+                                  <pre class="m-0 overflow-x-auto py-3 pl-2 pr-24 text-[0.9rem] leading-6 text-slate-50 sm:pl-3"><code>{{ part.exercise.starter }}</code></pre>
+                                  <button type="button" (click)="openExample(blockIndex, partIndex)" class="absolute right-2 top-2 inline-flex h-8 items-center gap-1 rounded-md bg-[#12bfc3] px-2.5 text-xs font-bold text-[#032d42] shadow hover:bg-[#3fd3d6] sm:right-4" [attr.aria-label]="'Run this example' | t">
+                                    <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">play_arrow</mat-icon>{{ 'Run' | t }}
+                                  </button>
+                                </div>
+                              }
+                            }
+                          }
+                        } @else if (block.kind === 'code') {
+                          <div class="pl-2 pr-4 sm:pl-3 sm:pr-6">
+                            <app-code-lab [exercise]="block.exercise" [saveKey]="exerciseKey(block.id)" [labPath]="labPath()" (passedChange)="markExercisePassed(block.id)" />
+                          </div>
                         } @else if (block.kind === 'tip') {
                           <aside
                             class="flex min-w-0 gap-2 border-y border-amber-100 bg-amber-50 py-3 pl-2 pr-4 text-amber-900 sm:gap-3 sm:py-4 sm:pl-3 sm:pr-6"
@@ -502,7 +531,21 @@ export class LessonPlayerComponent {
     return (this.store.lesson()?.blocks ?? []).map((block: LessonBlock, index): ViewBlock => {
       switch (block.type) {
         case 'text':
-          return { kind: 'text', html: renderKnowledgeContent(block.text) };
+          return { kind: 'text', html: renderKnowledgeContent(block.text), parts: textParts(block.text) };
+        case 'code':
+          return {
+            kind: 'code',
+            id: block.id,
+            exercise: {
+              language: block.language,
+              title: block.title,
+              instructions: block.instructions,
+              starter: block.starter,
+              tests: block.tests,
+              hints: block.hints,
+              solution: block.solution,
+            },
+          };
         case 'tip':
           return { kind: 'tip', html: renderKnowledgeContent(block.text) };
         case 'video':
@@ -724,6 +767,10 @@ export class LessonPlayerComponent {
       return block.caption || 'Image';
     }
 
+    if (block.kind === 'code') {
+      return block.exercise.title || 'Coding exercise';
+    }
+
     return 'Quick check';
   }
 
@@ -767,10 +814,41 @@ export class LessonPlayerComponent {
         )
       );
     }
+    if (block.kind === 'code' && this.passedExercises().has(block.id)) {
+      return true;
+    }
     if (this.expandedBlocks().has(index)) {
       return false;
     }
     return this.lessonDone() || this.visitedBlocks().has(index);
+  }
+
+  // ---------- Coding Lab ----------
+  protected readonly openExamples = signal<Set<string>>(new Set());
+  protected readonly passedExercises = signal<Set<string>>(new Set());
+  protected readonly labPath = computed(() => `${this.context.basePath}/coding-lab`);
+
+  protected openExample(blockIndex: number, partIndex: number): void {
+    this.openExamples.update((open) => new Set(open).add(`${blockIndex}:${partIndex}`));
+  }
+
+  protected exampleHeight(code: string): string {
+    const lines = Math.min(24, Math.max(4, code.split('\n').length + 1));
+    return `${(lines * 1.6 + 1.5).toFixed(1)}em`;
+  }
+
+  /** Where a learner's work on a lesson exercise is saved. */
+  protected exerciseKey(blockId: string): string {
+    return `${this.store.course()?.id ?? 'course'}__${this.store.lesson()?.id ?? 'lesson'}__${blockId}`;
+  }
+
+  protected markExercisePassed(blockId: string): void {
+    this.passedExercises.update((passed) => new Set(passed).add(blockId));
+  }
+
+  /** The first part loses the heading shown in the section header. */
+  protected partHtml(block: Extract<ViewBlock, { kind: 'text' }>, html: string, partIndex: number, index: number): string {
+    return partIndex === 0 ? this.blockContentHtml({ ...block, html }, index) : html;
   }
 
   protected checkAnswerKey(blockIndex: number, questionIndex: number): string {
@@ -848,4 +926,49 @@ export class LessonPlayerComponent {
       );
     }
   }
+}
+
+/** Fence languages that get a Run button (the Coding Lab's languages). */
+const RUNNABLE = new Map(CODE_LANGUAGES.flatMap((language) => language.fence.map((fence) => [fence, language.value] as const)));
+
+/**
+ * Split lesson text into rendered text and runnable examples: \`\`\`js and
+ * \`\`\`javascript fences become examples; everything else renders as before.
+ */
+function textParts(text: string): TextPart[] {
+  const parts: TextPart[] = [];
+  const pending: string[] = [];
+  const flush = () => {
+    if (pending.join('').trim()) {
+      parts.push({ kind: 'html', html: renderKnowledgeContent(pending.join('\n')) });
+    }
+    pending.length = 0;
+  };
+
+  const lines = text.split('\n');
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    const fence = /^\s*```\s*([A-Za-z]+)?\s*$/.exec(line);
+    if (!fence) {
+      pending.push(line);
+      continue;
+    }
+    // Find the closing fence.
+    let end = index + 1;
+    while (end < lines.length && !/^\s*```\s*$/.test(lines[end])) end++;
+    const language = RUNNABLE.get((fence[1] ?? '').toLowerCase());
+    if (language && end < lines.length) {
+      flush();
+      const code = lines.slice(index + 1, end).join('\n');
+      parts.push({
+        kind: 'example',
+        exercise: { language, title: '', instructions: '', starter: code, tests: [], hints: [], solution: '' },
+      });
+    } else {
+      pending.push(...lines.slice(index, Math.min(end + 1, lines.length)));
+    }
+    index = end;
+  }
+  flush();
+  return parts.length ? parts : [{ kind: 'html', html: renderKnowledgeContent(text) }];
 }

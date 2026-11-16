@@ -92,6 +92,16 @@ const CONTENT_SECURITY_POLICY = [
   "worker-src 'self' blob:",
 ].join('; ');
 
+/**
+ * Coding Lab workers (public/coding-lab/*.js) run learners' code. They may
+ * evaluate code but reach no network: learners' code can't send data anywhere.
+ */
+const CODING_LAB_WORKER_POLICY = [
+  "default-src 'none'",
+  "script-src 'self' 'unsafe-eval'",
+  "connect-src 'none'",
+].join('; ');
+
 app.use((_req, res, next) => {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -99,7 +109,10 @@ app.use((_req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), usb=(), magnetometer=(), gyroscope=(), payment=(self)');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  res.setHeader('Content-Security-Policy-Report-Only', CONTENT_SECURITY_POLICY);
+  res.setHeader(
+    'Content-Security-Policy-Report-Only',
+    _req.path.startsWith('/coding-lab/') ? CODING_LAB_WORKER_POLICY : CONTENT_SECURITY_POLICY,
+  );
   res.removeHeader('X-Powered-By');
   next();
 });

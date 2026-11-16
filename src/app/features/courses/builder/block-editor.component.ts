@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,8 +8,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
+import { CodeRunnerService } from '../../coding-lab/code-runner.service';
+import { TestResult } from '../../coding-lab/code-lab.model';
 import { LessonMediaComponent } from '../components/lesson-media.component';
-import { formatStartTime, LessonBlock, MEDIA_PROVIDERS, parseStartTime, resolveMedia } from '../course.model';
+import { formatStartTime, LessonBlock, LessonCodeBlock, MEDIA_PROVIDERS, parseStartTime, resolveMedia } from '../course.model';
 
 export const BLOCK_META: Record<LessonBlock['type'], { label: string; icon: string }> = {
   text: { label: 'Text', icon: 'notes' },
@@ -19,6 +21,7 @@ export const BLOCK_META: Record<LessonBlock['type'], { label: string; icon: stri
   image: { label: 'Image', icon: 'image' },
   tip: { label: 'Tip', icon: 'lightbulb' },
   check: { label: 'Quick check', icon: 'quiz' },
+  code: { label: 'Coding exercise', icon: 'terminal' },
 };
 
 const MAX_OPTIONS = 6;
@@ -139,6 +142,69 @@ const MAX_QUESTIONS = 20;
             }
           </div>
         }
+        @case ('code') {
+          <div class="flex flex-col gap-3">
+            <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+              <mat-label>{{ 'Exercise title' | t }}</mat-label>
+              <input matInput maxlength="120" [value]="code().title" (input)="set({ title: value($event) })" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+              <mat-label>{{ 'Instructions' | t }}</mat-label>
+              <textarea matInput rows="3" [value]="code().instructions" (input)="set({ instructions: value($event) })"></textarea>
+            </mat-form-field>
+            <p class="-mt-2 text-xs text-slate-500">{{ 'Language: JavaScript. Learners run it in their browser; it can\\u0027t reach the web page or other websites.' | t }}</p>
+
+            <label class="flex flex-col gap-1">
+              <span class="text-xs font-semibold text-slate-600">{{ 'Starting code (what learners see first)' | t }}</span>
+              <textarea class="code-input" rows="8" spellcheck="false" [value]="code().starter" (input)="set({ starter: value($event) })"></textarea>
+            </label>
+
+            <fieldset class="flex flex-col gap-2 rounded-xl border border-slate-200 p-3">
+              <legend class="px-1 text-sm font-bold text-slate-700">{{ 'Checks' | t }}</legend>
+              <p class="text-xs text-slate-500">{{ 'Each check runs after the learner\\u0027s code and fails by throwing. Use assert(condition, message), assertEqual(actual, expected) and __output() (what the code printed).' | t }}</p>
+              @for (test of code().tests; track $index; let testIndex = $index) {
+                <div class="flex flex-col gap-1.5 rounded-lg bg-slate-50 p-2">
+                  <div class="flex items-center gap-2">
+                    <input class="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm" [value]="test.name" [placeholder]="'What it checks, e.g. sum([1, 2]) returns 3' | t" (input)="setTest(testIndex, { name: value($event) })" [attr.aria-label]="'Check description' | t" />
+                    <button type="button" class="icon-btn hover:!text-rose-600" (click)="removeTest(testIndex)" [attr.aria-label]="'Remove check' | t" [matTooltip]="'Remove check' | t"><mat-icon>delete</mat-icon></button>
+                  </div>
+                  <textarea class="code-input" rows="2" spellcheck="false" [value]="test.code" placeholder="assertEqual(sum([1, 2]), 3);" (input)="setTest(testIndex, { code: value($event) })" [attr.aria-label]="'Check code' | t"></textarea>
+                  @if (testResults()[testIndex]; as result) {
+                    <p class="text-xs font-semibold" [class]="result.passed ? 'text-emerald-700' : 'text-rose-700'">
+                      {{ (result.passed ? 'The solution passes this check.' : 'The solution fails this check:') | t }} {{ result.passed ? '' : result.message }}
+                    </p>
+                  }
+                </div>
+              }
+              <button type="button" class="self-start text-sm font-semibold text-[#007979] hover:underline" (click)="addTest()">+ {{ 'Add a check' | t }}</button>
+            </fieldset>
+
+            <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
+              <mat-label>{{ 'Hints (one per line, shown one at a time)' | t }}</mat-label>
+              <textarea matInput rows="3" [value]="hintsText()" (input)="setHints(value($event))"></textarea>
+            </mat-form-field>
+
+            <label class="flex flex-col gap-1">
+              <span class="text-xs font-semibold text-slate-600">{{ 'Solution (optional; learners can see it after trying)' | t }}</span>
+              <textarea class="code-input" rows="6" spellcheck="false" [value]="code().solution" (input)="set({ solution: value($event) })"></textarea>
+            </label>
+
+            @if (code().tests.length) {
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" (click)="testSolution()" [disabled]="testing() || !code().solution.trim()" class="inline-flex h-9 items-center gap-1 rounded-lg border border-[#007979] px-3 text-sm font-semibold text-[#007979] hover:bg-teal-50 disabled:opacity-50">
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">fact_check</mat-icon>
+                  {{ (testing() ? 'Running…' : 'Run the checks on the solution') | t }}
+                </button>
+                @if (!code().solution.trim()) {
+                  <span class="text-xs text-slate-500">{{ 'Add a solution to test your checks.' | t }}</span>
+                }
+                @if (testError()) {
+                  <span class="text-xs text-rose-700">{{ testError() }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
         @default {
           <!-- Video, audio, PDF or slides, image -->
           <div class="flex flex-col gap-3">
@@ -223,6 +289,24 @@ const MAX_QUESTIONS = 20;
         background: #f1f5f9;
         color: #0f172a;
       }
+      .code-input {
+        width: 100%;
+        border-radius: 0.5rem;
+        border: 1px solid #e2e8f0;
+        background: #0b1f2a;
+        color: #f1f5f9;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.8125rem;
+        line-height: 1.55;
+        padding: 0.5rem 0.75rem;
+        tab-size: 2;
+        white-space: pre;
+        overflow-x: auto;
+      }
+      .code-input:focus {
+        outline: 2px solid #14b8a6;
+        outline-offset: 1px;
+      }
       .icon-btn:disabled {
         opacity: 0.35;
         cursor: not-allowed;
@@ -248,6 +332,52 @@ export class BlockEditorComponent {
   protected readonly formattingHint = 'Formatting: **bold**, *italic*, # heading, - list item, 1. numbered item, [link](https://…)';
 
   protected readonly meta = computed(() => BLOCK_META[this.block()?.type] ?? BLOCK_META.text);
+
+  // ---------- Coding exercise ----------
+  private readonly runner = inject(CodeRunnerService);
+  protected readonly testing = signal(false);
+  protected readonly testResults = signal<TestResult[]>([]);
+  protected readonly testError = signal('');
+
+  protected readonly code = computed<LessonCodeBlock>(() => {
+    const block = this.block();
+    return block.type === 'code'
+      ? block
+      : { type: 'code', id: '', language: 'javascript', title: '', instructions: '', starter: '', tests: [], hints: [], solution: '' };
+  });
+
+  protected hintsText(): string {
+    return this.code().hints.join('\n');
+  }
+
+  protected setHints(text: string): void {
+    this.set({ hints: text.split('\n') });
+  }
+
+  protected setTest(index: number, changes: Partial<{ name: string; code: string }>): void {
+    this.testResults.set([]);
+    this.set({ tests: this.code().tests.map((test, position) => (position === index ? { ...test, ...changes } : test)) });
+  }
+
+  protected addTest(): void {
+    this.set({ tests: [...this.code().tests, { name: '', code: '' }] });
+  }
+
+  protected removeTest(index: number): void {
+    this.testResults.set([]);
+    this.set({ tests: this.code().tests.filter((_, position) => position !== index) });
+  }
+
+  /** Run the checks against the solution, so authors know they work. */
+  protected async testSolution(): Promise<void> {
+    const block = this.code();
+    this.testing.set(true);
+    this.testError.set('');
+    const result = await this.runner.run(block.language, block.solution, { tests: block.tests });
+    this.testing.set(false);
+    this.testResults.set(result.tests);
+    this.testError.set(result.error ? result.error.split('\n')[0] : '');
+  }
 
   protected readonly mediaKind = computed(() => {
     const type = this.block().type;

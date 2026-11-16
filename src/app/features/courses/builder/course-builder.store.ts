@@ -151,6 +151,18 @@ export function emptyBlock(type: LessonBlockType): LessonBlock {
         type: 'check',
         questions: [{ question: '', options: ['', ''], answer: 0, explanation: '' }],
       };
+    case 'code':
+      return {
+        type: 'code',
+        id: `code-${Math.random().toString(36).slice(2, 10)}`,
+        language: 'javascript',
+        title: '',
+        instructions: '',
+        starter: '// Write your code here\n',
+        tests: [],
+        hints: [],
+        solution: '',
+      };
   }
 }
 
@@ -198,6 +210,14 @@ function publishProblems(details: DraftDetails, modules: DraftModule[], lessonMa
           }
         });
       }
+      if (block.type === 'code') {
+        if (!block.title.trim() || !block.instructions.trim()) {
+          problems.push(`"${name}": give its coding exercise a title and instructions.`);
+        }
+        if (block.tests.some((test) => !test.name.trim() || !test.code.trim())) {
+          problems.push(`"${name}": every check in its coding exercise needs a description and code.`);
+        }
+      }
       if ((block.type === 'video' || block.type === 'audio' || block.type === 'document' || block.type === 'image') && !/^https:\/\//i.test(block.url.trim())) {
         problems.push(`"${name}": a ${block.type} block needs an https:// link.`);
       }
@@ -221,6 +241,20 @@ function cleanBlock(block: LessonBlock): LessonBlock {
       return { type: 'document', url: block.url.trim(), title: block.title?.trim() ?? '', caption: block.caption?.trim() ?? '' };
     case 'image':
       return { type: 'image', url: block.url.trim(), alt: block.alt.trim(), caption: block.caption?.trim() ?? '' };
+    case 'code':
+      return {
+        type: 'code',
+        id: block.id || `code-${Math.random().toString(36).slice(2, 10)}`,
+        language: block.language,
+        title: block.title.trim(),
+        instructions: block.instructions.trim(),
+        starter: block.starter.replace(/\s+$/, '') + '\n',
+        tests: block.tests
+          .map((test) => ({ name: test.name.trim(), code: test.code.trim() }))
+          .filter((test) => test.name || test.code),
+        hints: block.hints.map((hint) => hint.trim()).filter(Boolean),
+        solution: block.solution.trim() ? block.solution.replace(/\s+$/, '') + '\n' : '',
+      };
     case 'check': {
       const questions = 'questions' in block && block.questions
         ? block.questions

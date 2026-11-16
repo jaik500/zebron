@@ -4645,6 +4645,40 @@ service cloud.firestore {
      * (functions/src/job-board.ts) reads them and sets lastSentAt.
      * Only the owner reads or changes either list.
      */
+    // ============================================================
+    // ZEBRON CODING LAB (private to each learner)
+    // ============================================================
+
+    // Saved projects from the Coding Lab page.
+    match /users/{userId}/codeLabProjects/{projectId} {
+      allow read, delete: if isCurrentUser(userId);
+
+      allow create, update: if isCurrentUser(userId)
+        && request.resource.data.keys().hasOnly(["name", "language", "code", "updatedAt"])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.language in ["javascript"]
+        && request.resource.data.code is string
+        && request.resource.data.code.size() <= 50000
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // Work on exercises (lesson exercises and the Coding Lab page's).
+    match /users/{userId}/codeLabExercises/{exerciseId} {
+      allow read, delete: if isCurrentUser(userId);
+
+      allow create, update: if isCurrentUser(userId)
+        && request.resource.data.keys().hasOnly(["key", "language", "code", "passed", "passedAt", "updatedAt"])
+        && request.resource.data.key is string
+        && request.resource.data.key.size() <= 300
+        && request.resource.data.language in ["javascript"]
+        && request.resource.data.code is string
+        && request.resource.data.code.size() <= 50000
+        && request.resource.data.passed is bool
+        && (!("passedAt" in request.resource.data) || request.resource.data.passedAt is timestamp)
+        && request.resource.data.updatedAt == request.time;
+    }
+
     match /users/{userId}/savedJobs/{jobId} {
       allow read, delete: if isCurrentUser(userId);
 

@@ -639,7 +639,7 @@ export class CourseBuilderComponent {
   protected readonly context = courseContextFromRoute(this.route);
   protected readonly managePath = `${this.context.basePath}/manage`;
 
-  protected readonly blockTypes: LessonBlockType[] = ['text', 'video', 'audio', 'document', 'image', 'tip', 'check'];
+  protected readonly blockTypes: LessonBlockType[] = ['text', 'video', 'audio', 'document', 'image', 'tip', 'check', 'code'];
   protected readonly blockMeta = BLOCK_META;
   protected readonly levels: CourseLevel[] = ['beginner', 'intermediate', 'advanced', 'all'];
   protected readonly levelLabels = COURSE_LEVEL_LABELS;

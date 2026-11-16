@@ -19,7 +19,7 @@ export interface CourseCrumb {
   translate?: boolean;
 }
 
-export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificates' | 'test-center' | 'live' | 'manage';
+export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificates' | 'test-center' | 'coding-lab' | 'live' | 'manage';
 
 /**
  * Page header for the course pages: back button and breadcrumbs on the
@@ -201,7 +201,7 @@ export class CourseHeaderComponent {
   });
 
   /** Tabs that move into the "More" menu on phones. */
-  private readonly secondaryTabs = new Set<CourseTab>(['certificates', 'test-center', 'live', 'manage']);
+  private readonly secondaryTabs = new Set<CourseTab>(['certificates', 'test-center', 'coding-lab', 'live', 'manage']);
 
   protected isSecondary(key: CourseTab): boolean {
     return this.secondaryTabs.has(key);
@@ -215,6 +215,7 @@ export class CourseHeaderComponent {
       { key: 'certificates', label: 'Certificates', icon: 'workspace_premium', link: `${this.basePath()}/certificates` },
       // Zebron Learning = Courses + Test Center: practice quizzes sit beside the courses.
       { key: 'test-center', label: 'Test Center', icon: 'quiz', link: this.basePath().replace(/\/courses$/, '/learn/test-center').replace(/^\/learn\/test-center$/, '/test-center') },
+      { key: 'coding-lab', label: 'Coding Lab', icon: 'terminal', link: `${this.basePath()}/coding-lab` },
     ];
 
     if (this.liveAvailable()) {

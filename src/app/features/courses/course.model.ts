@@ -1,5 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 import { ActivatedRoute } from '@angular/router';
+import type { CodeLanguage, CodeTest } from '../coding-lab/code-lab.model';
 
 /**
  * Courses: structured lessons with quick checks, progress and certificates.
@@ -122,6 +123,7 @@ export interface CourseReview {
 
 export type LessonBlock =
   | { type: 'text'; text: string }
+  | LessonCodeBlock
   | { type: 'video'; url: string; caption?: string; /** Seconds. */ start?: number }
   | { type: 'audio'; url: string; caption?: string }
   | { type: 'document'; url: string; title?: string; caption?: string }
@@ -145,6 +147,23 @@ export type LessonBlock =
       explanation?: string;
       questions?: never;
     };
+
+/**
+ * Zebron Coding Lab exercise: learners write and run code in the lesson;
+ * checks (tests) tell them when it works. Optional: it never blocks the lesson.
+ */
+export interface LessonCodeBlock {
+  type: 'code';
+  /** Stable id, so saved work follows the exercise when blocks move. */
+  id: string;
+  language: CodeLanguage;
+  title: string;
+  instructions: string;
+  starter: string;
+  tests: CodeTest[];
+  hints: string[];
+  solution: string;
+}
 
 export interface LessonCheckQuestion {
   question: string;
