@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 15,
+  id: "skills-stress-management",
+  title: "Stress Management",
+  summary: "Course 15 of 17 in the Zebron Professional Skills Program (Workplace & career). Recognise stress early, manage it day to day, and build habits and support that keep you well at work.",
+  description: "Some pressure helps us perform; too much for too long harms health, relationships and work. This course covers recognising stress, quick techniques for stressful moments, changing what you can, building resilience habits, and knowing when to seek support.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Stress Management** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "sky",
+  outcomes: ["Recognise signs of stress in yourself and others", "Use quick techniques to calm down in stressful moments", "Reduce sources of stress you can influence", "Build daily habits and support networks that protect wellbeing"],
+  skills: ["Stress awareness", "Resilience", "Self-care", "Work-life balance"],
+  quiz: {
+    name: "Stress Management",
+    slug: "skill-stress-management",
+    description: "Recognise stress early, manage it day to day, and build habits and support that keep you well at work.",
+    tags: ["Workplace & career", "soft skills", "stress management"],
+    skillGroup: "Workplace & career",
+    icon: "self_improvement",
+  },
+  topics: [
+    { key: "understanding-stress", name: "Understanding stress", description: "What stress is and how to notice it." },
+    { key: "in-the-moment", name: "Managing stress", description: "Quick techniques and changing what you can." },
+    { key: "wellbeing", name: "Wellbeing habits and support", description: "Habits, boundaries and getting help." },
+  ],
+  modules: [
+    {
+      id: "understanding-stress",
+      title: "Understanding Stress",
+      lessons: [
+        {
+          id: "what-stress-is",
+          title: "What Stress Is",
+          minutes: 5,
+          blocks: [
+            text("## Pressure and stress\n\n**Pressure** is the demands on you. A moderate amount can help you focus and perform. **Stress** is the reaction when demands feel greater than your ability to cope, especially for a long time.\n\nShort-term stress is a normal response that passes. **Chronic** stress, lasting weeks or months, can affect sleep, health, mood and work."),
+            text("## Common sources at work\n\n- Heavy workload or tight deadlines\n- Unclear expectations\n- Conflict with colleagues\n- Lack of control over your work\n- Change and uncertainty\n- Difficulty balancing work and life"),
+            tip("Notice whether your stress is a short spike or something lasting weeks; they need different responses."),
+            check("What is chronic stress?", ["A brief reaction to a deadline", "A type of pressure that always helps", "Excitement before a holiday", "Stress that lasts for weeks or months"], 3, "Long-lasting stress is the kind that most harms health and work."),
+          ],
+        },
+        {
+          id: "recognising-signs",
+          title: "Recognising the Signs",
+          minutes: 5,
+          blocks: [
+            text("## Signs to watch for\n\n| Area | Possible signs |\n| --- | --- |\n| **Body** | Tiredness, headaches, tense muscles, poor sleep |\n| **Mind** | Worry, difficulty concentrating, forgetfulness |\n| **Feelings** | Irritability, feeling overwhelmed, low mood |\n| **Behaviour** | Withdrawing, working excessively, changes in eating or drinking |"),
+            text("## Notice early\n\nStress is easier to manage early. A quick weekly check: \"How have I been sleeping? How's my mood? Am I enjoying anything?\" Notice changes in colleagues too, and check in kindly."),
+            tip("Do a two-minute check-in with yourself every Friday."),
+            check("Which is a common sign of stress?", ["Sleeping well and feeling rested", "Difficulty concentrating and irritability", "Enjoying hobbies more", "Feeling calm under pressure"], 1, "Concentration problems and irritability are common stress signs."),
+          ],
+        },
+        {
+          id: "stress-and-thinking",
+          title: "Stress and Thinking",
+          minutes: 5,
+          blocks: [
+            text("## Thoughts shape stress\n\nTwo people facing the same deadline can feel very differently, partly because of how they think about it:\n\n- \"This is impossible and it'll be a disaster.\" (more stress)\n- \"This is tight. What's the most important part to get right?\" (more manageable)"),
+            text("## Challenge stressful thoughts\n\nAsk:\n\n- What's the evidence?\n- What's the most likely outcome, not the worst?\n- What would I tell a friend?\n- What's one thing I can do now?"),
+            tip("When you catch a worst-case thought, ask: \"What's most likely?\""),
+            check("Which thought is likely to reduce stress?", ["\"It'll be a disaster.\"", "\"I always fail.\"", "\"It's tight; what's the most important part to get right?\"", "\"Everyone will be angry.\""], 2, "Realistic, action-focused thinking reduces stress."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "managing-stress",
+      title: "Managing Stress",
+      lessons: [
+        {
+          id: "in-the-moment",
+          title: "Calming Down in the Moment",
+          minutes: 5,
+          blocks: [
+            text("## Quick techniques\n\nWhen stress spikes (before a presentation, after a tense call):\n\n- **Slow breathing**: breathe in for about four counts, out for about six, for a minute or two.\n- **Ground yourself**: notice five things you can see, four you can hear.\n- **Move**: a short walk or stretch.\n- **Pause**: step away briefly before replying to something upsetting."),
+            text("## Why they work\n\nSlow breathing and movement help the body shift out of its \"alarm\" state, which makes clearer thinking easier. They take minutes and can be done almost anywhere."),
+            tip("Practise slow breathing when calm, so it's easy to use when stressed."),
+            check("Which is a quick technique for a stressful moment?", ["Slow breathing with a longer out-breath", "Replying immediately to an upsetting email", "Skipping lunch", "Drinking more coffee"], 0, "Slow breathing helps calm the body's stress response."),
+          ],
+        },
+        {
+          id: "changing-what-you-can",
+          title: "Changing What You Can",
+          minutes: 5,
+          blocks: [
+            text("## Tackle the source\n\nCalming techniques help, but lasting relief often means changing the cause:\n\n| Source | Possible action |\n| --- | --- |\n| Workload | Prioritise; talk to your manager |\n| Unclear expectations | Ask what success looks like |\n| Conflict | Have a constructive conversation |\n| Lack of control | Ask for input into how work is done |"),
+            text("## Accept what you can't change\n\nSome stressors can't be changed (a reorganisation, a market downturn). Focus energy on your response, and on what you can influence."),
+            tip("For each stressor, ask: can I change it, influence it, or only my response to it?"),
+            check("Stress comes from unclear expectations. What action helps most?", ["Ask your manager what success looks like", "Guess and hope", "Work longer hours", "Ignore it"], 0, "Clarifying expectations removes the source."),
+          ],
+        },
+        {
+          id: "workload-and-boundaries",
+          title: "Workload and Boundaries",
+          minutes: 5,
+          blocks: [
+            text("## Protect your limits\n\n- Set **working hours** and keep to them where you can.\n- **Turn off** work notifications outside those hours.\n- **Take breaks** during the day and use your leave.\n- Say **\"not yet\"** or **\"which should move?\"** when overloaded."),
+            text("## Recovery is part of performance\n\nAthletes plan recovery; so should you. Regular rest makes you more effective, not less."),
+            tip("Turn off work notifications after hours at least a few evenings a week."),
+            check("Which boundary supports wellbeing?", ["Answering messages at midnight", "Turning off work notifications outside working hours", "Skipping all breaks", "Never using leave"], 1, "Switching off allows recovery."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "wellbeing-habits",
+      title: "Wellbeing Habits and Support",
+      lessons: [
+        {
+          id: "daily-habits",
+          title: "Daily Habits",
+          minutes: 5,
+          blocks: [
+            text("## The basics matter\n\nHabits that build resilience to stress:\n\n- **Sleep**: regular times, enough hours\n- **Movement**: even short daily walks help\n- **Food and water**: regular meals\n- **Connection**: time with people you like\n- **Something enjoyable** that isn't work"),
+            text("## Start small\n\nPick one habit and make it tiny: a ten-minute walk at lunch, a fixed bedtime on weeknights. Small, consistent changes last longer than big resolutions."),
+            tip("Choose one small habit to start this week."),
+            check("Which approach to building wellbeing habits works best?", ["One small, consistent habit at a time", "A complete life change overnight", "Waiting until stress is severe", "Only exercising on holidays"], 0, "Small consistent habits are sustainable."),
+          ],
+        },
+        {
+          id: "support-networks",
+          title: "Support Networks",
+          minutes: 5,
+          blocks: [
+            text("## You don't need to cope alone\n\nTalking helps. Support can come from:\n\n- Friends and family\n- Trusted colleagues or a peer coach\n- Your manager (about workload and expectations)\n- Your organization's support services, such as an employee assistance program"),
+            text("## Supporting others\n\nIf a colleague seems stressed, a simple, private check-in helps:\n\n> \"You've seemed under pressure lately. How are you doing?\" \n\nListen, don't judge, and point them to support if needed."),
+            tip("Ask a colleague how they're really doing this week."),
+            check("A colleague seems very stressed. What is a helpful first step?", ["Ignore it", "Tell the whole team", "Give them more work", "A private, caring check-in and listening"], 3, "A private check-in shows care and opens the door to support."),
+          ],
+        },
+        {
+          id: "when-to-get-help",
+          title: "When to Get Help",
+          minutes: 5,
+          blocks: [
+            text("## Signs it's time for more support\n\nSeek help from a doctor or mental health professional if stress:\n\n- Lasts for weeks and isn't improving\n- Seriously affects sleep, eating or daily life\n- Leads to feeling hopeless or unable to cope\n- Leads to using alcohol or other substances to cope"),
+            text("## Getting help is a strength\n\nMany organizations offer free, confidential counselling through an employee assistance program. If you ever feel unsafe or think about harming yourself, contact local emergency services or a crisis line right away.\n\n> This course gives general information, not medical advice. Talk to a professional about your own situation."),
+            tip("Find out today what confidential support your organization offers, before you need it."),
+            check("When should you seek professional help for stress?", ["Never; it always passes", "Only after losing your job", "When it lasts for weeks, seriously affects daily life, or you feel unable to cope", "Only if your manager tells you to"], 2, "Persistent or severe stress warrants professional support."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("understanding-stress", "easy", "Stress is best described as…", ["Any demand at work", "Always helpful", "A sign of weakness", "The reaction when demands feel greater than your ability to cope"], 3, "Stress is a reaction to demands exceeding coping resources."),
+    tf("understanding-stress", "easy", "A moderate amount of pressure can help performance.", true, "Some pressure focuses attention."),
+    mc("understanding-stress", "medium", "Chronic stress is…", ["Stress lasting weeks or months", "A brief spike", "Excitement", "Always harmless"], 0, "Long-lasting stress harms health and work."),
+    ms("understanding-stress", "medium", "Which are possible signs of stress? Select all that apply.", ["Poor sleep", "Irritability", "Difficulty concentrating", "Feeling well rested"], [0, 1, 2], "Body, mind and feelings change under stress."),
+    ms("understanding-stress", "medium", "Which are common sources of work stress? Select all that apply.", ["Heavy workload", "Unclear expectations", "Lack of control", "A well-planned week"], [0, 1, 2], "Workload, ambiguity and low control are common sources."),
+    mc("understanding-stress", "medium", "Which thought is more manageable?", ["\"It'll be a disaster.\"", "\"It's tight; what matters most?\"", "\"I always fail.\"", "\"Everyone will hate it.\""], 1, "Realistic, action-focused thinking."),
+    mc("in-the-moment", "easy", "Which is a quick calming technique?", ["Replying instantly to an upsetting message", "Slow breathing with a longer out-breath", "Skipping meals", "More caffeine"], 1, "Slow breathing calms the stress response."),
+    mc("in-the-moment", "medium", "Stress from unclear expectations is best reduced by…", ["Guessing", "Working longer", "Asking what success looks like", "Ignoring it"], 2, "Remove the source."),
+    ord("in-the-moment", "medium", "Put these questions for a stressor in a sensible order.", ["Can I change it?", "Can I influence it?", "How can I manage my response?"], "Change, influence, then manage your response."),
+    tf("in-the-moment", "easy", "Turning off work notifications outside working hours can support wellbeing.", true, "Switching off allows recovery."),
+    mc("in-the-moment", "medium", "Why plan rest and recovery?", ["Rest makes you more effective over time", "It's lazy", "It's only for athletes", "It isn't needed"], 0, "Recovery supports performance."),
+    mc("in-the-moment", "hard", "Before replying to an upsetting email, the best step is to…", ["Reply immediately", "Pause, step away briefly, then respond calmly", "Forward it to everyone", "Delete it"], 1, "A pause prevents reactions you regret."),
+    mc("wellbeing", "easy", "Which approach builds lasting wellbeing habits?", ["Overnight life change", "Waiting until severe stress", "One small, consistent habit at a time", "Holiday-only exercise"], 2, "Small and consistent."),
+    ms("wellbeing", "medium", "Which are sources of support? Select all that apply.", ["Friends and family", "A trusted colleague", "An employee assistance program", "Keeping everything to yourself"], [0, 1, 2], "Support comes from many places."),
+    mc("wellbeing", "medium", "A colleague seems very stressed. Helpful first step?", ["Ignore it", "Tell the team", "Add work", "A private, caring check-in"], 3, "Care and listening."),
+    mc("wellbeing", "medium", "When should you seek professional help for stress?", ["Never", "Only if fired", "When it lasts for weeks or seriously affects daily life", "Only if told to"], 2, "Persistent or severe stress needs support."),
+    tf("wellbeing", "easy", "Asking for help with stress is a sign of strength.", true, "Seeking support is responsible."),
+    mc("wellbeing", "medium", "Which daily habit supports resilience?", ["Short daily walks", "Irregular sleep", "Skipping meals", "Constant work"], 0, "Movement helps manage stress."),
+  ],
+};

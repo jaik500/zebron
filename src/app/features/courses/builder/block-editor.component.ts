@@ -11,6 +11,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { CodeRunnerService } from '../../coding-lab/code-runner.service';
 import { CODE_LANGUAGES, CodeLanguage, TestResult } from '../../coding-lab/code-lab.model';
 import { LessonMediaComponent } from '../components/lesson-media.component';
+import { MarkdownFieldComponent } from './markdown-field.component';
 import { formatStartTime, LessonBlock, LessonCodeBlock, MEDIA_PROVIDERS, parseStartTime, resolveMedia } from '../course.model';
 
 export const BLOCK_META: Record<LessonBlock['type'], { label: string; icon: string }> = {
@@ -32,7 +33,7 @@ const MAX_QUESTIONS = 20;
   selector: 'app-block-editor',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, MatFormFieldModule, MatIconModule, MatInputModule, MatTooltipModule, TranslatePipe, LessonMediaComponent],
+  imports: [NgClass, MatFormFieldModule, MatIconModule, MatInputModule, MatTooltipModule, TranslatePipe, LessonMediaComponent, MarkdownFieldComponent],
   template: `
     <section class="rounded-2xl border border-slate-200 bg-white p-4 focus-within:border-[#007979] focus-within:ring-2 focus-within:ring-teal-100">
       <header class="mb-3 flex items-center gap-2">
@@ -51,17 +52,10 @@ const MAX_QUESTIONS = 20;
 
       @switch (block().type) {
         @case ('text') {
-          <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-            <mat-label>{{ 'Text' | t }}</mat-label>
-            <textarea matInput rows="6" [value]="textOf()" (input)="set({ text: value($event) })"></textarea>
-          </mat-form-field>
-          <p class="mt-1 text-xs text-slate-500">{{ formattingHint | t }}</p>
+          <app-markdown-field label="Text" [rows]="8" [value]="textOf()" placeholder="Write the lesson text here." (valueChange)="set({ text: $event })" />
         }
         @case ('tip') {
-          <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-            <mat-label>{{ 'Tip' | t }}</mat-label>
-            <textarea matInput rows="3" [value]="textOf()" (input)="set({ text: value($event) })"></textarea>
-          </mat-form-field>
+          <app-markdown-field label="Tip" [rows]="3" [compact]="true" [value]="textOf()" placeholder="A key takeaway or a helpful tip." (valueChange)="set({ text: $event })" />
         }
         @case ('check') {
           <div class="flex flex-col gap-5">
@@ -148,10 +142,7 @@ const MAX_QUESTIONS = 20;
               <mat-label>{{ 'Exercise title' | t }}</mat-label>
               <input matInput maxlength="120" [value]="code().title" (input)="set({ title: value($event) })" />
             </mat-form-field>
-            <mat-form-field appearance="outline" class="zb-field zb-field--flush" subscriptSizing="dynamic">
-              <mat-label>{{ 'Instructions' | t }}</mat-label>
-              <textarea matInput rows="3" [value]="code().instructions" (input)="set({ instructions: value($event) })"></textarea>
-            </mat-form-field>
+            <app-markdown-field label="Instructions" [rows]="3" [compact]="true" [value]="code().instructions" placeholder="What should learners do?" (valueChange)="set({ instructions: $event })" />
             <div class="-mt-1 flex flex-wrap items-center gap-2" role="group" [attr.aria-label]="'Language' | t">
               <span class="text-xs font-semibold text-slate-600">{{ 'Language' | t }}</span>
               @for (language of codeLanguages; track language.value) {
@@ -339,7 +330,6 @@ export class BlockEditorComponent {
   protected readonly maxOptions = MAX_OPTIONS;
   protected readonly maxQuestions = MAX_QUESTIONS;
   protected readonly providers = computed(() => MEDIA_PROVIDERS);
-  protected readonly formattingHint = 'Formatting: **bold**, *italic*, # heading, - list item, 1. numbered item, [link](https://…)';
 
   protected readonly meta = computed(() => BLOCK_META[this.block()?.type] ?? BLOCK_META.text);
 

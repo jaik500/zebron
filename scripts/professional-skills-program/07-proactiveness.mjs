@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 7,
+  id: "skills-proactiveness",
+  title: "Proactiveness",
+  summary: "Course 7 of 17 in the Zebron Professional Skills Program (Behavioral skills). Act before you're asked: spot problems and opportunities early, and take sensible initiative.",
+  description: "Proactive people anticipate needs, prevent problems and look for ways to improve, rather than waiting to react. This course covers spotting issues early, taking initiative within your role, suggesting improvements, and doing so with good judgement.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Proactiveness** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "teal",
+  outcomes: ["Explain the difference between reactive and proactive work", "Spot problems and opportunities early", "Take initiative within the limits of your role", "Propose improvements that others support"],
+  skills: ["Initiative", "Problem prevention", "Continuous improvement", "Self-direction"],
+  quiz: {
+    name: "Proactiveness",
+    slug: "skill-proactiveness",
+    description: "Act before you're asked: spot problems and opportunities early, and take sensible initiative.",
+    tags: ["Behavioral skills", "soft skills", "proactiveness"],
+    skillGroup: "Behavioral skills",
+    icon: "bolt",
+  },
+  topics: [
+    { key: "proactive-vs-reactive", name: "Proactive vs reactive", description: "What proactiveness looks like." },
+    { key: "initiative", name: "Taking initiative", description: "Acting early, with judgement." },
+    { key: "improvement", name: "Improving things", description: "Spotting and proposing improvements." },
+  ],
+  modules: [
+    {
+      id: "being-proactive",
+      title: "Being Proactive",
+      lessons: [
+        {
+          id: "reactive-vs-proactive",
+          title: "Reactive and Proactive",
+          minutes: 5,
+          blocks: [
+            text("## Waiting vs acting\n\n- **Reactive**: responding to problems after they happen; waiting for instructions.\n- **Proactive**: anticipating needs, preventing problems, and acting before being asked.\n\nBoth have their place: you must respond to urgent issues. But proactive people spend less time firefighting."),
+            text("## Examples\n\n| Reactive | Proactive |\n| --- | --- |\n| Fixing a printer when it breaks before a big meeting | Checking supplies the day before |\n| Answering the same customer question daily | Writing a help article for it |\n| Waiting for the next task | Asking \"What's coming next that I can prepare for?\" |"),
+            tip("Ask yourself each morning: \"What could go wrong today, and what can I do now?\""),
+            check("Which action is proactive?", ["Fixing a problem after a customer complains", "Waiting for instructions", "Ignoring early warning signs", "Writing a help article for a question asked every day"], 3, "Preventing repeat questions is proactive."),
+          ],
+        },
+        {
+          id: "spotting-problems-early",
+          title: "Spotting Problems Early",
+          minutes: 5,
+          blocks: [
+            text("## Early signals\n\nProblems usually give warnings: a task falling behind, a customer sounding unhappy, a number that looks odd. Proactive people notice and act while problems are small."),
+            text("## Raise it constructively\n\nWhen you spot an issue, bring it with a suggestion:\n\n> \"The supplier hasn't confirmed delivery for Friday's event. I can call them today, and we have a backup supplier if needed. Shall I go ahead?\""),
+            tip("Bring a problem with at least one possible solution."),
+            check("What is the best way to raise a problem you've noticed?", ["Wait until it gets worse", "Complain to colleagues", "Raise it early with a suggested solution", "Ignore it"], 2, "Early warning plus a suggestion helps decisions."),
+          ],
+        },
+        {
+          id: "anticipating-needs",
+          title: "Anticipating Needs",
+          minutes: 5,
+          blocks: [
+            text("## Think one step ahead\n\nProactive colleagues think about what others will need next:\n\n- Sending the agenda before a meeting\n- Preparing answers to likely questions\n- Sharing notes with someone who missed a meeting"),
+            text("## Ask the next question\n\nAfter finishing a task, ask: \"What will the person need next?\" Often a small extra step, like attaching the source file, saves them time."),
+            tip("Before handing over work, ask: what will they need to use this?"),
+            check("Which behaviour anticipates needs?", ["Attaching the source data so the reader can check it", "Sending files without context", "Waiting to be asked for each detail", "Sending the agenda after the meeting"], 0, "Thinking about the next need saves others time."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "taking-initiative",
+      title: "Taking Initiative",
+      lessons: [
+        {
+          id: "initiative-with-judgement",
+          title: "Initiative with Judgement",
+          minutes: 5,
+          blocks: [
+            text("## Act, but wisely\n\nInitiative means acting without being told. Good judgement means knowing **how far** to go:\n\n| Level | Example |\n| --- | --- |\n| Act and inform | Fix a typo on the team page, then mention it |\n| Recommend and wait | Suggest a new process to your manager |\n| Ask first | Anything affecting budget, customers, security or other teams |"),
+            text("## Respect boundaries\n\nInitiative shouldn't override decisions, policies or other people's ownership. When unsure, ask: \"Is it okay if I…?\""),
+            tip("Big impact or other people's areas? Ask first."),
+            check("You notice a mistake in another team's customer-facing document. What should you do?", ["Change it yourself without telling anyone", "Ignore it", "Post about it publicly", "Tell the document's owner and suggest the fix"], 3, "It's their area: inform the owner with a suggestion."),
+          ],
+        },
+        {
+          id: "volunteering",
+          title: "Volunteering for Work",
+          minutes: 5,
+          blocks: [
+            text("## Raise your hand\n\nVolunteering for tasks is one of the easiest ways to show initiative and learn:\n\n- Taking notes in meetings\n- Joining a project team\n- Helping onboard a new colleague"),
+            text("## Volunteer wisely\n\nChoose tasks that help the team **and** build skills you want. Don't over-commit: initiative loses value if your core work suffers."),
+            tip("Volunteer for one task this month that stretches a skill you want to build."),
+            check("What should you consider before volunteering?", ["Whether it helps the team, builds your skills and fits your workload", "Nothing; always say yes", "Only whether it's easy", "Whether your manager will notice"], 0, "Volunteer thoughtfully so core work doesn't suffer."),
+          ],
+        },
+        {
+          id: "self-direction",
+          title: "Working Without Being Told",
+          minutes: 5,
+          blocks: [
+            text("## Manage yourself\n\nProactive people don't wait for every instruction. They:\n\n- Know their priorities\n- Plan their day\n- Seek the information they need\n- Check in when direction is unclear"),
+            text("## When work runs out\n\nIf you finish early, don't wait silently. Options: help a teammate, improve documentation, learn a skill, or ask your manager what's most useful."),
+            tip("Finished early? Offer help or improve something."),
+            check("You've finished your tasks early. What's the most proactive option?", ["Ask what would be most useful or help a teammate", "Wait silently", "Leave early without telling anyone", "Start something unrelated"], 0, "Use the time for the team's benefit."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "improving-things",
+      title: "Improving Things",
+      lessons: [
+        {
+          id: "spotting-improvements",
+          title: "Spotting Improvements",
+          minutes: 5,
+          blocks: [
+            text("## Look for friction\n\nImprovement ideas hide in everyday frustrations:\n\n- Steps repeated by hand\n- Questions asked again and again\n- Delays waiting for approvals\n- Errors that keep recurring"),
+            text("## Ask \"why?\"\n\nWhen something keeps going wrong, ask \"why?\" several times to find the root cause. Fixing the root cause prevents many future problems."),
+            tip("Keep a list of small frustrations; they are improvement ideas."),
+            check("Where are good improvement ideas often found?", ["Only in executive meetings", "In repeated frustrations and recurring errors", "Nowhere", "In tasks that work perfectly"], 1, "Everyday friction points to improvements."),
+          ],
+        },
+        {
+          id: "proposing-ideas",
+          title: "Proposing Ideas",
+          minutes: 5,
+          blocks: [
+            text("## Make it easy to say yes\n\nA good proposal states:\n\n1. **The problem** (with evidence)\n2. **The idea**\n3. **The benefit** (time saved, errors avoided)\n4. **A small first step** or trial"),
+            text("## Example\n\n> \"We spend about three hours a week copying order data by hand. A shared form could cut that to 30 minutes. Could I test it with one team for two weeks?\""),
+            tip("Suggest a small trial; it's easier to approve than a big change."),
+            check("Which proposal is most likely to be approved?", ["\"We should change everything.\"", "\"Copying data takes 3 hours weekly; a form could save most of it; can I trial it for two weeks?\"", "\"This process is bad.\"", "\"Someone should fix this.\""], 1, "Problem, idea, benefit and small trial."),
+          ],
+        },
+        {
+          id: "following-through",
+          title: "Following Through",
+          minutes: 5,
+          blocks: [
+            text("## Ideas need action\n\nProactiveness is judged by results. Once an idea is approved:\n\n- Plan the steps\n- Share progress\n- Measure the result\n- Share what you learned"),
+            text("## If it doesn't work\n\nNot every improvement succeeds. Report honestly what happened and what you learned. A failed trial that teaches something is still progress."),
+            tip("Report results, even when the trial fails."),
+            check("What should you do after trialling an improvement?", ["Never mention it again", "Only report if it worked", "Measure and share the results, including what you learned", "Start another idea immediately"], 2, "Sharing results builds trust and learning."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("proactive-vs-reactive", "easy", "Being proactive means…", ["Responding after problems happen", "Anticipating needs and acting early", "Waiting for instructions", "Avoiding responsibility"], 1, "Proactive people act before being asked."),
+    mc("proactive-vs-reactive", "medium", "Which is the proactive action?", ["Answering the same question daily", "Waiting for complaints", "Writing a help article for a frequent question", "Ignoring patterns"], 2, "Prevent repeat work."),
+    tf("proactive-vs-reactive", "easy", "Proactive people never need to react to urgent problems.", false, "Everyone reacts sometimes; proactiveness reduces firefighting."),
+    mc("proactive-vs-reactive", "medium", "How should you raise a problem you notice?", ["Early, with a suggested solution", "Wait", "Complain privately", "Ignore"], 0, "Early and solution-focused."),
+    ms("proactive-vs-reactive", "medium", "Which anticipate others' needs? Select all that apply.", ["Sending the agenda in advance", "Attaching source data", "Sharing notes with absent colleagues", "Sending files with no context"], [0, 1, 2], "Think one step ahead for others."),
+    mc("proactive-vs-reactive", "hard", "A supplier hasn't confirmed delivery for Friday's event. What's most proactive on Wednesday?", ["Wait until Friday", "Assume it's fine", "Cancel the event", "Call them now and line up a backup"], 3, "Act while the problem is small."),
+    mc("initiative", "medium", "Which change should you ask about first?", ["Fixing a typo on your own team page", "Tidying your own files", "Updating your calendar", "Something affecting budget or customers"], 3, "Big-impact changes need approval."),
+    mc("initiative", "medium", "You spot an error in another team's document. What do you do?", ["Tell the owner and suggest the fix", "Fix it silently", "Ignore it", "Post publicly"], 0, "Respect ownership and inform."),
+    ms("initiative", "medium", "Before volunteering, consider… Select all that apply.", ["Does it help the team?", "Does it build skills I want?", "Does it fit my workload?", "Will it look impressive only?"], [0, 1, 2], "Volunteer thoughtfully."),
+    tf("initiative", "easy", "Initiative should override team decisions when you disagree.", false, "Initiative respects decisions, policies and ownership."),
+    mc("initiative", "easy", "You finish early. Most proactive option?", ["Help a teammate or ask what's useful", "Wait", "Leave unannounced", "Hide"], 0, "Use time well for the team."),
+    mc("initiative", "medium", "Self-directed workers…", ["Wait for every instruction", "Never check in", "Know priorities and seek information they need", "Ignore deadlines"], 2, "They manage themselves and check in when unclear."),
+    mc("improvement", "easy", "Where are improvement ideas often found?", ["Only in strategy documents", "Everyday frustrations and recurring errors", "Perfect processes", "Nowhere"], 1, "Friction signals improvement opportunities."),
+    ord("improvement", "medium", "Put the parts of a good proposal in order.", ["The problem", "The idea", "The benefit", "A small first step"], "Problem, idea, benefit, trial."),
+    tf("improvement", "easy", "A small trial is often easier to approve than a big change.", true, "Lower risk makes yes easier."),
+    mc("improvement", "medium", "Asking \"why?\" several times helps you find…", ["Someone to blame", "A quick excuse", "The root cause", "More meetings"], 2, "Root causes prevent recurrence."),
+    mc("improvement", "medium", "After a trial fails, you should…", ["Hide it", "Share what happened and what you learned", "Blame others", "Never try again"], 1, "Honest results build trust and learning."),
+    ms("improvement", "medium", "Following through on an idea includes… Select all that apply.", ["Planning steps", "Sharing progress", "Measuring results", "Announcing success before testing"], [0, 1, 2], "Plan, communicate, measure."),
+  ],
+};

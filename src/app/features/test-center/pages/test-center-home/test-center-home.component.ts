@@ -217,8 +217,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
             <!-- Skills -->
             <a
-              [routerLink]="[learnerBaseRoute(), 'quizzes']"
-              [queryParams]="{ type: 'skill' }"
+              [routerLink]="[learnerBaseRoute(), 'skills']"
               class="group rounded-xl border border-gray-200 bg-white p-2 sm:p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#12BFC3] hover:bg-[#E5F4F4] hover:shadow-md"
             >
               <div

@@ -41,12 +41,16 @@ const DIFFICULTIES = ["easy", "medium", "hard"];
  * @param {string} options.courseTopic  the course catalog topic, e.g. "Cybersecurity"
  * @param {string} options.folder       absolute path of the folder with 01-….mjs content files
  * @param {string} options.idPrefix     course id prefix removed for question tags, e.g. "cybersecurity-"
+ * @param {string} [options.quizType]   type of the course quizzes: "course" (default) or "skill" (listed on the
+ *   Test Center's Skills page; a course's quiz.skillGroup and quiz.icon group and decorate it there)
+ * @param {number} [options.examQuestions]  questions drawn for each course's final exam (default 20); every
+ *   course needs at least that many, so learners don't see the same set on each attempt
  * @param {object|object[]} [options.certification]  one certification, or several (for example a Zebron
  *   certification and an external exam preparation track), over the program's courses in order:
  *   { id, title, credentialName, summary, description, preparesFor[], level, cover,
  *     exam: { questionsPerCourse, passMark, timeLimitMinutes, maxAttempts, cooldownDays }, validityYears }
  */
-export async function seedProgram({ programName, courseTopic, folder, idPrefix, certification = null }) {
+export async function seedProgram({ programName, courseTopic, folder, idPrefix, certification = null, quizType = "course", examQuestions = 20 }) {
 const certificationList = (Array.isArray(certification) ? certification : [certification]).filter(Boolean);
 const PROGRAM_NAME = programName;
 const args = new Set(process.argv.slice(2));
@@ -225,7 +229,9 @@ async function seedQuiz(course) {
     slug: course.quiz.slug,
     description: course.quiz.description,
     provider: "Zebron",
-    type: "course",
+    type: quizType,
+    ...(course.quiz.skillGroup ? { skillGroup: course.quiz.skillGroup } : {}),
+    ...(course.quiz.icon ? { icon: course.quiz.icon } : {}),
     certificationCode: null,
     imageUrl: null,
     level: capitalize(course.level),
@@ -338,7 +344,7 @@ async function seedCourse(course) {
     finalExam: {
       quizId: quizIdOf(course),
       quizName: course.quiz.name,
-      questionCount: Math.min(20, course.questions.length),
+      questionCount: Math.min(examQuestions, course.questions.length),
       passMark: 70,
       timeLimitMinutes: 30,
       maxAttempts: 3,
@@ -450,7 +456,9 @@ function validateCourse(course) {
     if (count < 3) problem(course, `topic ${topic.key} has only ${count} questions`);
   }
 
-  if (course.questions.length < 20) problem(course, "fewer than 20 questions (the final exam draws 20)");
+  if (course.questions.length < examQuestions) {
+    problem(course, `fewer than ${examQuestions} questions (the final exam draws ${examQuestions})`);
+  }
 }
 
 function capitalize(value) {

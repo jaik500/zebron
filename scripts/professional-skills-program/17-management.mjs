@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 17,
+  id: "skills-management",
+  title: "Management",
+  summary: "Course 17 of 17 in the Zebron Professional Skills Program (Leadership & management). Manage people and work well: plan, delegate, run effective one-to-ones and meetings, manage performance and get results.",
+  description: "Good management turns goals into results through people, plans and processes. This course covers planning and organising work, delegating, one-to-ones and feedback, managing performance, running effective meetings, and managing your team's workload and wellbeing.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Management** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "slate",
+  outcomes: ["Plan and organise team work with clear goals and owners", "Delegate effectively and follow up", "Run one-to-ones, give feedback and manage performance fairly", "Run effective meetings and manage team workload"],
+  skills: ["People management", "Delegation", "Performance management", "Planning and organising"],
+  quiz: {
+    name: "Management",
+    slug: "skill-management",
+    description: "Manage people and work well: plan, delegate, run effective one-to-ones and meetings, manage performance and get results.",
+    tags: ["Leadership & management", "soft skills", "management"],
+    skillGroup: "Leadership & management",
+    icon: "event_note",
+  },
+  topics: [
+    { key: "planning-work", name: "Planning and organising", description: "Goals, plans and delegation." },
+    { key: "managing-people", name: "Managing people", description: "One-to-ones, feedback and performance." },
+    { key: "running-team", name: "Running the team", description: "Meetings, workload and results." },
+  ],
+  modules: [
+    {
+      id: "planning-and-organising",
+      title: "Planning and Organising",
+      lessons: [
+        {
+          id: "role-of-a-manager",
+          title: "The Manager's Role",
+          minutes: 5,
+          blocks: [
+            text("## From doing to enabling\n\nWhen you become a manager, success is measured by your **team's** results, not only your own work. Core responsibilities:\n\n- Setting goals and priorities\n- Organising work and resources\n- Supporting and developing people\n- Monitoring progress and solving problems\n- Communicating up, down and across"),
+            text("## The common trap\n\nNew managers often keep doing the work themselves because it's familiar. It feels productive but limits the team. Your job is to make the whole team effective."),
+            tip("Ask weekly: \"What can I do to help the team succeed this week?\""),
+            check("How is a manager's success mainly measured?", ["By how much work they do personally", "By the results of their team", "By the number of meetings", "By working the longest hours"], 1, "Managers succeed through their team's results."),
+          ],
+        },
+        {
+          id: "setting-goals",
+          title: "Setting Team Goals",
+          minutes: 5,
+          blocks: [
+            text("## SMART goals\n\nGood team goals are **SMART**:\n\n- **Specific**: clear and focused\n- **Measurable**: you can track progress\n- **Achievable**: realistic with the resources available\n- **Relevant**: linked to wider goals\n- **Time-bound**: with a deadline\n\nExample: \"Reduce average customer response time from 24 to 8 hours by the end of Q2.\""),
+            text("## Cascade and connect\n\nConnect team goals to the organization's goals, and each person's goals to the team's. Everyone should see how their work contributes."),
+            tip("Turn each team goal into one or two individual goals for the people working on it."),
+            check("Which goal is SMART?", ["\"Improve service\"", "\"Be the best\"", "\"Reduce average response time from 24 to 8 hours by end of Q2\"", "\"Work harder\""], 2, "It is specific, measurable, achievable, relevant and time-bound."),
+          ],
+        },
+        {
+          id: "delegating",
+          title: "Delegating Effectively",
+          minutes: 5,
+          blocks: [
+            text("## How to delegate\n\n1. **Choose** the right person (skills, development, workload).\n2. **Explain** the outcome, why it matters, the deadline and the limits of their authority.\n3. **Agree** on check-ins.\n4. **Step back**; don't redo their work.\n5. **Review** and recognise the result."),
+            text("## Levels of delegation\n\nFrom \"do exactly this\" to \"decide and let me know\". Choose the level that fits the person's experience, and increase it as trust grows."),
+            tip("Delegate the outcome, not every step."),
+            check("What should you explain when delegating?", ["Only the deadline", "The outcome, why it matters, the deadline and their authority", "Nothing; let them guess", "Every keystroke"], 1, "Clarity about outcome and limits makes delegation work."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "managing-people",
+      title: "Managing People",
+      lessons: [
+        {
+          id: "one-to-ones",
+          title: "One-to-One Meetings",
+          minutes: 5,
+          blocks: [
+            text("## Regular, short and theirs\n\nRegular one-to-ones (for example 30 minutes every one or two weeks) are a manager's most important tool. Make them **the employee's meeting**:\n\n- How are you doing?\n- What's going well? What's in your way?\n- How can I help?\n- Development and career goals (monthly)"),
+            text("## Keep them sacred\n\nCancelling one-to-ones tells people they're not a priority. Reschedule rather than cancel, and keep brief notes of agreements."),
+            tip("Let the employee set most of the agenda."),
+            check("Who should mainly own the one-to-one agenda?", ["The manager only", "HR", "No one", "The employee"], 3, "One-to-ones are the employee's time with their manager."),
+          ],
+        },
+        {
+          id: "giving-feedback-manager",
+          title: "Giving Feedback",
+          minutes: 5,
+          blocks: [
+            text("## Regular and specific\n\nFeedback should be frequent, not saved for annual reviews. Use **SBI** (Situation, Behaviour, Impact) for both praise and improvement:\n\n> \"In yesterday's client call (S), you summarised the next steps clearly (B), and the client confirmed straight away (I).\""),
+            text("## Improvement feedback\n\n- Give it privately and soon.\n- Focus on behaviour, not personality.\n- Agree on what to do differently.\n- Follow up.\n\nAim for more positive than corrective feedback over time."),
+            tip("Give feedback within a day or two while details are fresh."),
+            check("When should managers give feedback?", ["Regularly, soon after the event", "Only at the annual review", "Never", "Only when something goes wrong"], 0, "Timely, frequent feedback is most useful."),
+          ],
+        },
+        {
+          id: "managing-performance",
+          title: "Managing Performance",
+          minutes: 5,
+          blocks: [
+            text("## Clear expectations first\n\nMost performance problems come from unclear expectations, missing skills or obstacles, not from unwillingness. Start by checking:\n\n- Does the person know what's expected?\n- Do they have the skills and tools?\n- Is something getting in the way?"),
+            text("## When performance doesn't improve\n\n1. Discuss the gap with specific examples.\n2. Agree on a clear improvement plan with support and a timeline.\n3. Follow up regularly and document.\n4. Involve HR and follow your organization's policies if it continues.\n\nTreat people fairly and consistently."),
+            tip("Start every performance conversation by checking expectations, skills and obstacles."),
+            check("What is the most common cause of performance problems?", ["Unclear expectations, missing skills or obstacles", "Laziness", "Bad luck", "Too much feedback"], 0, "Check expectations, skills and obstacles first."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "running-the-team",
+      title: "Running the Team",
+      lessons: [
+        {
+          id: "effective-meetings",
+          title: "Effective Meetings",
+          minutes: 5,
+          blocks: [
+            text("## Fewer, better meetings\n\nBefore calling a meeting, ask: could this be an email or a shared document?\n\nGood meetings have:\n\n- A clear **purpose** and **agenda** sent in advance\n- The **right people**, no more\n- A **time limit**, and they end on time\n- **Decisions and actions** recorded, with owners and dates"),
+            text("## Running it\n\nStart on time, keep to the agenda, involve quieter people, and close by reading back decisions and actions."),
+            tip("End every meeting with: \"Who does what, by when?\""),
+            check("How should every meeting end?", ["With small talk", "Whenever people leave", "With the next agenda only", "By confirming decisions and actions with owners and dates"], 3, "Clear actions make meetings productive."),
+          ],
+        },
+        {
+          id: "team-workload",
+          title: "Managing Workload and Wellbeing",
+          minutes: 5,
+          blocks: [
+            text("## Watch the load\n\nManagers are responsible for keeping workload sustainable:\n\n- Know what each person is working on.\n- Balance work across the team.\n- Say no or renegotiate deadlines with stakeholders when needed.\n- Notice signs of stress and check in."),
+            text("## Protect the team\n\nShielding the team from unnecessary interruptions and unrealistic demands is part of the job. A sustainable team delivers more over a year than an exhausted one."),
+            tip("Review team workload together at least once a month."),
+            check("Which is part of a manager's responsibility for workload?", ["Balancing work and renegotiating unrealistic deadlines", "Accepting every request from stakeholders", "Ignoring stress signs", "Assigning all work to the fastest person"], 0, "Sustainable workload is a management responsibility."),
+          ],
+        },
+        {
+          id: "tracking-results",
+          title: "Tracking Results",
+          minutes: 5,
+          blocks: [
+            text("## Measure what matters\n\nChoose a few **key measures** linked to your goals, such as response time, quality or customer satisfaction. Review them regularly with the team.\n\nIn Zebron, managers can follow learning with **Team progress** and **Training Groups**: assignments, completion and overdue courses."),
+            text("## Learn and improve\n\nWhen results fall short, look at causes together, without blame. Celebrate improvements and share what worked."),
+            tip("Review your team's key measures together monthly."),
+            check("How many key measures should a team usually track?", ["As many as possible", "None", "A few, linked to goals", "Only one, forever"], 2, "A few relevant measures keep focus."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("planning-work", "easy", "A manager's success is mainly measured by…", ["Their personal output", "Meetings attended", "Hours worked", "Their team's results"], 3, "Managers succeed through their teams."),
+    ms("planning-work", "medium", "Which are SMART criteria? Select all that apply.", ["Specific", "Measurable", "Time-bound", "Secret"], [0, 1, 2], "Specific, Measurable, Achievable, Relevant, Time-bound."),
+    mc("planning-work", "medium", "Which goal is SMART?", ["\"Improve service\"", "\"Cut response time from 24 to 8 hours by end of Q2\"", "\"Be great\"", "\"Work harder\""], 1, "Specific, measurable, time-bound."),
+    ord("planning-work", "medium", "Put the delegation steps in order.", ["Choose the right person", "Explain the outcome and limits", "Agree on check-ins", "Step back", "Review and recognise"], "Choose, explain, agree, step back, review."),
+    tf("planning-work", "easy", "Good delegation means specifying every step in detail.", false, "Delegate the outcome; adjust detail to experience."),
+    mc("planning-work", "medium", "What is a common trap for new managers?", ["Delegating too much", "Continuing to do the work themselves", "Holding one-to-ones", "Setting goals"], 1, "Doing instead of enabling limits the team."),
+    mc("managing-people", "easy", "Who should mainly own the one-to-one agenda?", ["The manager", "HR", "The employee", "Nobody"], 2, "It's the employee's time."),
+    mc("managing-people", "medium", "When should feedback be given?", ["Regularly and soon after events", "Annually", "Never", "Only for problems"], 0, "Timely and frequent."),
+    ord("managing-people", "easy", "Put the SBI feedback parts in order.", ["Situation", "Behaviour", "Impact"], "Situation, Behaviour, Impact."),
+    mc("managing-people", "medium", "Most performance problems come from…", ["Laziness", "Bad luck", "Unclear expectations, missing skills or obstacles", "Too many breaks"], 2, "Check expectations, skills and obstacles first."),
+    tf("managing-people", "easy", "Cancelling one-to-ones often can signal that people aren't a priority.", true, "Reschedule rather than cancel."),
+    mc("managing-people", "hard", "Performance hasn't improved after a clear plan with support. Next step?", ["Ignore it", "Shout", "Follow your organization's policies and involve HR", "Move them without explanation"], 2, "Follow fair, documented processes."),
+    mc("running-team", "easy", "How should a meeting end?", ["Confirm decisions and actions with owners and dates", "Small talk", "Whenever", "New topics"], 0, "Who does what, by when."),
+    ms("running-team", "medium", "Which make meetings effective? Select all that apply.", ["Clear purpose and agenda", "The right people only", "Recorded actions", "No time limit"], [0, 1, 2], "Purpose, people and actions."),
+    mc("running-team", "medium", "Before calling a meeting, ask…", ["\"Who can I invite?\"", "\"How long can it be?\"", "\"Is there coffee?\"", "\"Could this be an email or shared document?\""], 3, "Avoid unnecessary meetings."),
+    mc("running-team", "medium", "Managing workload includes…", ["Balancing work and renegotiating unrealistic deadlines", "Accepting every request", "Ignoring stress", "Overloading top performers"], 0, "Sustainable workload is the manager's job."),
+    tf("running-team", "easy", "A sustainable team usually delivers more over a year than an exhausted one.", true, "Sustainability supports long-term results."),
+    mc("running-team", "medium", "How many key measures should a team track?", ["As many as possible", "A few, linked to goals", "None", "Hundreds"], 1, "Focus on what matters."),
+  ],
+};

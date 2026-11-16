@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 2,
+  id: "skills-persistence",
+  title: "Persistence",
+  summary: "Course 2 of 17 in the Zebron Professional Skills Program (Mindsets). Keep going when things get hard: set goals you can stick to, handle setbacks, and know when to change course.",
+  description: "Persistence is the ability to keep working toward a goal despite obstacles, boredom or setbacks. This course covers why people give up, practical ways to keep going, how to recover from setbacks, and how to tell the difference between healthy persistence and stubbornness.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Persistence** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "navy",
+  outcomes: ["Explain why people give up and what helps them continue", "Break big goals into steps that sustain motivation", "Recover from setbacks with a clear plan", "Decide when to persist, adjust or stop"],
+  skills: ["Persistence", "Resilience", "Goal setting", "Self-motivation"],
+  quiz: {
+    name: "Persistence",
+    slug: "skill-persistence",
+    description: "Keep going when things get hard: set goals you can stick to, handle setbacks, and know when to change course.",
+    tags: ["Mindsets", "soft skills", "persistence"],
+    skillGroup: "Mindsets",
+    icon: "hiking",
+  },
+  topics: [
+    { key: "why-we-quit", name: "Why we give up", description: "Common reasons people stop, and what persistence really is." },
+    { key: "keeping-going", name: "Keeping going", description: "Goals, habits and motivation that last." },
+    { key: "setbacks", name: "Setbacks and judgement", description: "Recovering from failure and knowing when to change course." },
+  ],
+  modules: [
+    {
+      id: "what-persistence-is",
+      title: "What Persistence Is",
+      lessons: [
+        {
+          id: "defining-persistence",
+          title: "Defining Persistence",
+          minutes: 5,
+          blocks: [
+            text("## Staying with it\n\n**Persistence** means continuing toward a goal even when progress is slow, the work is dull or something goes wrong. It's what gets a certification finished, a difficult project delivered or a new skill learned.\n\nPersistence is not the same as working endlessly. It is **purposeful**: you keep going because the goal matters, and you adjust how you work when needed."),
+            text("## Where persistence shows up at work\n\n- Completing a long course or certification alongside a job\n- Following up with a customer who hasn't replied\n- Debugging a problem that resists the first few fixes\n- Learning a new role during the difficult first months\n\nIn each case, the people who succeed are often not the most talented, but the ones who **don't stop at the first obstacle**."),
+            tip("Think of something you finished that was hard. What kept you going? Use the same reason next time."),
+            check("Which best describes persistence?", ["Never changing your approach", "Working as many hours as possible", "Continuing toward a goal despite obstacles, adjusting how you work when needed", "Only doing tasks that are enjoyable"], 2, "Persistence is purposeful continuation, with adjustment when needed."),
+          ],
+        },
+        {
+          id: "why-people-quit",
+          title: "Why People Give Up",
+          minutes: 5,
+          blocks: [
+            text("## The common reasons\n\nPeople rarely quit because a goal is impossible. More often:\n\n1. **The goal is too big or vague** to see progress.\n2. **Motivation fades** after the exciting start.\n3. **A setback** feels like proof of failure.\n4. **Other priorities** crowd it out.\n5. **No one notices** whether they continue."),
+            text("## Matching fixes to causes\n\n| Cause | What helps |\n| --- | --- |\n| Goal too big | Break it into small, visible steps |\n| Motivation fades | Habits and routines that don't rely on mood |\n| Setback | Treat it as information, plan the next step |\n| Crowded out | Schedule it like a meeting |\n| No one notices | Tell someone, or find a learning partner |"),
+            tip("When you feel like quitting, name the reason first. The fix depends on the cause."),
+            check("Someone stops a course because they can't see their progress. What is the best fix?", ["Choose a harder course", "Break the goal into small, visible steps", "Wait until motivation returns", "Study only on weekends"], 1, "Small visible steps show progress and keep people going."),
+          ],
+        },
+        {
+          id: "motivation-vs-discipline",
+          title: "Motivation and Discipline",
+          minutes: 5,
+          blocks: [
+            text("## Motivation comes and goes\n\nMotivation is a feeling. It is strong at the start and weaker in the middle. If you only work when you feel motivated, you will stop when the feeling fades.\n\n**Discipline** is a decision: you do the planned task whether or not you feel like it. Discipline becomes easier when it is built into **routines**."),
+            text("## Make it automatic\n\n- **Same time, same place**: \"Every Tuesday and Thursday at 7 a.m., one lesson.\"\n- **Start tiny**: commit to five minutes. Starting is the hardest part.\n- **Remove friction**: keep the course bookmarked, the notebook ready.\n- **Link it to an existing habit**: \"After my morning coffee, I open Zebron.\"\n\nOver time the routine carries you, even on low-motivation days."),
+            tip("On a day you don't feel like it, promise yourself just five minutes. You will often continue."),
+            check("What helps most on days when motivation is low?", ["A routine that doesn't depend on mood", "Waiting until you feel ready", "Changing goals frequently", "Working only when inspired"], 0, "Routines carry you through low-motivation days."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "building-staying-power",
+      title: "Building Staying Power",
+      lessons: [
+        {
+          id: "goals-that-last",
+          title: "Goals That Last",
+          minutes: 5,
+          blocks: [
+            text("## Make the goal clear\n\nA goal that lasts is:\n\n- **Specific**: \"Finish the Communication course\", not \"get better at communicating\".\n- **Measurable**: you can tell when it's done.\n- **Time-bound**: a target date.\n- **Meaningful**: you know **why** it matters to you."),
+            text("## Break it down\n\nTurn the goal into milestones and weekly actions:\n\n| Level | Example |\n| --- | --- |\n| Goal | Earn a certification by June |\n| Milestones | One course per month |\n| Weekly action | Three lessons every week |\n| Today | One lesson after lunch |\n\nYou can't do a goal, but you can always do **today's action**."),
+            tip("Write your \"why\" at the top of your plan. Read it when the work gets dull."),
+            check("Which goal is most likely to sustain persistence?", ["\"Learn more someday\"", "\"Be the best\"", "\"Study whenever possible\"", "\"Finish three lessons a week toward my certification by June\""], 3, "Specific, measurable, time-bound goals broken into weekly actions are easier to sustain."),
+          ],
+        },
+        {
+          id: "tracking-progress",
+          title: "Tracking Progress",
+          minutes: 5,
+          blocks: [
+            text("## Make progress visible\n\nSeeing progress is one of the strongest motivators. Ways to track it:\n\n- A checklist of lessons or tasks\n- A calendar where you mark each day you worked on the goal\n- The progress bar in your Zebron course\n- A weekly note of what you completed"),
+            text("## Celebrate small wins\n\nDon't wait for the finish line to feel good. Mark milestones: finishing a module, passing a quick check first time, a full week of your routine. Small celebrations keep the effort feeling worthwhile."),
+            tip("Don't break the chain: mark every day you make progress and try to keep the streak going."),
+            check("Why does tracking progress help persistence?", ["It shows evidence of progress, which motivates you to continue", "It makes the goal harder", "It replaces the need to do the work", "It lets you skip milestones"], 0, "Visible progress is a strong motivator."),
+          ],
+        },
+        {
+          id: "support-and-accountability",
+          title: "Support and Accountability",
+          minutes: 5,
+          blocks: [
+            text("## You don't have to do it alone\n\nTelling others about a goal makes you more likely to keep going:\n\n- A **learning partner** taking the same course\n- A **manager** who checks in monthly\n- A **group** or cohort with a shared deadline"),
+            text("## Ask for the right support\n\nBe specific about what helps you:\n\n> \"Could you ask me every Friday how many lessons I finished?\"\n\n> \"Can we study together on Wednesday evenings?\"\n\nAccountability works best when it is regular, friendly and expected."),
+            tip("Tell one person about your current goal and ask them to check in with you next week."),
+            check("Which is an example of accountability that supports persistence?", ["Keeping your goal secret", "Changing your goal whenever it gets hard", "A colleague who asks every Friday about your progress", "Avoiding feedback"], 2, "Regular, friendly check-ins make people more likely to follow through."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "handling-setbacks",
+      title: "Handling Setbacks",
+      lessons: [
+        {
+          id: "bouncing-back",
+          title: "Bouncing Back from Setbacks",
+          minutes: 5,
+          blocks: [
+            text("## Setbacks are normal\n\nEvery worthwhile goal includes setbacks: a failed exam, a rejected proposal, a missed week. What matters is the **response**.\n\nA helpful sequence:\n\n1. **Pause**: let the disappointment settle.\n2. **Review**: what happened and why?\n3. **Plan**: what is the next small step?\n4. **Restart**: take that step soon, before the setback becomes a stop."),
+            text("## Talk to yourself like a coach\n\nCompare two inner voices:\n\n- Critic: \"You failed. You're not cut out for this.\"\n- Coach: \"That didn't work. Let's look at which topics to review, then try again.\"\n\nThe coach voice is not softer; it is **more useful**."),
+            tip("Restart within 48 hours after a setback. The longer you wait, the harder it gets."),
+            check("You failed a final exam. What is the most persistent response?", ["Give up on the course", "Review the topics you missed, plan study time, and retake it", "Blame the exam", "Wait several months before thinking about it"], 1, "Review, plan and restart quickly."),
+          ],
+        },
+        {
+          id: "persist-or-pivot",
+          title: "Persist, Adjust or Stop?",
+          minutes: 5,
+          blocks: [
+            text("## Persistence vs stubbornness\n\nPersistence keeps the **goal** and adjusts the **method**. Stubbornness keeps the method even when it clearly isn't working.\n\nAsk:\n\n- Is the goal still important?\n- Is my current approach producing **any** progress?\n- What would I advise a friend in my situation?"),
+            text("## Three options\n\n| Option | When |\n| --- | --- |\n| **Persist** | The goal matters and you are making progress, however slowly |\n| **Adjust** | The goal matters but the approach isn't working: change the method, get help |\n| **Stop** | The goal no longer matters, or the cost is far greater than the benefit |\n\nStopping a goal that no longer fits is a decision, not a failure."),
+            tip("Before quitting, try at least one new approach and ask one person for advice."),
+            check("Your study method hasn't improved your scores after weeks. The certification still matters to you. What should you do?", ["Keep the same method", "Abandon the certification", "Study for longer using the same notes", "Adjust the method, for example practise questions and ask for help"], 3, "Keep the goal, change the method: that's healthy persistence."),
+          ],
+        },
+        {
+          id: "protecting-your-energy",
+          title: "Protecting Your Energy",
+          minutes: 5,
+          blocks: [
+            text("## Persistence needs rest\n\nYou can't keep going if you're exhausted. Sustainable persistence includes:\n\n- **Sleep** and regular breaks\n- **Realistic pace**: a plan you can keep for months, not days\n- **Recovery** after intense periods"),
+            text("## Warning signs\n\nWatch for constant tiredness, irritability, or dreading work you used to enjoy. These are signs to **slow down and recover**, not to push harder. Talk to your manager or someone you trust if they last."),
+            tip("Plan rest into your schedule. A goal reached at a sustainable pace is better than one abandoned from burnout."),
+            check("Which is part of sustainable persistence?", ["A realistic pace with regular breaks", "Skipping sleep to finish faster", "Ignoring signs of exhaustion", "Working every weekend indefinitely"], 0, "Persistence over months requires rest and a pace you can keep."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("why-we-quit", "easy", "Persistence is best described as…", ["Continuing toward a goal despite obstacles, adjusting the method when needed", "Never changing anything", "Working the most hours", "Only doing enjoyable tasks"], 0, "Persistence keeps the goal and adapts the approach."),
+    ms("why-we-quit", "medium", "Which are common reasons people give up on goals? Select all that apply.", ["The goal is too vague to see progress", "Motivation fades after the start", "A setback feels like failure", "They have a clear weekly plan"], [0, 1, 2], "Vague goals, fading motivation and setbacks are common causes; a clear plan helps."),
+    mc("why-we-quit", "medium", "What is the difference between motivation and discipline?", ["They are the same thing", "Discipline is a feeling; motivation is a habit", "Only motivation matters", "Motivation is a feeling; discipline is acting on a plan regardless of mood"], 3, "Motivation varies; discipline is a decision supported by routines."),
+    tf("why-we-quit", "easy", "Most people quit because their goal is truly impossible.", false, "More often goals are too vague, motivation fades or setbacks discourage them."),
+    mc("why-we-quit", "medium", "Which technique makes starting easier on low-energy days?", ["Wait for inspiration", "Commit to just five minutes", "Plan a three-hour session", "Change your goal"], 1, "Starting tiny lowers the barrier; you often continue."),
+    mc("why-we-quit", "hard", "A goal keeps getting crowded out by other work. What is the best fix?", ["Give it up", "Only work on it when you have spare time", "Schedule it like a meeting", "Make it bigger"], 2, "Putting it in the calendar protects the time."),
+    mc("keeping-going", "easy", "Which goal is most specific and measurable?", ["\"Get better at Excel\"", "\"Learn more\"", "\"Be more productive\"", "\"Finish the spreadsheet course by March 31\""], 3, "It names what, how you'll know, and when."),
+    ord("keeping-going", "medium", "Order these from biggest to smallest.", ["Goal", "Milestone", "Weekly action", "Today's action"], "Goals break into milestones, weekly actions and today's step."),
+    tf("keeping-going", "easy", "Celebrating small wins helps keep effort going.", true, "Marking milestones makes the effort feel worthwhile."),
+    mc("keeping-going", "medium", "Which is the best example of accountability?", ["Keeping your goal private", "A learning partner who checks in every week", "Changing goals often", "Waiting for your annual review"], 1, "Regular check-ins make follow-through more likely."),
+    ms("keeping-going", "medium", "Which help make a routine automatic? Select all that apply.", ["Same time and place each week", "Linking it to an existing habit", "Removing friction, such as bookmarking the course", "Only working when motivated"], [0, 1, 2], "Consistency, habit-linking and less friction build routines."),
+    mc("keeping-going", "medium", "Why is knowing your \"why\" useful?", ["It replaces the need to plan", "It makes goals easier to abandon", "It reminds you of the goal's meaning when work gets dull", "It isn't useful"], 2, "Meaning sustains effort through dull stretches."),
+    ord("setbacks", "medium", "Put the setback recovery steps in order.", ["Pause", "Review what happened", "Plan the next small step", "Restart"], "Pause, review, plan and restart quickly."),
+    mc("setbacks", "medium", "Which inner voice is most useful after a setback?", ["\"That didn't work; let's review and try again.\"", "\"You'll never be good at this.\"", "\"Someone else is to blame.\"", "\"Just forget it.\""], 0, "A coaching voice focuses on the next useful step."),
+    mc("setbacks", "hard", "The goal still matters, but your method isn't working. Healthy persistence means…", ["Change the method and ask for help", "Keep the same method", "Quit immediately", "Work longer with the same method"], 0, "Keep the goal, adjust the method."),
+    tf("setbacks", "medium", "Stopping a goal that no longer matters can be a sensible decision.", true, "Persistence isn't stubbornness; stopping can be the right choice."),
+    ms("setbacks", "medium", "Which are warning signs that you need to rest? Select all that apply.", ["Constant tiredness", "Irritability", "Dreading work you used to enjoy", "Feeling refreshed after a break"], [0, 1, 2], "These suggest exhaustion; slow down and recover."),
+    mc("setbacks", "easy", "When is the best time to restart after a setback?", ["After several months", "Within a day or two", "Never", "Only when you feel fully confident"], 1, "Restart soon, before a pause becomes a stop."),
+  ],
+};

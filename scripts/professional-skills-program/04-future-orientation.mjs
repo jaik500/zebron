@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 4,
+  id: "skills-future-orientation",
+  title: "Future Orientation",
+  summary: "Course 4 of 17 in the Zebron Professional Skills Program (Mindsets). Think ahead: set goals, plan for what's coming, and make today's choices with tomorrow in mind.",
+  description: "Future orientation is the habit of thinking about where you want to be and acting now to get there. This course covers setting a direction, planning and prioritising for the long term, anticipating change, and building skills that will matter in the future.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Future Orientation** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "violet",
+  outcomes: ["Describe a clear direction for your career or work", "Turn long-term goals into near-term actions", "Anticipate changes and prepare for them", "Balance today's demands with tomorrow's priorities"],
+  skills: ["Goal setting", "Planning", "Anticipating change", "Long-term thinking"],
+  quiz: {
+    name: "Future Orientation",
+    slug: "skill-future-orientation",
+    description: "Think ahead: set goals, plan for what's coming, and make today's choices with tomorrow in mind.",
+    tags: ["Mindsets", "soft skills", "future orientation"],
+    skillGroup: "Mindsets",
+    icon: "explore",
+  },
+  topics: [
+    { key: "direction", name: "Direction and goals", description: "Knowing where you want to go." },
+    { key: "planning", name: "Planning ahead", description: "From long-term goals to weekly actions." },
+    { key: "change", name: "Anticipating change", description: "Preparing for what's coming." },
+  ],
+  modules: [
+    {
+      id: "setting-direction",
+      title: "Setting a Direction",
+      lessons: [
+        {
+          id: "what-is-future-orientation",
+          title: "What Future Orientation Is",
+          minutes: 5,
+          blocks: [
+            text("## Thinking ahead\n\n**Future orientation** is the habit of considering the future when you make choices today. Future-oriented people ask, \"Where is this heading?\" and \"What will I need later?\"\n\nAt work this shows up as: planning projects ahead, preparing before meetings, learning skills before they're urgent, and saving time for important but not urgent work."),
+            text("## Why it matters\n\nPeople who think ahead:\n\n- Are less often surprised by deadlines or changes\n- Make better decisions, because they consider consequences\n- Grow their careers deliberately rather than by chance\n\nFuture orientation isn't worrying about the future. It's **preparing** for it."),
+            tip("Before a decision, ask: \"How will this look in six months?\""),
+            check("Which behaviour shows future orientation?", ["Starting a project only when the deadline is close", "Avoiding planning", "Learning a skill your role will need next year", "Reacting only to urgent requests"], 2, "Preparing early for future needs is future orientation."),
+          ],
+        },
+        {
+          id: "vision-and-goals",
+          title: "Your Vision and Goals",
+          minutes: 5,
+          blocks: [
+            text("## Picture where you want to be\n\nAsk yourself:\n\n- What work do I want to be doing in two or three years?\n- What skills or qualifications will that need?\n- What kind of team or organization do I want to be part of?\n\nWrite a short paragraph describing it. It doesn't need to be perfect; it gives you a direction."),
+            text("## From vision to goals\n\nTurn the vision into one to three goals for the next year. Each goal should be specific and have a date, for example:\n\n> \"By December, complete the Enterprise AI program and lead one small automation project at work.\""),
+            tip("Review your vision every six months; it is allowed to change."),
+            check("What is the purpose of writing a personal vision?", ["To give direction for goals and choices", "To predict the future exactly", "To impress others", "To avoid change"], 0, "A vision gives direction; it can change as you learn."),
+          ],
+        },
+        {
+          id: "values-and-priorities",
+          title: "Values and Priorities",
+          minutes: 5,
+          blocks: [
+            text("## Choose what matters\n\nFuture goals compete with present demands. Knowing your **values** (for example growth, stability, family, impact) helps you choose.\n\nIf growth matters most, protecting weekly learning time makes sense even when busy. If stability matters most, building savings and reliable skills may come first."),
+            text("## Saying no to say yes\n\nEvery yes uses time. Future-oriented people decline or delay some requests to protect what matters most. A useful phrase:\n\n> \"I'd like to help, but I've committed this week to finishing my certification module. Could we look at it next week?\""),
+            tip("List your top three values and check whether your calendar reflects them."),
+            check("Why do values help with future orientation?", ["They remove all hard choices", "They replace planning", "They guarantee success", "They help decide between competing demands"], 3, "Values guide choices when present and future priorities compete."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "planning-ahead",
+      title: "Planning Ahead",
+      lessons: [
+        {
+          id: "backward-planning",
+          title: "Planning Backward",
+          minutes: 5,
+          blocks: [
+            text("## Start from the end\n\n**Backward planning** starts with the goal and works back to today:\n\n1. What must be true at the end?\n2. What has to happen just before that?\n3. And before that?\n4. What is the first step this week?"),
+            text("## Example\n\n| When | Step |\n| --- | --- |\n| June | Pass the certification exam |\n| May | Complete the last two courses |\n| March to April | Complete four courses |\n| This week | Finish lesson one of course one |\n\nBackward planning reveals whether a deadline is realistic before it is too late."),
+            tip("If backward planning shows the date is unrealistic, adjust now, not at the deadline."),
+            check("What is the first step of backward planning?", ["Start working immediately", "Define what must be true at the end", "Pick a random date", "Ask someone else to plan"], 1, "Backward planning starts from the end goal."),
+          ],
+        },
+        {
+          id: "urgent-vs-important",
+          title: "Urgent vs Important",
+          minutes: 5,
+          blocks: [
+            text("## The trap of urgency\n\nUrgent tasks demand attention now (emails, requests). Important tasks move you toward your goals (learning, planning, relationships). Many important tasks are **never** urgent, so they get pushed aside."),
+            text("## Protect important time\n\n| | Urgent | Not urgent |\n| --- | --- | --- |\n| **Important** | Do now | **Schedule**: learning, planning, prevention |\n| **Not important** | Delegate or minimise | Drop |\n\nFuture-oriented people block time each week for the \"important, not urgent\" box."),
+            tip("Block one recurring hour each week for important, not urgent work."),
+            check("Where does professional learning usually fall?", ["Urgent and important", "Urgent but not important", "Important but not urgent", "Neither"], 2, "Learning is important but rarely urgent, so it must be scheduled."),
+          ],
+        },
+        {
+          id: "weekly-review",
+          title: "The Weekly Review",
+          minutes: 5,
+          blocks: [
+            text("## Look back, look ahead\n\nA short weekly review keeps long-term goals connected to daily work:\n\n1. **Look back**: what did I complete? What slipped?\n2. **Look ahead**: what's coming next week and next month?\n3. **Choose** two or three priorities for the week, including one step toward a long-term goal."),
+            text("## Keep it short\n\nFifteen to thirty minutes is enough. Friday afternoon or Monday morning works for most people. Consistency matters more than detail."),
+            tip("Put a recurring weekly review in your calendar today."),
+            check("What should a weekly review include?", ["Looking back, looking ahead and choosing priorities", "Only reading emails", "A full year plan every week", "Nothing written down"], 0, "Review the past week, preview the next, choose priorities."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "anticipating-change",
+      title: "Anticipating Change",
+      lessons: [
+        {
+          id: "spotting-trends",
+          title: "Spotting Trends",
+          minutes: 5,
+          blocks: [
+            text("## What's changing in your field?\n\nWork changes through new technology (such as AI), regulations, customer expectations and the economy. Future-oriented people notice early signals by:\n\n- Reading industry news briefly each week\n- Listening to what customers increasingly ask for\n- Asking experienced colleagues what they see coming"),
+            text("## From signal to action\n\nWhen you spot a trend, ask: \"If this continues, what will my role need in two years?\" Then take one small step, such as a short course, a conversation, or a pilot project."),
+            tip("Spend ten minutes a week on news about your industry."),
+            check("Which is a good way to notice change early?", ["Ask customers and experienced colleagues what they see coming", "Ignore news until it affects you", "Wait for your manager to announce it", "Avoid new tools"], 0, "Talking to customers and colleagues reveals early signals."),
+          ],
+        },
+        {
+          id: "future-skills",
+          title: "Building Future Skills",
+          minutes: 5,
+          blocks: [
+            text("## Skills that last\n\nSome skills stay valuable whatever changes:\n\n- Learning how to learn\n- Communication and teamwork\n- Problem solving\n- Digital and data literacy\n- Adaptability\n\nTechnical skills change faster; refresh them regularly."),
+            text("## A skills check\n\nEvery six months, rate yourself 1 to 5 on the skills your next role needs. Pick the lowest important one and plan a course or project to build it."),
+            tip("Skills you start building today will be ready when the opportunity appears."),
+            check("Which skill stays valuable whatever technology changes?", ["Using one specific old software version", "Memorising today's prices", "Avoiding change", "Learning how to learn"], 3, "Learning how to learn helps you adapt to any change."),
+          ],
+        },
+        {
+          id: "scenario-thinking",
+          title: "Preparing for Different Futures",
+          minutes: 5,
+          blocks: [
+            text("## Plan for more than one outcome\n\nYou can't predict the future, but you can prepare for possibilities. **Scenario thinking** asks: \"What if…?\"\n\n- What if the project is delayed by a month?\n- What if demand doubles?\n- What if a key person leaves?"),
+            text("## Simple contingency plans\n\nFor each important plan, note one risk and one response:\n\n| Risk | Response |\n| --- | --- |\n| Data arrives late | Prepare the template in advance |\n| Key person leaves | Document the process now |\n\nPreparation turns surprises into manageable events."),
+            tip("For your most important project, write down one risk and one response today."),
+            check("What is the goal of scenario thinking?", ["Predicting the future exactly", "Preparing responses for several possible outcomes", "Worrying about everything", "Avoiding planning"], 1, "Scenarios help you prepare for different possible futures."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("direction", "easy", "Future orientation is…", ["Worrying about the future", "Ignoring the present", "Predicting exact outcomes", "Considering the future when making choices today"], 3, "It is preparing for the future through today's choices."),
+    mc("direction", "medium", "What is a personal vision for?", ["Giving direction to goals and choices", "Predicting the future exactly", "Impressing others", "Avoiding change"], 0, "A vision provides direction and can evolve."),
+    tf("direction", "easy", "Your personal vision should never change once written.", false, "Review it regularly; it can change as you learn."),
+    mc("direction", "medium", "Why do values matter for long-term goals?", ["They help choose between competing demands", "They replace plans", "They remove all hard choices", "They aren't relevant"], 0, "Values guide trade-offs."),
+    mc("direction", "medium", "Which goal is best written?", ["\"Do better\"", "\"By December, complete the Enterprise AI program and lead one automation project\"", "\"Learn AI\"", "\"Get promoted soon\""], 1, "Specific with a date."),
+    ms("direction", "medium", "Which behaviours show future orientation? Select all that apply.", ["Preparing before meetings", "Learning skills before they are urgent", "Planning projects ahead", "Starting only when deadlines are near"], [0, 1, 2], "Preparing ahead is future-oriented."),
+    mc("planning", "easy", "Backward planning starts with…", ["Today's tasks", "A random date", "The end goal", "Someone else's plan"], 2, "Start from what must be true at the end."),
+    mc("planning", "medium", "Learning a new skill for next year is usually…", ["Urgent and important", "Urgent but not important", "Important but not urgent", "Neither"], 2, "Important but not urgent, so schedule it."),
+    ord("planning", "medium", "Put the weekly review steps in order.", ["Look back at the past week", "Look ahead at the coming weeks", "Choose two or three priorities"], "Review, preview, then prioritise."),
+    tf("planning", "easy", "Important but not urgent tasks are easily pushed aside unless scheduled.", true, "They never demand attention, so they need protected time."),
+    mc("planning", "medium", "What should you do with urgent but unimportant tasks?", ["Do them first always", "Delegate or minimise them", "Schedule them weekly", "Ignore all urgent tasks"], 1, "Delegate or minimise to protect important work."),
+    mc("planning", "hard", "Backward planning shows your deadline is unrealistic. When should you adjust?", ["At the deadline", "Never", "After missing it", "Now, while there is time"], 3, "Adjust early, when options remain."),
+    mc("change", "easy", "Which is a good early signal of change?", ["Customers increasingly asking for something new", "Last year's annual report", "A meeting that ran late", "Your favourite colour"], 0, "Shifts in customer requests often signal change."),
+    ms("change", "medium", "Which skills stay valuable through change? Select all that apply.", ["Learning how to learn", "Communication", "Adaptability", "Mastery of one outdated tool"], [0, 1, 2], "Durable skills transfer across changes."),
+    mc("change", "medium", "Scenario thinking asks…", ["\"What exactly will happen?\"", "\"Who is to blame?\"", "\"What if…?\" for several possibilities", "\"Why plan at all?\""], 2, "It prepares responses for possible futures."),
+    tf("change", "medium", "A contingency plan pairs a risk with a prepared response.", true, "Note the risk and your response in advance."),
+    mc("change", "medium", "How often might you check your skills against your next role?", ["Never", "About every six months", "Every ten years", "Only when unemployed"], 1, "A regular skills check keeps development on track."),
+    mc("change", "hard", "A key colleague may leave. What future-oriented step helps most now?", ["Hope they stay", "Wait until they leave", "Ignore it", "Document their process and share knowledge"], 3, "Preparation reduces the impact of change."),
+  ],
+};

@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 1,
+  id: "skills-growth-mindset",
+  title: "Growth Mindset",
+  summary: "Course 1 of 17 in the Zebron Professional Skills Program (Mindsets). Believe your abilities can grow, and act like it: learn from mistakes, seek feedback and take on challenges that stretch you.",
+  description: "People with a growth mindset believe ability grows with effort, good strategies and help from others. This course shows what that looks like at work, how to notice fixed-mindset thinking in yourself, and how to turn mistakes and feedback into progress.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Growth Mindset** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "teal",
+  outcomes: ["Explain the difference between a fixed and a growth mindset", "Notice fixed-mindset thoughts and reframe them", "Use mistakes and feedback as information for improving", "Plan stretch challenges and deliberate practice"],
+  skills: ["Growth mindset", "Learning from feedback", "Self-reflection", "Deliberate practice"],
+  quiz: {
+    name: "Growth Mindset",
+    slug: "skill-growth-mindset",
+    description: "Believe your abilities can grow, and act like it: learn from mistakes, seek feedback and take on challenges that stretch you.",
+    tags: ["Mindsets", "soft skills", "growth mindset"],
+    skillGroup: "Mindsets",
+    icon: "psychology",
+  },
+  topics: [
+    { key: "mindset-basics", name: "Fixed and growth mindsets", description: "What a growth mindset is, and what it is not." },
+    { key: "mistakes-feedback", name: "Mistakes and feedback", description: "Learning from errors and from other people's views." },
+    { key: "stretch-practice", name: "Stretch and practice", description: "Challenges, deliberate practice and lasting habits." },
+  ],
+  modules: [
+    {
+      id: "understanding-mindsets",
+      title: "Understanding Mindsets",
+      lessons: [
+        {
+          id: "fixed-vs-growth",
+          title: "Fixed and Growth Mindsets",
+          minutes: 5,
+          blocks: [
+            text("## Two ways of looking at ability\n\nPsychologist Carol Dweck described two mindsets:\n\n- A **fixed mindset** assumes ability is set: you are either \"good at numbers\" or you are not. Challenges feel risky, because failing would prove you lack talent.\n- A **growth mindset** assumes ability grows with **effort, good strategies and help from others**. Challenges are a way to get better.\n\nMost people have both, depending on the situation. You might feel confident learning a new phone app and completely stuck when asked to speak in public."),
+            text("## Why it matters at work\n\n| Situation | Fixed mindset | Growth mindset |\n| --- | --- | --- |\n| A new system is introduced | \"I'm not a tech person.\" | \"I'll learn the three things I use most first.\" |\n| A colleague is praised | \"They're just naturally good.\" | \"What did they do that I could learn from?\" |\n| You get a hard task | Avoid it or rush it | Ask how to approach it, then try |\n\nEmployers value a growth mindset because work keeps changing. People who expect to learn adapt faster."),
+            tip("A growth mindset is not the same as positive thinking. It means believing you can improve **and** changing how you work so that you do."),
+            check("A colleague says, \"I'm just not good at writing reports.\" Which reply reflects a growth mindset?", ["\"Some people are born writers; it's fine to avoid reports.\"", "\"Don't worry, someone else can always write them.\"", "\"Try harder next time.\"", "\"Let's look at a strong report together and pick one thing to practise.\""], 3, "A growth mindset pairs effort with a concrete strategy and help: studying a good example and practising one skill."),
+          ],
+        },
+        {
+          id: "myths-about-growth-mindset",
+          title: "Common Myths",
+          minutes: 5,
+          blocks: [
+            text("## What a growth mindset is not\n\nSome ideas sound like growth mindset but miss the point:\n\n1. **\"Just try harder.\"** Effort alone is not enough. If something isn't working, you need a **different strategy**, not only more hours.\n2. **\"Everyone can be great at everything.\"** A growth mindset says you can **improve**, not that everyone will reach the same level.\n3. **\"Praise effort no matter what.\"** Praising effort that produced no learning teaches nothing. Praise the **process**: the strategy, the persistence, the improvement.\n4. **\"I already have a growth mindset.\"** Everyone has fixed-mindset moments, especially under stress or criticism."),
+            text("## A better definition\n\nA practical working definition:\n\n> When something is hard, I look for a better approach, ask for input, and keep going, because I expect to improve.\n\nThat sentence has three parts you can act on: **strategy**, **help** and **persistence**. If one is missing, progress usually stalls."),
+            tip("Next time you are stuck, ask yourself: \"Is this an effort problem, a strategy problem or a help problem?\""),
+            check("Which statement best describes a growth mindset?", ["Effort always guarantees success.", "Everyone can become equally talented at everything.", "Abilities can be developed through effort, better strategies and help from others.", "Praise people for trying, whatever happens."], 2, "A growth mindset combines effort with strategies and support; it doesn't promise equal outcomes."),
+          ],
+        },
+        {
+          id: "noticing-your-mindset",
+          title: "Noticing Your Own Mindset",
+          minutes: 5,
+          blocks: [
+            text("## Spot the triggers\n\nFixed-mindset thinking usually appears in specific moments:\n\n- Facing a **new, unfamiliar** task\n- Receiving **criticism**\n- Seeing someone **better** at something than you\n- Making a **visible mistake**\n\nIn these moments listen for phrases like \"I can't\", \"I'm not a … person\" or \"Why bother?\". They are signals, not facts."),
+            text("## Reframe with \"yet\"\n\nA simple technique is to add **\"yet\"** and a next step:\n\n| Fixed thought | Reframed |\n| --- | --- |\n| \"I can't use spreadsheets.\" | \"I can't use spreadsheets **yet**. I'll learn sorting and filtering this week.\" |\n| \"I'm bad at presenting.\" | \"Presenting is a skill I haven't practised **yet**. I'll rehearse with one colleague.\" |\n| \"This is too hard.\" | \"This is hard **right now**. Which part can I start with?\" |\n\nThe reframe only works if it ends with an action you will actually take."),
+            tip("Write down one fixed thought you had this week and rewrite it with \"yet\" and a next step."),
+            check("Which situation is most likely to trigger fixed-mindset thinking?", ["Repeating a task you have done many times", "Taking a short break", "Reading your schedule for the day", "Receiving critical feedback on your work"], 3, "Criticism, new tasks, visible mistakes and comparison are common triggers for fixed-mindset thoughts."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "learning-from-mistakes",
+      title: "Mistakes and Feedback",
+      lessons: [
+        {
+          id: "mistakes-as-information",
+          title: "Mistakes as Information",
+          minutes: 5,
+          blocks: [
+            text("## What a mistake can tell you\n\nA mistake is data about what to change. After something goes wrong, ask:\n\n1. **What happened?** Facts, without blame.\n2. **Why did it happen?** Missing knowledge, a rushed step, unclear instructions, a tool problem?\n3. **What will I do differently?** One specific change.\n4. **Who should know?** Mistakes hidden today become bigger problems tomorrow."),
+            text("## Owning it\n\nPeople with a growth mindset **own** their mistakes quickly:\n\n> \"I sent the client the old price list. I've emailed the correct one and added a check to my sending routine.\"\n\nThat response states the error, fixes the impact and prevents a repeat. It builds more trust than a perfect record that no one believes."),
+            tip("Keep a short \"lessons learned\" note. Reviewing it once a month shows you how much you have grown."),
+            check("After making a mistake, what is the most useful first question to ask?", ["\"What happened, exactly?\"", "\"Who caused this?\"", "\"How can I hide this?\"", "\"Why does this always happen to me?\""], 0, "Start with the facts of what happened; blame and self-criticism don't help you improve."),
+          ],
+        },
+        {
+          id: "asking-for-feedback",
+          title: "Asking for Feedback",
+          minutes: 5,
+          blocks: [
+            text("## Make feedback easy to give\n\nMany people never get useful feedback because they don't ask well. Instead of \"Any feedback?\", ask a **specific** question:\n\n- \"What is one thing that would make this report clearer?\"\n- \"When I ran the meeting, what should I do differently next time?\"\n- \"Was there a point where you got lost in my explanation?\"\n\nSpecific questions get specific answers."),
+            text("## Receiving it well\n\nWhen feedback comes:\n\n1. **Listen** to the end without defending yourself.\n2. **Ask** for an example if it is vague.\n3. **Thank** the person, even if you disagree.\n4. **Decide** what to act on. Not every comment has to be accepted, but every comment is worth considering.\n\n> Feedback is a gift of someone's time and attention. Treat it that way and you will get more of it."),
+            tip("Ask one person this week a specific feedback question about a recent piece of work."),
+            check("Which request is most likely to get useful feedback?", ["\"What is one change that would make this presentation clearer?\"", "\"Any feedback?\"", "\"Was that okay?\"", "\"Did you like it?\""], 0, "A specific question focused on one improvement makes it easy for someone to give useful feedback."),
+          ],
+        },
+        {
+          id: "others-success",
+          title: "Learning from Others' Success",
+          minutes: 5,
+          blocks: [
+            text("## Inspiration, not threat\n\nA fixed mindset sees a colleague's success as a threat: \"If they're good, I look bad.\" A growth mindset sees it as a **lesson**:\n\n- What did they do differently?\n- What skills or habits made it work?\n- Could I ask them how they approached it?"),
+            text("## Turning admiration into action\n\n1. **Name the skill**: \"She handles angry customers calmly.\"\n2. **Observe or ask**: \"How do you stay calm when someone is shouting?\"\n3. **Try one technique** yourself.\n4. **Reflect** on what happened.\n\nMost people are glad to share how they work when asked respectfully."),
+            tip("Choose one person whose work you admire and ask them one question about how they do it."),
+            check("A teammate gets praised for an excellent presentation. What is the growth-mindset response?", ["Assume they are naturally talented", "Avoid presenting so you aren't compared", "Ask them how they prepared and try one of their techniques", "Point out a mistake they made"], 2, "Learning from others' success turns comparison into improvement."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "stretching-yourself",
+      title: "Stretching Yourself",
+      lessons: [
+        {
+          id: "choosing-stretch-goals",
+          title: "Choosing Stretch Challenges",
+          minutes: 5,
+          blocks: [
+            text("## The learning zone\n\nThink of three zones:\n\n| Zone | Feels like | Result |\n| --- | --- | --- |\n| **Comfort** | Easy, familiar | Little learning |\n| **Stretch** | Challenging but possible with effort and help | Fast learning |\n| **Panic** | Overwhelming | Stress, little learning |\n\nGrowth happens in the **stretch** zone. The goal is to move there on purpose."),
+            text("## Good stretch challenges\n\nA good stretch challenge is:\n\n- **Slightly beyond** what you can do now\n- **Relevant** to your work or goals\n- **Supported**: you know who to ask for help\n- **Time-boxed**: \"lead next month's team meeting\", not \"become a great leader\"\n\nVolunteer for one stretch task each month and your skills will grow steadily."),
+            tip("If a task makes you a little nervous but you can see how to start, it's probably in your stretch zone."),
+            check("Which is the best example of a stretch challenge for someone new to presenting?", ["Giving a keynote to 500 people next week", "Presenting a five-minute update at the next team meeting", "Never presenting until they feel ready", "Reading someone else's slides silently"], 1, "A short, supported presentation is challenging but achievable: the stretch zone."),
+          ],
+        },
+        {
+          id: "deliberate-practice",
+          title: "Deliberate Practice",
+          minutes: 5,
+          blocks: [
+            text("## Practice that actually improves you\n\nRepeating something the same way doesn't make you much better. **Deliberate practice** does:\n\n1. **Focus** on one specific part of a skill.\n2. **Practise** it with full attention.\n3. **Get feedback** quickly.\n4. **Adjust** and repeat.\n\nExample: instead of \"write better emails\", practise **writing a clear first sentence** on your next five emails and ask a colleague which is clearest."),
+            text("## Small and often\n\nTwenty focused minutes a day beats a three-hour session once a month. Short sessions are easier to start, easier to keep, and give you more chances to adjust."),
+            tip("Pick one micro-skill (such as a clear subject line) and practise it deliberately this week."),
+            check("Which activity is deliberate practice?", ["Practising one specific skill with attention and quick feedback", "Doing your job the same way every day", "Reading about a skill without trying it", "Practising only when you feel motivated"], 0, "Deliberate practice focuses on a specific skill, with feedback and adjustment."),
+          ],
+        },
+        {
+          id: "making-it-a-habit",
+          title: "Making Growth a Habit",
+          minutes: 5,
+          blocks: [
+            text("## Build the routine\n\nA growth mindset becomes real through small, repeated habits:\n\n- **Weekly reflection**: What did I learn? What would I do differently?\n- **Monthly stretch**: one task outside your comfort zone.\n- **Feedback rhythm**: ask one specific question after each important piece of work.\n- **Learning time**: a fixed slot each week, such as a Zebron course lesson."),
+            text("## Track your progress\n\nKeep a simple log: date, what you tried, what you learned. When you feel stuck, read it. Seeing how far you have come is the best evidence that your abilities can grow."),
+            tip("Book a 15-minute weekly reflection in your calendar now, before you forget."),
+            check("What turns a growth mindset into lasting change?", ["Reading one book about it", "Small, repeated habits such as weekly reflection and regular feedback", "Waiting for a big opportunity", "Avoiding difficult tasks"], 1, "Regular habits make growth-mindset behaviour automatic."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("mindset-basics", "easy", "Who described fixed and growth mindsets?", ["Daniel Goleman", "Peter Drucker", "Abraham Maslow", "Carol Dweck"], 3, "Psychologist Carol Dweck introduced the fixed and growth mindset ideas."),
+    tf("mindset-basics", "easy", "A growth mindset means believing everyone can become equally talented at everything.", false, "It means abilities can improve, not that everyone reaches the same level."),
+    mc("mindset-basics", "medium", "\"I'm just not a numbers person.\" This is an example of…", ["A growth mindset", "Deliberate practice", "A fixed mindset", "Feedback"], 2, "Treating ability as fixed and unchangeable is a fixed-mindset thought."),
+    ms("mindset-basics", "medium", "Which are common triggers for fixed-mindset thinking? Select all that apply.", ["Receiving criticism", "Facing an unfamiliar task", "Seeing someone outperform you", "Drinking a glass of water"], [0, 1, 2], "Criticism, new tasks and comparison often trigger fixed thoughts."),
+    mc("mindset-basics", "medium", "Which reframe best turns a fixed thought into a growth thought?", ["\"I can't do this yet; I'll start with the first step today.\"", "\"I can't do this.\"", "\"Someone else should do this.\"", "\"I'll never be good at this.\""], 0, "Adding \"yet\" plus a concrete next step reframes the thought into action."),
+    tf("mindset-basics", "easy", "Most people have a mix of fixed and growth mindsets depending on the situation.", true, "Mindsets vary by situation; everyone has fixed-mindset moments."),
+    mc("mistakes-feedback", "easy", "What is the best first step after making a mistake?", ["Find someone to blame", "Establish the facts of what happened", "Hide it until it's fixed", "Criticise yourself"], 1, "Start with facts: what happened, without blame."),
+    ord("mistakes-feedback", "medium", "Put the steps for learning from a mistake in order.", ["What happened?", "Why did it happen?", "What will I do differently?", "Who should know?"], "Facts, cause, change, then communicate."),
+    mc("mistakes-feedback", "medium", "Which feedback request is most specific?", ["\"Thoughts?\"", "\"What is one thing that would make this report clearer?\"", "\"Was it good?\"", "\"Any comments at all?\""], 1, "A focused question gets a focused answer."),
+    ms("mistakes-feedback", "medium", "How should you receive feedback well? Select all that apply.", ["Listen to the end", "Ask for an example if it is vague", "Thank the person", "Argue each point immediately"], [0, 1, 2], "Listen, clarify and thank; then decide what to act on."),
+    tf("mistakes-feedback", "medium", "You must accept every piece of feedback you receive.", false, "Consider all feedback, but decide which to act on."),
+    mc("mistakes-feedback", "hard", "A colleague is praised for handling a difficult client. What is the most useful growth-mindset action?", ["Assume they are naturally gifted", "Avoid difficult clients", "Point out their past mistakes", "Ask how they approached the conversation and try one technique"], 3, "Turning admiration into a question and a technique to try is learning from others' success."),
+    mc("stretch-practice", "easy", "In which zone does the fastest learning happen?", ["Stretch zone", "Comfort zone", "Panic zone", "Rest zone"], 0, "Challenges that are hard but achievable with help produce the most learning."),
+    mc("stretch-practice", "medium", "Which is a well-designed stretch challenge?", ["\"Become a great leader\"", "\"Do the same tasks as last year\"", "\"Lead next month's team meeting with my manager's support\"", "\"Run the company for a week\""], 2, "Specific, time-boxed, relevant and supported."),
+    ms("stretch-practice", "medium", "Which are features of deliberate practice? Select all that apply.", ["Focusing on one specific part of a skill", "Getting quick feedback", "Adjusting and repeating", "Doing the same thing on autopilot"], [0, 1, 2], "Deliberate practice is focused, gets feedback and adjusts."),
+    tf("stretch-practice", "easy", "Short, frequent practice sessions usually beat rare, long ones.", true, "Small and often is easier to keep up and gives more chances to adjust."),
+    mc("stretch-practice", "medium", "What is the main purpose of keeping a learning log?", ["To impress your manager", "To see evidence of your progress over time", "To record other people's mistakes", "To avoid reflection"], 1, "A log shows how much you have grown, which reinforces the growth mindset."),
+    mc("stretch-practice", "hard", "Someone has worked very hard on a skill for months without improving. What does a growth mindset suggest?", ["Try a different strategy and ask for help", "Stop: they lack talent", "Keep doing exactly the same thing", "Work even longer hours the same way"], 0, "Effort needs effective strategies and support; change the approach."),
+  ],
+};

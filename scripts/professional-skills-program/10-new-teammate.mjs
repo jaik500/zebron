@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 10,
+  id: "skills-new-teammate",
+  title: "Being a New Teammate",
+  summary: "Course 10 of 17 in the Zebron Professional Skills Program (Workplace & career). Start strong in a new team: learn fast, build relationships, ask good questions and add value early.",
+  description: "The first months in a new role shape how colleagues see you. This course covers preparing for your first days, learning how the team works, building relationships, asking questions without fear, and delivering early wins.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Being a New Teammate** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "sky",
+  outcomes: ["Prepare for your first weeks in a new team", "Learn the team's goals, people and unwritten rules", "Build trust through relationships and reliability", "Deliver early wins and ask for feedback"],
+  skills: ["Onboarding", "Relationship building", "Learning agility", "Adaptability"],
+  quiz: {
+    name: "Being a New Teammate",
+    slug: "skill-new-teammate",
+    description: "Start strong in a new team: learn fast, build relationships, ask good questions and add value early.",
+    tags: ["Workplace & career", "soft skills", "new teammate"],
+    skillGroup: "Workplace & career",
+    icon: "waving_hand",
+  },
+  topics: [
+    { key: "first-days", name: "First days", description: "Preparing and making a good start." },
+    { key: "learning-the-team", name: "Learning the team", description: "Goals, people and how things are done." },
+    { key: "adding-value", name: "Adding value", description: "Early wins, feedback and settling in." },
+  ],
+  modules: [
+    {
+      id: "starting-well",
+      title: "Starting Well",
+      lessons: [
+        {
+          id: "before-day-one",
+          title: "Before Day One",
+          minutes: 5,
+          blocks: [
+            text("## Prepare a little\n\nBefore you start:\n\n- Read what you can about the organization, its customers and products.\n- Review the job description and note questions.\n- Plan the practical details: route, start time, what to bring, how to log in.\n\nA little preparation lowers first-day stress and lets you focus on people."),
+            text("## Set your intention\n\nDecide how you want to be seen after three months, for example \"reliable, curious and easy to work with\". Let that guide small choices in your first weeks."),
+            tip("Write down three questions you want answered in your first week."),
+            check("What is a useful thing to do before your first day?", ["Nothing", "Read about the organization and note questions", "Plan to change everything on day one", "Skip reading the job description"], 1, "Light preparation helps you start confidently."),
+          ],
+        },
+        {
+          id: "first-week",
+          title: "Your First Week",
+          minutes: 5,
+          blocks: [
+            text("## Listen more than you speak\n\nIn your first week:\n\n- Meet your manager and agree expectations: \"What would success look like in my first 90 days?\"\n- Introduce yourself to teammates.\n- Learn the tools and where information lives.\n- Take notes; you'll hear a lot."),
+            text("## Avoid early mistakes\n\n- Don't criticise how things are done before you understand why.\n- Don't promise more than you can deliver while still learning.\n- Do say \"I'm new; can you show me how that works?\""),
+            tip("Ask your manager: \"What would success look like in my first 90 days?\""),
+            check("Which question is most useful to ask your manager in week one?", ["\"When can I be promoted?\"", "\"Why do you do it this way?\" (critically)", "\"What would success look like in my first 90 days?\"", "\"Can I work from home every day?\""], 2, "Clear early expectations guide your first months."),
+          ],
+        },
+        {
+          id: "first-impressions",
+          title: "First Impressions",
+          minutes: 5,
+          blocks: [
+            text("## Small things count\n\nNew colleagues form impressions quickly:\n\n- Being on time and prepared\n- Remembering names (write them down)\n- Being friendly with everyone, not only managers\n- Following through on small promises"),
+            text("## Be yourself, professionally\n\nYou don't need to impress with big ideas immediately. Curiosity, reliability and kindness make the strongest first impression."),
+            tip("Write down names and roles after each introduction."),
+            check("What makes the strongest first impression in a new team?", ["Big ideas on day one", "Only talking to managers", "Curiosity, reliability and kindness", "Pointing out problems"], 2, "Consistent small behaviours build trust."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "learning-the-team",
+      title: "Learning the Team",
+      lessons: [
+        {
+          id: "goals-and-priorities",
+          title: "Goals and Priorities",
+          minutes: 5,
+          blocks: [
+            text("## Understand what matters\n\nFind out:\n\n- What is the team trying to achieve this year?\n- How is success measured?\n- Who are the team's customers (internal or external)?\n- What are the biggest current challenges?"),
+            text("## Connect your role\n\nOnce you understand the goals, ask how your work contributes. It helps you prioritise and makes your contributions more valuable."),
+            tip("Ask your manager which two or three priorities matter most this quarter."),
+            check("Why learn the team's goals early?", ["To criticise them", "It isn't important", "To change them immediately", "To understand how your work contributes and prioritise well"], 3, "Goals give your work direction."),
+          ],
+        },
+        {
+          id: "people-and-relationships",
+          title: "People and Relationships",
+          minutes: 5,
+          blocks: [
+            text("## Map the people\n\nLearn who does what, and who you'll work with most. Schedule short one-to-one introductions:\n\n> \"I'm new on the team and would love 20 minutes to learn about your work and how we'll work together.\""),
+            text("## Questions for introductions\n\n- What do you work on?\n- How do our roles connect?\n- What should I know to work well with you?\n- What do you wish new people understood sooner?"),
+            tip("Aim for a short one-to-one with each close colleague in your first month."),
+            check("Which is a good question for an introductory one-to-one?", ["\"Why is this team so slow?\"", "\"What should I know to work well with you?\"", "\"How much do you earn?\"", "\"Who should I avoid?\""], 1, "It shows respect and builds working relationships."),
+          ],
+        },
+        {
+          id: "unwritten-rules",
+          title: "Unwritten Rules",
+          minutes: 5,
+          blocks: [
+            text("## How things are really done\n\nEvery team has norms no one writes down: how fast people reply, whether cameras are on, how decisions are made, how formal emails are.\n\nObserve for the first few weeks and ask a trusted colleague:\n\n> \"Is there anything about how the team works that isn't written down but I should know?\""),
+            text("## Adapt, then contribute\n\nFit in with norms first. Once you understand why things work as they do, you'll be in a better position to suggest improvements."),
+            tip("Find a \"buddy\" colleague you can ask small questions without hesitation."),
+            check("What's the best approach to a team's unwritten rules?", ["Observe and ask a trusted colleague", "Ignore them", "Change them on day one", "Complain about them"], 0, "Learn the norms before suggesting changes."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "adding-value-early",
+      title: "Adding Value Early",
+      lessons: [
+        {
+          id: "asking-questions-new",
+          title: "Asking Questions as a Newcomer",
+          minutes: 5,
+          blocks: [
+            text("## Questions are expected\n\nNew people are expected to ask questions. Not asking leads to mistakes and slower learning.\n\nMake questions efficient:\n\n- Try to find the answer first (documentation, search).\n- Batch small questions and ask them together.\n- Write down the answers so you ask only once."),
+            text("## The newcomer's advantage\n\nFresh eyes notice things others no longer see. Ask \"Why is it done this way?\" with curiosity, not criticism. Your questions may reveal improvements."),
+            tip("Keep a running list of questions and answers; it becomes your personal guide."),
+            check("Which approach to questions works best for a newcomer?", ["Try to find answers first, batch questions, and note the answers", "Never ask, to look competent", "Ask the same question repeatedly", "Only ask the manager"], 0, "Efficient, recorded questions speed up learning."),
+          ],
+        },
+        {
+          id: "early-wins",
+          title: "Early Wins",
+          minutes: 5,
+          blocks: [
+            text("## Show value early\n\nAn early win is a small, visible contribution in your first weeks or months:\n\n- Fixing a recurring small problem\n- Documenting a process that wasn't written down\n- Helping with a busy period\n- Delivering your first task well and on time"),
+            text("## Choose wisely\n\nPick wins that matter to the team, fit your skills, and can be done well. A small task done excellently beats a big promise left unfinished."),
+            tip("Ask your manager: \"Is there a small problem I could help solve in my first month?\""),
+            check("What makes a good early win?", ["A huge project with no support", "Criticising past decisions", "Working alone on something unrelated", "A small, visible contribution that matters to the team, done well"], 3, "Small, relevant and well executed."),
+          ],
+        },
+        {
+          id: "thirty-sixty-ninety",
+          title: "Your 30-60-90 Day Check-ins",
+          minutes: 5,
+          blocks: [
+            text("## Check in regularly\n\nAsk your manager for short check-ins at about 30, 60 and 90 days:\n\n- **30 days**: Am I learning the right things? Any concerns?\n- **60 days**: Where am I contributing well? What should I improve?\n- **90 days**: Am I meeting expectations? What are the goals for the next quarter?"),
+            text("## Ask for feedback\n\n> \"What's one thing I'm doing well, and one thing I could do better?\" \n\nActing quickly on early feedback shows you're coachable, one of the most valued qualities in a new team member."),
+            tip("Put 30, 60 and 90-day check-ins in the calendar in your first week."),
+            check("Why ask for feedback during your first 90 days?", ["Acting on early feedback shows you're coachable and prevents habits forming", "It isn't useful yet", "To find faults in your manager", "Only to ask for a raise"], 0, "Early feedback helps you adjust quickly."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("first-days", "easy", "Which is helpful preparation before starting a new job?", ["Nothing", "Reading about the organization and noting questions", "Planning big changes", "Skipping the job description"], 1, "Light preparation helps."),
+    mc("first-days", "medium", "Which question to your manager sets clear early expectations?", ["\"When is my promotion?\"", "\"Why is everything done this way?\"", "\"What would success look like in my first 90 days?\"", "\"Can I skip training?\""], 2, "Clarifies early goals."),
+    ms("first-days", "medium", "Which create good first impressions? Select all that apply.", ["Being on time", "Remembering names", "Following through on small promises", "Criticising existing processes on day one"], [0, 1, 2], "Small reliable behaviours build trust."),
+    tf("first-days", "easy", "New team members should immediately propose major changes to show initiative.", false, "Understand before changing."),
+    mc("first-days", "medium", "How can you remember new colleagues' names?", ["Write names and roles after introductions", "Hope", "Avoid using names", "Ask them repeatedly"], 0, "Notes help memory."),
+    mc("first-days", "easy", "In your first week you should mostly…", ["Speak more than listen", "Work alone", "Avoid questions", "Listen and learn"], 3, "Listening comes first."),
+    mc("learning-the-team", "medium", "Why learn the team's goals early?", ["To criticise", "To understand how your work contributes", "To change them", "It's not important"], 1, "Goals guide priorities."),
+    mc("learning-the-team", "medium", "Which is a good introductory one-to-one question?", ["\"What should I know to work well with you?\"", "\"Who should I avoid?\"", "\"What's your salary?\"", "\"Why is this team slow?\""], 0, "Respectful and practical."),
+    mc("learning-the-team", "medium", "How do you learn unwritten rules?", ["Ignore them", "Observe and ask a trusted colleague", "Change them", "Guess"], 1, "Observation and a buddy help."),
+    tf("learning-the-team", "easy", "Every team has norms that aren't written down.", true, "Unwritten rules exist everywhere."),
+    ms("learning-the-team", "medium", "What should you find out about the team? Select all that apply.", ["Its goals", "How success is measured", "Its biggest challenges", "Colleagues' private lives"], [0, 1, 2], "Goals, measures and challenges guide your contribution."),
+    mc("learning-the-team", "hard", "You notice a process that seems inefficient in week two. Best approach?", ["Announce it's wrong", "Change it yourself", "Ask with curiosity why it's done that way", "Ignore it forever"], 2, "Curious questions reveal context and improvements."),
+    mc("adding-value", "easy", "Which is a good early win?", ["A small, relevant task done excellently", "A huge unsupported project", "Criticising past decisions", "Unrelated side work"], 0, "Small, relevant, done well."),
+    ms("adding-value", "medium", "Which make newcomer questions efficient? Select all that apply.", ["Looking for the answer first", "Batching small questions", "Writing down answers", "Asking the same thing repeatedly"], [0, 1, 2], "Efficient and recorded."),
+    ord("adding-value", "easy", "Put the check-ins in order.", ["30 days", "60 days", "90 days"], "Regular check-ins across the first quarter."),
+    tf("adding-value", "easy", "Being coachable is one of the most valued qualities in a new team member.", true, "Acting on feedback quickly is highly valued."),
+    mc("adding-value", "medium", "What is the newcomer's advantage?", ["Knowing everything", "Avoiding responsibility", "Longer breaks", "Fresh eyes that notice what others no longer see"], 3, "New perspectives can reveal improvements."),
+    mc("adding-value", "medium", "Which feedback request is best?", ["\"Am I okay?\"", "\"Any thoughts?\"", "\"What's one thing I do well and one I could improve?\"", "\"Do you like me?\""], 2, "Specific and balanced."),
+  ],
+};

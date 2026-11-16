@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 12,
+  id: "skills-challenging-coworkers",
+  title: "Working with Challenging Coworkers",
+  summary: "Course 12 of 17 in the Zebron Professional Skills Program (Workplace & career). Handle difficult working relationships calmly: understand behaviour, have the hard conversation, and know when to escalate.",
+  description: "Almost everyone works with someone difficult at some point: a colleague who interrupts, misses deadlines, takes credit or is negative. This course helps you understand difficult behaviour, protect your own professionalism, have constructive conversations and know when and how to escalate.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Working with Challenging Coworkers** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "slate",
+  outcomes: ["Separate behaviour from intentions and identify common challenging behaviours", "Stay calm and professional under pressure", "Have a constructive conversation about a working problem", "Know when and how to escalate, including for unacceptable behaviour"],
+  skills: ["Conflict resolution", "Difficult conversations", "Emotional regulation", "Professional boundaries"],
+  quiz: {
+    name: "Working with Challenging Coworkers",
+    slug: "skill-challenging-coworkers",
+    description: "Handle difficult working relationships calmly: understand behaviour, have the hard conversation, and know when to escalate.",
+    tags: ["Workplace & career", "soft skills", "challenging coworkers"],
+    skillGroup: "Workplace & career",
+    icon: "diversity_3",
+  },
+  topics: [
+    { key: "understanding", name: "Understanding difficult behaviour", description: "Behaviour, intentions and your own reactions." },
+    { key: "conversations", name: "Constructive conversations", description: "Raising problems and finding solutions." },
+    { key: "boundaries", name: "Boundaries and escalation", description: "Protecting yourself and knowing when to escalate." },
+  ],
+  modules: [
+    {
+      id: "understanding-difficult-behaviour",
+      title: "Understanding Difficult Behaviour",
+      lessons: [
+        {
+          id: "behaviour-not-person",
+          title: "Behaviour, Not the Person",
+          minutes: 5,
+          blocks: [
+            text("## Focus on what you can describe\n\nLabels like \"rude\", \"lazy\" or \"difficult\" make problems feel personal and permanent. Describe **specific behaviour** instead:\n\n- Not \"she's rude\", but \"she interrupted me three times in the meeting\".\n- Not \"he's lazy\", but \"the last two reports arrived after the deadline\".\n\nSpecific behaviour can be discussed and changed."),
+            text("## Consider other explanations\n\nDifficult behaviour often has causes you can't see: workload, stress, unclear priorities, personal issues, or different working styles. This doesn't excuse it, but it helps you approach the person with curiosity instead of anger."),
+            tip("Replace labels with a description of what actually happened."),
+            check("Which description is most useful for resolving a problem?", ["\"He's lazy.\"", "\"He's impossible.\"", "\"He doesn't care.\"", "\"The last two reports arrived after the agreed deadline.\""], 3, "Specific behaviour can be discussed and changed."),
+          ],
+        },
+        {
+          id: "common-behaviours",
+          title: "Common Challenging Behaviours",
+          minutes: 5,
+          blocks: [
+            text("## Recognise the pattern\n\n| Behaviour | Often looks like |\n| --- | --- |\n| Interrupting | Talking over others, dominating meetings |\n| Missing commitments | Late work, forgotten tasks |\n| Credit-taking | Presenting others' work as their own |\n| Negativity | Dismissing ideas, constant complaining |\n| Passive-aggression | Sarcasm, silent treatment, \"as per my last email\" |\n| Micromanaging (peers) | Checking and redoing your work |"),
+            text("## Different patterns need different responses\n\nInterrupting may need a calm \"I'd like to finish my point\". Missed commitments need a conversation about deadlines. Credit-taking may need visible records of your contributions."),
+            tip("Name the pattern; it points to the right response."),
+            check("A colleague often presents your ideas as their own. Which response helps prevent this?", ["Never share ideas again", "Take their ideas in return", "Share ideas in writing or in meetings where contributions are visible, and address it directly", "Complain to everyone"], 2, "Visible records and a direct conversation address credit-taking."),
+          ],
+        },
+        {
+          id: "your-reactions",
+          title: "Your Own Reactions",
+          minutes: 5,
+          blocks: [
+            text("## You control your response\n\nYou can't control a coworker's behaviour, but you control how you respond. Notice your triggers: what makes you defensive, angry or withdrawn?"),
+            text("## Stay calm in the moment\n\n- **Pause** before replying; take a breath.\n- **Lower your voice** rather than raising it.\n- **Buy time**: \"Let me think about that and come back to you.\"\n- **Don't reply in writing while angry.**\n\nStaying professional protects your reputation, whatever the other person does."),
+            tip("\"Let me come back to you on that\" is a powerful sentence when you're upset."),
+            check("A coworker makes a sharp comment in a meeting. What is the best immediate response?", ["Pause, stay calm, and address it later if needed", "Reply sharply", "Leave the meeting", "Post about it in chat"], 0, "Calm responses protect your professionalism."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "constructive-conversations",
+      title: "Constructive Conversations",
+      lessons: [
+        {
+          id: "preparing",
+          title: "Preparing for the Conversation",
+          minutes: 5,
+          blocks: [
+            text("## Decide if and when\n\nNot every annoyance needs a conversation. Ask: Is it affecting my work or the team? Has it happened more than once? If yes, a conversation is usually better than silent frustration."),
+            text("## Prepare\n\n- Choose a **private** setting and a calm time.\n- Prepare **specific examples**.\n- Know what you'd like to **change**.\n- Expect to **listen**: there may be things you don't know."),
+            tip("Have the conversation privately and soon, not in front of others or months later."),
+            check("Where should a conversation about a coworker's behaviour take place?", ["In a team meeting", "By group email", "In a public chat channel", "In private, at a calm time"], 3, "Private settings keep the conversation constructive."),
+          ],
+        },
+        {
+          id: "sbi-model",
+          title: "The SBI Model",
+          minutes: 5,
+          blocks: [
+            text("## Situation, Behaviour, Impact\n\nA simple structure for raising an issue:\n\n- **Situation**: \"In Tuesday's client call…\"\n- **Behaviour**: \"…you answered the pricing questions I was asked to cover…\"\n- **Impact**: \"…so the client seemed unsure who to contact, and I couldn't give the details I'd prepared.\"\n\nThen **ask**: \"How do you see it?\" and **agree** on what to do next time."),
+            text("## Why it works\n\nSBI sticks to facts, avoids labels and explains why the behaviour matters. It invites conversation instead of defence."),
+            tip("Practise your SBI sentence before the conversation."),
+            check("What does SBI stand for?", ["Situation, Behaviour, Impact", "Strategy, Budget, Implementation", "Speak, Blame, Ignore", "Summary, Background, Idea"], 0, "Situation, Behaviour, Impact."),
+          ],
+        },
+        {
+          id: "finding-solutions",
+          title: "Finding Solutions Together",
+          minutes: 5,
+          blocks: [
+            text("## Aim for agreement, not victory\n\nAfter describing the issue and listening, work toward a practical agreement:\n\n> \"Could we agree that I cover pricing in client calls, and you jump in if I miss something?\""),
+            text("## Follow up\n\nThank the person for discussing it. If the behaviour improves, acknowledge it. If it doesn't, have one more conversation referring to the agreement before escalating."),
+            tip("End with a specific agreement and check how it's going a week later."),
+            check("What should a conversation with a challenging coworker aim for?", ["Winning the argument", "Making them apologise publicly", "A practical agreement about how to work together", "Ending the relationship"], 2, "Practical agreements change behaviour."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "boundaries-and-escalation",
+      title: "Boundaries and Escalation",
+      lessons: [
+        {
+          id: "setting-boundaries",
+          title: "Setting Boundaries",
+          minutes: 5,
+          blocks: [
+            text("## Protect your time and wellbeing\n\nBoundaries are clear limits on what you'll accept:\n\n- \"I'm happy to help, but I need requests by Wednesday to meet Friday's deadline.\"\n- \"I'd like us to keep this conversation respectful; let's continue after a break.\"\n- \"I don't discuss colleagues' personal lives.\""),
+            text("## State them calmly and consistently\n\nBoundaries work when they're stated clearly, without anger, and kept consistently."),
+            tip("A boundary is a calm statement of what you will and won't do."),
+            check("Which is a clear, professional boundary?", ["\"You're impossible!\"", "\"I need requests by Wednesday to meet Friday's deadline.\"", "Silently ignoring them", "\"Whatever.\""], 1, "Calm, specific and consistent."),
+          ],
+        },
+        {
+          id: "when-to-escalate",
+          title: "When to Escalate",
+          minutes: 5,
+          blocks: [
+            text("## Escalate when\n\n- You've tried a direct conversation and nothing changed\n- The behaviour affects results, customers or the team\n- You're not able to resolve it at your level"),
+            text("## How to escalate well\n\nBring facts to your manager: dates, examples, impact, and what you've already tried. Ask for help, not punishment:\n\n> \"I've raised the late handovers twice with Sam. It's now affecting client deadlines. Could you help us agree how handovers should work?\""),
+            tip("Keep a short, factual record of incidents and conversations."),
+            check("When is it appropriate to escalate to your manager?", ["Immediately, for any small annoyance", "After a direct conversation hasn't worked and it affects work", "Never", "Only anonymously"], 1, "Try directly first, then escalate with facts."),
+          ],
+        },
+        {
+          id: "unacceptable-behaviour",
+          title: "Unacceptable Behaviour",
+          minutes: 5,
+          blocks: [
+            text("## Some behaviour is never yours to manage alone\n\nHarassment, discrimination, bullying, threats or violence are **not** \"difficult coworker\" problems to fix with a conversation. Report them through your organization's channels: your manager, HR, or a confidential reporting line."),
+            text("## Protect yourself\n\n- Write down what happened, when and who saw it.\n- Use official reporting routes.\n- Seek support from people you trust.\n\nMost organizations prohibit retaliation against people who report in good faith."),
+            tip("If you feel unsafe, report it; don't try to handle it alone."),
+            check("A coworker repeatedly makes offensive comments about your background. What should you do?", ["Report it through your organization's official channels", "Try harder to get along", "Ignore it", "Respond with offensive comments"], 0, "Harassment must be reported through proper channels."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("understanding", "easy", "Which is the most useful way to describe a problem?", ["\"She interrupted me three times in the meeting.\"", "\"She's rude.\"", "\"She's difficult.\"", "\"She hates me.\""], 0, "Describe specific behaviour."),
+    tf("understanding", "easy", "Understanding possible causes of difficult behaviour means excusing it.", false, "Understanding helps you respond; it doesn't excuse it."),
+    mc("understanding", "medium", "Sarcasm and \"as per my last email\" are often signs of…", ["Passive-aggression", "Micromanaging", "Proactiveness", "Good teamwork"], 0, "Indirect hostility is passive-aggression."),
+    mc("understanding", "medium", "What is in your control in a conflict?", ["The other person's behaviour", "Their workload", "Your own response", "Their mood"], 2, "You control your response."),
+    ms("understanding", "medium", "Which help you stay calm in the moment? Select all that apply.", ["Pausing before replying", "Buying time: \"Let me come back to you\"", "Lowering your voice", "Replying angrily in writing"], [0, 1, 2], "Pause, buy time, stay calm."),
+    mc("understanding", "hard", "A colleague takes credit for your ideas. Which preventive step helps?", ["Stop sharing ideas", "Make contributions visible in writing or meetings, and address it directly", "Take credit for theirs", "Gossip about it"], 1, "Visibility plus a direct conversation."),
+    mc("conversations", "easy", "Where should a difficult conversation happen?", ["Team meeting", "Public chat", "Group email", "In private, at a calm time"], 3, "Private and calm."),
+    ord("conversations", "medium", "Put the SBI parts in order.", ["Situation", "Behaviour", "Impact"], "Situation, Behaviour, Impact."),
+    mc("conversations", "medium", "Which is an SBI statement?", ["\"You're always rude.\"", "\"Everyone dislikes you.\"", "\"In Tuesday's call you answered my pricing questions, so the client was unsure who to contact.\"", "\"Stop it.\""], 2, "Situation, behaviour and impact, without labels."),
+    mc("conversations", "medium", "What should the conversation aim for?", ["Winning", "Public apology", "A practical agreement", "Ending contact"], 2, "Agreements change behaviour."),
+    tf("conversations", "easy", "You should listen during the conversation; there may be things you don't know.", true, "Listening reveals context."),
+    ms("conversations", "medium", "How should you prepare? Select all that apply.", ["Choose a private setting", "Prepare specific examples", "Decide what you'd like to change", "Gather colleagues to watch"], [0, 1, 2], "Private, specific, solution-focused."),
+    mc("boundaries", "easy", "Which is a professional boundary?", ["\"You're impossible!\"", "Ignoring them", "\"Whatever.\"", "\"I need requests by Wednesday to meet Friday's deadline.\""], 3, "Calm and specific."),
+    mc("boundaries", "medium", "When should you escalate?", ["After a direct conversation fails and work is affected", "For every annoyance", "Never", "Before trying anything"], 0, "Try directly first."),
+    ms("boundaries", "medium", "What should you bring when escalating? Select all that apply.", ["Dates and examples", "The impact on work", "What you've already tried", "Personal insults"], [0, 1, 2], "Facts, impact and actions taken."),
+    mc("boundaries", "medium", "Harassment or discrimination should be…", ["Handled with a quick chat", "Reported through official channels", "Ignored", "Answered in kind"], 1, "Report through proper routes."),
+    tf("boundaries", "easy", "Keeping a factual record of incidents can help if you need to escalate.", true, "Records support fair escalation."),
+    mc("boundaries", "hard", "You agreed handover rules with a colleague, but nothing changed. Next step?", ["Give up", "Have one more conversation referring to the agreement, then escalate with facts if needed", "Retaliate", "Do their work silently forever"], 1, "Follow up once, then escalate."),
+  ],
+};

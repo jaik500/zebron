@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 8,
+  id: "skills-orientation-to-detail",
+  title: "Orientation to Detail",
+  summary: "Course 8 of 17 in the Zebron Professional Skills Program (Behavioral skills). Get the details right: check your work, use systems that catch errors, and know which details matter most.",
+  description: "Attention to detail means producing accurate, complete work and catching errors before they cause problems. This course covers why details matter, practical checking methods, systems that reduce errors, and how to balance accuracy with speed.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Orientation to Detail** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "navy",
+  outcomes: ["Explain the cost of small errors", "Use checklists and review methods to catch mistakes", "Build habits and systems that reduce errors", "Balance accuracy with speed by focusing on what matters"],
+  skills: ["Accuracy", "Quality checking", "Checklists", "Thoroughness"],
+  quiz: {
+    name: "Orientation to Detail",
+    slug: "skill-orientation-to-detail",
+    description: "Get the details right: check your work, use systems that catch errors, and know which details matter most.",
+    tags: ["Behavioral skills", "soft skills", "orientation to detail"],
+    skillGroup: "Behavioral skills",
+    icon: "manage_search",
+  },
+  topics: [
+    { key: "why-details", name: "Why details matter", description: "The cost of small errors." },
+    { key: "checking", name: "Checking your work", description: "Reviews, checklists and proofreading." },
+    { key: "balance", name: "Systems and balance", description: "Error-proof habits and knowing what matters." },
+  ],
+  modules: [
+    {
+      id: "why-details-matter",
+      title: "Why Details Matter",
+      lessons: [
+        {
+          id: "cost-of-errors",
+          title: "The Cost of Small Errors",
+          minutes: 5,
+          blocks: [
+            text("## Small mistakes, big effects\n\nA wrong digit in a price, a missing attachment, a misspelled name in a contract: small errors can cost money, time and trust.\n\n- A customer billed twice may never return.\n- A wrong date can send a delivery to the wrong week.\n- A misspelled client name signals carelessness."),
+            text("## Errors multiply\n\nAn error early in a process gets copied into everything that follows. Catching it at the source is far cheaper than fixing it later."),
+            tip("Treat names, numbers and dates as high-risk details: always double-check them."),
+            check("Why is it cheaper to catch errors early?", ["Errors disappear on their own", "Later checks are free", "Early errors get copied into later work", "It isn't cheaper"], 2, "Errors at the source spread downstream."),
+          ],
+        },
+        {
+          id: "details-and-trust",
+          title: "Details and Trust",
+          minutes: 5,
+          blocks: [
+            text("## Accuracy builds reputation\n\nColleagues and customers judge reliability by details. Consistently accurate work means people trust your numbers and don't feel the need to re-check everything."),
+            text("## What people notice\n\n- Correct names and titles\n- Numbers that add up\n- Following the requested format\n- Complete information, with nothing missing"),
+            tip("Your reputation is built one accurate email at a time."),
+            check("What happens when your work is consistently accurate?", ["People check it more", "People trust it and rely on it", "Nothing changes", "You get more errors"], 1, "Accuracy builds trust."),
+          ],
+        },
+        {
+          id: "where-errors-happen",
+          title: "Where Errors Happen",
+          minutes: 5,
+          blocks: [
+            text("## Common error points\n\nMistakes cluster in predictable places:\n\n- **Copying** data between systems\n- **Rushing** near deadlines\n- **Interruptions** mid-task\n- **Unfamiliar** tasks\n- **Repetitive** tasks done on autopilot"),
+            text("## Pay extra attention there\n\nKnowing where errors happen tells you where to slow down. For example, after an interruption, re-read the last step before continuing."),
+            tip("After an interruption, go back one step before continuing."),
+            check("Which situation is most likely to cause errors?", ["Working calmly on a familiar task", "Taking a planned break", "Reading instructions", "Copying data between systems under time pressure"], 3, "Copying and rushing are common error points."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "checking-your-work",
+      title: "Checking Your Work",
+      lessons: [
+        {
+          id: "checklists",
+          title: "Using Checklists",
+          minutes: 5,
+          blocks: [
+            text("## Why checklists work\n\nPilots and surgeons use checklists because even experts forget steps. A checklist makes sure the important steps happen every time."),
+            text("## A good checklist\n\n- Short: only the critical steps\n- Specific: \"Check the total matches the invoice\", not \"check numbers\"\n- Used every time, especially when confident\n\nExample for sending a quote: correct client name, correct prices, valid date, attachment included."),
+            tip("Create a five-item checklist for a task you do every week."),
+            check("What makes a checklist effective?", ["Long and general", "Only used for new tasks", "Short, specific and used every time", "Kept in your head"], 2, "Short, specific and consistently used."),
+          ],
+        },
+        {
+          id: "proofreading",
+          title: "Proofreading",
+          minutes: 5,
+          blocks: [
+            text("## Read it differently\n\nYour brain fills in what you meant to write. To catch errors:\n\n- **Take a break** before proofreading.\n- **Read aloud.**\n- **Change the view**: print it or enlarge the text.\n- **Check one thing at a time**: first numbers, then names, then spelling."),
+            text("## Spell-check isn't enough\n\nSpell-checkers miss correct words used wrongly (\"form\" instead of \"from\", \"manger\" for \"manager\" sometimes passes). Read for meaning too."),
+            tip("Read important documents aloud once before sending."),
+            check("Which technique helps catch your own errors?", ["Proofreading immediately after writing", "Reading aloud after a short break", "Relying only on spell-check", "Reading faster"], 1, "A break and reading aloud help you see what you actually wrote."),
+          ],
+        },
+        {
+          id: "peer-review",
+          title: "Asking for a Second Pair of Eyes",
+          minutes: 5,
+          blocks: [
+            text("## Fresh eyes catch more\n\nSomeone else sees what you can't. For high-stakes work (contracts, large orders, public documents), ask a colleague to review."),
+            text("## Make reviews effective\n\nTell the reviewer what to check:\n\n> \"Could you check the figures in table 2 and the client's name? The wording is already approved.\" \n\nFocused reviews are faster and catch more."),
+            tip("Ask reviewers to focus on specific parts."),
+            check("How can you make a peer review more effective?", ["Tell the reviewer exactly what to check", "Say nothing", "Send it without context", "Ask them to rewrite everything"], 0, "Focused review requests are faster and more accurate."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "systems-and-balance",
+      title: "Systems and Balance",
+      lessons: [
+        {
+          id: "error-proofing",
+          title: "Error-Proofing Your Work",
+          minutes: 5,
+          blocks: [
+            text("## Make errors hard to make\n\nInstead of relying on memory, build systems:\n\n- **Templates** with correct standard text\n- **Copy-paste** names and numbers instead of retyping\n- **Automated checks** such as totals that must match\n- **Naming conventions** for files, such as 2026-11-Report-v2"),
+            text("## Organised work is accurate work\n\nA tidy workspace, clear file names and one trusted to-do list reduce mistakes caused by searching or forgetting."),
+            tip("Copy and paste critical data rather than retyping it."),
+            check("Which reduces data-entry errors most?", ["Retyping numbers from memory", "Working faster", "Skipping checks", "Copying and pasting from the source"], 3, "Copying from the source avoids typing errors."),
+          ],
+        },
+        {
+          id: "what-matters-most",
+          title: "Knowing What Matters Most",
+          minutes: 5,
+          blocks: [
+            text("## Not every detail is equal\n\nPerfection everywhere is impossible and slow. Focus checking effort on details with high impact:\n\n| High impact | Lower impact |\n| --- | --- |\n| Prices, totals, dates | Internal note formatting |\n| Client names, legal terms | Font in a draft |\n| Safety instructions | Wording of an informal chat |"),
+            text("## Ask about standards\n\nWhen unsure how polished something should be, ask: \"Is this a quick draft or a final version for the client?\""),
+            tip("Spend most of your checking time on the details that would cause real harm if wrong."),
+            check("Which detail deserves the most checking?", ["The total price on a customer invoice", "The font in an internal draft", "Emoji in a team chat", "The colour of a sticky note"], 0, "High-impact details need the most care."),
+          ],
+        },
+        {
+          id: "speed-and-accuracy",
+          title: "Speed and Accuracy",
+          minutes: 5,
+          blocks: [
+            text("## Finding the balance\n\nBeing detail-oriented doesn't mean being slow. Experienced people work quickly because they have **routines** that catch errors efficiently."),
+            text("## Tips\n\n- Check in **one pass per type** of error (numbers, then names).\n- Use **checklists** so you don't over-check.\n- **Time-box** reviews for low-impact work.\n- **Learn from errors**: add a check for anything that slipped through."),
+            tip("Every error that gets through is a reason to add one line to your checklist."),
+            check("How do experienced people stay both fast and accurate?", ["They use efficient routines and checklists", "They skip checks", "They check everything five times", "They avoid detail"], 0, "Routines make accuracy efficient."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("why-details", "easy", "Why are errors cheaper to fix early?", ["They disappear", "Later fixes are free", "They aren't", "They get copied into later work"], 3, "Early errors spread downstream."),
+    ms("why-details", "medium", "Which are high-risk details to double-check? Select all that apply.", ["Names", "Numbers", "Dates", "The font of a draft note"], [0, 1, 2], "Names, numbers and dates cause real harm when wrong."),
+    mc("why-details", "medium", "Consistently accurate work leads to…", ["Trust and reliance", "More re-checking by others", "More errors", "Nothing"], 0, "Accuracy builds trust."),
+    ms("why-details", "medium", "Where do errors commonly happen? Select all that apply.", ["Copying between systems", "Rushing near deadlines", "After interruptions", "During a calm, focused review"], [0, 1, 2], "Copying, rushing and interruptions are error points."),
+    mc("why-details", "easy", "After an interruption, you should…", ["Continue where you think you were", "Re-read the last step before continuing", "Start over completely", "Skip ahead"], 1, "Going back one step catches missed work."),
+    tf("why-details", "easy", "Repetitive tasks done on autopilot can be an error risk.", true, "Autopilot reduces attention."),
+    mc("checking", "easy", "An effective checklist is…", ["Long and vague", "Only for new staff", "Short, specific and used every time", "Memorised"], 2, "Short, specific, consistent."),
+    mc("checking", "medium", "Why do experts like pilots use checklists?", ["Even experts forget steps", "They lack training", "Rules require paper", "To slow down"], 0, "Checklists guard against forgetting."),
+    ms("checking", "medium", "Which help you proofread your own work? Select all that apply.", ["Taking a break first", "Reading aloud", "Changing the view (print or zoom)", "Proofreading immediately at speed"], [0, 1, 2], "Distance and different views reveal errors."),
+    tf("checking", "easy", "A spell-checker catches every error.", false, "It misses correct words used wrongly."),
+    mc("checking", "medium", "How do you make a peer review effective?", ["Give no context", "Ask them to rewrite all", "Send at the last minute", "Tell the reviewer exactly what to check"], 3, "Focused review requests work better."),
+    ord("checking", "medium", "Put a one-thing-at-a-time proofreading pass in a sensible order for a quote.", ["Check numbers", "Check names", "Check spelling"], "Check high-impact items first, one type at a time."),
+    mc("balance", "easy", "Which reduces typing errors?", ["Retyping from memory", "Copying and pasting from the source", "Typing faster", "Skipping review"], 1, "Copy from the source."),
+    mc("balance", "medium", "Which detail deserves the most checking?", ["Font in a draft", "Chat emoji", "Total price on an invoice", "Sticky note colour"], 2, "High impact first."),
+    ms("balance", "medium", "Which error-proofing systems help? Select all that apply.", ["Templates", "Automated total checks", "File naming conventions", "Relying on memory"], [0, 1, 2], "Systems beat memory."),
+    tf("balance", "medium", "Being detail-oriented means checking everything as many times as possible.", false, "Focus effort on high-impact details with efficient routines."),
+    mc("balance", "medium", "An error slipped through. What should you do?", ["Add a check for it to your checklist", "Ignore it", "Blame the tool", "Check everything ten times"], 0, "Learn from errors by updating your system."),
+    mc("balance", "hard", "You're unsure how polished a document must be. Best step?", ["Assume perfection is required", "Ask whether it's a quick draft or a final client version", "Skip checking", "Rewrite it twice"], 1, "Clarify standards to balance speed and accuracy."),
+  ],
+};

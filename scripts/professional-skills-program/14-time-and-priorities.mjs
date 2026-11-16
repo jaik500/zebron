@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 14,
+  id: "skills-time-and-priorities",
+  title: "Managing Time and Priorities",
+  summary: "Course 14 of 17 in the Zebron Professional Skills Program (Workplace & career). Decide what matters, plan your week, protect focus time and handle interruptions and overload.",
+  description: "Time management is really priority management. This course covers choosing priorities, planning your week and day, working with focus, and handling interruptions, procrastination and overload.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Managing Time and Priorities** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "navy",
+  outcomes: ["Prioritise tasks by importance and urgency", "Plan your week and day realistically", "Protect focus time and reduce distractions", "Handle procrastination and overload"],
+  skills: ["Prioritisation", "Planning", "Focus", "Workload management"],
+  quiz: {
+    name: "Managing Time and Priorities",
+    slug: "skill-time-and-priorities",
+    description: "Decide what matters, plan your week, protect focus time and handle interruptions and overload.",
+    tags: ["Workplace & career", "soft skills", "time and priorities"],
+    skillGroup: "Workplace & career",
+    icon: "schedule",
+  },
+  topics: [
+    { key: "priorities", name: "Choosing priorities", description: "Important vs urgent, and saying no." },
+    { key: "planning-time", name: "Planning your time", description: "Weekly and daily planning." },
+    { key: "focus", name: "Focus and overload", description: "Distractions, procrastination and too much work." },
+  ],
+  modules: [
+    {
+      id: "choosing-priorities",
+      title: "Choosing Priorities",
+      lessons: [
+        {
+          id: "priority-matrix",
+          title: "Important and Urgent",
+          minutes: 5,
+          blocks: [
+            text("## The priority matrix\n\n| | Urgent | Not urgent |\n| --- | --- | --- |\n| **Important** | **Do** (crises, deadlines) | **Schedule** (planning, learning, prevention) |\n| **Not important** | **Delegate or minimise** (some interruptions) | **Drop** (time-wasters) |\n\nThe secret of effective people is spending more time in **important, not urgent**: it prevents many future crises."),
+            text("## Sorting your list\n\nGo through your to-do list and mark each item with one of the four boxes. You'll often find tasks you can drop or hand over."),
+            tip("Schedule at least one important, not urgent task every week."),
+            check("Planning next quarter's training belongs in which box?", ["Urgent and important", "Urgent, not important", "Important, not urgent", "Neither"], 2, "Planning is important but rarely urgent: schedule it."),
+          ],
+        },
+        {
+          id: "most-important-tasks",
+          title: "Your Most Important Tasks",
+          minutes: 5,
+          blocks: [
+            text("## Three a day\n\nChoose your **one to three most important tasks** (MITs) each day: the ones that would make the day a success even if nothing else got done. Do them early, before email and meetings take over."),
+            text("## Eat the frog\n\nIf one task is the hardest or most dreaded, do it first. The rest of the day feels easier, and you avoid carrying the worry all day."),
+            tip("Write tomorrow's MITs before you finish today."),
+            check("When should you usually do your most important tasks?", ["At the end of the day", "Only when you feel like it", "Early, before email and meetings take over", "Never"], 2, "Protect your best hours for what matters most."),
+          ],
+        },
+        {
+          id: "saying-no",
+          title: "Saying No and Not Yet",
+          minutes: 5,
+          blocks: [
+            text("## Every yes costs time\n\nSaying yes to everything means saying no to your priorities. Ways to decline or delay politely:\n\n- \"I can't take this on this week, but I could next Tuesday.\"\n- \"If I take this, which of my current tasks should move?\"\n- \"I can help with part of it: I'll review, but can't write it.\""),
+            text("## Ask your manager to prioritise\n\nWhen requests conflict, don't guess: show your list and ask which comes first. It's your manager's job to set priorities."),
+            tip("\"Which of these should come first?\" is a professional question, not a complaint."),
+            check("Your manager adds an urgent task when you're already full. Best response?", ["Ask which current task should move", "Say yes and work all night", "Ignore the new task", "Refuse without explanation"], 0, "Let your manager decide priorities when capacity is full."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "planning-your-time",
+      title: "Planning Your Time",
+      lessons: [
+        {
+          id: "weekly-planning",
+          title: "Planning Your Week",
+          minutes: 5,
+          blocks: [
+            text("## Fifteen minutes on Friday or Monday\n\n1. Review deadlines and meetings for the week.\n2. Choose three to five priorities.\n3. **Block time** in your calendar for them.\n4. Leave buffer time for the unexpected (about 20%)."),
+            text("## Time blocking\n\nPut tasks in your calendar as appointments with yourself: \"10:00 to 11:30: draft proposal\". Calendar time is real; to-do lists are wishes."),
+            tip("Block your priorities in the calendar before others fill it."),
+            check("What is time blocking?", ["Refusing all meetings", "Scheduling tasks as calendar appointments", "Working without breaks", "Blocking colleagues' calendars"], 1, "Calendar blocks turn intentions into time."),
+          ],
+        },
+        {
+          id: "daily-planning",
+          title: "Planning Your Day",
+          minutes: 5,
+          blocks: [
+            text("## A five-minute start\n\nEach morning (or the evening before):\n\n1. Check your calendar.\n2. Choose your MITs.\n3. Estimate how long each takes, and add a little extra.\n4. Match tasks to your energy: hard thinking when you're sharpest, admin when you're tired."),
+            text("## Be realistic\n\nMost people overestimate what they can do in a day. If your plan never fits, plan less and finish more."),
+            tip("Plan for about 70% of your day; the rest will fill itself."),
+            check("What is a common daily planning mistake?", ["Planning too little", "Choosing priorities", "Checking the calendar", "Overestimating how much fits in a day"], 3, "Plan realistically, with buffer."),
+          ],
+        },
+        {
+          id: "estimating-time",
+          title: "Estimating Time",
+          minutes: 5,
+          blocks: [
+            text("## Why estimates go wrong\n\nPeople underestimate because they imagine the task going perfectly, forgetting interruptions, questions and reviews (the **planning fallacy**)."),
+            text("## Better estimates\n\n- Base estimates on how long similar tasks really took.\n- Break big tasks into smaller pieces and estimate each.\n- Add buffer for reviews and surprises.\n- Track actual time occasionally to calibrate."),
+            tip("Track a few tasks for a week to learn how long things really take you."),
+            check("What is the planning fallacy?", ["Underestimating time by imagining tasks going perfectly", "Planning too much", "Never planning", "Overestimating everything"], 0, "We tend to forget interruptions and problems when estimating."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "focus-and-overload",
+      title: "Focus and Overload",
+      lessons: [
+        {
+          id: "focus-time",
+          title: "Protecting Focus",
+          minutes: 5,
+          blocks: [
+            text("## Deep work needs uninterrupted time\n\nSwitching between tasks costs time and attention. For demanding work:\n\n- Turn off notifications.\n- Close email and chat for a set block (for example 50 minutes).\n- Put your phone out of reach.\n- Tell colleagues when you'll be available again."),
+            text("## Batch the small stuff\n\nAnswer emails and messages in batches (for example three times a day) instead of constantly."),
+            tip("Try one 50-minute focus block a day with notifications off."),
+            check("Which helps protect focus?", ["Checking messages every minute", "Turning off notifications for a set block", "Multitasking", "Keeping email open always"], 1, "Uninterrupted blocks enable deep work."),
+          ],
+        },
+        {
+          id: "procrastination",
+          title: "Beating Procrastination",
+          minutes: 5,
+          blocks: [
+            text("## Why we delay\n\nProcrastination is usually about **feelings**, not laziness: the task feels boring, unclear, too big or scary."),
+            text("## What helps\n\n| Cause | Fix |\n| --- | --- |\n| Too big | Break it into a 10-minute first step |\n| Unclear | Write down what \"done\" looks like, or ask |\n| Boring | Pair it with something pleasant, or time-box it |\n| Scary | Start with the easiest part, ask for help |\n\nThe **two-minute rule**: if something takes less than two minutes, do it now."),
+            tip("Can't start? Commit to only ten minutes."),
+            check("A report feels too big to start. What helps most?", ["Wait for inspiration", "Work on something else all day", "Ask for a later deadline every time", "Break it into a ten-minute first step"], 3, "A small first step overcomes resistance."),
+          ],
+        },
+        {
+          id: "handling-overload",
+          title: "Handling Overload",
+          minutes: 5,
+          blocks: [
+            text("## When there's simply too much\n\n1. **List everything** on your plate.\n2. **Prioritise** with the matrix.\n3. **Talk to your manager early** with the list and suggestions.\n4. **Delegate, delay or drop** what you can."),
+            text("## Don't suffer in silence\n\nWorking late every night isn't a plan; it leads to mistakes and exhaustion. Raising overload early, with facts and options, is professional and responsible."),
+            tip("Raise overload early, with your list and options, not on the deadline."),
+            check("You're overloaded for the third week. Best action?", ["Show your manager the list and suggest what to delay or delegate", "Keep working late silently", "Drop tasks without telling anyone", "Wait for someone to notice"], 0, "Early, fact-based conversations fix overload."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("priorities", "easy", "Planning and learning usually fall into which box?", ["Urgent and important", "Important, not urgent", "Urgent, not important", "Neither"], 1, "Schedule important, non-urgent work."),
+    mc("priorities", "medium", "Tasks that are neither urgent nor important should be…", ["Done first", "Dropped", "Scheduled", "Delegated to your manager"], 1, "Drop time-wasters."),
+    mc("priorities", "easy", "How many most important tasks should you pick per day?", ["Ten", "Twenty", "None", "One to three"], 3, "A few MITs keep focus."),
+    tf("priorities", "easy", "\"Eat the frog\" means doing your hardest task first.", true, "Tackle the dreaded task early."),
+    mc("priorities", "medium", "Your manager adds a task when you're full. Best response?", ["Say yes and work all night", "Ask which current task should move", "Ignore it", "Refuse silently"], 1, "Let the manager set priorities."),
+    ms("priorities", "medium", "Which are polite ways to say no or not yet? Select all that apply.", ["\"I can do it next Tuesday.\"", "\"Which current task should move?\"", "\"I can review but not write it.\"", "Ignoring the request"], [0, 1, 2], "Offer alternatives."),
+    mc("planning-time", "easy", "Time blocking means…", ["Refusing meetings", "Never taking breaks", "Scheduling tasks as calendar appointments", "Blocking others' calendars"], 2, "Tasks become appointments."),
+    ord("planning-time", "medium", "Put the weekly planning steps in order.", ["Review deadlines and meetings", "Choose three to five priorities", "Block time for them", "Leave buffer time"], "Review, choose, block, buffer."),
+    mc("planning-time", "medium", "About how much of your day should you plan?", ["100%", "10%", "None", "About 70%"], 3, "Leave room for the unexpected."),
+    mc("planning-time", "medium", "The planning fallacy is…", ["Underestimating time by imagining perfect execution", "Planning too much", "Never planning", "Overestimating"], 0, "We forget interruptions."),
+    tf("planning-time", "easy", "Matching hard tasks to your highest-energy time helps productivity.", true, "Use your sharpest hours for demanding work."),
+    mc("planning-time", "hard", "Your estimates are always too short. Best fix?", ["Base estimates on how long similar tasks really took", "Work faster", "Stop estimating", "Double every number blindly"], 0, "Calibrate with real data."),
+    mc("focus", "easy", "Which protects focus?", ["Constant messages", "Multitasking", "Notifications off for a set block", "Open email all day"], 2, "Uninterrupted blocks."),
+    mc("focus", "medium", "Procrastination is usually caused by…", ["Feelings about the task: boring, unclear, big or scary", "Laziness only", "Too much time", "Good planning"], 0, "It's often emotional."),
+    mc("focus", "easy", "The two-minute rule says…", ["Take a two-minute break each hour", "Spend two minutes on every task", "If it takes under two minutes, do it now", "Reply within two minutes"], 2, "Do tiny tasks immediately."),
+    ord("focus", "medium", "Put the overload steps in order.", ["List everything", "Prioritise", "Talk to your manager", "Delegate, delay or drop"], "List, prioritise, discuss, act."),
+    tf("focus", "medium", "Working late every night is a sustainable plan for overload.", false, "It causes mistakes and exhaustion; raise it early."),
+    ms("focus", "medium", "Which help with a task that feels unclear? Select all that apply.", ["Write what \"done\" looks like", "Ask for clarification", "Break it into steps", "Avoid it until the deadline"], [0, 1, 2], "Clarity reduces procrastination."),
+  ],
+};

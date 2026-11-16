@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 16,
+  id: "skills-leadership",
+  title: "Leadership",
+  summary: "Course 16 of 17 in the Zebron Professional Skills Program (Leadership & management). Lead with or without a title: set direction, build trust, motivate people and lead through change.",
+  description: "Leadership is influencing people toward a shared goal, and anyone can do it. This course covers leadership styles, building trust, setting a clear direction, motivating and developing others, and leading through change.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Leadership** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "violet",
+  outcomes: ["Explain what leadership is and adapt your leadership style", "Build trust through credibility and care", "Set a clear direction others understand", "Motivate and develop people, and lead through change"],
+  skills: ["Leadership", "Influence", "Vision setting", "Change leadership"],
+  quiz: {
+    name: "Leadership",
+    slug: "skill-leadership",
+    description: "Lead with or without a title: set direction, build trust, motivate people and lead through change.",
+    tags: ["Leadership & management", "soft skills", "leadership"],
+    skillGroup: "Leadership & management",
+    icon: "flag",
+  },
+  topics: [
+    { key: "what-leadership-is", name: "What leadership is", description: "Leadership, styles and influence." },
+    { key: "trust-direction", name: "Trust and direction", description: "Credibility, vision and clarity." },
+    { key: "people-change", name: "People and change", description: "Motivating, developing and leading change." },
+  ],
+  modules: [
+    {
+      id: "understanding-leadership",
+      title: "Understanding Leadership",
+      lessons: [
+        {
+          id: "leadership-defined",
+          title: "What Leadership Is",
+          minutes: 5,
+          blocks: [
+            text("## Influence, not title\n\n**Leadership** is influencing people to work toward a shared goal. A job title gives authority, but people choose whether to follow.\n\nYou can lead without a title: organising a project, mentoring a newcomer, proposing a better process, or keeping a team calm in a crisis."),
+            text("## Leadership vs management\n\n| Leadership | Management |\n| --- | --- |\n| Sets direction and inspires | Plans, organises and controls |\n| Leads change | Keeps things running reliably |\n| Focuses on people and purpose | Focuses on processes and results |\n\nOrganizations need both, often from the same person."),
+            tip("Look for one chance this month to lead without a title."),
+            check("Which is true about leadership?", ["Only managers can lead", "Leadership is influencing people toward a shared goal, with or without a title", "Leadership means giving orders", "Leadership is the same as administration"], 1, "Leadership is influence, not position."),
+          ],
+        },
+        {
+          id: "leadership-styles",
+          title: "Leadership Styles",
+          minutes: 5,
+          blocks: [
+            text("## Adapting your style\n\n| Style | When it fits |\n| --- | --- |\n| **Directive**: clear instructions | Emergencies, new team members |\n| **Coaching**: questions and development | People building skills |\n| **Participative**: involve the team in decisions | When buy-in and ideas matter |\n| **Delegating**: hand over ownership | Experienced, capable people |\n| **Visionary**: inspire with purpose | Change and new directions |"),
+            text("## Situational leadership\n\nThe best leaders adapt their style to the person and situation. A new employee needs more direction; an expert needs more freedom."),
+            tip("Ask: \"What does this person need from me right now?\""),
+            check("An experienced, capable team member takes on a familiar task. Which style fits best?", ["Delegating", "Directive", "Constant supervision", "No contact at all"], 0, "Capable, experienced people benefit from ownership."),
+          ],
+        },
+        {
+          id: "self-leadership",
+          title: "Leading Yourself First",
+          minutes: 5,
+          blocks: [
+            text("## Lead by example\n\nPeople watch what leaders do more than what they say. Self-leadership means:\n\n- Knowing your strengths and blind spots\n- Managing your emotions under pressure\n- Keeping your own commitments\n- Continuing to learn"),
+            text("## Seek feedback\n\nLeaders often hear less honest feedback as they become more senior. Ask regularly: \"What's one thing I could do to support the team better?\""),
+            tip("Model the behaviour you want: if you want punctuality, be punctual."),
+            check("Why is self-leadership important for leaders?", ["It isn't", "It replaces teamwork", "People follow what leaders do, not only what they say", "It means working alone"], 2, "Leaders set the example."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "trust-and-direction",
+      title: "Trust and Direction",
+      lessons: [
+        {
+          id: "building-trust",
+          title: "Building Trust",
+          minutes: 5,
+          blocks: [
+            text("## Credibility and care\n\nPeople trust leaders who show:\n\n- **Competence**: they know what they're doing.\n- **Reliability**: they keep promises.\n- **Integrity**: they're honest, even with bad news.\n- **Care**: they care about people, not just results."),
+            text("## Trust is easy to lose\n\nOne broken promise or dishonest moment can undo months of trust. Admit mistakes, explain decisions, and treat everyone fairly."),
+            tip("Tell the truth early, especially when the news is bad."),
+            check("Which behaviour builds trust fastest?", ["Hiding bad news", "Taking credit for team success", "Treating favourites differently", "Keeping promises and being honest"], 3, "Reliability and honesty build trust."),
+          ],
+        },
+        {
+          id: "setting-direction",
+          title: "Setting Direction",
+          minutes: 5,
+          blocks: [
+            text("## A clear why, what and how\n\nPeople follow a direction they understand:\n\n- **Why**: the purpose. Why does this matter?\n- **What**: the goal. What will success look like?\n- **How**: the priorities and principles to get there."),
+            text("## Repeat it\n\nA direction mentioned once is forgotten. Good leaders repeat the core message in meetings, updates and decisions, and connect daily work back to it."),
+            tip("Can every team member explain the team's goal in one sentence? If not, repeat it."),
+            check("Which explains direction most completely?", ["Only the deadline", "Why it matters, what success looks like, and how to get there", "A list of rules", "The budget"], 1, "Why, what and how together give clear direction."),
+          ],
+        },
+        {
+          id: "decision-making",
+          title: "Making Decisions",
+          minutes: 5,
+          blocks: [
+            text("## Decide well\n\n1. Clarify the decision and who should be involved.\n2. Gather the key information, not all information.\n3. Consider options and risks.\n4. Decide, and explain the reasoning.\n5. Review later: what did we learn?"),
+            text("## Involve people\n\nAsking for input before deciding improves quality and commitment. Be clear whether you're **asking for ideas**, **deciding together**, or **informing** about a decision already made."),
+            tip("Say clearly whether you're asking for input or announcing a decision."),
+            check("Why explain the reasoning behind a decision?", ["It builds understanding and commitment, even among those who disagreed", "It isn't necessary", "To avoid future decisions", "It slows things down"], 0, "Explanations help people accept and support decisions."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "people-and-change",
+      title: "People and Change",
+      lessons: [
+        {
+          id: "motivating-people",
+          title: "Motivating People",
+          minutes: 5,
+          blocks: [
+            text("## What motivates people at work\n\nBeyond pay, people are motivated by:\n\n- **Autonomy**: some control over how they work\n- **Mastery**: getting better at something\n- **Purpose**: knowing why the work matters\n- **Recognition**: being noticed and appreciated\n- **Belonging**: being part of a team"),
+            text("## Recognition that works\n\nBe specific and timely:\n\n> \"Your checklist cut invoice errors in half this month. That saved the team hours of rework, thank you.\""),
+            tip("Recognise one specific contribution every week."),
+            check("Which recognition is most effective?", ["\"Your checklist halved invoice errors this month and saved hours. Thank you.\"", "\"Good job, everyone.\" once a year", "No recognition", "Only a pay rise"], 0, "Specific, timely recognition motivates."),
+          ],
+        },
+        {
+          id: "developing-others",
+          title: "Developing Others",
+          minutes: 5,
+          blocks: [
+            text("## Leaders grow people\n\nGreat leaders help others grow:\n\n- Give stretch assignments with support.\n- Coach with questions rather than always giving answers.\n- Give regular, specific feedback.\n- Talk about people's career goals."),
+            text("## Delegation as development\n\nDelegating is not dumping work. Delegate tasks that build skills, explain the outcome you want, agree on check-ins, and step back."),
+            tip("Ask each person: \"What would you like to learn this year?\""),
+            check("Which is development-focused delegation?", ["Passing on unwanted tasks without explanation", "Doing everything yourself", "Giving a skill-building task with a clear outcome and agreed check-ins", "Micromanaging every step"], 2, "Delegation with clarity and support develops people."),
+          ],
+        },
+        {
+          id: "leading-change",
+          title: "Leading Through Change",
+          minutes: 5,
+          blocks: [
+            text("## People need time to adjust\n\nPeople react to change in stages: uncertainty or resistance, then exploration, then commitment. Leaders help by:\n\n- Explaining **why** the change is needed\n- Being honest about what is known and unknown\n- Listening to concerns\n- Involving people in **how** the change happens\n- Celebrating early progress"),
+            text("## Communicate more than you think\n\nDuring change, silence fills with rumours. Communicate often, even to say \"we don't know yet; we'll update you on Friday\"."),
+            tip("During change, communicate even when there's little news."),
+            check("During a change, what should a leader do when details aren't decided yet?", ["Say nothing until everything is final", "Invent details", "Avoid the team", "Share what is known, admit what isn't, and say when the next update will come"], 3, "Honest, regular communication reduces rumours and anxiety."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("what-leadership-is", "easy", "Leadership is…", ["Influencing people toward a shared goal", "A job title", "Giving orders", "Administration"], 0, "Leadership is influence."),
+    tf("what-leadership-is", "easy", "You need a management title to show leadership.", false, "Anyone can lead."),
+    mc("what-leadership-is", "medium", "Which style fits an emergency or a brand-new team member?", ["Directive", "Delegating", "Visionary", "Hands-off"], 0, "Clear direction helps in emergencies and early on."),
+    mc("what-leadership-is", "medium", "Situational leadership means…", ["Using one style always", "Leading only in crises", "Avoiding decisions", "Adapting style to the person and situation"], 3, "Adapt to what people need."),
+    ms("what-leadership-is", "medium", "Which are part of self-leadership? Select all that apply.", ["Managing your emotions", "Keeping your commitments", "Continuing to learn", "Expecting others to follow rules you break"], [0, 1, 2], "Lead by example."),
+    mc("what-leadership-is", "medium", "Management mainly focuses on…", ["Inspiring change", "Only vision", "Nothing", "Planning, organising and running processes"], 3, "Management keeps things running."),
+    ms("trust-direction", "medium", "Which build trust in a leader? Select all that apply.", ["Competence", "Reliability", "Integrity and care", "Hiding bad news"], [0, 1, 2], "Credibility and care."),
+    ord("trust-direction", "medium", "Put the parts of a clear direction in order.", ["Why it matters", "What success looks like", "How to get there"], "Why, what, how."),
+    mc("trust-direction", "medium", "Why repeat the team's direction often?", ["It's annoying", "A message mentioned once is forgotten", "To fill time", "It isn't needed"], 1, "Repetition keeps direction alive."),
+    ord("trust-direction", "medium", "Put the decision steps in order.", ["Clarify the decision", "Gather key information", "Consider options and risks", "Decide and explain", "Review later"], "Clarify, gather, consider, decide, review."),
+    tf("trust-direction", "easy", "Leaders should be clear whether they're asking for input or announcing a decision.", true, "Clarity prevents frustration."),
+    mc("trust-direction", "hard", "A leader promised a team update but didn't give it. What is the main risk?", ["None", "Loss of trust", "Faster work", "Better morale"], 1, "Broken promises erode trust."),
+    ms("people-change", "medium", "Which motivate people beyond pay? Select all that apply.", ["Autonomy", "Mastery", "Purpose", "Constant criticism"], [0, 1, 2], "Autonomy, mastery and purpose."),
+    mc("people-change", "medium", "Effective recognition is…", ["Vague and yearly", "Only financial", "Specific and timely", "Public criticism"], 2, "Specific and timely."),
+    mc("people-change", "medium", "Development-focused delegation includes…", ["Dumping unwanted work", "A clear outcome and agreed check-ins", "Micromanaging", "No explanation"], 1, "Clarity plus support."),
+    mc("people-change", "medium", "During change with undecided details, a leader should…", ["Share what's known and when the next update comes", "Stay silent", "Invent details", "Avoid people"], 0, "Honest, regular communication."),
+    tf("people-change", "easy", "During change, silence tends to fill with rumours.", true, "Communicate often."),
+    mc("people-change", "hard", "A team resists a new system. Which action helps most?", ["Force it without explanation", "Punish resisters", "Explain why, listen to concerns and involve them in how it's rolled out", "Delay forever"], 2, "Why, listening and involvement build commitment."),
+  ],
+};

@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 3,
+  id: "skills-personal-responsibility",
+  title: "Personal Responsibility",
+  summary: "Course 3 of 17 in the Zebron Professional Skills Program (Mindsets). Own your work, your commitments and your mistakes: be someone others can rely on.",
+  description: "Personal responsibility means taking ownership of your actions, commitments and results instead of blaming circumstances or other people. This course covers ownership, reliable commitments, owning mistakes and the difference between what you control and what you don't.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Personal Responsibility** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "sunrise",
+  outcomes: ["Explain what ownership looks like at work", "Make and keep reliable commitments", "Own mistakes and fix their impact", "Focus effort on what you can control"],
+  skills: ["Accountability", "Reliability", "Ownership", "Integrity"],
+  quiz: {
+    name: "Personal Responsibility",
+    slug: "skill-personal-responsibility",
+    description: "Own your work, your commitments and your mistakes: be someone others can rely on.",
+    tags: ["Mindsets", "soft skills", "personal responsibility"],
+    skillGroup: "Mindsets",
+    icon: "task_alt",
+  },
+  topics: [
+    { key: "ownership", name: "Ownership", description: "Taking responsibility for your work and results." },
+    { key: "commitments", name: "Commitments", description: "Making, keeping and renegotiating promises." },
+    { key: "control", name: "Control and integrity", description: "Focusing on what you can control and doing the right thing." },
+  ],
+  modules: [
+    {
+      id: "owning-your-work",
+      title: "Owning Your Work",
+      lessons: [
+        {
+          id: "what-ownership-means",
+          title: "What Ownership Means",
+          minutes: 5,
+          blocks: [
+            text("## Owning the outcome\n\n**Personal responsibility** means you treat your work as **yours**: you care about the result, not just about doing your part.\n\n- An employee who **does a task**: \"I sent the report.\"\n- An employee who **owns the outcome**: \"I sent the report, checked the client received it, and answered their two questions.\"\n\nOwnership doesn't mean doing everything alone. It means making sure things get done, including asking for help."),
+            text("## Signs of ownership\n\n- You finish what you start, or hand it over clearly.\n- You speak up early when something is at risk.\n- You don't wait to be told about obvious next steps.\n- You say \"I\" when something goes wrong, and \"we\" when it goes right."),
+            tip("Ask yourself at the end of a task: \"Is the goal actually achieved, or just my step?\""),
+            check("Which behaviour shows ownership of an outcome?", ["Sending the file, confirming it arrived and answering questions", "Sending a file and assuming it's fine", "Waiting for someone to check your work", "Doing only what is written in your job description"], 0, "Ownership means caring that the goal is achieved, not just finishing your step."),
+          ],
+        },
+        {
+          id: "blame-vs-ownership",
+          title: "Blame and Excuses",
+          minutes: 5,
+          blocks: [
+            text("## The blame trap\n\nWhen something goes wrong, it's tempting to point elsewhere: \"The system was slow\", \"Nobody told me\", \"That's not my job\". Sometimes these are true, but they don't fix anything.\n\nBlame looks **backward** at who is at fault. Ownership looks **forward** at what to do next."),
+            text("## Turning excuses into actions\n\n| Excuse | Ownership response |\n| --- | --- |\n| \"Nobody told me the deadline changed.\" | \"I'll check deadlines at our Monday meeting from now on.\" |\n| \"The instructions were unclear.\" | \"I'll confirm my understanding before I start next time.\" |\n| \"It's not my job.\" | \"I'll find out who handles this and make sure they know.\" |"),
+            tip("Next time you hear yourself start an excuse, finish the sentence with \"…so next time I will…\""),
+            check("A deadline was missed because instructions were unclear. What is the ownership response?", ["\"It's the manager's fault.\"", "\"Nothing could be done.\"", "\"I'll confirm my understanding before starting next time.\"", "\"I won't take tasks like this again.\""], 2, "Ownership focuses on what you can do differently next time."),
+          ],
+        },
+        {
+          id: "reliability",
+          title: "Being Reliable",
+          minutes: 5,
+          blocks: [
+            text("## Trust is built in small moments\n\nPeople trust colleagues who are **reliable**: they do what they say, when they say. Reliability is built through hundreds of small actions:\n\n- Arriving on time to meetings\n- Replying when you said you would\n- Delivering work at the agreed quality"),
+            text("## Reliability habits\n\n1. **Write down** every commitment as you make it.\n2. **Check your list** daily.\n3. **Under-promise slightly** so you can deliver confidently.\n4. **Close the loop**: tell people when something is done."),
+            tip("Keep one trusted list for all your commitments. Memory is not a system."),
+            check("Which habit most improves reliability?", ["Remembering commitments in your head", "Writing every commitment down and checking the list daily", "Promising fast delivery on everything", "Only replying when chased"], 1, "A written, checked list prevents forgotten commitments."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "keeping-commitments",
+      title: "Keeping Commitments",
+      lessons: [
+        {
+          id: "making-realistic-promises",
+          title: "Making Realistic Promises",
+          minutes: 5,
+          blocks: [
+            text("## Think before you say yes\n\nMany broken promises start as an eager \"yes\". Before committing, check:\n\n- Do I understand what is needed?\n- Do I have the time, given my other work?\n- What could get in the way?"),
+            text("## Saying yes well\n\nA responsible yes is specific:\n\n> \"Yes, I can have the draft to you by Thursday at noon. If the data arrives late, I'll let you know on Wednesday.\"\n\nIt states **what**, **when**, and **what could change it**."),
+            tip("\"Let me check my workload and confirm in an hour\" is a responsible answer."),
+            check("Which commitment is the most responsible?", ["\"Sure, I'll do it sometime.\"", "\"No problem, right away\" (without checking your workload)", "\"Maybe.\"", "\"Yes, the draft by Thursday noon; I'll tell you Wednesday if the data is late.\""], 3, "A specific promise with a warning plan is responsible and reliable."),
+          ],
+        },
+        {
+          id: "renegotiating",
+          title: "When You Can't Deliver",
+          minutes: 5,
+          blocks: [
+            text("## Speak up early\n\nSometimes a commitment becomes impossible. The responsible move is to tell people **as soon as you know**, not on the deadline.\n\nEarly warning gives others time to adjust. A late surprise damages trust far more than an early renegotiation."),
+            text("## How to renegotiate\n\n1. **State the problem** briefly.\n2. **Offer options**: a later date, a smaller version, or help from someone else.\n3. **Agree** a new commitment, and keep it.\n\n> \"The data arrived late, so the full report won't be ready Thursday. I can send the summary Thursday and the full report Monday. Which works better?\""),
+            tip("Bad news doesn't get better with age. Share it early."),
+            check("You realise on Tuesday that you'll miss Friday's deadline. What should you do?", ["Tell the person now and offer options", "Wait and hope to catch up", "Say nothing and deliver late", "Ask a colleague to explain on Friday"], 0, "Early warning with options keeps trust and lets others plan."),
+          ],
+        },
+        {
+          id: "owning-mistakes",
+          title: "Owning Mistakes",
+          minutes: 5,
+          blocks: [
+            text("## Admit, fix, prevent\n\nWhen you make a mistake:\n\n1. **Admit** it quickly and plainly.\n2. **Fix** the impact as far as you can.\n3. **Prevent** a repeat with a specific change.\n\n> \"I entered the wrong date on the order. I've corrected it with the supplier and added a date check to my process.\""),
+            text("## Why it builds trust\n\nPeople forgive mistakes; they don't forgive hiding them. Colleagues who own errors quickly are trusted **more**, because others know they'll hear about problems in time to act."),
+            tip("Use the three words: admit, fix, prevent."),
+            check("What are the three steps to owning a mistake?", ["Deny, delay, defend", "Blame, explain, forget", "Admit, fix, prevent", "Hide, fix, hope"], 2, "Admit it, fix its impact and prevent a repeat."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "control-and-integrity",
+      title: "Control and Integrity",
+      lessons: [
+        {
+          id: "circle-of-control",
+          title: "What You Can Control",
+          minutes: 5,
+          blocks: [
+            text("## Focus your energy\n\nSome things you **control** (your effort, preparation, attitude, responses). Some you can **influence** (your team's decisions, a client's opinion). Some you **can't** (the economy, the weather, other people's choices).\n\nResponsible people spend most of their energy on what they control and influence."),
+            text("## In practice\n\n| Situation | Can't control | Can control |\n| --- | --- | --- |\n| Company reorganisation | The decision | Learning the new structure, asking good questions |\n| A difficult customer | Their mood | Your calm, your clarity |\n| A tough exam | The questions | Your preparation |"),
+            tip("When you feel stuck, list what you can control right now and do one of those things."),
+            check("A reorganisation is announced. What is within your control?", ["How you prepare and respond", "The decision itself", "Other people's reactions", "The company's budget"], 0, "Your preparation and response are within your control."),
+          ],
+        },
+        {
+          id: "integrity",
+          title: "Integrity",
+          minutes: 5,
+          blocks: [
+            text("## Doing the right thing when no one is watching\n\n**Integrity** means acting honestly and consistently with your values and your organization's rules, even when a shortcut would be easier or no one would notice.\n\nExamples: reporting your actual hours, giving credit to the colleague who did the work, flagging a safety issue that would be easier to ignore."),
+            text("## Gray areas\n\nWhen unsure, ask:\n\n- Would I be comfortable if this were shared with my team?\n- Does it follow our policies?\n- Who could be harmed?\n\nIf the answer worries you, ask your manager or a trusted colleague before acting."),
+            tip("If you'd be uncomfortable explaining a choice to your team, think twice."),
+            check("Which action shows integrity?", ["Taking credit for a colleague's idea", "Reporting your actual hours worked", "Ignoring a safety issue because it's not your area", "Skipping a required check when no one is watching"], 1, "Integrity means honesty and consistency, even when unobserved."),
+          ],
+        },
+        {
+          id: "responsibility-for-growth",
+          title: "Responsibility for Your Growth",
+          minutes: 5,
+          blocks: [
+            text("## Your development is yours\n\nManagers and organizations can support your growth, but you own it. Responsible learners:\n\n- Ask what skills their role will need next\n- Seek feedback and act on it\n- Make time for learning, such as Zebron courses"),
+            text("## A simple personal plan\n\n1. One skill to build this quarter\n2. One action each week toward it\n3. One person to ask for feedback\n\nReview it monthly and adjust."),
+            tip("Don't wait for training to be assigned: choose your next skill today."),
+            check("Who is primarily responsible for your professional growth?", ["Your manager only", "HR only", "No one", "You, with support from others"], 3, "Others support you, but you own your development."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("ownership", "easy", "Personal responsibility at work means…", ["Doing only your assigned step", "Never asking for help", "Owning outcomes, commitments and mistakes", "Blaming circumstances when things fail"], 2, "Ownership means caring about the result and acting on it."),
+    tf("ownership", "easy", "Ownership means you must do everything alone.", false, "Owning an outcome includes asking for help to get it done."),
+    mc("ownership", "medium", "\"Nobody told me the meeting moved.\" Which is the ownership response?", ["\"It's their fault.\"", "\"I'll check the calendar each morning from now on.\"", "\"Meetings don't matter.\"", "\"I'll skip meetings.\""], 1, "Turn the excuse into a forward-looking action."),
+    ms("ownership", "medium", "Which are signs of ownership? Select all that apply.", ["Speaking up early about risks", "Finishing what you start or handing over clearly", "Saying \"we\" when things go well and \"I\" when they go wrong", "Waiting to be told about obvious next steps"], [0, 1, 2], "Owners flag risks, finish or hand over, and take responsibility for errors."),
+    mc("ownership", "medium", "What is the main difference between blame and ownership?", ["Blame looks forward; ownership looks back", "They are the same", "Blame looks back at fault; ownership looks forward to solutions", "Ownership means blaming yourself"], 2, "Ownership focuses on what to do next."),
+    mc("ownership", "easy", "What builds reliability most?", ["Big promises", "Consistently doing what you said, when you said", "Working late occasionally", "Being friendly"], 1, "Reliability is consistent follow-through."),
+    mc("commitments", "medium", "Which is the most responsible commitment?", ["\"I'll try.\"", "\"Sure, whenever.\"", "\"Right away\" without checking workload", "\"Yes, by Thursday noon; I'll warn you Wednesday if data is late.\""], 3, "Specific, realistic and with a warning plan."),
+    ord("commitments", "medium", "Put the renegotiation steps in order.", ["State the problem", "Offer options", "Agree a new commitment", "Keep the new commitment"], "State it, offer options, agree, then deliver."),
+    tf("commitments", "easy", "It is better to warn people early that you'll miss a deadline than to tell them on the day.", true, "Early warning lets others adjust and keeps trust."),
+    ord("commitments", "easy", "Put the steps for owning a mistake in order.", ["Admit", "Fix", "Prevent"], "Admit it, fix the impact, prevent a repeat."),
+    mc("commitments", "medium", "Why do people who own mistakes quickly earn more trust?", ["Others know they'll hear about problems in time to act", "They never make mistakes", "They blame others less visibly", "They work longer hours"], 0, "Transparency about errors lets others rely on you."),
+    mc("commitments", "hard", "You're asked to take on an urgent task while already at capacity. What is the responsible answer?", ["Say yes and hope", "Ignore the request", "Explain your current load and ask which task should move", "Say yes, then deliver both late"], 2, "Responsible commitments consider capacity and priorities."),
+    mc("control", "easy", "Which is within your control?", ["The economy", "Other people's choices", "The weather", "Your preparation and response"], 3, "Focus energy on what you control."),
+    ms("control", "medium", "Which actions show integrity? Select all that apply.", ["Reporting your actual hours", "Giving credit to the person who did the work", "Flagging a safety issue", "Skipping a required check when unobserved"], [0, 1, 2], "Integrity is honesty and consistency even when unobserved."),
+    mc("control", "medium", "In a gray area, which question helps decide?", ["\"Would I be comfortable sharing this with my team?\"", "\"Will anyone find out?\"", "\"Is it faster?\"", "\"Did someone else do it?\""], 0, "Comfort with transparency is a good integrity test."),
+    tf("control", "easy", "Your manager is solely responsible for your professional growth.", false, "You own your growth; others support it."),
+    mc("control", "medium", "A difficult customer is upset. What can you control?", ["Your calm and clarity", "Their mood", "Their past experience", "Company policy"], 0, "Your response is in your control."),
+    mc("control", "hard", "Which personal development plan is most responsible?", ["Wait for assigned training", "One skill per quarter, a weekly action and a feedback partner", "Learn everything at once", "Only learn when promoted"], 1, "A small, specific, reviewed plan you own."),
+  ],
+};

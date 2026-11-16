@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 9,
+  id: "skills-career-development",
+  title: "Career Development: Up, Across and Beyond",
+  summary: "Course 9 of 17 in the Zebron Professional Skills Program (Workplace & career). Plan your career on purpose: grow vertically, move laterally, or build a path beyond the traditional ladder.",
+  description: "Careers rarely follow a straight line. This course helps you understand your strengths, explore vertical moves (promotion), lateral moves (new roles at a similar level) and paths beyond the ladder (changing fields, project and portfolio careers, freelancing and starting a business), and build a plan you can act on.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Career Development: Up, Across and Beyond** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "sunrise",
+  outcomes: ["Assess your strengths, interests and values", "Compare vertical, lateral and non-traditional career moves", "Build a development plan with skills, experience and relationships", "Present yourself and your achievements for the next opportunity"],
+  skills: ["Career planning", "Self-assessment", "Networking", "Professional branding"],
+  quiz: {
+    name: "Career Development: Up, Across and Beyond",
+    slug: "skill-career-development",
+    description: "Plan your career on purpose: grow vertically, move laterally, or build a path beyond the traditional ladder.",
+    tags: ["Workplace & career", "soft skills", "career development"],
+    skillGroup: "Workplace & career",
+    icon: "route",
+  },
+  topics: [
+    { key: "self-assessment", name: "Knowing yourself", description: "Strengths, interests and values." },
+    { key: "career-paths", name: "Career paths", description: "Vertical, lateral and beyond the ladder." },
+    { key: "career-plan", name: "Building your plan", description: "Skills, experience, relationships and visibility." },
+  ],
+  modules: [
+    {
+      id: "knowing-yourself",
+      title: "Knowing Yourself",
+      lessons: [
+        {
+          id: "career-is-yours",
+          title: "Your Career Is Yours",
+          minutes: 5,
+          blocks: [
+            text("## Nobody else will plan it for you\n\nOrganizations offer opportunities, training and promotions, but the direction of your career is **your** responsibility. People who plan their careers are more likely to find work they enjoy and to grow faster.\n\nCareer development is not only about job titles. It includes skills, experience, relationships, income, wellbeing and meaning."),
+            text("## Ask three questions\n\n1. **Where am I now?** Role, skills, satisfaction.\n2. **Where could I go?** Options up, across or beyond.\n3. **How will I get there?** The skills, experience and people I need.\n\nYou'll answer them throughout this course."),
+            tip("Block one hour this month to think about your career, away from your daily tasks."),
+            check("Who is primarily responsible for your career direction?", ["You", "Your employer", "Your manager alone", "HR"], 0, "Organizations support you, but you own your career direction."),
+          ],
+        },
+        {
+          id: "strengths-and-interests",
+          title: "Strengths and Interests",
+          minutes: 5,
+          blocks: [
+            text("## What are you good at and what energises you?\n\nList:\n\n- **Strengths**: tasks people ask you to help with; things you learn quickly.\n- **Interests**: work you'd happily do more of; topics you read about for fun.\n- **Drains**: tasks that exhaust you even when you do them well.\n\nThe best career moves increase the overlap between strengths and interests."),
+            text("## Ask others\n\nAsk three colleagues: \"What do you think I'm especially good at?\" Others often see strengths you take for granted."),
+            tip("Your strengths are often the things that feel easy to you but hard to others."),
+            check("Which career move is usually best?", ["One that uses mostly your drains", "Any move with a bigger title", "Staying still forever", "One that increases the overlap between strengths and interests"], 3, "Strengths plus interests make sustainable, satisfying work."),
+          ],
+        },
+        {
+          id: "values-and-tradeoffs",
+          title: "Values and Trade-offs",
+          minutes: 5,
+          blocks: [
+            text("## What matters to you?\n\nCommon career values: income, security, flexibility, learning, leadership, creativity, helping others, independence, work-life balance.\n\nRank your top five. They help you judge opportunities: a promotion with more travel may be great for one person and wrong for another."),
+            text("## Every move has trade-offs\n\n| Move | Possible gains | Possible costs |\n| --- | --- | --- |\n| Promotion | Pay, influence | Less hands-on work, more pressure |\n| Lateral move | New skills, wider network | Learning curve, no immediate pay rise |\n| Freelancing | Independence, variety | Less security, finding your own clients |"),
+            tip("Judge each opportunity against your top values, not only the title or salary."),
+            check("Why rank your career values?", ["To judge opportunities by what matters to you", "To avoid all trade-offs", "To impress recruiters", "They don't matter"], 0, "Values help you choose between options with different trade-offs."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "career-paths",
+      title: "Career Paths: Up, Across and Beyond",
+      lessons: [
+        {
+          id: "vertical-moves",
+          title: "Moving Up: Vertical Careers",
+          minutes: 5,
+          blocks: [
+            text("## Climbing the ladder\n\nA **vertical move** is a promotion: more responsibility, scope, pay and often leading people. Typical routes:\n\n- Individual contributor → senior → lead or specialist\n- Team member → team lead → manager → senior manager\n\nSome organizations have **dual ladders**: you can grow as an expert (senior specialist, principal) without managing people."),
+            text("## What usually gets people promoted\n\n- Consistently strong results in the current role\n- Already doing some of the next role (\"acting up\")\n- Visibility: decision-makers know your work\n- A manager or sponsor who supports you\n- Clear conversations about your goals\n\nAsk your manager: \"What would I need to show to be ready for the next level?\""),
+            tip("Promotions usually recognise work you are already doing at the next level."),
+            check("What is a dual career ladder?", ["Two jobs at once", "Moving down then up", "A lateral move only", "A path to grow as an expert without managing people, alongside a management path"], 3, "Dual ladders let experts advance without becoming managers."),
+          ],
+        },
+        {
+          id: "lateral-moves",
+          title: "Moving Across: Lateral Careers",
+          minutes: 5,
+          blocks: [
+            text("## Sideways can be forward\n\nA **lateral move** is a change to a different role, team or function at a similar level, for example from customer support to quality assurance, or from sales to training.\n\nBenefits:\n\n- **Broader skills** and a fuller understanding of the business\n- A **wider network**\n- **Renewed energy** when a role feels stale\n- Often a **stronger case** for a later promotion, because you understand more of the organization"),
+            text("## Making a lateral move\n\n1. Learn about the target role: shadow someone, ask for a coffee chat.\n2. Identify **transferable skills** you already have.\n3. Fill gaps with courses or a small project.\n4. Tell your manager; good managers support internal moves."),
+            tip("A lateral move can be the fastest route to a role that a direct promotion would never reach."),
+            check("Which is a lateral career move?", ["Promotion to manager", "Leaving work entirely", "Moving from customer support to quality assurance at a similar level", "Getting a pay rise in the same role"], 2, "Lateral moves change role or function at a similar level."),
+          ],
+        },
+        {
+          id: "beyond-the-ladder",
+          title: "Beyond the Ladder",
+          minutes: 5,
+          blocks: [
+            text("## Other shapes of careers\n\nMany careers don't follow a ladder at all:\n\n- **Career change**: moving into a new field, often through study (for example, retail to cybersecurity).\n- **Project-based careers**: moving between projects, roles or contracts.\n- **Portfolio careers**: combining several roles, such as part-time employment plus teaching plus consulting.\n- **Freelancing or consulting**: selling your skills to several clients.\n- **Entrepreneurship**: starting a business.\n- **Purpose-led moves**: public service, non-profits, community work."),
+            text("## Reducing the risk\n\n- **Test first**: a side project, volunteering, or a short course before a big jump.\n- **Build savings** to cover the transition.\n- **Talk to people** already doing it about the realities.\n- **Keep learning**: certifications and portfolios prove new skills, as in Zebron's programs."),
+            tip("Test a new path with a small, low-risk experiment before making a big move."),
+            check("Someone combines a part-time job, teaching and consulting. This is…", ["A vertical career", "A portfolio career", "A lateral move", "Unemployment"], 1, "Combining several roles is a portfolio career."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "building-your-plan",
+      title: "Building Your Plan",
+      lessons: [
+        {
+          id: "development-plan",
+          title: "Your Development Plan",
+          minutes: 5,
+          blocks: [
+            text("## The 70-20-10 idea\n\nA common guideline for development:\n\n- **70%** from experience: projects, stretch tasks, new responsibilities\n- **20%** from other people: mentors, coaching, feedback\n- **10%** from formal learning: courses, certifications\n\nCourses matter, but experience and relationships do most of the work."),
+            text("## A one-page plan\n\n| Part | Example |\n| --- | --- |\n| Goal | Move into a project coordinator role within 18 months |\n| Skills | Planning, stakeholder communication |\n| Experience | Coordinate the next team event; join a project |\n| People | Ask a project manager to mentor me |\n| Learning | Managing Time and Priorities course |\n| Review | Every quarter with my manager |"),
+            tip("Put your plan on one page and review it every quarter."),
+            check("According to the 70-20-10 idea, where does most development come from?", ["Formal courses", "Reading alone", "Experience on the job", "Annual reviews"], 2, "Most development comes from experience, supported by people and courses."),
+          ],
+        },
+        {
+          id: "networking",
+          title: "Networking and Mentors",
+          minutes: 5,
+          blocks: [
+            text("## Relationships open doors\n\nMany opportunities are filled through people who know your work. Networking simply means **building genuine professional relationships**:\n\n- Help others and share useful information.\n- Have short conversations with people in roles you're curious about.\n- Stay in touch with former colleagues."),
+            text("## Mentors and sponsors\n\n- A **mentor** gives advice and perspective.\n- A **sponsor** is a senior person who speaks up for you when opportunities arise.\n\nAsk for mentoring specifically: \"Could we meet for 30 minutes once a month to discuss my development?\""),
+            tip("Networking is giving as well as asking: share an article or an introduction this week."),
+            check("What is the difference between a mentor and a sponsor?", ["There is none", "A mentor advises you; a sponsor advocates for you when opportunities arise", "A sponsor gives money", "A mentor must be your manager"], 1, "Mentors advise; sponsors use their influence on your behalf."),
+          ],
+        },
+        {
+          id: "showing-your-value",
+          title: "Showing Your Value",
+          minutes: 5,
+          blocks: [
+            text("## Make your achievements visible\n\nDecision-makers can't promote or hire people whose work they don't know. Keep a **brag file**: a running list of achievements with results.\n\n> \"Reduced invoice errors by 40% by introducing a checklist (Q2).\""),
+            text("## Telling your story\n\nWhen an opportunity comes, use the **STAR** format: Situation, Task, Action, Result. Update your CV and professional profile regularly, and add certificates as you earn them; Zebron certificates can be added to LinkedIn and checked at /verify."),
+            tip("Add one achievement with a result to your brag file every month."),
+            check("What is a \"brag file\"?", ["A running record of your achievements and results", "A list of complaints", "Your job description", "A social media post"], 0, "A record of achievements makes your value easy to show."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("self-assessment", "easy", "Who owns your career direction?", ["Your employer", "HR", "You", "Your manager alone"], 2, "You own your career; others support it."),
+    mc("self-assessment", "medium", "The best career moves usually…", ["Increase overlap between strengths and interests", "Use mostly your drains", "Maximise title only", "Avoid all learning"], 0, "Strengths plus interests make sustainable work."),
+    ms("self-assessment", "medium", "Which are common career values? Select all that apply.", ["Security", "Flexibility", "Learning", "Your favourite colour"], [0, 1, 2], "Values guide career trade-offs."),
+    tf("self-assessment", "easy", "Every career move involves trade-offs.", true, "Gains usually come with some costs."),
+    mc("self-assessment", "medium", "How can you discover strengths you take for granted?", ["Ignore feedback", "Ask colleagues what you're especially good at", "Only read job ads", "Guess"], 1, "Others often see your strengths clearly."),
+    mc("self-assessment", "hard", "A promotion requires much more travel, and family time is your top value. What does values-based thinking suggest?", ["Always accept promotions", "Never consider promotions", "Let others decide", "Weigh the offer against your top values before deciding"], 3, "Judge opportunities by what matters most to you."),
+    mc("career-paths", "easy", "A vertical move is…", ["A move to another function at the same level", "Leaving to freelance", "A career break", "A promotion to more responsibility"], 3, "Vertical means moving up."),
+    mc("career-paths", "easy", "A lateral move is…", ["A promotion", "A move to a different role at a similar level", "A pay cut", "Retirement"], 1, "Lateral means moving across."),
+    mc("career-paths", "medium", "A dual career ladder allows…", ["Two jobs at once", "Moving down only", "Skipping levels", "Advancing as an expert without managing people"], 3, "Experts can grow without becoming managers."),
+    ms("career-paths", "medium", "Which are benefits of lateral moves? Select all that apply.", ["Broader skills", "A wider network", "Better understanding of the business", "Guaranteed immediate pay rise"], [0, 1, 2], "Lateral moves broaden you; pay may not change at first."),
+    ms("career-paths", "medium", "Which are paths beyond the traditional ladder? Select all that apply.", ["Portfolio careers", "Freelancing", "Starting a business", "Promotion to team lead"], [0, 1, 2], "Promotion is vertical; the others are non-ladder paths."),
+    mc("career-paths", "medium", "What is the best way to reduce the risk of a career change?", ["Quit immediately", "Test it with a side project or short course first", "Avoid talking to people in the field", "Spend all savings"], 1, "Small experiments reduce risk."),
+    mc("career-paths", "hard", "What question best prepares you for promotion?", ["\"What would I need to show to be ready for the next level?\"", "\"When is my pay rise?\"", "\"Why haven't I been promoted?\"", "\"Who else is applying?\""], 0, "It gets clear, actionable criteria."),
+    mc("career-plan", "medium", "In the 70-20-10 idea, the 70% comes from…", ["Courses", "Mentors", "Experience", "Reading"], 2, "Most development comes from experience."),
+    mc("career-plan", "medium", "A sponsor is someone who…", ["Advocates for you when opportunities arise", "Pays for your course", "Only gives advice", "Is always your peer"], 0, "Sponsors use influence on your behalf."),
+    ord("career-plan", "easy", "Put the STAR format in order.", ["Situation", "Task", "Action", "Result"], "Situation, Task, Action, Result."),
+    tf("career-plan", "easy", "Networking means building genuine professional relationships, including helping others.", true, "Good networking gives as well as asks."),
+    mc("career-plan", "medium", "Which brag file entry is strongest?", ["\"Worked hard\"", "\"Attended meetings\"", "\"Reduced invoice errors by 40% with a checklist (Q2)\"", "\"Was busy\""], 2, "Specific actions with measurable results."),
+  ],
+};

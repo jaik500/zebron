@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 13,
+  id: "skills-peer-coaching",
+  title: "Peer Coaching",
+  summary: "Course 13 of 17 in the Zebron Professional Skills Program (Workplace & career). Help colleagues grow, and grow yourself: coach peers with good questions, listening and useful feedback.",
+  description: "Peer coaching is colleagues helping each other improve through structured conversations. This course covers what coaching is and isn't, the GROW model, powerful questions, giving and receiving feedback between peers, and setting up a peer coaching partnership.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Peer Coaching** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "teal",
+  outcomes: ["Explain the difference between coaching, mentoring and advising", "Run a coaching conversation with the GROW model", "Ask powerful questions and listen without fixing", "Set up a peer coaching partnership that lasts"],
+  skills: ["Coaching", "Powerful questions", "Peer feedback", "Active listening"],
+  quiz: {
+    name: "Peer Coaching",
+    slug: "skill-peer-coaching",
+    description: "Help colleagues grow, and grow yourself: coach peers with good questions, listening and useful feedback.",
+    tags: ["Workplace & career", "soft skills", "peer coaching"],
+    skillGroup: "Workplace & career",
+    icon: "handshake",
+  },
+  topics: [
+    { key: "coaching-basics", name: "Coaching basics", description: "What peer coaching is." },
+    { key: "grow", name: "The GROW model and questions", description: "Structuring coaching conversations." },
+    { key: "partnerships", name: "Feedback and partnerships", description: "Giving feedback and coaching regularly." },
+  ],
+  modules: [
+    {
+      id: "what-peer-coaching-is",
+      title: "What Peer Coaching Is",
+      lessons: [
+        {
+          id: "coaching-defined",
+          title: "Coaching, Mentoring and Advising",
+          minutes: 5,
+          blocks: [
+            text("## Three ways to help\n\n| Approach | What it is | Who has the answer? |\n| --- | --- | --- |\n| **Advising** | Telling someone what to do | The adviser |\n| **Mentoring** | Sharing experience and guidance | Mostly the mentor |\n| **Coaching** | Asking questions that help someone find their own way | The person being coached |\n\n**Peer coaching** is coaching between colleagues at a similar level. Nobody is the boss; both learn."),
+            text("## Why coach rather than advise?\n\nPeople are more committed to solutions they find themselves. Coaching also builds their ability to solve the next problem without you."),
+            tip("When a colleague asks for help, try one question before giving advice."),
+            check("In coaching, who mainly finds the answer?", ["The person being coached", "The coach", "The manager", "HR"], 0, "Coaching helps people find their own solutions."),
+          ],
+        },
+        {
+          id: "benefits",
+          title: "Why Peer Coaching Works",
+          minutes: 5,
+          blocks: [
+            text("## Benefits for both\n\n- The person coached gains clarity and confidence.\n- The coach builds listening and questioning skills, valuable for any future leader.\n- Teams share knowledge and trust each other more.\n- It's free and available every day."),
+            text("## When it fits\n\nPeer coaching works well for: preparing for a difficult conversation, planning a career move, getting unstuck on a project, building a new habit. It's not therapy, and it doesn't replace manager decisions."),
+            tip("Peer coaching is about growth, not about judging each other's performance."),
+            check("Which situation suits peer coaching?", ["Treating a mental health condition", "Deciding someone's pay", "Preparing for a difficult conversation with a client", "Disciplining a colleague"], 2, "Peer coaching helps with growth and preparation, not therapy or HR decisions."),
+          ],
+        },
+        {
+          id: "coaching-mindset",
+          title: "The Coaching Mindset",
+          minutes: 5,
+          blocks: [
+            text("## Curiosity over expertise\n\nA good peer coach:\n\n- Believes the other person is capable\n- Is **curious** rather than eager to fix\n- Keeps the conversation **confidential**\n- Focuses on the other person's goals, not their own"),
+            text("## Resist the urge to fix\n\nThe hardest part is not jumping in with your solution. When you feel the urge, ask another question instead: \"What options do you see?\""),
+            tip("Count to three before offering a solution; often a question works better."),
+            check("What is the hardest habit for new peer coaches to break?", ["Jumping in with their own solution", "Listening too much", "Asking too many questions", "Being too curious"], 0, "Coaches ask; they resist fixing."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "coaching-conversations",
+      title: "Coaching Conversations",
+      lessons: [
+        {
+          id: "grow-model",
+          title: "The GROW Model",
+          minutes: 5,
+          blocks: [
+            text("## A simple structure\n\n**GROW** gives coaching conversations a shape:\n\n1. **Goal**: What do you want to achieve?\n2. **Reality**: What's happening now? What have you tried?\n3. **Options**: What could you do? What else?\n4. **Way forward** (or Will): What will you do, and when?"),
+            text("## A 20-minute example\n\n- Goal (3 min): \"I want to feel ready for my first client presentation.\"\n- Reality (5 min): \"I've written slides but haven't practised.\"\n- Options (7 min): rehearse with a colleague, cut slides, record myself.\n- Way forward (5 min): \"Rehearse with Lee on Thursday and cut to six slides.\""),
+            tip("Always end with a concrete action and a date."),
+            check("What does the \"O\" in GROW stand for?", ["Obstacles", "Options", "Outcome", "Opinions"], 1, "Goal, Reality, Options, Way forward."),
+          ],
+        },
+        {
+          id: "powerful-questions",
+          title: "Powerful Questions",
+          minutes: 5,
+          blocks: [
+            text("## Open, short and curious\n\nPowerful questions are open, short, and help the other person think:\n\n- \"What would success look like?\"\n- \"What's getting in the way?\"\n- \"What have you already tried?\"\n- \"What else could you do?\"\n- \"What's the first small step?\"\n- \"How will you know it worked?\""),
+            text("## Questions to avoid\n\n- **Leading**: \"Have you thought about just telling your manager?\" (advice disguised as a question)\n- **Why questions** that feel like blame: \"Why did you do that?\" Try \"What led to that?\" instead.\n- **Several questions at once**: ask one, then wait."),
+            tip("After asking a question, be quiet and wait. Silence gives people time to think."),
+            check("Which is a powerful coaching question?", ["\"Why did you mess that up?\"", "\"What's the first small step you could take?\"", "\"Have you thought about just quitting?\"", "\"Isn't it obvious?\""], 1, "Open, short and forward-looking."),
+          ],
+        },
+        {
+          id: "listening-as-coach",
+          title: "Listening as a Coach",
+          minutes: 5,
+          blocks: [
+            text("## Listen to understand\n\nIn coaching, you should talk for perhaps 20% of the time. Listen for:\n\n- What matters most to them\n- What they repeat\n- Feelings behind the words\n- What they're not saying"),
+            text("## Reflect back\n\nSummarise what you heard: \"It sounds like the deadline worries you more than the content. Is that right?\" Reflections often help people hear their own thinking clearly."),
+            tip("Aim to talk less than a quarter of the conversation."),
+            check("Roughly how much of a coaching conversation should the coach talk?", ["About 20%", "About 80%", "100%", "None at all"], 0, "The coached person should do most of the talking."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "feedback-and-partnerships",
+      title: "Feedback and Partnerships",
+      lessons: [
+        {
+          id: "peer-feedback",
+          title: "Giving Feedback to Peers",
+          minutes: 5,
+          blocks: [
+            text("## When feedback is invited\n\nSometimes your peer wants your view. Make it useful:\n\n- **Ask first**: \"Would some feedback be helpful?\"\n- **Be specific**: describe what you saw and its effect.\n- **Balance**: what worked and one thing to try.\n- **Make it about the work**, not the person."),
+            text("## A simple format\n\n> \"What worked well: your opening story got everyone's attention. One thing to try: summarise the three actions on one slide at the end.\""),
+            tip("One clear suggestion is more useful than ten small ones."),
+            check("What should you do before giving a peer feedback?", ["Tell their manager", "Post it publicly", "Ask whether feedback would be helpful", "List every mistake"], 2, "Ask first; feedback lands better when invited."),
+          ],
+        },
+        {
+          id: "setting-up-partnership",
+          title: "Setting Up a Peer Coaching Partnership",
+          minutes: 5,
+          blocks: [
+            text("## A simple arrangement\n\n1. Find a peer you trust, ideally from a different team.\n2. Agree on frequency (for example 30 minutes every two weeks).\n3. Take turns: 15 minutes each, or alternate sessions.\n4. Agree on **confidentiality**.\n5. Review after three months: is it useful?"),
+            text("## Ground rules\n\n- Show up and be on time.\n- What's said stays between you.\n- Coach, don't judge.\n- Either person can end the arrangement without hard feelings."),
+            tip("A peer from a different team brings fresh perspective and fewer conflicts of interest."),
+            check("Which ground rule is essential for peer coaching?", ["Sharing everything with your manager", "Always giving advice", "Competing with each other", "Confidentiality"], 3, "Trust depends on confidentiality."),
+          ],
+        },
+        {
+          id: "coaching-groups",
+          title: "Coaching in Groups",
+          minutes: 5,
+          blocks: [
+            text("## Group peer coaching\n\nSmall groups of three to five can coach each other:\n\n1. One person presents a challenge (5 minutes).\n2. Others ask clarifying questions only (5 minutes).\n3. Others share ideas while the presenter listens (10 minutes).\n4. The presenter says what they'll do (5 minutes)."),
+            text("## Use it in training cohorts\n\nLearners in a Training Group or bootcamp cohort can run short group coaching sessions to support each other through hard modules, projects and job searches."),
+            tip("Rotate the presenter role so everyone benefits."),
+            check("In group peer coaching, what does the presenter do while others share ideas?", ["Argue with each idea", "Leave the room", "Choose who's right", "Listen and take notes"], 3, "Listening first lets the presenter consider all ideas."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("coaching-basics", "easy", "In coaching, who mainly finds the answer?", ["The coach", "The manager", "The person being coached", "Nobody"], 2, "Coaching draws out the person's own solutions."),
+    mc("coaching-basics", "medium", "Which approach shares experience and guidance?", ["Mentoring", "Coaching", "Advising only", "Ignoring"], 0, "Mentors share experience."),
+    tf("coaching-basics", "easy", "Peer coaching can replace therapy.", false, "It supports growth, not clinical needs."),
+    ms("coaching-basics", "medium", "Which are features of a coaching mindset? Select all that apply.", ["Curiosity", "Belief in the other's capability", "Confidentiality", "Eagerness to fix everything"], [0, 1, 2], "Coaches are curious, trusting and discreet."),
+    mc("coaching-basics", "medium", "Why do coached solutions often stick better?", ["They're simpler", "Coaches are always right", "People are committed to solutions they find themselves", "They're imposed"], 2, "Ownership builds commitment."),
+    mc("coaching-basics", "medium", "Which suits peer coaching?", ["Deciding pay", "Disciplining a colleague", "Preparing for a difficult client conversation", "Diagnosing illness"], 2, "Growth and preparation."),
+    ord("grow", "easy", "Put the GROW model in order.", ["Goal", "Reality", "Options", "Way forward"], "Goal, Reality, Options, Way forward."),
+    mc("grow", "medium", "Which is a powerful question?", ["\"Why did you mess up?\"", "\"Isn't it obvious?\"", "\"Have you thought about quitting?\"", "\"What's the first small step?\""], 3, "Open, short, forward-looking."),
+    mc("grow", "medium", "\"Have you thought about just telling your manager?\" is…", ["Advice disguised as a leading question", "A powerful question", "A summary", "A reflection"], 0, "Leading questions push your solution."),
+    tf("grow", "easy", "After asking a question, a coach should wait in silence for the answer.", true, "Silence gives thinking time."),
+    mc("grow", "medium", "Roughly how much should the coach talk?", ["80%", "About 20%", "50%", "100%"], 1, "The coached person talks most."),
+    mc("grow", "hard", "A coaching conversation ends without a next step. What's missing?", ["The Way forward", "The Goal", "The Reality", "Nothing"], 0, "End with a concrete action and date."),
+    mc("partnerships", "easy", "Before giving peer feedback, you should…", ["Tell their manager", "Post it publicly", "List every flaw", "Ask if feedback would help"], 3, "Invited feedback lands better."),
+    ms("partnerships", "medium", "Which are good peer coaching ground rules? Select all that apply.", ["Confidentiality", "Showing up on time", "Coach, don't judge", "Reporting sessions to the manager"], [0, 1, 2], "Trust and respect make it work."),
+    mc("partnerships", "medium", "Why choose a peer from a different team?", ["They're easier to beat", "Fresh perspective and fewer conflicts of interest", "They know less", "It's required"], 1, "Different context, fewer conflicts."),
+    ord("partnerships", "medium", "Put the group coaching steps in order.", ["Presenter shares a challenge", "Clarifying questions", "Others share ideas", "Presenter states their action"], "Present, clarify, ideas, action."),
+    tf("partnerships", "easy", "One clear suggestion is often more useful than many small ones.", true, "Focus makes feedback actionable."),
+    mc("partnerships", "medium", "How often might a peer coaching pair meet?", ["Once a year", "About every two weeks", "Every hour", "Never"], 1, "Regular, short sessions work well."),
+  ],
+};

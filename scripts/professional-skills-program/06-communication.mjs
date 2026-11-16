@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 6,
+  id: "skills-communication",
+  title: "Communication",
+  summary: "Course 6 of 17 in the Zebron Professional Skills Program (Behavioral skills). Be clear, listen well and choose the right channel: write, speak and listen so that work gets done.",
+  description: "Clear communication saves time and prevents mistakes. This course covers active listening, clear writing, speaking with confidence, and choosing the right channel and tone.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Communication** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "slate",
+  outcomes: ["Listen actively and confirm understanding", "Write clear emails and messages", "Speak clearly in meetings and presentations", "Choose the right channel and tone"],
+  skills: ["Active listening", "Business writing", "Presenting", "Professional tone"],
+  quiz: {
+    name: "Communication",
+    slug: "skill-communication",
+    description: "Be clear, listen well and choose the right channel: write, speak and listen so that work gets done.",
+    tags: ["Behavioral skills", "soft skills", "communication"],
+    skillGroup: "Behavioral skills",
+    icon: "forum",
+  },
+  topics: [
+    { key: "listening", name: "Listening", description: "Active listening and checking understanding." },
+    { key: "writing", name: "Writing", description: "Clear emails and messages." },
+    { key: "speaking", name: "Speaking and channels", description: "Meetings, presentations and choosing the right channel." },
+  ],
+  modules: [
+    {
+      id: "listening-well",
+      title: "Listening Well",
+      lessons: [
+        {
+          id: "active-listening",
+          title: "Active Listening",
+          minutes: 5,
+          blocks: [
+            text("## Listening to understand\n\nMost misunderstandings come from poor listening, not poor speaking. **Active listening** means focusing fully on the speaker to understand, not to reply.\n\n- Put away distractions.\n- Let the person finish.\n- Notice tone and body language, not just words."),
+            text("## Show you're listening\n\n- Nod, keep eye contact (or look at the camera on video).\n- Ask clarifying questions: \"What do you mean by urgent?\"\n- **Paraphrase**: \"So you need the figures by Friday, broken down by region?\""),
+            tip("Before replying in an important conversation, summarise what you heard."),
+            check("Which is an example of paraphrasing?", ["\"Okay.\"", "\"I already know.\"", "Changing the subject", "\"So you need the figures by Friday, broken down by region?\""], 3, "Restating in your own words confirms understanding."),
+          ],
+        },
+        {
+          id: "asking-questions",
+          title: "Asking Good Questions",
+          minutes: 5,
+          blocks: [
+            text("## Open and closed questions\n\n- **Closed** questions get short answers: \"Is it due Friday?\"\n- **Open** questions invite explanation: \"What would a great result look like?\"\n\nUse open questions to explore and closed ones to confirm details."),
+            text("## Questions that help\n\n- \"What's most important to you here?\"\n- \"What have you already tried?\"\n- \"What would you like me to do next?\"\n\nAvoid leading questions such as \"You don't want that, do you?\", which push people toward an answer."),
+            tip("Start understanding with an open question, then confirm with a closed one."),
+            check("Which is an open question?", ["\"Is it urgent?\"", "\"What would a great result look like?\"", "\"Did you send it?\"", "\"Is it blue?\""], 1, "Open questions invite explanation."),
+          ],
+        },
+        {
+          id: "checking-understanding",
+          title: "Checking Understanding",
+          minutes: 5,
+          blocks: [
+            text("## Close the loop\n\nAfter agreeing on something, confirm it:\n\n> \"To check we're aligned: I'll draft the proposal by Wednesday, and you'll add pricing by Friday.\"\n\nA one-line confirmation, spoken or written, prevents days of rework."),
+            text("## When instructions are unclear\n\nAsk before starting, not halfway through:\n\n- \"What does done look like?\"\n- \"Who is it for?\"\n- \"When do you need it?\""),
+            tip("Write a short summary after any meeting where tasks were agreed."),
+            check("Why confirm agreements at the end of a conversation?", ["It prevents misunderstandings and rework", "It wastes time", "It shows you didn't listen", "It's only for managers"], 0, "A quick confirmation catches misunderstandings early."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "clear-writing",
+      title: "Clear Writing",
+      lessons: [
+        {
+          id: "writing-emails",
+          title: "Writing Clear Emails",
+          minutes: 5,
+          blocks: [
+            text("## Lead with the point\n\nBusy readers read the first lines. Put the **purpose and the request** first:\n\n> Subject: Approval needed: training budget by Friday\n>\n> Hi Ana, could you approve the attached budget by Friday? It covers three courses for the support team.\n\nThen add details below."),
+            text("## Make it easy to read\n\n- One topic per email\n- Short paragraphs and bullet points\n- Clear subject line that says what's needed\n- Explicit request and deadline"),
+            tip("Read your first two lines alone: do they say what you need?"),
+            check("What should the first lines of a work email contain?", ["A long introduction", "Your weekend plans", "The purpose and the request", "Every detail"], 2, "Lead with the point so busy readers act."),
+          ],
+        },
+        {
+          id: "concise-and-plain",
+          title: "Plain and Concise",
+          minutes: 5,
+          blocks: [
+            text("## Fewer, simpler words\n\nPlain language is faster to read and harder to misunderstand.\n\n| Wordy | Plain |\n| --- | --- |\n| \"At this point in time\" | \"Now\" |\n| \"In order to\" | \"To\" |\n| \"Please be advised that the meeting has been rescheduled\" | \"The meeting has moved to Tuesday\" |"),
+            text("## Edit once\n\nBefore sending something important, read it again and remove words that don't add meaning. Check names, dates and numbers."),
+            tip("If a sentence has more than about 25 words, try splitting it."),
+            check("Which is the plain version of \"in order to\"?", ["\"For the purpose of\"", "\"With a view to\"", "\"So as to be able to\"", "\"To\""], 3, "\"To\" says the same with fewer words."),
+          ],
+        },
+        {
+          id: "tone-in-writing",
+          title: "Tone in Writing",
+          minutes: 5,
+          blocks: [
+            text("## Text has no tone of voice\n\nWritten messages lose tone, so they can sound harsher than intended. \"Why isn't this done?\" may read as an accusation.\n\nSofter and clearer: \"Could you let me know when this will be ready? The client is asking.\""),
+            text("## Professional and warm\n\n- Greet and thank people.\n- Explain the reason behind requests.\n- Avoid ALL CAPS and many exclamation marks.\n- Never send angry messages: wait, then rewrite."),
+            tip("If you're upset, write the draft, then wait an hour before sending."),
+            check("Which message has the best professional tone?", ["\"WHY ISN'T THIS DONE?\"", "\"Could you let me know when this will be ready? The client is asking.\"", "\"This is late again.\"", "\"???\""], 1, "It's polite, explains the reason and asks clearly."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "speaking-and-channels",
+      title: "Speaking and Choosing Channels",
+      lessons: [
+        {
+          id: "speaking-in-meetings",
+          title: "Speaking in Meetings",
+          minutes: 5,
+          blocks: [
+            text("## Make your point count\n\n- **Prepare** one or two points before the meeting.\n- **Start with the headline**: \"I recommend option B because it's cheaper and faster.\"\n- **Be brief**; offer details if asked.\n- **Invite others**: \"What do others think?\""),
+            text("## If you're nervous\n\nSpeak early in the meeting; the longer you wait, the harder it gets. Writing your point down first helps."),
+            tip("Say your headline first, then your reasons."),
+            check("What is a good way to make a point in a meeting?", ["Headline first, then reasons", "Long background first", "Wait until the end", "Speak only if asked"], 0, "Leading with the headline helps people follow."),
+          ],
+        },
+        {
+          id: "presenting-basics",
+          title: "Presenting with Confidence",
+          minutes: 5,
+          blocks: [
+            text("## Simple structure\n\n1. **What** is the main message?\n2. **Why** does it matter to this audience?\n3. **How**: two or three supporting points.\n4. **Next**: what you want the audience to do."),
+            text("## Delivery\n\n- Practise out loud at least once.\n- Use fewer words on slides; speak the detail.\n- Pause instead of saying \"um\".\n- Look at people, not the screen."),
+            tip("Rehearse with a timer; most people run long."),
+            check("What should a presentation end with?", ["A clear next step for the audience", "A new topic", "An apology", "Every detail again"], 0, "End with what you want the audience to do."),
+          ],
+        },
+        {
+          id: "choosing-channels",
+          title: "Choosing the Right Channel",
+          minutes: 5,
+          blocks: [
+            text("## Match the message to the channel\n\n| Message | Best channel |\n| --- | --- |\n| Quick question | Chat |\n| Decision or record needed | Email or shared document |\n| Complex or sensitive | Video call or in person |\n| Urgent problem | Phone or call |"),
+            text("## Don't do this\n\n- Deliver bad news by chat.\n- Hold a long debate over email.\n- Make decisions in calls without writing them down."),
+            tip("Sensitive or complex? Talk first, then confirm in writing."),
+            check("Which channel suits giving difficult feedback?", ["Group chat", "A company-wide email", "A private video call or in person", "A sticky note"], 2, "Sensitive topics need a private, live conversation."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("listening", "easy", "Active listening means listening to…", ["Understand", "Reply quickly", "Find mistakes", "Wait your turn"], 0, "Focus on understanding the speaker."),
+    mc("listening", "medium", "Which is paraphrasing?", ["\"Okay.\"", "\"So you need the figures by Friday, by region?\"", "\"Got it.\"", "\"Next topic.\""], 1, "Restating in your own words checks understanding."),
+    mc("listening", "easy", "Which is an open question?", ["\"Is it urgent?\"", "\"Did you send it?\"", "\"Is it done?\"", "\"What would success look like?\""], 3, "Open questions invite explanation."),
+    ms("listening", "medium", "Which show you're listening? Select all that apply.", ["Asking clarifying questions", "Paraphrasing", "Putting away distractions", "Checking your phone"], [0, 1, 2], "Attention, clarifying and paraphrasing."),
+    tf("listening", "easy", "Confirming agreements at the end of a conversation prevents rework.", true, "A one-line summary catches misunderstandings."),
+    mc("listening", "medium", "Which is a leading question to avoid?", ["\"You don't want that, do you?\"", "\"What do you think?\"", "\"What's most important?\"", "\"What have you tried?\""], 0, "Leading questions push toward an answer."),
+    mc("writing", "easy", "What should the first lines of an email contain?", ["Background", "The purpose and request", "A joke", "Your signature"], 1, "Lead with the point."),
+    mc("writing", "medium", "Which subject line is clearest?", ["\"Hi\"", "\"Question\"", "\"Update\"", "\"Approval needed: training budget by Friday\""], 3, "Says what's needed and when."),
+    mc("writing", "easy", "Plain version of \"at this point in time\"?", ["\"Presently at this time\"", "\"Now\"", "\"Currently at present\"", "\"As of this moment in time\""], 1, "Plain language is shorter."),
+    ms("writing", "medium", "Which make emails easier to read? Select all that apply.", ["One topic per email", "Short paragraphs and bullets", "A clear request and deadline", "Long paragraphs on several topics"], [0, 1, 2], "Focused, scannable, explicit."),
+    tf("writing", "medium", "Written messages can sound harsher than intended.", true, "Text loses tone of voice."),
+    mc("writing", "hard", "You're angry about a colleague's error. What should you do before emailing?", ["Draft, wait, then rewrite calmly", "Send it immediately", "Use capitals for emphasis", "Copy everyone"], 0, "Waiting prevents messages you'll regret."),
+    mc("speaking", "easy", "How should you make a point in a meeting?", ["Background first", "Wait until asked", "Headline first, then reasons", "Repeat others"], 2, "Lead with the headline."),
+    ord("speaking", "medium", "Put this presentation structure in order.", ["What: the main message", "Why it matters to the audience", "How: supporting points", "Next: what you want them to do"], "What, why, how, next."),
+    mc("speaking", "medium", "Which channel suits a quick question?", ["Formal letter", "All-hands meeting", "Printed memo", "Chat"], 3, "Chat fits quick questions."),
+    mc("speaking", "medium", "Which channel suits sensitive feedback?", ["Group chat", "Company-wide email", "Private conversation, video or in person", "Public post"], 2, "Sensitive topics need private, live conversations."),
+    tf("speaking", "easy", "Decisions made in a call should be confirmed in writing.", true, "Written records prevent misunderstandings."),
+    mc("speaking", "medium", "What helps reduce filler words like \"um\"?", ["Speaking faster", "Reading slides aloud", "Pausing", "Avoiding practice"], 2, "A pause sounds confident."),
+  ],
+};

@@ -724,6 +724,19 @@ export const routes: Routes = [
         loadComponent: () => import('./features/test-center/pages/quiz/quiz-list.component').then((m) => m.QuizListComponent),
     },
     // -----------------------------------------------------
+    // TEST CENTER SKILLS (Skill quizzes, grouped, with their courses)
+    // -----------------------------------------------------
+    {
+        path: 'test-center/skills',
+        canActivate: [featureGuard],
+        data: {
+            featureKey: 'test-center',
+            title: 'Test Center | Skills',
+            header: 'Test Center',
+        },
+        loadComponent: () => import('./features/test-center/pages/skills/skills-page.component').then((m) => m.SkillsPageComponent),
+    },
+    // -----------------------------------------------------
     // TEST CENTER QUIZ DETAILS
     // -----------------------------------------------------
     {
@@ -896,6 +909,10 @@ export const routes: Routes = [
             {
                 path: 'quizzes',
                 loadComponent: () => import('./features/test-center/pages/quiz/quiz-list.component').then((m) => m.QuizListComponent),
+            },
+            {
+                path: 'skills',
+                loadComponent: () => import('./features/test-center/pages/skills/skills-page.component').then((m) => m.SkillsPageComponent),
             },
             {
                 path: 'quiz-details/:slug',

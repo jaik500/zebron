@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 5,
+  id: "skills-teamwork",
+  title: "Teamwork",
+  summary: "Course 5 of 17 in the Zebron Professional Skills Program (Behavioral skills). Work well with others: share goals, play your role, support teammates and handle disagreement constructively.",
+  description: "Most work is done in teams. This course covers what makes teams effective, how to be a good team member, how to collaborate across differences, and how to disagree productively.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Teamwork** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "sky",
+  outcomes: ["Describe what makes teams effective", "Contribute reliably and support teammates", "Collaborate with people who work differently", "Handle disagreement constructively"],
+  skills: ["Collaboration", "Team contribution", "Psychological safety", "Constructive disagreement"],
+  quiz: {
+    name: "Teamwork",
+    slug: "skill-teamwork",
+    description: "Work well with others: share goals, play your role, support teammates and handle disagreement constructively.",
+    tags: ["Behavioral skills", "soft skills", "teamwork"],
+    skillGroup: "Behavioral skills",
+    icon: "groups",
+  },
+  topics: [
+    { key: "effective-teams", name: "Effective teams", description: "What great teams have in common." },
+    { key: "team-member", name: "Being a good team member", description: "Roles, reliability and support." },
+    { key: "collaboration", name: "Collaboration and disagreement", description: "Working across differences and resolving conflict." },
+  ],
+  modules: [
+    {
+      id: "what-makes-teams-work",
+      title: "What Makes Teams Work",
+      lessons: [
+        {
+          id: "shared-goals",
+          title: "Shared Goals",
+          minutes: 5,
+          blocks: [
+            text("## Pulling in the same direction\n\nEffective teams have a **shared goal** everyone understands. Without one, people work hard in different directions.\n\nA good team goal is clear enough that every member can answer: \"What are we trying to achieve, and how will we know we succeeded?\""),
+            text("## Connect your work to the goal\n\nAsk yourself regularly: \"How does what I'm doing today help the team goal?\" If you can't answer, ask your lead. Sometimes priorities have changed and nobody said so."),
+            tip("At the start of a project, write the team goal in one sentence and check everyone agrees."),
+            check("Why is a shared goal important for a team?", ["It makes meetings longer", "It replaces communication", "It keeps everyone working in the same direction", "It means no one needs a role"], 2, "A shared goal aligns individual effort."),
+          ],
+        },
+        {
+          id: "psychological-safety",
+          title: "Psychological Safety",
+          minutes: 5,
+          blocks: [
+            text("## Safe to speak up\n\nResearch at Google found that the most important factor in effective teams was **psychological safety**: people feel safe to ask questions, admit mistakes and share ideas without fear of embarrassment.\n\nIn safe teams, problems surface early and people learn faster."),
+            text("## How anyone can build it\n\n- Thank people for raising concerns.\n- Admit your own mistakes openly.\n- Ask quieter colleagues for their view.\n- Respond to bad news with curiosity, not blame.\n\nYou don't need to be the manager to make your team safer."),
+            tip("When a teammate admits a mistake, start your reply with \"Thanks for flagging it\"."),
+            check("Which behaviour builds psychological safety?", ["Criticising people who ask basic questions", "Hiding your own mistakes", "Interrupting quiet members", "Thanking a colleague for raising a concern"], 3, "Thanking people for speaking up encourages it."),
+          ],
+        },
+        {
+          id: "roles-and-clarity",
+          title: "Roles and Clarity",
+          minutes: 5,
+          blocks: [
+            text("## Who does what?\n\nConfusion about roles causes duplicated work, gaps and frustration. Clear teams know:\n\n- Who **owns** each task\n- Who needs to be **consulted**\n- Who just needs to be **informed**"),
+            text("## Making roles clear\n\nAt the start of any shared task, agree on the owner and the deadline out loud:\n\n> \"So Maria owns the client email by Wednesday, and Sam reviews it first.\" \n\nWrite it in the team's tracker or meeting notes."),
+            tip("If you're unsure who owns something, ask; don't assume."),
+            check("What prevents duplicated work and gaps in a team?", ["Clear owners and deadlines for tasks", "Everyone doing everything", "Fewer meetings", "Working alone"], 0, "Clear ownership avoids both duplication and gaps."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "being-a-good-teammate",
+      title: "Being a Good Team Member",
+      lessons: [
+        {
+          id: "reliable-contribution",
+          title: "Contributing Reliably",
+          minutes: 5,
+          blocks: [
+            text("## Do your part well\n\nTeams depend on each member delivering what they promised. Being a good team member means:\n\n- Delivering your tasks on time and at quality\n- Telling the team early if you're stuck\n- Sharing information others need"),
+            text("## Make your work visible\n\nUpdate the team tracker, give short status updates and hand over cleanly when you're away. Visibility lets others plan around you."),
+            tip("A two-line update (\"Done: X. Next: Y. Blocked: Z\") keeps everyone informed."),
+            check("Which update best helps a team?", ["Silence until the deadline", "\"Busy.\"", "\"Done: draft. Next: review. Blocked: need data from finance.\"", "A long story of your week"], 2, "Short, structured updates keep everyone informed."),
+          ],
+        },
+        {
+          id: "helping-teammates",
+          title: "Helping Teammates",
+          minutes: 5,
+          blocks: [
+            text("## Offer support\n\nStrong teams help each other. You can:\n\n- Offer to help when a teammate is overloaded\n- Share a useful tip or template\n- Cover briefly during absences\n- Recognise good work publicly"),
+            text("## Help without overstepping\n\nAsk before jumping in: \"Would it help if I took the data section?\" Respect that people may prefer to finish their own work, and don't neglect your own commitments."),
+            tip("Recognition is free: name one teammate's good work in your next meeting."),
+            check("What is the best way to offer help?", ["Take over their task without asking", "Point out what they're doing wrong", "Wait for your manager to assign it", "Ask whether it would help if you took a specific part"], 3, "Asking respects ownership while offering support."),
+          ],
+        },
+        {
+          id: "receiving-help",
+          title: "Asking for Help",
+          minutes: 5,
+          blocks: [
+            text("## Asking is a strength\n\nMany people wait too long to ask for help, afraid of looking incompetent. Good teams expect members to ask when stuck: it saves time and prevents bigger problems."),
+            text("## Ask well\n\n1. Say what you're trying to do.\n2. Say what you've already tried.\n3. Ask a specific question.\n\n> \"I'm trying to filter the report by region. I tried the filter menu but the region column is missing. Do you know where it comes from?\""),
+            tip("If you've been stuck for more than 30 minutes, ask."),
+            check("Which request for help is best?", ["\"It doesn't work.\"", "\"I'm filtering by region; the column is missing after I tried the filter menu. Where does it come from?\"", "\"Can you do this for me?\"", "Waiting until the deadline"], 1, "Context, what you tried and a specific question make help easy."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "working-across-differences",
+      title: "Collaboration and Disagreement",
+      lessons: [
+        {
+          id: "different-styles",
+          title: "Different Working Styles",
+          minutes: 5,
+          blocks: [
+            text("## People work differently\n\nSome teammates think out loud; others prefer time to reflect. Some love detail; others focus on the big picture. Some reply instantly; others batch their messages.\n\nThese differences are strengths when combined, and frustrations when misunderstood."),
+            text("## Adapt and agree\n\n- Ask how colleagues prefer to communicate.\n- Share your own preferences.\n- Agree team norms: response times, meeting habits, where decisions are recorded."),
+            tip("Ask a new teammate: \"How do you like to work and communicate?\""),
+            check("How can a team turn different working styles into strengths?", ["Discuss preferences and agree team norms", "Insist everyone works the same way", "Ignore differences", "Avoid working together"], 0, "Understanding and agreeing norms makes differences useful."),
+          ],
+        },
+        {
+          id: "productive-disagreement",
+          title: "Disagreeing Productively",
+          minutes: 5,
+          blocks: [
+            text("## Disagreement can help\n\nTeams that never disagree often miss problems. Productive disagreement focuses on **ideas**, not people.\n\n- \"I see a risk with this timeline\" (idea)\n- \"You always plan badly\" (person)"),
+            text("## A useful pattern\n\n1. **Understand**: \"Help me understand why you prefer option A.\"\n2. **Share**: \"My concern is the cost.\"\n3. **Explore**: \"Could we test it with one region first?\"\n4. **Commit**: once decided, support the decision, even if it wasn't your choice."),
+            tip("\"Disagree and commit\": argue your case, then fully support the team's decision."),
+            check("Which statement disagrees productively?", ["\"That's a stupid idea.\"", "\"I see a risk with the timeline; could we test with one region first?\"", "\"You never think things through.\"", "Silent eye-rolling"], 1, "Focus on the idea, explain the concern and suggest options."),
+          ],
+        },
+        {
+          id: "remote-teamwork",
+          title: "Teamwork at a Distance",
+          minutes: 5,
+          blocks: [
+            text("## Remote and hybrid teams\n\nWhen teams aren't in the same room, small things matter more:\n\n- **Write things down**: decisions, owners, deadlines.\n- **Over-communicate** status.\n- **Use video** for complex or sensitive conversations.\n- **Respect time zones** and focus time."),
+            text("## Stay connected\n\nRemote teams lose casual chats. Make time for them: a short check-in at the start of meetings, or an informal virtual coffee. Relationships make collaboration easier."),
+            tip("Summarise decisions in writing after every remote meeting."),
+            check("What matters more in remote teams?", ["Writing down decisions and over-communicating status", "Fewer written records", "Avoiding video calls entirely", "Working only in your own time zone"], 0, "Clear written records and visible status replace hallway conversations."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("effective-teams", "easy", "What keeps a team working in the same direction?", ["Long meetings", "A shared goal", "Working alone", "Strict rules"], 1, "A clear, shared goal aligns effort."),
+    mc("effective-teams", "medium", "Psychological safety means…", ["Nobody ever disagrees", "Managers make all decisions", "Work is always easy", "People feel safe to speak up, ask and admit mistakes"], 3, "Safety to speak up helps teams learn."),
+    ms("effective-teams", "medium", "Which behaviours build psychological safety? Select all that apply.", ["Thanking people for raising concerns", "Admitting your own mistakes", "Asking quieter members for their view", "Mocking basic questions"], [0, 1, 2], "These encourage speaking up."),
+    tf("effective-teams", "easy", "Only managers can make a team psychologically safe.", false, "Every member's behaviour contributes."),
+    mc("effective-teams", "medium", "What helps prevent duplicated work and gaps?", ["Clear owners and deadlines", "Everyone doing everything", "Fewer updates", "Avoiding notes"], 0, "Clarity of ownership prevents both problems."),
+    mc("effective-teams", "hard", "Google's research found the most important factor in team effectiveness was…", ["Team size", "Psychological safety", "Office location", "Seniority"], 1, "Psychological safety topped the list."),
+    mc("team-member", "easy", "Which is a helpful status update?", ["\"Done: draft. Next: review. Blocked: need finance data.\"", "\"Busy.\"", "Silence", "A long story"], 0, "Short and structured."),
+    ms("team-member", "medium", "Which make a good team member? Select all that apply.", ["Delivering tasks on time", "Flagging problems early", "Sharing information others need", "Hiding being stuck"], [0, 1, 2], "Reliability, early warnings and sharing."),
+    mc("team-member", "medium", "What's the best way to offer help to a busy teammate?", ["Take over without asking", "Criticise their approach", "Ask if taking a specific part would help", "Ignore them"], 2, "Offer specifically and respect ownership."),
+    ord("team-member", "medium", "Put the steps of a good help request in order.", ["Say what you're trying to do", "Say what you already tried", "Ask a specific question"], "Context, attempts, then a precise question."),
+    tf("team-member", "easy", "Asking for help early usually saves the team time.", true, "Early questions prevent bigger problems."),
+    mc("team-member", "medium", "How long might you stay stuck before asking for help?", ["Several days", "About 30 minutes", "Never ask", "Until the deadline"], 1, "A short time-box avoids wasted hours."),
+    mc("collaboration", "easy", "Productive disagreement focuses on…", ["People", "Winning", "Seniority", "Ideas"], 3, "Discuss ideas, not personalities."),
+    ord("collaboration", "medium", "Put the productive disagreement pattern in order.", ["Understand", "Share your concern", "Explore options", "Commit to the decision"], "Understand, share, explore, commit."),
+    mc("collaboration", "medium", "\"Disagree and commit\" means…", ["Argue your case, then fully support the team's decision", "Keep arguing after a decision", "Never disagree", "Agree with everything"], 0, "Make your case, then support the outcome."),
+    ms("collaboration", "medium", "Which practices help remote teams? Select all that apply.", ["Writing down decisions", "Over-communicating status", "Using video for sensitive topics", "Never meeting"], [0, 1, 2], "Written records, visible status and video when needed."),
+    mc("collaboration", "medium", "A teammate prefers time to think before answering. What helps?", ["Demand instant answers", "Exclude them", "Share topics before meetings", "Answer for them"], 2, "Adapting to styles brings out everyone's best."),
+    tf("collaboration", "medium", "Teams that never disagree are always the most effective.", false, "No disagreement can mean problems go unspoken."),
+  ],
+};

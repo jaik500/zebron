@@ -1,0 +1,165 @@
+import { check, mc, ms, ord, text, tf, tip } from "../lib/program-helpers.mjs";
+
+export default {
+  order: 11,
+  id: "skills-bouncing-back",
+  title: "Bouncing Back from Early Failure",
+  summary: "Course 11 of 17 in the Zebron Professional Skills Program (Workplace & career). Handle a rough start, a failed first attempt or an early mistake, recover your confidence and come back stronger.",
+  description: "Almost everyone fails early at something: a first exam, a first project, a first job interview, a difficult first month. This course helps you understand early failure, manage the emotional impact, learn from it and rebuild momentum and confidence.\n\nEach lesson ends with a quick check. The final exam is drawn from the **Bouncing Back from Early Failure** skill quiz in the Test Center, where you can also practise on the **Skills** page.",
+  level: "beginner",
+  cover: "violet",
+  outcomes: ["Explain why early failure is common and useful", "Manage disappointment and self-criticism", "Analyse what went wrong and plan a better attempt", "Rebuild confidence and momentum after a setback"],
+  skills: ["Resilience", "Self-compassion", "Reflective learning", "Confidence building"],
+  quiz: {
+    name: "Bouncing Back from Early Failure",
+    slug: "skill-bouncing-back",
+    description: "Handle a rough start, a failed first attempt or an early mistake, recover your confidence and come back stronger.",
+    tags: ["Workplace & career", "soft skills", "bouncing back"],
+    skillGroup: "Workplace & career",
+    icon: "restart_alt",
+  },
+  topics: [
+    { key: "understanding-failure", name: "Understanding early failure", description: "Why it happens and what it means." },
+    { key: "emotions", name: "Handling the emotions", description: "Disappointment, self-talk and support." },
+    { key: "comeback", name: "Planning the comeback", description: "Learning, retrying and rebuilding confidence." },
+  ],
+  modules: [
+    {
+      id: "understanding-early-failure",
+      title: "Understanding Early Failure",
+      lessons: [
+        {
+          id: "failure-is-normal",
+          title: "Early Failure Is Normal",
+          minutes: 5,
+          blocks: [
+            text("## You are not alone\n\nEarly failure is part of almost every story of success: failed first exams, rejected first applications, products that didn't sell. Early attempts fail because you are still **learning the rules**, the skills and the context.\n\nFailing early is often better than failing late: the stakes are lower and there is time to adjust."),
+            text("## Failure is an event, not an identity\n\n\"I failed the exam\" is an event. \"I am a failure\" is an identity. Keep them separate. Events can be analysed and improved; identities feel permanent and stop you trying again."),
+            tip("Say \"I failed at this attempt\", never \"I am a failure\"."),
+            check("Which statement treats failure as an event, not an identity?", ["\"My first attempt at the exam didn't pass.\"", "\"I'm a failure.\"", "\"I'm just not smart.\"", "\"I always fail.\""], 0, "Describing the specific event keeps failure fixable."),
+          ],
+        },
+        {
+          id: "types-of-failure",
+          title: "Different Kinds of Failure",
+          minutes: 5,
+          blocks: [
+            text("## Not all failures are equal\n\n| Kind | Example | What to do |\n| --- | --- | --- |\n| **Preventable** | Skipped a required step | Fix the process or habit |\n| **Complex** | Several small factors combined | Look at the whole system |\n| **Intelligent / experimental** | Tried something new that didn't work | Learn, then try a better version |\n\nUnderstanding the kind of failure points to the right response."),
+            text("## Avoid over-generalising\n\nOne failed presentation doesn't mean you can't present. One difficult first month doesn't mean the job is wrong for you. Look at the specific causes before drawing big conclusions."),
+            tip("Ask: was this preventable, complex or experimental?"),
+            check("You tried a new approach in a small trial and it didn't work. This is best described as…", ["A preventable failure", "An intelligent, experimental failure to learn from", "Proof you should never try new things", "A disaster"], 1, "Experimental failures in small trials are valuable learning."),
+          ],
+        },
+        {
+          id: "what-failure-teaches",
+          title: "What Failure Teaches",
+          minutes: 5,
+          blocks: [
+            text("## Hidden lessons\n\nEarly failures often teach things success can't:\n\n- Where your preparation was weak\n- Which assumptions were wrong\n- How you react under pressure\n- Who supports you"),
+            text("## Write it down\n\nWithin a few days, write:\n\n1. What I expected to happen\n2. What actually happened\n3. Three things I learned\n4. One thing I'll do differently\n\nThis turns a painful experience into a useful resource."),
+            tip("Keep your written lessons; reread them before your next attempt."),
+            check("What is the value of writing down what you learned from a failure?", ["It turns the experience into lessons you can use next time", "It makes you feel worse", "It's only for managers", "It isn't useful"], 0, "Written lessons guide the next attempt."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "handling-the-emotions",
+      title: "Handling the Emotions",
+      lessons: [
+        {
+          id: "disappointment",
+          title: "Feeling Disappointed",
+          minutes: 5,
+          blocks: [
+            text("## Let yourself feel it\n\nDisappointment, embarrassment and frustration are normal after a failure. Trying to ignore them often makes them last longer.\n\nGive yourself a short, defined time to feel it: an evening, a walk, a conversation with someone you trust. Then move to reflection."),
+            text("## What doesn't help\n\n- Replaying the failure over and over\n- Avoiding everything connected to it\n- Hiding it from everyone\n- Making big decisions while upset\n\nIf difficult feelings last a long time or affect your daily life, talk to someone you trust or a professional."),
+            tip("Feel it, then file it: give the emotion time, then turn to the lessons."),
+            check("What is a healthy way to handle disappointment after failing?", ["Pretend nothing happened", "Replay it constantly", "Make a big decision immediately", "Allow yourself time to feel it, then move to reflection"], 3, "Acknowledge feelings, then reflect."),
+          ],
+        },
+        {
+          id: "self-talk",
+          title: "Managing Self-Criticism",
+          minutes: 5,
+          blocks: [
+            text("## Notice the inner critic\n\nAfter failure, many people talk to themselves harshly: \"I'm useless\", \"Everyone thinks I'm incompetent\". This self-talk drains energy and confidence.\n\n**Self-compassion** means talking to yourself as you would to a friend in the same situation: honest about what went wrong, but kind."),
+            text("## Reframe\n\n| Harsh | Helpful |\n| --- | --- |\n| \"I'm useless.\" | \"I didn't prepare enough for this format. I can fix that.\" |\n| \"Everyone thinks I'm incompetent.\" | \"Most people have failed something early. What matters is what I do next.\" |"),
+            tip("Ask: \"What would I say to a friend who had this happen?\""),
+            check("Which self-talk is most helpful after failing?", ["\"I'm useless.\"", "\"I'll never succeed.\"", "\"I didn't prepare enough for this format; I can fix that.\"", "\"It's all their fault.\""], 2, "Honest but kind self-talk keeps you moving."),
+          ],
+        },
+        {
+          id: "getting-support",
+          title: "Getting Support",
+          minutes: 5,
+          blocks: [
+            text("## Don't go through it alone\n\nTalking to others helps you see the failure in perspective:\n\n- A **colleague or mentor** may share their own early failures.\n- A **manager** can help you understand what happened and what to do next.\n- **Friends or family** provide encouragement."),
+            text("## Ask specifically\n\n> \"My first project presentation didn't go well. Could you tell me what you'd change, and how you handled your first ones?\" \n\nMany workplaces also offer confidential support services (such as an employee assistance program) if things feel overwhelming."),
+            tip("Ask someone you respect about their first big failure. You'll likely be surprised."),
+            check("Why is talking to a mentor helpful after an early failure?", ["They'll tell you to quit", "It's a waste of time", "They'll fix it for you", "They can share perspective and their own experiences"], 3, "Perspective and stories of others' failures help recovery."),
+          ],
+        },
+      ],
+    },
+    {
+      id: "planning-the-comeback",
+      title: "Planning the Comeback",
+      lessons: [
+        {
+          id: "analysing-what-happened",
+          title: "Analysing What Happened",
+          minutes: 5,
+          blocks: [
+            text("## Look at causes, not blame\n\nReview calmly:\n\n- **Preparation**: Did I know enough? Practise enough?\n- **Approach**: Did my method suit the task?\n- **Circumstances**: Time, tools, information, health?\n- **Feedback**: What did others observe?\n\nUse evidence: scores by topic, feedback, notes."),
+            text("## Find the few causes that matter\n\nUsually one to three causes explain most of the result. Focus on those, rather than trying to fix everything."),
+            tip("Use the topic breakdown of a failed exam to plan exactly what to review."),
+            check("After failing an exam, what is the most useful evidence to study?", ["Rumours about the exam", "Your score by topic and the feedback you received", "Other people's opinions of you", "Nothing"], 1, "Topic scores and feedback show what to focus on."),
+          ],
+        },
+        {
+          id: "the-next-attempt",
+          title: "The Next Attempt",
+          minutes: 5,
+          blocks: [
+            text("## Plan and try again soon\n\n1. Choose the one to three causes to address.\n2. Make a short, specific plan for each.\n3. Set a date for the next attempt.\n4. Practise in a low-stakes setting first.\n\nTrying again soon prevents fear from growing."),
+            text("## Example\n\n> First presentation failed: too much text, ran over time.\n> Plan: five slides maximum; rehearse twice with a timer; present to a colleague first.\n> Next attempt: team meeting in two weeks."),
+            tip("Set the date for your next attempt before you lose momentum."),
+            check("Why try again soon after an early failure?", ["To prove others wrong", "Because waiting is always wrong", "It prevents fear from growing and keeps momentum", "It doesn't matter"], 2, "Prompt retries keep momentum and reduce fear."),
+          ],
+        },
+        {
+          id: "rebuilding-confidence",
+          title: "Rebuilding Confidence",
+          minutes: 5,
+          blocks: [
+            text("## Confidence follows action\n\nConfidence comes back through **small successes**, not by waiting to feel confident:\n\n- Start with an easier version of the task.\n- Practise until it feels familiar.\n- Notice and record each improvement."),
+            text("## Your comeback story\n\nMany professionals' strongest interview answers are about early failures they recovered from. With the STAR format, a failure plus what you learned and changed becomes evidence of resilience."),
+            tip("Confidence is built by doing, one small success at a time."),
+            check("How is confidence best rebuilt after failure?", ["Achieving small successes through action", "Waiting until you feel confident", "Avoiding similar tasks", "Ignoring the failure"], 0, "Small wins rebuild confidence."),
+          ],
+        },
+      ],
+    },
+  ],
+  questions: [
+    mc("understanding-failure", "easy", "Which statement treats failure as an event?", ["\"I'm a failure.\"", "\"My first attempt didn't pass.\"", "\"I always fail.\"", "\"I'm not smart.\""], 1, "Describe the event, not your identity."),
+    tf("understanding-failure", "easy", "Early failure is unusual among successful people.", false, "Early failure is common in almost every success story."),
+    mc("understanding-failure", "medium", "A failure caused by skipping a required step is…", ["Experimental", "Complex", "Preventable", "Unavoidable"], 2, "Fix the habit or process."),
+    mc("understanding-failure", "medium", "Why can failing early be better than failing late?", ["It never matters", "It guarantees success", "Stakes are lower and there's time to adjust", "It's more embarrassing"], 2, "Early failure leaves room to learn."),
+    ord("understanding-failure", "medium", "Put the reflection notes in order.", ["What I expected", "What actually happened", "What I learned", "What I'll do differently"], "Expectation, reality, lessons, change."),
+    mc("understanding-failure", "hard", "After one poor presentation, someone concludes they can never present. This is…", ["Over-generalising", "Accurate analysis", "Self-compassion", "Good planning"], 0, "One event doesn't define ability."),
+    mc("emotions", "easy", "A healthy response to disappointment is to…", ["Ignore it", "Replay it constantly", "Hide it from everyone", "Allow time to feel it, then reflect"], 3, "Feel it, then file it."),
+    mc("emotions", "medium", "Self-compassion means…", ["Talking to yourself as you would a friend: honest but kind", "Ignoring mistakes", "Blaming others", "Never trying again"], 0, "Honest and kind self-talk."),
+    ms("emotions", "medium", "Which reactions tend not to help after failure? Select all that apply.", ["Replaying it over and over", "Avoiding everything connected to it", "Big decisions while upset", "Talking to a trusted mentor"], [0, 1, 2], "Talking to someone helps; the others usually don't."),
+    tf("emotions", "easy", "If difficult feelings last a long time, talking to someone you trust or a professional can help.", true, "Seek support when feelings persist."),
+    mc("emotions", "medium", "Which self-talk is most helpful?", ["\"I didn't prepare enough for this format; I can fix that.\"", "\"I'm useless.\"", "\"Everyone hates me.\"", "\"It's hopeless.\""], 0, "Specific and fixable."),
+    mc("emotions", "medium", "Why ask a mentor about their early failures?", ["To gossip", "To gain perspective and learn how they recovered", "To compare scores", "To avoid work"], 1, "Others' stories put yours in perspective."),
+    mc("comeback", "easy", "Best evidence after a failed exam?", ["Rumours", "Guesswork", "Others' opinions of you", "Score by topic and feedback"], 3, "Evidence shows where to focus."),
+    mc("comeback", "medium", "How many causes usually explain most of a result?", ["Dozens", "None", "One to three", "Exactly ten"], 2, "Focus on the few causes that matter."),
+    ord("comeback", "medium", "Put the comeback steps in order.", ["Choose the causes to address", "Make a plan for each", "Set a date", "Practise in a low-stakes setting"], "Causes, plan, date, practise."),
+    tf("comeback", "easy", "Confidence usually returns through action and small successes.", true, "Doing rebuilds confidence."),
+    mc("comeback", "medium", "Why try again soon?", ["To prove others wrong", "Waiting is always wrong", "It doesn't matter", "To keep momentum and stop fear growing"], 3, "Prompt retries help."),
+    mc("comeback", "hard", "How can an early failure help in a job interview?", ["It can't", "As a STAR story showing what you learned and changed", "By blaming others", "By hiding it"], 1, "Recovery stories demonstrate resilience."),
+  ],
+};
