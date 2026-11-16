@@ -670,4 +670,10 @@ export const FR_COURSES: Readonly<Record<string, string>> = {
   "Industry certifications awarded by their vendors, such as CompTIA and ServiceNow. Zebron prepares you with the same ordered courses, a map of every exam objective and a full practice exam; you book and take the real exam with the vendor.": "Certifications de l’industrie décernées par leurs éditeurs, comme CompTIA et ServiceNow. Zebron vous y prépare avec les mêmes cours ordonnés, une carte de chaque objectif d’examen et un examen d’entraînement complet ; vous réservez et passez l’examen officiel auprès de l’éditeur.",
   "External Professional Certification": "Certification professionnelle externe",
   "Zebron Certification": "Certification Zebron",
+  // Full screen (lesson player and Coding Lab)
+  'Full screen': 'Plein écran',
+  'Exit full screen': 'Quitter le plein écran',
+  'Exit full screen (Esc)': 'Quitter le plein écran (Échap)',
+  'Full screen: hide the menus and use the whole screen': 'Plein écran : masquer les menus et utiliser tout l’écran',
+  'Exit': 'Quitter',
 };

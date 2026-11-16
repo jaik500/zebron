@@ -2,13 +2,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   computed,
   effect,
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
-import { NgClass } from '@angular/common';
+import { DOCUMENT, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -77,7 +79,13 @@ type ViewBlock =
     CodeLabComponent,
   ],
   template: `
-    <main class="mt-16 min-h-screen w-full min-w-0 overflow-x-clip bg-slate-50">
+    <main
+      #player
+      class="w-full min-w-0 overflow-x-clip bg-slate-50"
+      [class]="focusMode() ? 'fixed inset-0 z-[900] overflow-y-auto overscroll-contain' : 'mt-16 min-h-screen'"
+      (keydown.escape)="onEscape()"
+    >
+      @if (!focusMode()) {
       <app-course-header
         [basePath]="context.basePath"
         [backLink]="coursePath()"
@@ -91,11 +99,14 @@ type ViewBlock =
           { label: store.lesson()?.title ?? 'Lesson', translate: !store.lesson() },
         ]"
       />
+      }
 
       <div
-        class="mx-auto grid w-full min-w-0 max-w-7xl grid-cols-[minmax(0,1fr)] gap-3 px-2 py-3 sm:gap-5 sm:px-5 sm:py-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6 lg:px-6 2xl:max-w-[88rem] 2xl:px-8"
+        class="mx-auto grid w-full min-w-0 grid-cols-[minmax(0,1fr)] gap-3 px-2 py-3 sm:gap-5 sm:px-5 sm:py-6 lg:gap-6 lg:px-6 2xl:px-8"
+        [class]="focusMode() ? 'max-w-[110rem]' : 'max-w-7xl lg:grid-cols-[240px_minmax(0,1fr)] 2xl:max-w-[88rem]'"
       >
-        <!-- Outline (wide screens) -->
+        <!-- Outline (wide screens; hidden in focus mode) -->
+        @if (!focusMode()) {
         <nav
           class="hidden self-start rounded-2xl border border-slate-200 bg-white p-3 lg:sticky lg:top-20 lg:block"
           [attr.aria-label]="'Course outline' | t"
@@ -137,14 +148,24 @@ type ViewBlock =
             }
           }
         </nav>
+        }
 
         <div class="w-full min-w-0">
           <!-- Where you are -->
           <div
-            class="lesson-progress-sticky sticky top-16 z-10 -mx-1 bg-slate-50/95 px-2 pb-3 pt-1 backdrop-blur"
+            class="lesson-progress-sticky sticky z-10 -mx-1 bg-slate-50/95 px-2 pb-3 pt-1 backdrop-blur"
+            [class]="focusMode() ? 'top-0' : 'top-16'"
           >
             <div class="flex items-center justify-between gap-3 text-xs font-medium text-slate-600">
-              <span>
+              @if (focusMode()) {
+                <a
+                  [routerLink]="coursePath()"
+                  (click)="exitFocusMode()"
+                  class="hidden min-w-0 max-w-[40%] truncate font-semibold text-[#007979] hover:underline sm:block"
+                  >{{ store.course()?.title }}</a
+                >
+              }
+              <span class="min-w-0 flex-1">
                 @if (store.lessonIndex() >= 0) {
                   {{ 'Lesson {0} of {1}' | t: [store.lessonIndex() + 1, store.outline().length] }}
                   @if (store.lesson(); as lesson) {
@@ -152,7 +173,18 @@ type ViewBlock =
                   }
                 }
               </span>
-              <span>{{ '{percent}% of course' | t: { percent: coursePercent() } }}</span>
+              <span class="shrink-0">{{ '{percent}% of course' | t: { percent: coursePercent() } }}</span>
+              <button
+                type="button"
+                (click)="toggleFocusMode()"
+                class="-my-1 inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]"
+                [attr.aria-pressed]="focusMode()"
+                [attr.aria-label]="(focusMode() ? 'Exit full screen' : 'Full screen') | t"
+                [title]="(focusMode() ? 'Exit full screen (Esc)' : 'Full screen: hide the menus and use the whole screen') | t"
+              >
+                <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">{{ focusMode() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+                <span class="hidden sm:inline">{{ (focusMode() ? 'Exit full screen' : 'Full screen') | t }}</span>
+              </button>
             </div>
             <div
               class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"
@@ -188,7 +220,8 @@ type ViewBlock =
             </div>
           } @else if (store.lesson(); as lesson) {
             <article
-              class="mx-auto w-full min-w-0 max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white pb-5 pt-5 shadow-sm sm:pb-6 sm:pt-6"
+              class="mx-auto w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white pb-5 pt-5 shadow-sm sm:pb-6 sm:pt-6"
+              [class]="focusMode() ? 'max-w-7xl' : 'max-w-5xl'"
             >
               @if (moduleTitle()) {
                 <p class="break-words px-4 text-[11px] font-bold uppercase tracking-wide text-[#007979] sm:px-6">
@@ -497,6 +530,64 @@ export class LessonPlayerComponent {
   protected readonly store = inject(CourseStore);
 
   protected readonly context = courseContextFromRoute(this.route);
+
+  // ------------------------------------------------------------------
+  // Full screen (focus mode): the lesson covers the app's menus and the
+  // course outline, uses the full width, and the browser goes full screen
+  // where it can. It stays on while moving between lessons.
+  // ------------------------------------------------------------------
+
+  private readonly document = inject(DOCUMENT);
+  protected readonly focusMode = signal(false);
+  /** Focus mode turned on the browser's full screen (and turns it off again). */
+  private ownsBrowserFullscreen = false;
+  private readonly player = viewChild<ElementRef<HTMLElement>>('player');
+
+  /** In focus mode the lesson scrolls inside its own container, not the window. */
+  private scrollPosition(): number {
+    return this.focusMode() ? (this.player()?.nativeElement.scrollTop ?? 0) : window.scrollY;
+  }
+
+  private scrollToPosition(top: number, behavior: ScrollBehavior = 'auto'): void {
+    const target = this.focusMode() ? this.player()?.nativeElement : window;
+    target?.scrollTo({ top, behavior });
+  }
+
+  protected toggleFocusMode(): void {
+    if (this.focusMode()) {
+      this.exitFocusMode();
+      return;
+    }
+    this.focusMode.set(true);
+    const root = this.document.documentElement;
+    if (!this.document.fullscreenElement && root.requestFullscreen) {
+      root
+        .requestFullscreen()
+        .then(() => (this.ownsBrowserFullscreen = true))
+        .catch(() => undefined); // Not allowed (e.g. iPhone): the lesson still fills the window.
+    }
+  }
+
+  protected exitFocusMode(): void {
+    this.focusMode.set(false);
+    if (this.ownsBrowserFullscreen && this.document.fullscreenElement) {
+      void this.document.exitFullscreen().catch(() => undefined);
+    }
+    this.ownsBrowserFullscreen = false;
+  }
+
+  /** Esc leaves focus mode (when the browser is full screen, it handles Esc itself). */
+  protected onEscape(): void {
+    if (this.focusMode() && !this.document.fullscreenElement) this.exitFocusMode();
+  }
+
+  /** The learner left the browser's full screen (Esc or F11): leave focus mode too. */
+  private readonly onBrowserFullscreenChange = (): void => {
+    if (!this.document.fullscreenElement && this.focusMode()) {
+      this.ownsBrowserFullscreen = false;
+      this.exitFocusMode();
+    }
+  };
   private readonly courseId = signal(this.route.snapshot.paramMap.get('courseId') ?? '');
 
   /** Chosen option per quick check (by block index). */
@@ -642,7 +733,11 @@ export class LessonPlayerComponent {
   });
 
   constructor() {
+    this.document.addEventListener('fullscreenchange', this.onBrowserFullscreenChange);
     this.destroyRef.onDestroy(() => {
+      this.document.removeEventListener('fullscreenchange', this.onBrowserFullscreenChange);
+      // Leaving the lesson pages (course page, exam…) ends full screen.
+      if (this.focusMode()) this.exitFocusMode();
       if (this.focusHighlightTimer !== undefined) {
         window.clearTimeout(this.focusHighlightTimer);
       }
@@ -671,7 +766,7 @@ export class LessonPlayerComponent {
   private async load(courseId: string, lessonId: string): Promise<void> {
     await this.store.openCourse(courseId);
     await this.store.openLesson(lessonId);
-    window.scrollTo({ top: 0 });
+    this.scrollToPosition(0);
   }
 
   /** Add an index and move focus to a newly opened section after its panel animation. */
@@ -705,13 +800,10 @@ export class LessonPlayerComponent {
 
         const stickyProgress = document.querySelector<HTMLElement>('.lesson-progress-sticky');
         const stickyBottom = stickyProgress?.getBoundingClientRect().bottom ?? 112;
-        const targetTop = window.scrollY + panel.getBoundingClientRect().top - stickyBottom - 16;
+        const targetTop = this.scrollPosition() + panel.getBoundingClientRect().top - stickyBottom - 16;
 
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        window.scrollTo({
-          top: Math.max(0, targetTop),
-          behavior: reduceMotion ? 'auto' : 'smooth',
-        });
+        this.scrollToPosition(Math.max(0, targetTop), reduceMotion ? 'auto' : 'smooth');
 
         this.focusedBlock.set(index);
         if (this.focusHighlightTimer !== undefined) {

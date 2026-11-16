@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   afterNextRender,
   computed,
   effect,
@@ -10,7 +11,9 @@ import {
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -35,9 +38,11 @@ import { CodeRunnerService } from './code-runner.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatIconModule, TranslatePipe, CodeEditorComponent],
   template: `
-    <section class="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white" [attr.aria-label]="(exercise().title || 'Coding Lab') | t" (focusin)="warmUp()">
+    <section #panel [class]="panelClass()" [attr.aria-label]="(exercise().title || 'Coding Lab') | t" [attr.role]="fullscreen() ? 'dialog' : null" [attr.aria-modal]="fullscreen() ? 'true' : null" (focusin)="warmUp()" (keydown.escape)="onEscape()">
+      <!-- Side (full screen on wide screens): title and instructions -->
+      <div [class]="sideTopClass()">
       @if (mode() === 'exercise') {
-        <header class="flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3">
+        <header class="order-1 flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3">
           <mat-icon class="text-[#007979]" aria-hidden="true">terminal</mat-icon>
           <h3 class="min-w-0 flex-1 text-base font-semibold text-slate-900">{{ exercise().title || ('Coding exercise' | t) }}</h3>
           @if (passed()) {
@@ -49,14 +54,18 @@ import { CodeRunnerService } from './code-runner.service';
         </header>
         @if (instructionsHtml()) {
           <div
-            class="px-4 py-3 text-[0.975rem] leading-7 text-slate-800 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:text-sm [&_p]:mb-2 [&_ul]:mb-2 [&_ul]:ml-6 [&_ul]:list-disc [&_ol]:ml-6 [&_ol]:list-decimal [&>*:last-child]:mb-0"
+            class="order-2 px-4 py-3 text-[0.975rem] leading-7 text-slate-800 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:text-sm [&_p]:mb-2 [&_ul]:mb-2 [&_ul]:ml-6 [&_ul]:list-disc [&_ol]:ml-6 [&_ol]:list-decimal [&>*:last-child]:mb-0"
             [innerHTML]="instructionsHtml()"
           ></div>
         }
       }
 
+      </div>
+
+      <!-- Main: toolbar, editor, program input and console -->
+      <div [class]="mainClass()">
       <!-- Toolbar -->
-      <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-800 bg-[#0f2b38] px-2 py-1.5">
+      <div class="order-3 flex flex-wrap items-center gap-1.5 border-b border-slate-800 bg-[#0f2b38] px-2 py-1.5">
         <button type="button" (click)="runCode()" [disabled]="running()" class="inline-flex h-8 items-center gap-1 rounded-md bg-[#12bfc3] px-3 text-sm font-semibold text-[#032d42] hover:bg-[#3fd3d6] disabled:opacity-60" [title]="'Run (Ctrl+Enter)' | t">
           <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">{{ running() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
           {{ (running() ? 'Running…' : 'Run') | t }}
@@ -81,24 +90,30 @@ import { CodeRunnerService } from './code-runner.service';
           <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">restart_alt</mat-icon>
           <span class="hidden text-sm sm:inline">{{ 'Reset' | t }}</span>
         </button>
-        @if (allowOpenInLab()) {
+        @if (allowOpenInLab() && !fullscreen()) {
           <button type="button" (click)="openInLab()" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-300 hover:bg-white/10" [attr.aria-label]="'Open in the Coding Lab' | t" [title]="'Open in the Coding Lab' | t">
             <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">open_in_new</mat-icon>
           </button>
         }
+        <button type="button" (click)="toggleFullscreen()" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-300 hover:bg-white/10 sm:w-auto sm:gap-1 sm:px-2" [attr.aria-label]="(fullscreen() ? 'Exit full screen' : 'Full screen') | t" [title]="(fullscreen() ? 'Exit full screen (Esc)' : 'Full screen') | t" [attr.aria-pressed]="fullscreen()">
+          <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">{{ fullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+          <span class="hidden text-sm sm:inline">{{ (fullscreen() ? 'Exit' : 'Full screen') | t }}</span>
+        </button>
       </div>
 
-      <app-code-editor [(code)]="code" [language]="exercise().language" [height]="editorHeight()" [label]="'Code editor' | t" (run)="runCode()" />
+      <div [class]="editorWrapClass()">
+        <app-code-editor [class]="fullscreen() ? 'absolute inset-0 block' : 'block'" [(code)]="code" [language]="exercise().language" [height]="fullscreen() ? '100%' : editorHeight()" [label]="'Code editor' | t" (run)="runCode()" />
+      </div>
 
       <!-- Program input for prompt() -->
-      <details class="border-t border-slate-800 bg-[#0b1f2a] text-sm text-slate-300" [open]="stdin().length > 0">
+      <details class="order-5 border-t border-slate-800 bg-[#0b1f2a] text-sm text-slate-300" [open]="stdin().length > 0">
         <summary class="cursor-pointer px-3 py-1.5 text-xs text-slate-400">{{ (exercise().language === 'python' ? 'Program input (one line for each input())' : 'Program input (one line for each prompt())') | t }}</summary>
         <textarea class="block h-16 w-full resize-y border-0 bg-[#081822] px-3 py-2 font-mono text-xs text-slate-100 outline-none" [value]="stdin()" (input)="stdin.set($any($event.target).value)" [attr.aria-label]="'Program input' | t" spellcheck="false"></textarea>
       </details>
 
       <!-- Console -->
       @if (hasRun()) {
-        <div class="border-t border-slate-800 bg-[#06141c]" role="log" aria-live="polite" [attr.aria-label]="'Output' | t">
+        <div class="order-6 border-t border-slate-800 bg-[#06141c]" role="log" aria-live="polite" [attr.aria-label]="'Output' | t">
           <div class="flex items-center justify-between px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             <span>{{ 'Output' | t }}</span>
             <span class="font-normal normal-case tracking-normal">
@@ -106,14 +121,17 @@ import { CodeRunnerService } from './code-runner.service';
               <button type="button" (click)="clearOutput()" class="ml-2 rounded px-1 text-slate-400 hover:text-white">{{ 'Clear' | t }}</button>
             </span>
           </div>
-          <pre class="m-0 max-h-72 overflow-auto whitespace-pre-wrap break-words px-3 pb-3 font-mono text-[13px] leading-relaxed">@for (line of output(); track $index) {<span [class]="line.stream === 'stderr' ? 'text-amber-300' : line.stream === 'system' ? 'text-slate-500' : 'text-slate-100'">{{ line.text }}
+          <pre [class]="fullscreen() ? 'max-h-[30dvh]' : 'max-h-72'" class="m-0 overflow-auto whitespace-pre-wrap break-words px-3 pb-3 font-mono text-[13px] leading-relaxed">@for (line of output(); track $index) {<span [class]="line.stream === 'stderr' ? 'text-amber-300' : line.stream === 'system' ? 'text-slate-500' : 'text-slate-100'">{{ line.text }}
 </span>}@if (error()) {<span class="text-rose-300">{{ error() }}</span>}@if (!output().length && !error() && !running()) {<span class="text-slate-500">{{ 'No output. Use {0} to print values.' | t: [printHint()] }}</span>}</pre>
         </div>
       }
 
-      <!-- Check results -->
+      </div>
+
+      <!-- Check results and hints (side, under the instructions, in full screen) -->
+      <div [class]="sideEndClass()">
       @if (results().length) {
-        <div class="border-t border-slate-200 px-4 py-3" aria-live="polite">
+        <div class="order-7 border-t border-slate-200 px-4 py-3" aria-live="polite">
           <p class="mb-2 text-sm font-semibold" [class]="allPassed() ? 'text-emerald-700' : 'text-slate-900'">
             {{ allPassed() ? ('All checks passed. Well done!' | t) : ('{0} of {1} checks passed' | t: [passedCount(), results().length]) }}
           </p>
@@ -136,7 +154,7 @@ import { CodeRunnerService } from './code-runner.service';
 
       <!-- Hints and solution -->
       @if (hintsShown() || (exercise().solution && attempts() > 0)) {
-        <div class="space-y-2 border-t border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <div class="order-8 space-y-2 border-t border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           @for (hint of exercise().hints.slice(0, hintsShown()); track $index) {
             <p class="flex gap-2"><mat-icon class="!h-5 !w-5 shrink-0 !text-[20px] text-amber-600" aria-hidden="true">lightbulb</mat-icon><span class="whitespace-pre-line"><strong>{{ 'Hint {0}:' | t: [$index + 1] }}</strong> {{ hint }}</span></p>
           }
@@ -153,6 +171,7 @@ import { CodeRunnerService } from './code-runner.service';
           }
         </div>
       }
+      </div>
     </section>
   `,
 })
@@ -194,6 +213,83 @@ export class CodeLabComponent {
   protected readonly showSolution = signal(false);
   protected readonly passed = signal(false);
   protected readonly saveState = signal<string | null>(null);
+
+  // ------------------------------------------------------------------
+  // Full screen: the panel covers the window (instructions beside the editor
+  // on wide screens) and the browser goes full screen where it can.
+  // ------------------------------------------------------------------
+
+  private readonly document = inject(DOCUMENT);
+  private readonly panel = viewChild.required<ElementRef<HTMLElement>>('panel');
+  protected readonly fullscreen = signal(false);
+  /** This panel turned on the browser's full screen (and turns it off again). */
+  private ownsBrowserFullscreen = false;
+  private returnFocus: HTMLElement | null = null;
+
+  /** Exercises have a side area (title, instructions, results, hints) in full screen. */
+  private readonly hasSide = computed(() => this.mode() === 'exercise');
+  private readonly wideSplit = computed(() => this.fullscreen() && this.hasSide());
+
+  protected readonly panelClass = computed(() => {
+    if (!this.fullscreen()) return 'flex min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white';
+    const base = 'fixed inset-0 z-[1000] flex min-w-0 flex-col overscroll-contain bg-white';
+    return this.hasSide()
+      ? `${base} overflow-y-auto lg:grid lg:grid-cols-[minmax(20rem,28rem)_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden`
+      : `${base} overflow-hidden`;
+  });
+  protected readonly sideTopClass = computed(() =>
+    this.wideSplit() ? 'contents lg:col-start-1 lg:row-start-1 lg:block lg:max-h-[55dvh] lg:overflow-y-auto lg:border-r lg:border-slate-200' : 'contents',
+  );
+  protected readonly sideEndClass = computed(() =>
+    this.wideSplit() ? 'contents lg:col-start-1 lg:row-start-2 lg:block lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-slate-200' : 'contents',
+  );
+  protected readonly mainClass = computed(() =>
+    this.wideSplit() ? 'contents lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:flex lg:min-h-0 lg:flex-col' : 'contents',
+  );
+  protected readonly editorWrapClass = computed(() =>
+    this.fullscreen() ? 'relative order-4 min-h-[60dvh] flex-1 lg:min-h-0' : 'order-4',
+  );
+
+  protected toggleFullscreen(): void {
+    if (this.fullscreen()) this.exitFullscreen();
+    else this.enterFullscreen();
+  }
+
+  private enterFullscreen(): void {
+    this.returnFocus = this.document.activeElement as HTMLElement | null;
+    this.fullscreen.set(true);
+    // The whole page goes full screen (not just the panel) so messages and menus still show.
+    const root = this.document.documentElement;
+    if (!this.document.fullscreenElement && root.requestFullscreen) {
+      root
+        .requestFullscreen()
+        .then(() => (this.ownsBrowserFullscreen = true))
+        .catch(() => undefined); // Not allowed (e.g. iPhone): the panel still fills the window.
+    }
+    setTimeout(() => this.panel().nativeElement.querySelector<HTMLElement>('.cm-content, textarea')?.focus());
+  }
+
+  private exitFullscreen(): void {
+    this.fullscreen.set(false);
+    if (this.ownsBrowserFullscreen && this.document.fullscreenElement) {
+      void this.document.exitFullscreen().catch(() => undefined);
+    }
+    this.ownsBrowserFullscreen = false;
+    setTimeout(() => this.returnFocus?.focus());
+  }
+
+  /** Esc leaves full screen (when the browser is full screen, it handles Esc itself). */
+  protected onEscape(): void {
+    if (this.fullscreen() && !this.document.fullscreenElement) this.exitFullscreen();
+  }
+
+  /** The learner left the browser's full screen (Esc or F11): leave the panel's too. */
+  private readonly onBrowserFullscreenChange = (): void => {
+    if (!this.document.fullscreenElement && this.fullscreen()) {
+      this.ownsBrowserFullscreen = false;
+      this.exitFullscreen();
+    }
+  };
 
   protected readonly printHint = computed(() => CODE_LANGUAGES.find((item) => item.value === this.exercise().language)?.print ?? 'print()');
   protected readonly languageLabel = computed(() => CODE_LANGUAGES.find((item) => item.value === this.exercise().language)?.label ?? 'Code');
@@ -244,7 +340,11 @@ export class CodeLabComponent {
       if (this.autoRun()) void this.runCode();
     });
 
+    this.document.addEventListener('fullscreenchange', this.onBrowserFullscreenChange);
+
     inject(DestroyRef).onDestroy(() => {
+      this.document.removeEventListener('fullscreenchange', this.onBrowserFullscreenChange);
+      if (this.fullscreen()) this.exitFullscreen();
       if (this.saveTimer) {
         clearTimeout(this.saveTimer);
         void this.save(false);
