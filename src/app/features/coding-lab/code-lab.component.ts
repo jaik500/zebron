@@ -35,7 +35,7 @@ import { CodeRunnerService } from './code-runner.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatIconModule, TranslatePipe, CodeEditorComponent],
   template: `
-    <section class="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white" [attr.aria-label]="(exercise().title || 'Coding Lab') | t">
+    <section class="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white" [attr.aria-label]="(exercise().title || 'Coding Lab') | t" (focusin)="warmUp()">
       @if (mode() === 'exercise') {
         <header class="flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3">
           <mat-icon class="text-[#007979]" aria-hidden="true">terminal</mat-icon>
@@ -88,11 +88,11 @@ import { CodeRunnerService } from './code-runner.service';
         }
       </div>
 
-      <app-code-editor [(code)]="code" [height]="editorHeight()" [label]="'Code editor' | t" (run)="runCode()" />
+      <app-code-editor [(code)]="code" [language]="exercise().language" [height]="editorHeight()" [label]="'Code editor' | t" (run)="runCode()" />
 
       <!-- Program input for prompt() -->
       <details class="border-t border-slate-800 bg-[#0b1f2a] text-sm text-slate-300" [open]="stdin().length > 0">
-        <summary class="cursor-pointer px-3 py-1.5 text-xs text-slate-400">{{ 'Program input (one line for each prompt())' | t }}</summary>
+        <summary class="cursor-pointer px-3 py-1.5 text-xs text-slate-400">{{ (exercise().language === 'python' ? 'Program input (one line for each input())' : 'Program input (one line for each prompt())') | t }}</summary>
         <textarea class="block h-16 w-full resize-y border-0 bg-[#081822] px-3 py-2 font-mono text-xs text-slate-100 outline-none" [value]="stdin()" (input)="stdin.set($any($event.target).value)" [attr.aria-label]="'Program input' | t" spellcheck="false"></textarea>
       </details>
 
@@ -107,7 +107,7 @@ import { CodeRunnerService } from './code-runner.service';
             </span>
           </div>
           <pre class="m-0 max-h-72 overflow-auto whitespace-pre-wrap break-words px-3 pb-3 font-mono text-[13px] leading-relaxed">@for (line of output(); track $index) {<span [class]="line.stream === 'stderr' ? 'text-amber-300' : line.stream === 'system' ? 'text-slate-500' : 'text-slate-100'">{{ line.text }}
-</span>}@if (error()) {<span class="text-rose-300">{{ error() }}</span>}@if (!output().length && !error() && !running()) {<span class="text-slate-500">{{ 'No output. Use console.log() to print values.' | t }}</span>}</pre>
+</span>}@if (error()) {<span class="text-rose-300">{{ error() }}</span>}@if (!output().length && !error() && !running()) {<span class="text-slate-500">{{ 'No output. Use {0} to print values.' | t: [printHint()] }}</span>}</pre>
         </div>
       }
 
@@ -138,7 +138,7 @@ import { CodeRunnerService } from './code-runner.service';
       @if (hintsShown() || (exercise().solution && attempts() > 0)) {
         <div class="space-y-2 border-t border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           @for (hint of exercise().hints.slice(0, hintsShown()); track $index) {
-            <p class="flex gap-2"><mat-icon class="!h-5 !w-5 shrink-0 !text-[20px] text-amber-600" aria-hidden="true">lightbulb</mat-icon><span><strong>{{ 'Hint {0}:' | t: [$index + 1] }}</strong> {{ hint }}</span></p>
+            <p class="flex gap-2"><mat-icon class="!h-5 !w-5 shrink-0 !text-[20px] text-amber-600" aria-hidden="true">lightbulb</mat-icon><span class="whitespace-pre-line"><strong>{{ 'Hint {0}:' | t: [$index + 1] }}</strong> {{ hint }}</span></p>
           }
           @if (exercise().solution && attempts() > 0) {
             @if (showSolution()) {
@@ -195,6 +195,7 @@ export class CodeLabComponent {
   protected readonly passed = signal(false);
   protected readonly saveState = signal<string | null>(null);
 
+  protected readonly printHint = computed(() => CODE_LANGUAGES.find((item) => item.value === this.exercise().language)?.print ?? 'print()');
   protected readonly languageLabel = computed(() => CODE_LANGUAGES.find((item) => item.value === this.exercise().language)?.label ?? 'Code');
   protected readonly instructionsHtml = computed(() => (this.exercise().instructions.trim() ? renderKnowledgeContent(this.exercise().instructions) : ''));
   protected readonly passedCount = computed(() => this.results().filter((result) => result.passed).length);
@@ -312,6 +313,11 @@ export class CodeLabComponent {
         await this.save(true);
       }
     }
+  }
+
+  /** Python takes a few seconds to start: begin when the learner starts working. */
+  protected warmUp(): void {
+    this.runner.warmUp(this.exercise().language);
   }
 
   protected check(): void {

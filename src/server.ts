@@ -94,12 +94,20 @@ const CONTENT_SECURITY_POLICY = [
 
 /**
  * Coding Lab workers (public/coding-lab/*.js) run learners' code. They may
- * evaluate code but reach no network: learners' code can't send data anywhere.
+ * evaluate code but reach no network (the Python worker only jsDelivr, where
+ * Python and its packages come from).
  */
 const CODING_LAB_WORKER_POLICY = [
   "default-src 'none'",
   "script-src 'self' 'unsafe-eval'",
   "connect-src 'none'",
+].join('; ');
+
+/** The Python worker also loads Pyodide (WebAssembly) and packages from jsDelivr. */
+const CODING_LAB_PYTHON_POLICY = [
+  "default-src 'none'",
+  "script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net",
+  "connect-src https://cdn.jsdelivr.net",
 ].join('; ');
 
 app.use((_req, res, next) => {
@@ -111,7 +119,11 @@ app.use((_req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   res.setHeader(
     'Content-Security-Policy-Report-Only',
-    _req.path.startsWith('/coding-lab/') ? CODING_LAB_WORKER_POLICY : CONTENT_SECURITY_POLICY,
+    _req.path === '/coding-lab/python-worker.js'
+      ? CODING_LAB_PYTHON_POLICY
+      : _req.path.startsWith('/coding-lab/')
+        ? CODING_LAB_WORKER_POLICY
+        : CONTENT_SECURITY_POLICY,
   );
   res.removeHeader('X-Powered-By');
   next();

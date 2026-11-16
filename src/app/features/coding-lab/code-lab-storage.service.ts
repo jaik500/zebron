@@ -16,7 +16,7 @@ import {
 import { AuthService } from '../../core/services/auth.service';
 import { firestore } from '../../core/services/firebase-config';
 
-import { CodeLanguage, CodeProject, ExerciseWork, MAX_CODE_LENGTH } from './code-lab.model';
+import { CodeLanguage, CodeProject, ExerciseWork, MAX_CODE_LENGTH, isCodeLanguage } from './code-lab.model';
 
 /**
  * Learners' Coding Lab work, private to each learner:
@@ -92,7 +92,7 @@ export class CodeLabStorageService {
       return {
         id: item.id,
         name: typeof data['name'] === 'string' ? data['name'] : 'Untitled',
-        language: 'javascript',
+        language: isCodeLanguage(data['language']) ? data['language'] : 'javascript',
         code: typeof data['code'] === 'string' ? data['code'] : '',
         updatedAt: toDate(data['updatedAt']),
       };

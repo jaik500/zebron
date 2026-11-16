@@ -185,7 +185,7 @@ export class CourseService {
             return {
               type: 'code',
               id: text(block['id']) || 'code',
-              language: 'javascript',
+              language: block['language'] === 'python' ? 'python' : 'javascript',
               title: text(block['title']),
               instructions: text(block['instructions']),
               starter: text(block['starter']),

@@ -1,11 +1,16 @@
 /** Zebron Coding Lab: shared types. */
 
-/** Languages the lab runs. JavaScript first; Python can follow (same model). */
-export type CodeLanguage = 'javascript';
+/** Languages the lab runs, both in the learner's browser. */
+export type CodeLanguage = 'javascript' | 'python';
 
-export const CODE_LANGUAGES: { value: CodeLanguage; label: string; fence: string[] }[] = [
-  { value: 'javascript', label: 'JavaScript', fence: ['js', 'javascript'] },
+export const CODE_LANGUAGES: { value: CodeLanguage; label: string; fence: string[]; print: string; starter: string }[] = [
+  { value: 'javascript', label: 'JavaScript', fence: ['js', 'javascript'], print: 'console.log()', starter: '// Write your code here\n' },
+  { value: 'python', label: 'Python', fence: ['py', 'python'], print: 'print()', starter: '# Write your code here\n' },
 ];
+
+export function isCodeLanguage(value: unknown): value is CodeLanguage {
+  return CODE_LANGUAGES.some((language) => language.value === value);
+}
 
 export interface CodeTest {
   /** What the check verifies, shown to the learner ("sum([1, 2, 3]) returns 6"). */

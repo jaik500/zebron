@@ -184,7 +184,7 @@ function validate(course, modules, lessons) {
       if (block.type === 'code') {
         // Zebron Coding Lab exercise (JavaScript): an id, a title, instructions and starting code.
         need(/^[A-Za-z0-9_-]{1,60}$/.test(block.id ?? ''), `lesson "${lesson.id}" has a coding exercise without a valid id`);
-        need(block.language === 'javascript', `lesson "${lesson.id}" has a coding exercise in an unsupported language`);
+        need(['javascript', 'python'].includes(block.language), `lesson "${lesson.id}" has a coding exercise in an unsupported language`);
         need(block.title && block.instructions && typeof block.starter === 'string', `lesson "${lesson.id}" has an incomplete coding exercise`);
         need((block.tests ?? []).every((test) => test.name && test.code), `lesson "${lesson.id}" has a coding exercise check without a name or code`);
       }

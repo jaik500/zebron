@@ -9,7 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 import { CodeRunnerService } from '../../coding-lab/code-runner.service';
-import { TestResult } from '../../coding-lab/code-lab.model';
+import { CODE_LANGUAGES, CodeLanguage, TestResult } from '../../coding-lab/code-lab.model';
 import { LessonMediaComponent } from '../components/lesson-media.component';
 import { formatStartTime, LessonBlock, LessonCodeBlock, MEDIA_PROVIDERS, parseStartTime, resolveMedia } from '../course.model';
 
@@ -152,7 +152,13 @@ const MAX_QUESTIONS = 20;
               <mat-label>{{ 'Instructions' | t }}</mat-label>
               <textarea matInput rows="3" [value]="code().instructions" (input)="set({ instructions: value($event) })"></textarea>
             </mat-form-field>
-            <p class="-mt-2 text-xs text-slate-500">{{ 'Language: JavaScript. Learners run it in their browser; it can\\u0027t reach the web page or other websites.' | t }}</p>
+            <div class="-mt-1 flex flex-wrap items-center gap-2" role="group" [attr.aria-label]="'Language' | t">
+              <span class="text-xs font-semibold text-slate-600">{{ 'Language' | t }}</span>
+              @for (language of codeLanguages; track language.value) {
+                <button type="button" (click)="setLanguage(language.value)" [attr.aria-pressed]="code().language === language.value" class="h-8 rounded-lg border px-3 text-sm font-semibold" [ngClass]="code().language === language.value ? 'border-[#007979] bg-teal-50 text-[#007979]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'">{{ language.label }}</button>
+              }
+              <span class="text-xs text-slate-500">{{ 'Learners run it in their browser; it can\\u0027t reach the web page or other websites.' | t }}</span>
+            </div>
 
             <label class="flex flex-col gap-1">
               <span class="text-xs font-semibold text-slate-600">{{ 'Starting code (what learners see first)' | t }}</span>
@@ -161,14 +167,18 @@ const MAX_QUESTIONS = 20;
 
             <fieldset class="flex flex-col gap-2 rounded-xl border border-slate-200 p-3">
               <legend class="px-1 text-sm font-bold text-slate-700">{{ 'Checks' | t }}</legend>
-              <p class="text-xs text-slate-500">{{ 'Each check runs after the learner\\u0027s code and fails by throwing. Use assert(condition, message), assertEqual(actual, expected) and __output() (what the code printed).' | t }}</p>
+              @if (code().language === 'python') {
+                <p class="text-xs text-slate-500">{{ 'Each check is Python run after the learner\\u0027s code, with access to its functions and variables. It fails when it raises: use assert condition, "message". __output() returns what the code printed.' | t }}</p>
+              } @else {
+                <p class="text-xs text-slate-500">{{ 'Each check runs after the learner\\u0027s code and fails by throwing. Use assert(condition, message), assertEqual(actual, expected) and __output() (what the code printed).' | t }}</p>
+              }
               @for (test of code().tests; track $index; let testIndex = $index) {
                 <div class="flex flex-col gap-1.5 rounded-lg bg-slate-50 p-2">
                   <div class="flex items-center gap-2">
                     <input class="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm" [value]="test.name" [placeholder]="'What it checks, e.g. sum([1, 2]) returns 3' | t" (input)="setTest(testIndex, { name: value($event) })" [attr.aria-label]="'Check description' | t" />
                     <button type="button" class="icon-btn hover:!text-rose-600" (click)="removeTest(testIndex)" [attr.aria-label]="'Remove check' | t" [matTooltip]="'Remove check' | t"><mat-icon>delete</mat-icon></button>
                   </div>
-                  <textarea class="code-input" rows="2" spellcheck="false" [value]="test.code" placeholder="assertEqual(sum([1, 2]), 3);" (input)="setTest(testIndex, { code: value($event) })" [attr.aria-label]="'Check code' | t"></textarea>
+                  <textarea class="code-input" rows="2" spellcheck="false" [value]="test.code" [placeholder]="code().language === 'python' ? 'assert total([1, 2]) == 3' : 'assertEqual(sum([1, 2]), 3);'" (input)="setTest(testIndex, { code: value($event) })" [attr.aria-label]="'Check code' | t"></textarea>
                   @if (testResults()[testIndex]; as result) {
                     <p class="text-xs font-semibold" [class]="result.passed ? 'text-emerald-700' : 'text-rose-700'">
                       {{ (result.passed ? 'The solution passes this check.' : 'The solution fails this check:') | t }} {{ result.passed ? '' : result.message }}
@@ -338,6 +348,16 @@ export class BlockEditorComponent {
   protected readonly testing = signal(false);
   protected readonly testResults = signal<TestResult[]>([]);
   protected readonly testError = signal('');
+  protected readonly codeLanguages = CODE_LANGUAGES;
+
+  /** Switch language; untouched starting code switches to the new language's. */
+  protected setLanguage(language: CodeLanguage): void {
+    const block = this.code();
+    const untouched = CODE_LANGUAGES.some((item) => item.starter.trim() === block.starter.trim()) || !block.starter.trim();
+    const starter = untouched ? CODE_LANGUAGES.find((item) => item.value === language)?.starter ?? '' : block.starter;
+    this.testResults.set([]);
+    this.set({ language, starter });
+  }
 
   protected readonly code = computed<LessonCodeBlock>(() => {
     const block = this.block();
