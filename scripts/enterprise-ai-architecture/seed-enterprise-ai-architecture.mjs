@@ -1,6 +1,6 @@
 /**
  * Enterprise AI Architecture
- * Program: Enterprise AI & Solutions Architecture, step 9
+ * Program: Enterprise AI & Solutions Architecture, step 7
  *
  * Dry run (checks the content, writes nothing):
  *   node scripts/enterprise-ai-architecture/seed-enterprise-ai-architecture.mjs
@@ -24,7 +24,7 @@ const COURSE = {
   description: "Learn to design enterprise AI architectures, select appropriate models, structure AI data platforms, implement RAG and multi-agent systems, integrate enterprise applications, and establish security and governance controls.",
   topic: "Artificial Intelligence",
   program: "Enterprise AI & Solutions Architecture",
-  programOrder: 9,
+  programOrder: 7,
   level: "advanced",
   cover: "slate",
   outcomes: [
@@ -56,6 +56,11 @@ const MODULES = [
         title: "Understanding Enterprise AI Architecture",
         minutes: 7,
         blocks: [
+          {
+            type: 'video',
+            url: "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fenterprise-ai-architecture-overview.mp4?alt=media&token=955a3376-6678-4e13-beb0-f072bfbed2d1",
+            caption: "Course overview: what you will learn, the modules and the skills you will build (about 50 seconds, no sound).",
+          },
           {
             type: 'text',
             text: `# Understanding Enterprise AI Architecture

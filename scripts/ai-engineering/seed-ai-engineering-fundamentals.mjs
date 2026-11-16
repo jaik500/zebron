@@ -1,6 +1,6 @@
 /**
  * AI Engineering Fundamentals & LLMs
- * Program: Enterprise AI & Solutions Architecture, step 5
+ * Program: Enterprise AI & Solutions Architecture, step 3
  *
  * Dry run (checks the content, writes nothing):
  *   node scripts/ai-engineering/seed-ai-engineering-fundamentals.mjs
@@ -24,7 +24,7 @@ const COURSE = {
   description: "Build a strong foundation in artificial intelligence, machine learning, deep learning, and large language models.\n\nExplore neural networks, transformer architecture, attention mechanisms, model training, inference, tokenization, context windows, and AI model providers.\n\nLearn how to connect Python applications to LLM APIs, implement structured outputs and tool calling, evaluate model quality, and monitor performance.\n\nThrough a practical enterprise AI project, learn how to design and integrate an AI-powered application using secure backend architecture.\n\nThis course prepares learners for advanced study in prompt engineering, retrieval-augmented generation, AI agents, and enterprise AI architecture.",
   topic: "Artificial Intelligence and AI Engineering",
   program: "Enterprise AI & Solutions Architecture",
-  programOrder: 5,
+  programOrder: 3,
   level: "beginner",
   cover: "teal",
   outcomes: [
@@ -56,6 +56,11 @@ const MODULES = [
         title: "Understanding Artificial Intelligence",
         minutes: 6,
         blocks: [
+          {
+            type: 'video',
+            url: "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fai-engineering-fundamentals-llms-overview.mp4?alt=media&token=22cbaafa-796c-438c-9dc3-4ad1c9d3d913",
+            caption: "Course overview: what you will learn, the modules and the skills you will build (about 50 seconds, no sound).",
+          },
           {
             type: 'text',
             text: `# Understanding Artificial Intelligence

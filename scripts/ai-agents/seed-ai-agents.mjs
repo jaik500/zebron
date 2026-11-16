@@ -1,6 +1,6 @@
 /**
  * AI Agents & Workflow Automation
- * Program: Enterprise AI & Solutions Architecture, step 8
+ * Program: Enterprise AI & Solutions Architecture, step 6
  *
  * Dry run (checks the content, writes nothing):
  *   node scripts/ai-agents/seed-ai-agents.mjs
@@ -24,7 +24,7 @@ const COURSE = {
   description: "Learn how autonomous AI agents operate, reason, use tools, maintain memory, and automate complex enterprise workflows. Develop practical skills for designing reliable, secure, and scalable agent-based systems.",
   topic: "Artificial Intelligence",
   program: "Enterprise AI & Solutions Architecture",
-  programOrder: 8,
+  programOrder: 6,
   level: "intermediate",
   cover: "navy",
   outcomes: [
@@ -56,6 +56,11 @@ const MODULES = [
         title: "What Is an AI Agent?",
         minutes: 5,
         blocks: [
+          {
+            type: 'video',
+            url: "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fai-agents-workflow-automation-overview.mp4?alt=media&token=88fcccdf-c893-40fb-929b-4262d67d3b01",
+            caption: "Course overview: what you will learn, the modules and the skills you will build (about 50 seconds, no sound).",
+          },
           {
             type: 'text',
             text: `## Understanding AI Agents

@@ -1,0 +1,83 @@
+[
+  {
+    "courseId": "python-for-ai-engineering",
+    "file": "python-for-ai-engineering-overview.mp4",
+    "path": "course-videos/python-for-ai-engineering-overview.mp4",
+    "token": "575df200-a14f-4869-8776-cf9acf1c4962",
+    "url": "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fpython-for-ai-engineering-overview.mp4?alt=media&token=575df200-a14f-4869-8776-cf9acf1c4962",
+    "firstLessonId": "python-and-ai",
+    "programOrder": 1
+  },
+  {
+    "courseId": "apis-json-backend-integration",
+    "file": "apis-json-backend-integration-overview.mp4",
+    "path": "course-videos/apis-json-backend-integration-overview.mp4",
+    "token": "34f9f909-450b-4093-b0ab-d9a0cfc92262",
+    "url": "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fapis-json-backend-integration-overview.mp4?alt=media&token=34f9f909-450b-4093-b0ab-d9a0cfc92262",
+    "firstLessonId": "understanding-apis",
+    "programOrder": 2
+  },
+  {
+    "courseId": "ai-engineering-fundamentals-llms",
+    "file": "ai-engineering-fundamentals-llms-overview.mp4",
+    "path": "course-videos/ai-engineering-fundamentals-llms-overview.mp4",
+    "token": "22cbaafa-796c-438c-9dc3-4ad1c9d3d913",
+    "url": "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fai-engineering-fundamentals-llms-overview.mp4?alt=media&token=22cbaafa-796c-438c-9dc3-4ad1c9d3d913",
+    "firstLessonId": "understanding-artificial-intelligence",
+    "programOrder": 3
+  },
+  {
+    "courseId": "prompt-engineering-structured-outputs",
+    "file": "prompt-engineering-structured-outputs-overview.mp4",
+    "path": "course-videos/prompt-engineering-structured-outputs-overview.mp4",
+    "token": "654c2485-1b78-4e86-b986-30e5d94987bd",
+    "url": "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fprompt-engineering-structured-outputs-overview.mp4?alt=media&token=654c2485-1b78-4e86-b986-30e5d94987bd",
+    "firstLessonId": "what-is-prompt-engineering",
+    "programOrder": 4
+  },
+  {
+    "courseId": "embeddings-vector-databases-rag",
+    "file": "embeddings-vector-databases-rag-overview.mp4",
+    "path": "course-videos/embeddings-vector-databases-rag-overview.mp4",
+    "token": "b3123ad3-d88b-4e96-af5a-0bcde8256e26",
+    "url": "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fembeddings-vector-databases-rag-overview.mp4?alt=media&token=b3123ad3-d88b-4e96-af5a-0bcde8256e26",
+    "firstLessonId": "what-are-ai-embeddings",
+    "programOrder": 5
+  },
+  {
+    "courseId": "ai-agents-workflow-automation",
+    "file": "ai-agents-workflow-automation-overview.mp4",
+    "path": "course-videos/ai-agents-workflow-automation-overview.mp4",
+    "token": "88fcccdf-c893-40fb-929b-4262d67d3b01",
+    "url": "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fai-agents-workflow-automation-overview.mp4?alt=media&token=88fcccdf-c893-40fb-929b-4262d67d3b01",
+    "firstLessonId": "what-is-an-ai-agent",
+    "programOrder": 6
+  },
+  {
+    "courseId": "enterprise-ai-architecture",
+    "file": "enterprise-ai-architecture-overview.mp4",
+    "path": "course-videos/enterprise-ai-architecture-overview.mp4",
+    "token": "955a3376-6678-4e13-beb0-f072bfbed2d1",
+    "url": "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fenterprise-ai-architecture-overview.mp4?alt=media&token=955a3376-6678-4e13-beb0-f072bfbed2d1",
+    "firstLessonId": "understanding-enterprise-ai-architecture",
+    "programOrder": 7
+  },
+  {
+    "courseId": "cloud-architecture-ai-solutions",
+    "file": "cloud-architecture-ai-solutions-overview.mp4",
+    "path": "course-videos/cloud-architecture-ai-solutions-overview.mp4",
+    "token": "2fd77e35-e48b-4c56-b06b-df7cb25c32da",
+    "url": "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fcloud-architecture-ai-solutions-overview.mp4?alt=media&token=2fd77e35-e48b-4c56-b06b-df7cb25c32da",
+    "firstLessonId": "cloud-computing-fundamentals",
+    "programOrder": 8
+  },
+  {
+    "courseId": "mlops-llmops-production-ai-operations",
+    "file": "mlops-llmops-production-ai-operations-overview.mp4",
+    "path": "course-videos/mlops-llmops-production-ai-operations-overview.mp4",
+    "token": "26a21115-8a48-46b0-bfab-d9a042d7d2f2",
+    "url": "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fmlops-llmops-production-ai-operations-overview.mp4?alt=media&token=26a21115-8a48-46b0-bfab-d9a042d7d2f2",
+    "firstLessonId": "introduction-to-mlops",
+    "programOrder": 9
+  }
+]

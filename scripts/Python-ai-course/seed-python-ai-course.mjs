@@ -63,6 +63,11 @@ const MODULES = [
         minutes: 6,
         blocks: [
           {
+            type: 'video',
+            url: "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fpython-for-ai-engineering-overview.mp4?alt=media&token=575df200-a14f-4869-8776-cf9acf1c4962",
+            caption: "Course overview: what you will learn, the modules and the skills you will build (about 50 seconds, no sound).",
+          },
+          {
             type: 'text',
             text: `# Why Python Is Useful in AI Engineering
 

@@ -35,7 +35,7 @@ const COURSE = {
   language: 'en',
   category: 'AI Engineering',
   program: 'Enterprise AI & Solutions Architecture',
-  programOrder: 11,
+  programOrder: 9,
   status: 'draft',
   cover: 'violet',
   tags: [
@@ -72,6 +72,11 @@ const MODULES = [
         title: 'Introduction to MLOps',
         minutes: 5,
         blocks: [
+          {
+            type: 'video',
+            url: 'https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fmlops-llmops-production-ai-operations-overview.mp4?alt=media&token=26a21115-8a48-46b0-bfab-d9a042d7d2f2',
+            caption: 'Course overview: what you will learn, the modules and the skills you will build (about 50 seconds, no sound).',
+          },
           {
             type: 'text',
             heading: 'Understanding MLOps',

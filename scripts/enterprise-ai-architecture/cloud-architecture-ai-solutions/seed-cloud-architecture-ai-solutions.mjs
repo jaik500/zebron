@@ -1,6 +1,6 @@
 /**
  * Cloud Architecture for AI Solutions
- * Program: Enterprise AI & Solutions Architecture, step 10
+ * Program: Enterprise AI & Solutions Architecture, step 8
  *
  * Dry run (checks the content, writes nothing):
  *   node scripts/cloud-architecture-ai-solutions/seed-cloud-architecture-ai-solutions.mjs
@@ -24,7 +24,7 @@ const COURSE = {
   description: "Develop the skills to architect production-ready cloud environments for enterprise AI solutions. Learn cloud infrastructure, compute, networking, storage, AI accelerators, managed AI platforms, containerization, security, high availability, disaster recovery, cloud operations, and FinOps.",
   topic: "Cloud Computing",
   program: "Enterprise AI & Solutions Architecture",
-  programOrder: 10,
+  programOrder: 8,
   level: "advanced",
   cover: "sky",
   outcomes: [
@@ -68,6 +68,11 @@ const MODULES = [
         title: "Understanding Cloud Computing",
         minutes: 6,
         blocks: [
+          {
+            type: 'video',
+            url: "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fcloud-architecture-ai-solutions-overview.mp4?alt=media&token=2fd77e35-e48b-4c56-b06b-df7cb25c32da",
+            caption: "Course overview: what you will learn, the modules and the skills you will build (about 50 seconds, no sound).",
+          },
           {
             type: 'text',
             text: `# Understanding Cloud Computing

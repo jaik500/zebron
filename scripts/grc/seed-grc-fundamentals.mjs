@@ -1,6 +1,6 @@
 /**
  * GRC Fundamentals
- * Program: Enterprise AI & Solutions Architecture, step 3
+ * Not part of a program
  *
  * Dry run (checks the content, writes nothing):
  *   node scripts/grc/seed-grc-fundamentals.mjs
@@ -23,8 +23,8 @@ const COURSE = {
   summary: "Governance, Risk, and Compliance Fundamentals",
   description: "Learn the foundations of Governance, Risk, and Compliance (GRC).\n\nThis course introduces organizational governance, enterprise risk management, regulatory compliance, security controls, IT auditing, third-party risk, business continuity, and GRC technology.\n\nExplore important frameworks and standards including NIST, ISO/IEC 27001, ISO 31000, SOC 2, COBIT, CIS Controls, FISMA, HIPAA, GDPR, and PCI DSS.\n\nThrough practical examples and exercises, learners will develop foundational skills in risk identification, risk assessment, control documentation, audit evidence, and remediation tracking.\n\nThis course is designed for aspiring GRC analysts, cybersecurity professionals, IT auditors, risk managers, and IT professionals.",
   topic: "Governance, Risk, and Compliance",
-  program: "Enterprise AI & Solutions Architecture",
-  programOrder: 3,
+  program: "",
+  programOrder: null,
   level: "beginner",
   cover: "teal",
   outcomes: [
@@ -89,7 +89,7 @@ One control, such as multi-factor authentication, can reduce several risks and s
 
 ## GRC and AI
 
-AI systems create new GRC questions: who approves a model for use, how bias and errors are assessed, and how data protection laws apply. The same framework (governance, risk, compliance) applies, which is why this course is part of the Enterprise AI program.
+AI systems create new GRC questions: who approves a model for use, how bias and errors are assessed, and how data protection laws apply. The same framework (governance, risk, compliance) applies.
 
 ## Key points
 

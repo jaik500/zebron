@@ -1,6 +1,6 @@
 /**
  * Embeddings, Vector Databases & RAG
- * Program: Enterprise AI & Solutions Architecture, step 7
+ * Program: Enterprise AI & Solutions Architecture, step 5
  *
  * Dry run (checks the content, writes nothing):
  *   node scripts/embeddings-rag/seed-embeddings-rag.mjs
@@ -24,7 +24,7 @@ const COURSE = {
   description: "This course introduces vector embeddings, similarity search, vector database architecture, document processing, and Retrieval-Augmented Generation. Learners explore how enterprise AI systems retrieve relevant information from organizational knowledge sources and use it to generate grounded responses.",
   topic: "Artificial Intelligence",
   program: "Enterprise AI & Solutions Architecture",
-  programOrder: 7,
+  programOrder: 5,
   level: "intermediate",
   cover: "violet",
   outcomes: [
@@ -66,6 +66,11 @@ const MODULES = [
         title: "What Are AI Embeddings?",
         minutes: 5,
         blocks: [
+          {
+            type: 'video',
+            url: "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fembeddings-vector-databases-rag-overview.mp4?alt=media&token=b3123ad3-d88b-4e96-af5a-0bcde8256e26",
+            caption: "Course overview: what you will learn, the modules and the skills you will build (about 50 seconds, no sound).",
+          },
           {
             type: 'text',
             text: `# What Are AI Embeddings?

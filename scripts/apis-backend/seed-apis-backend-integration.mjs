@@ -1,6 +1,6 @@
 /**
  * APIs, JSON & Backend Integration
- * Program: Enterprise AI & Solutions Architecture, step 4
+ * Program: Enterprise AI & Solutions Architecture, step 2
  *
  * Dry run (checks the content, writes nothing):
  *   node scripts/apis-backend/seed-apis-backend-integration.mjs
@@ -24,7 +24,7 @@ const COURSE = {
   description: "Learn how modern applications communicate through APIs, exchange structured data, and integrate backend services.\n\nThis course covers HTTP, REST APIs, JSON, Python API development, external integrations, authentication, authorization, database operations, API security, webhooks, event-driven architecture, and asynchronous processing.\n\nThrough practical examples involving Python, Angular, Firebase, and enterprise applications, learners will develop the foundational skills required to design and implement secure application integrations.\n\nThe final project introduces enterprise integration architecture and prepares learners for advanced AI engineering and enterprise architecture studies.",
   topic: "APIs and Backend Engineering",
   program: "Enterprise AI & Solutions Architecture",
-  programOrder: 4,
+  programOrder: 2,
   level: "beginner",
   cover: "teal",
   outcomes: [
@@ -56,6 +56,11 @@ const MODULES = [
         title: "Understanding Application Programming Interfaces",
         minutes: 6,
         blocks: [
+          {
+            type: 'video',
+            url: "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fapis-json-backend-integration-overview.mp4?alt=media&token=34f9f909-450b-4093-b0ab-d9a0cfc92262",
+            caption: "Course overview: what you will learn, the modules and the skills you will build (about 50 seconds, no sound).",
+          },
           {
             type: 'text',
             text: `# Understanding Application Programming Interfaces

@@ -1,6 +1,6 @@
 /**
  * Mathématiques fondamentales
- * Program: Enterprise AI & Solutions Architecture, step 2
+ * Not part of a program
  *
  * Dry run (checks the content, writes nothing):
  *   node scripts/mathematics-foundations/seed-mathematiques-fondamentales.mjs
@@ -23,8 +23,8 @@ const COURSE = {
   summary: "Les bases mathématiques pour la programmation, la science des données et l'intelligence artificielle",
   description: "Ce cours présente les concepts mathématiques essentiels pour les personnes qui souhaitent se préparer à la programmation, à la science des données et à l'intelligence artificielle.\n\nVous apprendrez les bases de l'arithmétique, de l'algèbre, de la géométrie, des statistiques et des probabilités.\n\nVous découvrirez également comment les mathématiques sont utilisées en informatique, notamment avec les nombres binaires, la logique booléenne, les vecteurs et les matrices.\n\nLe cours est conçu pour les débutants et comprend des explications, des exemples pratiques et des vérifications des connaissances.",
   topic: "Mathematics",
-  program: "Enterprise AI & Solutions Architecture",
-  programOrder: 2,
+  program: "",
+  programOrder: null,
   level: "beginner",
   cover: "teal",
   outcomes: [

@@ -1,6 +1,6 @@
 /**
  * Prompt Engineering & Structured Outputs
- * Program: Enterprise AI & Solutions Architecture, step 6
+ * Program: Enterprise AI & Solutions Architecture, step 4
  *
  * Dry run (checks the content, writes nothing):
  *   node scripts/prompt-engineering/seed-prompt-engineering.mjs
@@ -24,7 +24,7 @@ const COURSE = {
   description: "This course introduces the principles and practical techniques of prompt engineering. Learners explore prompt structure, system instructions, few-shot prompting, structured JSON outputs, schema validation, function calling, prompt security, and evaluation. The course culminates in an enterprise-focused prompt engineering project.",
   topic: "Artificial Intelligence",
   program: "Enterprise AI & Solutions Architecture",
-  programOrder: 6,
+  programOrder: 4,
   level: "beginner",
   cover: "sunrise",
   outcomes: [
@@ -64,6 +64,11 @@ const MODULES = [
         title: "What Is Prompt Engineering?",
         minutes: 5,
         blocks: [
+          {
+            type: 'video',
+            url: "https://firebasestorage.googleapis.com/v0/b/zebron-2b49f.firebasestorage.app/o/course-videos%2Fprompt-engineering-structured-outputs-overview.mp4?alt=media&token=654c2485-1b78-4e86-b986-30e5d94987bd",
+            caption: "Course overview: what you will learn, the modules and the skills you will build (about 50 seconds, no sound).",
+          },
           {
             type: 'text',
             text: `# What Is Prompt Engineering?
