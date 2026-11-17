@@ -133,6 +133,16 @@ import { CourseStore } from '../course.store';
                 </a>
               }
 
+              @if (signedIn()) {
+                <a
+                  [routerLink]="[coursePath(), 'flashcards']"
+                  class="inline-flex h-10 items-center justify-center gap-1 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">style</mat-icon>
+                  {{ 'Review with flashcards' | t }}
+                </a>
+              }
+
               @if (lessonsDone()) {
                 <a
                   [routerLink]="[coursePath(), 'summary']"

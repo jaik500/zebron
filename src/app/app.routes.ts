@@ -188,6 +188,13 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/courses/pages/course-summary.component').then((m) => m.CourseSummaryComponent),
             },
             {
+                // Review the course's Quick Check questions as spaced-repetition flashcards.
+                path: ':courseId/flashcards',
+                canActivate: [authGuard],
+                data: { title: 'Zebron | Flashcards' },
+                loadComponent: () => import('./features/courses/flashcards/course-flashcards.component').then((m) => m.CourseFlashcardsComponent),
+            },
+            {
                 path: ':courseId/exam',
                 canActivate: [authGuard],
                 loadComponent: () => import('./features/courses/pages/course-exam.component').then((m) => m.CourseExamComponent),
@@ -1251,6 +1258,13 @@ export const routes: Routes = [
                 path: ':courseId/summary',
                 canActivate: [authGuard],
                 loadComponent: () => import('./features/courses/pages/course-summary.component').then((m) => m.CourseSummaryComponent),
+            },
+            {
+                // Review the course's Quick Check questions as spaced-repetition flashcards.
+                path: ':courseId/flashcards',
+                canActivate: [authGuard],
+                data: { title: 'Zebron | Flashcards' },
+                loadComponent: () => import('./features/courses/flashcards/course-flashcards.component').then((m) => m.CourseFlashcardsComponent),
             },
             {
                 path: ':courseId/exam',

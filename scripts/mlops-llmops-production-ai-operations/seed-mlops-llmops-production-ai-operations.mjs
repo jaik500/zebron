@@ -460,10 +460,10 @@ Reliable ingestion provides the foundation for trustworthy machine learning syst
             type: 'check',
             question: 'What is the primary purpose of data validation in an ML pipeline?',
             options: [
-              'To check that incoming data meets expected quality and structure rules',
-              'To convert raw data into features the model can use',
-              'To balance classes so the model learns each outcome equally',
-              'To compress data so pipelines run faster and cost less',
+              "To check incoming data meets quality and structure rules",
+              "To convert raw data into features the model can use",
+              "To balance classes so the model learns each outcome equally",
+              "To compress data so pipelines run faster and cost less",
             ],
             answer: 0,
             explanation:
@@ -516,10 +516,10 @@ Consistent feature definitions and transformations help reduce this risk.
             type: 'check',
             question: 'What is training-serving skew?',
             options: [
-              'A drop in accuracy caused by changes in real-world data over time',
-              'A delay between a prediction request and the model\'s response',
-              'A model learning the training data too closely to generalize',
-              'A mismatch between how features are computed in training and in production',
+              "A drop in accuracy caused by real-world data changing over time",
+              "A delay between a prediction request and the model's response",
+              "A model fitting its training data too closely to generalize well",
+              "Features computed differently in training than in production",
             ],
             answer: 3,
             explanation:
@@ -571,10 +571,10 @@ Versioned data and orchestrated workflows improve traceability, reliability, and
             type: 'check',
             question: 'Why is data versioning important in an MLOps environment?',
             options: [
-              'It keeps the latest dataset synchronized across every environment',
-              'It reduces storage costs by removing duplicate records',
-              'It records exactly which dataset produced a given model or experiment',
-              'It validates that incoming data matches the expected schema',
+              "It keeps the latest dataset synchronized across every environment",
+              "It reduces storage costs by removing duplicate records",
+              "It records which dataset produced a model or experiment",
+              "It validates that incoming data matches the expected schema",
             ],
             answer: 2,
             explanation:
@@ -684,10 +684,10 @@ Distributed training is valuable when workload requirements justify the addition
             type: 'check',
             question: 'What does data parallelism do during distributed model training?',
             options: [
-              'It splits the model\'s layers across workers that each hold part of the network',
-              'It runs several different models in parallel and keeps the best one',
-              'It sends inference requests to whichever worker is least busy',
-              'It splits the training data across workers that each hold a copy of the model',
+              "It splits the model's layers across workers, each holding part",
+              "It runs several models in parallel and keeps the best one",
+              "It sends inference requests to the least busy worker",
+              "It splits the data across workers that each hold the model",
             ],
             answer: 3,
             explanation:
@@ -859,10 +859,10 @@ Model lineage improves traceability, reproducibility, and accountability across 
             type: 'check',
             question: 'What does model lineage help an organization understand?',
             options: [
-              'Which model version is currently serving production traffic',
-              'How a model was produced, including its data, code and configuration',
-              'How a model\'s accuracy has changed since it was deployed',
-              'Who approved the model and when it was promoted',
+              "Which model version is serving production traffic right now",
+              "How a model was produced: its data, code and configuration",
+              "How a model's accuracy has changed since it was deployed",
+              "Who approved the model and when it was promoted to production",
             ],
             answer: 1,
             explanation:
@@ -982,10 +982,10 @@ CI/CD improves release consistency, reduces manual errors, and supports controll
             type: 'check',
             question: 'What additional concern must machine learning CI/CD pipelines address compared with traditional software pipelines?',
             options: [
-              'Source code compilation, unit tests and container images',
-              'User interface changes, API contracts and documentation',
-              'Model artifacts, data dependencies and feature transformations',
-              'Branching strategy, code review and merge approvals',
+              "Source code compilation, unit tests and container images",
+              "User interface changes, API contracts and documentation",
+              "Model artifacts, data dependencies and feature logic",
+              "Branching strategy, code review and merge approval rules",
             ],
             answer: 2,
             explanation:
@@ -1032,10 +1032,10 @@ Continuous training helps organizations keep models relevant while maintaining c
             type: 'check',
             question: 'What should happen after a continuous training pipeline produces a new candidate model?',
             options: [
-              'It should replace the production model as soon as training finishes',
-              'It should be evaluated against defined acceptance criteria before promotion',
-              'It should be deployed to all users and monitored for problems',
-              'It should be archived until the next scheduled release',
+              "It should replace the production model as soon as training ends",
+              "It should be evaluated against acceptance criteria first",
+              "It should be deployed to all users and monitored for problems",
+              "It should be archived until the next scheduled release window",
             ],
             answer: 1,
             explanation:
@@ -1086,10 +1086,10 @@ Architects should also define rollback procedures so that an unsuccessful releas
             type: 'check',
             question: 'What is the purpose of shadow deployment in a machine learning environment?',
             options: [
-              'To test a new model on live traffic without it controlling user-facing responses',
-              'To send a small share of live traffic to a new model and expand gradually',
-              'To run two full environments and switch all traffic at once',
-              'To compare two models by splitting users into experiment groups',
+              "To test a new model on live traffic without serving its output",
+              "To send a small share of live traffic to a new model, then expand",
+              "To run two full environments and switch all traffic at once",
+              "To compare two models by splitting users into experiment groups",
             ],
             answer: 0,
             explanation:
@@ -1250,10 +1250,10 @@ Architects should define release approvals, health checks, monitoring requiremen
             type: 'check',
             question: 'What is the primary purpose of a model rollback procedure?',
             options: [
-              'To gradually move traffic from the old model to the new one',
-              'To retrain the model on fresh data after a failed release',
-              'To restore a known-good model or configuration when a release fails',
-              'To keep a copy of every model version for auditing',
+              "To gradually move traffic from the old model to the new one",
+              "To retrain the model on fresh data after a failed release",
+              "To restore a known-good model when a release fails",
+              "To keep a copy of every model version for later audits",
             ],
             answer: 2,
             explanation:
@@ -1485,10 +1485,10 @@ Evaluation should occur before production deployment and continue as the applica
             type: 'check',
             question: 'What is the purpose of an LLM evaluation dataset?',
             options: [
-              'To supply extra training examples for fine-tuning the model',
-              'To store production conversations for later analysis',
-              'To measure the model\'s latency and cost per request',
-              'To give representative inputs and criteria for judging outputs',
+              "To supply extra training examples for fine-tuning the model",
+              "To store production conversations for later analysis",
+              "To measure the model's latency and cost per request",
+              "Representative inputs and criteria for judging outputs",
             ],
             answer: 3,
             explanation:
@@ -1792,10 +1792,10 @@ A clear operating model prevents gaps between model development and production o
             type: 'check',
             question: 'Why should an architect define an AI operating model before implementation?',
             options: [
-              'To choose the cloud provider and model hosting platform',
-              'To estimate the infrastructure budget for the first year',
-              'To select the evaluation metrics for each model',
-              'To set team responsibilities, ownership and operational processes',
+              "To choose the cloud provider and model hosting platform",
+              "To estimate the infrastructure budget for the first year",
+              "To select the evaluation metrics for each model",
+              "To set responsibilities, ownership and processes",
             ],
             answer: 3,
             explanation: 'An operating model establishes who owns each activity and how teams collaborate throughout the AI lifecycle.'
@@ -1900,10 +1900,10 @@ The architect's responsibility is to ensure that the proposed platform is not on
             type: 'check',
             question: 'What is the primary objective of an AI production readiness review?',
             options: [
-              'To confirm the model meets its accuracy target on the test set',
-              'To check that the development team has finished all planned features',
-              'To approve the budget for production infrastructure',
-              'To verify the system can be securely operated, monitored, supported and maintained',
+              "To confirm the model meets its accuracy target on the test set",
+              "To check that the team has finished every planned feature",
+              "To approve the budget for production infrastructure",
+              "To verify it can be operated, monitored and supported safely",
             ],
             answer: 3,
             explanation: 'Production readiness validates the complete operational capability of the AI solution, not just whether the initial deployment works.'
