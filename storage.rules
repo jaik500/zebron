@@ -18,6 +18,8 @@ rules_version = '2';
 //                                                       files an instructor attaches to an assignment
 //   organizations/{organizationId}/trainingGroups/{groupId}/assignments/{assignmentId}/submissions/{userId}/{file}
 //                                                       files a learner hands in
+//   organizations/{organizationId}/branding/{file}      the organization's dashboard logo
+//   users/{userId}/avatar/{file}                        a person's profile photo
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -204,6 +206,43 @@ service firebase.storage {
       allow create: if signedIn() && (isPlatformAdmin() || organizationRank(organizationId) >= 2) && isBlogImage();
       allow update: if false;
       allow delete: if signedIn() && (isPlatformAdmin() || organizationRank(organizationId) >= 3);
+    }
+
+    // ------------------------------------------------------------
+    // PROFILE PHOTOS
+    // ------------------------------------------------------------
+    // Shown on the person's profile, in the header and in Community, so
+    // any signed-in user can see them. Only the person uploads or removes
+    // their own. The app crops and shrinks them to 256 px first, so 1 MB
+    // is plenty. PNG, JPEG or WebP only (SVG can carry scripts).
+    match /users/{userId}/avatar/{fileName} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.size > 0
+        && request.resource.size <= 1 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|webp)');
+      allow update: if false;
+      allow delete: if signedIn() && (request.auth.uid == userId || isPlatformAdmin());
+    }
+
+    // ------------------------------------------------------------
+    // ORGANIZATION LOGO
+    // ------------------------------------------------------------
+    // Shown on the organization dashboard. Members can see it; owners,
+    // administrators and platform administrators upload and remove it.
+    // The app shrinks it to 256 px before upload, so 1 MB is plenty.
+    // PNG, JPEG or WebP only (SVG can carry scripts). Never replaced in
+    // place: each upload is a new file and the old one is deleted.
+    match /organizations/{organizationId}/branding/{fileName} {
+      allow read: if signedIn() && (isPlatformAdmin() || organizationRank(organizationId) >= 1);
+      allow create: if signedIn()
+        && (isPlatformAdmin() || organizationRank(organizationId) >= 4)
+        && request.resource.size > 0
+        && request.resource.size <= 1 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|webp)');
+      allow update: if false;
+      allow delete: if signedIn() && (isPlatformAdmin() || organizationRank(organizationId) >= 4);
     }
 
     // ------------------------------------------------------------

@@ -25,11 +25,17 @@ import { CourseStore } from '../course.store';
       <app-course-header
         [basePath]="context.basePath"
         [crumbs]="[{ label: 'Learning', link: context.basePath }, { label: 'Certificates' }]"
-        [activeTab]="'certificates'"
+        [activeTab]="'learning'"
         [canManage]="canManage()"
+        [backLink]="context.basePath"
       />
 
       <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div class="mb-4">
+        <a [routerLink]="context.basePath" class="inline-flex items-center gap-1 text-sm font-semibold text-[#007979] hover:underline">
+          <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">arrow_back</mat-icon>{{ 'Back to My learning' | t }}
+        </a>
+        </div>
         @if (!signedIn()) {
           <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center">
             <p class="text-slate-700">{{ 'Sign in to see your certificates.' | t }}</p>

@@ -18,7 +18,9 @@ import {
   courseContextFromRoute,
   courseLink,
   CourseCover,
+  Course,
   CourseProgress,
+  hasCertificate,
   isCourseComplete,
   progressId,
 } from '../course.model';
@@ -27,6 +29,8 @@ import { CourseAccessService } from '../course-access.service';
 import { CourseStore } from '../course.store';
 import { STATUS_LABELS, TrainingGroup, TrainingGroupService, groupStatus } from '../../training-groups/training-group.service';
 import { MyAssignment, SUBMISSION_STATUS_LABELS, TrainingGroupAssignmentService } from '../../training-groups/training-group-assignment.service';
+import { CareerPathService } from '../../careers/career-path.service';
+import { CareerPlan } from '../../careers/career-path.model';
 
 /** Minutes a week the streak card counts toward. */
 const WEEKLY_GOAL_MINUTES = 60;
@@ -68,46 +72,53 @@ const WEEKLY_GOAL_MINUTES = 60;
             </a>
           </section>
         } @else if (store.continueRecord(); as record) {
-          <!-- Continue learning -->
-          <section class="grid grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-            <div class="relative min-h-36" [style.background]="coverOf(record)">
-              <div class="absolute bottom-4 left-5">
+          <!-- Continue learning. Phones: a compact row (small cover with the ring beside the text). -->
+          <section class="grid grid-cols-[4.5rem_minmax(0,1fr)] overflow-hidden rounded-2xl border border-slate-200 bg-white md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+            <div class="relative flex items-center justify-center md:block md:min-h-36" [style.background]="coverOf(record)">
+              <div class="md:hidden">
+                <app-progress-ring [percent]="record.percent" [size]="48" color="#ffffff" trackColor="rgba(255,255,255,0.25)" />
+              </div>
+              <div class="absolute bottom-4 left-5 hidden md:block">
                 <app-progress-ring [percent]="record.percent" [size]="68" color="#ffffff" trackColor="rgba(255,255,255,0.25)" />
               </div>
             </div>
-            <div class="flex min-w-0 flex-col justify-center gap-2 p-4 sm:p-5">
+            <div class="flex min-w-0 flex-col justify-center gap-1 p-3 md:gap-2 md:p-5">
               <span class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ 'Continue learning' | t }}</span>
-              <h2 class="break-words text-xl font-semibold leading-snug text-slate-900 [overflow-wrap:anywhere]">{{ record.courseTitle }}</h2>
+              <h2 class="break-words text-base font-semibold leading-snug text-slate-900 [overflow-wrap:anywhere] md:text-xl">{{ record.courseTitle }}</h2>
               @if (nextLessonTitle(); as title) {
-                <p class="flex min-w-0 items-start gap-1 text-sm text-slate-600">
-                  <mat-icon class="!h-[18px] !w-[18px] shrink-0 !text-[18px] text-[#007979]" aria-hidden="true">play_circle</mat-icon>
-                  <span class="min-w-0 break-words [overflow-wrap:anywhere]">{{ 'Next: {0}' | t: [title] }}</span>
+                <p class="flex min-w-0 items-start gap-1 text-xs text-slate-600 md:text-sm">
+                  <mat-icon class="!h-4 !w-4 shrink-0 !text-[16px] text-[#007979] md:!h-[18px] md:!w-[18px] md:!text-[18px]" aria-hidden="true">play_circle</mat-icon>
+                  <span class="min-w-0 truncate md:whitespace-normal md:break-words md:[overflow-wrap:anywhere]">{{ 'Next: {0}' | t: [title] }}</span>
                 </p>
               }
-              <p class="text-xs text-slate-500">
+              <p class="hidden text-xs text-slate-500 md:block">
                 {{ '{0} of {1} lessons done' | t: [record.completedLessonIds.length, record.lessonCount] }}
               </p>
-              <div class="mt-1 flex flex-wrap gap-2">
+              <div class="mt-1 flex flex-wrap items-center gap-1.5 md:gap-2">
                 <a
                   [routerLink]="resumeLink()"
-                  class="inline-flex h-10 items-center gap-1 rounded-lg bg-[#007979] px-4 text-sm font-semibold text-white hover:bg-[#006666]"
+                  class="inline-flex h-8 items-center gap-1 rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666] md:h-10 md:px-4"
                 >
-                  <mat-icon aria-hidden="true">play_arrow</mat-icon>{{ 'Resume' | t }}
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px] md:!h-6 md:!w-6 md:!text-[24px]" aria-hidden="true">play_arrow</mat-icon>{{ 'Resume' | t }}
                 </a>
                 <a
                   [routerLink]="linkFor(record)"
-                  class="inline-flex h-10 items-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  class="inline-flex h-8 items-center rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 md:h-10 md:px-4"
+                  [attr.aria-label]="'Course outline' | t"
+                  [title]="'Course outline' | t"
                 >
-                  {{ 'Course outline' | t }}
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px] md:hidden" aria-hidden="true">list</mat-icon>
+                  <span class="max-md:hidden">{{ 'Course outline' | t }}</span>
                 </a>
                 <button
                   type="button"
                   (click)="remove(record)"
-                  class="inline-flex h-10 items-center gap-1 rounded-lg px-3 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                  class="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 md:h-10 md:px-3"
                   [title]="'Remove from My learning. Your progress is kept.' | t"
+                  [attr.aria-label]="'Remove' | t"
                 >
                   <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">remove_circle_outline</mat-icon>
-                  {{ 'Remove' | t }}
+                  <span class="max-md:hidden">{{ 'Remove' | t }}</span>
                 </button>
               </div>
             </div>
@@ -120,6 +131,86 @@ const WEEKLY_GOAL_MINUTES = 60;
               {{ 'Short lessons, quick checks and a certificate at the end. Pick a course below to begin.' | t }}
             </p>
           </section>
+        }
+
+        @if (showCareerCard() || signedIn()) {
+          <!-- Career path and certificates, side by side (one column on phones) -->
+          <div [class]="showCareerCard() && signedIn() ? 'mt-4 grid gap-3 md:grid-cols-2' : 'mt-4 grid gap-3'">
+            @if (showCareerCard()) {
+              <!-- Career path: the learner's own, or an invitation to pick one (Zebron Learning only) -->
+              <section class="flex h-full items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4" aria-labelledby="career-card-title">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 text-[#007979]" aria-hidden="true">
+                  <mat-icon>route</mat-icon>
+                </span>
+                <div class="flex min-w-0 flex-1 flex-col gap-2">
+                  @if (careerPlan(); as plan) {
+                    <div>
+                      <span class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ 'Your career path' | t }}</span>
+                      <h2 id="career-card-title" class="truncate text-base font-semibold text-slate-900">{{ plan.pathTitle }}</h2>
+                      <p class="text-sm text-slate-600">{{ 'See where you stand, what to learn next and the jobs it leads to.' | t }}</p>
+                    </div>
+                    <div class="mt-auto flex flex-wrap gap-2">
+                      <a
+                        [routerLink]="['/courses/careers', plan.pathId]"
+                        class="inline-flex h-9 items-center gap-1 rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]"
+                      >
+                        {{ 'Open my path' | t }}<mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">arrow_forward</mat-icon>
+                      </a>
+                      <a
+                        routerLink="/courses/careers"
+                        class="inline-flex h-9 items-center rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        {{ 'All career paths' | t }}
+                      </a>
+                    </div>
+                  } @else {
+                    <div>
+                      <h2 id="career-card-title" class="text-base font-semibold text-slate-900">{{ 'Career paths' | t }}</h2>
+                      <p class="text-sm text-slate-600">{{ 'Not sure what to learn next? Pick a role and follow a roadmap of skills, courses and projects to get there.' | t }}</p>
+                    </div>
+                    <div class="mt-auto">
+                      <a
+                        routerLink="/courses/careers"
+                        class="inline-flex h-9 items-center gap-1 rounded-lg bg-[#007979] px-3 text-sm font-semibold text-white hover:bg-[#006666]"
+                      >
+                        {{ 'Explore career paths' | t }}<mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">arrow_forward</mat-icon>
+                      </a>
+                    </div>
+                  }
+                </div>
+              </section>
+            }
+
+            @if (signedIn()) {
+              <!-- Certificates (was its own tab) -->
+              <a
+                [routerLink]="context.basePath + '/certificates'"
+                class="flex h-full items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-[#007979]/40 hover:shadow-sm"
+              >
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600" aria-hidden="true">
+                  <mat-icon>workspace_premium</mat-icon>
+                </span>
+                <span class="flex min-w-0 flex-1 flex-col gap-2">
+                  <span>
+                    <span class="block text-[11px] font-bold uppercase tracking-wide text-amber-700">{{ 'Certificates' | t }}</span>
+                    <span class="block text-base font-semibold text-slate-900">{{ 'My certificates' | t }}</span>
+                    <span class="block text-sm text-slate-600">
+                      @if (certificateCount() === 0) {
+                        {{ 'Pass the final exam of a course to earn a certificate you can share and others can verify.' | t }}
+                      } @else if (certificateCount() === 1) {
+                        {{ '1 certificate earned. View, download or share it.' | t }}
+                      } @else {
+                        {{ '{0} certificates earned. View, download or share them.' | t: [certificateCount()] }}
+                      }
+                    </span>
+                  </span>
+                  <span class="mt-auto inline-flex h-9 w-fit items-center gap-1 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700">
+                    {{ 'View certificates' | t }}<mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">arrow_forward</mat-icon>
+                  </span>
+                </span>
+              </a>
+            }
+          </div>
         }
 
         @if (signedIn() && assigned().length) {
@@ -362,13 +453,64 @@ const WEEKLY_GOAL_MINUTES = 60;
         } @else if (store.recommended().length) {
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (course of store.recommended(); track course.id + (course.organizationId ?? '')) {
-              <app-course-card [course]="course" [link]="context.basePath + '/' + course.id" />
+              <div class="relative">
+                <app-course-card [course]="course" [link]="context.basePath + '/' + course.id" />
+                @if (signedIn()) {
+                  <!-- Sits on the cover, over the card link (a separate button, not inside the link) -->
+                  <button
+                    type="button"
+                    (click)="dismissRecommendation(course)"
+                    class="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-600 shadow-sm transition hover:bg-white hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007979]/50"
+                    [attr.aria-label]="'Not interested in {0}' | t: [course.title]"
+                    [title]="'Not interested' | t"
+                  >
+                    <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">close</mat-icon>
+                  </button>
+                }
+              </div>
             }
           </div>
         } @else if (store.catalogLoaded()) {
           <p class="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-            {{ store.catalog().length ? ('You have started every course. Well done!' | t) : ('No courses are published yet. Check back soon.' | t) }}
+            {{ store.catalog().length ? ('No more recommendations. Browse the catalog for more courses.' | t) : ('No courses are published yet. Check back soon.' | t) }}
           </p>
+        }
+
+        @if (lastDismissed(); as dismissed) {
+          <div class="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-slate-800 px-4 py-2 text-sm text-white" role="status" aria-live="polite">
+            <span class="min-w-0 flex-1">{{ '{0} was removed from your recommendations.' | t: [dismissed.title] }}</span>
+            <button type="button" (click)="restoreRecommendation(dismissed)" class="font-semibold text-teal-200 underline">{{ 'Undo' | t }}</button>
+          </div>
+        }
+        @if (dismissError()) {
+          <p class="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700" role="alert">{{ dismissError()! | t }}</p>
+        }
+
+        @if (signedIn() && store.dismissedRecommendations().length) {
+          <div class="mt-4">
+            <button
+              type="button"
+              (click)="showDismissed.set(!showDismissed())"
+              class="inline-flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-[#007979]"
+              [attr.aria-expanded]="showDismissed()"
+            >
+              <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">{{ showDismissed() ? 'expand_less' : 'expand_more' }}</mat-icon>
+              {{ 'Hidden recommendations ({0})' | t: [store.dismissedRecommendations().length] }}
+            </button>
+            @if (showDismissed()) {
+              <ul class="mt-2 flex flex-col gap-2">
+                @for (course of store.dismissedRecommendations(); track course.id + (course.organizationId ?? '')) {
+                  <li class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                    <span class="h-10 w-10 shrink-0 rounded-lg opacity-60" [style.background]="coverName(course.cover)" aria-hidden="true"></span>
+                    <span class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-700">{{ course.title }}</span>
+                    <button type="button" (click)="restoreRecommendation(course)" class="h-9 rounded-lg border border-slate-300 px-3 text-xs font-semibold text-[#007979] hover:bg-teal-50">
+                      {{ 'Show again' | t }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
         }
       </div>
     </main>
@@ -443,6 +585,33 @@ export class MyLearningComponent {
       this.lastRemoved.set(record);
     } catch (error) {
       this.removeError.set((error as Error).message);
+    }
+  }
+
+  // ---------- Dismissing recommendations (same hidden list as removed courses) ----------
+  protected readonly lastDismissed = signal<Course | null>(null);
+  protected readonly dismissError = signal<string | null>(null);
+  protected readonly showDismissed = signal(false);
+
+  protected async dismissRecommendation(course: Course): Promise<void> {
+    this.dismissError.set(null);
+    try {
+      await this.store.hideCourse(progressId(course));
+      this.lastDismissed.set(course);
+    } catch (error) {
+      this.dismissError.set((error as Error).message);
+    }
+  }
+
+  protected async restoreRecommendation(course: Course): Promise<void> {
+    this.dismissError.set(null);
+    try {
+      await this.store.unhideCourse(progressId(course));
+      if (this.lastDismissed() === course) {
+        this.lastDismissed.set(null);
+      }
+    } catch (error) {
+      this.dismissError.set((error as Error).message);
     }
   }
 
@@ -522,8 +691,32 @@ export class MyLearningComponent {
         void this.store.loadProgress();
         void this.loadAssignments(user?.uid ?? null);
         void this.loadMyGroups(user?.uid ?? null);
+        void this.loadCareerPlan(user?.uid ?? null);
       });
     });
+  }
+
+  /** Courses whose final exam is passed (same rule as the Certificates page). No extra reads. */
+  protected readonly certificateCount = computed(
+    () => this.store.completed().filter((record) => hasCertificate(record, this.store.exams()[record.id])).length,
+  );
+
+  // ---------- Career path (Zebron Learning only; replaces the Career paths tab) ----------
+  private readonly careers = inject(CareerPathService);
+  /** The learner's most recently updated career plan, if any. */
+  protected readonly careerPlan = signal<CareerPlan | null>(null);
+  protected readonly showCareerCard = computed(() => this.context.basePath === '/courses');
+
+  private async loadCareerPlan(userId: string | null): Promise<void> {
+    if (!userId || this.context.basePath !== '/courses') {
+      this.careerPlan.set(null);
+      return;
+    }
+    try {
+      this.careerPlan.set((await this.careers.listPlans(userId))[0] ?? null);
+    } catch {
+      this.careerPlan.set(null);
+    }
   }
 
   // ---------- Training groups (organization pages) ----------

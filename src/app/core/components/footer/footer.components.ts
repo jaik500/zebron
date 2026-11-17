@@ -68,11 +68,24 @@ import { RouterLink } from '@angular/router';
                      leading-6
                      text-white/70"
             >
-              Discover resources, organizations, jobs, training, and opportunities.
+              Discover resources, organizations, training, and opportunities.
             </p>
+             <div>
+                <a
+                  routerLink="/contact"
+                  class="text-sm
+                         text-white/70
+                         transition
+                         hover:text-white"
+                >
+                  Message Us
+                </a>
+            </div>
+           <div>
             <a class="text-white/70 hover:text-white" href="mailto:support@inbound.zebron.org">
               contact@zebron.org
             </a>
+          </div>
           </div>
 
           <!-- ===================================================
@@ -154,7 +167,7 @@ import { RouterLink } from '@angular/router';
                      font-semibold
                      text-white"
             >
-              Legal & Help
+              Legal
             </h2>
 
             <ul
@@ -184,18 +197,6 @@ import { RouterLink } from '@angular/router';
                   Terms of Use
                 </a>
               </li>
-
-              <li>
-                <a
-                  routerLink="/faq"
-                  class="text-sm
-               text-white/70
-               transition
-               hover:text-white"
-                >
-                  FAQ
-                </a>
-              </li>
               <li>
                 <a
                   routerLink="/accessibility"
@@ -207,15 +208,15 @@ import { RouterLink } from '@angular/router';
                   Accessibility
                 </a>
               </li>
-              <li>
+             <li>
                 <a
-                  routerLink="/contact"
+                  routerLink="/faq"
                   class="text-sm
-                         text-white/70
-                         transition
-                         hover:text-white"
+               text-white/70
+               transition
+               hover:text-white"
                 >
-                  Contact
+                  FAQ
                 </a>
               </li>
             </ul>

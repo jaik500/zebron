@@ -68,7 +68,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
       <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
-        <div class="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-1 sm:px-6">
           <a mat-stroked-button class="!border-white/40 !text-white" [routerLink]="['/partner/org', organizationId, 'knowledge']">
             <mat-icon>arrow_back</mat-icon>
             {{ 'Knowledge Center' | t }}
@@ -151,7 +151,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
         </div>
       </header>
 
-      <main class="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      <main class="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         @if (loading()) {
           <p class="text-center text-sm text-gray-500">{{ 'Loading article…' | t }}</p>
         } @else if (article(); as current) {

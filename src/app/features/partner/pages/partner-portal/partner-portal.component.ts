@@ -33,7 +33,7 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
       <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
         <div class="mx-auto max-w-7xl px-4 py-1 sm:px-6 lg:px-8">
 
-          <h1 class="text-2xl font-bold text-white/70">
+          <h1 class="text-lg text-white/80">
             {{ 'Select an Organization' | t }}
           </h1>
         </div>

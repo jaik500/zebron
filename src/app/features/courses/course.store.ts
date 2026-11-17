@@ -157,13 +157,22 @@ export const CourseStore = signalStore(
     /** The most recently touched unfinished course. */
     continueRecord: computed(() => store.inProgress()[0] ?? null),
 
-    /** Courses not started yet, newest first. */
-    recommended: computed(() =>
-      store
+    /** Courses not started yet and not dismissed by the learner, newest first. */
+    recommended: computed(() => {
+      const hidden = new Set(store.hiddenIds());
+      return store
         .catalog()
-        .filter((course) => !store.progressById().has(progressId(course)))
-        .slice(0, 6),
-    ),
+        .filter((course) => !store.progressById().has(progressId(course)) && !hidden.has(progressId(course)))
+        .slice(0, 6);
+    }),
+
+    /** Not-started courses the learner removed from Recommended; they can show them again. */
+    dismissedRecommendations: computed(() => {
+      const hidden = new Set(store.hiddenIds());
+      return store
+        .catalog()
+        .filter((course) => !store.progressById().has(progressId(course)) && hidden.has(progressId(course)));
+    }),
 
     courseProgress: computed(() => {
       const course = store.course();

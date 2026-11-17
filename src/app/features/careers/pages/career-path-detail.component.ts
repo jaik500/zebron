@@ -60,7 +60,13 @@ const PROJECT_STATUS: Record<string, { label: string; classes: string }> = {
   imports: [RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent],
   template: `
     <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
-      <app-course-header basePath="/courses" backLink="/courses/careers" [crumbs]="crumbs()" [activeTab]="'careers'" [canManage]="isAdmin()" />
+      <app-course-header basePath="/courses" backLink="/courses" [crumbs]="crumbs()" [activeTab]="'learning'" [canManage]="isAdmin()" />
+
+      <div class="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+        <a routerLink="/courses" class="inline-flex items-center gap-1 text-sm font-semibold text-[#007979] hover:underline">
+          <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">arrow_back</mat-icon>{{ 'Back to My learning' | t }}
+        </a>
+      </div>
 
       @if (loading()) {
         <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6" aria-hidden="true">
@@ -78,7 +84,7 @@ const PROJECT_STATUS: Record<string, { label: string; classes: string }> = {
       } @else {
         @let p = path()!;
         @let info = insights();
-        <div class="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+        <div class="mx-auto max-w-6xl space-y-6 px-4 pb-6 pt-4 sm:px-6">
           <!-- ================= Overview ================= -->
           <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div class="flex flex-wrap gap-2 text-xs font-semibold">

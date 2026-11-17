@@ -34,8 +34,9 @@ interface PlanCard {
       <app-course-header
         basePath="/courses"
         [crumbs]="[{ label: 'Learning', link: '/courses' }, { label: 'Career paths' }]"
-        [activeTab]="'careers'"
+        [activeTab]="'learning'"
         [canManage]="isAdmin()"
+        backLink="/courses"
         [showSearch]="true"
         searchLabel="Search career paths"
         searchPlaceholder="A job, such as nurse or AI engineer"
@@ -44,6 +45,11 @@ interface PlanCard {
       />
 
       <div class="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
+        <div>
+        <a routerLink="/courses" class="inline-flex items-center gap-1 text-sm font-semibold text-[#007979] hover:underline">
+          <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">arrow_back</mat-icon>{{ 'Back to My learning' | t }}
+        </a>
+        </div>
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 class="flex items-center gap-2 text-2xl font-bold text-slate-900">

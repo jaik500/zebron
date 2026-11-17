@@ -3,8 +3,10 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -47,20 +49,22 @@ import { DashboardGridComponent } from '../../../../shared/dashboards/dashboard-
 import { DashboardService } from '../../../../shared/dashboards/dashboard.service';
 import { injectDashboardContext } from '../../../dashboards/dashboard-context';
 import { setUpDashboards } from '../../../dashboards/dashboard-setup';
+import { MyTrainingGroupsPanelComponent } from '../../../training-groups/my-training-groups-panel.component';
+import { OrganizationBrandingService, accentStyle } from '../../branding/organization-branding';
 
 @Component({
   selector: 'app-partner-admin',
   standalone: true,
   imports: [
-    TranslatePipe,RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule, AnnouncementBannerComponent, DashboardGridComponent],
+    TranslatePipe,RouterLink, MatButtonModule, MatIconModule, MatMenuModule, MatFormFieldModule, MatInputModule, AnnouncementBannerComponent, DashboardGridComponent, MyTrainingGroupsPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-gray-50 pt-15">
+    <div class="min-h-screen bg-gray-50 pt-15" [style]="accentStyle()">
       <!-- =========================================================
            HEADER
            ========================================================= -->
 
-      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[color:var(--zb-accent,#007979)] via-[color:var(--zb-accent-dark,#00706f)] to-[color:var(--zb-accent-end,#2a835f)]">
         <div class="mx-auto max-w-7xl px-4 py-0 sm:px-6 lg:px-8">
           <div class="flex items-center justify-between gap-4">
             <div class="min-w-0">
@@ -88,7 +92,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
 
             <mat-menu #dashboardMenu="matMenu">
               <div
-                      class="inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 mx-1 px-4 py-2 text-sm font-semibold text-[#007979]"
+                      class="inline-flex items-center gap-2 rounded-lg bg-[color:var(--zb-accent,#007979)]/10 mx-1 px-4 py-2 text-sm font-semibold text-[color:var(--zb-accent,#007979)]"
                     >
                       {{ 'Role:' | t }}
                       <span class="font-medium text-gray-700">
@@ -190,7 +194,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
 
         @if (organizationStore.contextLoading()) {
           <section class="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-            <mat-icon class="!h-9 !w-9 !text-4xl text-[#007979]"> sync </mat-icon>
+            <mat-icon class="!h-9 !w-9 !text-4xl text-[color:var(--zb-accent,#007979)]"> sync </mat-icon>
 
             <p class="mt-4 text-sm font-medium text-gray-700">
               {{ 'Loading your partner organization...' | t }}
@@ -245,11 +249,18 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
           <section class="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
             <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <div class="flex items-start gap-4">
-                <div
-                  class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#5DB996]"
-                >
-                  <mat-icon class="!text-2xl !leading-none text-white"> business </mat-icon>
-                </div>
+                @if (branding.logoUrl(); as logo) {
+                  <!-- The organization's logo (Settings > Appearance) -->
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-white">
+                    <img [src]="logo" [alt]="organizationName() + ' logo'" class="h-full w-full object-contain p-1" />
+                  </div>
+                } @else {
+                  <div
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#5DB996]"
+                  >
+                    <mat-icon class="!text-2xl !leading-none text-white"> business </mat-icon>
+                  </div>
+                }
 
                 <div class="min-w-0">
                   <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -266,7 +277,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                         organizationStore.selectedOrganizationId(),
                         'onboarding',
                       ]"
-                      class="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/20"
+                      class="mt-3 inline-flex items-center gap-2 rounded-lg bg-[color:var(--zb-accent,#007979)]/10 px-3 py-2 text-sm font-semibold text-[color:var(--zb-accent,#007979)] transition-colors hover:bg-[color:var(--zb-accent,#007979)]/20"
                     >
                       <mat-icon class="!h-5 !w-5 !text-xl !leading-none">checklist</mat-icon>
                       <span>{{ 'Complete onboarding steps' | t }}</span>
@@ -298,7 +309,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
       [attr.aria-label]="'Search partner resources' | t"
     />
     @if (searching()) {
-      <mat-icon matSuffix class="mr-3 animate-spin !text-[#007979]" [attr.aria-label]="'Searching' | t">sync</mat-icon>
+      <mat-icon matSuffix class="mr-3 animate-spin !text-[color:var(--zb-accent,#007979)]" [attr.aria-label]="'Searching' | t">sync</mat-icon>
     } @else if (searchQuery()) {
       <button mat-icon-button matSuffix type="button" [attr.aria-label]="'Clear search' | t" (click)="clearSearch()">
         <mat-icon>close</mat-icon>
@@ -315,7 +326,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                       <div
                         class="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-5 py-4"
                       >
-                        <mat-icon class="animate-spin text-[#007979]"> sync </mat-icon>
+                        <mat-icon class="animate-spin text-[color:var(--zb-accent,#007979)]"> sync </mat-icon>
 
                         <span class="text-sm text-gray-600"> {{ 'Searching your organization...' | t }} </span>
                       </div>
@@ -369,7 +380,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                                 </p>
 
                                 @if (result.metadata) {
-                                  <p class="mt-1 text-[11px] font-medium text-[#007979]">
+                                  <p class="mt-1 text-[11px] font-medium text-[color:var(--zb-accent,#007979)]">
                                     {{ result.metadata }}
                                   </p>
                                 }
@@ -412,11 +423,11 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
 
             <!-- The whole card opens Profile (stretched link); Help & Support sits above it. -->
             <div
-              class="hidden md:block group relative block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md lg:min-w-[250px]"
+              class="hidden md:block group relative block rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)]/40 hover:shadow-md lg:min-w-[250px]"
             >
               <div class="flex items-start justify-between gap-4">
                 <div>
-                  <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">
                     {{ 'My Account' | t }}
                   </p>
 
@@ -424,21 +435,21 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                     <div
                       class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50"
                     >
-                      <mat-icon class="text-[#007979]">person</mat-icon>
+                      <mat-icon class="text-[color:var(--zb-accent,#007979)]">person</mat-icon>
                     </div>
 
                     <div>
                       <a
                         routerLink="/profile"
                         [attr.aria-label]="'View and manage your profile' | t"
-                        class="font-semibold text-gray-900 after:absolute after:inset-0 after:rounded-xl after:content-[''] group-hover:text-[#007979] focus:outline-none focus-visible:after:ring-2 focus-visible:after:ring-[#007979]"
+                        class="font-semibold text-gray-900 after:absolute after:inset-0 after:rounded-xl after:content-[''] group-hover:text-[color:var(--zb-accent,#007979)] focus:outline-none focus-visible:after:ring-2 focus-visible:after:ring-[color:var(--zb-accent,#007979)]"
                       >{{ 'Profile' | t }}</a>
                       <p class="text-sm text-gray-500">{{ 'View and manage your personal profile' | t }}</p>
                     </div>
                   </div>
                   <div class="mt-3 flex flex-wrap items-center gap-2">
                     <div
-                      class="inline-flex items-center gap-2 rounded-lg bg-[#007979]/10 px-3 py-2 text-sm font-semibold text-[#007979]"
+                      class="inline-flex items-center gap-2 rounded-lg bg-[color:var(--zb-accent,#007979)]/10 px-3 py-2 text-sm font-semibold text-[color:var(--zb-accent,#007979)]"
                     >
                       {{ 'Role:' | t }}
                       <span class="font-medium text-gray-700">
@@ -449,7 +460,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                     <a
                       routerLink="/support"
                       [queryParams]="supportQuery()"
-                      class="relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-[#007979]/30 bg-white px-3 py-2 text-sm font-semibold text-[#007979] transition-colors hover:bg-[#007979]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]"
+                      class="relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--zb-accent,#007979)]/30 bg-white px-3 py-2 text-sm font-semibold text-[color:var(--zb-accent,#007979)] transition-colors hover:bg-[color:var(--zb-accent,#007979)]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--zb-accent,#007979)]"
                     >
                       <mat-icon class="!h-4 !w-4 !text-base !leading-none">support_agent</mat-icon>
                       {{ 'Help & Support' | t }}
@@ -457,12 +468,20 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                   </div>
                 </div>
 
-                <mat-icon class="mt-1 text-gray-300 transition-colors group-hover:text-[#007979]">
+                <mat-icon class="mt-1 text-gray-300 transition-colors group-hover:text-[color:var(--zb-accent,#007979)]">
                   arrow_forward
                 </mat-icon>
               </div>
             </div>
           </section>
+
+          <!-- =====================================================
+               YOUR TRAINING GROUPS (only for people in a group)
+               ===================================================== -->
+
+          @if (canShowOperationalWorkspace() && organizationStore.hasActiveApplication('training-groups') && organizationStore.selectedOrganizationId(); as organizationId) {
+            <app-my-training-groups-panel [organizationId]="organizationId" />
+          }
 
           <!-- =====================================================
                MEMBER FEATURES
@@ -472,7 +491,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
             <section>
               <div class="mb-5 flex min-w-0 flex-wrap items-end justify-between gap-3">
                 <div class="min-w-0">
-                  <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">
                     {{ 'Partner Portal' | t }}
                   </p>
 
@@ -486,7 +505,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                 <!-- Shared Dashboard Engine -->
                 <a
                   [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'dashboards']"
-                  class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-[#007979]/30 bg-white px-4 text-sm font-semibold text-[#007979] hover:bg-teal-50"
+                  class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-[color:var(--zb-accent,#007979)]/30 bg-white px-4 text-sm font-semibold text-[color:var(--zb-accent,#007979)] hover:bg-teal-50"
                 >
                   <mat-icon class="!h-[18px] !w-[18px] !text-[18px] !leading-none" aria-hidden="true">space_dashboard</mat-icon>
                   {{ 'Dashboards' | t }}
@@ -502,9 +521,9 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                 @for (card of visibleDashboardCards(); track card.id) {
                   <div
                     class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm
-         transition-all hover:-translate-y-0.5 hover:border-[#007979]/40
+         transition-all hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)]/40
          hover:shadow-md
-         focus-within:ring-2 focus-within:ring-[#007979]
+         focus-within:ring-2 focus-within:ring-[color:var(--zb-accent,#007979)]
          focus-within:ring-offset-2"
                     [class.opacity-60]="!card.enabled"
                   >
@@ -517,7 +536,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                         [class.pointer-events-none]="!card.enabled"
                       >
                         <div
-                          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 text-[#007979] transition-colors group-hover:bg-[#007979] group-hover:text-white"
+                          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--zb-accent,#007979)]/10 text-[color:var(--zb-accent,#007979)] transition-colors group-hover:bg-[color:var(--zb-accent,#007979)] group-hover:text-white"
                         >
                           <mat-icon>{{ card.icon }}</mat-icon>
                         </div>
@@ -533,7 +552,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                           [routerLink]="manageRoute"
                           [attr.aria-label]="'Manage {0}' | t: [(card.title | t)]"
                           [title]="'Manage {0}' | t: [(card.title | t)]"
-                          class="relative shrink-0 rounded-lg p-2 text-gray-600 transition-colors hover:bg-teal-50 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-[#007979]"
+                          class="relative shrink-0 rounded-lg p-2 text-gray-600 transition-colors hover:bg-teal-50 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-[color:var(--zb-accent,#007979)]"
                         >
                           <mat-icon>settings</mat-icon>
                           @if (card.id === 'learning' && coursesInReview() > 0) {
@@ -550,7 +569,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                           [routerLink]="dashboardCardRoute(card)"
                           tabindex="-1"
                           aria-hidden="true"
-                          class="shrink-0 rounded-lg p-2 text-gray-300 transition-colors group-hover:text-[#007979] hover:bg-teal-50"
+                          class="shrink-0 rounded-lg p-2 text-gray-300 transition-colors group-hover:text-[color:var(--zb-accent,#007979)] hover:bg-teal-50"
                         >
                           <mat-icon>arrow_forward</mat-icon>
                         </a>
@@ -602,9 +621,9 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
             <section class="mt-10">
               <div class="mb-5">
                 <div class="flex items-center gap-2">
-                  <mat-icon class="text-[#007979]"> admin_panel_settings </mat-icon>
+                  <mat-icon class="text-[color:var(--zb-accent,#007979)]"> admin_panel_settings </mat-icon>
 
-                  <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">
                     {{ 'Administration' | t }}
                   </p>
                 </div>
@@ -620,19 +639,19 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                 @if (access.canAccessAdministration()) {
                 <a
                   [routerLink]="administrationRoute()"
-                  class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
+                  class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)]/40 hover:shadow-md"
                 >
                   <!-- Icon and title on one row -->
                   <div class="flex items-center gap-3">
                     <div
-                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 text-[#007979] transition-colors group-hover:bg-[#007979] group-hover:text-white"
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--zb-accent,#007979)]/10 text-[color:var(--zb-accent,#007979)] transition-colors group-hover:bg-[color:var(--zb-accent,#007979)] group-hover:text-white"
                     >
                       <mat-icon>admin_panel_settings</mat-icon>
                     </div>
 
                     <h3 class="min-w-0 flex-1 text-lg font-bold text-gray-900">{{ 'Administration' | t }}</h3>
 
-                    <mat-icon class="shrink-0 text-gray-300 transition-colors group-hover:text-[#007979]">arrow_forward</mat-icon>
+                    <mat-icon class="shrink-0 text-gray-300 transition-colors group-hover:text-[color:var(--zb-accent,#007979)]">arrow_forward</mat-icon>
                   </div>
 
                   <p class="mt-3 text-sm leading-6 text-gray-500">
@@ -645,18 +664,18 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                 @if (mailboxCard(); as mailbox) {
                   <a
                     [routerLink]="mailbox.route"
-                    class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
+                    class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)]/40 hover:shadow-md"
                   >
                     <div class="flex items-center gap-3">
                       <div
-                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 text-[#007979] transition-colors group-hover:bg-[#007979] group-hover:text-white"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--zb-accent,#007979)]/10 text-[color:var(--zb-accent,#007979)] transition-colors group-hover:bg-[color:var(--zb-accent,#007979)] group-hover:text-white"
                       >
                         <mat-icon>{{ mailbox.icon }}</mat-icon>
                       </div>
 
                       <h3 class="min-w-0 flex-1 text-lg font-bold text-gray-900">{{ mailbox.title | t }}</h3>
 
-                      <mat-icon class="shrink-0 text-gray-300 transition-colors group-hover:text-[#007979]">arrow_forward</mat-icon>
+                      <mat-icon class="shrink-0 text-gray-300 transition-colors group-hover:text-[color:var(--zb-accent,#007979)]">arrow_forward</mat-icon>
                     </div>
 
                     <p class="mt-3 text-sm leading-6 text-gray-500">{{ mailbox.description | t }}</p>
@@ -674,7 +693,7 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
             <section class="mt-10 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p class="text-xs font-semibold uppercase tracking-wider text-[#007979]">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">
                     {{ 'Quick Access' | t }}
                   </p>
 
@@ -715,6 +734,16 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
 })
 export class PartnerAdminComponent implements OnInit {
   protected readonly organizationStore = inject(OrganizationContextStore);
+
+  // Organization accent color (Settings > Appearance); Zebron teal by default.
+  protected readonly branding = inject(OrganizationBrandingService);
+  protected readonly accentStyle = computed(() => accentStyle(this.branding.accent(), this.branding.background()));
+  private readonly loadAccent = effect(() => {
+    const organizationId = this.organizationStore.selectedOrganizationId();
+    if (organizationId) {
+      untracked(() => void this.branding.load(organizationId));
+    }
+  });
 
   // ---------- Shared Dashboard Engine ----------
   private readonly dashboards = inject(DashboardService);

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
 import { doc, getDoc } from 'firebase/firestore';
-import { NgClass } from '@angular/common';
+import { NgClass, NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { firestore } from '../../../core/services/firebase-config';
@@ -19,6 +19,15 @@ export interface CourseCrumb {
   translate?: boolean;
 }
 
+/** An extra item a page adds to the phone "More" menu, below the tabs. */
+export interface CourseMenuAction {
+  key: string;
+  label: string;
+  icon: string;
+  /** Shows a tick (for a choice such as the current layout). */
+  active?: boolean;
+}
+
 export type CourseTab = 'learning' | 'catalog' | 'careers' | 'certifications' | 'certificates' | 'test-center' | 'coding-lab' | 'live' | 'manage';
 
 /**
@@ -30,7 +39,7 @@ export type CourseTab = 'learning' | 'catalog' | 'careers' | 'certifications' | 
   selector: 'app-course-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgClass, RouterLink, MatFormFieldModule, MatIconModule, MatInputModule, MatMenuModule, TranslatePipe],
+  imports: [NgClass, NgTemplateOutlet, RouterLink, MatFormFieldModule, MatIconModule, MatInputModule, MatMenuModule, TranslatePipe],
   template: `
     <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
       <div class="mx-auto max-w-7xl px-4 sm:px-2 lg:px-8" [ngClass]="showTabs() ? 'pt-3' : 'py-2'">
@@ -158,7 +167,33 @@ export type CourseTab = 'learning' | 'catalog' | 'careers' | 'certifications' | 
                   <span>{{ tab.label | t }}</span>
                 </a>
               }
+              @if (menuActions().length) {
+                <div class="my-1 border-t border-slate-200" role="separator"></div>
+                @if (menuActionsLabel()) {
+                  <!-- A labelled group (such as View) opens its own drop-down. -->
+                  <button mat-menu-item type="button" [matMenuTriggerFor]="actionsMenu">
+                    <mat-icon aria-hidden="true">{{ menuActionsIcon() }}</mat-icon>
+                    <span>{{ menuActionsLabel() | t }}</span>
+                  </button>
+                } @else {
+                  <ng-container *ngTemplateOutlet="actionItems" />
+                }
+              }
             </mat-menu>
+            <mat-menu #actionsMenu="matMenu">
+              <ng-container *ngTemplateOutlet="actionItems" />
+            </mat-menu>
+            <ng-template #actionItems>
+              @for (action of menuActions(); track action.key) {
+                <button mat-menu-item type="button" (click)="menuAction.emit(action.key)" [attr.aria-pressed]="action.active ?? null">
+                  <mat-icon aria-hidden="true" [ngClass]="action.active ? '!text-[#007979]' : ''">{{ action.icon }}</mat-icon>
+                  <span [ngClass]="action.active ? 'font-semibold text-[#007979]' : ''">{{ action.label | t }}</span>
+                  @if (action.active) {
+                    <mat-icon class="!ml-2 !mr-0 !text-[#007979]" aria-hidden="true">check</mat-icon>
+                  }
+                </button>
+              }
+            </ng-template>
           </nav>
         }
       </div>
@@ -168,6 +203,12 @@ export type CourseTab = 'learning' | 'catalog' | 'careers' | 'certifications' | 
 export class CourseHeaderComponent {
   readonly basePath = input.required<string>();
   readonly crumbs = input<CourseCrumb[]>([]);
+  /** Extra items for the phone "More" menu (for example a page's layout choice). */
+  readonly menuActions = input<CourseMenuAction[]>([]);
+  readonly menuAction = output<string>();
+  /** When set, the extra items sit in a drop-down under this label (such as "View"). */
+  readonly menuActionsLabel = input<string | null>(null);
+  readonly menuActionsIcon = input('visibility');
   readonly backLink = input<string | null>(null);
   readonly showSearch = input(false);
   readonly query = input('');
@@ -211,10 +252,6 @@ export class CourseHeaderComponent {
     const tabs: { key: CourseTab; label: string; icon: string; link: string }[] = [
       { key: 'learning', label: 'My learning', icon: 'school', link: this.basePath() },
       { key: 'catalog', label: 'Catalog', icon: 'auto_stories', link: `${this.basePath()}/catalog` },
-      // Career paths (features/careers): Zebron's own Learning pages only.
-      ...(this.basePath() === '/courses'
-        ? [{ key: 'careers' as CourseTab, label: 'Career paths', icon: 'route', link: '/courses/careers' }]
-        : []),
       { key: 'certifications', label: 'Certifications', icon: 'military_tech', link: `${this.basePath()}/certifications` },
       // Zebron Learning = Courses + Test Center: practice quizzes sit beside the courses.
       { key: 'test-center', label: 'Test Center', icon: 'quiz', link: this.basePath().replace(/\/courses$/, '/learn/test-center').replace(/^\/learn\/test-center$/, '/test-center') },
@@ -225,8 +262,7 @@ export class CourseHeaderComponent {
       tabs.push({ key: 'live', label: 'Live sessions', icon: 'video_camera_front', link: this.basePath().replace(/\/courses$/, '/live') });
     }
 
-    // Certificates comes after Live sessions (or after Coding Lab when there are no live sessions).
-    tabs.push({ key: 'certificates', label: 'Certificates', icon: 'workspace_premium', link: `${this.basePath()}/certificates` });
+    // Certificates moved into My learning (a card under the weekly stats).
 
     if (this.canManage()) {
       tabs.push({ key: 'manage', label: 'Manage courses', icon: 'edit_note', link: `${this.basePath()}/manage` });

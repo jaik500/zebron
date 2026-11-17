@@ -87,6 +87,10 @@ function normalize(value: string): string {
         (queryChange)="query.set($event)"
         searchLabel="Search certifications"
         searchPlaceholder="Name, vendor, exam code or course..."
+        [menuActions]="viewActions()"
+        menuActionsLabel="View"
+        menuActionsIcon="view_quilt"
+        (menuAction)="setView($any($event))"
       />
 
       <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -118,9 +122,10 @@ function normalize(value: string): string {
           </section>
         }
 
-        <!-- Categories: the organization's own (on organization pages), Zebron and external -->
+        <!-- Categories (left) and the cards / list switch (right) -->
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
         @if (groups().length > 1) {
-        <div class="mb-5 inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1" role="tablist" [attr.aria-label]="'Certification categories' | t">
+        <div class="inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1" role="tablist" [attr.aria-label]="'Certification categories' | t">
           @for (group of groups(); track group.kind) {
             <button
               type="button"
@@ -138,7 +143,36 @@ function normalize(value: string): string {
             </button>
           }
         </div>
+        } @else {
+          <span></span>
         }
+
+        <!-- Phones: Cards / List are in the header's ⋮ menu instead. -->
+        <div class="ml-auto inline-flex rounded-xl border border-slate-200 bg-white p-1 max-md:hidden" role="group" [attr.aria-label]="'Layout' | t">
+          <button
+            type="button"
+            (click)="setView('cards')"
+            [attr.aria-pressed]="view() === 'cards'"
+            class="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition"
+            [ngClass]="view() === 'cards' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'"
+            [title]="'Cards' | t"
+          >
+            <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">grid_view</mat-icon>
+            <span class="max-sm:sr-only">{{ 'Cards' | t }}</span>
+          </button>
+          <button
+            type="button"
+            (click)="setView('list')"
+            [attr.aria-pressed]="view() === 'list'"
+            class="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition"
+            [ngClass]="view() === 'list' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'"
+            [title]="'List' | t"
+          >
+            <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">view_list</mat-icon>
+            <span class="max-sm:sr-only">{{ 'List' | t }}</span>
+          </button>
+        </div>
+        </div>
 
         @if (loading() || (context.organizationId && settings() === null)) {
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2" aria-hidden="true">
@@ -172,6 +206,48 @@ function normalize(value: string): string {
           @if (current(); as group) {
           <section [id]="'cert-panel-' + group.kind" role="tabpanel" [attr.aria-labelledby]="'cert-tab-' + group.kind">
             <p class="mb-4 max-w-3xl text-sm text-slate-600">{{ group.note | t }}</p>
+          @if (view() === 'list') {
+            <!-- List view: one row per certification -->
+            <ul class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              @for (row of group.rows; track row.definition.key) {
+                <li>
+                  <a
+                    [routerLink]="[context.basePath, 'certifications', row.definition.key]"
+                    class="group flex items-center gap-3 px-4 py-3 transition hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50"
+                  >
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white" [style.background]="cover(row.definition)" aria-hidden="true">
+                      <mat-icon>military_tech</mat-icon>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-sm font-semibold text-slate-900 group-hover:text-[#007979]">{{ row.definition.credentialName }}</span>
+                      <span class="block truncate text-xs text-slate-500">
+                        @if (row.definition.vendor; as vendor) {
+                          {{ vendor.name }} · {{ 'Exam preparation' | t }}
+                        } @else {
+                          {{ row.definition.providerName }}
+                        }
+                        · {{ '{0} of {1} courses' | t: [row.done, row.definition.courses.length] }}
+                      </span>
+                    </span>
+                    <!-- Course progress bar (wider screens) -->
+                    <span class="hidden w-28 shrink-0 sm:block" aria-hidden="true">
+                      <span class="block h-1.5 overflow-hidden rounded-full bg-slate-200">
+                        <span
+                          class="block h-full rounded-full bg-emerald-500"
+                          [style.width.%]="row.definition.courses.length ? (row.done / row.definition.courses.length) * 100 : 0"
+                        ></span>
+                      </span>
+                    </span>
+                    <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold" [ngClass]="stage(row).classes">
+                      <mat-icon class="!h-3.5 !w-3.5 !text-[14px] !leading-none" aria-hidden="true">{{ stage(row).icon }}</mat-icon>
+                      <span class="max-sm:sr-only">{{ stage(row).label | t }}</span>
+                    </span>
+                    <mat-icon class="shrink-0 text-slate-400" aria-hidden="true">chevron_right</mat-icon>
+                  </a>
+                </li>
+              }
+            </ul>
+          } @else {
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             @for (row of group.rows; track row.definition.key) {
               <a
@@ -239,6 +315,7 @@ function normalize(value: string): string {
               </a>
             }
           </div>
+          }
           </section>
           }
         }
@@ -257,6 +334,33 @@ export class CertificationListComponent {
 
   protected readonly context = courseContextFromRoute(this.route);
   protected readonly canManage = computed(() => this.access.canManage(this.context));
+
+  // ---------- Cards / list layout (remembered in this browser) ----------
+  private static readonly VIEW_KEY = 'zebron:certifications-view';
+  protected readonly view = signal<'cards' | 'list'>(CertificationListComponent.readView());
+
+  private static readView(): 'cards' | 'list' {
+    try {
+      return typeof localStorage !== 'undefined' && localStorage.getItem(CertificationListComponent.VIEW_KEY) === 'list' ? 'list' : 'cards';
+    } catch {
+      return 'cards';
+    }
+  }
+
+  /** Cards / List in the header's ⋮ menu on phones. */
+  protected readonly viewActions = computed(() => [
+    { key: 'cards', label: 'Cards', icon: 'grid_view', active: this.view() === 'cards' },
+    { key: 'list', label: 'List', icon: 'view_list', active: this.view() === 'list' },
+  ]);
+
+  protected setView(view: 'cards' | 'list'): void {
+    this.view.set(view);
+    try {
+      localStorage.setItem(CertificationListComponent.VIEW_KEY, view);
+    } catch {
+      // Storage unavailable (private mode, server rendering): the choice lasts for this visit.
+    }
+  }
 
   private readonly definitions = signal<CertificationDefinition[]>([]);
   private readonly enrollments = signal<Map<string, CertificationEnrollment>>(new Map());

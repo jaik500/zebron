@@ -220,7 +220,7 @@ import { MatSelectModule } from '@angular/material/select';
                FIND TRAINING
                =================================================== -->
           <a
-            routerLink="/find/training"
+            routerLink="/courses/careers"
             class="group
                    flex
                    min-h-[150px]
@@ -260,7 +260,7 @@ import { MatSelectModule } from '@angular/material/select';
                        text-[#032D42]
                        group-hover:text-[#007979]"
               >
-                Find Training
+                Career Paths
               </h2>
 
               <p
@@ -270,8 +270,8 @@ import { MatSelectModule } from '@angular/material/select';
                        leading-5
                        text-gray-600"
               >
-                Discover bootcamps, courses, certifications,
-                and job-ready training programs.
+                Pick a role and see the skills, courses,
+                projects and certifications to get there.
               </p>
 
             </div>
@@ -282,7 +282,7 @@ import { MatSelectModule } from '@angular/material/select';
                      font-semibold
                      text-[#007979]"
             >
-              Find training →
+              Explore career paths →
             </span>
 
           </a>

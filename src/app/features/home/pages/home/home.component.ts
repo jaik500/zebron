@@ -43,7 +43,7 @@ const HERO_TOPICS: { key: string; icon: string }[] = [
 const EXPLORE_CARDS: { route: string; icon: string; title: keyof HomeText; text: keyof HomeText; link: keyof HomeText }[] = [
   { route: '/resources', icon: 'explore', title: 'resourcesTitle', text: 'resourcesText', link: 'exploreResources' },
   { route: '/jobs', icon: 'work_outline', title: 'jobsTitle', text: 'jobsText', link: 'jobsLink' },
-  { route: '/find/training', icon: 'school', title: 'trainingTitle', text: 'trainingText', link: 'trainingLink' },
+  { route: '/courses/careers', icon: 'school', title: 'trainingTitle', text: 'trainingText', link: 'trainingLink' },
   { route: '/blog', icon: 'article', title: 'blogCardTitle', text: 'blogCardText', link: 'blogCardLink' },
   { route: '/tax-calculator', icon: 'calculate', title: 'taxTitle', text: 'taxText', link: 'taxLink' },
   { route: '/organizations/apply', icon: 'business', title: 'organizationTitle', text: 'organizationText', link: 'organizationLink' },
@@ -800,7 +800,7 @@ export class HomeComponent {
 
   protected readonly valueRows = computed(() => [
     { route: '/resources', icon: 'explore', step: this.t().discover, title: this.t().resourcesServices },
-    { route: '/find/training', icon: 'school', step: this.t().explore, title: this.t().trainingEducation },
+    { route: '/courses/careers', icon: 'school', step: this.t().explore, title: this.t().trainingEducation },
     { route: '/find/job', icon: 'work_outline', step: this.t().connect, title: this.t().jobsOpportunities },
   ]);
 

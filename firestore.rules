@@ -1005,6 +1005,61 @@ service cloud.firestore {
       allow delete: if isPlatformAdmin();
     }
 
+    /*
+     * Organization branding: the dashboard accent color.
+     *
+     *   organizations/{organizationId}/settings/branding
+     *   { accent: one of the preset keys, background, logoUrl, logoPath, updatedAt, updatedBy }
+     *
+     * background: the page background (plain, tinted, gray or dark-gray).
+     *
+     * logoUrl / logoPath: the uploaded logo (Cloud Storage
+     * organizations/{organizationId}/branding/{file}), or null for none.
+     *
+     * Every active member reads it (their dashboard uses it); owners,
+     * administrators and platform administrators change it.
+     */
+    match /organizations/{organizationId}/settings/branding {
+
+      function canManageBranding() {
+        return isPlatformAdmin()
+          || (
+            isOrganizationConfigurable(organizationId)
+            && isOrganizationAdmin(organizationId)
+          );
+      }
+
+      function validLogo() {
+        let data = request.resource.data;
+        let url = data.get('logoUrl', null);
+        let path = data.get('logoPath', null);
+        return (url == null && path == null)
+          || (
+            url is string && url.size() <= 2048
+            && (
+              url.matches('^https://firebasestorage[.]googleapis[.]com/.*')
+              || url.matches('^http://(127[.]0[.]0[.]1|localhost):[0-9]+/.*')
+            )
+            && path is string
+            && path.matches('^organizations/' + organizationId + '/branding/[^/]+$')
+          );
+      }
+
+      function validBranding() {
+        return request.resource.data.keys().hasOnly(['accent', 'background', 'logoUrl', 'logoPath', 'updatedAt', 'updatedBy'])
+          && request.resource.data.accent in ['teal', 'blue', 'cyan', 'purple', 'rose', 'orange', 'green', 'brown']
+          && request.resource.data.get('background', 'plain') in ['plain', 'tinted', 'gray', 'dark-gray']
+          && validLogo()
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedBy == request.auth.uid;
+      }
+
+      allow get: if isPlatformAdmin() || isOrganizationMember(organizationId);
+      allow list: if false;
+      allow create, update: if canManageBranding() && validBranding();
+      allow delete: if isPlatformAdmin();
+    }
+
     // ============================================================
     // GROUP MEMBERSHIPS
     // ============================================================

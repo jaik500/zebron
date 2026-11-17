@@ -73,7 +73,7 @@ const splitSkills = (value: string, max: number) =>
         basePath="/courses"
         backLink="/courses/careers"
         [crumbs]="[{ label: 'Learning', link: '/courses' }, { label: 'Career paths', link: '/courses/careers' }, { label: 'Manage' }]"
-        [activeTab]="'careers'"
+        [activeTab]="'learning'"
         [canManage]="true"
       />
 

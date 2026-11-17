@@ -8,6 +8,8 @@
 @use './styles/new-input-fields';
 @use './styles/zebron-material';
 @use "tailwindcss";
+// After Tailwind: organization colors and background on /partner/org/... pages.
+@use './styles/organization-theme';
 
 html {
   height: 100%;

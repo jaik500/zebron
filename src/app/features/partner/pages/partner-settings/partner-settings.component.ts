@@ -20,6 +20,7 @@ import {
   PartnerCourseVisibility,
 } from '../../models/partner-organization-settings.model';
 import { PartnerAccessService } from '../../../../core/services/partner-access.service';
+import { ACCENT_PRESETS, DEFAULT_ACCENT, OrganizationBrandingService } from '../../branding/organization-branding';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -326,6 +327,70 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
                 <!-- =============================================
                      TEST CENTER
                      ============================================= -->
+
+                @case ('appearance') {
+                  <div class="settings-panel">
+
+                    <div class="settings-heading">
+                      <mat-icon>
+                        palette
+                      </mat-icon>
+
+                      <div>
+                        <h2>
+                          {{ 'Appearance' | t }}
+                        </h2>
+
+                        <p>
+                          {{ 'Choose the accent color members see on your organization dashboard.' | t }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="settings-content">
+                      <div role="radiogroup" [attr.aria-label]="'Accent color' | t" class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        @for (preset of accentPresets; track preset.key) {
+                          <button
+                            type="button"
+                            role="radio"
+                            [attr.aria-checked]="accent() === preset.key"
+                            [disabled]="!canEditSettings()"
+                            (click)="accent.set(preset.key)"
+                            class="flex items-center gap-2 rounded-xl border p-2.5 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-60"
+                            [class]="accent() === preset.key ? 'border-slate-900 ring-2 ring-slate-900/20' : 'border-slate-200 hover:border-slate-400'"
+                          >
+                            <span
+                              class="h-8 w-8 shrink-0 rounded-lg"
+                              [style.background]="'linear-gradient(135deg, ' + preset.base + ', ' + preset.end + ')'"
+                              aria-hidden="true"
+                            ></span>
+                            <span class="min-w-0 flex-1 truncate font-medium text-slate-800">{{ preset.label | t }}</span>
+                            @if (accent() === preset.key) {
+                              <mat-icon class="!h-5 !w-5 !text-[20px] text-slate-900" aria-hidden="true">check_circle</mat-icon>
+                            }
+                          </button>
+                        }
+                      </div>
+
+                      <!-- Preview of the dashboard header band and a card icon -->
+                      <div class="mt-4 overflow-hidden rounded-xl border border-slate-200" aria-hidden="true">
+                        <div class="px-4 py-3 text-sm font-semibold text-white" [style.background]="'linear-gradient(to right, ' + accentPreview().base + ', ' + accentPreview().dark + ', ' + accentPreview().end + ')'">
+                          {{ organizationName() }}
+                        </div>
+                        <div class="flex items-center gap-3 bg-white p-3">
+                          <span class="flex h-10 w-10 items-center justify-center rounded-xl text-white" [style.background]="accentPreview().base">
+                            <mat-icon>school</mat-icon>
+                          </span>
+                          <span class="text-sm font-semibold" [style.color]="accentPreview().base">{{ 'Learning' | t }}</span>
+                        </div>
+                      </div>
+
+                      <p class="mt-3 text-xs text-slate-500">
+                        {{ 'All colors keep text readable. Changes apply after you save.' | t }}
+                      </p>
+                    </div>
+                  </div>
+                }
 
                 @case ('test-center') {
                   <div class="settings-panel">
@@ -857,6 +922,17 @@ export class PartnerSettingsComponent implements OnInit {
 protected readonly canEditSettings = computed(
   () => this.access.canManageSettings(),
 );
+
+  // ---------- Appearance (organizations/{id}/settings/branding) ----------
+  private readonly branding = inject(OrganizationBrandingService);
+  protected readonly accentPresets = ACCENT_PRESETS;
+  /** The accent picked on this page (saved with Save Settings). */
+  protected readonly accent = signal<string>(DEFAULT_ACCENT);
+  /** The accent as loaded, to save only when it changed. */
+  private savedAccent = DEFAULT_ACCENT;
+  protected readonly accentPreview = computed(
+    () => ACCENT_PRESETS.find((preset) => preset.key === this.accent()) ?? ACCENT_PRESETS[0],
+  );
   protected readonly sections:
     SettingsSection[] = [
       {
@@ -865,6 +941,13 @@ protected readonly canEditSettings = computed(
         description:
           'Organization information and status.',
         icon: 'business',
+      },
+      {
+        id: 'appearance',
+        title: 'Appearance',
+        description:
+          'Dashboard accent color.',
+        icon: 'palette',
       },
       {
         id: 'test-center',
@@ -930,6 +1013,9 @@ protected readonly canEditSettings = computed(
       await this.settingsService.getSettings(
         organizationId,
       );
+
+    this.savedAccent = await this.branding.load(organizationId);
+    this.accent.set(this.savedAccent);
   } catch (error) {
     console.error(
       'Failed to initialize partner settings:',
@@ -981,6 +1067,11 @@ protected readonly canEditSettings = computed(
       await this.settingsService.saveSettings(
         this.settings,
       );
+
+      if (this.accent() !== this.savedAccent) {
+        await this.branding.save(organizationId, this.accent());
+        this.savedAccent = this.accent();
+      }
 
       this.toast.success(
         'Organization settings saved.',

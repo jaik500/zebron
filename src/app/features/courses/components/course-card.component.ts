@@ -18,7 +18,7 @@ import { Course, COURSE_COVERS, COURSE_LEVEL_LABELS, CourseExamRecord, CoursePro
       [routerLink]="link()"
       class="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#007979]/50"
     >
-      <div class="relative h-24 shrink-0" [style.background]="cover()">
+      <div class="relative h-20 shrink-0" [style.background]="cover()">
         <span
           class="absolute left-3 top-3 max-w-[85%] truncate rounded-full bg-white/90 px-2 py-0.5 text-xs font-bold text-[#007979]"
         >
@@ -29,16 +29,20 @@ import { Course, COURSE_COVERS, COURSE_LEVEL_LABELS, CourseExamRecord, CoursePro
             <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">workspace_premium</mat-icon>{{ 'Completed' | t }}
           </span>
         }
+        @if (course().program || course().topic) {
+          <!-- Program and step (or topic) on the cover; a soft shade keeps white text readable on every cover color -->
+          <div class="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/40 to-transparent" aria-hidden="true"></div>
+          <span class="absolute inset-x-3 bottom-2 truncate text-[11px] font-bold uppercase tracking-wide text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
+            @if (course().program) {
+              {{ course().program }}@if (course().programOrder) { · {{ 'Step {0}' | t: [course().programOrder] }} }
+            } @else {
+              {{ course().topic }}
+            }
+          </span>
+        }
       </div>
 
       <div class="flex min-w-0 flex-1 flex-col gap-1.5 p-4">
-        @if (course().program) {
-          <span class="truncate text-[11px] font-bold uppercase tracking-wide text-[#007979]">
-            {{ course().program }}@if (course().programOrder) { · {{ 'Step {0}' | t: [course().programOrder] }} }
-          </span>
-        } @else if (course().topic) {
-          <span class="truncate text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ course().topic }}</span>
-        }
         <h3 class="break-words text-base font-semibold leading-snug text-slate-900 [overflow-wrap:anywhere] group-hover:text-[#007979]">{{ course().title }}</h3>
         <p class="text-xs text-slate-500">
           {{ levelLabel() | t }} · {{ duration() }} · {{ course().lessonCount }} {{ (course().lessonCount === 1 ? 'lesson' : 'lessons') | t }}

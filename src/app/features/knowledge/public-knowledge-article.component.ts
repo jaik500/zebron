@@ -54,7 +54,7 @@ import { PUBLIC_KNOWLEDGE_TYPE_LABELS, PublicKnowledgeService } from './public-k
   template: `
     <div class="min-h-screen bg-slate-50 pt-16">
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
-        <div class="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div class="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6">
           <a mat-stroked-button class="!border-white/40 !text-white" routerLink="/knowledge">
             <mat-icon>arrow_back</mat-icon>
             {{ 'Knowledge Center' | t }}

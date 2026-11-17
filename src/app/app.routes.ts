@@ -303,22 +303,18 @@ export const routes: Routes = [
         redirectTo: ({ queryParams }) => inject(Router).createUrlTree(['/jobs'], { queryParams: legacyJobSearch(queryParams) }),
     },
     // -----------------------------------------------------
-    // TRAINING FINDER
+    // TRAINING FINDER (removed)
     // -----------------------------------------------------
+    // The training finder never had results; Career paths replaced it.
+    // Old links and bookmarks go to Career paths.
     {
         path: 'find/training',
-        data: {
-            title: 'Find a training',
-            header: 'Find jobs & training',
-        },
-        loadComponent: () => import('./features/resource-finder/pages/training/training-finder.component').then((m) => m.TrainingFinderComponent),
+        pathMatch: 'full',
+        redirectTo: '/courses/careers',
     },
     {
         path: 'find/training/results',
-        data: {
-            title: 'Zebron | Trainings',
-        },
-        loadComponent: () => import('./features/resource-finder/pages/training-results/training-results.component').then((m) => m.TrainingResultsComponent),
+        redirectTo: '/courses/careers',
     },
     // -----------------------------------------------------
     // JOB DETAILS

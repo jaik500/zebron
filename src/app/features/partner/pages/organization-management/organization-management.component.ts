@@ -3,8 +3,10 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -66,6 +68,7 @@ interface RoleGroup {
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 import { GroupFilter, TrainingGroupService } from '../../../training-groups/training-group.service';
+import { ACCENT_PRESETS, BACKGROUND_PRESETS, DEFAULT_ACCENT, DEFAULT_BACKGROUND, LOGO_TYPES, OrganizationBrandingService, accentPreset, accentStyle, backgroundPreset, pageBackground } from '../../branding/organization-branding';
 
 @Component({
   selector: 'app-organization-management',
@@ -74,8 +77,8 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
     TranslatePipe,RouterLink, FormsModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, AnnouncementManagerComponent, OrganizationAuditLogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="min-h-screen bg-gray-50 pt-14">
-      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
+    <main class="min-h-screen bg-gray-50 pt-14" [style]="accentStyle()">
+      <header class="border-b border-white/10 bg-gradient-to-r from-[color:var(--zb-accent,#007979)] via-[color:var(--zb-accent-dark,#00706f)] to-[color:var(--zb-accent-end,#2a835f)]">
         <div class="mx-auto max-w-7xl px-4 py-1 sm:px-6 lg:px-8">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <!-- Page title and description -->
@@ -178,7 +181,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                   @if (!setupComplete()) {
                     <a
                       mat-flat-button
-                      class="mt-4 !bg-[#007979] !text-white"
+                      class="mt-4 !bg-[color:var(--zb-accent,#007979)] !text-white"
                       [routerLink]="[
                         '/partner/org',
                         organizationStore.selectedOrganizationId(),
@@ -232,7 +235,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
 
                     <a
                       mat-flat-button
-                      class="mt-4 !bg-[#007979] !text-white"
+                      class="mt-4 !bg-[color:var(--zb-accent,#007979)] !text-white"
                       [routerLink]="[
                         '/partner/org',
                         organizationStore.selectedOrganizationId(),
@@ -253,19 +256,19 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
           @if (canManageBilling()) {
             <a
               [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'contract']"
-              class="flex h-full items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md sm:px-6"
+              class="flex h-full items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)]/40 hover:shadow-md sm:px-6"
             >
               <span class="flex min-w-0 items-center gap-3">
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
                   <mat-icon>handshake</mat-icon>
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Zebron partnership' | t }}</span>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">{{ 'Zebron partnership' | t }}</span>
                   <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Contract & Billing' | t }}</span>
                   <span class="mt-1 block text-sm text-gray-600">{{ 'Your agreement, applications, billing contact and requests to Zebron.' | t }}</span>
                 </span>
               </span>
-              <mat-icon class="shrink-0 text-[#007979]">arrow_forward</mat-icon>
+              <mat-icon class="shrink-0 text-[color:var(--zb-accent,#007979)]">arrow_forward</mat-icon>
             </a>
           }
 
@@ -273,19 +276,19 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
           @if (canManageBilling()) {
             <a
               [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'support']"
-              class="flex h-full items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md sm:px-6"
+              class="flex h-full items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)]/40 hover:shadow-md sm:px-6"
             >
               <span class="flex min-w-0 items-center gap-3">
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-700">
                   <mat-icon>confirmation_number</mat-icon>
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Zebron support' | t }}</span>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">{{ 'Zebron support' | t }}</span>
                   <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Support Tickets' | t }}</span>
                   <span class="mt-1 block text-sm text-gray-600">{{ 'Report issues, request services and track their status.' | t }}</span>
                 </span>
               </span>
-              <mat-icon class="shrink-0 text-[#007979]">arrow_forward</mat-icon>
+              <mat-icon class="shrink-0 text-[color:var(--zb-accent,#007979)]">arrow_forward</mat-icon>
             </a>
           }
 
@@ -293,30 +296,188 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
           @if (canUseMailbox()) {
             <a
               [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'mailbox']"
-              class="flex h-full items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md sm:px-6"
+              class="flex h-full items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)]/40 hover:shadow-md sm:px-6"
             >
               <span class="flex min-w-0 items-center gap-3">
                 <span class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
                   <mat-icon>mail</mat-icon>
                   @if (mailboxUnread() > 0) {
-                    <span class="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-[#007979] px-1.5 text-center text-[11px] font-bold leading-5 text-white">
+                    <span class="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-[color:var(--zb-accent,#007979)] px-1.5 text-center text-[11px] font-bold leading-5 text-white">
                       {{ mailboxUnread() > 99 ? '99+' : mailboxUnread() }}
                     </span>
                   }
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Communication' | t }}</span>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">{{ 'Communication' | t }}</span>
                   <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Mailbox' | t }}</span>
                   <span class="mt-1 block break-all text-sm text-gray-600">
                     {{ mailboxAddress() ? ('Send and receive email at {0}.' | t: [mailboxAddress()]) : ('Send and receive email.' | t) }}
                   </span>
                 </span>
               </span>
-              <mat-icon class="shrink-0 text-[#007979]">arrow_forward</mat-icon>
+              <mat-icon class="shrink-0 text-[color:var(--zb-accent,#007979)]">arrow_forward</mat-icon>
             </a>
           }
 
           </div>
+
+          <!-- APPEARANCE: the dashboard accent color (owners and administrators) -->
+          @if (canManageOrganization()) {
+            <section id="organization-appearance" class="mb-8 scroll-mt-24 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              <!-- Header: shows or hides the color picker (hidden by default; opened by ?section=appearance) -->
+              <button
+                type="button"
+                class="flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition hover:bg-gray-50 sm:px-6"
+                [attr.aria-expanded]="appearanceExpanded()"
+                aria-controls="organization-appearance-panel"
+                (click)="appearanceExpanded.set(!appearanceExpanded())"
+              >
+                <span class="flex min-w-0 items-center gap-3">
+                  <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white" [style.background]="accentPreset(savedAccent()).base" aria-hidden="true">
+                    <mat-icon>palette</mat-icon>
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block text-lg font-bold text-gray-900">{{ 'Appearance' | t }}</span>
+                    <span class="mt-0.5 block text-sm text-gray-500">
+                      {{ 'Color: {0}' | t: [(accentPreset(savedAccent()).label | t)] }} ·
+                      {{ 'Background: {0}' | t: [(backgroundPreset(savedBackground()).label | t)] }} ·
+                      {{ (branding.logoUrl() ? 'Logo uploaded' : 'No logo') | t }}
+                    </span>
+                  </span>
+                </span>
+                <span class="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-[color:var(--zb-accent,#007979)]">
+                  <span class="max-sm:sr-only">{{ (appearanceExpanded() ? 'Hide' : 'Show') | t }}</span>
+                  <mat-icon aria-hidden="true">{{ appearanceExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </span>
+              </button>
+
+              @if (appearanceExpanded()) {
+              <div id="organization-appearance-panel" class="border-t border-gray-200 px-5 pb-5 pt-4 sm:px-6">
+              <!-- Logo -->
+              <div class="mb-5 flex flex-wrap items-center gap-4 border-b border-gray-100 pb-5">
+                <span class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                  @if (branding.logoUrl(); as logo) {
+                    <img [src]="logo" [alt]="'Organization logo' | t" class="h-full w-full object-contain p-1" />
+                  } @else {
+                    <mat-icon class="text-gray-400" aria-hidden="true">business</mat-icon>
+                  }
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="font-semibold text-gray-900">{{ 'Logo' | t }}</p>
+                  <p class="text-sm text-gray-500">{{ 'PNG, JPEG or WebP, up to 5 MB. A square image works best; it is resized to 256 pixels.' | t }}</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <label
+                    class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 px-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                    [class.pointer-events-none]="logoBusy()"
+                    [class.opacity-60]="logoBusy()"
+                  >
+                    <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">upload</mat-icon>
+                    {{ (logoBusy() ? 'Uploading...' : branding.logoUrl() ? 'Replace logo' : 'Upload logo') | t }}
+                    <input type="file" class="sr-only" [accept]="logoTypes" [disabled]="logoBusy()" (change)="onLogoPicked($event)" />
+                  </label>
+                  @if (branding.logoUrl()) {
+                    <button
+                      type="button"
+                      (click)="removeLogo()"
+                      [disabled]="logoBusy()"
+                      class="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60"
+                    >
+                      <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">delete</mat-icon>
+                      {{ 'Remove' | t }}
+                    </button>
+                  }
+                </div>
+                @if (logoMessage(); as message) {
+                  <p class="w-full text-sm" [class]="message.error ? 'text-rose-700' : 'text-emerald-700'" role="status">{{ message.text | t }}</p>
+                }
+              </div>
+
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <p class="text-sm text-gray-500">{{ 'Choose the color and page background members see on every page of your organization.' | t }}</p>
+                <button
+                  mat-flat-button
+                  type="button"
+                  class="!bg-[color:var(--zb-accent,#007979)] !text-white"
+                  [disabled]="(accent() === savedAccent() && background() === savedBackground()) || savingAccent()"
+                  (click)="saveAccent()"
+                >
+                  {{ savingAccent() ? ('Saving...' | t) : ('Save' | t) }}
+                </button>
+              </div>
+
+              <div role="radiogroup" [attr.aria-label]="'Accent color' | t" class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                @for (preset of accentPresets; track preset.key) {
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="accent() === preset.key"
+                    (click)="accent.set(preset.key)"
+                    class="flex items-center gap-2 rounded-xl border p-2.5 text-left text-sm transition"
+                    [class]="accent() === preset.key ? 'border-gray-900 ring-2 ring-gray-900/20' : 'border-gray-200 hover:border-gray-400'"
+                  >
+                    <span
+                      class="h-8 w-8 shrink-0 rounded-lg"
+                      [style.background]="'linear-gradient(135deg, ' + preset.base + ', ' + preset.end + ')'"
+                      aria-hidden="true"
+                    ></span>
+                    <span class="min-w-0 flex-1 truncate font-medium text-gray-800">{{ preset.label | t }}</span>
+                    @if (accent() === preset.key) {
+                      <mat-icon class="!h-5 !w-5 !text-[20px] text-gray-900" aria-hidden="true">check_circle</mat-icon>
+                    }
+                  </button>
+                }
+              </div>
+
+              <!-- Page background -->
+              <p class="mt-5 text-sm font-semibold text-gray-900">{{ 'Page background' | t }}</p>
+              <div role="radiogroup" [attr.aria-label]="'Page background' | t" class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                @for (preset of backgroundPresets; track preset.key) {
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="background() === preset.key"
+                    (click)="background.set(preset.key)"
+                    class="flex items-center gap-2 rounded-xl border p-2.5 text-left text-sm transition"
+                    [class]="background() === preset.key ? 'border-gray-900 ring-2 ring-gray-900/20' : 'border-gray-200 hover:border-gray-400'"
+                  >
+                    <span class="h-8 w-8 shrink-0 rounded-lg border border-gray-300" [style.background]="backgroundColor(preset.key)" aria-hidden="true"></span>
+                    <span class="min-w-0 flex-1 truncate font-medium text-gray-800">{{ preset.label | t }}</span>
+                    @if (background() === preset.key) {
+                      <mat-icon class="!h-5 !w-5 !text-[20px] text-gray-900" aria-hidden="true">check_circle</mat-icon>
+                    }
+                  </button>
+                }
+              </div>
+              <p class="mt-2 text-xs text-gray-500">{{ 'Only light shades are offered, so titles and text on the page stay readable.' | t }}</p>
+
+              <!-- Preview: the dashboard header band and a card -->
+              <div class="mt-4 overflow-hidden rounded-xl border border-gray-200" aria-hidden="true">
+                <div class="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-white" [style.background]="'linear-gradient(to right, ' + accentPreview().base + ', ' + accentPreview().dark + ', ' + accentPreview().end + ')'">
+                  @if (branding.logoUrl(); as logo) {
+                    <img [src]="logo" alt="" class="h-7 w-7 rounded-md bg-white object-contain p-0.5" />
+                  }
+                  {{ organizationStore.selectedOrganization()?.name ?? ('Your organization' | t) }}
+                </div>
+                <div class="p-3" [style.background]="backgroundColor(background())">
+                <div class="flex items-center gap-3 rounded-lg bg-white p-3 shadow-sm">
+                  <span class="flex h-10 w-10 items-center justify-center rounded-xl text-white" [style.background]="accentPreview().base">
+                    <mat-icon>school</mat-icon>
+                  </span>
+                  <span class="text-sm font-semibold" [style.color]="accentPreview().base">{{ 'Learning' | t }}</span>
+                </div>
+                </div>
+              </div>
+
+              @if (accentMessage(); as message) {
+                <p class="mt-3 text-sm" [class]="message.error ? 'text-rose-700' : 'text-emerald-700'" role="status">{{ message.text | t }}</p>
+              } @else {
+                <p class="mt-3 text-xs text-gray-500">{{ 'Every color keeps text readable.' | t }}</p>
+              }
+              </div>
+              }
+            </section>
+          }
 
           <!-- APPLICATION SETTINGS: the same pages as the gears on the dashboard cards -->
           @if (applicationSettings().length) {
@@ -328,10 +489,10 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                 @for (item of applicationSettings(); track item.id) {
                   <a
                     [routerLink]="item.route"
-                    class="flex h-full items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979]/40 hover:shadow-md"
+                    class="flex h-full items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)]/40 hover:shadow-md"
                   >
                     <span class="flex min-w-0 items-center gap-3">
-                      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-[#007979]">
+                      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-[color:var(--zb-accent,#007979)]">
                         <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
                       </span>
                       <span class="min-w-0">
@@ -339,7 +500,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                         <span class="mt-0.5 block text-sm text-gray-600">{{ item.description | t }}</span>
                       </span>
                     </span>
-                    <mat-icon class="shrink-0 text-[#007979]" aria-hidden="true">settings</mat-icon>
+                    <mat-icon class="shrink-0 text-[color:var(--zb-accent,#007979)]" aria-hidden="true">settings</mat-icon>
                   </a>
                 }
               </div>
@@ -361,12 +522,12 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                     <mat-icon>campaign</mat-icon>
                   </span>
                   <span class="min-w-0">
-                    <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Communication' | t }}</span>
+                    <span class="block text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">{{ 'Communication' | t }}</span>
                     <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Dashboard Banners' | t }}</span>
                     <span class="mt-1 block text-sm text-gray-600">{{ 'Announce events, new cohorts, graduations and student shout-outs.' | t }}</span>
                   </span>
                 </span>
-                <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[#007979]">
+                <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[color:var(--zb-accent,#007979)]">
                   <span class="hidden sm:inline">{{ announcementsExpanded() ? ('Collapse' | t) : ('Expand' | t) }}</span>
                   <mat-icon>{{ announcementsExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
                 </span>
@@ -388,16 +549,16 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
               (click)="toggleAccessControl()"
             >
               <span class="flex min-w-0 items-center gap-3">
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-[#007979]">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-[color:var(--zb-accent,#007979)]">
                   <mat-icon>admin_panel_settings</mat-icon>
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Access Control' | t }}</span>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">{{ 'Access Control' | t }}</span>
                   <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Staff & Access Management' | t }}</span>
                   <span class="mt-1 block text-sm text-gray-600">{{ 'Manage roles, invitations, and organization access.' | t }}</span>
                 </span>
               </span>
-              <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[#007979]">
+              <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[color:var(--zb-accent,#007979)]">
                 <span class="hidden sm:inline">{{ accessControlExpanded() ? ('Collapse' | t) : ('Expand' | t) }}</span>
                 <mat-icon>{{ accessControlExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
               </span>
@@ -407,7 +568,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
               <div id="organization-access-control-panel" class="border-t border-gray-100 p-5 sm:p-6">
                 @if (canManageMembers()) {
                   <div class="mb-5 flex justify-end">
-                    <button mat-flat-button class="!bg-[#007979] !text-white" type="button" (click)="toggleInviteForm()">
+                    <button mat-flat-button class="!bg-[color:var(--zb-accent,#007979)] !text-white" type="button" (click)="toggleInviteForm()">
                       <mat-icon>{{ inviteFormVisible() ? 'close' : 'person_add' }}</mat-icon>
                       {{ inviteFormVisible() ? ('Cancel invitation' | t) : ('Invite member' | t) }}
                     </button>
@@ -438,7 +599,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                 <section class="mt-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                   <div class="flex items-start gap-3">
                     <div
-                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-[#007979]"
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-[color:var(--zb-accent,#007979)]"
                     >
                       <mat-icon>mail</mat-icon>
                     </div>
@@ -510,7 +671,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                         mat-flat-button
                         type="submit"
                         [disabled]="sendingInvitation()"
-                        class="!bg-[#007979] !text-white"
+                        class="!bg-[color:var(--zb-accent,#007979)] !text-white"
                       >
                         <mat-icon>
                           {{ sendingInvitation() ? 'hourglass_top' : 'send' }}
@@ -535,7 +696,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
               <!-- MEMBERSHIP SUMMARY -->
 
               <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" [attr.aria-label]="'Membership summary filters' | t">
-                <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#007979]" [class.border-[#007979]]="summaryFilter() === 'all'" [class.ring-2]="summaryFilter() === 'all'" [class.ring-teal-100]="summaryFilter() === 'all'" [attr.aria-pressed]="summaryFilter() === 'all'" (click)="selectSummaryFilter('all')">
+                <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[color:var(--zb-accent,#007979)]" [class.border-[color:var(--zb-accent,#007979)]]="summaryFilter() === 'all'" [class.ring-2]="summaryFilter() === 'all'" [class.ring-teal-100]="summaryFilter() === 'all'" [attr.aria-pressed]="summaryFilter() === 'all'" (click)="selectSummaryFilter('all')">
                   <div
                     class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700"
                   >
@@ -549,7 +710,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                   </p>
                 </button>
 
-                <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#007979]" [class.border-[#007979]]="summaryFilter() === 'active'" [class.ring-2]="summaryFilter() === 'active'" [class.ring-teal-100]="summaryFilter() === 'active'" [attr.aria-pressed]="summaryFilter() === 'active'" (click)="selectSummaryFilter('active')">
+                <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[color:var(--zb-accent,#007979)]" [class.border-[color:var(--zb-accent,#007979)]]="summaryFilter() === 'active'" [class.ring-2]="summaryFilter() === 'active'" [class.ring-teal-100]="summaryFilter() === 'active'" [attr.aria-pressed]="summaryFilter() === 'active'" (click)="selectSummaryFilter('active')">
                   <div
                     class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700"
                   >
@@ -563,7 +724,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                   </p>
                 </button>
 
-                <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#007979]" [class.border-[#007979]]="summaryFilter() === 'administrators'" [class.ring-2]="summaryFilter() === 'administrators'" [class.ring-teal-100]="summaryFilter() === 'administrators'" [attr.aria-pressed]="summaryFilter() === 'administrators'" (click)="selectSummaryFilter('administrators')">
+                <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[color:var(--zb-accent,#007979)]" [class.border-[color:var(--zb-accent,#007979)]]="summaryFilter() === 'administrators'" [class.ring-2]="summaryFilter() === 'administrators'" [class.ring-teal-100]="summaryFilter() === 'administrators'" [attr.aria-pressed]="summaryFilter() === 'administrators'" (click)="selectSummaryFilter('administrators')">
                   <div
                     class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-violet-700"
                   >
@@ -577,7 +738,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                   </p>
                 </button>
 
-                <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#007979]" [class.border-[#007979]]="summaryFilter() === 'managers'" [class.ring-2]="summaryFilter() === 'managers'" [class.ring-teal-100]="summaryFilter() === 'managers'" [attr.aria-pressed]="summaryFilter() === 'managers'" (click)="selectSummaryFilter('managers')">
+                <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[color:var(--zb-accent,#007979)]" [class.border-[color:var(--zb-accent,#007979)]]="summaryFilter() === 'managers'" [class.ring-2]="summaryFilter() === 'managers'" [class.ring-teal-100]="summaryFilter() === 'managers'" [attr.aria-pressed]="summaryFilter() === 'managers'" (click)="selectSummaryFilter('managers')">
                   <div
                     class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700"
                   >
@@ -591,7 +752,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                   </p>
                 </button>
 
-                <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#007979] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#007979]" [class.border-[#007979]]="summaryFilter() === 'staff'" [class.ring-2]="summaryFilter() === 'staff'" [class.ring-teal-100]="summaryFilter() === 'staff'" [attr.aria-pressed]="summaryFilter() === 'staff'" (click)="selectSummaryFilter('staff')">
+                <button type="button" class="rounded-xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[color:var(--zb-accent,#007979)] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[color:var(--zb-accent,#007979)]" [class.border-[color:var(--zb-accent,#007979)]]="summaryFilter() === 'staff'" [class.ring-2]="summaryFilter() === 'staff'" [class.ring-teal-100]="summaryFilter() === 'staff'" [attr.aria-pressed]="summaryFilter() === 'staff'" (click)="selectSummaryFilter('staff')">
                   <div
                     class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-700"
                   >
@@ -667,7 +828,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                 <section
                   class="mt-5 rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm"
                 >
-                  <mat-icon class="!h-10 !w-10 !text-[40px] text-[#007979]">
+                  <mat-icon class="!h-10 !w-10 !text-[40px] text-[color:var(--zb-accent,#007979)]">
                     progress_activity
                   </mat-icon>
 
@@ -744,7 +905,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                                   [routerLink]="memberProfileRoute(member)"
                                   [attr.aria-label]="'View profile of ' + memberName(member)"
                                   [title]="'View profile' | t"
-                                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-100 font-semibold text-gray-600 transition hover:bg-teal-50 hover:text-[#007979] hover:ring-2 hover:ring-[#007979]/30 focus:outline-none focus:ring-2 focus:ring-[#007979]"
+                                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-100 font-semibold text-gray-600 transition hover:bg-teal-50 hover:text-[color:var(--zb-accent,#007979)] hover:ring-2 hover:ring-[color:var(--zb-accent,#007979)]/30 focus:outline-none focus:ring-2 focus:ring-[color:var(--zb-accent,#007979)]"
                                 >
                                   {{ initials(member) }}
                                 </a>
@@ -752,7 +913,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                                 <div class="min-w-0">
                                   <a
                                     [routerLink]="memberProfileRoute(member)"
-                                    class="block break-words text-sm font-semibold text-gray-900 hover:text-[#007979] hover:underline"
+                                    class="block break-words text-sm font-semibold text-gray-900 hover:text-[color:var(--zb-accent,#007979)] hover:underline"
                                   >
                                     {{ memberName(member) }}
                                   </a>
@@ -803,7 +964,7 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                                   </button>
                                 } @else {
                                   <span
-                                    class="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-[#007979]"
+                                    class="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-[color:var(--zb-accent,#007979)]"
                                   >
                                     {{ roleLabel(member.role) | t }}
                                   </span>
@@ -849,12 +1010,12 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                   <mat-icon>groups</mat-icon>
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Learning & Development' | t }}</span>
+                  <span class="block text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">{{ 'Learning & Development' | t }}</span>
                   <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Organization Members' | t }}</span>
                   <span class="mt-1 block text-sm text-gray-600">{{ 'Browse regular members and open their learning dashboard.' | t }}</span>
                 </span>
               </span>
-              <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[#007979]">
+              <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[color:var(--zb-accent,#007979)]">
                 <span class="hidden sm:inline">{{ membersDirectoryExpanded() ? ('Collapse' | t) : ('Expand' | t) }}</span>
                 <mat-icon>{{ membersDirectoryExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
               </span>
@@ -914,12 +1075,12 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                             [routerLink]="memberProfileRoute(member)"
                             [attr.aria-label]="'View profile of ' + memberName(member)"
                             [title]="'View profile' | t"
-                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 font-semibold text-[#007979] transition hover:ring-2 hover:ring-[#007979]/30 focus:outline-none focus:ring-2 focus:ring-[#007979]"
+                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 font-semibold text-[color:var(--zb-accent,#007979)] transition hover:ring-2 hover:ring-[color:var(--zb-accent,#007979)]/30 focus:outline-none focus:ring-2 focus:ring-[color:var(--zb-accent,#007979)]"
                           >{{ initials(member) }}</a>
                           <div class="min-w-0">
                             <a
                               [routerLink]="memberProfileRoute(member)"
-                              class="block break-words text-sm font-semibold text-gray-900 hover:text-[#007979] hover:underline"
+                              class="block break-words text-sm font-semibold text-gray-900 hover:text-[color:var(--zb-accent,#007979)] hover:underline"
                             >{{ memberName(member) }}</a>
                             @if (memberEmail(member); as email) {
                               <p class="mt-1 break-all text-xs text-gray-500">{{ email }}</p>
@@ -964,12 +1125,12 @@ import { GroupFilter, TrainingGroupService } from '../../../training-groups/trai
                     <mat-icon>history</mat-icon>
                   </span>
                   <span class="min-w-0">
-                    <span class="block text-xs font-semibold uppercase tracking-wider text-[#007979]">{{ 'Security & compliance' | t }}</span>
+                    <span class="block text-xs font-semibold uppercase tracking-wider text-[color:var(--zb-accent,#007979)]">{{ 'Security & compliance' | t }}</span>
                     <span class="mt-1 block text-lg font-bold text-gray-900">{{ 'Audit Log' | t }}</span>
                     <span class="mt-1 block text-sm text-gray-600">{{ 'Every change made by your organization, by Zebron, and by the system.' | t }}</span>
                   </span>
                 </span>
-                <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[#007979]">
+                <span class="flex shrink-0 items-center gap-2 text-sm font-semibold text-[color:var(--zb-accent,#007979)]">
                   <span class="hidden sm:inline">{{ auditExpanded() ? ('Collapse' | t) : ('Expand' | t) }}</span>
                   <mat-icon>{{ auditExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
                 </span>
@@ -1138,6 +1299,117 @@ export class OrganizationManagementComponent implements OnInit {
   protected readonly canManageOrganization = computed(() =>
     this.access.can('organization.configure'),
   );
+
+  // ---------- Appearance (organizations/{id}/settings/branding) ----------
+  protected readonly branding = inject(OrganizationBrandingService);
+  protected readonly accentPresets = ACCENT_PRESETS;
+  protected readonly logoTypes = LOGO_TYPES.join(',');
+  protected readonly logoBusy = signal(false);
+  protected readonly logoMessage = signal<{ text: string; error: boolean } | null>(null);
+
+  protected async onLogoPicked(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    const organizationId = this.organizationStore.selectedOrganizationId();
+    if (!file || !organizationId) return;
+    this.logoBusy.set(true);
+    this.logoMessage.set(null);
+    try {
+      await this.branding.uploadLogo(organizationId, file);
+      this.logoMessage.set({ text: 'Logo saved. Your dashboard shows it now.', error: false });
+    } catch (error) {
+      const message = error instanceof Error && /PNG|5 MB|browser/.test(error.message)
+        ? error.message
+        : 'The logo could not be uploaded. Try again.';
+      this.logoMessage.set({ text: message, error: true });
+    } finally {
+      this.logoBusy.set(false);
+    }
+  }
+
+  protected async removeLogo(): Promise<void> {
+    const organizationId = this.organizationStore.selectedOrganizationId();
+    if (!organizationId) return;
+    this.logoBusy.set(true);
+    this.logoMessage.set(null);
+    try {
+      await this.branding.removeLogo(organizationId);
+      this.logoMessage.set({ text: 'Logo removed.', error: false });
+    } catch {
+      this.logoMessage.set({ text: 'The logo could not be removed. Try again.', error: true });
+    } finally {
+      this.logoBusy.set(false);
+    }
+  }
+  protected readonly accent = signal<string>(DEFAULT_ACCENT);
+  protected readonly savedAccent = signal<string>(DEFAULT_ACCENT);
+  protected readonly savingAccent = signal(false);
+  protected readonly accentMessage = signal<{ text: string; error: boolean } | null>(null);
+  protected readonly accentPreview = computed(() => accentPreset(this.accent()));
+  protected readonly accentPreset = accentPreset;
+  protected readonly backgroundPreset = backgroundPreset;
+  protected readonly backgroundPresets = BACKGROUND_PRESETS;
+  protected readonly background = signal<string>(DEFAULT_BACKGROUND);
+  protected readonly savedBackground = signal<string>(DEFAULT_BACKGROUND);
+  protected backgroundColor(key: string): string {
+    return pageBackground(this.accent(), key);
+  }
+  /** The page follows the organization's saved accent color (as the dashboard does). */
+  protected readonly accentStyle = computed(() => accentStyle(this.branding.accent(), this.branding.background()));
+  /**
+   * The Appearance card starts closed, except when opened from a link with
+   * ?section=appearance (Admin > Organizations > Appearance), which also
+   * scrolls to it once the page has loaded.
+   */
+  private readonly openAppearance = inject(ActivatedRoute).snapshot.queryParamMap.get('section') === 'appearance';
+  protected readonly appearanceExpanded = signal(this.openAppearance);
+  private appearanceScrolled = false;
+  private readonly scrollToAppearance = effect(() => {
+    if (!this.openAppearance || this.appearanceScrolled || !this.canManageOrganization()) return;
+    this.appearanceScrolled = true;
+    // The section appears once the organization has loaded: look for it for up to 5 seconds.
+    let tries = 0;
+    const scroll = () => {
+      const section = document.getElementById('organization-appearance');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (++tries < 20) {
+        setTimeout(scroll, 250);
+      }
+    };
+    setTimeout(scroll, 250);
+  });
+
+  private readonly loadAccent = effect(() => {
+    const organizationId = this.organizationStore.selectedOrganizationId();
+    if (!organizationId) return;
+    untracked(() => {
+      void this.branding.loadBranding(organizationId).then((branding) => {
+        this.savedAccent.set(branding.accent);
+        this.accent.set(branding.accent);
+        this.savedBackground.set(branding.background);
+        this.background.set(branding.background);
+      });
+    });
+  });
+
+  protected async saveAccent(): Promise<void> {
+    const organizationId = this.organizationStore.selectedOrganizationId();
+    if (!organizationId) return;
+    this.savingAccent.set(true);
+    this.accentMessage.set(null);
+    try {
+      await this.branding.save(organizationId, this.accent(), this.background());
+      this.savedAccent.set(this.accent());
+      this.savedBackground.set(this.background());
+      this.accentMessage.set({ text: 'Saved. Your organization pages use it now.', error: false });
+    } catch {
+      this.accentMessage.set({ text: 'The appearance could not be saved. Try again.', error: true });
+    } finally {
+      this.savingAccent.set(false);
+    }
+  }
 
   /** Invite people and change roles below your own: managers and above. */
   protected readonly canManageMembers = computed(() =>

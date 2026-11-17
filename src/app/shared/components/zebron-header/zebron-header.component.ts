@@ -386,9 +386,13 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
                     hover:text-white
                   "
                 >
-                  <mat-icon>
-                    account_circle
-                  </mat-icon>
+                  @if (photoUrl(); as photo) {
+                    <img [src]="photo" alt="" class="h-8 w-8 rounded-full object-cover ring-2 ring-white/30" referrerpolicy="no-referrer" />
+                  } @else {
+                    <mat-icon>
+                      account_circle
+                    </mat-icon>
+                  }
                 </a>
               } @else if (showSignIn()) {
                 <a
@@ -527,7 +531,11 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
           [attr.aria-label]="'Profile: ' + accountName()"
           title="View your profile"
         >
-          <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">account_circle</mat-icon>
+          @if (photoUrl(); as photo) {
+            <img [src]="photo" alt="" class="mr-2 h-[18px] w-[18px] rounded-full object-cover" referrerpolicy="no-referrer" />
+          } @else {
+            <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">account_circle</mat-icon>
+          }
           <span class="block max-w-48 truncate text-sm font-semibold">{{ accountName() }}</span>
         </button>
         <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="navigateTo('/notifications')">
@@ -608,6 +616,9 @@ export class ZebronHeaderComponent {
    */
   protected readonly isSignedIn =
     computed(() => this.authService.user() !== null);
+
+  /** The signed-in person's profile photo, if they have one. */
+  protected readonly photoUrl = computed(() => this.authService.user()?.photoUrl || null);
  
   /**
    * Show "Sign in" only after authentication state has

@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
 import { KNOWLEDGE_CONFIGURATION } from '../../../core/config/knowledge.config';
 import { KnowledgeAudience, KnowledgeContentType } from '../../../core/models/knowledge-article.model';
@@ -57,12 +58,12 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
   selector: 'app-organization-knowledge',
   standalone: true,
   imports: [
-    TranslatePipe,DatePipe, FormsModule, RouterLink, MatButtonModule, MatIconModule],
+    TranslatePipe,DatePipe, FormsModule, RouterLink, MatButtonModule, MatIconModule, MatMenuModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 pt-16">
       <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f]">
-        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-1 sm:px-6 lg:px-8">
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <h1 class="text-2xl font-bold text-white">{{ 'Knowledge Center' | t }}</h1>
@@ -75,17 +76,52 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               {{ 'Documentation, policies and procedures for {0} members, plus articles from Zebron.' | t: [organizationName()] }}
             </p>
           </div>
-          <div class="flex flex-wrap gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <a mat-stroked-button class="!border-white/40 !text-white" [routerLink]="['/partner/org', organizationId]">
               <mat-icon>arrow_back</mat-icon>
               {{ 'Dashboard' | t }}
             </a>
-            @if (canManage()) {
-              <a mat-flat-button class="!bg-white !text-[#007979]" [routerLink]="['/partner/org', organizationId, 'knowledge', 'manage']">
-                <mat-icon>settings</mat-icon>
-                {{ 'Manage articles' | t }}
-              </a>
-            }
+
+            <!-- More: layout and Manage articles -->
+            <button
+              mat-icon-button
+              type="button"
+              class="!text-white"
+              [matMenuTriggerFor]="moreMenu"
+              [attr.aria-label]="'More options' | t"
+              [title]="'More options' | t"
+            >
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #moreMenu="matMenu" xPosition="before">
+              <button mat-menu-item type="button" [matMenuTriggerFor]="viewMenu">
+                <mat-icon>view_quilt</mat-icon>
+                <span>{{ 'View' | t }}</span>
+              </button>
+              @if (canManage()) {
+                <div class="my-1 border-t border-gray-200" role="separator"></div>
+                <a mat-menu-item [routerLink]="['/partner/org', organizationId, 'knowledge', 'manage']">
+                  <mat-icon>settings</mat-icon>
+                  <span>{{ 'Manage articles' | t }}</span>
+                </a>
+              }
+            </mat-menu>
+            <mat-menu #viewMenu="matMenu">
+              <button mat-menu-item type="button" (click)="setView('cards')" [attr.aria-checked]="view() === 'cards'" role="menuitemradio">
+                <mat-icon>grid_view</mat-icon>
+                <span>{{ 'Cards' | t }}</span>
+                @if (view() === 'cards') {
+                  <mat-icon class="!ml-2 !mr-0 text-[#007979]" aria-hidden="true">check</mat-icon>
+                }
+              </button>
+              <button mat-menu-item type="button" (click)="setView('list')" [attr.aria-checked]="view() === 'list'" role="menuitemradio">
+                <mat-icon>view_list</mat-icon>
+                <span>{{ 'List' | t }}</span>
+                @if (view() === 'list') {
+                  <mat-icon class="!ml-2 !mr-0 text-[#007979]" aria-hidden="true">check</mat-icon>
+                }
+              </button>
+            </mat-menu>
           </div>
         </div>
       </header>
@@ -146,6 +182,40 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           </div>
         } @else {
           <p class="mt-6 text-sm text-gray-500">{{ '{0} article{1}' | t: [filtered().length, (filtered().length === 1 ? '' : 's')] }}</p>
+          @if (view() === 'list') {
+            <!-- List view: one row per article -->
+            <ul class="mt-3 divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              @for (article of filtered(); track article.source + article.id) {
+                <li>
+                  <a
+                    [routerLink]="['/partner/org', organizationId, 'knowledge', 'articles', article.source, article.id]"
+                    class="group flex items-center gap-3 px-4 py-3 transition hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50"
+                  >
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#007979]/10 text-[#007979]" aria-hidden="true">
+                      <mat-icon class="!h-5 !w-5 !text-[20px]">{{ typeIcon(article.contentType) }}</mat-icon>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-sm font-semibold text-gray-900 group-hover:text-[#007979]">{{ article.title }}</span>
+                      <span class="hidden truncate text-xs text-gray-500 sm:block">{{ excerpt(article) }}</span>
+                    </span>
+                    <span class="hidden shrink-0 items-center gap-2 text-xs md:flex">
+                      <span [class]="article.source === 'organization' ? 'inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-800' : 'rounded-full bg-sky-50 px-2 py-0.5 font-semibold text-sky-800'">
+                        @if (article.source === 'organization') {
+                          <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">lock</mat-icon>
+                          {{ 'Internal' | t }}
+                        } @else {
+                          {{ 'Zebron' | t }}
+                        }
+                      </span>
+                      <span class="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">{{ typeLabel(article.contentType) | t }}</span>
+                      <span class="w-24 text-right text-gray-500">{{ article.updatedAt | date: 'mediumDate' }}</span>
+                    </span>
+                    <mat-icon class="shrink-0 text-gray-400" aria-hidden="true">chevron_right</mat-icon>
+                  </a>
+                </li>
+              }
+            </ul>
+          } @else {
           <div class="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             @for (article of filtered(); track article.source + article.id) {
               <a
@@ -174,6 +244,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               </a>
             }
           </div>
+          }
         }
       </main>
     </div>
@@ -206,6 +277,27 @@ export class OrganizationKnowledgeComponent implements OnInit {
   );
 
   protected readonly canManage = computed(() => this.access.can('knowledge.manage'));
+
+  // ---------- Cards / list layout (remembered in this browser) ----------
+  private static readonly VIEW_KEY = 'zebron:knowledge-view';
+  protected readonly view = signal<'cards' | 'list'>(OrganizationKnowledgeComponent.readView());
+
+  private static readView(): 'cards' | 'list' {
+    try {
+      return typeof localStorage !== 'undefined' && localStorage.getItem(OrganizationKnowledgeComponent.VIEW_KEY) === 'list' ? 'list' : 'cards';
+    } catch {
+      return 'cards';
+    }
+  }
+
+  protected setView(view: 'cards' | 'list'): void {
+    this.view.set(view);
+    try {
+      localStorage.setItem(OrganizationKnowledgeComponent.VIEW_KEY, view);
+    } catch {
+      // Storage unavailable: the choice lasts for this visit.
+    }
+  }
 
   protected readonly typeOptions = computed(() => {
     const present = new Set(this.articles().map((article) => article.contentType));

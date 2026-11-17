@@ -46,7 +46,7 @@ type StatusTab = 'all' | TrainingGroupStatus | 'archived';
   template: `
     <main class="mt-16 min-h-screen bg-slate-50">
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-4 sm:px-6 lg:px-8">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-1 sm:px-6 lg:px-8">
           <a
             [routerLink]="['/partner/org', organizationId, 'dashboard']"
             class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/90 hover:bg-white/15 hover:text-white"

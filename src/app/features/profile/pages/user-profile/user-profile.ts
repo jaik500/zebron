@@ -1,12 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, effect, inject, OnInit, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { HotToastService } from '@ngxpert/hot-toast';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
-import { firestore } from '../../../../core/services/firebase-config';
+import { firebaseAuth } from '../../../../core/services/firebase-config';
 import { Organization } from '../../../../core/models/organization.model';
 import { OrganizationMembership } from '../../../../core/models/organization-membership.model';
 import { OrganizationMembershipRepository } from '../../../../core/repositories/firestore/organization-membership.repository';
@@ -23,6 +23,8 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
 
 import { CommunityFollowStore } from '../../../community/store/community-follow.store';
 import { CommunityUser } from '../../../community/models/community-user.model';
+import { ProfileLearningComponent } from '../../profile-learning.component';
+import { PROFILE_PHOTO_TYPES, ProfilePhotoService } from '../../profile-photo.service';
 
 @Component({
   selector: 'app-user-profile',
@@ -36,6 +38,7 @@ import { CommunityUser } from '../../../community/models/community-user.model';
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
+    ProfileLearningComponent,
   ],
 
   styles: [
@@ -52,35 +55,67 @@ import { CommunityUser } from '../../../community/models/community-user.model';
   ],
 
   template: `
-    <main class="mx-auto max-w-7xl p-6 sm:p-8 mt-9">
+    <div class="min-h-screen bg-gray-50 pt-16">
       <!-- =========================================================
-           Profile header
+           Profile header: the same full-width teal band as the
+           Knowledge Center, Learning and organization pages
            ========================================================= -->
-      <!-- Profile header -->
-      <section
-        class="rounded-2xl bg-[#2a835f]
-         px-6 py-3 text-white
-         shadow-sm sm:px-8"
-      >
+      <header class="border-b border-white/10 bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
         <div
-          class="flex flex-col gap-1
-           sm:flex-row sm:items-center
-           sm:justify-between"
+          class="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-1
+           sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
         >
           <!-- Profile identity -->
           <div class="flex min-w-0 items-center gap-3">
-            <!-- Avatar -->
-            <div
-              class="flex h-16 w-16 shrink-0
-           items-center justify-center
-           rounded-full bg-white/15
-           text-xl font-bold text-white
-           ring-2 ring-white/20"
-            >
-              @if (authService.user(); as user) {
-                {{ initials(user.preferredName || user.displayName || user.email) }}
-              } @else {
-                ?
+            <!-- Avatar: the photo (or initials) with a camera button to change it -->
+            <div class="relative shrink-0">
+              <div
+                class="flex h-16 w-16 items-center justify-center overflow-hidden
+             rounded-full bg-white/15
+             text-xl font-bold text-white
+             ring-2 ring-white/20"
+              >
+                @if (authService.user()?.photoUrl; as photo) {
+                  <img [src]="photo" alt="Your profile photo" class="h-full w-full object-cover" referrerpolicy="no-referrer" />
+                } @else if (authService.user(); as user) {
+                  {{ initials(user.preferredName || user.displayName || user.email) }}
+                } @else {
+                  ?
+                }
+                @if (photoBusy()) {
+                  <span class="absolute inset-0 flex items-center justify-center rounded-full bg-black/40" aria-hidden="true">
+                    <span class="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                  </span>
+                }
+              </div>
+              @if (authService.user()) {
+                <button
+                  type="button"
+                  (click)="photoMenuOpen.set(!photoMenuOpen())"
+                  [disabled]="photoBusy()"
+                  [attr.aria-expanded]="photoMenuOpen()"
+                  aria-label="Change profile photo"
+                  title="Change profile photo"
+                  class="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#032D42] shadow ring-2 ring-[#032D42]/10 transition hover:bg-gray-100 disabled:opacity-60"
+                >
+                  <mat-icon class="!h-4 !w-4 !text-[16px]" aria-hidden="true">photo_camera</mat-icon>
+                </button>
+                @if (photoMenuOpen()) {
+                  <div class="absolute left-0 top-full z-20 mt-2 w-56 rounded-xl border border-gray-200 bg-white p-1.5 text-sm shadow-lg">
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 font-medium text-gray-800 hover:bg-gray-50">
+                      <mat-icon class="!h-[18px] !w-[18px] !text-[18px] text-[#007979]" aria-hidden="true">upload</mat-icon>
+                      {{ authService.user()?.photoUrl ? 'Replace photo' : 'Upload photo' }}
+                      <input type="file" class="sr-only" [accept]="photoTypes" (change)="onPhotoPicked($event)" />
+                    </label>
+                    @if (authService.user()?.photoUrl) {
+                      <button type="button" (click)="removePhoto()" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-medium text-rose-700 hover:bg-rose-50">
+                        <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">delete</mat-icon>
+                        Remove photo
+                      </button>
+                    }
+                    <p class="px-3 pb-1 pt-1 text-xs text-gray-500">PNG, JPEG or WebP, up to 5 MB. Cropped to a square.</p>
+                  </div>
+                }
               }
             </div>
 
@@ -99,7 +134,7 @@ import { CommunityUser } from '../../../community/models/community-user.model';
 
                 <p
                   class="mt-1 truncate
-               text-sm text-blue-100"
+               text-sm text-white/80"
                 >
                   {{ user.email }}
                 </p>
@@ -142,9 +177,9 @@ Mobile: Save icon only
             class=" flex w-full items-center justify-end gap-2
          sm:w-auto"
           >
-            <!-- Back to resources -->
+            <!-- My learning -->
             <a
-              routerLink="/resources"
+              routerLink="/courses"
               class="hidden sm:inline-flex shrink-0
            items-center justify-center
            gap-2 rounded-lg
@@ -157,12 +192,12 @@ Mobile: Save icon only
            focus:ring-2
            focus:ring-white/40"
             >
-              ← Back to resources
+              My learning
             </a>
 
             <!-- Home - desktop only -->
             <a
-              routerLink="/resources"
+              routerLink="/"
               class="hidden sm:inline-flex shrink-0
            items-center justify-center
            gap-2 rounded-lg
@@ -202,16 +237,18 @@ Mobile: Save icon only
             </button>
           </div>
         </div>
-      </section>
+      </header>
+
+    <!-- Phones: content runs wall to wall; from tablets up it sits in rounded cards. -->
+    <main class="mx-auto max-w-7xl sm:px-6 sm:py-6 lg:px-8">
 
       <!-- =========================================================
            Loading state
            ========================================================= -->
       @if (authService.isLoading()) {
         <section
-          class="mt-6 rounded-2xl
-                 border border-gray-200
-                 bg-white p-8 shadow-sm"
+          class="border-b border-gray-200 bg-white p-8
+                 sm:mt-6 sm:rounded-2xl sm:border sm:shadow-sm"
         >
           <div class="flex items-center gap-3">
             <div
@@ -230,7 +267,7 @@ Mobile: Save icon only
            Profile workspace
            ========================================================= -->
       @if (!authService.isLoading() && authService.user(); as user) {
-        <section class="mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <section class="overflow-hidden border-b border-gray-200 bg-white sm:mt-6 sm:rounded-2xl sm:border sm:shadow-sm">
           <!-- =======================================================
                Horizontal profile tabs
                ======================================================= -->
@@ -249,7 +286,7 @@ Mobile: Save icon only
                 Personal Info
               </button>
 
-              @if (showLearningAndOrganizations()) {
+              @if (authService.user()) {
                 <button
                   type="button"
                   (click)="setActiveTab('learning')"
@@ -260,7 +297,7 @@ Mobile: Save icon only
                   [class.text-gray-500]="activeTab() !== 'learning'"
                   class="whitespace-nowrap border-b-2 px-4 py-4 text-sm font-semibold transition hover:text-[#032D42] focus:outline-none focus:ring-2 focus:ring-[#007979]/20 sm:px-5"
                 >
-                  Learning Dashboard
+                  Learning
                 </button>
               }
 
@@ -308,7 +345,7 @@ Mobile: Save icon only
                 </button>
               }
 
-              @if (showLearningAndOrganizations()) {
+              @if (hasOrganizationMembership()) {
                 <button
                   type="button"
                   (click)="setActiveTab('organizations')"
@@ -345,14 +382,13 @@ Mobile: Save icon only
           @if (activeTab() === 'personal') {
             <div class="p-0">
               <section
-                class="overflow-hidden rounded-2xl
-                   border border-gray-200
-                   bg-white shadow-sm"
+                class="overflow-hidden bg-white
+                   sm:rounded-2xl sm:border sm:border-gray-200 sm:shadow-sm"
               >
                 <!-- Section heading -->
                 <div
                   class="border-b border-gray-200
-                     bg-gray-50/60 p-6 sm:p-8"
+                     bg-gray-50/60 px-6 py-2 sm:px-8 sm:py-4"
                 >
                   <p
                     class="text-xs font-semibold
@@ -363,7 +399,7 @@ Mobile: Save icon only
                   </p>
 
                   <h2
-                    class="mt-1 text-xl font-semibold
+                    class=" text-xl font-semibold
                        text-[#032D42]"
                   >
                     Account details
@@ -777,111 +813,11 @@ Mobile: Save icon only
           }
 
           <!-- =======================================================
-               Learning Dashboard
+               Learning: courses, certificates, certifications,
+               career path and test results (ProfileLearningComponent)
                ======================================================= -->
-          @if (activeTab() === 'learning' && showLearningAndOrganizations()) {
-            <div class="p-6 sm:p-8">
-              <div class="max-w-3xl">
-                <p class="text-xs font-semibold uppercase tracking-wide text-[#007979]">
-                  Learning dashboard
-                </p>
-                <h2 class="mt-1 text-2xl font-semibold tracking-tight text-[#032D42]">
-                  Your learning journey
-                </h2>
-                <p class="mt-2 text-sm leading-6 text-gray-500">
-                  Track your progress, assessments, and learning activity from one place.
-                </p>
-              </div>
-
-              <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                  <p class="text-sm font-medium text-gray-500">Courses started</p>
-                  <p class="mt-2 text-3xl font-bold text-[#032D42]">0</p>
-                  <p class="mt-1 text-xs text-gray-500">Your active learning</p>
-                </div>
-                <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                  <p class="text-sm font-medium text-gray-500">Completed</p>
-                  <p class="mt-2 text-3xl font-bold text-[#032D42]">0</p>
-                  <p class="mt-1 text-xs text-gray-500">Courses completed</p>
-                </div>
-                <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                  <p class="text-sm font-medium text-gray-500">Tests taken</p>
-                  <p class="mt-2 text-3xl font-bold text-[#032D42]">0</p>
-                  <p class="mt-1 text-xs text-gray-500">Test Center activity</p>
-                </div>
-                <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                  <p class="text-sm font-medium text-gray-500">Learning streak</p>
-                  <p class="mt-2 text-3xl font-bold text-[#032D42]">0</p>
-                  <p class="mt-1 text-xs text-gray-500">Days in a row</p>
-                </div>
-              </div>
-
-              <div class="mt-6 grid gap-6 lg:grid-cols-2">
-                <section class="rounded-2xl border border-gray-200 bg-white p-6">
-                  <div class="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 class="text-base font-semibold text-[#032D42]">Continue learning</h3>
-                      <p class="mt-1 text-sm text-gray-500">
-                        Your recently started courses will appear here.
-                      </p>
-                    </div>
-                    <span
-                      class="rounded-full bg-[#007979]/10 px-3 py-1 text-xs font-semibold text-[#007979]"
-                    >
-                      Coming soon
-                    </span>
-                  </div>
-                  <div
-                    class="mt-5 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-5 text-sm text-gray-500"
-                  >
-                    No learning activity yet. Start a course or practice assessment to build your
-                    dashboard.
-                  </div>
-                </section>
-
-                <section class="rounded-2xl border border-gray-200 bg-white p-6">
-                  <div class="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 class="text-base font-semibold text-[#032D42]">Recommended next steps</h3>
-                      <p class="mt-1 text-sm text-gray-500">
-                        Personalized learning recommendations will appear here.
-                      </p>
-                    </div>
-                    <span
-                      class="rounded-full bg-[#007979]/10 px-3 py-1 text-xs font-semibold text-[#007979]"
-                    >
-                      Coming soon
-                    </span>
-                  </div>
-                  <div class="mt-5 space-y-3">
-                    <a
-                      routerLink="/test-center"
-                      class="flex items-center justify-between rounded-xl border border-gray-200 p-4 transition hover:border-[#007979]/40 hover:bg-gray-50"
-                    >
-                      <div>
-                        <p class="text-sm font-semibold text-[#032D42]">Explore Test Center</p>
-                        <p class="mt-1 text-xs text-gray-500">
-                          Practice and assess your knowledge.
-                        </p>
-                      </div>
-                      <span class="text-[#007979]" aria-hidden="true">→</span>
-                    </a>
-                    <a
-                      routerLink="/resources"
-                      class="flex items-center justify-between rounded-xl border border-gray-200 p-4 transition hover:border-[#007979]/40 hover:bg-gray-50"
-                    >
-                      <div>
-                        <p class="text-sm font-semibold text-[#032D42]">Explore Resources</p>
-                        <p class="mt-1 text-xs text-gray-500">
-                          Find resources to support your goals.
-                        </p>
-                      </div>
-                      <span class="text-[#007979]" aria-hidden="true">→</span>
-                    </a>
-                  </div>
-                </section>
-              </div>
-            </div>
+          @if (activeTab() === 'learning') {
+            <app-profile-learning />
           }
 
           <!-- =======================================================
@@ -1067,7 +1003,7 @@ Mobile: Save icon only
           <!-- =======================================================
                 My Organizations
                 ======================================================= -->
-          @if (activeTab() === 'organizations' && showLearningAndOrganizations()) {
+          @if (activeTab() === 'organizations' && hasOrganizationMembership()) {
             <div class="p-6 sm:p-8">
               <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -1398,10 +1334,8 @@ Mobile: Save icon only
            ========================================================= -->
       @if (!authService.isLoading() && !authService.user()) {
         <section
-          class="mt-6 rounded-2xl
-                 border border-gray-200
-                 bg-white p-8 text-center
-                 shadow-sm"
+          class="border-b border-gray-200 bg-white p-8 text-center
+                 sm:mt-6 sm:rounded-2xl sm:border sm:shadow-sm"
         >
           <h2
             class="text-lg font-semibold
@@ -1426,6 +1360,7 @@ Mobile: Save icon only
         </section>
       }
     </main>
+    </div>
   `,
 })
 export class UserProfileComponent implements OnInit {
@@ -1499,10 +1434,7 @@ export class UserProfileComponent implements OnInit {
   protected readonly organizations = signal<
     Array<{ membership: OrganizationMembership; organization: Organization | null }>
   >([]);
-  protected readonly hasCourseEnrollment = signal(false);
   protected readonly hasOrganizationMembership = signal(false);
-  protected readonly showLearningAndOrganizations = () =>
-    this.hasCourseEnrollment() || this.hasOrganizationMembership();
 
   // Controls the additional navigation menu.
   protected readonly showMoreMenu = signal(false);
@@ -1510,10 +1442,64 @@ export class UserProfileComponent implements OnInit {
   // Controls the active profile tab. Personal Info is the default view.
   protected readonly activeTab = signal<
     'personal' | 'learning' | 'followers' | 'following' | 'organizations' | 'settings'
-  >('personal');
+  >(initialTab(inject(ActivatedRoute).snapshot.queryParamMap.get('tab')));
+
+  // ---------- Profile photo ----------
+  private readonly profilePhoto = inject(ProfilePhotoService);
+  protected readonly photoTypes = PROFILE_PHOTO_TYPES.join(',');
+  protected readonly photoBusy = signal(false);
+  protected readonly photoMenuOpen = signal(false);
+
+  protected async onPhotoPicked(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    this.photoMenuOpen.set(false);
+    if (!file) return;
+    this.photoBusy.set(true);
+    try {
+      await this.profilePhoto.upload(file);
+      this.toast.success('Profile photo updated.');
+    } catch (error) {
+      const message = error instanceof Error && /PNG|5 MB|browser|loaded/.test(error.message)
+        ? error.message
+        : 'Your photo could not be uploaded. Try again.';
+      this.toast.error(message);
+    } finally {
+      this.photoBusy.set(false);
+    }
+  }
+
+  protected async removePhoto(): Promise<void> {
+    this.photoMenuOpen.set(false);
+    this.photoBusy.set(true);
+    try {
+      await this.profilePhoto.remove();
+      this.toast.success('Profile photo removed.');
+    } catch {
+      this.toast.error('Your photo could not be removed. Try again.');
+    } finally {
+      this.photoBusy.set(false);
+    }
+  }
+
+  /** The form is filled once per signed-in person, as soon as their profile loads. */
+  private filledForUserId: string | null = null;
 
   constructor() {
     this.pageTitleService.setTitle('My Profile');
+
+    // The profile often loads after this page opens (a refresh, a direct
+    // link). Fill the form when it arrives; filling only in ngOnInit left
+    // the form empty, and saving it then erased the person's details.
+    effect(() => {
+      const user = this.authService.user();
+      if (!user || user.id === this.filledForUserId) {
+        return;
+      }
+      this.filledForUserId = user.id;
+      untracked(() => this.fillForm());
+    });
   }
 
   // =============================================================
@@ -1521,6 +1507,10 @@ export class UserProfileComponent implements OnInit {
   // =============================================================
 
   ngOnInit(): void {
+    // The form is filled by the effect in the constructor.
+  }
+
+  private fillForm(): void {
     const user = this.authService.user();
 
     if (!user) {
@@ -1586,7 +1576,6 @@ export class UserProfileComponent implements OnInit {
     if (!user?.id) {
       this.organizations.set([]);
       this.hasOrganizationMembership.set(false);
-      this.hasCourseEnrollment.set(false);
       return;
     }
 
@@ -1594,10 +1583,7 @@ export class UserProfileComponent implements OnInit {
     this.organizationError.set(null);
 
     try {
-      const [memberships, enrolled] = await Promise.all([
-        this.membershipRepository.getMembershipsForUser(user.id),
-        this.checkCourseEnrollment(user.id),
-      ]);
+      const memberships = await this.membershipRepository.getMembershipsForUser(user.id);
 
       const activeMemberships = memberships.filter((membership) => membership.active);
       const entries = await Promise.all(
@@ -1621,12 +1607,8 @@ export class UserProfileComponent implements OnInit {
 
       this.organizations.set(entries);
       this.hasOrganizationMembership.set(activeMemberships.length > 0);
-      this.hasCourseEnrollment.set(enrolled);
 
-      if (
-        !this.showLearningAndOrganizations() &&
-        (this.activeTab() === 'learning' || this.activeTab() === 'organizations')
-      ) {
+      if (!activeMemberships.length && this.activeTab() === 'organizations') {
         this.activeTab.set('personal');
       }
     } catch (error: unknown) {
@@ -1637,31 +1619,6 @@ export class UserProfileComponent implements OnInit {
       );
     } finally {
       this.loadingOrganizations.set(false);
-    }
-  }
-
-  /**
-   * Looks up enrollment records scoped to the signed-in user.
-   * Expected collection: `courseEnrollments`, with a `userId` field.
-   */
-  private async checkCourseEnrollment(userId: string): Promise<boolean> {
-    try {
-      const enrollmentQuery = query(
-        collection(firestore, 'courseEnrollments'),
-        where('userId', '==', userId),
-      );
-      const snapshot = await getDocs(enrollmentQuery);
-      return snapshot.docs.some((enrollment) => {
-        const data = enrollment.data() as Record<string, unknown>;
-        return (
-          data['status'] !== 'cancelled' &&
-          data['status'] !== 'withdrawn' &&
-          data['active'] !== false
-        );
-      });
-    } catch (error) {
-      console.warn('Unable to check course enrollment for profile tabs.', error);
-      return false;
     }
   }
 
@@ -1779,6 +1736,10 @@ export class UserProfileComponent implements OnInit {
         bio: this.bio,
 
         website: this.website,
+
+        // Keep the current photo: leaving it out saved an empty address and
+        // erased uploaded and Google photos on every save.
+        photoUrl: this.authService.user()?.photoUrl ?? '',
       });
 
       this.toast.success('Profile updated successfully.');
@@ -1814,7 +1775,13 @@ export class UserProfileComponent implements OnInit {
       return;
     }
 
-    this.toast.success('Password reset instructions will be sent to your email.');
+    try {
+      await sendPasswordResetEmail(firebaseAuth, user.email);
+      this.toast.success(`We sent a link to ${user.email} to set a new password.`);
+    } catch (error) {
+      console.error('Failed to send the password reset email:', error);
+      this.toast.error('The password reset email could not be sent. Try again later.');
+    }
   }
 
   // =============================================================
@@ -1901,4 +1868,9 @@ export class UserProfileComponent implements OnInit {
   protected closeMoreMenu(): void {
     this.showMoreMenu.set(false);
   }
+}
+
+/** Profile tabs a link can open with ?tab=…; anything else opens Personal Info. */
+function initialTab(value: string | null): 'personal' | 'learning' | 'followers' | 'following' | 'organizations' | 'settings' {
+  return value === 'learning' || value === 'settings' || value === 'organizations' ? value : 'personal';
 }

@@ -3,8 +3,10 @@ import {
   Component,
   DestroyRef,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 
 import {
@@ -22,6 +24,7 @@ import { LocalizationService } from './core/services/localization.service';
 import { ClaimsSyncService } from './core/services/claims-sync.service';
 import { AuthService } from './core/services/auth.service';
 import { SupportAssistantComponent } from './features/support/assistant/support-assistant.component';
+import { OrganizationBrandingService } from './features/partner/branding/organization-branding';
 
 @Component({
   selector: 'app-root',
@@ -81,6 +84,7 @@ export class App {
   private readonly destroyRef = inject(DestroyRef);
   private readonly localization = inject(LocalizationService);
   private readonly claimsSync = inject(ClaimsSyncService);
+  private readonly branding = inject(OrganizationBrandingService);
 
   /**
    * Controls whether the global header is displayed.
@@ -114,6 +118,16 @@ export class App {
 
     // Keep roles on the sign-in token current (browser only).
     this.claimsSync.start();
+
+    // Organization pages use the organization's color and background
+    // (Settings > Appearance); every other page keeps Zebron's look.
+    // Also re-applied when the person signs in, since reading an
+    // organization's branding needs a signed-in member.
+    effect(() => {
+      const organizationId = this.assistantOrganizationId();
+      this.auth.firebaseUser();
+      untracked(() => void this.branding.applyTheme(organizationId));
+    });
 
     this.router.events
       .pipe(

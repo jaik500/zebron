@@ -38,7 +38,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 @Component({
   selector: 'app-organization-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatExpansionModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, OrganizationAppsPanelComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MatIconModule, MatExpansionModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, OrganizationAppsPanelComponent],
   template: `
     <div class="min-h-screen bg-gray-50 mt-16">
       <!-- =========================================================
@@ -662,6 +662,16 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                               >
                                 View/Edit
                               </button>
+
+                              <!-- Appearance: the organization's color and logo (its Settings page) -->
+                              <a
+                                [routerLink]="['/partner/org', organization.id, 'settings']"
+                                [queryParams]="{ section: 'appearance' }"
+                                class="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 transition hover:border-[#007979]/40 hover:bg-[#007979]/5"
+                              >
+                                <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">palette</mat-icon>
+                                Appearance
+                              </a>
 
                               <!-- Suspend -->
                               @if (canPerformLifecycleAction(organization, 'suspend')) {
