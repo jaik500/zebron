@@ -32,7 +32,15 @@ import { acceptOrganizationInvitation } from '../../functions/src/organization-i
 describe('Zebron Organization Invitation Acceptance', () => {
   let testEnv: RulesTestEnvironment;
 
-  const PROJECT_ID = 'zebron-organization-invitation-test';
+  /*
+   * The same project as vitest.config.ts (GCLOUD_PROJECT). The callable
+   * reads through the default Firebase Admin app, which functions/src/
+   * firebase-admin.ts creates for that project when the callable loads, so
+   * the initializeApp below is skipped. Seeding another project would leave
+   * the callable unable to see the test data ("invitation could not be found").
+   */
+  const PROJECT_ID =
+    process.env['GCLOUD_PROJECT'] ?? 'zebron-test';
 
   const USER_ID = 'user-invitation-test';
 

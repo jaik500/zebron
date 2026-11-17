@@ -6,6 +6,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
   query,
   serverTimestamp,
   updateDoc,
@@ -14,9 +16,8 @@ import {
   where,
 } from 'firebase/firestore';
 
-import { Job } from '../../core/models/job.model';
+import { isJobOpen, Job } from '../../core/models/job.model';
 import { AiService } from '../../core/services/ai.service';
-import { JobService } from '../../core/services/job.service';
 import { firestore } from '../../core/services/firebase-config';
 import { isCourseComplete } from '../courses/course.model';
 import { CourseService } from '../courses/course.service';
@@ -166,6 +167,10 @@ export interface CareerPathDraft {
   stages: CareerStage[];
 }
 
+/** Newest open listings looked at for "Matching jobs", and how long they are reused. */
+const JOB_SAMPLE = 100;
+const JOB_CACHE_MS = 10 * 60 * 1000;
+
 const byOrder = (a: CareerPath, b: CareerPath) => a.order - b.order || a.title.localeCompare(b.title);
 
 /**
@@ -177,7 +182,6 @@ export class CareerPathService {
   private readonly courses = inject(CourseService);
   private readonly certifications = inject(CertificationService);
   private readonly ai = inject(AiService);
-  private readonly jobs = inject(JobService);
 
   // ---------- Paths ----------
 
@@ -415,11 +419,32 @@ export class CareerPathService {
   // ---------- Job Board ----------
 
   /**
-   * Active jobs on the Job Board that fit the path: the job keywords in the
-   * title, or at least two of the path's skills in the listing.
+   * Newest open jobs, read at most once every 10 minutes per visitor and
+   * shared by every career page: browsing several paths costs one query of
+   * at most JOB_SAMPLE reads, not a read of the whole Job Board per page.
+   */
+  private jobSample: { at: number; jobs: Promise<Job[]> } | null = null;
+
+  private recentJobs(): Promise<Job[]> {
+    if (!this.jobSample || Date.now() - this.jobSample.at > JOB_CACHE_MS) {
+      const jobs = getDocs(
+        // Same index as the Job Board (status + createdAt desc).
+        query(collection(firestore, 'jobs'), where('status', '==', 'active'), orderBy('createdAt', 'desc'), limit(JOB_SAMPLE)),
+      ).then((snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<Job, 'id'>) })).filter((job) => isJobOpen(job)));
+      // A failed read is not cached: the next career page tries again.
+      jobs.catch(() => (this.jobSample = null));
+      this.jobSample = { at: Date.now(), jobs };
+    }
+    return this.jobSample.jobs;
+  }
+
+  /**
+   * Open jobs on the Job Board that fit the path: the job keywords in the
+   * title, or at least two of the path's skills in the listing. Looks at
+   * the newest JOB_SAMPLE listings; "Search the Job Board" covers the rest.
    */
   async matchingJobs(path: CareerPath, max = 6): Promise<CareerJobMatch[]> {
-    const jobs = await this.jobs.getActiveJobs();
+    const jobs = await this.recentJobs();
     const keywords = path.jobKeywords.toLowerCase().split(/[,;]/).map((word) => word.trim()).filter(Boolean);
     const skills = [...new Set([...path.skills, ...path.stages.flatMap((stage) => stage.skills)])];
     return jobs

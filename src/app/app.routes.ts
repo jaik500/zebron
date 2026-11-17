@@ -433,6 +433,17 @@ export const routes: Routes = [
         },
         loadComponent: () => import('./features/support/pages/support-ticket.component').then((m) => m.SupportTicketComponent),
     },
+    // -----------------------------------------------------
+    // NOTIFICATIONS (learning updates; features/notifications)
+    // -----------------------------------------------------
+    {
+        path: 'notifications',
+        canActivate: [authGuard],
+        data: {
+            title: 'Zebron | Notifications',
+        },
+        loadComponent: () => import('./features/notifications/notifications.component').then((m) => m.NotificationsComponent),
+    },
     {
         path: 'profile',
         canActivate: [authGuard],

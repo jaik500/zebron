@@ -216,7 +216,6 @@ export class CourseHeaderComponent {
         ? [{ key: 'careers' as CourseTab, label: 'Career paths', icon: 'route', link: '/courses/careers' }]
         : []),
       { key: 'certifications', label: 'Certifications', icon: 'military_tech', link: `${this.basePath()}/certifications` },
-      { key: 'certificates', label: 'Certificates', icon: 'workspace_premium', link: `${this.basePath()}/certificates` },
       // Zebron Learning = Courses + Test Center: practice quizzes sit beside the courses.
       { key: 'test-center', label: 'Test Center', icon: 'quiz', link: this.basePath().replace(/\/courses$/, '/learn/test-center').replace(/^\/learn\/test-center$/, '/test-center') },
       { key: 'coding-lab', label: 'Coding Lab', icon: 'terminal', link: `${this.basePath()}/coding-lab` },
@@ -225,6 +224,9 @@ export class CourseHeaderComponent {
     if (this.liveAvailable()) {
       tabs.push({ key: 'live', label: 'Live sessions', icon: 'video_camera_front', link: this.basePath().replace(/\/courses$/, '/live') });
     }
+
+    // Certificates comes after Live sessions (or after Coding Lab when there are no live sessions).
+    tabs.push({ key: 'certificates', label: 'Certificates', icon: 'workspace_premium', link: `${this.basePath()}/certificates` });
 
     if (this.canManage()) {
       tabs.push({ key: 'manage', label: 'Manage courses', icon: 'edit_note', link: `${this.basePath()}/manage` });

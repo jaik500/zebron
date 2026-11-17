@@ -52,6 +52,8 @@ import {
 import {
   AuthService,
 } from '../../../core/services/auth.service';
+
+import { LearnerNotificationService } from '../../../features/notifications/learner-notification.service';
  
 import {
   LoggerService,
@@ -350,6 +352,20 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
             >
               @if (isSignedIn()) {
                 <a
+                  routerLink="/notifications"
+                  [routerLinkActive]="['!bg-white/15', '!text-white']"
+                  [attr.aria-label]="learnerNotifications.unreadCount() ? 'Notifications: ' + learnerNotifications.unreadCount() + ' new' : 'Notifications'"
+                  matTooltip="Notifications"
+                  class="relative mr-1 flex h-10 w-10 items-center justify-center rounded-full text-slate-200 transition hover:bg-white/10 hover:text-white"
+                >
+                  <mat-icon aria-hidden="true">{{ learnerNotifications.unreadCount() ? 'notifications_active' : 'notifications' }}</mat-icon>
+                  @if (learnerNotifications.unreadCount()) {
+                    <span class="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-amber-400 px-1 text-[11px] font-bold leading-none text-[#032D42]" aria-hidden="true">
+                      {{ learnerNotifications.unreadCount() > 9 ? '9+' : learnerNotifications.unreadCount() }}
+                    </span>
+                  }
+                </a>
+                <a
                   routerLink="/profile"
                   [routerLinkActive]="[
                     '!bg-white/15',
@@ -424,8 +440,9 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
               mat-icon-button
               type="button"
               [matMenuTriggerFor]="mobileNavigationMenu"
-              aria-label="Open Zebron navigation"
+              [attr.aria-label]="learnerNotifications.unreadCount() ? 'Open Zebron navigation (' + learnerNotifications.unreadCount() + ' new notifications)' : 'Open Zebron navigation'"
               class="
+                !relative
                 !h-10
                 !w-10
                 !shrink-0
@@ -437,6 +454,9 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
               <mat-icon>
                 menu
               </mat-icon>
+              @if (learnerNotifications.unreadCount()) {
+                <span class="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-[#032D42]" aria-hidden="true"></span>
+              }
             </button>
             } @else if (showSignIn()) {
               <a
@@ -510,6 +530,13 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
           <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">account_circle</mat-icon>
           <span class="block max-w-48 truncate text-sm font-semibold">{{ accountName() }}</span>
         </button>
+        <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="navigateTo('/notifications')">
+          <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">notifications</mat-icon>
+          <span class="text-sm">Notifications</span>
+          @if (learnerNotifications.unreadCount()) {
+            <span class="ml-2 rounded-full bg-amber-400 px-1.5 text-[11px] font-bold text-[#032D42]">{{ learnerNotifications.unreadCount() }}</span>
+          }
+        </button>
         <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="signOut()">
           <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">logout</mat-icon>
           <span class="text-sm">Sign out</span>
@@ -554,6 +581,10 @@ export class ZebronHeaderComponent {
  
   private readonly authService =
     inject(AuthService);
+
+  /** Learning updates: the bell's unread count (features/notifications). */
+  protected readonly learnerNotifications =
+    inject(LearnerNotificationService);
  
   private readonly router =
     inject(Router);

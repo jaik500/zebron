@@ -2701,6 +2701,7 @@ export { refreshOrganizationStats, refreshDashboardStatsNightly } from "./dashbo
 export { startQuizExam, submitQuizExam } from "./quiz-exams";
 export { getTeamLearningProgress } from "./learning-progress";
 export { completeCourseLesson } from "./course-progress";
+export { notifyOnCourseAssignment, notifyOnCareerProjectReview, sendLearningUpdates } from "./learner-notifications";
 export { expireJobListings, sendJobAlerts } from "./job-board";
 export { aiAssist, draftTopicContent } from "./ai-engine";
 export { runContentChecksNow, weeklyContentChecks } from "./content-checks";

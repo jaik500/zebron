@@ -5,6 +5,7 @@ import { getStorage } from "firebase-admin/storage";
 import { logger } from "firebase-functions";
 import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https";
 
+import { notifyLearner, notifyLearners } from "./learner-notifications";
 import { isPlatformAdministrator } from "./platform-admin-authorization";
 import { LOCKED_MESSAGE, ROLE_RANK, clean, isLocked } from "./training-groups";
 
@@ -157,6 +158,27 @@ export const manageTrainingGroupAssignment = onCall({ region: REGION, timeoutSec
   );
 
   logger.info("Training group assignment saved.", { path: assignmentRef.path, status, by: caller.uid });
+
+  // Just published: tell the group's members (once per assignment).
+  if (status === "published" && existing.get("status") !== "published") {
+    const members = await caller.groupRef.collection("members").get();
+    const due = dueAt ? ` Due ${dueAt.toDate().toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.` : "";
+    await notifyLearners(
+      members.docs
+        .filter((member) => member.id !== caller.uid)
+        .map((member) => ({
+          uid: member.id,
+          id: `group-published-${caller.organizationRef.id}-${caller.groupRef.id}-${assignmentId}`,
+          notification: {
+            kind: "assignment_published" as const,
+            title: `New ${kind === "project" ? "project" : "assignment"}: ${title}`,
+            body: `${clean(caller.group.get("name")) || "Your training group"} has new work for you.${due}`,
+            link: `/partner/org/${caller.organizationRef.id}/training-groups/${caller.groupRef.id}`,
+          },
+        })),
+    );
+  }
+
   return { assignmentId, status };
 });
 
@@ -301,6 +323,14 @@ export const reviewTrainingGroupSubmission = onCall({ region: REGION }, async (r
   await updateCounts(assignmentRef);
 
   logger.info("Training group submission reviewed.", { path: submissionRef.path, decision, by: caller.uid });
+
+  const assignmentTitle = clean((await assignmentRef.get()).get("title")) || "your assignment";
+  await notifyLearner(userId, `group-reviewed-${caller.organizationRef.id}-${caller.groupRef.id}-${assignmentId}-${(submission.get("attempt") as number | undefined) ?? 1}-${decision}`, {
+    kind: "work_reviewed",
+    title: decision === "complete" ? `Marked complete: ${assignmentTitle}` : `Needs revision: ${assignmentTitle}`,
+    body: decision === "complete" ? `${name} reviewed your work.${feedback ? ` ${feedback.slice(0, 300)}` : ""}` : `${name} asked for changes: ${feedback.slice(0, 300)}`,
+    link: `/partner/org/${caller.organizationRef.id}/training-groups/${caller.groupRef.id}`,
+  });
   return { status: decision };
 });
 

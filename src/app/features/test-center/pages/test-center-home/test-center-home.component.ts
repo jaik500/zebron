@@ -1,6 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
-import { Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
@@ -29,6 +28,7 @@ interface StoredPracticeFavorites {
 }
 
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { CourseCrumb, CourseHeaderComponent } from '../../../courses/components/course-header.component';
 
 @Component({
   selector: 'app-test-center-home',
@@ -36,70 +36,26 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
   standalone: true,
 
   imports: [
-    TranslatePipe,RouterLink, MatIconModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+    TranslatePipe,RouterLink, MatIconModule, MatFormFieldModule, MatInputModule, MatButtonModule, CourseHeaderComponent],
 
   template: `
     <main class="min-h-screen bg-gray-50 mt-16">
       <!-- ===================================================
-           SITE HEADER
+           LEARNING HEADER: the Test Center is a tab of Learning,
+           beside My learning, Catalog and Certifications. Without
+           Courses (an organization can have the Test Center on its
+           own) there are no tabs, only the title and search.
            =================================================== -->
-
-      <header
-        class="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-br from-teal-800 via-teal-700 to-teal-600 shadow-md"
-      >
-        <div
-          class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-2 sm:px-6 lg:px-8"
-        >
-          <!-- Left: Test Center branding -->
-          <div class="flex min-w-0 shrink-0 items-center gap-3 text-white">
-            <a
-              [href]="fallbackBackUrl()"
-              (click)="goBack($event)"
-              class="flex min-w-0 shrink-0 items-center gap-3 rounded-lg text-white transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              [attr.aria-label]="'Back' | t"
-              [title]="'Back' | t"
-            >
-              <div
-                class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 sm:flex"
-                aria-hidden="true"
-              >
-                <mat-icon class="!h-8 !w-8 !text-3xl">arrow_back</mat-icon>
-              </div>
-            </a>
-
-            <span class="text-base font-bold tracking-tight sm:text-xl">
-              {{ 'Learning & assessment' | t }}
-            </span>
-          </div>
-
-          <!-- Right: Search bar (white, compact) -->
-          <div class="min-w-0 flex-1 md:ml-8">
-            <div class="relative ml-auto w-full max-w-xs">
-              <mat-icon class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 !h-5 !w-5 !text-[20px] !text-[#007979]" aria-hidden="true">search</mat-icon>
-              <input
-                id="test-center-search"
-                type="search"
-                autocomplete="off"
-                class="h-10 w-full rounded-lg border-0 bg-white pl-10 pr-9 text-sm text-slate-900 shadow-sm outline-none placeholder:text-slate-400 focus:ring-4 focus:ring-white/40"
-                [value]="searchTerm()"
-                (input)="searchTerm.set($any($event.target).value)"
-                [placeholder]="'Search Test Center' | t"
-                [attr.aria-label]="'Search Test Center' | t"
-              />
-              @if (searchTerm()) {
-                <button
-                  type="button"
-                  class="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
-                  [attr.aria-label]="'Clear search' | t"
-                  (click)="searchTerm.set('')"
-                >
-                  <mat-icon class="!h-4 !w-4 !text-[16px]">close</mat-icon>
-                </button>
-              }
-            </div>
-          </div>
-        </div>
-      </header>
+      <app-course-header
+        [basePath]="coursesBasePath()"
+        [crumbs]="crumbs()"
+        [activeTab]="coursesAvailable() ? 'test-center' : null"
+        [showSearch]="true"
+        searchLabel="Search Test Center"
+        searchPlaceholder="Quizzes, skills, certifications..."
+        [query]="searchTerm()"
+        (queryChange)="searchTerm.set($event)"
+      />
 
       <!-- ===================================================
            MAIN CONTENT
@@ -446,32 +402,10 @@ private readonly questionService = inject(TestQuestionService); // add
     null,
 );
 
-  private readonly location = inject(Location);
-
-  /** Where Back goes when the Test Center was opened directly (no earlier page in Zebron). */
-  readonly fallbackBackUrl = computed(() => {
-    const organizationId = this.organizationId();
-    return organizationId ? `/partner/org/${organizationId}/dashboard` : '/';
-  });
-
   readonly certificationsRoute = computed(() => {
     const organizationId = this.organizationId();
     return organizationId ? ['/partner/org', organizationId, 'courses', 'certifications'] : ['/courses', 'certifications'];
   });
-
-  /** Back to the page the learner came from; the dashboard (or home) if there is none. */
-  goBack(event: MouseEvent): void {
-    if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) {
-      return; // let the browser open the link in a new tab/window
-    }
-    event.preventDefault();
-    const navigationId = (window.history.state as { navigationId?: number } | null)?.navigationId ?? 0;
-    if (navigationId > 1) {
-      this.location.back();
-    } else {
-      void this.router.navigateByUrl(this.fallbackBackUrl());
-    }
-  }
 
   readonly learnerBaseRoute = computed(() => {
     const organizationId = this.organizationId();
@@ -482,6 +416,18 @@ private readonly questionService = inject(TestQuestionService); // add
 
   /** Whether to link to Courses: organizations can have the Test Center on its own. */
   readonly coursesAvailable = useCoursesAvailable(this.route);
+
+  /** Learning's base path, for the shared header's tabs: '/courses' or '/partner/org/<id>/courses'. */
+  readonly coursesBasePath = computed(() => {
+    const organizationId = this.organizationId();
+    return organizationId ? `/partner/org/${organizationId}/courses` : '/courses';
+  });
+
+  readonly crumbs = computed<CourseCrumb[]>(() =>
+    this.coursesAvailable()
+      ? [{ label: 'Learning', link: this.coursesBasePath() }, { label: 'Test Center' }]
+      : [{ label: 'Test Center' }],
+  );
 
   /** Live sessions: organizations with the Virtual Classroom only. */
   readonly liveAvailable = useLiveAvailable(this.route);
