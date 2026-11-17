@@ -17,6 +17,17 @@ export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 export type TicketStatus = 'open' | 'in_progress' | 'waiting_on_requester' | 'resolved' | 'closed';
 
+/** Who answers a ticket: Zebron Support, or the requester's own organization. */
+export type TicketHandledBy = 'zebron' | 'organization';
+
+/** An organization the signed-in person belongs to (for "Who should help?"). */
+export interface MemberOrganization {
+  id: string;
+  name: string;
+  /** Manager, admin or owner: answers the organization's requests. */
+  manager: boolean;
+}
+
 export interface SupportTicket {
   id: string;
   number: string;
@@ -25,6 +36,10 @@ export interface SupportTicket {
   priority: TicketPriority;
   status: TicketStatus;
   scope: 'personal' | 'organization';
+  handledBy: TicketHandledBy;
+  /** Sent on to Zebron by the organization. */
+  escalatedAt: string | null;
+  escalatedByName: string | null;
   organizationId: string | null;
   organizationName: string | null;
   requesterName: string | null;
@@ -47,6 +62,8 @@ export interface SupportTicketMessage {
   authorRole: 'requester' | 'organization' | 'staff' | 'system';
   body: string;
   internal: boolean;
+  /** Internal notes: who sees them. */
+  audience: 'zebron' | 'organization' | 'shared' | null;
   kind: 'message' | 'note' | 'event';
   createdAt: string | null;
 }
@@ -57,6 +74,8 @@ export interface CreateTicketInput {
   category: TicketCategory;
   priority: TicketPriority;
   organizationId?: string | null;
+  /** 'organization': the organization's managers answer it, not Zebron. */
+  handledBy?: TicketHandledBy;
   name?: string;
   email?: string;
   pageUrl?: string;
@@ -104,7 +123,7 @@ export class SupportService {
     return this.call('createSupportTicket', input);
   }
 
-  listMine(): Promise<{ tickets: SupportTicket[]; managedOrganizations: string[] }> {
+  listMine(): Promise<{ tickets: SupportTicket[]; managedOrganizations: string[]; memberOrganizations?: MemberOrganization[] }> {
     return this.call('listMySupportTickets', {});
   }
 
@@ -119,6 +138,10 @@ export class SupportService {
   getTicket(ticketId: string): Promise<{
     ticket: SupportTicket;
     access: 'staff' | 'requester' | 'organization';
+    /** Answers this ticket (Zebron staff, or the organization's managers for its own requests). */
+    handler?: boolean;
+    /** The organization can send it on to Zebron Support. */
+    canEscalate?: boolean;
     messages: SupportTicketMessage[];
   }> {
     return this.call('getSupportTicket', { ticketId });
@@ -133,6 +156,11 @@ export class SupportService {
     changes: { status?: TicketStatus; priority?: TicketPriority; assignToMe?: boolean; unassign?: boolean },
   ): Promise<{ status: TicketStatus }> {
     return this.call('updateSupportTicket', { ticketId, ...changes });
+  }
+
+  /** The organization passes its member's request to Zebron Support. */
+  escalate(ticketId: string, note: string): Promise<{ status: TicketStatus }> {
+    return this.call('updateSupportTicket', { ticketId, escalate: true, note });
   }
 
   private async call<TInput, TOutput>(name: string, input: TInput): Promise<TOutput> {

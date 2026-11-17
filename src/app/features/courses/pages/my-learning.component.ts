@@ -26,6 +26,7 @@ import { CourseAssignment, CourseAssignmentService, isOverdue } from '../course-
 import { CourseAccessService } from '../course-access.service';
 import { CourseStore } from '../course.store';
 import { STATUS_LABELS, TrainingGroup, TrainingGroupService, groupStatus } from '../../training-groups/training-group.service';
+import { MyAssignment, SUBMISSION_STATUS_LABELS, TrainingGroupAssignmentService } from '../../training-groups/training-group-assignment.service';
 
 /** Minutes a week the streak card counts toward. */
 const WEEKLY_GOAL_MINUTES = 60;
@@ -204,6 +205,38 @@ const WEEKLY_GOAL_MINUTES = 60;
                 </li>
               }
             </ul>
+
+            @if (openWork().length) {
+              <!-- Assignments and projects still to do or waiting for review -->
+              <h3 class="mt-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <mat-icon class="!h-5 !w-5 !text-[20px] text-[#007979]" aria-hidden="true">assignment</mat-icon>
+                {{ 'Assignments and projects' | t }}
+              </h3>
+              <ul class="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200">
+                @for (entry of openWork(); track entry.groupId + entry.assignment.id) {
+                  <li>
+                    <a
+                      [routerLink]="['/partner/org', entry.organizationId, 'training-groups', entry.groupId]"
+                      [queryParams]="{ assignment: entry.assignment.id }"
+                      class="flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50"
+                    >
+                      <mat-icon class="shrink-0 text-slate-500" aria-hidden="true">{{ entry.assignment.kind === 'project' ? 'rocket_launch' : 'assignment' }}</mat-icon>
+                      <span class="min-w-0 flex-1">
+                        <span class="block truncate text-sm font-semibold text-slate-900">{{ entry.assignment.title }}</span>
+                        <span class="block truncate text-xs text-slate-500">
+                          {{ entry.groupName }}
+                          @if (entry.assignment.dueAt) {
+                            ·
+                            <span [class]="workOverdue(entry) ? 'font-semibold text-rose-700' : ''">{{ 'Due {0}' | t: [dueLabel(entry.assignment.dueAt)] }}</span>
+                          }
+                        </span>
+                      </span>
+                      <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold" [class]="workBadge(entry).classes">{{ workBadge(entry).label | t }}</span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
           </section>
         }
 
@@ -511,6 +544,43 @@ export class MyLearningComponent {
     } catch {
       this.myGroups.set([]);
     }
+    await this.loadMyWork(organizationId, userId);
+  }
+
+  // ---------- Assignments and projects in the learner's groups ----------
+  private readonly groupAssignments = inject(TrainingGroupAssignmentService);
+  private readonly myWork = signal<MyAssignment[]>([]);
+  /** Not complete yet: to hand in, waiting for review, or sent back. Soonest due first. */
+  protected readonly openWork = computed(() =>
+    this.myWork()
+      .filter((entry) => entry.submission?.status !== 'complete')
+      .sort((a, b) => (a.assignment.dueAt?.getTime() ?? Number.MAX_SAFE_INTEGER) - (b.assignment.dueAt?.getTime() ?? Number.MAX_SAFE_INTEGER))
+      .slice(0, 8),
+  );
+
+  private async loadMyWork(organizationId: string, userId: string): Promise<void> {
+    const groups = this.myGroups();
+    if (!groups.length) {
+      this.myWork.set([]);
+      return;
+    }
+    try {
+      this.myWork.set(await this.groupAssignments.listMineAcrossGroups(organizationId, userId, groups));
+    } catch {
+      this.myWork.set([]);
+    }
+  }
+
+  protected workBadge(entry: MyAssignment): { label: string; classes: string } {
+    return SUBMISSION_STATUS_LABELS[entry.submission?.status ?? 'not_submitted'];
+  }
+
+  protected workOverdue(entry: MyAssignment): boolean {
+    return !entry.submission && !!entry.assignment.dueAt && entry.assignment.dueAt.getTime() < Date.now();
+  }
+
+  protected dueLabel(date: Date): string {
+    return date.toLocaleDateString(this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
   protected groupBadge(group: TrainingGroup): { label: string; classes: string } {

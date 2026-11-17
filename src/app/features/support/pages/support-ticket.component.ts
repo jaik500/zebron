@@ -33,8 +33,11 @@ import {
  * One support ticket: conversation, status and actions.
  * Route: /support/tickets/:ticketId (signed in).
  *
- * - Requesters and organization managers: reply, close, reopen.
- * - Zebron staff: also assign, set status and priority, internal notes.
+ * - Requesters, and organization managers following a Zebron ticket: reply, close, reopen.
+ * - Whoever handles it (Zebron staff; the organization's managers for
+ *   requests sent to the organization): also assign, set status and
+ *   priority, internal notes. The organization can send its request on to
+ *   Zebron Support.
  */
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
@@ -64,7 +67,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           </div>
           <a mat-stroked-button class="!border-white/40 !text-white" [routerLink]="backLink()" [queryParams]="backQuery()">
             <mat-icon>arrow_back</mat-icon>
-            {{ access() === 'staff' ? ('Support queue' | t) : ('My tickets' | t) }}
+            {{ backLabel() | t }}
           </a>
         </div>
       </header>
@@ -89,16 +92,16 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                     </li>
                   } @else {
                     <li class="rounded-xl border p-4 shadow-sm"
-                      [class]="message.internal ? 'border-amber-200 bg-amber-50' : message.authorRole === 'staff' ? 'border-teal-200 bg-teal-50/50' : 'border-gray-200 bg-white'">
+                      [class]="message.internal ? 'border-amber-200 bg-amber-50' : message.authorRole === 'staff' ? 'border-teal-200 bg-teal-50/50' : message.authorRole === 'organization' ? 'border-violet-200 bg-violet-50/40' : 'border-gray-200 bg-white'">
                       <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                         <span class="flex items-center gap-2 text-sm font-semibold text-gray-900">
                           <span class="flex h-7 w-7 items-center justify-center rounded-full text-xs"
-                            [class]="message.authorRole === 'staff' ? 'bg-[#007979] text-white' : 'bg-gray-200 text-gray-700'">
-                            <mat-icon class="!h-4 !w-4 !text-base">{{ message.authorRole === 'staff' ? 'support_agent' : 'person' }}</mat-icon>
+                            [class]="message.authorRole === 'staff' ? 'bg-[#007979] text-white' : message.authorRole === 'organization' ? 'bg-violet-600 text-white' : 'bg-gray-200 text-gray-700'">
+                            <mat-icon class="!h-4 !w-4 !text-base">{{ message.authorRole === 'staff' ? 'support_agent' : message.authorRole === 'organization' ? 'groups' : 'person' }}</mat-icon>
                           </span>
                           {{ message.authorName }}
                           @if (message.internal) {
-                            <span class="rounded bg-amber-200 px-1.5 text-[10px] font-bold uppercase text-amber-900">{{ 'Internal note' | t }}</span>
+                            <span class="rounded bg-amber-200 px-1.5 text-[10px] font-bold uppercase text-amber-900">{{ (message.audience === 'shared' ? 'Note to Zebron' : 'Internal note') | t }}</span>
                           }
                         </span>
                         <span class="text-xs text-gray-500">{{ message.createdAt | date: 'medium' }}</span>
@@ -110,15 +113,15 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
               </ol>
 
               <!-- Reply -->
-              @if (current.status !== 'closed' || access() === 'staff') {
+              @if (current.status !== 'closed' || handler()) {
                 <div class="mt-5 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                   <mat-form-field appearance="outline" class="zb-field">
-                    <mat-label>{{ internal ? ('Internal note (only Zebron staff see this)' | t) : ('Reply' | t) }}</mat-label>
+                    <mat-label>{{ internal ? (noteLabel() | t: [current.organizationName || '']) : ('Reply' | t) }}</mat-label>
                     <textarea matInput rows="4" maxlength="10000" [(ngModel)]="replyText" name="reply"></textarea>
                   </mat-form-field>
 
                   <div class="flex flex-wrap items-center justify-between gap-3">
-                    @if (access() === 'staff') {
+                    @if (access() === 'staff' || access() === 'organization') {
                       <mat-slide-toggle [(ngModel)]="internal" name="internal">{{ 'Internal note' | t }}</mat-slide-toggle>
                     } @else {
                       <span class="text-xs text-gray-500">{{ 'Replying to a resolved ticket reopens it.' | t }}</span>
@@ -147,7 +150,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                     <dt class="text-xs text-gray-500">{{ 'Status' | t }}</dt>
                     <dd class="mt-1">
                       <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [class]="statusInfo(current.status).classes">
-                        {{ (access() === 'staff' ? statusInfo(current.status).label : statusInfo(current.status).requesterLabel) | t }}
+                        {{ (handler() ? statusInfo(current.status).label : statusInfo(current.status).requesterLabel) | t }}
                       </span>
                     </dd>
                   </div>
@@ -160,12 +163,21 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                     <dt class="text-xs text-gray-500">{{ 'Requested by' | t }}</dt>
                     <dd class="break-words text-gray-900">
                       {{ current.requesterName }}
-                      @if (access() === 'staff' && current.requesterEmail) {
+                      @if (handler() && current.requesterEmail) {
                         <span class="block break-all text-xs text-gray-500">{{ current.requesterEmail }}{{ current.requesterIsGuest ? (' (guest)' | t) : '' }}</span>
                       }
                     </dd>
                   </div>
-                  @if (current.organizationName) {
+                  <div>
+                    <dt class="text-xs text-gray-500">{{ 'Handled by' | t }}</dt>
+                    <dd class="text-gray-900">
+                      {{ current.handledBy === 'organization' ? current.organizationName : ('Zebron Support' | t) }}
+                      @if (current.escalatedAt) {
+                        <span class="block text-xs text-gray-500">{{ 'Passed on by {0}, {1}' | t: [current.escalatedByName || current.organizationName, (current.escalatedAt | date: 'MMM d')] }}</span>
+                      }
+                    </dd>
+                  </div>
+                  @if (current.organizationName && current.handledBy !== 'organization') {
                     <div><dt class="text-xs text-gray-500">{{ 'Organization' | t }}</dt><dd class="text-gray-900">{{ current.organizationName }}</dd></div>
                   }
                   <div><dt class="text-xs text-gray-500">{{ 'Assigned to' | t }}</dt><dd class="text-gray-900">{{ current.assigneeName || ('Not assigned yet' | t) }}</dd></div>
@@ -176,9 +188,9 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                 </dl>
               </section>
 
-              @if (access() === 'staff') {
+              @if (handler()) {
                 <section class="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm">
-                  <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-indigo-800">{{ 'Zebron staff' | t }}</p>
+                  <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-indigo-800">{{ (access() === 'staff' ? 'Zebron staff' : 'Answering for {0}') | t: [current.organizationName || ''] }}</p>
 
                   <mat-form-field appearance="outline" class="zb-field zb-field--dense">
                     <mat-label>{{ 'Status' | t }}</mat-label>
@@ -208,6 +220,32 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                     }
                   </div>
                 </section>
+
+                @if (canEscalate()) {
+                  <section class="rounded-xl border border-teal-200 bg-white p-4 shadow-sm">
+                    <p class="text-sm font-semibold text-gray-900">{{ 'Need Zebron’s help?' | t }}</p>
+                    <p class="mt-1 text-xs text-gray-600">{{ 'Send this request to Zebron Support if it’s a problem with Zebron itself. They answer it from then on; you keep following it.' | t }}</p>
+                    @if (escalating()) {
+                      <mat-form-field appearance="outline" class="zb-field zb-field--dense mt-3">
+                        <mat-label>{{ 'Note to Zebron (optional)' | t }}</mat-label>
+                        <textarea matInput rows="3" maxlength="10000" [(ngModel)]="escalationNote" name="escalationNote"></textarea>
+                        <mat-hint>{{ 'The requester doesn’t see this note.' | t }}</mat-hint>
+                      </mat-form-field>
+                      <div class="mt-3 flex flex-wrap gap-2">
+                        <button mat-flat-button type="button" class="!bg-[#007979] !text-white" [disabled]="busy()" (click)="escalate()">
+                          <mat-icon>forward_to_inbox</mat-icon>
+                          {{ 'Send to Zebron' | t }}
+                        </button>
+                        <button mat-button type="button" [disabled]="busy()" (click)="escalating.set(false)">{{ 'Cancel' | t }}</button>
+                      </div>
+                    } @else {
+                      <button mat-stroked-button type="button" class="mt-3 w-full" [disabled]="busy()" (click)="escalating.set(true)">
+                        <mat-icon>forward_to_inbox</mat-icon>
+                        {{ 'Send to Zebron Support' | t }}
+                      </button>
+                    }
+                  </section>
+                }
               } @else {
                 <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                   @if (current.status === 'resolved' || current.status === 'closed') {
@@ -243,6 +281,11 @@ export class SupportTicketComponent implements OnInit {
   protected readonly ticket = signal<SupportTicket | null>(null);
   protected readonly messages = signal<SupportTicketMessage[]>([]);
   protected readonly access = signal<'staff' | 'requester' | 'organization' | null>(null);
+  /** Answers this ticket (Zebron staff, or the organization for its members' requests). */
+  protected readonly handler = signal(false);
+  protected readonly canEscalate = signal(false);
+  protected readonly escalating = signal(false);
+  protected escalationNote = '';
   protected readonly loading = signal(true);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
@@ -250,8 +293,19 @@ export class SupportTicketComponent implements OnInit {
   protected replyText = '';
   protected internal = false;
 
-  protected readonly backLink = computed(() => (this.access() === 'staff' ? ['/admin/support'] : ['/support']));
-  protected readonly backQuery = computed(() => (this.access() === 'staff' ? {} : { tab: 'mine' }));
+  protected readonly backLink = computed(() => {
+    const organizationId = this.ticket()?.organizationId;
+    if (this.access() === 'staff') return ['/admin/support'];
+    if (this.access() === 'organization' && organizationId) return ['/partner/org', organizationId, 'support'];
+    return ['/support'];
+  });
+  protected readonly backQuery = computed(() => (this.access() === 'requester' || !this.access() ? { tab: 'mine' } : {}));
+  protected readonly backLabel = computed(() =>
+    this.access() === 'staff' ? 'Support queue' : this.access() === 'organization' ? 'Support Tickets' : 'My tickets',
+  );
+  protected readonly noteLabel = computed(() =>
+    this.access() === 'staff' ? 'Internal note (only Zebron staff see this)' : 'Internal note (only {0} managers, admins and owners see this)',
+  );
 
   async ngOnInit(): Promise<void> {
     await this.load();
@@ -265,6 +319,8 @@ export class SupportTicketComponent implements OnInit {
       this.ticket.set(result.ticket);
       this.messages.set(result.messages);
       this.access.set(result.access);
+      this.handler.set(result.handler ?? result.access === 'staff');
+      this.canEscalate.set(result.canEscalate === true);
       this.pageTitleService.setDocumentTitle(`${result.ticket.number} · ${result.ticket.subject}`);
     } catch (error) {
       this.error.set(supportErrorMessage(error));
@@ -289,6 +345,14 @@ export class SupportTicketComponent implements OnInit {
 
   protected setStatus(status: TicketStatus): Promise<void> {
     return this.run(() => this.support.update(this.ticketId, { status }).then(() => undefined));
+  }
+
+  protected escalate(): Promise<void> {
+    return this.run(async () => {
+      await this.support.escalate(this.ticketId, this.escalationNote.trim());
+      this.escalationNote = '';
+      this.escalating.set(false);
+    });
   }
 
   protected setPriority(priority: TicketPriority): Promise<void> {

@@ -19,7 +19,7 @@ export interface CourseCrumb {
   translate?: boolean;
 }
 
-export type CourseTab = 'learning' | 'catalog' | 'certifications' | 'certificates' | 'test-center' | 'coding-lab' | 'live' | 'manage';
+export type CourseTab = 'learning' | 'catalog' | 'careers' | 'certifications' | 'certificates' | 'test-center' | 'coding-lab' | 'live' | 'manage';
 
 /**
  * Page header for the course pages: back button and breadcrumbs on the
@@ -211,6 +211,10 @@ export class CourseHeaderComponent {
     const tabs: { key: CourseTab; label: string; icon: string; link: string }[] = [
       { key: 'learning', label: 'My learning', icon: 'school', link: this.basePath() },
       { key: 'catalog', label: 'Catalog', icon: 'auto_stories', link: `${this.basePath()}/catalog` },
+      // Career paths (features/careers): Zebron's own Learning pages only.
+      ...(this.basePath() === '/courses'
+        ? [{ key: 'careers' as CourseTab, label: 'Career paths', icon: 'route', link: '/courses/careers' }]
+        : []),
       { key: 'certifications', label: 'Certifications', icon: 'military_tech', link: `${this.basePath()}/certifications` },
       { key: 'certificates', label: 'Certificates', icon: 'workspace_premium', link: `${this.basePath()}/certificates` },
       // Zebron Learning = Courses + Test Center: practice quizzes sit beside the courses.

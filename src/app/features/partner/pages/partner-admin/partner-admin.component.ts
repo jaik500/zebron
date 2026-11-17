@@ -120,10 +120,20 @@ import { setUpDashboards } from '../../../dashboards/dashboard-setup';
                   <span>{{ 'Administration' | t }}</span>
                 </a>
               }
-               <a mat-menu-item routerLink="/support">
-                  <mat-icon>support_agent</mat-icon>
-                  <span>{{ 'Help & Support' | t }}</span>
+              <a mat-menu-item routerLink="/support" [queryParams]="supportQuery()">
+                <mat-icon>support_agent</mat-icon>
+                <span>{{ 'Help & Support' | t }}</span>
+              </a>
+              <a mat-menu-item routerLink="/support" [queryParams]="{ tab: 'mine' }">
+                <mat-icon>confirmation_number</mat-icon>
+                <span>{{ 'My support requests' | t }}</span>
+              </a>
+              @if (!isOrganizationOnboarding() && access.canAccessAdministration() && organizationStore.selectedOrganizationId()) {
+                <a mat-menu-item [routerLink]="['/partner/org', organizationStore.selectedOrganizationId(), 'support']">
+                  <mat-icon>inbox</mat-icon>
+                  <span>{{ 'Requests from members' | t }}</span>
                 </a>
+              }
             </mat-menu>
           </div>
         </div>
@@ -1078,13 +1088,14 @@ protected readonly dashboardCards = computed<DashboardCard[]>(() => {
   }
 
   /**
-   * Help & Support opens for this organization. Managers and above can file
-   * it as an organization ticket; everyone else files a personal one.
+   * Help & Support opens for this organization: members ask their
+   * organization by default (or choose Zebron); managers and above raise it
+   * with Zebron on the organization's behalf.
    */
   protected supportQuery(): Record<string, string> {
     const organizationId = this.organizationStore.selectedOrganizationId();
 
-    return organizationId && this.access.canAccessAdministration() ? { organizationId } : {};
+    return organizationId ? { organizationId } : {};
   }
 
   /** Organization Management (Administration) page for this organization. */

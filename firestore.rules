@@ -4679,6 +4679,135 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
+    // ============================================================
+    // CAREER PATHS (Learning → Career paths, features/careers)
+    //
+    // careerPaths/{pathId}: roadmaps written by platform administrators,
+    // readable by anyone once published.
+    // users/{uid}/careerPlans/{pathId}: the paths a learner follows and
+    // the practice steps they checked off.
+    // careerProjects/{uid}__{pathId}__{stepId}: a learner's project.
+    // Only an administrator can verify it: a finished course alone never
+    // verifies a skill.
+    // ============================================================
+
+    function validCareerPath(data) {
+      return data.keys().hasOnly([
+          "title", "summary", "description", "field", "level", "salaryRange",
+          "outlook", "jobKeywords", "skills", "stages", "status", "order",
+          "createdAt", "updatedAt"
+        ])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 120
+        && data.summary is string && data.summary.size() <= 240
+        && data.description is string && data.description.size() <= 3000
+        && data.field is string && data.field.size() <= 60
+        && data.level in ["entry", "mid", "senior"]
+        && data.salaryRange is string && data.salaryRange.size() <= 120
+        && data.outlook is string && data.outlook.size() <= 400
+        && data.jobKeywords is string && data.jobKeywords.size() <= 100
+        && data.skills is list && data.skills.size() <= 20
+        && data.stages is list && data.stages.size() <= 10
+        && data.status in ["draft", "published"]
+        && data.order is int && data.order >= 0 && data.order <= 10000
+        && data.updatedAt == request.time;
+    }
+
+    match /careerPaths/{pathId} {
+      allow get, list: if resource.data.status == "published"
+        || isPlatformAdmin();
+
+      allow create: if isPlatformAdmin()
+        && pathId.matches('^[a-z0-9-]{1,60}$')
+        && validCareerPath(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if isPlatformAdmin()
+        && validCareerPath(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /users/{userId}/careerPlans/{pathId} {
+      allow read, delete: if isCurrentUser(userId);
+
+      allow create: if isCurrentUser(userId)
+        && request.resource.data.keys().hasOnly(["pathId", "pathTitle", "completedStepIds", "startedAt", "updatedAt"])
+        && request.resource.data.pathId == pathId
+        && request.resource.data.pathTitle is string
+        && request.resource.data.pathTitle.size() <= 200
+        && request.resource.data.completedStepIds is list
+        && request.resource.data.completedStepIds.size() <= 200
+        && request.resource.data.startedAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && exists(/databases/$(database)/documents/careerPaths/$(pathId));
+
+      allow update: if isCurrentUser(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["pathTitle", "completedStepIds", "updatedAt"])
+        && request.resource.data.pathTitle is string
+        && request.resource.data.pathTitle.size() <= 200
+        && request.resource.data.completedStepIds is list
+        && request.resource.data.completedStepIds.size() <= 200
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function validCareerProjectWork(data) {
+      return data.url is string
+        && data.url.matches('^https://.{1,490}$')
+        && data.notes is string && data.notes.size() <= 2000
+        && data.learnerName is string && data.learnerName.size() <= 120;
+    }
+
+    match /careerProjects/{projectId} {
+      allow get, list: if isPlatformAdmin()
+        || (isAuthenticated() && resource.data.userId == request.auth.uid);
+
+      // The learner submits their work.
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasOnly([
+          "userId", "learnerName", "pathId", "pathTitle", "stepId", "stepTitle",
+          "url", "notes", "status", "feedback", "reviewerId", "reviewedAt",
+          "submittedAt", "updatedAt"
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.pathId is string
+        && request.resource.data.stepId is string
+        && projectId == request.auth.uid + "__" + request.resource.data.pathId + "__" + request.resource.data.stepId
+        && request.resource.data.pathTitle is string && request.resource.data.pathTitle.size() <= 200
+        && request.resource.data.stepTitle is string && request.resource.data.stepTitle.size() <= 160
+        && validCareerProjectWork(request.resource.data)
+        && request.resource.data.status == "submitted"
+        && request.resource.data.feedback == ""
+        && request.resource.data.reviewerId == null
+        && request.resource.data.reviewedAt == null
+        && request.resource.data.submittedAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && exists(/databases/$(database)/documents/careerPaths/$(request.resource.data.pathId));
+
+      // The learner resubmits (not after it is verified): only their work changes.
+      allow update: if isAuthenticated()
+        && resource.data.userId == request.auth.uid
+        && resource.data.status != "verified"
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["learnerName", "url", "notes", "status", "updatedAt"])
+        && request.resource.data.status == "submitted"
+        && validCareerProjectWork(request.resource.data)
+        && request.resource.data.updatedAt == request.time;
+
+      // A platform administrator verifies it or asks for more work.
+      allow update: if isPlatformAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "feedback", "reviewerId", "reviewedAt"])
+        && request.resource.data.status in ["verified", "needs-work"]
+        && request.resource.data.feedback is string
+        && request.resource.data.feedback.size() <= 2000
+        && request.resource.data.reviewerId == request.auth.uid
+        && request.resource.data.reviewedAt == request.time;
+
+      allow delete: if isPlatformAdmin()
+        || (isAuthenticated()
+          && resource.data.userId == request.auth.uid
+          && resource.data.status != "verified");
+    }
+
     match /users/{userId}/savedJobs/{jobId} {
       allow read, delete: if isCurrentUser(userId);
 
@@ -5807,6 +5936,46 @@ service cloud.firestore {
           );
 
         allow write: if false;
+      }
+
+      // Assignments and individual projects (functions/src/training-group-assignments.ts).
+      // Staff see every assignment and every submission; members see published
+      // assignments (members must query status == "published") and their own
+      // submission. Written only by the Cloud Functions.
+      match /assignments/{assignmentId} {
+        allow get, list: if isPlatformAdmin()
+          || (
+            trainingGroupsOpen(organizationId)
+            && (
+              isTrainingGroupStaff(organizationId, groupId)
+              || (
+                isOrganizationMember(organizationId)
+                && resource.data.get("status", "draft") == "published"
+                && exists(/databases/$(database)/documents/organizations/$(organizationId)/trainingGroups/$(groupId)/members/$(request.auth.uid))
+              )
+            )
+          );
+
+        allow write: if false;
+
+        match /submissions/{submissionUserId} {
+          allow get: if isPlatformAdmin()
+            || (
+              trainingGroupsOpen(organizationId)
+              && (
+                isCurrentUser(submissionUserId)
+                || isTrainingGroupStaff(organizationId, groupId)
+              )
+            );
+
+          allow list: if isPlatformAdmin()
+            || (
+              trainingGroupsOpen(organizationId)
+              && isTrainingGroupStaff(organizationId, groupId)
+            );
+
+          allow write: if false;
+        }
       }
 
       // Courses assigned to the whole group (manageTrainingGroupCourses).

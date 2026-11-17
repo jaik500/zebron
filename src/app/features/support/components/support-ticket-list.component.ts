@@ -41,6 +41,12 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                   @if (showOrganization() && ticket.organizationName) {
                     <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-800">{{ ticket.organizationName }}</span>
                   }
+                  @if (ticket.escalatedAt) {
+                    <span class="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                      <mat-icon class="!h-3.5 !w-3.5 !text-sm">forward_to_inbox</mat-icon>
+                      {{ 'Passed on by {0}' | t: [ticket.organizationName || ''] }}
+                    </span>
+                  }
                   @if (staffView() && ticket.lastMessageBy === 'requester' && ticket.status !== 'closed') {
                     <span class="inline-flex items-center gap-0.5 text-[11px] font-semibold text-sky-700">
                       <mat-icon class="!h-3.5 !w-3.5 !text-sm">mark_chat_unread</mat-icon>

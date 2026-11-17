@@ -18,6 +18,7 @@ import { OrganizationContextStore } from '../organizations/stores/organization-c
 import { PartnerMemberService } from '../partner/services/partner-member.service';
 import { GroupStaffOption, TrainingGroupFormComponent } from './training-group-form.component';
 import { loadStaffOptions } from './training-groups.component';
+import { TrainingGroupAssignmentsComponent } from './training-group-assignments.component';
 import { TrainingGroupPdfService } from './training-group-pdf.service';
 import {
   DELIVERY_MODES,
@@ -71,6 +72,9 @@ interface AddCandidate {
  * - Courses: owners, admins and the group's manager leads assign courses to
  *   the whole group (manageTrainingGroupCourses); members see the list.
  * - Members: the group's details and its courses.
+ * - Assignments and individual projects (TrainingGroupAssignmentsComponent):
+ *   managers and the group's leads and instructors create and review them;
+ *   members hand in work. ?assignment={id} opens one.
  *
  * Route: /partner/org/:organizationId/training-groups/:groupId
  */
@@ -78,7 +82,7 @@ interface AddCandidate {
   selector: 'app-training-group-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, MatIconModule, TranslatePipe, TrainingGroupFormComponent],
+  imports: [DatePipe, RouterLink, MatIconModule, TranslatePipe, TrainingGroupFormComponent, TrainingGroupAssignmentsComponent],
   template: `
     <main class="mt-16 min-h-screen bg-slate-50">
       <header class="bg-gradient-to-r from-[#007979] via-[#00706f] to-[#2a835f] text-white">
@@ -316,6 +320,18 @@ interface AddCandidate {
               }
             </section>
           }
+
+          <!-- Assignments and individual projects (staff and members) -->
+          <app-training-group-assignments
+            [organizationId]="organizationId"
+            [groupId]="groupId"
+            [userId]="userId()"
+            [isStaff]="canSeeRoster()"
+            [locked]="locked()"
+            [cancelled]="status().label === 'Cancelled'"
+            [members]="members()"
+            [openId]="openAssignmentId"
+          />
 
           <!-- Enrollment: requests, applications, waitlist (staff) -->
           @if (canSeeRoster() && current.enrollmentMode !== 'invite') {
@@ -740,7 +756,9 @@ export class TrainingGroupDetailComponent implements OnInit {
   private readonly pageTitle = inject(PageTitleService);
 
   protected readonly organizationId = this.route.snapshot.paramMap.get('organizationId') ?? '';
-  private readonly groupId = this.route.snapshot.paramMap.get('groupId') ?? '';
+  protected readonly groupId = this.route.snapshot.paramMap.get('groupId') ?? '';
+  /** ?assignment={id}: open that assignment (links from My learning). */
+  protected readonly openAssignmentId = this.route.snapshot.queryParamMap.get('assignment');
 
   protected readonly group = signal<TrainingGroup | null>(null);
   protected readonly loading = signal(true);

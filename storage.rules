@@ -14,6 +14,10 @@ rules_version = '2';
 //   business-documents/{businessId}/{file}              Zebron's own Business Operations documents
 //   blog-images/{file}                                  photos in public and staff blog posts
 //   organizations/{organizationId}/blog-images/{file}   photos in an organization's blog posts
+//   organizations/{organizationId}/trainingGroups/{groupId}/assignments/{assignmentId}/materials/{file}
+//                                                       files an instructor attaches to an assignment
+//   organizations/{organizationId}/trainingGroups/{groupId}/assignments/{assignmentId}/submissions/{userId}/{file}
+//                                                       files a learner hands in
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -200,6 +204,91 @@ service firebase.storage {
       allow create: if signedIn() && (isPlatformAdmin() || organizationRank(organizationId) >= 2) && isBlogImage();
       allow update: if false;
       allow delete: if signedIn() && (isPlatformAdmin() || organizationRank(organizationId) >= 3);
+    }
+
+    // ------------------------------------------------------------
+    // TRAINING GROUP ASSIGNMENTS
+    // ------------------------------------------------------------
+    // The same people as the Firestore records (see firestore.rules,
+    // TRAINING GROUPS): the group's staff (managers and above, and its
+    // leads and instructors who are staff or above), and its members.
+    // Files up to 25 MB; the Cloud Functions record them on the
+    // assignment or submission.
+    function trainingGroupsActive(organizationId) {
+      let entitlementPath =
+        /databases/(default)/documents/organizations/$(organizationId)/applications/training-groups;
+
+      return firestore.exists(entitlementPath)
+        && firestore.get(entitlementPath).data.get("status", "") == "active";
+    }
+
+    function isTrainingGroupStaff(organizationId, groupId) {
+      let groupPath = /databases/(default)/documents/organizations/$(organizationId)/trainingGroups/$(groupId);
+
+      return organizationRank(organizationId) >= 3
+        || (
+          organizationRank(organizationId) >= 2
+          && firestore.exists(groupPath)
+          && (
+            firestore.get(groupPath).data.get("leadIds", []).hasAny([request.auth.uid])
+            || firestore.get(groupPath).data.get("instructorIds", []).hasAny([request.auth.uid])
+          )
+        );
+    }
+
+    function isTrainingGroupMember(organizationId, groupId) {
+      return organizationRank(organizationId) >= 1
+        && firestore.exists(
+          /databases/(default)/documents/organizations/$(organizationId)/trainingGroups/$(groupId)/members/$(request.auth.uid)
+        );
+    }
+
+    function isAssignmentFile() {
+      return request.resource.size > 0
+        && request.resource.size <= 25 * 1024 * 1024;
+    }
+
+    match /organizations/{organizationId}/trainingGroups/{groupId}/assignments/{assignmentId}/materials/{fileName} {
+      allow read: if signedIn()
+        && (
+          isPlatformAdmin()
+          || (
+            trainingGroupsActive(organizationId)
+            && (isTrainingGroupStaff(organizationId, groupId) || isTrainingGroupMember(organizationId, groupId))
+          )
+        );
+
+      allow create: if signedIn()
+        && (isPlatformAdmin() || (trainingGroupsActive(organizationId) && isTrainingGroupStaff(organizationId, groupId)))
+        && isAssignmentFile();
+
+      allow update: if false;
+
+      allow delete: if signedIn()
+        && (isPlatformAdmin() || (trainingGroupsActive(organizationId) && isTrainingGroupStaff(organizationId, groupId)));
+    }
+
+    match /organizations/{organizationId}/trainingGroups/{groupId}/assignments/{assignmentId}/submissions/{userId}/{fileName} {
+      allow read: if signedIn()
+        && (
+          isPlatformAdmin()
+          || (
+            trainingGroupsActive(organizationId)
+            && (request.auth.uid == userId || isTrainingGroupStaff(organizationId, groupId))
+          )
+        );
+
+      // Learners upload only into their own folder.
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && trainingGroupsActive(organizationId)
+        && isTrainingGroupMember(organizationId, groupId)
+        && isAssignmentFile();
+
+      allow update: if false;
+
+      // Removing a file before handing in (once handed in, the Cloud Function manages it).
+      allow delete: if signedIn() && request.auth.uid == userId;
     }
 
     // Everything else is closed.

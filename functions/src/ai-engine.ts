@@ -12,8 +12,8 @@ import { linkStatus } from "./link-check";
  *
  *   aiAssist({ app, task, input })   one callable for every task
  *
- * - Tasks are listed in TASKS below (draft-topic, improve, summarize,
- *   classify-resource). Each says which apps may use it and how its answer
+ * - Tasks are listed in TASKS below (draft-topic, draft-career-path,
+ *   improve, summarize, classify-resource). Each says which apps may use it and how its answer
  *   is checked; add new tasks there.
  * - Settings: aiEngineConfig/settings (Admin → AI and content checks):
  *   on/off, a monthly call limit, a daily limit per person, an optional
@@ -287,6 +287,104 @@ export const TASKS: Record<string, TaskDefinition> = {
         }),
       );
       return { resources: checked, searchedPages: extras.sources.slice(0, 12) };
+    },
+  },
+
+  /**
+   * First draft of a career roadmap (Learning → Career paths → Manage).
+   * Stages name their required skills, the learning that builds them and a
+   * practical check (assessment or project) that proves them. Only Zebron
+   * courses and certifications sent in the input can be linked; anything
+   * else becomes "coming soon" or an outside step. Nothing is saved here.
+   */
+  "draft-career-path": {
+    apps: ["learning"],
+    build(input) {
+      const title = clip(input.title, 120);
+      if (!title) throw new HttpsError("invalid-argument", "Give the career a title first.");
+      const level = ["entry", "mid", "senior"].includes(String(input.level)) ? String(input.level) : "entry";
+      const area = clip(input.area, 120) || "United States";
+      const courses = (Array.isArray(input.courses) ? (input.courses as Array<Record<string, unknown>>) : [])
+        .slice(0, 150)
+        .map((course) => {
+          const skills = Array.isArray(course.skills) ? course.skills.filter((item): item is string => typeof item === "string").slice(0, 8).join(", ") : "";
+          return `${clip(course.id, 120)}: ${clip(course.title, 160)}${skills ? ` [${skills}]` : ""}`;
+        });
+      const certifications = (Array.isArray(input.certifications) ? (input.certifications as Array<Record<string, unknown>>) : [])
+        .slice(0, 60)
+        .map((item) => `${clip(item.key, 160)}: ${clip(item.title, 160)}`);
+      return {
+        json: true,
+        maxTokens: 6000,
+        system:
+          `You design career roadmaps for Zebron Learning. ${STYLE} ` +
+          "A roadmap has 4 to 8 ordered stages, from fundamentals to job-ready. Each stage has: a short title, 1 to 5 required skills, " +
+          "learning steps (Zebron courses, outside resources, or skills to practice) and at least one practical check that proves the skills: " +
+          "a certification exam (kind \"certification\") or a hands-on project (kind \"project\") with a clear brief of what to build and hand in. " +
+          "Finishing a course never proves competency on its own, so every stage needs a certification or a project, and later stages need real projects. " +
+          "Use a Zebron course or certification only when it is in the lists below, by its exact id or key. When the right course is not on Zebron, " +
+          "add a course step with courseId null and a clear title (it shows as coming soon), or a resource step with an official https link you are sure exists. " +
+          "Pay and outlook are rough, honest estimates for the area; say \"varies\" when unsure. Never invent statistics. " +
+          "Reply with JSON only: {\"summary\": string (under 200 characters), \"description\": string (what the job is like, 3 to 5 sentences), " +
+          "\"field\": string (such as Technology, Healthcare, Business, Skilled Trades), \"salaryRange\": string (under 100 characters), " +
+          "\"outlook\": string (under 300 characters), \"jobKeywords\": string (2 or 3 job titles to search, commas between), " +
+          "\"skills\": string[] (soft skills, up to 6), \"stages\": [{\"title\": string, \"description\": string (one sentence), \"skills\": string[], " +
+          "\"steps\": [{\"kind\": \"course\" | \"resource\" | \"skill\" | \"certification\" | \"project\", \"title\": string, \"description\": string, " +
+          "\"courseId\": string | null, \"certificationKey\": string | null, \"url\": string, \"hours\": number}]}]}.",
+        prompt:
+          `Career: ${title}\nLevel: ${level}\nArea: ${area}\n` +
+          `Zebron courses (id: title [skills]):\n${courses.length ? courses.join("\n") : "(none yet)"}\n` +
+          `Zebron certifications (key: title):\n${certifications.length ? certifications.join("\n") : "(none yet)"}\n`,
+      };
+    },
+    async parse(text, input) {
+      const parsed = parseJson(text);
+      const courseIds = new Set((Array.isArray(input.courses) ? (input.courses as Array<{ id?: unknown }>) : []).map((course) => clip(course.id, 120)));
+      const certificationKeys = new Set(
+        (Array.isArray(input.certifications) ? (input.certifications as Array<{ key?: unknown }>) : []).map((item) => clip(item.key, 160)),
+      );
+      const kinds = ["course", "resource", "skill", "certification", "project"];
+      const strings = (value: unknown, max: number, length: number) =>
+        Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").map((item) => item.trim().slice(0, length)).filter(Boolean).slice(0, max) : [];
+
+      const stages = (Array.isArray(parsed.stages) ? (parsed.stages as Array<Record<string, unknown>>) : []).slice(0, 10).map((stage) => ({
+        title: clip(stage.title, 120),
+        description: clip(stage.description, 600),
+        skills: strings(stage.skills, 10, 60),
+        steps: (Array.isArray(stage.steps) ? (stage.steps as Array<Record<string, unknown>>) : [])
+          .slice(0, 15)
+          .map((step) => {
+            const kind = kinds.includes(String(step.kind)) ? String(step.kind) : "skill";
+            const courseId = clip(step.courseId, 120);
+            const certificationKey = clip(step.certificationKey, 160);
+            const url = clip(step.url, 500);
+            const hours = typeof step.hours === "number" && Number.isFinite(step.hours) ? Math.min(2000, Math.max(0, Math.round(step.hours))) : 0;
+            return {
+              kind,
+              title: clip(step.title, 160),
+              description: clip(step.description, 1000),
+              // Only real Zebron courses and certifications are linked.
+              courseId: kind === "course" && courseIds.has(courseId) ? courseId : null,
+              certificationKey: kind === "certification" && certificationKeys.has(certificationKey) ? certificationKey : null,
+              url: /^https:\/\//i.test(url) ? url : "",
+              hours,
+            };
+          })
+          .filter((step) => step.title),
+      })).filter((stage) => stage.title || stage.steps.length);
+
+      if (!stages.length) throw new HttpsError("internal", "The AI draft had no roadmap. Try again.");
+
+      return {
+        summary: clip(parsed.summary, 240),
+        description: clip(parsed.description, 3000),
+        field: clip(parsed.field, 60),
+        salaryRange: clip(parsed.salaryRange, 120),
+        outlook: clip(parsed.outlook, 400),
+        jobKeywords: clip(parsed.jobKeywords, 100),
+        skills: strings(parsed.skills, 20, 60),
+        stages,
+      };
     },
   },
 

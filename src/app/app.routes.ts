@@ -145,6 +145,23 @@ export const routes: Routes = [
                 data: { title: 'Zebron | Certification exam' },
                 loadComponent: () => import('./features/courses/pages/certification-exam.component').then((m) => m.CertificationExamComponent),
             },
+            // Career paths (features/careers): career → skills → roadmap → courses → projects → credentials → jobs.
+            {
+                path: 'careers',
+                data: { title: 'Zebron | Career paths' },
+                loadComponent: () => import('./features/careers/pages/career-paths.component').then((m) => m.CareerPathsComponent),
+            },
+            {
+                path: 'careers/manage',
+                canActivate: [adminGuard],
+                data: { title: 'Zebron | Manage career paths' },
+                loadComponent: () => import('./features/careers/pages/career-path-manage.component').then((m) => m.CareerPathManageComponent),
+            },
+            {
+                path: 'careers/:pathId',
+                data: { title: 'Zebron | Career path' },
+                loadComponent: () => import('./features/careers/pages/career-path-detail.component').then((m) => m.CareerPathDetailComponent),
+            },
             {
                 path: 'manage',
                 canActivate: [adminGuard],

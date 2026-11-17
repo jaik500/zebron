@@ -2690,6 +2690,11 @@ export {
   listOpenTrainingGroups,
   submitTrainingGroupRequest,
 } from "./training-group-enrollment";
+export {
+  manageTrainingGroupAssignment,
+  reviewTrainingGroupSubmission,
+  submitTrainingGroupAssignment,
+} from "./training-group-assignments";
 export { deleteTestCenterQuiz } from "./test-center-quiz-delete";
 export { castPollVote } from "./polls";
 export { refreshOrganizationStats, refreshDashboardStatsNightly } from "./dashboard-stats";

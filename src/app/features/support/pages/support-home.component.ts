@@ -19,6 +19,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { PageTitleService } from '../../../core/services/page-title.service';
 import { OrganizationContextStore } from '../../organizations/stores/organization-context.store';
 import {
+  MemberOrganization,
   SupportService,
   SupportTicket,
   TICKET_CATEGORY_OPTIONS,
@@ -39,7 +40,20 @@ type Tab = 'new' | 'mine';
  * - Signed-in users see "My tickets": their own tickets plus the tickets
  *   of organizations they manage.
  * - Managers can open a ticket on behalf of an organization.
+ * - Members choose who should help: their own organization (its managers,
+ *   admins and owners answer; Zebron doesn't see it unless they escalate it)
+ *   or Zebron Support. ?organizationId= preselects that organization.
  */
+
+/** "Who should help?": Zebron, the member's organization, or Zebron on the organization's behalf. */
+interface RecipientOption {
+  key: string;
+  title: string;
+  hint: string;
+  icon: string;
+  organizationId: string | null;
+  handledBy: 'zebron' | 'organization';
+}
 @Component({
   selector: 'app-support-home',
   standalone: true,
@@ -85,11 +99,23 @@ type Tab = 'new' | 'mine';
             <!-- ============ CONFIRMATION ============ -->
             <section class="rounded-xl border border-emerald-200 bg-white p-6 text-center shadow-sm sm:p-8">
               <mat-icon class="!h-12 !w-12 !text-5xl text-emerald-600">task_alt</mat-icon>
-              <h2 class="mt-3 text-xl font-bold text-gray-900">We've received your request</h2>
-              <p class="mt-2 text-gray-600">
-                Your ticket number is <strong class="text-gray-900">{{ done.number }}</strong>.
-                We've emailed you a copy and will reply there.
-              </p>
+              @if (done.organizationName) {
+                <h2 class="mt-3 text-xl font-bold text-gray-900">Sent to {{ done.organizationName }}</h2>
+                <p class="mt-2 text-gray-600">
+                  Your ticket number is <strong class="text-gray-900">{{ done.number }}</strong>.
+                  Your organization's admins and managers will answer it. We've emailed you a copy, and you'll get an
+                  email whenever they reply.
+                </p>
+              } @else {
+                <h2 class="mt-3 text-xl font-bold text-gray-900">We've received your request</h2>
+                <p class="mt-2 text-gray-600">
+                  Your ticket number is <strong class="text-gray-900">{{ done.number }}</strong>.
+                  We've emailed you a copy and will reply there.
+                </p>
+              }
+              @if (signedIn()) {
+                <p class="mt-2 text-sm text-gray-600">Follow it any time under <strong>My tickets</strong> on this page.</p>
+              }
 
               <div class="mt-5 flex flex-wrap justify-center gap-2">
                 @if (signedIn() && done.id) {
@@ -144,17 +170,25 @@ type Tab = 'new' | 'mine';
                 </div>
               }
 
-              @if (organizationOptions().length > 0) {
-                <mat-form-field appearance="outline" class="zb-field">
-                  <mat-label>On behalf of</mat-label>
-                  <mat-select [(ngModel)]="organizationId" name="organizationId">
-                    <mat-option [value]="null">Just me (personal)</mat-option>
-                    @for (organization of organizationOptions(); track organization.id) {
-                      <mat-option [value]="organization.id">{{ organization.name }}</mat-option>
+              @if (recipientOptions().length > 1) {
+                <fieldset class="mb-5">
+                  <legend class="mb-2 text-sm font-semibold text-gray-900">Who should help?</legend>
+                  <div class="grid gap-2 sm:grid-cols-2">
+                    @for (option of recipientOptions(); track option.key) {
+                      <label
+                        class="flex cursor-pointer gap-3 rounded-xl border-2 p-3 transition focus-within:ring-2 focus-within:ring-[#007979]"
+                        [class]="recipient() === option.key ? 'border-teal-700 bg-teal-50' : 'border-gray-200 hover:bg-gray-50'"
+                      >
+                        <input type="radio" name="recipient" class="sr-only" [checked]="recipient() === option.key" (change)="recipient.set(option.key)" />
+                        <mat-icon class="mt-0.5 shrink-0 text-[#007979]">{{ option.icon }}</mat-icon>
+                        <span class="min-w-0">
+                          <span class="block text-sm font-semibold text-gray-900">{{ option.title }}</span>
+                          <span class="block text-xs text-gray-500">{{ option.hint }}</span>
+                        </span>
+                      </label>
                     }
-                  </mat-select>
-                  <mat-hint>Organization tickets are visible to its managers, admins and owners.</mat-hint>
-                </mat-form-field>
+                  </div>
+                </fieldset>
               }
 
               <mat-form-field appearance="outline" class="zb-field">
@@ -204,6 +238,10 @@ type Tab = 'new' | 'mine';
           }
         } @else {
           <!-- ============ MY TICKETS ============ -->
+          <p class="mb-3 text-sm text-gray-600">
+            Open a ticket to see the conversation and its status, reply, or close it when your issue is solved.
+            You also get an email whenever someone replies.
+          </p>
           <div class="mb-4 flex flex-wrap items-center gap-2">
             @for (filter of filters; track filter.key) {
               <button type="button" class="rounded-full border px-3 py-1 text-sm"
@@ -233,9 +271,7 @@ type Tab = 'new' | 'mine';
                       <span class="flex flex-wrap items-center gap-2">
                         <span class="font-mono text-xs text-gray-500">{{ ticket.number }}</span>
                         <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="statusInfo(ticket.status).classes">{{ statusInfo(ticket.status).requesterLabel }}</span>
-                        @if (ticket.organizationName) {
-                          <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-800">{{ ticket.organizationName }}</span>
-                        }
+                        <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" [class]="handlerBadge(ticket).classes">{{ handlerBadge(ticket).label }}</span>
                         @if (ticket.lastMessageBy === 'staff' && ticket.status === 'waiting_on_requester') {
                           <span class="text-[11px] font-semibold text-amber-700">New reply</span>
                         }
@@ -277,7 +313,7 @@ export class SupportHomeComponent implements OnInit {
   protected readonly loading = signal(false);
   protected readonly submitting = signal(false);
   protected readonly error = signal('');
-  protected readonly created = signal<{ id: string | null; number: string } | null>(null);
+  protected readonly created = signal<{ id: string | null; number: string; organizationName: string | null } | null>(null);
 
   protected category: TicketCategory = 'technical_issue';
   protected priority: TicketPriority = 'normal';
@@ -285,8 +321,56 @@ export class SupportHomeComponent implements OnInit {
   protected description = '';
   protected guestName = '';
   protected guestEmail = '';
-  protected organizationId: string | null = null;
+  private wantedOrganizationId: string | null = null;
   protected website = '';
+
+  // ---------- Who should help? ----------
+  protected readonly memberOrganizations = signal<MemberOrganization[]>([]);
+  protected readonly recipient = signal('zebron');
+
+  protected readonly recipientOptions = computed<RecipientOption[]>(() => {
+    const options: RecipientOption[] = [];
+    const managed = new Set(this.managed());
+    const organizations = this.memberOrganizations().length
+      ? this.memberOrganizations()
+      : this.organizationOptions().map((organization) => ({ ...organization, manager: true }));
+
+    for (const organization of organizations) {
+      if (organization.manager || managed.has(organization.id)) {
+        options.push({
+          key: `zebron-org:${organization.id}`,
+          title: `Zebron Support, for ${organization.name}`,
+          hint: `Shared with ${organization.name}'s managers, admins and owners.`,
+          icon: 'domain',
+          organizationId: organization.id,
+          handledBy: 'zebron',
+        });
+      } else {
+        options.push({
+          key: `org:${organization.id}`,
+          title: organization.name,
+          hint: 'Your organization’s admins and managers: courses, cohorts and assignments, access, grades and schedules.',
+          icon: 'groups',
+          organizationId: organization.id,
+          handledBy: 'organization',
+        });
+      }
+    }
+
+    options.push({
+      key: 'zebron',
+      title: options.length ? 'Zebron Support, just me' : 'Zebron Support',
+      hint: 'Problems with the Zebron website or your account, bugs and suggestions.',
+      icon: 'support_agent',
+      organizationId: null,
+      handledBy: 'zebron',
+    });
+    return options;
+  });
+
+  private readonly chosenRecipient = computed(
+    () => this.recipientOptions().find((option) => option.key === this.recipient()) ?? this.recipientOptions()[this.recipientOptions().length - 1],
+  );
   protected fromPage = '';
 
   protected readonly organizationOptions = computed(() => {
@@ -315,7 +399,7 @@ export class SupportHomeComponent implements OnInit {
 
     const params = this.route.snapshot.queryParamMap;
     this.fromPage = params.get('from')?.slice(0, 500) ?? '';
-    this.organizationId = params.get('organizationId');
+    this.wantedOrganizationId = params.get('organizationId');
 
     const category = params.get('category');
     if (category && TICKET_CATEGORY_OPTIONS.some((option) => option.value === category)) {
@@ -345,6 +429,7 @@ export class SupportHomeComponent implements OnInit {
       } catch {
         // Organization choices are optional.
       }
+      this.chooseDefaultRecipient();
     } else {
       this.tab.set('new');
     }
@@ -363,10 +448,8 @@ export class SupportHomeComponent implements OnInit {
       const result = await this.support.listMine();
       this.tickets.set(result.tickets);
       this.managed.set(result.managedOrganizations);
-
-      if (this.organizationId && !result.managedOrganizations.includes(this.organizationId)) {
-        this.organizationId = null;
-      }
+      this.memberOrganizations.set(result.memberOrganizations ?? []);
+      this.chooseDefaultRecipient();
     } catch (error) {
       this.error.set(supportErrorMessage(error));
     } finally {
@@ -396,7 +479,8 @@ export class SupportHomeComponent implements OnInit {
         description: this.description.trim(),
         category: this.category,
         priority: this.priority,
-        organizationId: this.organizationId,
+        organizationId: this.signedIn() ? this.chosenRecipient().organizationId : null,
+        handledBy: this.signedIn() ? this.chosenRecipient().handledBy : 'zebron',
         name: this.guestName.trim(),
         email: this.guestEmail.trim(),
         pageUrl: this.fromPage || undefined,
@@ -404,7 +488,12 @@ export class SupportHomeComponent implements OnInit {
         website: this.website,
       });
 
-      this.created.set({ id: result.ticketId, number: result.ticketNumber ?? '' });
+      const chosen = this.chosenRecipient();
+      this.created.set({
+        id: result.ticketId,
+        number: result.ticketNumber ?? '',
+        organizationName: this.signedIn() && chosen.handledBy === 'organization' ? chosen.title : null,
+      });
 
       if (this.signedIn()) {
         void this.loadMine();
@@ -421,6 +510,35 @@ export class SupportHomeComponent implements OnInit {
     this.subject = '';
     this.description = '';
     this.priority = 'normal';
+  }
+
+  /**
+   * Preselect who should help: the organization the person came from
+   * (members ask it; managers raise it with Zebron for it), else Zebron.
+   */
+  private chooseDefaultRecipient(): void {
+    const keys = this.recipientOptions().map((option) => option.key);
+    const wanted = this.wantedOrganizationId;
+    const preferred = wanted ? [`org:${wanted}`, `zebron-org:${wanted}`].find((key) => keys.includes(key)) : null;
+    if (preferred) {
+      this.recipient.set(preferred);
+    } else if (!keys.includes(this.recipient())) {
+      this.recipient.set('zebron');
+    }
+  }
+
+  /** Who is answering, on the My tickets list. */
+  protected handlerBadge(ticket: SupportTicket): { label: string; classes: string } {
+    if (ticket.handledBy === 'organization') {
+      return { label: `Sent to ${ticket.organizationName ?? 'your organization'}`, classes: 'bg-violet-50 text-violet-800' };
+    }
+    if (ticket.escalatedAt) {
+      return { label: `Passed to Zebron by ${ticket.organizationName ?? 'your organization'}`, classes: 'bg-amber-50 text-amber-800' };
+    }
+    if (ticket.organizationName) {
+      return { label: `Zebron · ${ticket.organizationName}`, classes: 'bg-teal-50 text-teal-800' };
+    }
+    return { label: 'Zebron Support', classes: 'bg-gray-100 text-gray-700' };
   }
 
   protected statusInfo(status: SupportTicket['status']) {

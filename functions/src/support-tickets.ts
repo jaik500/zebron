@@ -29,6 +29,20 @@ import { recordEmailUsage } from "./email-usage";
  * - Zebron staff are platform administrators. They see every ticket,
  *   reply, add internal notes, assign, and change status and priority.
  *
+ * Who handles a ticket (handledBy):
+ * - "zebron" (the default, and every ticket before this field existed):
+ *   Zebron Support answers it.
+ * - "organization": a member asked their own organization (courses,
+ *   cohorts, access, grades). The organization's managers, admins and
+ *   owners answer it from Administration → Support Tickets, with the same
+ *   tools as Zebron staff (status, priority, assignment, internal notes).
+ *   It isn't in Zebron's queue. They can escalate it to Zebron, which turns
+ *   it into a "zebron" ticket the organization keeps following.
+ *
+ * Internal notes carry an audience: "zebron" (Zebron staff only; notes
+ * without one), "organization" (that organization's handlers only), or
+ * "shared" (both, never the requester; used for escalation notes).
+ *
  * Data (server-only; clients have no direct Firestore access):
  *   supportTickets/{id}
  *   supportTickets/{id}/messages/{id}
@@ -97,6 +111,12 @@ export const TICKET_STATUSES = [
 ] as const;
 
 type Category = (typeof TICKET_CATEGORIES)[number];
+type HandledBy = "zebron" | "organization";
+type NoteAudience = "zebron" | "organization" | "shared";
+
+function handledByOf(ticket: DocumentData): HandledBy {
+  return ticket.handledBy === "organization" ? "organization" : "zebron";
+}
 type Priority = (typeof TICKET_PRIORITIES)[number];
 type Status = (typeof TICKET_STATUSES)[number];
 
@@ -178,7 +198,43 @@ async function managerOrganizations(uid: string): Promise<Map<string, string>> {
   return result;
 }
 
+/** Organizations the person is an active member of (any role), with names. */
+async function memberOrganizations(uid: string): Promise<{ id: string; name: string; manager: boolean }[]> {
+  const memberships = await db().collection("organizationMemberships").where("userId", "==", uid).get();
+  const active = memberships.docs
+    .map((document) => document.data())
+    .filter((data) => data.active === true && clean(data.organizationId))
+    .slice(0, 20);
+  const organizations = await Promise.all(active.map((data) => db().collection("organizations").doc(clean(data.organizationId)).get()));
+
+  return active
+    .map((data, index) => ({
+      id: clean(data.organizationId),
+      name: clean(organizations[index].data()?.name) || "Organization",
+      manager: MANAGER_ROLES.includes(clean(data.role)),
+      exists: organizations[index].exists,
+    }))
+    .filter((organization) => organization.exists)
+    .map(({ id, name, manager }) => ({ id, name, manager }));
+}
+
 type Access = "staff" | "requester" | "organization" | null;
+
+/**
+ * Who answers on this ticket: Zebron staff always may; an organization's
+ * managers do for tickets their organization handles.
+ */
+function isHandler(access: Access, ticket: DocumentData): boolean {
+  return access === "staff" || (access === "organization" && handledByOf(ticket) === "organization");
+}
+
+/** Internal notes and private events the caller may see. */
+function canSeeInternal(access: Access, message: DocumentData): boolean {
+  const audience = clean(message.audience) || "zebron";
+  if (access === "staff") return audience === "zebron" || audience === "shared";
+  if (access === "organization") return audience === "organization" || audience === "shared";
+  return false;
+}
 
 async function accessTo(caller: Caller, ticket: DocumentData): Promise<Access> {
   if (caller.isStaff) {
@@ -231,6 +287,7 @@ export const createSupportTicket = onCall(
     const category = clean(data.category) as Category;
     const priority = (clean(data.priority) || "normal") as Priority;
     const organizationId = clean(data.organizationId) || null;
+    const handledBy: HandledBy = data.handledBy === "organization" ? "organization" : "zebron";
     const pageUrl = clean(data.pageUrl).slice(0, 500) || null;
     const userAgent = clean(data.userAgent).slice(0, 300) || null;
 
@@ -265,12 +322,26 @@ export const createSupportTicket = onCall(
     // Organization tickets: managers and above of that organization only.
     let organizationName: string | null = null;
 
+    if (handledBy === "organization") {
+      // Any active member can ask their own organization.
+      if (!caller.uid) {
+        throw new HttpsError("unauthenticated", "Sign in to send a request to your organization.");
+      }
+      if (!organizationId) {
+        throw new HttpsError("invalid-argument", "Choose your organization.");
+      }
+      const membership = await db().collection("organizationMemberships").doc(`${caller.uid}_${organizationId}`).get();
+      if (membership.get("active") !== true) {
+        throw new HttpsError("permission-denied", "You can only send requests to an organization you belong to.");
+      }
+    }
+
     if (organizationId) {
       if (!caller.uid) {
         throw new HttpsError("unauthenticated", "Sign in to open a ticket for an organization.");
       }
 
-      if (!caller.isStaff) {
+      if (!caller.isStaff && handledBy === "zebron") {
         const organizations = await managerOrganizations(caller.uid);
 
         if (!organizations.has(organizationId)) {
@@ -314,6 +385,9 @@ export const createSupportTicket = onCall(
         priority: category === "security" && priority === "normal" ? "high" : priority,
         status: "open" satisfies Status,
         scope: organizationId ? "organization" : "personal",
+        handledBy,
+        escalatedAt: null,
+        escalatedByName: null,
         organizationId,
         organizationName,
         requesterUid: caller.uid,
@@ -345,7 +419,31 @@ export const createSupportTicket = onCall(
     await batch.commit();
     const ticketNumber = number;
 
-    logger.info("Support ticket created.", { ticketId: ticketRef.id, ticketNumber, category, organizationId, guest: !caller.uid });
+    logger.info("Support ticket created.", { ticketId: ticketRef.id, ticketNumber, category, organizationId, handledBy, guest: !caller.uid });
+
+    if (handledBy === "organization") {
+      await Promise.all([
+        notify(
+          [email],
+          `[${ticketNumber}] ${organizationName} received your request: ${subject}`,
+          `Hi ${name},\n\nYour request was sent to ${organizationName}. Your ticket number is ${ticketNumber}.\n\n` +
+            `You'll get an email when someone replies. Follow it, reply or close it at ${SITE_URL}/support/tickets/${ticketRef.id}\n\n` +
+            `Your message:\n${description}`,
+          null,
+        ),
+        notify(
+          await organizationHandlerEmails(organizationId as string, caller.uid),
+          `[${ticketNumber}] New request from ${name}: ${subject}`,
+          `${name} <${email}> sent a request to ${organizationName}.\n` +
+            `Category: ${CATEGORY_LABELS[category]}\nPriority: ${priority}\n` +
+            (pageUrl ? `Page: ${pageUrl}\n` : "") +
+            `\n${description}\n\nAnswer it at ${SITE_URL}/support/tickets/${ticketRef.id}\n` +
+            `All requests: ${SITE_URL}/partner/org/${organizationId}/support`,
+          null,
+        ),
+      ]);
+      return { ticketId: ticketRef.id, ticketNumber };
+    }
 
     await Promise.all([
       notify(
@@ -391,20 +489,25 @@ export const listMySupportTickets = onCall({ region: REGION }, async (request) =
     queries.push(tickets().where("organizationId", "in", organizationIds).orderBy("updatedAt", "desc").limit(200).get());
   }
 
-  const snapshots = await Promise.all(queries);
+  const [snapshots, memberOf] = await Promise.all([Promise.all(queries), memberOrganizations(caller.uid)]);
   const byId = new Map<string, DocumentData>();
 
-  for (const snapshot of snapshots) {
+  snapshots.forEach((snapshot, index) => {
+    const isOrganizationQuery = index === snapshots.length - 1 && organizationIds.length > 0;
     for (const document of snapshot.docs) {
-      byId.set(document.id, document.data());
+      const data = document.data();
+      // Members' requests to the organization live in its inbox, not in the manager's own list.
+      if (isOrganizationQuery && handledByOf(data) === "organization" && data.requesterUid !== caller.uid) continue;
+      byId.set(document.id, data);
     }
-  }
+  });
 
   return {
     tickets: [...byId.entries()]
       .map(([id, data]) => serializeTicket(id, data))
       .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "")),
     managedOrganizations: [...organizations.keys()],
+    memberOrganizations: memberOf,
   };
 });
 
@@ -447,7 +550,12 @@ export const listAllSupportTickets = onCall({ region: REGION }, async (request) 
 
   const snapshot = await query.get();
 
-  return { tickets: snapshot.docs.map((document) => serializeTicket(document.id, document.data())) };
+  // Requests an organization handles itself stay out of Zebron's queue (escalated ones come in).
+  return {
+    tickets: snapshot.docs
+      .filter((document) => handledByOf(document.data()) === "zebron")
+      .map((document) => serializeTicket(document.id, document.data())),
+  };
 });
 
 // ============================================================
@@ -477,12 +585,15 @@ export const getSupportTicket = onCall({ region: REGION }, async (request) => {
   return {
     ticket: serializeTicket(snapshot.id, ticket),
     access,
+    handler: isHandler(access, ticket),
+    canEscalate: access === "organization" && handledByOf(ticket) === "organization",
     messages: messages.docs
       .map((document) => ({ id: document.id, ...document.data() }) as DocumentData)
-      .filter((message) => access === "staff" || message.internal !== true)
+      .filter((message) => message.internal !== true || canSeeInternal(access, message))
       .map((message) => ({
         id: clean(message.id),
         authorName: clean(message.authorName) || (message.authorRole === "staff" ? "Zebron Support" : "Requester"),
+        audience: message.internal === true ? clean(message.audience) || "zebron" : null,
         authorRole: clean(message.authorRole) || "requester",
         body: clean(message.body),
         internal: message.internal === true,
@@ -524,25 +635,31 @@ export const addSupportTicketMessage = onCall(
       throw new HttpsError("permission-denied", "You don't have access to this ticket.");
     }
 
-    if (internal && access !== "staff") {
-      throw new HttpsError("permission-denied", "Only Zebron staff can add internal notes.");
+    const handler = isHandler(access, ticket);
+    const isStaff = access === "staff";
+    const organizationName = clean(ticket.organizationName) || "your organization";
+
+    if (internal && !(handler || access === "organization")) {
+      throw new HttpsError("permission-denied", "Only the people answering this ticket can add internal notes.");
     }
 
-    const isStaff = access === "staff";
     const status = clean(ticket.status) as Status;
 
-    // A requester reply reopens a waiting or resolved ticket; staff replies wait for the requester.
+    // A requester reply reopens a waiting or resolved ticket; handler replies wait for the requester.
     let nextStatus: Status = status;
 
     if (!internal) {
-      if (isStaff && (status === "open" || status === "in_progress")) {
+      if (handler && (status === "open" || status === "in_progress")) {
         nextStatus = "waiting_on_requester";
-      } else if (!isStaff && ["waiting_on_requester", "resolved", "closed"].includes(status)) {
+      } else if (!handler && ["waiting_on_requester", "resolved", "closed"].includes(status)) {
         nextStatus = "open";
       }
     }
 
-    const authorName = isStaff ? `${caller.name || "Zebron"} (Zebron Support)` : caller.name || caller.email;
+    const authorName = isStaff ?
+      `${caller.name || "Zebron"} (Zebron Support)` :
+      access === "organization" ? `${caller.name || caller.email} (${organizationName})` : caller.name || caller.email;
+    const audience: NoteAudience = isStaff ? "zebron" : "organization";
 
     await db().runTransaction(async (transaction) => {
       transaction.set(ref.collection("messages").doc(), {
@@ -551,6 +668,7 @@ export const addSupportTicketMessage = onCall(
         authorRole: isStaff ? "staff" : access === "organization" ? "organization" : "requester",
         body,
         internal,
+        ...(internal ? { audience } : {}),
         kind: internal ? "note" : "message",
         createdAt: FieldValue.serverTimestamp(),
       });
@@ -558,7 +676,7 @@ export const addSupportTicketMessage = onCall(
       transaction.update(ref, {
         status: nextStatus,
         messageCount: FieldValue.increment(1),
-        ...(internal ? {} : { lastMessageAt: FieldValue.serverTimestamp(), lastMessageBy: isStaff ? "staff" : "requester" }),
+        ...(internal ? {} : { lastMessageAt: FieldValue.serverTimestamp(), lastMessageBy: handler ? "staff" : "requester" }),
         ...(nextStatus === "open" && status !== "open" ? { resolvedAt: null, reopenedAt: FieldValue.serverTimestamp() } : {}),
         updatedAt: FieldValue.serverTimestamp(),
         updatedBy: caller.uid,
@@ -573,11 +691,21 @@ export const addSupportTicketMessage = onCall(
     const subject = clean(ticket.subject);
 
     if (!internal) {
-      if (isStaff) {
+      const byOrganization = handledByOf(ticket) === "organization";
+      if (handler) {
+        const who = isStaff ? "Zebron Support" : organizationName;
         await notify(
-          await requesterRecipients(ticket),
-          `[${number}] Zebron Support replied: ${subject}`,
-          `${body}\n\n— ${caller.name || "Zebron Support"}\n\nReply or follow the ticket at ${SITE_URL}/support/tickets/${ticketId}`,
+          byOrganization ? requesterOnly(ticket) : await requesterRecipients(ticket),
+          `[${number}] ${who} replied: ${subject}`,
+          `${body}\n\n— ${caller.name || who}\n\nReply or follow the ticket at ${SITE_URL}/support/tickets/${ticketId}`,
+          byOrganization ? null : SUPPORT_INBOX,
+        );
+      } else if (byOrganization) {
+        await notify(
+          await organizationHandlerEmails(clean(ticket.organizationId), caller.uid),
+          `[${number}] New reply from ${caller.name || caller.email}: ${subject}`,
+          `${body}\n\nAnswer it at ${SITE_URL}/support/tickets/${ticketId}`,
+          null,
         );
       } else {
         await notify(
@@ -617,6 +745,12 @@ export const updateSupportTicket = onCall(
       throw new HttpsError("permission-denied", "You don't have access to this ticket.");
     }
 
+    const handler = isHandler(access, ticket);
+
+    if (data.escalate === true) {
+      return escalateTicket(ref, ticket, access, caller, clean(data.note).slice(0, MAX_BODY));
+    }
+
     const current = clean(ticket.status) as Status;
     const status = clean(data.status) as Status | "";
     const priority = clean(data.priority) as Priority | "";
@@ -626,10 +760,13 @@ export const updateSupportTicket = onCall(
     const updates: Record<string, unknown> = {};
     const events: DocumentData[] = [];
 
-    if (access !== "staff") {
-      // Requesters and organization managers may only close or reopen.
+    const noteAudience: NoteAudience = access === "staff" ? "zebron" : "organization";
+    const handlerName = access === "staff" ? "Zebron Support" : caller.name || caller.email;
+
+    if (!handler) {
+      // Requesters, and organization managers following a Zebron ticket, may only close or reopen.
       if (priority || assignToMe || unassign) {
-        throw new HttpsError("permission-denied", "Only Zebron staff can change priority or assignment.");
+        throw new HttpsError("permission-denied", "Only the people answering this ticket can change priority or assignment.");
       }
 
       if (status === "closed" && current !== "closed") {
@@ -667,14 +804,14 @@ export const updateSupportTicket = onCall(
 
         if (priority !== ticket.priority) {
           updates.priority = priority;
-          events.push(systemEvent(`Priority changed from ${ticket.priority} to ${priority}`, caller.name || "Zebron Support", true));
+          events.push(systemEvent(`Priority changed from ${ticket.priority} to ${priority}`, handlerName, true, noteAudience));
         }
       }
 
       if (assignToMe) {
         updates.assigneeUid = caller.uid;
         updates.assigneeName = caller.name || caller.email;
-        events.push(systemEvent(`Assigned to ${caller.name || caller.email}`, caller.name || "Zebron Support", true));
+        events.push(systemEvent(`Assigned to ${caller.name || caller.email}`, handlerName, true, noteAudience));
 
         if (current === "open" && !status) {
           updates.status = "in_progress";
@@ -684,7 +821,7 @@ export const updateSupportTicket = onCall(
       if (unassign) {
         updates.assigneeUid = null;
         updates.assigneeName = null;
-        events.push(systemEvent("Unassigned", caller.name || "Zebron Support", true));
+        events.push(systemEvent("Unassigned", handlerName, true, noteAudience));
       }
     }
 
@@ -693,7 +830,7 @@ export const updateSupportTicket = onCall(
     }
 
     const nextStatus = (updates.status as Status | undefined) ?? current;
-    const actorName = access === "staff" ? "Zebron Support" : caller.name || caller.email;
+    const actorName = access === "staff" ? "Zebron Support" : handler ? `${caller.name || caller.email} (${clean(ticket.organizationName) || "Organization"})` : caller.name || caller.email;
 
     if (nextStatus !== current) {
       events.push(statusEvent(current, nextStatus, actorName));
@@ -711,13 +848,22 @@ export const updateSupportTicket = onCall(
       const number = clean(ticket.number);
       const subject = clean(ticket.subject);
 
-      if (access === "staff") {
+      if (handler) {
+        const byOrganization = handledByOf(ticket) === "organization";
         await notify(
-          await requesterRecipients(ticket),
+          byOrganization ? requesterOnly(ticket) : await requesterRecipients(ticket),
           `[${number}] ${STATUS_LABELS[nextStatus]}: ${subject}`,
           nextStatus === "resolved" ?
             `We've marked your ticket as resolved. If anything is still wrong, just reply within ${AUTO_CLOSE_DAYS} days and it will reopen.\n\n${SITE_URL}/support/tickets/${ticketId}` :
             `Your ticket status is now: ${STATUS_LABELS[nextStatus]}.\n\n${SITE_URL}/support/tickets/${ticketId}`,
+          byOrganization ? null : SUPPORT_INBOX,
+        );
+      } else if (handledByOf(ticket) === "organization") {
+        await notify(
+          await organizationHandlerEmails(clean(ticket.organizationId), caller.uid),
+          `[${number}] ${STATUS_LABELS[nextStatus]} by requester: ${subject}`,
+          `${caller.name || caller.email} changed the status to ${STATUS_LABELS[nextStatus]}.\n\n${SITE_URL}/support/tickets/${ticketId}`,
+          null,
         );
       } else {
         await notify([SUPPORT_INBOX], `[${number}] ${STATUS_LABELS[nextStatus]} by requester: ${subject}`, `${caller.name || caller.email} changed the status to ${STATUS_LABELS[nextStatus]}.`);
@@ -768,6 +914,9 @@ function serializeTicket(id: string, data: DocumentData) {
     priority: clean(data.priority) || "normal",
     status: clean(data.status) || "open",
     scope: clean(data.scope) || "personal",
+    handledBy: handledByOf(data),
+    escalatedAt: iso(data.escalatedAt),
+    escalatedByName: clean(data.escalatedByName) || null,
     organizationId: clean(data.organizationId) || null,
     organizationName: clean(data.organizationName) || null,
     requesterName: clean(data.requesterName) || null,
@@ -789,13 +938,14 @@ function statusEvent(from: Status, to: Status, by: string): DocumentData {
   return systemEvent(`Status changed from ${STATUS_LABELS[from] ?? from} to ${STATUS_LABELS[to] ?? to}`, by, false);
 }
 
-function systemEvent(body: string, by: string, internal: boolean): DocumentData {
+function systemEvent(body: string, by: string, internal: boolean, audience: NoteAudience = "zebron"): DocumentData {
   return {
     authorUid: null,
     authorName: by,
     authorRole: "system",
     body,
     internal,
+    ...(internal ? { audience } : {}),
     kind: "event",
     createdAt: FieldValue.serverTimestamp(),
   };
@@ -840,7 +990,110 @@ async function requesterRecipients(ticket: DocumentData): Promise<string[]> {
   return [...recipients];
 }
 
-async function notify(to: string[], subject: string, text: string): Promise<void> {
+/** Just the requester (organization tickets: the organization's managers are the ones answering). */
+function requesterOnly(ticket: DocumentData): string[] {
+  const email = clean(ticket.requesterEmail).toLowerCase();
+  return email ? [email] : [];
+}
+
+/** The organization's managers, admins and owners (up to 25), without the person acting. */
+async function organizationHandlerEmails(organizationId: string, exceptUid: string | null): Promise<string[]> {
+  if (!organizationId) return [];
+  const memberships = await db().collection("organizationMemberships").where("organizationId", "==", organizationId).get();
+  const handlers = memberships.docs
+    .map((document) => document.data())
+    .filter((data) => data.active === true && MANAGER_ROLES.includes(clean(data.role)) && clean(data.userId) && clean(data.userId) !== exceptUid)
+    .slice(0, 25);
+  const addresses = await Promise.all(
+    handlers.map(async (data) => {
+      const profile = (await db().collection("users").doc(clean(data.userId)).get()).data() ?? {};
+      let address = clean(profile.email);
+      if (!address) {
+        try {
+          address = clean((await getAuth().getUser(clean(data.userId))).email);
+        } catch {
+          address = "";
+        }
+      }
+      return address.toLowerCase();
+    }),
+  );
+  return addresses.filter(Boolean);
+}
+
+/**
+ * The organization passes a request it can't solve to Zebron Support:
+ * Zebron handles it from now on, the organization keeps following it.
+ */
+async function escalateTicket(
+  ref: FirebaseFirestore.DocumentReference,
+  ticket: DocumentData,
+  access: Access,
+  caller: Caller & { uid: string },
+  note: string,
+): Promise<{ status: Status; escalated: true }> {
+  if (!(access === "organization" || access === "staff") || handledByOf(ticket) !== "organization") {
+    throw new HttpsError("failed-precondition", "Only the organization answering this request can send it to Zebron Support.");
+  }
+  const organizationName = clean(ticket.organizationName) || "Organization";
+  const byName = `${caller.name || caller.email} (${organizationName})`;
+  const current = clean(ticket.status) as Status;
+
+  await db().runTransaction(async (transaction) => {
+    transaction.update(ref, {
+      handledBy: "zebron",
+      escalatedAt: FieldValue.serverTimestamp(),
+      escalatedBy: caller.uid,
+      escalatedByName: byName,
+      status: "open",
+      assigneeUid: null,
+      assigneeName: null,
+      lastMessageBy: "requester",
+      updatedAt: FieldValue.serverTimestamp(),
+      updatedBy: caller.uid,
+    });
+    transaction.set(ref.collection("messages").doc(), systemEvent(`${organizationName} sent this request to Zebron Support`, byName, false));
+    if (note) {
+      transaction.set(ref.collection("messages").doc(), {
+        authorUid: caller.uid,
+        authorName: byName,
+        authorRole: "organization",
+        body: note,
+        internal: true,
+        audience: "shared",
+        kind: "note",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
+    if (current !== "open") {
+      transaction.set(ref.collection("messages").doc(), statusEvent(current, "open", byName));
+    }
+  });
+
+  const number = clean(ticket.number);
+  const subject = clean(ticket.subject);
+  await Promise.all([
+    notify(
+      [SUPPORT_INBOX],
+      `[${number}] Escalated by ${organizationName}: ${subject}`,
+      `${byName} sent this request to Zebron Support.\n` +
+        `From: ${clean(ticket.requesterName)} <${clean(ticket.requesterEmail)}>\n` +
+        (note ? `\nNote from ${organizationName}:\n${note}\n` : "") +
+        `\nOpen it in Zebron Admin → Support.`,
+    ),
+    notify(
+      requesterOnly(ticket),
+      `[${number}] Your request was passed to Zebron Support: ${subject}`,
+      `${organizationName} asked Zebron Support to help with your request. You'll get an email when they reply.\n\n${SITE_URL}/support/tickets/${ref.id}`,
+    ),
+  ]);
+
+  logger.info("Support ticket escalated to Zebron.", { ticketId: ref.id, organizationId: clean(ticket.organizationId), by: caller.uid });
+  return { status: "open", escalated: true };
+}
+
+/** replyTo: the Zebron support inbox by default; null for organization tickets (they answer on Zebron). */
+async function notify(to: string[], subject: string, text: string, replyTo: string | null = SUPPORT_INBOX): Promise<void> {
   const recipients = [...new Set(to.map((address) => address.trim().toLowerCase()).filter(Boolean))];
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -855,7 +1108,7 @@ async function notify(to: string[], subject: string, text: string): Promise<void
         const response = await fetch(RESEND_API_URL, {
           method: "POST",
           headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ from: FROM, to: [recipient], reply_to: SUPPORT_INBOX, subject: subject.slice(0, 200), text }),
+          body: JSON.stringify({ from: FROM, to: [recipient], ...(replyTo ? { reply_to: replyTo } : {}), subject: subject.slice(0, 200), text }),
         });
 
         if (!response.ok) {
