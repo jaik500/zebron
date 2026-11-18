@@ -131,13 +131,13 @@ import { RouterLink } from '@angular/router';
 
               <li>
                 <a
-                  routerLink="/find"
+                  routerLink="/jobs"
                   class="text-sm
                          text-white/70
                          transition
                          hover:text-white"
                 >
-                  Find Jobs and opportunities
+                  Job Board
                 </a>
               </li>
               <li>

@@ -102,7 +102,7 @@ import {
           </a>
 
           <a
-            routerLink="/find/job"
+            routerLink="/jobs"
             class="text-sm
                    font-medium
                    text-[#032D42]

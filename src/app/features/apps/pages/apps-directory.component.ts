@@ -263,12 +263,12 @@ interface AppCard extends PublicApp {
       <div class="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-5 py-10 sm:flex-row sm:items-center sm:px-6 lg:px-8">
         <div>
           <h2 class="text-lg font-bold text-[#032D42]">{{ 'Not sure where to start?' | t }}</h2>
-          <p class="mt-1 text-sm text-slate-600">{{ 'Answer a few questions and we\\u0027ll point you to the right resources, jobs and training.' | t }}</p>
+          <p class="mt-1 text-sm text-slate-600">{{ 'Pick a career path to see what to learn, or ask us for help.' | t }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <a routerLink="/find" class="inline-flex items-center gap-2 rounded-xl bg-[#007979] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700">
-            <mat-icon class="!h-5 !w-5 !text-[18px]" aria-hidden="true">travel_explore</mat-icon>
-            {{ 'Start the Resource Finder' | t }}
+          <a routerLink="/courses/careers" class="inline-flex items-center gap-2 rounded-xl bg-[#007979] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700">
+            <mat-icon class="!h-5 !w-5 !text-[18px]" aria-hidden="true">route</mat-icon>
+            {{ 'Explore career paths' | t }}
           </a>
           <a routerLink="/support" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-400">
             <mat-icon class="!h-5 !w-5 !text-[18px]" aria-hidden="true">support_agent</mat-icon>

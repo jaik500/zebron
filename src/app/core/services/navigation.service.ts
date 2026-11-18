@@ -75,11 +75,11 @@ icon: 'library_books',
 featureKey: 'resources',
 },
 {
-// One entry for the finder: jobs and training are its two paths.
+// The job board (the old finder at /find redirects here).
 key: 'find',
-label: 'Find jobs & training',
-route: '/find',
-icon: 'travel_explore',
+label: 'Job Board',
+route: '/jobs',
+icon: 'work',
 },
 {
 key: 'community',

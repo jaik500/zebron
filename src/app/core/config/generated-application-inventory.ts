@@ -7,7 +7,7 @@
  * scripts/generate-application-inventory.mjs
  *
  * Generated at:
- * 2026-11-08T17:44:48.856Z
+ * 2026-11-18T01:53:45.319Z
  */
 
 import type {
@@ -65,6 +65,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "applicationKey": "core",
         "name": "Organization Application Admin",
         "path": "src/app/features/admin/pages/organizations/organization-application-admin.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.admin.pages.organizations.organization_apps_panel.component",
+        "applicationKey": "core",
+        "name": "Organization Apps Panel",
+        "path": "src/app/features/admin/pages/organizations/organization-apps-panel.component.ts",
         "type": "component",
         "required": true,
         "status": "detected",
@@ -451,6 +464,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
+        "id": "core.component.partner.pages.organization_unavailable.organization_unavailable.component",
+        "applicationKey": "core",
+        "name": "Organization Unavailable",
+        "path": "src/app/features/partner/pages/organization-unavailable/organization-unavailable.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
         "id": "core.component.partner.pages.partner_admin.partner_admin.component",
         "applicationKey": "core",
         "name": "Partner Admin",
@@ -521,6 +547,32 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "name": "Privacy",
         "path": "src/app/features/privacy/pages/privacy/privacy.component.ts",
         "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.component.profile.profile_learning.component",
+        "applicationKey": "core",
+        "name": "Profile Learning",
+        "path": "src/app/features/profile/profile-learning.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "core.service.profile.profile_photo.service",
+        "applicationKey": "core",
+        "name": "Profile Photo",
+        "path": "src/app/features/profile/profile-photo.service.ts",
+        "type": "service",
         "required": true,
         "status": "detected",
         "metadata": {
@@ -749,58 +801,6 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "name": "Location",
         "path": "src/app/features/locations/stores/location.store.ts",
         "type": "store",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "resources.component.resource_finder.pages.find.find.component",
-        "applicationKey": "resources",
-        "name": "Find",
-        "path": "src/app/features/resource-finder/pages/find/find.component.ts",
-        "type": "component",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "resources.component.resource_finder.pages.job.job_finder.component",
-        "applicationKey": "resources",
-        "name": "Job Finder",
-        "path": "src/app/features/resource-finder/pages/job/job-finder.component.ts",
-        "type": "component",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "resources.component.resource_finder.pages.training_results.training_results.component",
-        "applicationKey": "resources",
-        "name": "Training Results",
-        "path": "src/app/features/resource-finder/pages/training-results/training-results.component.ts",
-        "type": "component",
-        "required": true,
-        "status": "detected",
-        "metadata": {
-          "generated": true,
-          "source": "source-tree"
-        }
-      },
-      {
-        "id": "resources.component.resource_finder.pages.training.training_finder.component",
-        "applicationKey": "resources",
-        "name": "Training Finder",
-        "path": "src/app/features/resource-finder/pages/training/training-finder.component.ts",
-        "type": "component",
         "required": true,
         "status": "detected",
         "metadata": {
@@ -1577,6 +1577,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
     "description": "Jobs & Training application implementation inventory.",
     "dependencies": [
       {
+        "id": "jobs.component.admin.pages.jobs.components.job_providers.job_providers.component",
+        "applicationKey": "jobs",
+        "name": "Job Providers",
+        "path": "src/app/features/admin/pages/jobs/components/job-providers/job-providers.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
         "id": "jobs.component.admin.pages.jobs.job_admin.component",
         "applicationKey": "jobs",
         "name": "Job Admin",
@@ -1864,6 +1877,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         }
       },
       {
+        "id": "courses.component.courses.builder.markdown_field.component",
+        "applicationKey": "courses",
+        "name": "Markdown Field",
+        "path": "src/app/features/courses/builder/markdown-field.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
         "id": "courses.service.courses.certification.service",
         "applicationKey": "courses",
         "name": "Certification",
@@ -1986,6 +2012,32 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "name": "Course",
         "path": "src/app/features/courses/course.store.ts",
         "type": "store",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.component.courses.flashcards.course_flashcards.component",
+        "applicationKey": "courses",
+        "name": "Course Flashcards",
+        "path": "src/app/features/courses/flashcards/course-flashcards.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "courses.service.courses.flashcards.flashcard.service",
+        "applicationKey": "courses",
+        "name": "Flashcard",
+        "path": "src/app/features/courses/flashcards/flashcard.service.ts",
+        "type": "service",
         "required": true,
         "status": "detected",
         "metadata": {
@@ -2198,6 +2250,130 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
     ]
   },
   {
+    "applicationKey": "training-groups",
+    "applicationName": "Training Groups",
+    "description": "Training Groups application implementation inventory.",
+    "dependencies": [
+      {
+        "id": "training-groups.component.training_groups.my_training_groups_panel.component",
+        "applicationKey": "training-groups",
+        "name": "My Training Groups Panel",
+        "path": "src/app/features/training-groups/my-training-groups-panel.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "training-groups.service.training_groups.training_group_assignment.service",
+        "applicationKey": "training-groups",
+        "name": "Training Group Assignment",
+        "path": "src/app/features/training-groups/training-group-assignment.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "training-groups.component.training_groups.training_group_assignments.component",
+        "applicationKey": "training-groups",
+        "name": "Training Group Assignments",
+        "path": "src/app/features/training-groups/training-group-assignments.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "training-groups.component.training_groups.training_group_detail.component",
+        "applicationKey": "training-groups",
+        "name": "Training Group Detail",
+        "path": "src/app/features/training-groups/training-group-detail.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "training-groups.component.training_groups.training_group_form.component",
+        "applicationKey": "training-groups",
+        "name": "Training Group Form",
+        "path": "src/app/features/training-groups/training-group-form.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "training-groups.component.training_groups.training_group_join.component",
+        "applicationKey": "training-groups",
+        "name": "Training Group Join",
+        "path": "src/app/features/training-groups/training-group-join.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "training-groups.service.training_groups.training_group_pdf.service",
+        "applicationKey": "training-groups",
+        "name": "Training Group Pdf",
+        "path": "src/app/features/training-groups/training-group-pdf.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "training-groups.service.training_groups.training_group.service",
+        "applicationKey": "training-groups",
+        "name": "Training Group",
+        "path": "src/app/features/training-groups/training-group.service.ts",
+        "type": "service",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "training-groups.component.training_groups.training_groups.component",
+        "applicationKey": "training-groups",
+        "name": "Training Groups",
+        "path": "src/app/features/training-groups/training-groups.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      }
+    ]
+  },
+  {
     "applicationKey": "test-center",
     "applicationName": "Test Center",
     "description": "Test Center application implementation inventory.",
@@ -2259,6 +2435,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "applicationKey": "test-center",
         "name": "Question Answer Editor",
         "path": "src/app/features/test-center/components/question-answer-editor.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.component.test_center.components.quiz_delete_dialog.component",
+        "applicationKey": "test-center",
+        "name": "Quiz Delete Dialog",
+        "path": "src/app/features/test-center/components/quiz-delete-dialog.component.ts",
         "type": "component",
         "required": true,
         "status": "detected",
@@ -2415,6 +2604,19 @@ export const GENERATED_APPLICATION_IMPLEMENTATION_MANIFESTS:
         "applicationKey": "test-center",
         "name": "Quiz List",
         "path": "src/app/features/test-center/pages/quiz/quiz-list.component.ts",
+        "type": "component",
+        "required": true,
+        "status": "detected",
+        "metadata": {
+          "generated": true,
+          "source": "source-tree"
+        }
+      },
+      {
+        "id": "test-center.component.test_center.pages.skills.skills_page.component",
+        "applicationKey": "test-center",
+        "name": "Skills Page",
+        "path": "src/app/features/test-center/pages/skills/skills-page.component.ts",
         "type": "component",
         "required": true,
         "status": "detected",

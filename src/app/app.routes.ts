@@ -276,26 +276,19 @@ export const routes: Routes = [
         loadComponent: () => import('./features/resources/pages/resource-detail/resource-detail.component').then((m) => m.ResourceDetailComponent),
     },
     // -----------------------------------------------------
-    // RESOURCE FINDER
+    // RESOURCE FINDER (removed)
     // -----------------------------------------------------
+    // The finder pages (/find, /find/job) only led to the job board and
+    // career paths. Old links go straight there, keeping any search.
     {
         path: 'find',
-        data: {
-            title: 'Find your next opportunity',
-            header: 'Find jobs & training',
-        },
-        loadComponent: () => import('./features/resource-finder/pages/find/find.component').then((m) => m.FindComponent),
+        pathMatch: 'full',
+        redirectTo: '/jobs',
     },
-    // -----------------------------------------------------
-    // JOB FINDER
-    // -----------------------------------------------------
     {
         path: 'find/job',
-        data: {
-            title: 'Find a job',
-            header: 'Find jobs & training',
-        },
-        loadComponent: () => import('./features/resource-finder/pages/job/job-finder.component').then((m) => m.JobFinderComponent),
+        pathMatch: 'full',
+        redirectTo: ({ queryParams }) => inject(Router).createUrlTree(['/jobs'], { queryParams: legacyJobSearch(queryParams) }),
     },
     {
         // Old results page: now the job board at /jobs, with the same search.

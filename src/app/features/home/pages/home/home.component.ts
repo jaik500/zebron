@@ -801,7 +801,7 @@ export class HomeComponent {
   protected readonly valueRows = computed(() => [
     { route: '/resources', icon: 'explore', step: this.t().discover, title: this.t().resourcesServices },
     { route: '/courses/careers', icon: 'school', step: this.t().explore, title: this.t().trainingEducation },
-    { route: '/find/job', icon: 'work_outline', step: this.t().connect, title: this.t().jobsOpportunities },
+    { route: '/jobs', icon: 'work_outline', step: this.t().connect, title: this.t().jobsOpportunities },
   ]);
 
   protected search(event: Event, text: string): void {

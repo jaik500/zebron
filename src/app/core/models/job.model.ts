@@ -29,6 +29,12 @@ export interface Job {
   categoryId?: string;
   categoryName?: string;
 
+  /**
+   * USAJOBS imports: the sectors the listing is in (functions/src/job-aggregation/usajobs-sectors.ts).
+   * 'it' | 'healthcare' | 'armed-forces' | 'finance'; a listing can be in several.
+   */
+  sectors?: string[];
+
   location?: {
     city?: string;
     state?: string;
@@ -58,8 +64,8 @@ export interface Job {
    */
   expiresAt?: Timestamp | null;
 
-  /** Why a closed listing was closed. */
-  closedReason?: 'expired' | 'manual' | null;
+  /** Why a closed listing was closed ('category': a USAJOBS listing outside the imported sectors). */
+  closedReason?: 'expired' | 'manual' | 'category' | null;
 
   status: JobStatus;
 

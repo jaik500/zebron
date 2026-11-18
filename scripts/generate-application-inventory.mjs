@@ -37,7 +37,7 @@ const APPLICATIONS = {
   resources: {
     name: 'Resources',
     featureDirectories: [
-      'resources', 'resource-finder', 'resource-types', 'categories', 'locations',
+      'resources', 'resource-types', 'categories', 'locations',
       'submissions', 'admin/pages/resources', 'admin/pages/resource-types',
       'admin/pages/categories', 'admin/pages/locations', 'admin/pages/submissions',
       'admin/pages/topics',

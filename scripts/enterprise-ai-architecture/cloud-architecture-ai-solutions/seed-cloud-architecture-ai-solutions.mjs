@@ -3,11 +3,11 @@
  * Program: Enterprise AI & Solutions Architecture, step 8
  *
  * Dry run (checks the content, writes nothing):
- *   node scripts/cloud-architecture-ai-solutions/seed-cloud-architecture-ai-solutions.mjs
+ *   node scripts/enterprise-ai-architecture/cloud-architecture-ai-solutions/seed-cloud-architecture-ai-solutions.mjs
  * Create the course:
- *   node scripts/cloud-architecture-ai-solutions/seed-cloud-architecture-ai-solutions.mjs --apply
+ *   node scripts/enterprise-ai-architecture/cloud-architecture-ai-solutions/seed-cloud-architecture-ai-solutions.mjs --apply
  * Update an existing course (keeps its status, publish date and final exam):
- *   node scripts/cloud-architecture-ai-solutions/seed-cloud-architecture-ai-solutions.mjs --apply --overwrite
+ *   node scripts/enterprise-ai-architecture/cloud-architecture-ai-solutions/seed-cloud-architecture-ai-solutions.mjs --apply --overwrite
  *
  * Lesson text uses the light Markdown lessons support: # / ## / ### headings,
  * - and 1. lists, **bold**, *italic*, `code`, ``` code blocks, > quotes and
@@ -15,7 +15,7 @@
  * heading is the section title.
  */
 
-import { runCourseSeed } from '../lib/write-zebron-course.mjs';
+import { runCourseSeed } from '../../lib/write-zebron-course.mjs';
 
 const COURSE = {
   id: "cloud-architecture-ai-solutions",
@@ -2405,7 +2405,7 @@ The objective is to demonstrate that cloud AI architecture is not simply selecti
   },
 ];
 
-runCourseSeed({ course: COURSE, modules: MODULES, script: 'scripts/cloud-architecture-ai-solutions/seed-cloud-architecture-ai-solutions.mjs' }).catch((error) => {
+runCourseSeed({ course: COURSE, modules: MODULES, script: 'scripts/enterprise-ai-architecture/cloud-architecture-ai-solutions/seed-cloud-architecture-ai-solutions.mjs' }).catch((error) => {
   console.error('\nSEED FAILED:', error);
   process.exit(1);
 });

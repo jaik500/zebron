@@ -97,7 +97,7 @@ import {
       </a>
 
       <a
-        routerLink="/find"
+        routerLink="/jobs"
         class="text-sm
                font-medium
                text-white
@@ -303,14 +303,14 @@ import {
             </h2>
 
             <p class="mt-2 text-sm leading-6 text-gray-600">
-              Yes. Use the Find section to explore available
-              employment opportunities and career-related
-              information.
+              Yes. The Job Board lists open jobs, including
+              federal jobs in IT, healthcare, the armed forces
+              and finance. Career Paths show what to learn for a role.
             </p>
 
 
             <a
-              routerLink="/find/job"
+              routerLink="/jobs"
               class="mt-3 inline-flex text-sm font-semibold
                      text-[#007979] hover:underline"
             >

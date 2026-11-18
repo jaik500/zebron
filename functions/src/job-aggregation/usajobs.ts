@@ -8,6 +8,8 @@ import { logger } from 'firebase-functions';
 import { defineSecret } from 'firebase-functions/params';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 
+import { ARMED_FORCES_AGENCIES, IMPORTED_SERIES, JobSector, sectorLabel, sectorsOf } from './usajobs-sectors';
+
 const REGION = 'us-central1';
 const TIME_ZONE = 'America/New_York';
 
@@ -292,6 +294,19 @@ function mapUsaJobsItem(item: UsaJobsItem) {
 
   const category = descriptor.JobCategory?.[0];
 
+  /**
+   * Only IT, healthcare, armed forces and banking/finance/accounting jobs
+   * are imported (see usajobs-sectors.ts).
+   */
+  const sectors = sectorsOf(
+    (descriptor.JobCategory ?? []).map((item) => clean(item.Code)).filter(Boolean),
+    [clean(descriptor.DepartmentName), employer],
+  );
+
+  if (sectors.length === 0) {
+    return null;
+  }
+
   const documentId = `external_usajobs_${externalJobId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
   return {
@@ -327,7 +342,9 @@ function mapUsaJobsItem(item: UsaJobsItem) {
 
       skills: [],
 
-      tags: [clean(category?.Name), clean(descriptor.DepartmentName)].filter(Boolean),
+      sectors,
+
+      tags: [...sectors.map(sectorLabel), clean(category?.Name), clean(descriptor.DepartmentName)].filter(Boolean),
 
       applicationUrl,
 
@@ -385,7 +402,51 @@ interface UsaJobsSyncResult {
   skipped: number;
   returned: number;
   totalAvailable: number;
+  /** Listings by sector (a listing can be in more than one). */
+  bySector: Record<JobSector, number>;
+  /** Earlier USAJOBS listings closed because they are outside the sectors. */
+  closedOutsideSectors: number;
   syncedAt: string;
+}
+
+/** One USAJOBS search: the newest 500 listings from the last 60 days matching the filter. */
+async function searchUsajobs(
+  apiKey: string,
+  userAgent: string,
+  filter: Record<string, string>,
+): Promise<{ items: UsaJobsItem[]; totalAvailable: number }> {
+  const url = new URL('https://data.usajobs.gov/api/Search');
+
+  url.searchParams.set('DatePosted', '60');
+  url.searchParams.set('ResultsPerPage', '500');
+  url.searchParams.set('Page', '1');
+  url.searchParams.set('SortField', 'openingdate');
+  url.searchParams.set('SortDirection', 'Desc');
+  url.searchParams.set('Fields', 'Full');
+
+  for (const [name, value] of Object.entries(filter)) {
+    url.searchParams.set(name, value);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'User-Agent': userAgent,
+      'Authorization-Key': apiKey,
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`USAJOBS API returned HTTP ${response.status}`);
+  }
+
+  const data = (await response.json()) as UsaJobsResponse;
+
+  return {
+    items: data.SearchResult?.SearchResultItems ?? [],
+    totalAvailable: data.SearchResult?.SearchResultCountAll ?? 0,
+  };
 }
 
 /**
@@ -406,33 +467,27 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
     throw new Error('USAJOBS API credentials are not configured.');
   }
 
-  const url = new URL('https://data.usajobs.gov/api/Search');
+  /**
+   * Two searches: IT, healthcare and finance jobs by occupational series,
+   * and civilian jobs with the military departments by agency. Listings
+   * found by both are kept once.
+   */
+  const [bySeries, byAgency] = await Promise.all([
+    searchUsajobs(apiKey, userAgent, { JobCategoryCode: IMPORTED_SERIES.join(';') }),
+    searchUsajobs(apiKey, userAgent, { Organization: ARMED_FORCES_AGENCIES.join(';') }),
+  ]);
 
-  url.searchParams.set('DatePosted', '60');
-  url.searchParams.set('ResultsPerPage', '500');
-  url.searchParams.set('Page', '1');
-  url.searchParams.set('SortField', 'openingdate');
-  url.searchParams.set('SortDirection', 'Desc');
-  url.searchParams.set('Fields', 'Full');
-
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: {
-      'User-Agent': userAgent,
-      'Authorization-Key': apiKey,
-      Accept: 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`USAJOBS API returned HTTP ${response.status}`);
+  const seen = new Set<string>();
+  const items: UsaJobsItem[] = [];
+  for (const item of [...bySeries.items, ...byAgency.items]) {
+    const id = clean(item.MatchedObjectId);
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      items.push(item);
+    }
   }
 
-  const data = (await response.json()) as UsaJobsResponse;
-
-  const items = data.SearchResult?.SearchResultItems ?? [];
-
-  const totalAvailable = data.SearchResult?.SearchResultCountAll ?? 0;
+  const totalAvailable = bySeries.totalAvailable + byAgency.totalAvailable;
 
   const stateRef = db.collection('jobAggregationState').doc('usajobs');
 
@@ -446,47 +501,107 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
   let updated = 0;
   let skipped = 0;
 
-  const batch = db.batch();
+  const bySector: Record<JobSector, number> = { it: 0, healthcare: 0, 'armed-forces': 0, finance: 0 };
+  const keptIds = new Set<string>();
 
-  for (const item of items) {
-    const mapped = mapUsaJobsItem(item);
+  const mappedItems = items
+    .map((item) => mapUsaJobsItem(item))
+    .filter((mapped): mapped is NonNullable<ReturnType<typeof mapUsaJobsItem>> => {
+      if (!mapped) {
+        skipped++;
+      }
+      return mapped !== null;
+    });
 
-    if (!mapped) {
-      skipped++;
+  // Firestore allows 500 writes per batch: write 400 at a time, and read
+  // the existing listings for each chunk in one call.
+  for (let offset = 0; offset < mappedItems.length; offset += 400) {
+    const chunk = mappedItems.slice(offset, offset + 400);
+    const refs = chunk.map((mapped) => db.collection('jobs').doc(mapped.documentId));
+    const existingDocs = await db.getAll(...refs);
+    const batch = db.batch();
+
+    chunk.forEach((mapped, index) => {
+      const existing = existingDocs[index];
+
+      /**
+       * Avoid mass job-alert emails during the initial import.
+       */
+      const alertEligibleAt = existing.exists
+        ? (existing.data()?.alertEligibleAt ?? null)
+        : initialImport
+          ? null
+          : now;
+
+      batch.set(
+        refs[index],
+        {
+          ...mapped.job,
+          alertEligibleAt,
+        },
+        { merge: true },
+      );
+
+      keptIds.add(mapped.documentId);
+      for (const sector of mapped.job.sectors) {
+        bySector[sector]++;
+      }
+
+      if (existing.exists) {
+        updated++;
+      } else {
+        imported++;
+      }
+    });
+
+    await batch.commit();
+  }
+
+  /**
+   * Close earlier USAJOBS listings that are outside the imported sectors
+   * (imported before the sector filter). Listings that are still in a
+   * sector stay open until they expire as usual.
+   */
+  let closedOutsideSectors = 0;
+  const activeImports = await db
+    .collection('jobs')
+    .where('createdBy', '==', 'system:usajobs')
+    .where('status', '==', 'active')
+    .get();
+
+  let closeBatch = db.batch();
+  let pending = 0;
+
+  for (const doc of activeImports.docs) {
+    if (keptIds.has(doc.id)) {
       continue;
     }
-
-    const jobRef = db.collection('jobs').doc(mapped.documentId);
-
-    const existing = await jobRef.get();
-
-    /**
-     * Avoid mass job-alert emails during the initial import.
-     */
-    const alertEligibleAt = existing.exists
-      ? (existing.data()?.alertEligibleAt ?? null)
-      : initialImport
-        ? null
-        : now;
-
-    batch.set(
-      jobRef,
-      {
-        ...mapped.job,
-        alertEligibleAt,
-      },
-      { merge: true },
-    );
-
-    if (existing.exists) {
-      updated++;
-    } else {
-      imported++;
+    const job = doc.data();
+    const stored: unknown = job.sectors;
+    const sectors = Array.isArray(stored) && stored.length
+      ? stored
+      : sectorsOf(
+        [clean(job.categoryId)].filter(Boolean),
+        [clean(job.organizationName), ...(Array.isArray(job.tags) ? job.tags.map(clean) : [])],
+      );
+    if (sectors.length > 0) {
+      continue;
+    }
+    closeBatch.update(doc.ref, {
+      status: 'closed',
+      closedReason: 'category',
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    closedOutsideSectors++;
+    if (++pending === 400) {
+      await closeBatch.commit();
+      closeBatch = db.batch();
+      pending = 0;
     }
   }
 
-  if (items.length > 0) {
-    await batch.commit();
+  if (pending > 0) {
+    await closeBatch.commit();
   }
 
   const syncedAt = now.toDate().toISOString();
@@ -505,6 +620,9 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
       lastUpdatedCount: updated,
       lastSkippedCount: skipped,
 
+      lastSectorCounts: bySector,
+      lastClosedOutsideSectors: closedOutsideSectors,
+
       lastSyncSource: triggeredBy ? 'manual' : 'scheduled',
 
       lastTriggeredBy: triggeredBy,
@@ -520,6 +638,8 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
     skipped,
     returned: items.length,
     totalAvailable,
+    bySector,
+    closedOutsideSectors,
     triggeredBy,
   });
 
@@ -530,6 +650,8 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
     skipped,
     returned: items.length,
     totalAvailable,
+    bySector,
+    closedOutsideSectors,
     syncedAt,
   };
 }
