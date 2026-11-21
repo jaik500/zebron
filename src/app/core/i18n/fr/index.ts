@@ -11,6 +11,7 @@ import { FR_COURSES } from './courses';
 import { FR_MAILBOX } from './mailbox';
 import { FR_ONBOARDING } from './onboarding';
 import { FR_PARTNER } from './partner';
+import { FR_REVIEWS } from './reviews';
 import { FR_TEST_CENTER } from './test-center';
 
 export const FRENCH: Readonly<Record<string, string>> = {
@@ -21,5 +22,6 @@ export const FRENCH: Readonly<Record<string, string>> = {
   ...FR_MAILBOX,
   ...FR_ONBOARDING,
   ...FR_PARTNER,
+  ...FR_REVIEWS,
   ...FR_TEST_CENTER,
 };

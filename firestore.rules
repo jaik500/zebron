@@ -644,9 +644,26 @@ service cloud.firestore {
         );
 
       /*
+       * The document ID must be {userId}_{organizationId}, matching the
+       * fields inside it. Every rule and Cloud Function finds a membership
+       * by that ID alone, so a record filed under another organization's
+       * ID would grant access to that organization.
+       */
+      function hasMatchingMembershipId() {
+        return request.resource.data.get("userId", "") is string
+          && request.resource.data.get("organizationId", "") is string
+          && request.resource.data.get("userId", "") != ""
+          && request.resource.data.get("organizationId", "") != ""
+          && membershipId == request.resource.data.get("userId", "")
+            + "_" + request.resource.data.get("organizationId", "");
+      }
+
+      /*
        * New memberships can only carry a role below the creator's.
        */
-      allow create: if isPlatformAdmin()
+      allow create: if hasMatchingMembershipId()
+        && (
+        isPlatformAdmin()
         || (
           request.resource.data.get("organizationId", "") != ""
           && isOrganizationOperational(request.resource.data.get("organizationId", ""))
@@ -655,9 +672,13 @@ service cloud.firestore {
             request.resource.data.get("organizationId", ""),
             request.resource.data.get("role", "")
           )
+        )
         );
 
-      allow update: if isPlatformAdmin()
+      // Updates must keep the ID and the fields in step as well.
+      allow update: if hasMatchingMembershipId()
+        && (
+        isPlatformAdmin()
 
         // Change role or status of someone below you, to a role
         // that is still below you. Never your own membership.
@@ -704,6 +725,7 @@ service cloud.firestore {
               "phoneNumber",
               "updatedAt"
             ])
+        )
         );
 
       allow delete: if isPlatformAdmin()
@@ -4886,10 +4908,16 @@ service cloud.firestore {
       allow read: if isCurrentUser(userId);
 
       allow create, update: if isCurrentUser(userId)
-        && preferenceId == "notifications"
-        && request.resource.data.keys().hasOnly(["learningEmails", "updatedAt"])
-        && request.resource.data.learningEmails is bool
-        && request.resource.data.updatedAt == request.time;
+        && request.resource.data.updatedAt == request.time
+        && (
+          (preferenceId == "notifications"
+            && request.resource.data.keys().hasOnly(["learningEmails", "updatedAt"])
+            && request.resource.data.learningEmails is bool)
+          // Study tools (features/courses/annotations): ask before removing from My learning.
+          || (preferenceId == "study"
+            && request.resource.data.keys().hasOnly(["confirmRemoveFromMyLearning", "updatedAt"])
+            && request.resource.data.confirmRemoveFromMyLearning is bool)
+        );
     }
 
     // Course flashcards: a learner's spaced-repetition boxes per course
@@ -4905,6 +4933,109 @@ service cloud.firestore {
         && request.resource.data.cards is map
         && request.resource.data.cards.size() <= 500
         && request.resource.data.updatedAt == request.time;
+    }
+
+    // Highlights, notes and lesson bookmarks in courses
+    // (features/courses/annotations). Private to the learner.
+    match /users/{userId}/courseAnnotations/{annotationId} {
+      function validAnnotation(data) {
+        return data.keys().hasOnly([
+            "kind", "courseKey", "courseId", "organizationId", "courseTitle",
+            "lessonId", "lessonTitle", "blockIndex", "quote", "prefix", "suffix",
+            "color", "note", "createdAt", "updatedAt"
+          ])
+          && data.kind in ["highlight", "note", "bookmark"]
+          && data.courseKey is string && data.courseKey.size() > 0 && data.courseKey.size() <= 300
+          && data.courseId is string && data.courseId.size() > 0 && data.courseId.size() <= 200
+          && (data.organizationId == null || data.organizationId is string)
+          && data.courseTitle is string && data.courseTitle.size() <= 200
+          && data.lessonId is string && data.lessonId.size() > 0 && data.lessonId.size() <= 200
+          && data.lessonTitle is string && data.lessonTitle.size() <= 200
+          && data.blockIndex is int && data.blockIndex >= -1 && data.blockIndex <= 500
+          && data.quote is string && data.quote.size() <= 1000
+          && data.prefix is string && data.prefix.size() <= 64
+          && data.suffix is string && data.suffix.size() <= 64
+          && data.note is string && data.note.size() <= 2000
+          && (data.kind == "highlight"
+            ? data.color in ["yellow", "green", "blue", "pink"] && data.quote.size() > 0
+            : data.color == null)
+          && (data.kind != "note" || data.quote.size() > 0)
+          && data.updatedAt == request.time;
+      }
+
+      allow read, delete: if isCurrentUser(userId);
+
+      allow create: if isCurrentUser(userId)
+        && validAnnotation(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+
+      // Change the colour or the note; a highlight and a note can turn
+      // into each other, a bookmark stays a bookmark.
+      allow update: if isCurrentUser(userId)
+        && validAnnotation(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["color", "kind", "note", "updatedAt"])
+        && (resource.data.kind == "bookmark") == (request.resource.data.kind == "bookmark");
+    }
+
+    // ============================================================
+    // SITE REVIEWS (home page carousel, features/home/reviews)
+    //
+    // siteReviews/{uid}: one review per person. Anyone reads approved
+    // reviews; the author reads and edits their own, and every edit goes
+    // back to "pending". Platform admins approve, reject or delete.
+    // ============================================================
+    match /siteReviews/{reviewerId} {
+      function validReviewContent(data) {
+        return data.keys().hasOnly([
+            "userId", "displayName", "about", "rating", "text", "status",
+            "moderatorNote", "reviewedAt", "reviewedBy", "createdAt", "updatedAt"
+          ])
+          && data.userId == reviewerId
+          && data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 60
+          && data.about is string && data.about.size() <= 80
+          && data.rating is int && data.rating >= 1 && data.rating <= 5
+          && data.text is string && data.text.size() >= 20 && data.text.size() <= 800
+          && data.moderatorNote is string && data.moderatorNote.size() <= 300
+          && data.updatedAt == request.time;
+      }
+
+      allow get: if resource.data.status == "approved"
+        || isCurrentUser(reviewerId)
+        || isPlatformAdmin();
+      allow list: if resource.data.status == "approved" || isPlatformAdmin();
+
+      // The author writes the review; it always waits for approval.
+      allow create: if isCurrentUser(reviewerId)
+        && validReviewContent(request.resource.data)
+        && request.resource.data.status == "pending"
+        && request.resource.data.moderatorNote == ""
+        && request.resource.data.reviewedAt == null
+        && request.resource.data.reviewedBy == null
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if (
+          isCurrentUser(reviewerId)
+          && validReviewContent(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.status == "pending"
+          && request.resource.data.moderatorNote == ""
+          && request.resource.data.reviewedAt == null
+          && request.resource.data.reviewedBy == null
+        )
+        || (
+          isPlatformAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["status", "moderatorNote", "reviewedAt", "reviewedBy", "updatedAt"])
+          && request.resource.data.status in ["pending", "approved", "rejected"]
+          && request.resource.data.moderatorNote is string
+          && request.resource.data.moderatorNote.size() <= 300
+          && request.resource.data.reviewedBy == request.auth.uid
+          && request.resource.data.reviewedAt == request.time
+          && request.resource.data.updatedAt == request.time
+        );
+
+      allow delete: if isCurrentUser(reviewerId) || isPlatformAdmin();
     }
 
     match /users/{userId}/savedJobs/{jobId} {

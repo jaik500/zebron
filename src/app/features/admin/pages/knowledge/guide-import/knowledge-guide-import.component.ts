@@ -15,6 +15,16 @@ import { GUIDE_ARTICLES, GUIDE_EDITION, GuideArticle } from './guide-articles';
 
 type ImportOutcome = 'new' | 'update' | 'unchanged' | 'kept' | 'conflict';
 
+/** The summary cards, which also filter the table. */
+type StatKey = 'new' | 'update' | 'unchanged' | 'kept';
+
+const STAT_OUTCOMES: Record<StatKey, ImportOutcome[]> = {
+  new: ['new'],
+  update: ['update'],
+  unchanged: ['unchanged'],
+  kept: ['kept', 'conflict'],
+};
+
 interface ImportRow {
   article: GuideArticle;
   id: string;
@@ -108,14 +118,37 @@ const OUTCOME_LABELS: Record<ImportOutcome, string> = {
         }
       </header>
 
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        @for (stat of stats(); track stat.label) {
-          <div class="rounded-xl border border-emerald-100 bg-white p-3 shadow-sm">
+      <!-- Summary cards: click one to show only those articles; click again to show all. -->
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4" role="group" aria-label="Filter articles by status">
+        @for (stat of stats(); track stat.key) {
+          <button
+            type="button"
+            class="rounded-xl border border-emerald-100 bg-white p-3 text-left shadow-sm transition
+                   hover:border-emerald-300 disabled:hover:border-emerald-100
+                   focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#007979]
+                   disabled:cursor-default disabled:opacity-60"
+            [style.border-color]="filter() === stat.key ? '#007979' : null"
+            [style.background-color]="filter() === stat.key ? '#ecfdf5' : null"
+            [style.box-shadow]="filter() === stat.key ? '0 0 0 2px rgba(0, 121, 121, 0.25)' : null"
+            [attr.aria-pressed]="filter() === stat.key"
+            [disabled]="stat.value === 0 && filter() !== stat.key"
+            [title]="filter() === stat.key ? 'Show all articles' : 'Show only: ' + stat.label"
+            (click)="toggleFilter(stat.key)"
+          >
             <div class="text-2xl font-semibold text-gray-900">{{ stat.value }}</div>
             <div class="text-xs text-gray-600">{{ stat.label }}</div>
-          </div>
+          </button>
         }
       </div>
+
+      @if (filter()) {
+        <div class="-mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-700" aria-live="polite">
+          <span>Showing {{ visibleRows().length }} of {{ rows().length }} articles: {{ filterLabel() }}</span>
+          <button type="button" class="font-medium text-[#007979] hover:underline" (click)="filter.set(null)">
+            Show all
+          </button>
+        </div>
+      }
 
       <div class="min-w-0 overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
         <table class="w-full min-w-[760px] text-left text-sm">
@@ -130,7 +163,7 @@ const OUTCOME_LABELS: Record<ImportOutcome, string> = {
             </tr>
           </thead>
           <tbody>
-            @for (row of rows(); track row.id) {
+            @for (row of visibleRows(); track row.id) {
               <tr class="border-t border-gray-100 align-top">
                 <td class="px-4 py-3">
                   <div class="font-medium text-gray-900">{{ row.article.title }}</div>
@@ -156,6 +189,15 @@ const OUTCOME_LABELS: Record<ImportOutcome, string> = {
                   } @else {
                     <span class="text-gray-400">Not checked</span>
                   }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">
+                  No articles with this status.
+                  <button type="button" class="ml-1 font-medium text-[#007979] hover:underline" (click)="filter.set(null)">
+                    Show all
+                  </button>
                 </td>
               </tr>
             }
@@ -195,13 +237,30 @@ export class KnowledgeGuideImportComponent {
     const rows = this.rows();
     const count = (...outcomes: ImportOutcome[]) =>
       rows.filter((row) => row.outcome && outcomes.includes(row.outcome)).length;
+    const stat = (key: StatKey, label: string) => ({ key, label, value: count(...STAT_OUTCOMES[key]) });
     return [
-      { label: 'New', value: count('new') },
-      { label: 'To update', value: count('update') },
-      { label: 'Up to date', value: count('unchanged') },
-      { label: 'Kept (edited or in use)', value: count('kept', 'conflict') },
+      stat('new', 'New'),
+      stat('update', 'To update'),
+      stat('unchanged', 'Up to date'),
+      stat('kept', 'Kept (edited or in use)'),
     ];
   });
+
+  /** The card the table is filtered by, or null for all articles. */
+  protected readonly filter = signal<StatKey | null>(null);
+
+  protected readonly visibleRows = computed(() => {
+    const filter = this.filter();
+    if (!filter) return this.rows();
+    const outcomes = STAT_OUTCOMES[filter];
+    return this.rows().filter((row) => row.outcome !== null && outcomes.includes(row.outcome));
+  });
+
+  protected readonly filterLabel = computed(() => this.stats().find((stat) => stat.key === this.filter())?.label ?? '');
+
+  protected toggleFilter(key: StatKey): void {
+    this.filter.update((current) => (current === key ? null : key));
+  }
 
   protected outcomeLabel(outcome: ImportOutcome | null): string {
     return outcome ? OUTCOME_LABELS[outcome] : '';

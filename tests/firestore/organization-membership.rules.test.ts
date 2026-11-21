@@ -164,6 +164,83 @@ describe('Zebron Firestore Security Rules - Organization Memberships', () => {
     await assertSucceeds(getDoc(doc(db, `organizationMemberships/${newMembershipId}`)));
   });
 
+  // A membership is found by its ID ({userId}_{organizationId}) alone, so
+  // its ID must match the fields inside it. Otherwise an admin of one
+  // organization could file a record under another organization's ID and
+  // gain a role there.
+  describe('membership ID must match userId and organizationId', () => {
+    const OTHER_ORGANIZATION_ID = 'org-victim';
+    const ACCOMPLICE_UID = 'accomplice-uid';
+
+    async function seedOtherOrganization(): Promise<void> {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), `organizations/${OTHER_ORGANIZATION_ID}`), {
+          name: 'Victim Organization',
+          slug: 'victim-organization',
+          status: 'active',
+          lifecycleStatus: 'active',
+        });
+      });
+    }
+
+    it("denies an organization admin filing a membership under another organization's ID", async () => {
+      await seedBaseOrganization();
+      await seedOtherOrganization();
+
+      const db = authenticatedDb(ADMIN_UID);
+
+      await assertFails(
+        setDoc(doc(db, `organizationMemberships/${ACCOMPLICE_UID}_${OTHER_ORGANIZATION_ID}`), {
+          userId: ACCOMPLICE_UID,
+          organizationId: ORGANIZATION_ID,
+          role: 'org_manager',
+          active: true,
+        }),
+      );
+    });
+
+    it('denies a membership whose ID names a different user', async () => {
+      await seedBaseOrganization();
+
+      await assertFails(
+        setDoc(doc(authenticatedDb(ADMIN_UID), `organizationMemberships/someone-else_${ORGANIZATION_ID}`), {
+          userId: 'new-member-uid',
+          organizationId: ORGANIZATION_ID,
+          role: 'org_member',
+          active: true,
+        }),
+      );
+    });
+
+    it('denies a membership with a random ID', async () => {
+      await seedBaseOrganization();
+
+      await assertFails(
+        setDoc(doc(authenticatedDb(ADMIN_UID), 'organizationMemberships/random-id'), {
+          userId: 'new-member-uid',
+          organizationId: ORGANIZATION_ID,
+          role: 'org_member',
+          active: true,
+        }),
+      );
+    });
+
+    it('holds platform admins to the same ID format', async () => {
+      await seedBaseOrganization();
+      await seedOtherOrganization();
+      await seedPlatformAdmin();
+
+      await assertFails(
+        setDoc(doc(authenticatedDb(PLATFORM_ADMIN_UID), `organizationMemberships/${ACCOMPLICE_UID}_${OTHER_ORGANIZATION_ID}`), {
+          userId: ACCOMPLICE_UID,
+          organizationId: ORGANIZATION_ID,
+          role: 'org_member',
+          active: true,
+        }),
+      );
+    });
+  });
+
   // ==========================================================
   // UPDATE
   // ==========================================================

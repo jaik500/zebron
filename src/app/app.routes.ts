@@ -503,6 +503,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/pages/support/support-queue.component').then((m) => m.SupportQueueComponent),
     },
     {
+        path: 'admin/reviews',
+        canActivate: [adminGuard],
+        data: {
+            title: 'Admin | Reviews',
+        },
+        loadComponent: () => import('./features/admin/pages/reviews/review-admin.component').then((m) => m.ReviewAdminComponent),
+    },
+    {
         path: 'admin/organizations/requests',
         canActivate: [adminGuard],
         data: {

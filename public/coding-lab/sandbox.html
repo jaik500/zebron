@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--
+  Zebron Coding Lab sandbox.
+
+  CodeRunnerService loads this page in a hidden iframe with
+  sandbox="allow-scripts" and NOT allow-same-origin, so it has an opaque
+  origin. Learners' code runs in Web Workers started from here, from blob
+  URLs, so the workers have the same opaque origin: they cannot read
+  Zebron's cookies, localStorage or IndexedDB (where Firebase keeps the
+  sign-in), and they cannot call Zebron or Firestore as the learner.
+
+  The page receives each worker's source (public/coding-lab/js-worker.js
+  or python-worker.js) from the parent and relays messages both ways.
+
+  The policy below also applies to the workers: no network except
+  jsDelivr, where Python (Pyodide) and its packages are loaded from.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdn.jsdelivr.net; worker-src blob: data:; connect-src https://cdn.jsdelivr.net; img-src 'none'; style-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Zebron Coding Lab sandbox</title>
+</head>
+<body>
+<script>
+(() => {
+  'use strict';
+
+  const PARENT = window.parent;
+  const MAX_SOURCE = 200000;
+  const workers = new Map();
+  /** One blob URL per worker source, reused between runs. */
+  const urls = new Map();
+
+  function send(message) {
+    PARENT.postMessage({ source: 'zebron-code-sandbox', ...message }, '*');
+  }
+
+  function urlFor(source) {
+    let url = urls.get(source);
+    if (url) return url;
+    try {
+      url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+    } catch {
+      url = 'data:text/javascript;charset=utf-8,' + encodeURIComponent(source);
+    }
+    // Keep a few at most (a new deploy can change a worker's source).
+    if (urls.size >= 4) {
+      const [oldSource, oldUrl] = urls.entries().next().value;
+      urls.delete(oldSource);
+      if (oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+    }
+    urls.set(source, url);
+    return url;
+  }
+
+  function create(workerId, source) {
+    if (typeof source !== 'string' || !source || source.length > MAX_SOURCE) {
+      send({ type: 'error', workerId, message: 'The Coding Lab could not start.' });
+      return;
+    }
+    let worker;
+    try {
+      worker = new Worker(urlFor(source));
+    } catch {
+      send({ type: 'error', workerId, message: 'The Coding Lab could not start in this browser.' });
+      return;
+    }
+    worker.onmessage = (event) => send({ type: 'message', workerId, data: event.data });
+    worker.onmessageerror = () => send({ type: 'error', workerId, message: 'The code sent a message that could not be read.' });
+    worker.onerror = (event) => {
+      event.preventDefault();
+      send({ type: 'error', workerId, message: event.message || 'The code could not run.' });
+    };
+    workers.set(workerId, worker);
+  }
+
+  function terminate(workerId) {
+    const worker = workers.get(workerId);
+    if (!worker) return;
+    worker.terminate();
+    workers.delete(workerId);
+  }
+
+  window.addEventListener('message', (event) => {
+    // Only the page that embeds this sandbox may control it.
+    if (event.source !== PARENT) return;
+    const data = event.data;
+    if (!data || data.source !== 'zebron-code-lab' || typeof data.workerId !== 'number') return;
+    if (data.type === 'create') create(data.workerId, data.workerSource);
+    else if (data.type === 'post') workers.get(data.workerId)?.postMessage(data.data);
+    else if (data.type === 'terminate') terminate(data.workerId);
+  });
+
+  send({ type: 'ready' });
+})();
+</script>
+</body>
+</html>

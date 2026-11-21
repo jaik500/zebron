@@ -20,6 +20,14 @@ import { MatDividerModule } from '@angular/material/divider';
 import { NavigationService } from '../../../../core/services/navigation.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { PageTitleService } from '../../../../core/services/page-title.service';
+import { SettingsService } from '../../../../core/services/settings.service';
+import { SystemHealthService } from '../../../../core/services/system-health.service';
+
+interface SystemStatusBadge {
+  tone: 'operational' | 'unstable' | 'maintenance' | 'checking';
+  label: string;
+  textColor: string;
+}
 
 import { SecurityChecksComponent as ConfigurationSecurityComponent } from '../../shared/security-checks.component';
 import { ConfigurationMaintenanceComponent } from './tabs/maintenance/configuration-maintenance.component';
@@ -102,24 +110,33 @@ const TAB_ALIASES: Record<string, (typeof TABS)[number]> = {
                RIGHT: SYSTEM STATUS
                ======================================================== -->
           <div class="ml-auto flex shrink-0 items-center gap-2">
-            <!-- System Operational -->
+            <!-- System status: red in maintenance, orange when health
+                 checks find a problem, green when operational. -->
             <div
               class="flex items-center gap-2 rounded-full
                      border border-[#5FB8B8] bg-white/60
                      px-2.5 py-1.5 sm:px-3"
-              aria-label="System Operational"
+              role="status"
+              [attr.aria-label]="systemStatus().label"
+              [title]="systemStatus().label"
             >
               <!-- Status indicator -->
               <span
-                class="h-3 w-3 shrink-0 rounded-full bg-green-600
+                class="h-3 w-3 shrink-0 rounded-full
                        shadow-[0_0_0_2px_rgba(255,255,255,0.35)]"
+                [class.bg-green-600]="systemStatus().tone === 'operational'"
+                [class.bg-orange-500]="systemStatus().tone === 'unstable'"
+                [class.bg-red-600]="systemStatus().tone === 'maintenance'"
+                [class.bg-slate-400]="systemStatus().tone === 'checking'"
+                [class.animate-pulse]="systemStatus().tone === 'checking'"
               ></span>
 
               <!-- Hide text on small screens -->
               <span
-                class="hidden text-xs font-semibold text-[#164E55] sm:inline"
+                class="hidden text-xs font-semibold sm:inline"
+                [style.color]="systemStatus().textColor"
               >
-                System Operational
+                {{ systemStatus().label }}
               </span>
             </div>
           </div>
@@ -287,6 +304,34 @@ export class ConfigurationComponent {
     void this.router.navigate(['/admin/configuration', tab], { replaceUrl: true });
   }
 
+  private readonly settingsService =
+    inject(SettingsService);
+
+  private readonly systemHealthService =
+    inject(SystemHealthService);
+
+  /**
+   * Header status badge. Maintenance mode wins (red); otherwise the
+   * latest health check decides: problems are orange, healthy is green.
+   */
+  protected readonly systemStatus = computed((): SystemStatusBadge => {
+    if (this.settingsService.isEnabled('system.maintenance.enabled')) {
+      return { tone: 'maintenance', label: 'Maintenance Active', textColor: '#B91C1C' };
+    }
+
+    const health = this.systemHealthService.overallStatus();
+
+    if (health === 'degraded' || health === 'unhealthy') {
+      return { tone: 'unstable', label: 'System Unstable', textColor: '#C2410C' };
+    }
+
+    if (this.systemHealthService.checking() && !this.systemHealthService.lastChecked()) {
+      return { tone: 'checking', label: 'Checking Status', textColor: '#164E55' };
+    }
+
+    return { tone: 'operational', label: 'System Operational', textColor: '#164E55' };
+  });
+
   protected readonly navigationService =
     inject(NavigationService);
 
@@ -312,6 +357,15 @@ export class ConfigurationComponent {
     this.pageTitleService.setTitle(
       'Control Center',
     );
+
+    // Current maintenance setting and one health check per session, so
+    // the header badge reflects the real state. A check run from
+    // Operational Monitoring updates the badge too (same service).
+    void this.settingsService.ensureLoaded();
+
+    if (!this.systemHealthService.lastChecked() && !this.systemHealthService.checking()) {
+      void this.systemHealthService.runHealthCheck().catch(() => undefined);
+    }
   }
 
   protected async signOut(): Promise<void> {

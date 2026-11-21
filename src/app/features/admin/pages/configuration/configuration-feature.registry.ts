@@ -56,6 +56,17 @@ const CARDS: Omit<ConfigurationFeature, 'applicationName'>[] = [
     keywords: ['onboarding', 'applications', 'sign up', 'join'],
   },
   {
+    key: 'site-reviews',
+    applicationKey: 'core',
+    name: 'Reviews',
+    description:
+      'Approve or reject reviews of Zebron before they appear on the home page.',
+    icon: 'reviews',
+    type: 'settings',
+    route: '/admin/reviews',
+    keywords: ['reviews', 'testimonials', 'ratings', 'home page', 'moderation', 'approve'],
+  },
+  {
     key: 'users',
     applicationKey: 'core',
     name: 'Users',

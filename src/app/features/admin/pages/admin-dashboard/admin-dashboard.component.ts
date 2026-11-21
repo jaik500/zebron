@@ -1275,6 +1275,13 @@ export class AdminDashboardComponent {
       icon: 'support_agent',
     },
     {
+      title: 'Reviews',
+      description: 'Approve or reject reviews of Zebron before they appear on the home page.',
+      route: '/admin/reviews',
+      actionLabel: 'Moderate Reviews',
+      icon: 'reviews',
+    },
+    {
       title: 'Partner Requests',
       description: 'Review partner requests for apps, suspensions, terminations and ownership transfers, and edit the partner agreement.',
       route: '/admin/organizations/requests',

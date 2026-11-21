@@ -59,6 +59,40 @@ const DEFAULT_SETTINGS: SystemSetting[] = [
     clientReadable: true,
   },
 
+  // Maintenance mode (Admin -> Configuration -> Maintenance).
+  // MaintenanceService reads and writes these two settings.
+  {
+    id: 'system.maintenance.enabled',
+    key: 'system.maintenance.enabled',
+    applicationKey: 'platform',
+    label: 'Maintenance Mode',
+    group: 'Maintenance',
+    description:
+      'Places the Zebron platform into maintenance mode.',
+    type: 'boolean',
+    value: false,
+    defaultValue: false,
+    editable: true,
+    clientReadable: true,
+  },
+
+  {
+    id: 'system.maintenance.message',
+    key: 'system.maintenance.message',
+    applicationKey: 'platform',
+    label: 'Maintenance Message',
+    group: 'Maintenance',
+    description:
+      'Message shown to users while maintenance mode is on.',
+    type: 'string',
+    value:
+      'Zebron is temporarily unavailable while scheduled maintenance is being performed.',
+    defaultValue:
+      'Zebron is temporarily unavailable while scheduled maintenance is being performed.',
+    editable: true,
+    clientReadable: true,
+  },
+
   // ============================================================
   // COMMUNITY
   // ============================================================

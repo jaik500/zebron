@@ -14,6 +14,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { RevealDirective } from '../../../../shared/directives/reveal.directive';
 
 import { HomeText, homeText } from './home.i18n';
+import { HomeReviewsComponent } from '../../reviews/home-reviews.component';
 import { BlogService } from '../../../blog/blog.service';
 import { BLOG_COVERS, BlogCover, BlogPost, blogDate, isBlogImageSource } from '../../../blog/blog.model';
 import { POPULAR_SEARCHES, RESOURCE_NEEDS } from '../../../resources/resource-needs';
@@ -96,7 +97,7 @@ interface HomeStat {
   selector: 'app-home',
   standalone: true,
 
-  imports: [RouterLink, MatIconModule, RevealDirective],
+  imports: [RouterLink, MatIconModule, RevealDirective, HomeReviewsComponent],
 
   template: `
     <main class="overflow-x-clip">
@@ -635,6 +636,12 @@ interface HomeStat {
           </section>
         </div>
       </section>
+
+      <!-- =========================================================
+           REVIEWS: approved reviews in a carousel, and the review form
+           (features/home/reviews)
+           ========================================================= -->
+      <app-home-reviews />
     </main>
   `,
 

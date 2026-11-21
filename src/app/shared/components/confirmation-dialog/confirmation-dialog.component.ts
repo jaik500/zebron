@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, signal } from '@angular/core';
 
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 
@@ -47,6 +47,19 @@ export interface ConfirmationDialogData {
    * visually represent a destructive operation.
    */
   destructive?: boolean;
+
+  /**
+   * Optional checkbox under the message, for example "Don't ask me again".
+   * When set, the dialog closes with { confirmed, option } instead of a
+   * boolean (ConfirmationService.confirmWithOption).
+   */
+  optionLabel?: string;
+}
+
+/** What the dialog returns when it shows a checkbox. */
+export interface ConfirmationDialogResult {
+  confirmed: boolean;
+  option: boolean;
 }
 
 @Component({
@@ -150,6 +163,18 @@ export interface ConfirmationDialogData {
             </p>
           </div>
         }
+
+        @if (data.optionLabel) {
+          <label class="mt-4 flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              class="h-4 w-4 shrink-0 accent-[#007979]"
+              [checked]="option()"
+              (change)="option.set($any($event.target).checked)"
+            />
+            {{ data.optionLabel | t }}
+          </label>
+        }
       </mat-dialog-content>
 
       <!-- =========================================================
@@ -193,13 +218,20 @@ export class ConfirmationDialogComponent {
    * Confirm the operation.
    */
   protected confirm(): void {
-    this.dialogRef.close(true);
+    this.dialogRef.close(this.result(true));
   }
 
   /**
    * Cancel the operation.
    */
   protected cancel(): void {
-    this.dialogRef.close(false);
+    this.dialogRef.close(this.result(false));
+  }
+
+  /** The optional checkbox (data.optionLabel). */
+  protected readonly option = signal(false);
+
+  private result(confirmed: boolean): boolean | ConfirmationDialogResult {
+    return this.data.optionLabel ? { confirmed, option: this.option() } : confirmed;
   }
 }

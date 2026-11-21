@@ -103,6 +103,21 @@ const CODING_LAB_WORKER_POLICY = [
   "connect-src 'none'",
 ].join('; ');
 
+/**
+ * The Coding Lab sandbox page (public/coding-lab/sandbox.html), loaded in an
+ * opaque-origin iframe. Learners' code runs in workers it starts, which
+ * inherit this policy. The page also sets the same policy itself, which
+ * is enforced; this header matches it so no false reports appear.
+ */
+const CODING_LAB_SANDBOX_POLICY = [
+  "default-src 'none'",
+  "script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdn.jsdelivr.net",
+  "worker-src blob: data:",
+  "connect-src https://cdn.jsdelivr.net",
+  "base-uri 'none'",
+  "form-action 'none'",
+].join('; ');
+
 /** The Python worker also loads Pyodide (WebAssembly) and packages from jsDelivr. */
 const CODING_LAB_PYTHON_POLICY = [
   "default-src 'none'",
@@ -119,7 +134,9 @@ app.use((_req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   res.setHeader(
     'Content-Security-Policy-Report-Only',
-    _req.path === '/coding-lab/python-worker.js'
+    _req.path === '/coding-lab/sandbox.html'
+      ? CODING_LAB_SANDBOX_POLICY
+      : _req.path === '/coding-lab/python-worker.js'
       ? CODING_LAB_PYTHON_POLICY
       : _req.path.startsWith('/coding-lab/')
         ? CODING_LAB_WORKER_POLICY

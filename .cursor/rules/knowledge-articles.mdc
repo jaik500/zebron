@@ -1,0 +1,30 @@
+---
+description: Every change to Zebron also updates the Knowledge Center articles used by the help assistant
+alwaysApply: true
+---
+
+# Every change updates the knowledge articles
+
+**RULE: Whenever anything in the Zebron platform is created or changed, the Knowledge Center articles must be created or updated in the same piece of work.** No change is finished until its knowledge articles are.
+
+The help assistant answers from the Knowledge Center, whose platform articles
+come from `src/app/features/admin/pages/knowledge/guide-import/guide-articles.ts`.
+
+Whenever you add or change anything in Zebron (features, pages, settings,
+roles, rules, Cloud Functions, scripts, error messages, fixes), update that
+file in the same change:
+
+1. Update every article the change makes wrong or incomplete, including FAQs
+   and troubleshooting. If none covers it, add one (unique kebab-case `slug`,
+   `dev-` prefix for developer articles; reuse existing categories).
+2. Set `audience` carefully: `user`, `admin`, `support` (platform admins),
+   `developer`, `all`. Never put developer or security internals in `user`
+   or `all` articles.
+3. Keep `summary` in step with `content`. Name pages, buttons and error
+   messages exactly. Say what is not done yet.
+4. Bump `GUIDE_EDITION` by one and update the date in the file's top comment.
+5. Tell the user which articles changed and to publish them:
+   Admin → Knowledge Center → **Import guide** → **Import**.
+
+Full instructions: `CLAUDE.md` at the project root. Platform overview:
+`docs/ZEBRON-CONTEXT.md`; keep it current when a change affects it.

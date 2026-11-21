@@ -31,6 +31,11 @@ import { CourseHeaderComponent } from '../components/course-header.component';
 import { LessonMediaComponent } from '../components/lesson-media.component';
 import { courseContextFromRoute, LessonBlock } from '../course.model';
 import { CourseStore } from '../course.store';
+import { AnnotationService } from '../annotations/annotation.service';
+import { AnnotationToolbarComponent } from '../annotations/annotation-toolbar.component';
+import { HighlightLayerDirective } from '../annotations/highlight-layer.directive';
+import { HighlightPainter } from '../annotations/highlight-painter.service';
+import { MyNotesPanelComponent } from '../annotations/my-notes-panel.component';
 
 /** A lesson block prepared for display. */
 /** Text, or a runnable code example (```js fences) inside a text section. */
@@ -77,7 +82,12 @@ type ViewBlock =
     CourseHeaderComponent,
     LessonMediaComponent,
     CodeLabComponent,
+    HighlightLayerDirective,
+    AnnotationToolbarComponent,
+    MyNotesPanelComponent,
   ],
+  // One painter per lesson page: draws the learner's highlights in the text sections.
+  providers: [HighlightPainter],
   template: `
     <main
       #player
@@ -174,6 +184,32 @@ type ViewBlock =
                 }
               </span>
               <span class="shrink-0">{{ '{percent}% of course' | t: { percent: coursePercent() } }}</span>
+              @if (annotations.available() && store.lesson()) {
+                <button
+                  type="button"
+                  (click)="toggleBookmark()"
+                  class="-my-1 inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]"
+                  [attr.aria-pressed]="bookmarked()"
+                  [attr.aria-label]="(bookmarked() ? 'Remove bookmark' : 'Bookmark this lesson') | t"
+                  [title]="(bookmarked() ? 'Remove bookmark' : 'Bookmark this lesson') | t"
+                >
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" [style.color]="bookmarked() ? '#007979' : null" aria-hidden="true">{{ bookmarked() ? 'bookmark' : 'bookmark_border' }}</mat-icon>
+                  <span class="hidden md:inline">{{ (bookmarked() ? 'Bookmarked' : 'Bookmark') | t }}</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="notesOpen.set(true)"
+                  class="-my-1 inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]"
+                  [attr.aria-label]="'My notes ({0})' | t: [annotations.annotations().length]"
+                  [title]="'My notes: highlights, notes and bookmarks in this course' | t"
+                >
+                  <mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">sticky_note_2</mat-icon>
+                  <span class="hidden md:inline">{{ 'My notes' | t }}</span>
+                  @if (annotations.annotations().length) {
+                    <span class="rounded-full bg-teal-50 px-1.5 tabular-nums text-[#007979]">{{ annotations.annotations().length }}</span>
+                  }
+                </button>
+              }
               <button
                 type="button"
                 (click)="toggleFocusMode()"
@@ -220,6 +256,7 @@ type ViewBlock =
             </div>
           } @else if (store.lesson(); as lesson) {
             <article
+              #lessonArticle
               class="mx-auto w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white pb-5 pt-5 shadow-sm sm:pb-6 sm:pt-6"
               [class]="focusMode() ? 'max-w-7xl' : 'max-w-5xl'"
             >
@@ -315,6 +352,9 @@ type ViewBlock =
                               [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-inherit
                               [&>*:last-child]:mb-0"
                             [innerHTML]="partHtml(block, part.html, partIndex, blockIndex)"
+                            zbHighlightLayer
+                            [zbBlockIndex]="blockIndex"
+                            [zbHtml]="partHtml(block, part.html, partIndex, blockIndex)"
                           ></div>
                             } @else if (part.kind === 'example') {
                               <!-- Runnable example: Run opens it in the Coding Lab panel -->
@@ -352,6 +392,9 @@ type ViewBlock =
                                 [&_a]:text-teal-800 [&_a]:underline
                                 [&>*:last-child]:mb-0"
                               [innerHTML]="block.html"
+                              zbHighlightLayer
+                              [zbBlockIndex]="blockIndex"
+                              [zbHtml]="block.html"
                             ></div>
                           </aside>
                         } @else if (block.kind === 'media') {
@@ -516,6 +559,20 @@ type ViewBlock =
           }
         </div>
       </div>
+
+      <!-- Highlights, notes and copy (select text in a lesson section) -->
+      @if (annotations.available()) {
+        <app-annotation-toolbar [root]="articleElement()" [lesson]="store.lesson()" />
+        <app-my-notes-panel
+          [open]="notesOpen()"
+          [courseTitle]="store.course()?.title ?? ''"
+          [outline]="store.outline()"
+          [currentLessonId]="store.lesson()?.id ?? null"
+          [missing]="painter.missing()"
+          (closed)="notesOpen.set(false)"
+          (goTo)="goToAnnotation($event)"
+        />
+      }
     </main>
   `,
 })
@@ -530,6 +587,22 @@ export class LessonPlayerComponent {
   protected readonly store = inject(CourseStore);
 
   protected readonly context = courseContextFromRoute(this.route);
+
+  // ------------------------------------------------------------------
+  // Highlights, notes and bookmarks (features/courses/annotations)
+  // ------------------------------------------------------------------
+  protected readonly annotations = inject(AnnotationService);
+  protected readonly painter = inject(HighlightPainter);
+  protected readonly notesOpen = signal(false);
+  private readonly lessonArticle = viewChild<ElementRef<HTMLElement>>('lessonArticle');
+  protected readonly articleElement = computed(() => this.lessonArticle()?.nativeElement ?? null);
+  protected readonly bookmarked = computed(() => {
+    const lesson = this.store.lesson();
+    return !!lesson && this.annotations.isBookmarked(lesson.id);
+  });
+  /** A highlight to show once the lesson is drawn (?annotation=<id>, from My notes). */
+  private readonly pendingAnnotation = signal<string | null>(null);
+  private flashTimer: number | undefined;
 
   // ------------------------------------------------------------------
   // Full screen (focus mode): the lesson covers the app's menus and the
@@ -745,6 +818,38 @@ export class LessonPlayerComponent {
 
     this.store.setContext(this.context);
 
+    // Follow the open course's highlights and paint this lesson's.
+    effect(() => this.annotations.watch(this.store.course()));
+    effect(() => {
+      const lessonId = this.store.lesson()?.id;
+      const items = this.annotations.annotations();
+      this.painter.setAnnotations(lessonId ? items.filter((item) => item.lessonId === lessonId) : []);
+    });
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed())
+      .subscribe((params) => this.pendingAnnotation.set(params.get('annotation')));
+    // Show the requested highlight once it is drawn (or say it changed).
+    effect(() => {
+      const id = this.pendingAnnotation();
+      if (!id || this.store.lessonLoading()) return;
+      const blockIndex = this.painter.placed().get(id);
+      if (blockIndex !== undefined) {
+        untracked(() => this.revealAnnotation(id, blockIndex));
+      } else if (this.painter.missing().has(id)) {
+        // The page may still show the previous lesson: decide once the new one is drawn.
+        untracked(() =>
+          window.setTimeout(() => {
+            if (this.pendingAnnotation() !== id || this.painter.placed().has(id)) return;
+            this.toast.info(this.i18n.t('This passage changed in the lesson, so it is no longer highlighted there.'));
+            this.clearPendingAnnotation();
+          }, 800),
+        );
+      }
+    });
+    this.destroyRef.onDestroy(() => {
+      if (this.flashTimer !== undefined) window.clearTimeout(this.flashTimer);
+    });
+
     effect(() => {
       this.auth.firebaseUser();
       untracked(() => void this.store.loadProgress());
@@ -761,6 +866,61 @@ export class LessonPlayerComponent {
       this.visitedBlocks.set(new Set([0]));
       void this.load(courseId, lessonId);
     });
+  }
+
+  protected async toggleBookmark(): Promise<void> {
+    const lesson = this.store.lesson();
+    if (!lesson) return;
+    try {
+      const saved = await this.annotations.toggleBookmark(lesson);
+      this.toast.success(this.i18n.t(saved ? 'Lesson bookmarked.' : 'Bookmark removed.'));
+    } catch {
+      this.toast.error(this.i18n.t('Could not save. Check your connection and try again.'));
+    }
+  }
+
+  /** From My notes: open the lesson (and show the highlight). */
+  protected goToAnnotation(target: { lessonId: string; annotationId: string | null }): void {
+    this.notesOpen.set(false);
+    if (target.lessonId === this.store.lesson()?.id) {
+      if (target.annotationId) this.pendingAnnotation.set(target.annotationId);
+      return;
+    }
+    void this.router.navigate([this.coursePath(), 'lessons', target.lessonId], {
+      queryParams: target.annotationId ? { annotation: target.annotationId } : {},
+    });
+  }
+
+  /** Open the section holding a highlight, scroll to it and flash it. */
+  private revealAnnotation(id: string, blockIndex: number): void {
+    this.expandedBlocks.update((current) => new Set(current).add(blockIndex));
+    this.visitedBlocks.update((current) => new Set(current).add(blockIndex));
+    this.clearPendingAnnotation();
+    // Wait for the panel to open before measuring.
+    window.setTimeout(() => {
+      const marks = this.painter.marks(id);
+      if (!marks.length) return;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      marks[0].scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+      for (const mark of marks) mark.style.outline = '3px solid #007979';
+      if (this.flashTimer !== undefined) window.clearTimeout(this.flashTimer);
+      this.flashTimer = window.setTimeout(() => {
+        for (const mark of this.painter.marks(id)) mark.style.outline = '';
+        this.flashTimer = undefined;
+      }, 1800);
+    }, 350);
+  }
+
+  private clearPendingAnnotation(): void {
+    this.pendingAnnotation.set(null);
+    if (this.route.snapshot.queryParamMap.has('annotation')) {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { annotation: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
   }
 
   private async load(courseId: string, lessonId: string): Promise<void> {

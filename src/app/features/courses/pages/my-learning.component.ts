@@ -27,6 +27,7 @@ import {
 import { CourseAssignment, CourseAssignmentService, isOverdue } from '../course-assignment.service';
 import { CourseAccessService } from '../course-access.service';
 import { CourseStore } from '../course.store';
+import { MyNotesSummaryComponent } from '../annotations/my-notes-summary.component';
 import { STATUS_LABELS, TrainingGroup, TrainingGroupService, groupStatus } from '../../training-groups/training-group.service';
 import { MyAssignment, SUBMISSION_STATUS_LABELS, TrainingGroupAssignmentService } from '../../training-groups/training-group-assignment.service';
 import { CareerPathService } from '../../careers/career-path.service';
@@ -40,7 +41,7 @@ const WEEKLY_GOAL_MINUTES = 60;
   selector: 'app-my-learning',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent, CourseCardComponent, ProgressRingComponent],
+  imports: [RouterLink, MatIconModule, TranslatePipe, CourseHeaderComponent, CourseCardComponent, ProgressRingComponent, MyNotesSummaryComponent],
   template: `
     <main class="mt-16 min-h-screen overflow-x-clip bg-slate-50">
       <app-course-header
@@ -435,6 +436,9 @@ const WEEKLY_GOAL_MINUTES = 60;
               }
             </div>
           }
+
+          <!-- Highlights, notes and bookmarks from every course (features/courses/annotations) -->
+          <app-my-notes-summary [context]="context" [offeredZebron]="offeredZebron()" />
         }
 
         <div class="mb-3 mt-8 flex items-baseline justify-between gap-3">

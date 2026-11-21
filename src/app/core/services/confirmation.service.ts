@@ -5,6 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import {
   ConfirmationDialogComponent,
   ConfirmationDialogData,
+  ConfirmationDialogResult,
 } from '../../shared/components/confirmation-dialog/confirmation-dialog.component';
 
 /**
@@ -30,6 +31,29 @@ export class ConfirmationService {
   confirm(
     data: ConfirmationDialogData,
   ): Promise<boolean> {
+    return this.open(data).then((result) =>
+      result === true || (typeof result === 'object' && result !== null && result.confirmed === true),
+    );
+  }
+
+  /**
+   * A confirmation with a checkbox (data.optionLabel), such as
+   * "Don't ask me again". Resolves with the answer and the checkbox.
+   * Cancelling or closing the dialog never reports the checkbox as ticked.
+   */
+  async confirmWithOption(
+    data: ConfirmationDialogData & { optionLabel: string },
+  ): Promise<ConfirmationDialogResult> {
+    const result = await this.open(data);
+    if (typeof result === 'object' && result !== null) {
+      return { confirmed: result.confirmed === true, option: result.confirmed === true && result.option === true };
+    }
+    return { confirmed: result === true, option: false };
+  }
+
+  private open(
+    data: ConfirmationDialogData,
+  ): Promise<boolean | ConfirmationDialogResult | undefined> {
 
     const dialogRef = this.dialog.open(
       ConfirmationDialogComponent,
@@ -42,10 +66,10 @@ export class ConfirmationService {
       },
     );
 
-    return new Promise<boolean>((resolve) => {
+    return new Promise<boolean | ConfirmationDialogResult | undefined>((resolve) => {
 
       dialogRef.afterClosed().subscribe((result) => {
-        resolve(result === true);
+        resolve(result as boolean | ConfirmationDialogResult | undefined);
       });
 
     });
