@@ -87,12 +87,14 @@ const FIRST_PAGE = 6;
               [style.color]="chip.accent ?? '#334155'"
               [attr.aria-pressed]="filter() === chip.key"
               [disabled]="chip.count === 0 && chip.key !== 'all'"
+              [title]="chip.label | t"
               (click)="setFilter(chip.key)"
             >
               @if (chip.icon) {
                 <mat-icon class="!h-4 !w-4 !text-[16px] !leading-none" aria-hidden="true">{{ chip.icon }}</mat-icon>
               }
-              <span class="text-slate-800">{{ chip.label | t }}</span>
+              <!-- Phones: icon and count only (the name stays for screen readers); "All" keeps its name. -->
+              <span class="text-slate-800" [class]="chip.icon ? 'sr-only md:not-sr-only' : ''">{{ chip.label | t }}</span>
               <span class="tabular-nums text-slate-500">{{ chip.count }}</span>
             </button>
           }

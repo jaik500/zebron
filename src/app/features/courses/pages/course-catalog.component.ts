@@ -100,6 +100,7 @@ const LEVEL_ORDER: Record<CourseLevel, number> = { beginner: 0, intermediate: 1,
             <h2 id="programs-title" class="mb-3 flex items-center gap-2 text-base font-semibold text-slate-900">
               <mat-icon class="text-[#007979]" aria-hidden="true">route</mat-icon>
               {{ 'Programs' | t }}
+              <span class="font-normal tabular-nums text-slate-500">({{ programs().length }})</span>
             </h2>
 
             <div class="flex flex-col gap-4">

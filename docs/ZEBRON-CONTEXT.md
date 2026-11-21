@@ -4,7 +4,7 @@ Give this file to an AI assistant (or a new developer) at the start of any
 work on Zebron. It explains what Zebron is, how it is built, where things
 live, the rules every change follows, and how we work together.
 
-- **Last updated:** 21 November 2026 (guide edition 88)
+- **Last updated:** 21 November 2026 (guide edition 96)
 - **Also in the Knowledge Center** as "Zebron platform overview for the team" (support and developers), and introduced on the Internal Blog in "How Zebron works: one page for the whole team" (`scripts/seed-blog-zebron-context.mjs`).
 - **Keep it current:** when a change makes anything here wrong (a new
   application, folder, collection, function, rule or way of working), update
@@ -250,6 +250,7 @@ Secrets (Secret Manager, `firebase functions:secrets:set NAME`):
   not positions, so they survive lesson edits. Code:
   `features/courses/annotations`; text sections opt in with
   `zbHighlightLayer`. Never in quick checks, exams or code exercises.
+- **What to learn next:** when a course is finished, its summary page suggests the next course in the same program, similar courses (shared skills, topic, program, level) and, on Zebron's own pages only, matching bootcamps from the bootcamp directory. Pure logic in `features/courses/next-steps.ts` (unit tests), UI in `course-summary.component.ts`; no new data.
 - **Home page reviews:** signed-in people rate Zebron (1–5 stars) and write
   one review each at the bottom of the home page; platform admins approve,
   reject (with a note) or delete them at **/admin/reviews**. Only approved

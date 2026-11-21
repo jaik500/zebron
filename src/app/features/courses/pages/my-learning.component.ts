@@ -32,6 +32,37 @@ import { STATUS_LABELS, TrainingGroup, TrainingGroupService, groupStatus } from 
 import { MyAssignment, SUBMISSION_STATUS_LABELS, TrainingGroupAssignmentService } from '../../training-groups/training-group-assignment.service';
 import { CareerPathService } from '../../careers/career-path.service';
 import { CareerPlan } from '../../careers/career-path.model';
+import { collection, getDocs, limit, query, where } from 'firebase/firestore';
+import { firestore } from '../../../core/services/firebase-config';
+import { LoggerService } from '../../../core/services/logger.service';
+import { QuizService } from '../../test-center/services/quiz.service';
+import { QuizResultLike, quizOverview, summarizeQuizzes, topicsToReview } from '../quiz-tracking';
+
+/** A `quizResults` document, as quiz tracking reads it. */
+function toQuizResult(id: string, data: Record<string, unknown>): QuizResultLike {
+  const completedAt = data['completedAt'] as { toDate?: () => Date } | null | undefined;
+  const topics = Array.isArray(data['topicPerformance']) ? (data['topicPerformance'] as Record<string, unknown>[]) : [];
+  const text = (value: unknown) => (typeof value === 'string' ? value : '');
+  const number = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : 0);
+  const source = data['source'];
+  return {
+    id,
+    quizId: text(data['quizId']),
+    quizName: text(data['quizName']),
+    scorePercentage: number(data['scorePercentage']),
+    mode: data['mode'] === 'exam' ? 'exam' : 'practice',
+    source: source === 'course' || source === 'certification' ? source : 'test-center',
+    completedAt: typeof completedAt?.toDate === 'function' ? completedAt.toDate() : null,
+    topicPerformance: topics.map((topic) => ({
+      topicId: text(topic['topicId']),
+      topicName: text(topic['topicName']),
+      answeredQuestions: number(topic['answeredQuestions']),
+      correctAnswers: number(topic['correctAnswers']),
+    })),
+    courseId: text(data['courseId']) || null,
+    courseTitle: text(data['courseTitle']) || null,
+  };
+}
 
 /** Minutes a week the streak card counts toward. */
 const WEEKLY_GOAL_MINUTES = 60;
@@ -139,16 +170,17 @@ const WEEKLY_GOAL_MINUTES = 60;
           <div [class]="showCareerCard() && signedIn() ? 'mt-4 grid gap-3 md:grid-cols-2' : 'mt-4 grid gap-3'">
             @if (showCareerCard()) {
               <!-- Career path: the learner's own, or an invitation to pick one (Zebron Learning only) -->
-              <section class="flex h-full items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4" aria-labelledby="career-card-title">
+              <section class="flex h-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:items-start" aria-labelledby="career-card-title">
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 text-[#007979]" aria-hidden="true">
                   <mat-icon>route</mat-icon>
                 </span>
-                <div class="flex min-w-0 flex-1 flex-col gap-2">
+                <!-- Phones: icon and buttons only; titles stay for screen readers, descriptions are hidden. -->
+                <div class="flex min-w-0 flex-1 flex-col md:gap-2">
                   @if (careerPlan(); as plan) {
                     <div>
-                      <span class="text-[11px] font-bold uppercase tracking-wide text-[#007979]">{{ 'Your career path' | t }}</span>
-                      <h2 id="career-card-title" class="truncate text-base font-semibold text-slate-900">{{ plan.pathTitle }}</h2>
-                      <p class="text-sm text-slate-600">{{ 'See where you stand, what to learn next and the jobs it leads to.' | t }}</p>
+                      <span class="hidden text-[11px] font-bold uppercase tracking-wide text-[#007979] md:inline">{{ 'Your career path' | t }}</span>
+                      <h2 id="career-card-title" class="sr-only truncate text-base font-semibold text-slate-900 md:not-sr-only">{{ plan.pathTitle }}</h2>
+                      <p class="hidden text-sm text-slate-600 md:block">{{ 'See where you stand, what to learn next and the jobs it leads to.' | t }}</p>
                     </div>
                     <div class="mt-auto flex flex-wrap gap-2">
                       <a
@@ -166,8 +198,8 @@ const WEEKLY_GOAL_MINUTES = 60;
                     </div>
                   } @else {
                     <div>
-                      <h2 id="career-card-title" class="text-base font-semibold text-slate-900">{{ 'Career paths' | t }}</h2>
-                      <p class="text-sm text-slate-600">{{ 'Not sure what to learn next? Pick a role and follow a roadmap of skills, courses and projects to get there.' | t }}</p>
+                      <h2 id="career-card-title" class="sr-only text-base font-semibold text-slate-900 md:not-sr-only">{{ 'Career paths' | t }}</h2>
+                      <p class="hidden text-sm text-slate-600 md:block">{{ 'Not sure what to learn next? Pick a role and follow a roadmap of skills, courses and projects to get there.' | t }}</p>
                     </div>
                     <div class="mt-auto">
                       <a
@@ -186,16 +218,17 @@ const WEEKLY_GOAL_MINUTES = 60;
               <!-- Certificates (was its own tab) -->
               <a
                 [routerLink]="context.basePath + '/certificates'"
-                class="flex h-full items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-[#007979]/40 hover:shadow-sm"
+                class="flex h-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-[#007979]/40 hover:shadow-sm md:items-start"
               >
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600" aria-hidden="true">
                   <mat-icon>workspace_premium</mat-icon>
                 </span>
-                <span class="flex min-w-0 flex-1 flex-col gap-2">
+                <span class="flex min-w-0 flex-1 flex-col md:gap-2">
                   <span>
-                    <span class="block text-[11px] font-bold uppercase tracking-wide text-amber-700">{{ 'Certificates' | t }}</span>
-                    <span class="block text-base font-semibold text-slate-900">{{ 'My certificates' | t }}</span>
-                    <span class="block text-sm text-slate-600">
+                    <span class="hidden text-[11px] font-bold uppercase tracking-wide text-amber-700 md:block">{{ 'Certificates' | t }}</span>
+                    <span class="sr-only text-base font-semibold text-slate-900 md:not-sr-only md:block">{{ 'My certificates' | t }}</span>
+                    <!-- Descriptions are hidden on phones to keep the cards short. -->
+                    <span class="hidden text-sm text-slate-600 md:block">
                       @if (certificateCount() === 0) {
                         {{ 'Pass the final exam of a course to earn a certificate you can share and others can verify.' | t }}
                       } @else if (certificateCount() === 1) {
@@ -333,8 +366,11 @@ const WEEKLY_GOAL_MINUTES = 60;
         }
 
         @if (signedIn()) {
-          <!-- Stats: four on one line, icons hidden on phones -->
-          <section class="mt-4 grid grid-cols-4 gap-2 sm:gap-3" [attr.aria-label]="'Your learning this week' | t">
+          <!-- Stats on one line, icons hidden on phones; the minutes card is hidden on phones -->
+          <section
+            [class]="quizzesAvailable() ? 'mt-4 grid grid-cols-4 gap-2 sm:gap-3 md:grid-cols-5' : 'mt-4 grid grid-cols-3 gap-2 sm:gap-3 md:grid-cols-4'"
+            [attr.aria-label]="'Your learning this week' | t"
+          >
             <div class="rounded-2xl border border-slate-200 bg-white p-2 text-center sm:p-4">
               <mat-icon class="max-sm:!hidden text-[#007979]" aria-hidden="true">local_fire_department</mat-icon>
               <p class="text-lg font-bold tabular-nums text-slate-900 sm:text-2xl">{{ store.streakWeeks() }}</p>
@@ -345,22 +381,260 @@ const WEEKLY_GOAL_MINUTES = 60;
                 }
               </div>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-2 text-center sm:p-4">
+            <div class="rounded-2xl border border-slate-200 bg-white p-2 text-center max-md:hidden sm:p-4">
               <mat-icon class="max-sm:!hidden text-[#007979]" aria-hidden="true">schedule</mat-icon>
               <p class="text-lg font-bold tabular-nums text-slate-900 sm:text-2xl">{{ store.weekMinutes() }}</p>
               <p class="text-[10px] text-slate-500 sm:text-xs">{{ 'of {0} min this week' | t: [weeklyGoal] }}</p>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-2 text-center sm:p-4">
+            <!-- Completed and Skills earned open a list below the stats -->
+            <button
+              type="button"
+              class="rounded-2xl border bg-white p-2 text-center transition hover:border-[#007979]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979] disabled:cursor-default disabled:hover:border-slate-200 sm:p-4"
+              [style.border-color]="statPanel() === 'completed' ? '#007979' : '#e2e8f0'"
+              [style.background-color]="statPanel() === 'completed' ? '#f0f9f9' : '#ffffff'"
+              [attr.aria-expanded]="statPanel() === 'completed'"
+              aria-controls="stat-panel"
+              [disabled]="store.completed().length === 0"
+              [title]="'Show completed courses' | t"
+              (click)="toggleStatPanel('completed')"
+            >
               <mat-icon class="max-sm:!hidden text-[#007979]" aria-hidden="true">task_alt</mat-icon>
-              <p class="text-lg font-bold tabular-nums text-slate-900 sm:text-2xl">{{ store.completed().length }}</p>
-              <p class="text-[10px] text-slate-500 sm:text-xs">{{ 'Completed' | t }}</p>
-            </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-2 text-center sm:p-4">
+              <span class="block text-lg font-bold tabular-nums text-slate-900 sm:text-2xl">{{ store.completed().length }}</span>
+              <span class="flex items-center justify-center text-[10px] text-slate-500 sm:text-xs">
+                {{ 'Completed' | t }}
+                @if (store.completed().length) {
+                  <mat-icon class="max-sm:!hidden !h-4 !w-4 !text-[16px] !leading-none" aria-hidden="true">{{ statPanel() === 'completed' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                }
+              </span>
+            </button>
+            <button
+              type="button"
+              class="rounded-2xl border bg-white p-2 text-center transition hover:border-[#007979]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979] disabled:cursor-default disabled:hover:border-slate-200 sm:p-4"
+              [style.border-color]="statPanel() === 'skills' ? '#007979' : '#e2e8f0'"
+              [style.background-color]="statPanel() === 'skills' ? '#f0f9f9' : '#ffffff'"
+              [attr.aria-expanded]="statPanel() === 'skills'"
+              aria-controls="stat-panel"
+              [disabled]="store.skillsEarned() === 0"
+              [title]="'Show skills earned' | t"
+              (click)="toggleStatPanel('skills')"
+            >
               <mat-icon class="max-sm:!hidden text-[#007979]" aria-hidden="true">military_tech</mat-icon>
-              <p class="text-lg font-bold tabular-nums text-slate-900 sm:text-2xl">{{ store.skillsEarned() }}</p>
-              <p class="text-[10px] text-slate-500 sm:text-xs">{{ 'Skills earned' | t }}</p>
-            </div>
+              <span class="block text-lg font-bold tabular-nums text-slate-900 sm:text-2xl">{{ store.skillsEarned() }}</span>
+              <span class="flex items-center justify-center text-[10px] text-slate-500 sm:text-xs">
+                {{ 'Skills earned' | t }}
+                @if (store.skillsEarned()) {
+                  <mat-icon class="max-sm:!hidden !h-4 !w-4 !text-[16px] !leading-none" aria-hidden="true">{{ statPanel() === 'skills' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                }
+              </span>
+            </button>
+            @if (quizzesAvailable()) {
+              <button
+                type="button"
+                class="rounded-2xl border bg-white p-2 text-center transition hover:border-[#007979]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979] disabled:cursor-default disabled:hover:border-slate-200 sm:p-4"
+                [style.border-color]="statPanel() === 'quizzes' ? '#007979' : '#e2e8f0'"
+                [style.background-color]="statPanel() === 'quizzes' ? '#f0f9f9' : '#ffffff'"
+                [attr.aria-expanded]="statPanel() === 'quizzes'"
+                aria-controls="stat-panel"
+                [disabled]="quizOverview().attempts === 0"
+                [title]="'Show your quizzes' | t"
+                (click)="toggleStatPanel('quizzes')"
+              >
+                <mat-icon class="max-sm:!hidden text-[#007979]" aria-hidden="true">quiz</mat-icon>
+                <span class="block text-lg font-bold tabular-nums text-slate-900 sm:text-2xl">{{ quizOverview().quizzes }}</span>
+                <span class="flex items-center justify-center text-[10px] text-slate-500 sm:text-xs">
+                  {{ 'Quizzes' | t }}
+                  @if (quizOverview().attempts) {
+                    <mat-icon class="max-sm:!hidden !h-4 !w-4 !text-[16px] !leading-none" aria-hidden="true">{{ statPanel() === 'quizzes' ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  }
+                </span>
+                @if (quizOverview().average !== null) {
+                  <span class="block text-[10px] tabular-nums text-slate-400 sm:text-xs">{{ 'avg {0}%' | t: [quizOverview().average] }}</span>
+                }
+              </button>
+            }
           </section>
+
+          @if (statPanel(); as panel) {
+            <section id="stat-panel" class="mt-2 rounded-2xl border border-[#007979]/30 bg-white p-4" [attr.aria-label]="(panel === 'skills' ? 'Skills earned' : panel === 'quizzes' ? 'Quizzes' : 'Completed courses') | t">
+              <div class="mb-3 flex items-center justify-between gap-3">
+                <h2 class="font-semibold text-slate-900">
+                  @if (panel === 'skills') {
+                    {{ 'Skills you earned ({0})' | t: [earnedSkills().length] }}
+                  } @else if (panel === 'quizzes') {
+                    {{ 'Your quizzes ({0})' | t: [quizSummaries().length] }}
+                  } @else {
+                    {{ 'Courses you completed ({0})' | t: [store.completed().length] }}
+                  }
+                </h2>
+                <button
+                  type="button"
+                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]"
+                  [attr.aria-label]="'Close' | t"
+                  (click)="statPanel.set(null)"
+                >
+                  <mat-icon aria-hidden="true">close</mat-icon>
+                </button>
+              </div>
+
+              @if (panel === 'skills') {
+                <p class="mb-3 text-xs text-slate-500">{{ 'From the courses you completed. Tap a skill to see where you learned it.' | t }}</p>
+                <ul class="flex flex-wrap gap-1.5">
+                  @for (skill of earnedSkills(); track skill.name) {
+                    <li>
+                      <button
+                        type="button"
+                        class="inline-flex h-8 items-center gap-1 rounded-full border px-3 text-xs font-medium text-[#00605f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]"
+                        [style.background-color]="openSkill() === skill.name ? '#ccebea' : '#f0f9f9'"
+                        [style.border-color]="openSkill() === skill.name ? '#007979' : '#cfe9e8'"
+                        [attr.aria-expanded]="openSkill() === skill.name"
+                        (click)="openSkill.set(openSkill() === skill.name ? null : skill.name)"
+                      >
+                        {{ skill.name }}
+                        @if (skill.courses.length > 1) {
+                          <span class="tabular-nums text-slate-500">{{ skill.courses.length }}</span>
+                        }
+                      </button>
+                    </li>
+                  }
+                </ul>
+                @if (openSkillDetails(); as detail) {
+                  <div class="mt-3 rounded-xl bg-slate-50 p-3">
+                    <p class="text-xs font-semibold text-slate-700">{{ 'Learned in' | t }}</p>
+                    <ul class="mt-1 flex flex-col gap-1">
+                      @for (record of detail.courses; track record.id) {
+                        <li>
+                          <a [routerLink]="linkFor(record)" class="break-words text-sm font-medium text-[#007979] hover:underline [overflow-wrap:anywhere]">{{ record.courseTitle }}</a>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+              } @else if (panel === 'quizzes') {
+                <p class="mb-3 text-xs text-slate-500">
+                  {{ (quizOverview().attempts === 1 ? '1 attempt' : '{0} attempts') | t: [quizOverview().attempts] }}
+                  · {{ 'average score {0}%' | t: [quizOverview().average ?? 0] }}
+                  · {{ (context.organizationId ? 'Results from this organization' : 'Results from Zebron') | t }}
+                </p>
+
+                <ul class="flex flex-col divide-y divide-slate-100">
+                  @for (quiz of visibleQuizzes(); track quiz.quizId) {
+                    <li class="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:gap-3">
+                      <div class="min-w-0 flex-1">
+                        <p class="flex flex-wrap items-center gap-1.5">
+                          <span class="break-words text-sm font-semibold text-slate-900 [overflow-wrap:anywhere]">{{ quiz.quizName || ('Quiz' | t) }}</span>
+                          @if (quiz.source === 'course') {
+                            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">{{ 'Course exam' | t }}</span>
+                          } @else if (quiz.source === 'certification') {
+                            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">{{ 'Certification exam' | t }}</span>
+                          } @else if (quiz.hasExam) {
+                            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">{{ 'Exam' | t }}</span>
+                          }
+                        </p>
+                        <p class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
+                          <span>{{ 'Best {0}%' | t: [quiz.best] }}</span>
+                          <span aria-hidden="true">·</span>
+                          <span class="inline-flex items-center">
+                            {{ 'Latest {0}%' | t: [quiz.latest] }}
+                            @if (quiz.trend === 'up') {
+                              <mat-icon class="!h-4 !w-4 !text-[16px] !leading-none text-emerald-600" [attr.aria-label]="'Improving' | t">trending_up</mat-icon>
+                            } @else if (quiz.trend === 'down') {
+                              <mat-icon class="!h-4 !w-4 !text-[16px] !leading-none text-rose-600" [attr.aria-label]="'Dropping' | t">trending_down</mat-icon>
+                            }
+                          </span>
+                          <span aria-hidden="true">·</span>
+                          <span>{{ (quiz.attempts === 1 ? '1 attempt' : '{0} attempts') | t: [quiz.attempts] }}</span>
+                          @if (quiz.lastTaken) {
+                            <span aria-hidden="true">·</span>
+                            <span>{{ shortDate(quiz.lastTaken) }}</span>
+                          }
+                        </p>
+                      </div>
+                      @if (quizPracticeLink(quiz.quizId); as link) {
+                        <a
+                          [routerLink]="link"
+                          class="inline-flex h-9 shrink-0 items-center gap-1 self-start rounded-lg border border-slate-200 px-3 text-sm font-semibold text-[#007979] hover:bg-teal-50 sm:self-auto"
+                        >
+                          {{ 'Practice again' | t }}<mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">arrow_forward</mat-icon>
+                        </a>
+                      } @else if (quiz.courseId) {
+                        <a
+                          [routerLink]="context.basePath + '/' + quiz.courseId"
+                          class="inline-flex h-9 shrink-0 items-center gap-1 self-start rounded-lg border border-slate-200 px-3 text-sm font-semibold text-[#007979] hover:bg-teal-50 sm:self-auto"
+                        >
+                          {{ 'Open course' | t }}<mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">arrow_forward</mat-icon>
+                        </a>
+                      }
+                    </li>
+                  }
+                </ul>
+                @if (quizSummaries().length > quizFirstPage) {
+                  <button
+                    type="button"
+                    class="mt-2 text-sm font-semibold text-[#007979] hover:underline"
+                    (click)="showAllQuizzes.set(!showAllQuizzes())"
+                  >
+                    {{ (showAllQuizzes() ? 'Show fewer' : 'Show all ({0})') | t: [quizSummaries().length] }}
+                  </button>
+                }
+
+                @if (reviewTopics().length) {
+                  <div class="mt-4 rounded-xl bg-amber-50/60 p-3">
+                    <h3 class="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                      <mat-icon class="!h-[18px] !w-[18px] !text-[18px] text-amber-600" aria-hidden="true">psychology_alt</mat-icon>
+                      {{ 'Topics to review' | t }}
+                    </h3>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ 'Your lowest-scoring topics across all attempts.' | t }}</p>
+                    <ul class="mt-2 flex flex-col gap-1.5">
+                      @for (topic of reviewTopics(); track topic.quizId + topic.topicId) {
+                        <li class="flex items-center gap-3">
+                          <span class="min-w-0 flex-1">
+                            <span class="block break-words text-sm font-medium text-slate-800 [overflow-wrap:anywhere]">{{ topic.topicName }}</span>
+                            <span class="block truncate text-xs text-slate-500">{{ topic.quizName }} · {{ '{0} of {1} right' | t: [topic.correct, topic.answered] }}</span>
+                          </span>
+                          <span class="shrink-0 text-sm font-bold tabular-nums" [style.color]="topic.percentage < 50 ? '#be123c' : '#b45309'">{{ topic.percentage }}%</span>
+                          @if (quizPracticeLink(topic.quizId); as link) {
+                            <a
+                              [routerLink]="link"
+                              class="shrink-0 text-xs font-semibold text-[#007979] hover:underline"
+                              [attr.aria-label]="'Practice {0}' | t: [topic.topicName]"
+                            >
+                              {{ 'Practice' | t }}
+                            </a>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+              } @else {
+                <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  @for (record of completedSorted(); track record.id) {
+                    <li>
+                      <a [routerLink]="linkFor(record)" class="flex min-w-0 items-start gap-3 rounded-xl border border-slate-200 p-2.5 transition hover:border-[#007979] hover:bg-teal-50/40">
+                        <span class="mt-0.5 h-10 w-10 shrink-0 rounded-lg" [style.background]="coverOf(record)" aria-hidden="true"></span>
+                        <span class="min-w-0 flex-1">
+                          <span class="block break-words text-sm font-semibold leading-snug text-slate-900 [overflow-wrap:anywhere]">{{ record.courseTitle }}</span>
+                          @if (record.completedAt) {
+                            <span class="block text-xs text-slate-500">{{ 'Completed {0}' | t: [shortDate(record.completedAt.toDate())] }}</span>
+                          }
+                          @if (record.skills.length) {
+                            <span class="mt-1 flex flex-wrap gap-1">
+                              @for (skill of record.skills.slice(0, 4); track skill) {
+                                <span class="rounded-full bg-teal-50 px-2 py-0.5 text-[11px] text-[#00605f]">{{ skill }}</span>
+                              }
+                              @if (record.skills.length > 4) {
+                                <span class="px-1 text-[11px] text-slate-500">+{{ record.skills.length - 4 }}</span>
+                              }
+                            </span>
+                          }
+                        </span>
+                      </a>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+          }
 
           @if (otherInProgress().length) {
             <div class="mb-3 mt-8 flex items-baseline justify-between gap-3">
@@ -696,6 +970,7 @@ export class MyLearningComponent {
         void this.loadAssignments(user?.uid ?? null);
         void this.loadMyGroups(user?.uid ?? null);
         void this.loadCareerPlan(user?.uid ?? null);
+        void this.loadQuizResults(user?.uid ?? null);
       });
     });
   }
@@ -810,6 +1085,104 @@ export class MyLearningComponent {
 
   protected coverName(cover: string): string {
     return COURSE_COVERS[cover as CourseCover] ?? COURSE_COVERS.teal;
+  }
+
+  // ---------- Completed and Skills earned: click a stat to list them ----------
+  protected readonly statPanel = signal<'completed' | 'skills' | 'quizzes' | null>(null);
+  protected readonly openSkill = signal<string | null>(null);
+
+  protected toggleStatPanel(panel: 'completed' | 'skills' | 'quizzes'): void {
+    this.statPanel.update((open) => (open === panel ? null : panel));
+    this.openSkill.set(null);
+  }
+
+  /** Completed courses, most recently completed first. */
+  protected readonly completedSorted = computed(() =>
+    [...this.store.completed()].sort(
+      (a, b) => (b.completedAt?.toMillis() ?? b.updatedAt?.toMillis() ?? 0) - (a.completedAt?.toMillis() ?? a.updatedAt?.toMillis() ?? 0),
+    ),
+  );
+
+  /** Every skill from a completed course (the same set the Skills earned count uses), A to Z, with the courses that taught it. */
+  protected readonly earnedSkills = computed(() => {
+    const bySkill = new Map<string, CourseProgress[]>();
+    for (const record of this.completedSorted()) {
+      for (const skill of new Set(record.skills)) {
+        bySkill.set(skill, [...(bySkill.get(skill) ?? []), record]);
+      }
+    }
+    return [...bySkill.entries()]
+      .map(([name, courses]) => ({ name, courses }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  });
+
+  protected readonly openSkillDetails = computed(() => {
+    const name = this.openSkill();
+    return name ? this.earnedSkills().find((skill) => skill.name === name) ?? null : null;
+  });
+
+  protected shortDate(date: Date): string {
+    return date.toLocaleDateString(this.i18n.language() === 'fr' ? 'fr-CA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  // ---------- Quizzes: the learner's own results here (quiz-tracking.ts) ----------
+  // On an organization's pages only that organization's results; on /courses only Zebron's.
+  private readonly quizService = inject(QuizService);
+  private readonly logger = inject(LoggerService);
+  private readonly quizResults = signal<QuizResultLike[]>([]);
+  /** False when results can't be read here (for example the organization has no Test Center). */
+  protected readonly quizzesAvailable = signal(false);
+  private readonly practiceSlugs = signal<Map<string, string>>(new Map());
+  protected readonly showAllQuizzes = signal(false);
+  protected readonly quizFirstPage = 8;
+
+  protected readonly quizOverview = computed(() => quizOverview(this.quizResults()));
+  protected readonly quizSummaries = computed(() => summarizeQuizzes(this.quizResults()));
+  protected readonly visibleQuizzes = computed(() =>
+    this.showAllQuizzes() ? this.quizSummaries() : this.quizSummaries().slice(0, this.quizFirstPage),
+  );
+  protected readonly reviewTopics = computed(() => topicsToReview(this.quizResults()));
+
+  /** The quiz's page in this Test Center, when the learner can practise it here (not exam-only quizzes). */
+  protected quizPracticeLink(quizId: string): string | null {
+    const slug = this.practiceSlugs().get(quizId);
+    if (!slug) return null;
+    const organizationId = this.context.organizationId;
+    const base = organizationId ? `/partner/org/${organizationId}/learn/test-center` : '/test-center';
+    return `${base}/quiz-details/${encodeURIComponent(slug)}`;
+  }
+
+  private async loadQuizResults(userId: string | null): Promise<void> {
+    this.quizResults.set([]);
+    this.practiceSlugs.set(new Map());
+    this.quizzesAvailable.set(false);
+    if (!userId) return;
+    const organizationId = this.context.organizationId;
+    try {
+      const snapshot = await getDocs(
+        query(
+          collection(firestore, 'quizResults'),
+          where('userId', '==', userId),
+          where('organizationId', '==', organizationId),
+          limit(1000),
+        ),
+      );
+      if (this.auth.firebaseUser()?.uid !== userId) return;
+      this.quizResults.set(snapshot.docs.map((item) => toQuizResult(item.id, item.data())));
+      this.quizzesAvailable.set(true);
+    } catch (error) {
+      // No Test Center here, or results can't be read: the card stays hidden.
+      this.logger.error('MyLearning', 'Could not load quiz results.', error);
+      return;
+    }
+    try {
+      const quizzes = await this.quizService.getQuizzesForLearners(organizationId);
+      this.practiceSlugs.set(
+        new Map(quizzes.filter((quiz) => !quiz.examOnly && quiz.slug).map((quiz) => [quiz.id, quiz.slug])),
+      );
+    } catch {
+      // Practice links are extra; the list still shows.
+    }
   }
 
   protected linkFor(record: CourseProgress): string {

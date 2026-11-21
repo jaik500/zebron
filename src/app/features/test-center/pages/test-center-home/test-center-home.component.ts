@@ -247,38 +247,39 @@ import { CourseCrumb, CourseHeaderComponent } from '../../../courses/components/
 
           <!-- Content -->
           @if (!loading() && !error()) {
-            <!-- Favorite quizzes -->
-            @if (favoriteQuizzes().length > 0) {
+            <!-- At most 10 cards: favourite quizzes fill from the top, then saved and other practice -->
+            @if (popularFavoriteQuizzes().length > 0 || popularCourses().length > 0) {
               <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                @for (quiz of favoriteQuizzes(); track quiz.id) {
+                @for (quiz of popularFavoriteQuizzes(); track quiz.id) {
                   <button
                     type="button"
                     (click)="startQuiz(quiz)"
                     class="group rounded-xl border border-gray-200 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#12BFC3] hover:bg-[#E5F4F4] hover:shadow-md"
                   >
-                    <div class="flex items-start justify-between gap-4">
+                    <!-- Icon, then the title and its provider on the same line -->
+                    <div class="flex items-center gap-3">
                       <div
                         class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E5F4F4] text-[#007979]"
                       >
                         <mat-icon aria-hidden="true">quiz</mat-icon>
                       </div>
+                      <div class="min-w-0 flex-1">
+                        <h3 class="line-clamp-2 break-words text-base font-bold leading-5 text-[#032D42] group-hover:text-[#007979]">
+                          {{ quiz.title }}
+                        </h3>
+                        @if (quiz.courseName) {
+                          <p class="mt-0.5 truncate text-xs font-medium text-[#007979]">
+                            {{ quiz.courseName }}
+                          </p>
+                        }
+                      </div>
                       <span
-                        class="rounded-full bg-violet-50 px-2 py-1 text-[10px] font-semibold text-violet-700"
+                        class="shrink-0 self-start rounded-full bg-violet-50 px-2 py-1 text-[10px] font-semibold text-violet-700"
                       >
                         {{ 'Favorite quiz' | t }}
                       </span>
                     </div>
-                    <h3
-                      class="mt-3 text-base font-bold leading-5 text-[#032D42] group-hover:text-[#007979]"
-                    >
-                      {{ quiz.title }}
-                    </h3>
-                    @if (quiz.courseName) {
-                      <p class="mt-1 text-xs font-medium text-[#007979]">
-                        {{ quiz.courseName }}
-                      </p>
-                    }
-                    <p class="mt-2 line-clamp-2 text-sm leading-5 text-gray-600">
+                    <p class="mt-3 line-clamp-2 text-sm leading-5 text-gray-600">
                       {{ quiz.description || ('Continue practicing with this saved quiz.' | t) }}
                     </p>
                     <div
@@ -293,46 +294,43 @@ import { CourseCrumb, CourseHeaderComponent } from '../../../courses/components/
                     </div>
                   </button>
                 }
-              </div>
-            }
 
-            <!-- Courses & certifications -->
-            @if (popularCourses().length > 0) {
-              <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <!-- Courses & certifications -->
                 @for (course of popularCourses(); track course.id) {
                   <a
                     [routerLink]="practiceRoute(course)"
                     class="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#12BFC3] hover:bg-[#E5F4F4] hover:shadow-md"
                   >
-                    <div class="flex items-start justify-between gap-4">
+                    <!-- Icon, then the title and its provider on the same line -->
+                    <div class="flex items-center gap-3">
                       <div
                         class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E5F4F4] text-[#007979]"
                       >
                         <mat-icon aria-hidden="true"> school </mat-icon>
                       </div>
 
+                      <div class="min-w-0 flex-1">
+                        <h3 class="line-clamp-2 break-words text-base font-bold leading-5 text-[#032D42] group-hover:text-[#007979]">
+                          {{ course.name }}
+                        </h3>
+
+                        @if (course.provider) {
+                          <p class="mt-0.5 truncate text-xs font-medium text-[#007979]">
+                            {{ course.provider }}
+                          </p>
+                        }
+                      </div>
+
                       @if (course.type === 'certification') {
                         <span
-                          class="rounded-full bg-[#E5F4F4] px-2 py-1 text-[10px] font-semibold text-[#007979]"
+                          class="shrink-0 self-start rounded-full bg-[#E5F4F4] px-2 py-1 text-[10px] font-semibold text-[#007979]"
                         >
                           {{ 'Certification' | t }}
                         </span>
                       }
                     </div>
 
-                    <h3
-                      class="mt-3 text-base font-bold leading-5 text-[#032D42] group-hover:text-[#007979]"
-                    >
-                      {{ course.name }}
-                    </h3>
-
-                    @if (course.provider) {
-                      <p class="mt-1 text-xs font-medium text-[#007979]">
-                        {{ course.provider }}
-                      </p>
-                    }
-
-                    <p class="mt-2 line-clamp-2 text-sm leading-5 text-gray-600">
+                    <p class="mt-3 line-clamp-2 text-sm leading-5 text-gray-600">
                       {{ course.description | t }}
                     </p>
 
@@ -353,7 +351,7 @@ import { CourseCrumb, CourseHeaderComponent } from '../../../courses/components/
             }
 
             <!-- Empty state: only when there is nothing at all to show -->
-            @if (favoriteQuizzes().length === 0 && popularCourses().length === 0) {
+            @if (popularFavoriteQuizzes().length === 0 && popularCourses().length === 0) {
               <div
                 class="mt-4 rounded-xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center"
               >
@@ -460,22 +458,35 @@ private readonly questionService = inject(TestQuestionService); // add
     );
   });
 
+  /** Popular Practice shows at most this many cards in all. */
+  readonly popularLimit = 10;
+
+  /** Favourite quizzes come first and fill the grid from the top. */
+  readonly popularFavoriteQuizzes = computed(() => this.favoriteQuizzes().slice(0, this.popularLimit));
+
+  /**
+   * The rest of the grid, up to the limit: saved courses and certifications first,
+   * then other practice to explore. Quizzes already shown as favourites are not repeated,
+   * and quizzes without questions yet are not shown to learners.
+   */
   readonly popularCourses = computed(() => {
     const courseFavorites = new Set(this.favoriteQuizIds());
     const certificationFavorites = new Set(this.favoriteCertificationIds());
-    const filtered = this.filteredCourses();
+    const shownFavorites = this.popularFavoriteQuizzes();
+    const alreadyShown = new Set(shownFavorites.flatMap((quiz) => [quiz.id, quiz.slug]));
+    const room = this.popularLimit - shownFavorites.length;
+    if (room <= 0) return [];
 
-    // Show the learner's saved courses and certifications together.
-    const saved = filtered.filter((course) =>
+    const isSaved = (course: Quiz) =>
       course.type === 'certification'
         ? certificationFavorites.has(course.id) || courseFavorites.has(course.id)
-        : courseFavorites.has(course.id),
-    );
+        : courseFavorites.has(course.id);
 
-    // Preserve discovery behavior when the learner has not saved anything,
-    // or when saved IDs no longer match available courses.
-    // Quizzes without questions yet are not shown to learners.
-    return (saved.length > 0 ? saved : filtered).filter((course) => this.courseQuestionCount(course) > 0);
+    const available = this.filteredCourses().filter(
+      (course) =>
+        !alreadyShown.has(course.id) && !alreadyShown.has(course.slug) && this.courseQuestionCount(course) > 0,
+    );
+    return [...available.filter(isSaved), ...available.filter((course) => !isSaved(course))].slice(0, room);
   });
 
   private favoriteStorageKey(organizationId: string | null): string {
