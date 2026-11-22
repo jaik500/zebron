@@ -86,7 +86,8 @@ const CONTENT_SECURITY_POLICY = [
   "font-src 'self' data: https://fonts.gstatic.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://apis.google.com https://js.stripe.com https://www.googletagmanager.com",
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://*.run.app https://firebasestorage.googleapis.com https://www.google-analytics.com https://*.google-analytics.com https://www.google.com https://api.stripe.com",
+  // fonts.gstatic.com: the service worker keeps the fonts for offline use (fonts.googleapis.com is covered by *.googleapis.com).
+  "connect-src 'self' https://fonts.gstatic.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://*.run.app https://firebasestorage.googleapis.com https://www.google-analytics.com https://*.google-analytics.com https://www.google.com https://api.stripe.com",
   // Course lessons embed these players (features/courses/course.model.ts resolveMedia).
   "frame-src 'self' https://*.firebaseapp.com https://www.google.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.loom.com https://drive.google.com https://docs.google.com https://*.sharepoint.com https://w.soundcloud.com https://open.spotify.com https://js.stripe.com https://checkout.stripe.com",
   "worker-src 'self' blob:",
@@ -350,11 +351,33 @@ const angularApp = new AngularNodeAppEngine({
 /**
  * Serve static files from the browser build.
  */
+/**
+ * Files of the installable app that must never be cached by the browser or
+ * the CDN, so a new deployment is found at once: the service worker, its
+ * manifest of files (ngsw.json), the app manifest and the page shell.
+ * Everything else has a content hash in its name (or rarely changes) and
+ * keeps the one-year cache.
+ */
+const NO_CACHE_FILES = new Set([
+  '/ngsw-worker.js',
+  '/ngsw.json',
+  '/safety-worker.js',
+  '/worker-basic.min.js',
+  '/manifest.webmanifest',
+  '/index.csr.html',
+]);
+
 app.use(
   express.static(browserDistFolder, {
     maxAge: '1y',
     index: false,
     redirect: false,
+    setHeaders: (res, filePath) => {
+      const name = '/' + filePath.slice(browserDistFolder.length + 1).replace(/\\/g, '/');
+      if (NO_CACHE_FILES.has(name)) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    },
   }),
 );
 

@@ -84,4 +84,12 @@ describe('Quiz tracking', () => {
     ]);
     expect(review).toHaveLength(2);
   });
+
+  it('groups reader quizzes by document and keeps the document for its link', () => {
+    const [summary] = summarizeQuizzes([
+      result('1', 'document:d1', 40, 1, { source: 'document', documentId: 'd1', quizName: 'Biology notes' }),
+      result('2', 'document:d1', 80, 2, { source: 'document', documentId: 'd1', quizName: 'Biology notes' }),
+    ]);
+    expect(summary).toMatchObject({ quizId: 'document:d1', attempts: 2, best: 80, source: 'document', documentId: 'd1', courseId: null });
+  });
 });

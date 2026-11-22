@@ -2,8 +2,9 @@
  * Quiz tracking on My learning: pure functions that turn a learner's
  * `quizResults` into a per-quiz summary and a short list of topics to review.
  *
- * Results come from the Test Center (practice and exams), course final exams
- * and certification exams. My learning reads only the learner's own results
+ * Results come from the Test Center (practice and exams), course final exams,
+ * certification exams and "Quiz me" in the My documents reader (Zebron only;
+ * one entry per document, quizId `document:<id>`). My learning reads only the learner's own results
  * for the current place: the organization's on its pages, Zebron's on /courses.
  */
 
@@ -14,13 +15,17 @@ export interface QuizResultLike {
   quizName: string;
   scorePercentage: number;
   mode: 'practice' | 'exam';
-  source?: 'test-center' | 'course' | 'certification';
+  source?: QuizSource;
   completedAt: Date | null;
   topicPerformance: { topicId: string; topicName: string; answeredQuestions: number; correctAnswers: number }[];
   /** Course final exams record their course. */
   courseId?: string | null;
   courseTitle?: string | null;
+  /** Reader quizzes record their document. */
+  documentId?: string | null;
 }
+
+export type QuizSource = 'test-center' | 'course' | 'certification' | 'document';
 
 export type QuizTrend = 'up' | 'down' | 'same';
 
@@ -35,9 +40,10 @@ export interface QuizSummary {
   lastTaken: Date | null;
   /** At least one attempt was an exam. */
   hasExam: boolean;
-  source: 'test-center' | 'course' | 'certification';
+  source: QuizSource;
   courseId: string | null;
   courseTitle: string | null;
+  documentId: string | null;
 }
 
 export interface TopicToReview {
@@ -108,6 +114,7 @@ export function summarizeQuizzes(results: readonly QuizResultLike[]): QuizSummar
         source: latest.source ?? 'test-center',
         courseId: withCourse?.courseId ?? null,
         courseTitle: withCourse?.courseTitle ?? null,
+        documentId: ordered.find((result) => result.documentId)?.documentId ?? null,
       };
     })
     .sort((a, b) => time(b.lastTaken) - time(a.lastTaken));

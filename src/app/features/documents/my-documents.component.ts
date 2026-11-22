@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { HotToastService } from '@ngxpert/hot-toast';
 
 import { I18nService } from '../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
@@ -20,7 +21,9 @@ import {
   formatBytes,
   formatInfo,
 } from './document-formats';
+import { listDocumentAnnotations } from './document-annotation.store';
 import { DocumentService, UserDocument } from './document.service';
+import { OfflineDocumentsService } from './offline-documents.service';
 
 interface UploadRow {
   key: number;
@@ -67,13 +70,20 @@ const FORMAT_COLORS: Record<string, { background: string; color: string }> = {
           <button
             type="button"
             class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#007979] px-4 font-semibold text-white hover:bg-[#006666] disabled:opacity-50"
-            [disabled]="!service.loaded()"
+            [disabled]="!service.loaded() || !offline.online()"
             (click)="fileInput.click()"
           >
             <mat-icon aria-hidden="true">upload_file</mat-icon>{{ 'Add documents' | t }}
           </button>
           <input #fileInput type="file" class="hidden" multiple [accept]="accepted" (change)="onPicked($event)" />
         </div>
+
+        @if (!offline.online()) {
+          <p class="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+            <mat-icon class="shrink-0 text-amber-700" aria-hidden="true">cloud_off</mat-icon>
+            <span>{{ 'You are offline. Documents kept on this device can still be read; adding, renaming and deleting need a connection.' | t }}</span>
+          </p>
+        }
 
         <!-- Drop zone -->
         <div
@@ -170,6 +180,12 @@ const FORMAT_COLORS: Record<string, { background: string; color: string }> = {
                     </a>
                   }
                   <p class="mt-0.5 text-xs text-slate-500">
+                    @if (offline.isKept(item.id)) {
+                      <span class="mr-1 inline-flex items-center gap-0.5 font-semibold text-[#007979]">
+                        <mat-icon class="!h-3.5 !w-3.5 !text-[14px]" aria-hidden="true">offline_pin</mat-icon>{{ 'On this device' | t }}
+                      </span>
+                      ·
+                    }
                     {{ info(item).label | t }} · {{ size(item) }}
                     @if (item.openedAt) {
                       · {{ 'Opened {0}' | t: [dateLabel(item.openedAt)] }}
@@ -199,13 +215,25 @@ const FORMAT_COLORS: Record<string, { background: string; color: string }> = {
                   <a mat-menu-item [routerLink]="['/courses/documents', item.id]">
                     <mat-icon aria-hidden="true">chrome_reader_mode</mat-icon>{{ 'Read' | t }}
                   </a>
-                  <button mat-menu-item type="button" (click)="startRename(item)">
+                  @if (offline.supported()) {
+                    @if (offline.isKept(item.id)) {
+                      <button mat-menu-item type="button" (click)="forget(item)">
+                        <mat-icon aria-hidden="true">mobiledata_off</mat-icon>{{ 'Remove from this device' | t }}
+                      </button>
+                    } @else {
+                      <button mat-menu-item type="button" [disabled]="!offline.online() || keeping().has(item.id)" (click)="keep(item)">
+                        <mat-icon aria-hidden="true">download_for_offline</mat-icon>
+                        {{ (keeping().has(item.id) ? 'Saving to this device...' : 'Keep on this device') | t }}
+                      </button>
+                    }
+                  }
+                  <button mat-menu-item type="button" [disabled]="!offline.online()" (click)="startRename(item)">
                     <mat-icon aria-hidden="true">edit</mat-icon>{{ 'Rename' | t }}
                   </button>
-                  <button mat-menu-item type="button" (click)="download(item)">
+                  <button mat-menu-item type="button" [disabled]="!offline.online()" (click)="download(item)">
                     <mat-icon aria-hidden="true">download</mat-icon>{{ 'Download' | t }}
                   </button>
-                  <button mat-menu-item type="button" (click)="remove(item)">
+                  <button mat-menu-item type="button" [disabled]="!offline.online()" (click)="remove(item)">
                     <mat-icon aria-hidden="true">delete</mat-icon>{{ 'Delete' | t }}
                   </button>
                 </mat-menu>
@@ -225,7 +253,14 @@ export class MyDocumentsComponent {
   private readonly confirmation = inject(ConfirmationService);
   private readonly logger = inject(LoggerService);
   private readonly i18n = inject(I18nService);
+  private readonly toast = inject(HotToastService);
+  protected readonly offline = inject(OfflineDocumentsService);
   private readonly headerTitle = useLearningHeaderTitle(this.route);
+
+  /** Documents being saved to this device. */
+  protected readonly keeping = signal<ReadonlySet<string>>(new Set());
+  /** Offline: the list shows only documents kept on this device. */
+  private readonly showingKept = signal(false);
 
   protected readonly context = courseContextFromRoute(this.route);
   protected readonly canManage = computed(() => this.access.canManage(this.context));
@@ -245,13 +280,65 @@ export class MyDocumentsComponent {
   private uploadKey = 0;
 
   constructor() {
-    afterNextRender(() => {
-      if (!this.auth.firebaseUser()) return;
-      this.service.load().catch((error) => {
-        this.logger.error('MyDocuments', 'Could not load documents.', error);
-        this.loadError.set('Your documents could not be loaded. Refresh the page to try again.');
-      });
+    afterNextRender(() => void this.loadList());
+
+    // Back online after showing only the kept documents: load the full list.
+    effect(() => {
+      if (this.offline.online() && this.showingKept()) untracked(() => void this.loadList());
     });
+  }
+
+  private async loadList(): Promise<void> {
+    const uid = this.auth.firebaseUser()?.uid;
+    if (!uid) return;
+    this.loadError.set('');
+    await this.offline.refresh(uid);
+    try {
+      await this.service.load();
+      this.showingKept.set(false);
+    } catch (error) {
+      if (!this.offline.online()) {
+        // Offline: list the documents kept on this device.
+        this.service.showKept(await this.offline.keptDocuments(uid));
+        this.showingKept.set(true);
+        return;
+      }
+      this.logger.error('MyDocuments', 'Could not load documents.', error);
+      this.loadError.set('Your documents could not be loaded. Refresh the page to try again.');
+    }
+  }
+
+  // ---------- Keep on this device ----------
+
+  protected async keep(item: UserDocument): Promise<void> {
+    const uid = this.auth.firebaseUser()?.uid;
+    if (!uid) return;
+    this.keeping.update((ids) => new Set(ids).add(item.id));
+    try {
+      const [bytes, annotations] = await Promise.all([
+        this.service.bytes(item),
+        listDocumentAnnotations(uid, item.id).catch(() => []),
+      ]);
+      const kept = await this.offline.keep(uid, item, bytes, annotations);
+      if (kept) this.toast.success(this.i18n.t('"{0}" is kept on this device.', [item.title]));
+      else this.toast.error(this.i18n.t('This device has no room to keep "{0}".', [item.title]));
+    } catch (error) {
+      this.logger.error('MyDocuments', 'Could not keep the document on this device.', error);
+      this.toast.error(this.i18n.t('Could not save the document to this device. Try again.'));
+    } finally {
+      this.keeping.update((ids) => {
+        const next = new Set(ids);
+        next.delete(item.id);
+        return next;
+      });
+    }
+  }
+
+  protected async forget(item: UserDocument): Promise<void> {
+    const uid = this.auth.firebaseUser()?.uid;
+    if (!uid) return;
+    await this.offline.remove(uid, item.id);
+    this.toast.success(this.i18n.t('Removed from this device. It is still in your documents.'));
   }
 
   protected info(item: UserDocument) {
@@ -291,7 +378,7 @@ export class MyDocumentsComponent {
   }
 
   private async uploadAll(files: File[]): Promise<void> {
-    if (!this.service.loaded()) return;
+    if (!this.service.loaded() || !this.offline.online()) return;
     for (const file of files) {
       const key = ++this.uploadKey;
       this.uploads.update((rows) => [...rows, { key, name: file.name, percent: 0, status: 'uploading', message: '' }]);
@@ -354,7 +441,7 @@ export class MyDocumentsComponent {
   protected async remove(item: UserDocument): Promise<void> {
     const confirmed = await this.confirmation.confirm({
       title: 'Delete this document?',
-      message: this.i18n.t('"{0}" and where you stopped reading will be deleted. This can\'t be undone.', [item.title]),
+      message: this.i18n.t('"{0}", its highlights and notes, and where you stopped reading will be deleted. This can\'t be undone.', [item.title]),
       icon: 'delete',
       confirmText: 'Delete',
     });

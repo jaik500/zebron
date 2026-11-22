@@ -69,6 +69,8 @@ import {
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { firestore } from '../../../core/services/firebase-config';
 import { PartnerOrganizationContextService } from '../../../core/services/partner-organization-context.service';
+import { PwaService } from '../../../core/services/pwa.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
  
 @Component({
   selector: 'app-zebron-header',
@@ -85,6 +87,7 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
     MatTooltipModule,
  
     LanguageSwitcherComponent,
+    TranslatePipe,
   ],
  
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -521,6 +524,14 @@ import { PartnerOrganizationContextService } from '../../../core/services/partne
 
       <mat-divider></mat-divider>
 
+      <!-- Installable app (PwaService): shown when this browser can install Zebron. -->
+      @if (pwa.canInstall()) {
+        <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="pwa.install()">
+          <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">install_mobile</mat-icon>
+          <span class="text-sm">{{ 'Install the Zebron app' | t }}</span>
+        </button>
+      }
+
       @if (isSignedIn()) {
         <!-- Account: the user's name opens their profile -->
         <button
@@ -602,6 +613,9 @@ export class ZebronHeaderComponent {
  
   private readonly pageTitleService =
     inject(PageTitleService);
+
+  /** Install the Zebron app (menu item). */
+  protected readonly pwa = inject(PwaService);
  
   private readonly destroyRef =
     inject(DestroyRef);

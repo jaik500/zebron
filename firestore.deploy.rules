@@ -3112,8 +3112,11 @@ allow create, update: if isPlatformAdmin()
 && configId == "settings"
 && request.resource.data.keys().hasOnly([
 "enabled", "monthlyCallLimit", "userDailyLimit", "model",
-"inputCostPerMillion", "outputCostPerMillion", "updatedAt"
+"inputCostPerMillion", "outputCostPerMillion",
+"learnerDailyLimit", "learnerMonthlyLimit", "updatedAt"
 ])
+&& request.resource.data.get("learnerDailyLimit", 0) is int
+&& request.resource.data.get("learnerMonthlyLimit", 0) is int
 && request.resource.data.enabled is bool
 && request.resource.data.monthlyCallLimit is int
 && request.resource.data.userDailyLimit is int
@@ -3339,6 +3342,34 @@ allow update: if isCurrentUser(userId)
 && validDocument(request.resource.data)
 && request.resource.data.diff(resource.data).affectedKeys()
 .hasOnly(["title", "position", "progress", "updatedAt", "openedAt"]);
+}
+match /users/{userId}/documentAnnotations/{annotationId} {
+function validDocumentAnnotation(data) {
+return data.keys().hasOnly(["kind", "documentId", "documentTitle", "blockIndex",
+"quote", "prefix", "suffix", "color", "note", "createdAt", "updatedAt"])
+&& data.kind in ["highlight", "note"]
+&& data.documentId is string && data.documentId.size() > 0 && data.documentId.size() <= 100
+&& data.documentTitle is string && data.documentTitle.size() <= 200
+&& data.blockIndex is int && data.blockIndex >= 0 && data.blockIndex <= 100000
+&& data.quote is string && data.quote.size() > 0 && data.quote.size() <= 1000
+&& data.prefix is string && data.prefix.size() <= 64
+&& data.suffix is string && data.suffix.size() <= 64
+&& data.note is string && data.note.size() <= 2000
+&& (data.kind == "highlight" ? data.color in ["yellow", "green", "blue", "pink"] : data.color == null)
+&& data.updatedAt == request.time;
+}
+allow read, delete: if isCurrentUser(userId);
+allow create: if isCurrentUser(userId)
+&& validDocumentAnnotation(request.resource.data)
+&& request.resource.data.createdAt == request.time;
+allow update: if isCurrentUser(userId)
+&& validDocumentAnnotation(request.resource.data)
+&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["color", "kind", "note", "updatedAt"]);
+}
+match /users/{userId}/documentQuizzes/{quizId} {
+allow get, list: if isCurrentUser(userId)
+&& resource.data.status == "graded";
+allow write: if false;
 }
 match /users/{userId}/courseAnnotations/{annotationId} {
 function validAnnotation(data) {

@@ -64,6 +64,24 @@ function toQuizResult(id: string, data: Record<string, unknown>): QuizResultLike
   };
 }
 
+/**
+ * A graded "Quiz me" from the My documents reader
+ * (users/{uid}/documentQuizzes, functions/src/document-quiz.ts). Every quiz
+ * of one document counts as an attempt of the same quiz.
+ */
+function toDocumentQuizResult(id: string, data: Record<string, unknown>): QuizResultLike {
+  const result = toQuizResult(id, data);
+  const documentId = typeof data['documentId'] === 'string' ? data['documentId'] : '';
+  return {
+    ...result,
+    quizId: `document:${documentId}`,
+    quizName: typeof data['documentTitle'] === 'string' ? data['documentTitle'] : '',
+    mode: 'practice',
+    source: 'document',
+    documentId: documentId || null,
+  };
+}
+
 /** Minutes a week the streak card counts toward. */
 const WEEKLY_GOAL_MINUTES = 60;
 
@@ -526,6 +544,8 @@ const WEEKLY_GOAL_MINUTES = 60;
                             <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">{{ 'Course exam' | t }}</span>
                           } @else if (quiz.source === 'certification') {
                             <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">{{ 'Certification exam' | t }}</span>
+                          } @else if (quiz.source === 'document') {
+                            <span class="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-[#00605f]">{{ 'My document' | t }}</span>
                           } @else if (quiz.hasExam) {
                             <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">{{ 'Exam' | t }}</span>
                           }
@@ -555,6 +575,13 @@ const WEEKLY_GOAL_MINUTES = 60;
                           class="inline-flex h-9 shrink-0 items-center gap-1 self-start rounded-lg border border-slate-200 px-3 text-sm font-semibold text-[#007979] hover:bg-teal-50 sm:self-auto"
                         >
                           {{ 'Practice again' | t }}<mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">arrow_forward</mat-icon>
+                        </a>
+                      } @else if (quiz.documentId) {
+                        <a
+                          [routerLink]="['/courses/documents', quiz.documentId]"
+                          class="inline-flex h-9 shrink-0 items-center gap-1 self-start rounded-lg border border-slate-200 px-3 text-sm font-semibold text-[#007979] hover:bg-teal-50 sm:self-auto"
+                        >
+                          {{ 'Open document' | t }}<mat-icon class="!h-[18px] !w-[18px] !text-[18px]" aria-hidden="true">arrow_forward</mat-icon>
                         </a>
                       } @else if (quiz.courseId) {
                         <a
@@ -1167,8 +1194,19 @@ export class MyLearningComponent {
           limit(1000),
         ),
       );
+      // Zebron's page also lists quizzes from the My documents reader (graded ones only).
+      const documentQuizzes = organizationId
+        ? []
+        : await getDocs(
+            query(collection(firestore, 'users', userId, 'documentQuizzes'), where('status', '==', 'graded'), limit(500)),
+          )
+            .then((result) => result.docs.map((item) => toDocumentQuizResult(item.id, item.data())))
+            .catch((error) => {
+              this.logger.error('MyLearning', 'Could not load document quizzes.', error);
+              return [] as QuizResultLike[];
+            });
       if (this.auth.firebaseUser()?.uid !== userId) return;
-      this.quizResults.set(snapshot.docs.map((item) => toQuizResult(item.id, item.data())));
+      this.quizResults.set([...snapshot.docs.map((item) => toQuizResult(item.id, item.data())), ...documentQuizzes]);
       this.quizzesAvailable.set(true);
     } catch (error) {
       // No Test Center here, or results can't be read: the card stays hidden.

@@ -131,7 +131,7 @@ const splitSkills = (value: string, max: number) =>
                   }
                   <mat-form-field appearance="outline" class="zb-field mt-3">
                     <mat-label>Feedback to the learner</mat-label>
-                    <textarea matInput rows="2" maxlength="2000" [ngModel]="feedback()[project.id] ?? ''" (ngModelChange)="setFeedback(project.id, $event)"
+                    <textarea matInput rows="2" maxlength="2000" [ngModel]="feedback()[project.id] || ''" (ngModelChange)="setFeedback(project.id, $event)"
                       placeholder="What works, and what to change if it needs more work."></textarea>
                   </mat-form-field>
                   <div class="flex flex-wrap gap-2">
@@ -139,8 +139,8 @@ const splitSkills = (value: string, max: number) =>
                       <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">verified</mat-icon>
                       Verify
                     </button>
-                    <button type="button" (click)="review(project, 'needs-work')" [disabled]="busy() || !(feedback()[project.id] ?? '').trim()" class="inline-flex h-10 items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
-                      [title]="(feedback()[project.id] ?? '').trim() ? '' : 'Write feedback first'">
+                    <button type="button" (click)="review(project, 'needs-work')" [disabled]="busy() || !(feedback()[project.id] || '').trim()" class="inline-flex h-10 items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+                      [title]="(feedback()[project.id] || '').trim() ? '' : 'Write feedback first'">
                       <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">replay</mat-icon>
                       Needs more work
                     </button>
@@ -667,7 +667,7 @@ export class CareerPathManageComponent implements OnInit {
     if (!reviewerId) return;
     this.busy.set(true);
     try {
-      await this.service.reviewProject(reviewerId, project, status, this.feedback()[project.id] ?? '');
+      await this.service.reviewProject(reviewerId, project, status, this.feedback()[project.id] || '');
       this.reviews.update((list) => list.filter((item) => item.id !== project.id));
       this.notify.success(status === 'verified' ? 'Project verified.' : 'Sent back with your feedback.');
     } catch (error) {

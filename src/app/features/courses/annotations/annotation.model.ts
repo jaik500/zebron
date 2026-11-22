@@ -1,4 +1,7 @@
+import type { Signal } from '@angular/core';
 import { Timestamp } from 'firebase/firestore';
+
+import type { TextAnchor } from './annotation-anchoring';
 
 /**
  * Personal study tools in lessons: highlights, notes and lesson bookmarks.
@@ -64,6 +67,26 @@ export const HIGHLIGHT_COLORS: readonly HighlightColorOption[] = [
   { color: 'blue', label: 'Example or explanation', icon: 'lightbulb', background: '#bfdbfe', accent: '#1d4ed8' },
   { color: 'pink', label: 'Review later', icon: 'replay', background: '#fbcfe8', accent: '#be185d' },
 ];
+
+/** What the painter and the toolbar need from a highlight or note (lessons and My documents). */
+export type PaintableAnnotation = Pick<CourseAnnotation, 'id' | 'kind' | 'blockIndex' | 'quote' | 'prefix' | 'suffix' | 'color' | 'note'>;
+
+/**
+ * Where the highlight toolbar saves. Lessons use AnnotationService (the
+ * default, nothing to provide). Other readers, such as My documents, provide
+ * their own store:
+ *
+ *   providers: [HighlightPainter, { provide: AnnotationStore, useExisting: DocumentAnnotationStore }]
+ */
+export abstract class AnnotationStore {
+  abstract readonly annotations: Signal<readonly PaintableAnnotation[]>;
+  /** False while signed out or before the reader is ready. */
+  abstract readonly available: Signal<boolean>;
+  abstract add(blockIndex: number, anchor: TextAnchor, color: HighlightColor | null, note?: string): Promise<unknown>;
+  abstract setColor(id: string, color: HighlightColor | null): Promise<void>;
+  abstract setNote(id: string, note: string): Promise<void>;
+  abstract remove(id: string): Promise<void>;
+}
 
 export function highlightOption(color: HighlightColor | null): HighlightColorOption | null {
   return HIGHLIGHT_COLORS.find((option) => option.color === color) ?? null;

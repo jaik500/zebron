@@ -84,6 +84,11 @@ interface PageSlot {
     .zb-pdf-page .textLayer .markedContent { display: contents; }
     .zb-pdf-page .textLayer ::selection { background: rgb(0 121 121 / 0.3); color: transparent; }
     .zb-pdf-page .textLayer br::selection { background: transparent; }
+    /* Highlights (features/courses/annotations) are drawn in the text layer; the layer
+       multiplies onto the page so the printed text under a highlight stays visible
+       (a blend on the mark alone stays inside pdf.js's span stacking contexts). */
+    .zb-pdf-page .textLayer { mix-blend-mode: multiply; }
+    .zb-pdf-page .textLayer mark { color: transparent !important; }
     .zb-pdf-page .textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: default; user-select: none; }
   `,
 })
@@ -98,6 +103,10 @@ export class PdfViewComponent {
   readonly pageFilter = input('none');
 
   readonly pageChange = output<{ page: number; total: number }>();
+  /** A page's text layer is ready: highlights can be drawn in it (blockIndex = page - 1). */
+  readonly textLayerReady = output<{ element: HTMLElement; blockIndex: number }>();
+  /** A page's text layer was removed (zoom or resize): stop drawing in it. */
+  readonly textLayerRemoved = output<HTMLElement>();
 
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
 
@@ -230,7 +239,7 @@ export class PdfViewComponent {
       slot.task?.cancel();
       slot.task = null;
       slot.rendered = 0;
-      slot.element.querySelectorAll('canvas, .textLayer').forEach((node) => node.remove());
+      this.removeLayers(slot);
       slot.element.style.width = `${Math.floor(this.pageSize.width * scale)}px`;
       slot.element.style.height = `${Math.floor(this.pageSize.height * scale)}px`;
     }
@@ -295,18 +304,49 @@ export class PdfViewComponent {
     }
     slot.task = null;
     if (this.destroyed) return;
-    slot.element.querySelectorAll('canvas, .textLayer').forEach((node) => node.remove());
+    this.removeLayers(slot);
     slot.element.prepend(canvas);
     slot.rendered = scale;
 
     const textLayer = document.createElement('div');
     textLayer.className = 'textLayer';
+    // A highlight section for the toolbar and painter (features/courses/annotations).
+    textLayer.setAttribute('data-annotation-section', '');
+    textLayer.setAttribute('data-block-index', String(slot.number - 1));
     slot.element.appendChild(textLayer);
     try {
       await new this.pdfjs.TextLayer({ textContentSource: page.streamTextContent(), container: textLayer, viewport }).render();
+      if (textLayer.isConnected) this.textLayerReady.emit({ element: textLayer, blockIndex: slot.number - 1 });
     } catch {
       // Text selection is extra; the page is already drawn.
     }
+  }
+
+  private removeLayers(slot: PageSlot): void {
+    slot.element.querySelectorAll<HTMLElement>('canvas, .textLayer').forEach((node) => {
+      if (node.classList.contains('textLayer')) this.textLayerRemoved.emit(node);
+      node.remove();
+    });
+  }
+
+  /** Number of pages (0 until the PDF is open). */
+  pageCount(): number {
+    return this.slots.length;
+  }
+
+  /** The current page (1-based). */
+  page(): number {
+    return this.currentPage;
+  }
+
+  /** A page's text, for read aloud: lines end with a line break. */
+  async pageText(pageNumber: number): Promise<string> {
+    if (!this.pdf || pageNumber < 1 || pageNumber > this.pdf.numPages) return '';
+    const content = await (await this.pdf.getPage(pageNumber)).getTextContent();
+    return content.items
+      .map((item) => ('str' in item ? item.str + (item.hasEOL ? '\n' : '') : ''))
+      .join('')
+      .replace(/[ \t]+\n/g, '\n');
   }
 
   private readonly onScroll = (): void => {

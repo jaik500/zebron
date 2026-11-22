@@ -2704,6 +2704,7 @@ export { completeCourseLesson } from "./course-progress";
 export { notifyOnCourseAssignment, notifyOnCareerProjectReview, sendLearningUpdates } from "./learner-notifications";
 export { expireJobListings, sendJobAlerts } from "./job-board";
 export { aiAssist, draftTopicContent } from "./ai-engine";
+export { createDocumentQuiz, gradeDocumentQuiz, cleanUpDocumentQuizzes } from "./document-quiz";
 export { runContentChecksNow, weeklyContentChecks } from "./content-checks";
 export { enrollInCertification, startCertificationExam, submitCertificationExam } from "./certifications";
 export {

@@ -20,9 +20,18 @@ import { I18nService } from '../../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LoggerService } from '../../../core/services/logger.service';
 import { Lesson } from '../course.model';
-import { ANNOTATION_LIMITS, CourseAnnotation, HIGHLIGHT_COLORS, HighlightColor, HighlightColorOption } from './annotation.model';
+import { ANNOTATION_LIMITS, AnnotationStore, HIGHLIGHT_COLORS, HighlightColor, HighlightColorOption, PaintableAnnotation } from './annotation.model';
 import { TextAnchor, anchor, offsetOf, textOf } from './annotation-anchoring';
 import { AnnotationService } from './annotation.service';
+
+/** What the toolbar needs from either store. */
+interface AnnotationSource {
+  annotations(): readonly PaintableAnnotation[];
+  available(): boolean;
+  setColor(id: string, color: HighlightColor | null): Promise<void>;
+  setNote(id: string, note: string): Promise<void>;
+  remove(id: string): Promise<void>;
+}
 
 interface PendingSelection {
   blockIndex: number;
@@ -183,7 +192,9 @@ export class AnnotationToolbarComponent {
   readonly root = input<HTMLElement | null>(null);
   readonly lesson = input<Lesson | null>(null);
 
-  private readonly service = inject(AnnotationService);
+  /** A reader other than lessons (My documents) provides its own store; lessons use AnnotationService. */
+  private readonly store = inject(AnnotationStore, { optional: true });
+  private readonly service = this.store ? null : inject(AnnotationService);
   private readonly toast = inject(HotToastService);
   private readonly i18n = inject(I18nService);
   private readonly logger = inject(LoggerService);
@@ -205,7 +216,8 @@ export class AnnotationToolbarComponent {
   /** The highlight being changed (kept live: another tab may change it). */
   protected readonly editing = computed(() => {
     const id = this.editingId();
-    return id ? (this.service.annotations().find((item) => item.id === id) ?? null) : null;
+    const list: readonly PaintableAnnotation[] = this.source().annotations();
+    return id ? (list.find((item) => item.id === id) ?? null) : null;
   });
   protected readonly currentColor = computed<HighlightColor | null>(() =>
     this.mode() === 'edit' ? (this.editing()?.color ?? null) : null,
@@ -257,6 +269,11 @@ export class AnnotationToolbarComponent {
     });
   }
 
+  /** The store in use: My documents' own, or the lessons' AnnotationService. */
+  private source(): AnnotationSource {
+    return this.store ?? this.service!;
+  }
+
   protected colorLabel(option: HighlightColorOption): string {
     return this.i18n.t('Highlight: {0}', [this.i18n.t(option.label)]);
   }
@@ -294,7 +311,7 @@ export class AnnotationToolbarComponent {
     const range = selection.getRangeAt(0);
     const root = this.root();
     const section = sectionOf(range.startContainer);
-    if (!root || !section || section !== sectionOf(range.endContainer) || !root.contains(section) || !this.service.available()) {
+    if (!root || !section || section !== sectionOf(range.endContainer) || !root.contains(section) || !this.source().available()) {
       if (this.mode() === 'select') this.reset();
       return;
     }
@@ -345,15 +362,16 @@ export class AnnotationToolbarComponent {
     const lesson = this.lesson();
     const pending = this.pending();
     const editing = this.editing();
-    if (!lesson) return;
+    if (!lesson && !this.store) return;
 
     await this.run(async () => {
       if (this.mode() === 'select' && pending) {
-        await this.service.add(lesson, pending.blockIndex, pending.anchor, color);
+        if (this.store) await this.store.add(pending.blockIndex, pending.anchor, color);
+        else if (lesson) await this.service!.add(lesson, pending.blockIndex, pending.anchor, color);
         document.getSelection()?.removeAllRanges();
         this.reset();
       } else if (this.mode() === 'edit' && editing && editing.color !== color) {
-        await this.service.setColor(editing.id, color);
+        await this.source().setColor(editing.id, color);
       }
     });
   }
@@ -382,10 +400,11 @@ export class AnnotationToolbarComponent {
 
     await this.run(async () => {
       if (editing) {
-        await this.service.setNote(editing.id, note);
+        await this.source().setNote(editing.id, note);
         this.toast.success(this.i18n.t(note ? 'Note saved.' : 'Note removed.'));
-      } else if (pending && lesson && note) {
-        await this.service.add(lesson, pending.blockIndex, pending.anchor, null, note);
+      } else if (pending && note && (lesson || this.store)) {
+        if (this.store) await this.store.add(pending.blockIndex, pending.anchor, null, note);
+        else if (lesson) await this.service!.add(lesson, pending.blockIndex, pending.anchor, null, note);
         document.getSelection()?.removeAllRanges();
         this.toast.success(this.i18n.t('Note saved.'));
       }
@@ -409,7 +428,7 @@ export class AnnotationToolbarComponent {
     const editing = this.editing();
     if (!editing) return;
     await this.run(async () => {
-      await this.service.remove(editing.id);
+      await this.source().remove(editing.id);
       this.toast.success(this.i18n.t(editing.color ? 'Highlight removed.' : 'Note removed.'));
       this.reset();
     });

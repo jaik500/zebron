@@ -17,6 +17,9 @@ interface EngineSettings {
   model: string;
   inputCostPerMillion: number;
   outputCostPerMillion: number;
+  /** Learner tasks ("Quiz me" in the reader): per person per day, and for everyone per month. */
+  learnerDailyLimit: number;
+  learnerMonthlyLimit: number;
 }
 
 interface UsageCounter {
@@ -93,6 +96,8 @@ const DEFAULTS: EngineSettings = {
   model: '',
   inputCostPerMillion: 0,
   outputCostPerMillion: 0,
+  learnerDailyLimit: 10,
+  learnerMonthlyLimit: 1000,
 };
 
 const APP_LABELS: Record<string, string> = {
@@ -110,6 +115,8 @@ const TASK_LABELS: Record<string, string> = {
   improve: 'Improve text',
   summarize: 'Summarize',
   'classify-resource': 'Sort a resource',
+  'draft-career-path': 'Draft a career path',
+  'document-quiz': 'Quiz me (learners)',
 };
 
 /**
@@ -350,6 +357,20 @@ const TASK_LABELS: Record<string, string> = {
               Requests per person per day (0 = no limit)
               <input type="number" min="0" name="daily" [(ngModel)]="settings.userDailyLimit" class="mt-1 h-9 w-full rounded-lg border border-gray-300 px-2 text-sm font-normal" />
             </label>
+            <fieldset class="rounded-lg border border-gray-200 p-3">
+              <legend class="px-1 text-xs font-semibold text-gray-600">Learners: "Quiz me" in the document reader</legend>
+              <p class="mb-2 text-xs text-gray-500">Counted apart from the limits above, so learners never use up the administrators' allowance.</p>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="text-xs text-gray-600">
+                  Quizzes per person per day (0 = off)
+                  <input type="number" min="0" name="learnerDaily" [(ngModel)]="settings.learnerDailyLimit" class="mt-1 h-9 w-full rounded-lg border border-gray-300 px-2 text-sm" />
+                </label>
+                <label class="text-xs text-gray-600">
+                  Quizzes per month, everyone (0 = no limit)
+                  <input type="number" min="0" name="learnerMonthly" [(ngModel)]="settings.learnerMonthlyLimit" class="mt-1 h-9 w-full rounded-lg border border-gray-300 px-2 text-sm" />
+                </label>
+              </div>
+            </fieldset>
             <label class="block text-xs font-semibold text-gray-600">
               Model (empty = the help assistant's model)
               <input type="text" name="model" [(ngModel)]="settings.model" placeholder="gemini-3.5-flash-lite" class="mt-1 h-9 w-full rounded-lg border border-gray-300 px-2 text-sm font-normal" />
@@ -444,6 +465,8 @@ export class AiContentAdminComponent implements OnInit {
         model,
         inputCostPerMillion: number(this.settings.inputCostPerMillion, 1000),
         outputCostPerMillion: number(this.settings.outputCostPerMillion, 1000),
+        learnerDailyLimit: Math.round(number(this.settings.learnerDailyLimit, 1000)),
+        learnerMonthlyLimit: Math.round(number(this.settings.learnerMonthlyLimit, 1_000_000)),
       };
       await setDoc(doc(firestore, 'aiEngineConfig', 'settings'), { ...value, updatedAt: serverTimestamp() });
       this.settings = value;

@@ -18,6 +18,8 @@ import { deleteObject, getBytes, getDownloadURL, ref, uploadBytesResumable } fro
 import { firebaseStorage, firestore } from '../../core/services/firebase-config';
 import { AuthService } from '../../core/services/auth.service';
 import { LoggerService } from '../../core/services/logger.service';
+import { deleteDocumentAnnotations } from './document-annotation.store';
+import { OfflineDocumentsService } from './offline-documents.service';
 import { DocumentFormat, MAX_FILE_BYTES, UploadCheck, checkUpload, clampProgress } from './document-formats';
 
 /**
@@ -81,6 +83,7 @@ function toUserDocument(id: string, data: Record<string, unknown>): UserDocument
 export class DocumentService {
   private readonly auth = inject(AuthService);
   private readonly logger = inject(LoggerService);
+  private readonly offline = inject(OfflineDocumentsService);
 
   private readonly items = signal<UserDocument[]>([]);
   private readonly loadedFor = signal<string | null>(null);
@@ -101,6 +104,12 @@ export class DocumentService {
     const snapshot = await getDocs(query(collection(firestore, 'users', uid, 'documents'), orderBy('updatedAt', 'desc')));
     this.items.set(snapshot.docs.map((item) => toUserDocument(item.id, item.data())));
     this.loadedFor.set(uid);
+  }
+
+  /** Offline: show the documents kept on this device instead of the full list. */
+  showKept(documents: UserDocument[]): void {
+    this.items.set([...documents].sort((a, b) => (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0)));
+    this.loadedFor.set(this.auth.firebaseUser()?.uid ?? null);
   }
 
   async get(documentId: string): Promise<UserDocument | null> {
@@ -189,12 +198,20 @@ export class DocumentService {
     this.items.update((items) => items.map((item) => (item.id === documentId ? { ...item, title: clean, updatedAt: new Date() } : item)));
   }
 
-  /** Delete the file and its details. A file already gone from Storage doesn't stop the delete. */
+  /**
+   * Delete the file, its highlights and notes, and its details. A file
+   * already gone from Storage doesn't stop the delete.
+   */
   async remove(document: UserDocument): Promise<void> {
+    const uid = this.uid();
     await deleteObject(ref(firebaseStorage, document.storagePath)).catch((error: { code?: string }) => {
       if (error?.code !== 'storage/object-not-found') throw error;
     });
-    await deleteDoc(doc(firestore, 'users', this.uid(), 'documents', document.id));
+    await this.offline.remove(uid, document.id).catch(() => undefined);
+    await deleteDocumentAnnotations(uid, document.id).catch((error) =>
+      this.logger.error('DocumentService', 'Could not delete the highlights of a deleted document.', error),
+    );
+    await deleteDoc(doc(firestore, 'users', uid, 'documents', document.id));
     this.items.update((items) => items.filter((item) => item.id !== document.id));
   }
 

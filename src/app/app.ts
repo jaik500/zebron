@@ -24,6 +24,7 @@ import { LocalizationService } from './core/services/localization.service';
 import { ClaimsSyncService } from './core/services/claims-sync.service';
 import { AuthService } from './core/services/auth.service';
 import { SupportAssistantComponent } from './features/support/assistant/support-assistant.component';
+import { AppStatusComponent } from './shared/components/app-status/app-status.component';
 import { OrganizationBrandingService } from './features/partner/branding/organization-branding';
 
 @Component({
@@ -34,6 +35,7 @@ import { OrganizationBrandingService } from './features/partner/branding/organiz
     FooterComponent,
     ZebronHeaderComponent,
     SupportAssistantComponent,
+    AppStatusComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -74,6 +76,9 @@ import { OrganizationBrandingService } from './features/partner/branding/organiz
         [organizationId]="assistantOrganizationId()"
         [firstName]="firstName()"
       />
+
+      <!-- New version ready / offline notices (installable app). -->
+      <app-status />
 
     </div>
   `,

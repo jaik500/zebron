@@ -2,6 +2,7 @@
 import {
   ApplicationConfig,
   inject,
+  isDevMode,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
@@ -28,6 +29,7 @@ import { MAT_DIALOG_DEFAULT_OPTIONS, MatDialogConfig } from '@angular/material/d
 import { provideNativeDateAdapter } from '@angular/material/core';
 
 import { provideHotToastConfig } from '@ngxpert/hot-toast';
+import { provideServiceWorker } from '@angular/service-worker';
 
 import { routes } from './app.routes';
 
@@ -100,6 +102,14 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withFetch(),
     ),
+
+    // Installable app: the service worker keeps Zebron on the device so it
+    // opens with no connection (ngsw-config.json; PwaService shows updates).
+    // Registered once the app is stable (or after 30 s), production only.
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
 
     {
       provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,

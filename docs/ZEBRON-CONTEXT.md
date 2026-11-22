@@ -4,7 +4,7 @@ Give this file to an AI assistant (or a new developer) at the start of any
 work on Zebron. It explains what Zebron is, how it is built, where things
 live, the rules every change follows, and how we work together.
 
-- **Last updated:** 21 November 2026 (guide edition 103)
+- **Last updated:** 21 November 2026 (guide edition 107)
 - **Also in the Knowledge Center** as "Zebron platform overview for the team" (support and developers), and introduced on the Internal Blog in "How Zebron works: one page for the whole team" (`scripts/seed-blog-zebron-context.mjs`).
 - **Keep it current:** when a change makes anything here wrong (a new
   application, folder, collection, function, rule or way of working), update
@@ -155,7 +155,8 @@ security.
 
 - `users/{uid}` (+ subcollections: notifications, preferences, courseProgress,
   courseExams, certifications, courseAnnotations, codeLabProjects, codeLabExercises,
-  careerPlans, savedJobs, jobAlerts, flashcards, communityBookmarks, documents)
+  careerPlans, savedJobs, jobAlerts, flashcards, communityBookmarks, documents,
+  documentAnnotations)
 - `communityProfiles/{uid}`: public profile fields only
 - `organizations/{id}` (+ applications, announcements, auditLogs,
   knowledgeArticles, inboundMessages, sentMessages, mailboxes, mailboxUsage,
@@ -244,9 +245,28 @@ Secrets (Secret Manager, `firebase functions:secrets:set NAME`):
   for Word), with reading themes, text size or zoom, and the place they
   stopped remembered. Files in Storage `users/{uid}/documents/{id}/{file}`,
   details in `users/{uid}/documents/{id}`, both owner-only; 50 MB per file,
-  100 files and 500 MB per person. Untrusted HTML goes through an allowlist
-  sanitizer (`reader-html.ts`). Code: `features/documents`. Needs CORS on the
+  100 files and 500 MB per person. Highlights and notes use the lesson
+  toolbar and painter (`users/{uid}/documentAnnotations`, via
+  `AnnotationStore`); read aloud uses the browser's voices sentence by
+  sentence. **Keep on this device** stores a document and its highlights
+  in Cache Storage (`OfflineDocumentsService`) for reading offline.
+  **Quiz me** (reader button) sends the part being read to
+  `createDocumentQuiz` (AI engine task `document-quiz`, open to learners
+  with `learnerDailyLimit` / `learnerMonthlyLimit`); questions live in
+  `users/{uid}/documentQuizzes` (readable only once graded, written only by
+  functions) and graded ones show on My learning.
+  Untrusted HTML goes through an allowlist sanitizer
+  (`reader-html.ts`). Code: `features/documents`. Needs CORS on the
   Storage bucket (`storage.cors.json`).
+- **Installable app (PWA):** `public/manifest.webmanifest`, `public/icons/`,
+  and the Angular service worker (`ngsw-config.json`, production builds only,
+  registered in app.config.ts). The app code and the client shell
+  (`index.csr.html`) are stored on the device, so Zebron opens offline;
+  Firestore and other APIs are not cached. `PwaService` keeps the install
+  prompt (header menu "Install the Zebron app") and shows "A new version is
+  ready" (`AppStatusComponent`). server.ts sends `no-cache` for the service
+  worker files. To turn it off, ship Angular's safety worker; never just
+  delete the service worker.
 - **Coding Lab:** learner code runs in Web Workers inside a sandboxed iframe
   (`public/coding-lab/sandbox.html`, opaque origin) started by
   `CodeRunnerService`. Learner code must never run on Zebron's own origin.

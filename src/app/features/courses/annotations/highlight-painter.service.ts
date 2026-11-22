@@ -1,7 +1,7 @@
 import { Injectable, NgZone, inject, signal } from '@angular/core';
 
 import { I18nService } from '../../../core/i18n/i18n.service';
-import { CourseAnnotation, highlightOption } from './annotation.model';
+import { PaintableAnnotation, highlightOption } from './annotation.model';
 import { PaintRequest, locate, paint, textOf, unpaint } from './annotation-anchoring';
 
 /**
@@ -18,7 +18,7 @@ export class HighlightPainter {
   private readonly i18n = inject(I18nService);
 
   private readonly sections = new Map<HTMLElement, number>();
-  private annotations: CourseAnnotation[] = [];
+  private annotations: PaintableAnnotation[] = [];
   private frame = 0;
 
   /** Where each annotation was drawn: annotation ID → lesson section index. */
@@ -36,7 +36,7 @@ export class HighlightPainter {
     this.schedule();
   }
 
-  setAnnotations(annotations: CourseAnnotation[]): void {
+  setAnnotations(annotations: PaintableAnnotation[]): void {
     this.annotations = annotations.filter((item) => item.kind !== 'bookmark' && item.quote);
     this.schedule();
   }
@@ -106,7 +106,7 @@ export class HighlightPainter {
   }
 
   /** Hover text: what the colour means, and the note. */
-  private titleFor(annotation: CourseAnnotation): string {
+  private titleFor(annotation: PaintableAnnotation): string {
     const option = highlightOption(annotation.color);
     const label = this.i18n.t(option ? option.label : 'Note');
     return annotation.note ? `${label}: ${annotation.note}` : label;
@@ -114,7 +114,7 @@ export class HighlightPainter {
 }
 
 /** Colours are inline: lesson HTML is outside the component's styles. */
-function styleMark(mark: HTMLElement, annotation: CourseAnnotation): void {
+function styleMark(mark: HTMLElement, annotation: PaintableAnnotation): void {
   const option = highlightOption(annotation.color);
   mark.style.color = 'inherit';
   mark.style.borderRadius = '2px';
