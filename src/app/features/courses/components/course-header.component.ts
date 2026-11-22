@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { doc, getDoc } from 'firebase/firestore';
 import { NgClass, NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -28,7 +28,7 @@ export interface CourseMenuAction {
   active?: boolean;
 }
 
-export type CourseTab = 'learning' | 'catalog' | 'careers' | 'certifications' | 'certificates' | 'test-center' | 'coding-lab' | 'live' | 'manage';
+export type CourseTab = 'learning' | 'catalog' | 'careers' | 'certifications' | 'certificates' | 'test-center' | 'coding-lab' | 'documents' | 'live' | 'manage';
 
 /**
  * Page header for the course pages: back button and breadcrumbs on the
@@ -90,9 +90,10 @@ export type CourseTab = 'learning' | 'catalog' | 'careers' | 'certifications' | 
 
           @if (showSearch()) {
             <button
+              #searchToggle
               type="button"
               class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/85 transition hover:bg-white/15 hover:text-white sm:hidden"
-              (click)="mobileSearchOpen.set(!mobileSearchOpen())"
+              (click)="toggleMobileSearch(searchInput)"
               [attr.aria-expanded]="mobileSearchOpen()"
               aria-controls="course-search"
               [attr.aria-label]="(mobileSearchOpen() ? 'Hide search' : 'Search') | t"
@@ -110,12 +111,14 @@ export type CourseTab = 'learning' | 'catalog' | 'careers' | 'certifications' | 
                 <mat-label>{{ searchLabel() | t }}</mat-label>
                 <mat-icon matPrefix aria-hidden="true">search</mat-icon>
                 <input
+                  #searchInput
                   matInput
                   id="course-search"
                   type="search"
                   autocomplete="off"
                   [value]="query()"
                   (input)="queryChange.emit($any($event.target).value)"
+                  (keydown.escape)="closeMobileSearch(searchToggle)"
                   [placeholder]="searchPlaceholder() | t"
                 />
               </mat-form-field>
@@ -222,6 +225,27 @@ export class CourseHeaderComponent {
   readonly queryChange = output<string>();
 
   protected readonly mobileSearchOpen = signal(false);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+
+  /**
+   * Phones: the search icon shows or hides the search box. Opening it puts the
+   * cursor in the box so the learner can type straight away. The box is shown
+   * and focused in the same tap (not after a delay), so phones also open the keyboard.
+   */
+  protected toggleMobileSearch(input: HTMLInputElement): void {
+    const open = !this.mobileSearchOpen();
+    this.mobileSearchOpen.set(open);
+    if (!open) return;
+    this.changeDetector.detectChanges();
+    input.focus();
+  }
+
+  /** Escape in the search box on phones closes it and returns to the search icon. */
+  protected closeMobileSearch(toggle: HTMLButtonElement): void {
+    if (!this.mobileSearchOpen()) return;
+    this.mobileSearchOpen.set(false);
+    toggle.focus();
+  }
 
   protected readonly showTabs = computed(() => this.activeTab() !== null);
 
@@ -242,7 +266,7 @@ export class CourseHeaderComponent {
   });
 
   /** Tabs that move into the "More" menu on phones. */
-  private readonly secondaryTabs = new Set<CourseTab>(['certificates', 'test-center', 'coding-lab', 'live', 'manage']);
+  private readonly secondaryTabs = new Set<CourseTab>(['certificates', 'test-center', 'coding-lab', 'documents', 'live', 'manage']);
 
   protected isSecondary(key: CourseTab): boolean {
     return this.secondaryTabs.has(key);
@@ -257,6 +281,11 @@ export class CourseHeaderComponent {
       { key: 'test-center', label: 'Test Center', icon: 'quiz', link: this.basePath().replace(/\/courses$/, '/learn/test-center').replace(/^\/learn\/test-center$/, '/test-center') },
       { key: 'coding-lab', label: 'Coding Lab', icon: 'terminal', link: `${this.basePath()}/coding-lab` },
     ];
+
+    // My documents (the reader) belongs to the person, not an organization: Zebron's pages only.
+    if (this.basePath() === '/courses') {
+      tabs.push({ key: 'documents', label: 'My documents', icon: 'library_books', link: '/courses/documents' });
+    }
 
     if (this.liveAvailable()) {
       tabs.push({ key: 'live', label: 'Live sessions', icon: 'video_camera_front', link: this.basePath().replace(/\/courses$/, '/live') });

@@ -1,0 +1,4746 @@
+// Generated from firestore.rules by scripts/build-rules.mjs. Do not edit: edit firestore.rules, then run npm run rules:build.
+rules_version = '2';
+service cloud.firestore {
+match /databases/{database}/documents {
+function isAuthenticated() {
+return request.auth != null;
+}
+function isCurrentUser(userId) {
+return isAuthenticated()
+&& request.auth.uid == userId;
+}
+function hasZebronClaims() {
+return isAuthenticated()
+&& request.auth.token.get("zv", 0) == 1;
+}
+function claimedOrganizationRole(organizationId) {
+return hasZebronClaims()
+? request.auth.token.get("zorg", {}).get(organizationId, "")
+: "";
+}
+function isPlatformAdmin() {
+return isAuthenticated()
+&& (
+hasZebronClaims()
+? request.auth.token.get("zpa", false) == true
+: isPlatformAdminFromProfile()
+);
+}
+function isPlatformAdminFromProfile() {
+return isAuthenticated()
+&& exists(
+/databases/$(database)/documents/users/$(request.auth.uid)
+)
+&& (
+(
+get(
+/databases/$(database)/documents/users/$(request.auth.uid)
+).data.keys().hasAny(["platformRole"])
+&& get(
+/databases/$(database)/documents/users/$(request.auth.uid)
+).data.get("platformRole", "") == "platform-admin"
+)
+||
+(
+!get(
+/databases/$(database)/documents/users/$(request.auth.uid)
+).data.keys().hasAny(["platformRole"])
+&& get(
+/databases/$(database)/documents/users/$(request.auth.uid)
+).data.keys().hasAny(["role"])
+&& get(
+/databases/$(database)/documents/users/$(request.auth.uid)
+).data.get("role", "") == "admin"
+)
+);
+}
+function isOrganizationApplicationRequestOwner() {
+return isAuthenticated()
+&& resource.data.keys().hasAny(["applicantUserId"])
+&& resource.data.get("applicantUserId", "") == request.auth.uid;
+}
+function isOrganizationApplicationRequestOwnerForCreate() {
+return isAuthenticated()
+&& request.resource.data.keys().hasAny(["applicantUserId"])
+&& request.resource.data.get("applicantUserId", "") == request.auth.uid;
+}
+function organizationMembershipPath(
+userId,
+organizationId
+) {
+return /databases/$(database)/documents/organizationMemberships/$(userId + "_" + organizationId);
+}
+function organizationMembershipExists(
+userId,
+organizationId
+) {
+return exists(
+organizationMembershipPath(
+userId,
+organizationId
+)
+);
+}
+function isOrganizationMember(organizationId) {
+return isAuthenticated()
+&& (
+claimedOrganizationRole(organizationId) != ""
+|| isOrganizationMemberFromDocument(organizationId)
+);
+}
+function isOrganizationMemberFromDocument(organizationId) {
+return isAuthenticated()
+&& organizationMembershipExists(
+request.auth.uid,
+organizationId
+)
+&& get(
+organizationMembershipPath(
+request.auth.uid,
+organizationId
+)
+).data.get("active", false) == true;
+}
+function organizationStatus(organizationId) {
+let organizationPath =
+/databases/$(database)/documents/organizations/$(organizationId);
+return exists(organizationPath)
+? get(organizationPath).data.get(
+"status",
+get(organizationPath).data.get("active", true) == true
+? "active"
+: "suspended"
+)
+: "missing";
+}
+function isOrganizationOperational(organizationId) {
+return organizationStatus(organizationId) == "active";
+}
+function isOrganizationOnboarding(organizationId) {
+return organizationStatus(organizationId) == "onboarding";
+}
+function isOrganizationConfigurable(organizationId) {
+return isOrganizationOperational(organizationId)
+|| isOrganizationOnboarding(organizationId);
+}
+function isOrganizationRestricted(organizationId) {
+return organizationStatus(organizationId) in [
+"suspended",
+"archived"
+];
+}
+function myOrganizationRoleFromDocument(organizationId) {
+return get(
+organizationMembershipPath(
+request.auth.uid,
+organizationId
+)
+).data.get("role", "");
+}
+function isOrganizationAdmin(organizationId) {
+return isAuthenticated()
+&& (
+isPlatformAdmin()
+|| organizationRankOf(organizationId) >= 4
+);
+}
+function isOrganizationStaffOrAbove(
+organizationId
+) {
+return isAuthenticated()
+&& (
+isPlatformAdmin()
+|| organizationRankOf(organizationId) >= 2
+);
+}
+function isOrganizationManagerOrAbove(
+organizationId
+) {
+return isAuthenticated()
+&& (
+isPlatformAdmin()
+|| organizationRankOf(organizationId) >= 3
+);
+}
+function organizationRankOf(organizationId) {
+return claimedOrganizationRole(organizationId) != ""
+? organizationRoleRank(claimedOrganizationRole(organizationId))
+: (
+isOrganizationMemberFromDocument(organizationId)
+? organizationRoleRank(myOrganizationRoleFromDocument(organizationId))
+: 0
+);
+}
+function organizationRoleRank(role) {
+return {
+"org_member": 1,
+"org_staff": 2,
+"org_manager": 3,
+"org_admin": 4,
+"org_owner": 5
+}.get(role, 0);
+}
+function myOrganizationRank(organizationId) {
+return organizationRankOf(organizationId);
+}
+function canManageOrganizationRole(organizationId, targetRole) {
+return isOrganizationMember(organizationId)
+&& myOrganizationRank(organizationId) >= 3
+&& organizationRoleRank(targetRole) >= 1
+&& organizationRoleRank(targetRole)
+< myOrganizationRank(organizationId);
+}
+match /organizationApplicationRequests/{requestId} {
+allow get: if isPlatformAdmin()
+|| isOrganizationApplicationRequestOwner();
+allow list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.keys().hasAny(["applicantUserId"])
+&& resource.data.get("applicantUserId", "") == request.auth.uid
+);
+allow create: if isOrganizationApplicationRequestOwnerForCreate()
+&& request.resource.data.get("status", "") in [
+"draft",
+"submitted"
+]
+&& request.resource.data.get("organizationName", "") is string
+&& request.resource.data.get("organizationName", "") != ""
+&& request.resource.data.get("contactName", "") is string
+&& request.resource.data.get("contactName", "") != ""
+&& request.resource.data.get("contactEmail", "") is string
+&& request.resource.data.get("contactEmail", "") != ""
+&& request.resource.data.get("requestedApplications", []) is list;
+allow update: if isPlatformAdmin()
+|| (
+isOrganizationApplicationRequestOwner()
+&& request.resource.data.get("applicantUserId", "")
+== resource.data.get("applicantUserId", "")
+&& (
+(
+resource.data.get("status", "") == "draft"
+&& request.resource.data.get("status", "") == "draft"
+)
+||
+(
+resource.data.get("status", "") == "draft"
+&& request.resource.data.get("status", "") == "submitted"
+)
+)
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationApplicationRequestOwner()
+&& resource.data.get("status", "") == "draft"
+);
+}
+match /organizations/{organizationId} {
+allow get: if isPlatformAdmin()
+|| (
+isOrganizationMember(organizationId)
+&& !isOrganizationRestricted(organizationId)
+);
+allow list: if isPlatformAdmin();
+allow create: if isPlatformAdmin();
+allow update: if isPlatformAdmin();
+allow delete: if false;
+}
+match /organizations/{organizationId}/applications/{applicationId} {
+allow get: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& isOrganizationAdmin(organizationId)
+)
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationMember(organizationId)
+&& resource.data.status == "active"
+);
+allow list: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& isOrganizationAdmin(organizationId)
+)
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationMember(organizationId)
+&& resource.data.status == "active"
+);
+allow create: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& isOrganizationAdmin(organizationId)
+&& request.resource.data.organizationId == organizationId
+&& request.resource.data.applicationId == applicationId
+&& request.resource.data.status in [
+"available",
+"selected"
+]
+);
+allow update: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& isOrganizationAdmin(organizationId)
+&& resource.data.organizationId == organizationId
+&& request.resource.data.organizationId == organizationId
+&& request.resource.data.applicationId == applicationId
+&& request.resource.data.applicationId
+== resource.data.applicationId
+&& request.resource.data.status != "active"
+&& !request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasAny([
+"provisioningStrategy",
+"provisionedAt",
+"provisioningError",
+"activatedBy",
+"activatedAt"
+])
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& isOrganizationAdmin(organizationId)
+);
+}
+match /organizationOnboarding/{organizationId} {
+allow get: if isPlatformAdmin()
+|| isOrganizationMember(organizationId);
+allow list: if false;
+allow create: if false;
+allow update: if isPlatformAdmin()
+|| (
+isOrganizationAdmin(organizationId)
+&& isOrganizationOnboarding(organizationId)
+);
+allow delete: if false;
+}
+match /organizationInvitations/{invitationId} {
+allow get: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.organizationId is string
+&& isOrganizationConfigurable(
+resource.data.organizationId
+)
+&& isOrganizationMember(
+resource.data.organizationId
+)
+);
+allow list: if false;
+allow create: if false;
+allow update: if false;
+allow delete: if false;
+}
+match /organizationMemberships/{membershipId} {
+allow get: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.get("userId", "") == request.auth.uid
+)
+|| (
+isOrganizationOperational(resource.data.get("organizationId", ""))
+&& isOrganizationManagerOrAbove(resource.data.get("organizationId", ""))
+);
+allow list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.keys().hasAll(["userId"])
+&& resource.data.get("userId", "") == request.auth.uid
+)
+|| (
+isAuthenticated()
+&& resource.data.keys().hasAll(["organizationId"])
+&& isOrganizationOperational(resource.data.get("organizationId", ""))
+&& isOrganizationManagerOrAbove(resource.data.get("organizationId", ""))
+);
+function hasMatchingMembershipId() {
+return request.resource.data.get("userId", "") is string
+&& request.resource.data.get("organizationId", "") is string
+&& request.resource.data.get("userId", "") != ""
+&& request.resource.data.get("organizationId", "") != ""
+&& membershipId == request.resource.data.get("userId", "")
++ "_" + request.resource.data.get("organizationId", "");
+}
+allow create: if hasMatchingMembershipId()
+&& (
+isPlatformAdmin()
+|| (
+request.resource.data.get("organizationId", "") != ""
+&& isOrganizationOperational(request.resource.data.get("organizationId", ""))
+&& request.resource.data.get("userId", "") != request.auth.uid
+&& canManageOrganizationRole(
+request.resource.data.get("organizationId", ""),
+request.resource.data.get("role", "")
+)
+)
+);
+allow update: if hasMatchingMembershipId()
+&& (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(resource.data.get("organizationId", ""))
+&& request.auth.uid != resource.data.get("userId", "")
+&& request.resource.data.get("userId", "")
+== resource.data.get("userId", "")
+&& request.resource.data.get("organizationId", "")
+== resource.data.get("organizationId", "")
+&& canManageOrganizationRole(
+resource.data.get("organizationId", ""),
+resource.data.get("role", "")
+)
+&& canManageOrganizationRole(
+resource.data.get("organizationId", ""),
+request.resource.data.get("role", "")
+)
+&& request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasOnly([
+"role",
+"active",
+"displayName",
+"email",
+"title",
+"phoneNumber",
+"updatedAt"
+])
+)
+|| (
+isOrganizationOperational(resource.data.get("organizationId", ""))
+&& request.auth.uid == resource.data.get("userId", "")
+&& isOrganizationAdmin(resource.data.get("organizationId", ""))
+&& request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasOnly([
+"displayName",
+"email",
+"title",
+"phoneNumber",
+"updatedAt"
+])
+)
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationOperational(resource.data.get("organizationId", ""))
+&& request.auth.uid != resource.data.get("userId", "")
+&& canManageOrganizationRole(
+resource.data.get("organizationId", ""),
+resource.data.get("role", "")
+)
+);
+}
+function groupPath(
+organizationId,
+groupId
+) {
+return /databases/$(database)/documents/organizations/$(organizationId)/groups/$(groupId);
+}
+function groupExists(
+organizationId,
+groupId
+) {
+return exists(
+groupPath(
+organizationId,
+groupId
+)
+);
+}
+function isActiveGroup(
+organizationId,
+groupId
+) {
+return groupExists(
+organizationId,
+groupId
+)
+&& get(
+groupPath(
+organizationId,
+groupId
+)
+).data.get("active", false) == true;
+}
+function groupMembershipPath(
+organizationId,
+groupId,
+membershipId
+) {
+return /databases/$(database)/documents/organizations/$(organizationId)/groups/$(groupId)/members/$(membershipId);
+}
+function groupMembershipExists(
+organizationId,
+groupId,
+membershipId
+) {
+return exists(
+groupMembershipPath(
+organizationId,
+groupId,
+membershipId
+)
+);
+}
+function activeGroupMembershipExists(
+organizationId,
+groupId,
+membershipId
+) {
+return groupMembershipExists(
+organizationId,
+groupId,
+membershipId
+)
+&& get(
+groupMembershipPath(
+organizationId,
+groupId,
+membershipId
+)
+).data.get("active", false) == true;
+}
+function isOwnGroupMembership(
+organizationId,
+groupId,
+membershipId
+) {
+return isAuthenticated()
+&& activeGroupMembershipExists(
+organizationId,
+groupId,
+membershipId
+)
+&& get(
+groupMembershipPath(
+organizationId,
+groupId,
+membershipId
+)
+).data.get("userId", "") == request.auth.uid;
+}
+function groupRolePath(
+organizationId,
+groupId,
+roleId
+) {
+return /databases/$(database)/documents/organizations/$(organizationId)/groups/$(groupId)/roles/$(roleId);
+}
+function groupRoleExists(
+organizationId,
+groupId,
+roleId
+) {
+return exists(
+groupRolePath(
+organizationId,
+groupId,
+roleId
+)
+);
+}
+function activeGroupRoleExists(
+organizationId,
+groupId,
+roleId
+) {
+return groupRoleExists(
+organizationId,
+groupId,
+roleId
+)
+&& get(
+groupRolePath(
+organizationId,
+groupId,
+roleId
+)
+).data.get("active", false) == true;
+}
+function groupRoleBelongsToGroup(
+organizationId,
+groupId,
+roleId
+) {
+return groupRoleExists(
+organizationId,
+groupId,
+roleId
+)
+&& get(
+groupRolePath(
+organizationId,
+groupId,
+roleId
+)
+).data.get("groupId", "") == groupId;
+}
+match /organizations/{organizationId}/groups/{groupId} {
+allow get: if isPlatformAdmin()
+|| (isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId))
+|| (
+(isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
+&& resource.data.active == true
+);
+allow list: if isPlatformAdmin()
+|| (isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId))
+|| (
+(isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
+&& resource.data.active == true
+);
+allow create: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& request.resource.data.systemManaged == false
+&& request.resource.data.name is string
+&& request.resource.data.slug is string
+);
+allow update: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& resource.data.systemManaged == false
+&& request.resource.data.systemManaged == false
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& resource.data.systemManaged == false
+);
+}
+match /organizationSettings/{organizationId} {
+function canManageOrganizationSettings() {
+return isPlatformAdmin()
+|| (
+isOrganizationAdmin(organizationId)
+&& isOrganizationConfigurable(organizationId)
+);
+}
+allow get: if canManageOrganizationSettings();
+allow list: if false;
+allow create: if canManageOrganizationSettings();
+allow update: if canManageOrganizationSettings();
+allow delete: if isPlatformAdmin();
+}
+match /organizations/{organizationId}/settings/partner {
+function canManagePartnerSettings() {
+return isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+);
+}
+allow get: if canManagePartnerSettings();
+allow list: if false;
+allow create: if canManagePartnerSettings();
+allow update: if canManagePartnerSettings();
+allow delete: if isPlatformAdmin();
+}
+match /organizations/{organizationId}/settings/branding {
+function canManageBranding() {
+return isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& isOrganizationAdmin(organizationId)
+);
+}
+function validLogo() {
+let data = request.resource.data;
+let url = data.get('logoUrl', null);
+let path = data.get('logoPath', null);
+return (url == null && path == null)
+|| (
+url is string && url.size() <= 2048
+&& (
+url.matches('^https://firebasestorage[.]googleapis[.]com/.*')
+|| url.matches('^http://(127[.]0[.]0[.]1|localhost):[0-9]+/.*')
+)
+&& path is string
+&& path.matches('^organizations/' + organizationId + '/branding/[^/]+$')
+);
+}
+function validBranding() {
+return request.resource.data.keys().hasOnly(['accent', 'background', 'logoUrl', 'logoPath', 'updatedAt', 'updatedBy'])
+&& request.resource.data.accent in ['teal', 'blue', 'cyan', 'purple', 'rose', 'orange', 'green', 'brown']
+&& request.resource.data.get('background', 'plain') in ['plain', 'tinted', 'gray', 'dark-gray']
+&& validLogo()
+&& request.resource.data.updatedAt == request.time
+&& request.resource.data.updatedBy == request.auth.uid;
+}
+allow get: if isPlatformAdmin() || isOrganizationMember(organizationId);
+allow list: if false;
+allow create, update: if canManageBranding() && validBranding();
+allow delete: if isPlatformAdmin();
+}
+match /organizations/{organizationId}/groups/{groupId}/members/{membershipId} {
+allow get: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+)
+|| (
+isOrganizationOperational(organizationId) && isOwnGroupMembership(
+organizationId,
+groupId,
+membershipId
+)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+);
+allow list: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+)
+|| (
+(isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& resource.data.get("userId", "") == request.auth.uid
+&& resource.data.active == true
+);
+allow create: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& request.resource.data.groupId == groupId
+&& request.resource.data.userId is string
+&& request.resource.data.userId != ""
+&& request.resource.data.active == true
+);
+allow update: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& resource.data.groupId == groupId
+&& request.resource.data.groupId == groupId
+&& resource.data.userId == request.resource.data.userId
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+);
+}
+match /organizations/{organizationId}/groups/{groupId}/roles/{roleId} {
+allow get: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+)
+|| (
+(isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& resource.data.active == true
+);
+allow list: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+)
+|| (
+(isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& resource.data.active == true
+);
+allow create: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& request.resource.data.groupId == groupId
+&& request.resource.data.systemManaged == false
+&& request.resource.data.name is string
+&& request.resource.data.name != ""
+);
+allow update: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& resource.data.groupId == groupId
+&& request.resource.data.groupId == groupId
+&& resource.data.systemManaged == false
+&& request.resource.data.systemManaged == false
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& resource.data.systemManaged == false
+);
+}
+match /organizations/{organizationId}/groups/{groupId}/roles/{roleId}/permissions/{permissionId} {
+allow get: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& activeGroupRoleExists(
+organizationId,
+groupId,
+roleId
+)
+&& resource.data.groupRoleId == roleId
+&& resource.data.active == true
+)
+|| (
+(isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& activeGroupRoleExists(
+organizationId,
+groupId,
+roleId
+)
+&& resource.data.groupRoleId == roleId
+&& resource.data.active == true
+);
+allow list: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& activeGroupRoleExists(
+organizationId,
+groupId,
+roleId
+)
+&& resource.data.groupRoleId == roleId
+)
+|| (
+(isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& activeGroupRoleExists(
+organizationId,
+groupId,
+roleId
+)
+&& resource.data.groupRoleId == roleId
+&& resource.data.active == true
+);
+allow create: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& groupRoleBelongsToGroup(
+organizationId,
+groupId,
+roleId
+)
+&& request.resource.data.groupRoleId == roleId
+&& request.resource.data.permission is string
+&& request.resource.data.permission != ""
+&& request.resource.data.active == true
+);
+allow update: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& groupRoleBelongsToGroup(
+organizationId,
+groupId,
+roleId
+)
+&& resource.data.groupRoleId == roleId
+&& request.resource.data.groupRoleId == roleId
+&& request.resource.data.permission
+== resource.data.permission
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
+&& isActiveGroup(
+organizationId,
+groupId
+)
+&& groupRoleBelongsToGroup(
+organizationId,
+groupId,
+roleId
+)
+);
+}
+function isValidKnowledgeArticle() {
+return request.resource.data.keys().hasAll([
+'id',
+'applicationKey',
+'title',
+'content',
+'contentType',
+'category',
+'tags',
+'audience',
+'status',
+'version',
+'authorId',
+'createdAt',
+'updatedAt',
+'downloadable'
+])
+&& request.resource.data.id is string
+&& request.resource.data.applicationKey is string
+&& request.resource.data.title is string
+&& request.resource.data.content is string
+&& request.resource.data.contentType is string
+&& request.resource.data.category is string
+&& request.resource.data.tags is list
+&& request.resource.data.audience is list
+&& request.resource.data.status in [
+'draft',
+'published',
+'archived'
+]
+&& request.resource.data.version is int
+&& request.resource.data.authorId is string
+&& request.resource.data.createdAt is string
+&& request.resource.data.updatedAt is string
+&& request.resource.data.downloadable is bool;
+}
+function isValidKnowledgeArticleVersion() {
+return request.resource.data.keys().hasAll([
+'id',
+'articleId',
+'version',
+'title',
+'content',
+'contentType',
+'category',
+'tags',
+'audience',
+'createdBy',
+'createdAt'
+])
+&& request.resource.data.id is string
+&& request.resource.data.articleId is string
+&& request.resource.data.version is int
+&& request.resource.data.title is string
+&& request.resource.data.content is string
+&& request.resource.data.contentType is string
+&& request.resource.data.category is string
+&& request.resource.data.tags is list
+&& request.resource.data.audience is list
+&& request.resource.data.createdBy is string
+&& request.resource.data.createdAt is string;
+}
+match /users/{userId} {
+allow get: if isCurrentUser(userId)
+|| isPlatformAdmin();
+allow list: if isPlatformAdmin();
+allow create: if isPlatformAdmin()
+|| (
+isCurrentUser(userId)
+&& request.resource.data.get("role", "user") != "admin"
+&& request.resource.data.get("platformRole", "") != "platform-admin"
+);
+allow update: if
+isPlatformAdmin()
+|| (
+isCurrentUser(userId)
+&& request.resource.data.get("role", "")
+== resource.data.get("role", "")
+&& (
+(
+!resource.data.keys().hasAny(["platformRole"])
+&& !request.resource.data.keys().hasAny(["platformRole"])
+)
+||
+(
+resource.data.keys().hasAny(["platformRole"])
+&& request.resource.data.keys().hasAny(["platformRole"])
+&& request.resource.data.platformRole
+== resource.data.platformRole
+)
+)
+);
+allow delete: if isPlatformAdmin();
+}
+match /communityProfiles/{userId} {
+function validCommunityProfile(data) {
+return data.keys().hasOnly([
+"displayName",
+"firstName",
+"lastName",
+"preferredName",
+"countryOfOrigin",
+"currentCountry",
+"city",
+"state",
+"bio",
+"website",
+"photoUrl",
+"createdAt",
+"updatedAt"
+])
+&& data.get("displayName", "") is string
+&& data.get("firstName", "") is string
+&& data.get("lastName", "") is string
+&& data.get("preferredName", "") is string
+&& data.get("countryOfOrigin", "") is string
+&& data.get("currentCountry", "") is string
+&& data.get("city", "") is string
+&& data.get("state", "") is string
+&& data.get("bio", "") is string
+&& data.get("website", "") is string
+&& data.get("photoUrl", "") is string;
+}
+allow get, list: if isAuthenticated();
+allow create: if isCurrentUser(userId)
+&& validCommunityProfile(request.resource.data)
+&& request.resource.data.keys().hasAll([
+"displayName",
+"createdAt",
+"updatedAt"
+]);
+allow update: if isCurrentUser(userId)
+&& validCommunityProfile(request.resource.data)
+&& request.resource.data.get("createdAt", null)
+== resource.data.get("createdAt", null)
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly([
+"displayName",
+"firstName",
+"lastName",
+"preferredName",
+"countryOfOrigin",
+"currentCountry",
+"city",
+"state",
+"bio",
+"website",
+"photoUrl",
+"updatedAt"
+]);
+allow delete: if isPlatformAdmin();
+}
+function isActivePublicPlatformQuiz(quizId) {
+let quizPath =
+/databases/$(database)/documents/quizzes/$(quizId);
+return exists(quizPath)
+&& get(quizPath).data.get("scope", "") == "platform"
+&& get(quizPath).data.get("accessType", "") == "public"
+&& get(quizPath).data.get("organizationId", null) == null
+&& get(quizPath).data.get("active", false) == true;
+}
+function isActivePlatformTopic(topicId, quizId) {
+let topicPath =
+/databases/$(database)/documents/quizTopics/$(topicId);
+return exists(topicPath)
+&& get(topicPath).data.get("scope", "") == "platform"
+&& get(topicPath).data.get("organizationId", null) == null
+&& get(topicPath).data.get("quizId", "") == quizId
+&& get(topicPath).data.get("active", false) == true
+&& isActivePublicPlatformQuiz(quizId);
+}
+function isPlatformOwned(data) {
+return data.get("scope", "") == "platform"
+&& "organizationId" in data
+&& data.organizationId == null;
+}
+function isPlatformQuiz(quizId) {
+let quizPath =
+/databases/$(database)/documents/quizzes/$(quizId);
+return exists(quizPath)
+&& isPlatformOwned(get(quizPath).data);
+}
+function isPlatformTopicOfQuiz(topicId, quizId) {
+let topicPath =
+/databases/$(database)/documents/quizTopics/$(topicId);
+return exists(topicPath)
+&& isPlatformOwned(get(topicPath).data)
+&& get(topicPath).data.get("quizId", "") == quizId;
+}
+function canCreatePlatformTopic(data) {
+return isPlatformAdmin()
+&& isPlatformOwned(data)
+&& data.quizId is string
+&& isPlatformQuiz(data.quizId);
+}
+function canCreatePlatformQuestion(data) {
+return isPlatformAdmin()
+&& isPlatformOwned(data)
+&& data.quizId is string
+&& data.topicId is string
+&& isPlatformTopicOfQuiz(data.topicId, data.quizId);
+}
+function isPublishedPlatformQuestion(questionId) {
+let questionPath =
+/databases/$(database)/documents/quizQuestions/$(questionId);
+return exists(questionPath)
+&& get(questionPath).data.get("scope", "") == "platform"
+&& get(questionPath).data.get("organizationId", null) == null
+&& get(questionPath).data.get("status", "") == "published"
+&& isActivePlatformTopic(
+get(questionPath).data.get("topicId", ""),
+get(questionPath).data.get("quizId", "")
+);
+}
+function hasActiveTestCenterEntitlement(organizationId) {
+let entitlementPath =
+/databases/$(database)/documents/organizations/$(organizationId)/applications/test-center;
+return exists(entitlementPath)
+&& get(entitlementPath).data.get("status", "") == "active";
+}
+function isTestCenterMember(organizationId) {
+return isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationMember(organizationId)
+&& hasActiveTestCenterEntitlement(organizationId)
+);
+}
+function isTestCenterAdmin(organizationId) {
+return isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+&& hasActiveTestCenterEntitlement(organizationId)
+);
+}
+function canReviewTestCenterResults(organizationId) {
+return isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+&& hasActiveTestCenterEntitlement(organizationId)
+);
+}
+function isOperationalOrganizationAdmin(organizationId) {
+return isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationAdmin(organizationId)
+);
+}
+function canCreateTestCenterDocument(organizationId) {
+return isTestCenterAdmin(organizationId);
+}
+function testProgramBelongsToOrganization(
+programId,
+organizationId
+) {
+return exists(
+/databases/$(database)/documents/testPrograms/$(programId)
+)
+&& get(
+/databases/$(database)/documents/testPrograms/$(programId)
+).data.organizationId == organizationId;
+}
+function quizProgramBelongsToOrganization(
+programId,
+organizationId
+) {
+return programId is string
+&& programId != ""
+&& testProgramBelongsToOrganization(
+programId,
+organizationId
+);
+}
+function testCenterQuizBelongsToOrganization(
+quizId,
+organizationId
+) {
+return exists(
+/databases/$(database)/documents/quizzes/$(quizId)
+)
+&& get(
+/databases/$(database)/documents/quizzes/$(quizId)
+).data.organizationId == organizationId;
+}
+function testCenterTopicBelongsToOrganization(
+topicId,
+organizationId,
+quizId
+) {
+let topicPath =
+/databases/$(database)/documents/quizTopics/$(topicId);
+return topicId is string
+&& topicId != ""
+&& organizationId is string
+&& organizationId != ""
+&& quizId is string
+&& quizId != ""
+&& exists(topicPath)
+&& get(topicPath).data.organizationId == organizationId
+&& get(topicPath).data.quizId == quizId;
+}
+function canCreateTestCenterTopic(
+organizationId,
+quizId
+) {
+return isTestCenterAdmin(organizationId)
+&& testCenterQuizBelongsToOrganization(
+quizId,
+organizationId
+);
+}
+function canCreateTestCenterQuestion(
+organizationId,
+quizId,
+topicId
+) {
+return isTestCenterMember(organizationId)
+&& testCenterTopicBelongsToOrganization(
+topicId,
+organizationId,
+quizId
+);
+}
+function canCreatePlatformTestAttempt() {
+return isAuthenticated()
+&& request.resource.data.get("organizationId", "missing") == null
+&& request.resource.data.get("userId", "") == request.auth.uid
+&& request.resource.data.get("quizId", "") is string
+&& isActivePublicPlatformQuiz(
+request.resource.data.quizId
+);
+}
+function canCreatePlatformTestResult() {
+let attemptId = request.resource.data.get("attemptId", "");
+let quizId = request.resource.data.get("quizId", "");
+let attemptPath =
+/databases/$(database)/documents/quizAttempts/$(attemptId);
+return isAuthenticated()
+&& request.resource.data.get("organizationId", "missing") == null
+&& request.resource.data.get("userId", "") == request.auth.uid
+&& quizId is string
+&& isActivePublicPlatformQuiz(quizId)
+&& attemptId is string
+&& attemptId != ""
+&& existsAfter(attemptPath)
+&& getAfter(attemptPath).data.get("organizationId", "missing") == null
+&& getAfter(attemptPath).data.get("userId", "") == request.auth.uid
+&& getAfter(attemptPath).data.get("quizId", "") == quizId;
+}
+match /organizations/{organizationId}/knowledgeArticles/{articleId} {
+allow get, list: if isPlatformAdmin();
+allow get, list: if isAuthenticated()
+&& isOrganizationOperational(organizationId)
+&& isOrganizationMember(organizationId)
+&& resource.data.get("status", "") == "published";
+allow get, list: if isOrganizationOperational(organizationId)
+&& isOrganizationStaffOrAbove(organizationId);
+allow create: if (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+)
+)
+&& isValidKnowledgeArticle()
+&& request.resource.data.id == articleId;
+allow update: if (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+)
+)
+&& isValidKnowledgeArticle()
+&& request.resource.data.id == resource.data.id
+&& request.resource.data.id == articleId;
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+);
+}
+match /organizations/{organizationId}/knowledgeArticles/{articleId}/versions/{versionId} {
+allow get, list: if isPlatformAdmin();
+allow get, list: if isOrganizationOperational(organizationId)
+&& isOrganizationStaffOrAbove(organizationId);
+allow create: if (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+)
+)
+&& isValidKnowledgeArticleVersion()
+&& request.resource.data.id == versionId
+&& request.resource.data.articleId == articleId;
+allow update, delete: if false;
+}
+match /knowledgeArticles/{articleId} {
+allow get, list: if resource.data.status == "published"
+&& "all" in resource.data.audience;
+allow get: if isAuthenticated()
+&& resource.data.status == "published";
+allow get: if isPlatformAdmin();
+allow list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.status == "published"
+);
+allow create: if isPlatformAdmin()
+&& isValidKnowledgeArticle()
+&& request.resource.data.id == articleId;
+allow update: if isPlatformAdmin()
+&& isValidKnowledgeArticle()
+&& request.resource.data.id == resource.data.id
+&& request.resource.data.id == articleId;
+allow delete: if isPlatformAdmin();
+}
+match /knowledgeLikes/{likeId} {
+allow get, list: if isAuthenticated()
+&& (
+resource.data.organizationId == null
+|| isOrganizationMember(resource.data.organizationId)
+);
+allow create: if isAuthenticated()
+&& request.resource.data.keys().hasOnly([
+"articleKey", "articleId", "source", "organizationId", "userId", "createdAt"
+])
+&& request.resource.data.userId == request.auth.uid
+&& likeId == request.resource.data.articleKey + "_" + request.auth.uid
+&& request.resource.data.articleKey is string
+&& request.resource.data.articleId is string
+&& request.resource.data.createdAt == request.time
+&& (
+(
+request.resource.data.source == "zebron"
+&& request.resource.data.organizationId == null
+&& request.resource.data.articleKey == "zebron_" + request.resource.data.articleId
+)
+|| (
+request.resource.data.source == "organization"
+&& request.resource.data.organizationId is string
+&& request.resource.data.articleKey
+== "org_" + request.resource.data.organizationId + "_" + request.resource.data.articleId
+&& isOrganizationMember(request.resource.data.organizationId)
+)
+);
+allow update: if false;
+allow delete: if isAuthenticated()
+&& resource.data.userId == request.auth.uid;
+}
+match /knowledgeReports/{reportId} {
+allow get: if isAuthenticated()
+&& resource.data.reporterId == request.auth.uid;
+allow get, list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.organizationId is string
+&& isOrganizationStaffOrAbove(resource.data.organizationId)
+);
+allow create: if isAuthenticated()
+&& request.resource.data.keys().hasOnly([
+"articleKey", "articleId", "articleTitle", "source", "organizationId",
+"reason", "details", "reporterId", "reporterName", "status", "createdAt"
+])
+&& request.resource.data.reporterId == request.auth.uid
+&& reportId == request.auth.uid + "_" + request.resource.data.articleKey
+&& request.resource.data.status == "open"
+&& request.resource.data.createdAt == request.time
+&& request.resource.data.reason in ["incorrect", "outdated", "inappropriate", "spam", "broken", "other"]
+&& request.resource.data.details is string
+&& request.resource.data.details.size() <= 1000
+&& request.resource.data.articleTitle is string
+&& request.resource.data.articleTitle.size() <= 200
+&& (
+(
+request.resource.data.source == "zebron"
+&& request.resource.data.organizationId == null
+)
+|| (
+request.resource.data.source == "organization"
+&& request.resource.data.organizationId is string
+&& isOrganizationMember(request.resource.data.organizationId)
+)
+);
+allow update: if (
+isPlatformAdmin()
+|| (
+resource.data.organizationId is string
+&& isOrganizationStaffOrAbove(resource.data.organizationId)
+)
+)
+&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "resolvedBy", "resolvedAt"])
+&& request.resource.data.status == "resolved"
+&& request.resource.data.resolvedBy == request.auth.uid;
+allow delete: if isPlatformAdmin();
+}
+match /knowledgeArticleVersions/{versionId} {
+allow get: if isPlatformAdmin();
+allow list: if isPlatformAdmin();
+allow create: if isPlatformAdmin()
+&& isValidKnowledgeArticleVersion()
+&& request.resource.data.id == versionId;
+allow update: if false;
+allow delete: if false;
+}
+match /testPrograms/{programId} {
+function validProgramPlatformQuizIds(data) {
+return !('platformQuizIds' in data)
+|| (data.platformQuizIds is list && data.platformQuizIds.size() <= 50);
+}
+allow get: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& isTestCenterMember(
+resource.data.organizationId
+)
+);
+allow list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& isTestCenterMember(
+resource.data.organizationId
+)
+);
+allow create: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& request.resource.data.organizationId is string
+&& request.resource.data.organizationId != ""
+&& isTestCenterAdmin(
+request.resource.data.organizationId
+)
+&& request.resource.data.quizCount == 0
+&& validProgramPlatformQuizIds(request.resource.data)
+);
+allow update: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.organizationId is string
+&& request.resource.data.get("organizationId", "")
+== resource.data.get("organizationId", "")
+&& isTestCenterAdmin(
+resource.data.organizationId
+)
+&& request.resource.data.quizCount
+== resource.data.quizCount
+&& validProgramPlatformQuizIds(request.resource.data)
+);
+allow delete: if false;
+}
+match /quizzes/{quizId} {
+allow get: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.scope == 'platform'
+&& resource.data.accessType == 'public'
+&& resource.data.organizationId == null
+&& resource.data.active == true
+)
+|| (
+resource.data.scope == 'organization'
+&& resource.data.accessType == 'organization-members'
+&& resource.data.organizationId != null
+&& isTestCenterMember(
+resource.data.organizationId
+)
+&& resource.data.active == true
+);
+allow list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& (
+(
+resource.data.scope == 'platform'
+&& resource.data.accessType == 'public'
+&& resource.data.active == true
+)
+||
+(
+resource.data.scope == 'organization'
+&& resource.data.accessType == 'organization-members'
+&& resource.data.organizationId != null
+&& isTestCenterMember(
+resource.data.organizationId
+)
+&& resource.data.active == true
+)
+)
+);
+allow create: if
+request.resource.data.scope == 'organization'
+&& request.resource.data.accessType
+== 'organization-members'
+&& request.resource.data.organizationId is string
+&& request.resource.data.programId is string
+&& request.resource.data.programId != ""
+&& canCreateTestCenterDocument(
+request.resource.data.organizationId
+)
+&& quizProgramBelongsToOrganization(
+request.resource.data.programId,
+request.resource.data.organizationId
+);
+allow create: if
+isPlatformAdmin()
+&& request.resource.data.scope == 'platform'
+&& request.resource.data.accessType == 'public'
+&& request.resource.data.organizationId == null;
+allow update: if isPlatformAdmin()
+|| (
+resource.data.scope == 'organization'
+&& resource.data.organizationId is string
+&& request.resource.data.scope == 'organization'
+&& request.resource.data.organizationId
+== resource.data.organizationId
+&& request.resource.data.accessType
+== 'organization-members'
+&& request.resource.data.programId is string
+&& request.resource.data.programId != ""
+&& canCreateTestCenterDocument(
+resource.data.organizationId
+)
+&& quizProgramBelongsToOrganization(
+request.resource.data.programId,
+resource.data.organizationId
+)
+);
+allow delete: if isPlatformAdmin()
+|| (
+resource.data.scope == 'organization'
+&& resource.data.organizationId is string
+&& canCreateTestCenterDocument(
+resource.data.organizationId
+)
+);
+}
+match /quizTopics/{topicId} {
+allow get, list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.get("scope", "") == "platform"
+&& resource.data.get("organizationId", null) == null
+&& resource.data.get("active", false) == true
+&& isActivePublicPlatformQuiz(
+resource.data.get("quizId", "")
+)
+)
+|| (
+resource.data.get("organizationId", null) != null
+&& isTestCenterMember(resource.data.organizationId)
+&& resource.data.get("active", false) == true
+)
+|| (
+resource.data.get("organizationId", null) != null
+&& isTestCenterAdmin(resource.data.organizationId)
+);
+allow create: if
+(
+request.resource.data.organizationId is string
+&& request.resource.data.quizId is string
+&& canCreateTestCenterTopic(
+request.resource.data.organizationId,
+request.resource.data.quizId
+)
+)
+|| canCreatePlatformTopic(request.resource.data);
+allow update: if
+isTestCenterAdmin(resource.data.organizationId)
+&& request.resource.data.organizationId
+== resource.data.organizationId
+&& request.resource.data.quizId
+== resource.data.quizId;
+allow delete: if
+isTestCenterAdmin(resource.data.organizationId);
+}
+function quizAllowsBrowserAnswers(quizId) {
+return quizId is string
+&& quizId != ""
+&& (
+!exists(/databases/$(database)/documents/quizzes/$(quizId))
+|| get(/databases/$(database)/documents/quizzes/$(quizId)).data.get("examOnly", false) != true
+);
+}
+match /quizQuestions/{questionId} {
+allow get: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.get("scope", "") == "platform"
+&& resource.data.get("organizationId", null) == null
+&& isPublishedPlatformQuestion(questionId)
+&& quizAllowsBrowserAnswers(resource.data.get("quizId", ""))
+)
+|| (
+resource.data.get("organizationId", null) != null
+&& isTestCenterMember(resource.data.organizationId)
+&& resource.data.get("status", "") == "published"
+&& quizAllowsBrowserAnswers(resource.data.get("quizId", ""))
+)
+|| (
+resource.data.get("organizationId", null) != null
+&& isTestCenterAdmin(resource.data.organizationId)
+);
+allow list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.get("scope", "") == "platform"
+&& resource.data.get("organizationId", null) == null
+&& resource.data.get("status", "") == "published"
+&& isActivePublicPlatformQuiz(
+resource.data.get("quizId", "")
+)
+&& quizAllowsBrowserAnswers(resource.data.get("quizId", ""))
+)
+|| (
+isAuthenticated()
+&& resource.data.get("organizationId", null) != null
+&& isTestCenterMember(resource.data.organizationId)
+&& resource.data.get("status", "") == "published"
+&& quizAllowsBrowserAnswers(resource.data.get("quizId", ""))
+)
+|| (
+isAuthenticated()
+&& resource.data.get("organizationId", null) != null
+&& isTestCenterAdmin(resource.data.organizationId)
+);
+allow create: if
+(
+request.resource.data.organizationId is string
+&& request.resource.data.quizId is string
+&& request.resource.data.topicId is string
+&& canCreateTestCenterQuestion(
+request.resource.data.organizationId,
+request.resource.data.quizId,
+request.resource.data.topicId
+)
+)
+|| canCreatePlatformQuestion(request.resource.data);
+allow update: if
+isTestCenterAdmin(resource.data.organizationId)
+&& request.resource.data.organizationId
+== resource.data.organizationId
+&& request.resource.data.quizId
+== resource.data.quizId
+&& request.resource.data.topicId
+== resource.data.topicId;
+allow delete: if
+isTestCenterAdmin(resource.data.organizationId);
+}
+match /quizAttempts/{attemptId} {
+allow get: if isPlatformAdmin()
+|| (
+resource.data.organizationId != null
+&& isTestCenterMember(resource.data.organizationId)
+&& resource.data.get("userId", "") == request.auth.uid
+)
+|| (
+resource.data.organizationId != null
+&& canReviewTestCenterResults(resource.data.organizationId)
+)
+|| (
+isAuthenticated()
+&& resource.data.organizationId == null
+&& resource.data.get("userId", "") == request.auth.uid
+);
+allow list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.organizationId != null
+&& isTestCenterMember(resource.data.organizationId)
+&& resource.data.get("userId", "") == request.auth.uid
+)
+|| (
+isAuthenticated()
+&& resource.data.organizationId != null
+&& canReviewTestCenterResults(resource.data.organizationId)
+)
+|| (
+isAuthenticated()
+&& resource.data.organizationId == null
+&& resource.data.get("userId", "") == request.auth.uid
+);
+allow create: if isAuthenticated()
+&& request.resource.data.get("mode", "") == "practice"
+&& (
+(
+request.resource.data.get("organizationId", null) is string
+&& isTestCenterMember(
+request.resource.data.organizationId
+)
+&& request.resource.data.get("userId", "") == request.auth.uid
+)
+|| canCreatePlatformTestAttempt()
+);
+allow update: if isPlatformAdmin()
+|| (
+isOperationalOrganizationAdmin(resource.data.organizationId)
+&& request.resource.data.organizationId
+== resource.data.organizationId
+&& request.resource.data.userId
+== resource.data.userId
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOperationalOrganizationAdmin(resource.data.organizationId)
+);
+}
+match /quizResults/{resultId} {
+allow get: if isPlatformAdmin()
+|| (
+resource.data.organizationId != null
+&& isTestCenterMember(resource.data.organizationId)
+&& resource.data.get("userId", "") == request.auth.uid
+)
+|| (
+resource.data.organizationId != null
+&& canReviewTestCenterResults(resource.data.organizationId)
+)
+|| (
+isAuthenticated()
+&& resource.data.organizationId == null
+&& resource.data.get("userId", "") == request.auth.uid
+);
+allow list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.organizationId != null
+&& isTestCenterMember(resource.data.organizationId)
+&& resource.data.get("userId", "") == request.auth.uid
+)
+|| (
+isAuthenticated()
+&& resource.data.organizationId != null
+&& canReviewTestCenterResults(resource.data.organizationId)
+)
+|| (
+isAuthenticated()
+&& resource.data.organizationId == null
+&& resource.data.get("userId", "") == request.auth.uid
+);
+allow create: if isAuthenticated()
+&& request.resource.data.get("mode", "") == "practice"
+&& (
+(
+request.resource.data.get("organizationId", null) is string
+&& isTestCenterMember(
+request.resource.data.organizationId
+)
+&& request.resource.data.get("userId", "") == request.auth.uid
+)
+|| canCreatePlatformTestResult()
+);
+allow update: if isPlatformAdmin()
+|| (
+isOperationalOrganizationAdmin(resource.data.organizationId)
+&& request.resource.data.organizationId
+== resource.data.organizationId
+&& request.resource.data.userId
+== resource.data.userId
+&& request.resource.data.attemptId
+== resource.data.attemptId
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOperationalOrganizationAdmin(resource.data.organizationId)
+);
+}
+match /userClaims/{userId} {
+allow get: if isCurrentUser(userId);
+allow list, write: if false;
+}
+function communityScopeOf(data) {
+return data.get("organizationId", null);
+}
+function canSeeCommunityScope(organizationId) {
+return organizationId == null
+|| isPlatformAdmin()
+|| (
+organizationId is string
+&& isOrganizationOperational(organizationId)
+&& isOrganizationMember(organizationId)
+);
+}
+function canModerateCommunityScope(organizationId) {
+return isPlatformAdmin()
+|| (
+organizationId is string
+&& isOrganizationOperational(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+}
+function communityPostPath(postId) {
+return /databases/$(database)/documents/communityPosts/$(postId);
+}
+function communityPostIsOpen(postId) {
+return exists(communityPostPath(postId))
+&& get(communityPostPath(postId)).data.get("status", "") == "published"
+&& get(communityPostPath(postId)).data.get("moderationStatus", "") == "approved"
+&& canSeeCommunityScope(
+communityScopeOf(get(communityPostPath(postId)).data)
+);
+}
+match /communityPosts/{postId} {
+function postScope() {
+return resource.data.organizationId;
+}
+function validPostText(data) {
+return data.title is string
+&& data.title.size() > 0
+&& data.title.size() <= 200
+&& data.content is string
+&& data.content.size() > 0
+&& data.content.size() <= 10000
+&& data.topicId is string
+&& data.topicId.size() > 0
+&& data.get("tags", []) is list
+&& data.get("tags", []).size() <= 20
+&& data.get("mediaUrls", []) is list
+&& data.get("mediaUrls", []).size() <= 10;
+}
+function isValidNewPost() {
+let data = request.resource.data;
+let organizationId = data.get("organizationId", null);
+return isAuthenticated()
+&& data.keys().hasAll([
+"authorId",
+"author",
+"topicId",
+"title",
+"content",
+"status",
+"moderationStatus",
+"reactionCounts",
+"commentCount",
+"viewCount",
+"organizationId",
+"createdAt",
+"updatedAt"
+])
+&& data.keys().hasOnly([
+"authorId",
+"author",
+"topicId",
+"topicName",
+"title",
+"content",
+"mediaUrls",
+"tags",
+"status",
+"moderationStatus",
+"reactionCounts",
+"commentCount",
+"viewCount",
+"trendingScore",
+"organizationId",
+"pollId",
+"createdAt",
+"updatedAt"
+])
+&& data.authorId == request.auth.uid
+&& (
+data.get("pollId", null) == null
+|| (
+data.pollId is string
+&& exists(/databases/$(database)/documents/polls/$(data.pollId))
+&& get(/databases/$(database)/documents/polls/$(data.pollId)).data.contextType == "community"
+&& get(/databases/$(database)/documents/polls/$(data.pollId)).data.createdBy == request.auth.uid
+&& get(/databases/$(database)/documents/polls/$(data.pollId)).data.parentId == postId
+)
+)
+&& data.author is map
+&& data.author.get("id", "") == request.auth.uid
+&& validPostText(data)
+&& data.status == "published"
+&& data.moderationStatus == "approved"
+&& data.reactionCounts is map
+&& data.commentCount == 0
+&& data.viewCount == 0
+&& data.get("trendingScore", 0) == 0
+&& data.createdAt == request.time
+&& (organizationId == null || organizationId is string)
+&& canSeeCommunityScope(organizationId);
+}
+function isAuthorEditingPost() {
+return isAuthenticated()
+&& resource.data.get("authorId", "") == request.auth.uid
+&& resource.data.get("status", "") == "published"
+&& canSeeCommunityScope(postScope())
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly([
+"title",
+"content",
+"tags",
+"topicId",
+"topicName",
+"mediaUrls",
+"editedAt",
+"updatedAt"
+])
+&& validPostText(request.resource.data);
+}
+function isAuthorDeletingPost() {
+return isAuthenticated()
+&& resource.data.get("authorId", "") == request.auth.uid
+&& resource.data.get("status", "") in ["published", "hidden"]
+&& request.resource.data.get("status", "") == "deleted"
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["status", "deletedAt", "updatedAt"]);
+}
+function isModeratingPost() {
+return isAuthenticated()
+&& canModerateCommunityScope(postScope())
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly([
+"status",
+"moderationStatus",
+"moderatedBy",
+"moderatedAt",
+"moderationReason",
+"updatedAt"
+])
+&& request.resource.data.get("status", "")
+in ["published", "hidden", "deleted"]
+&& request.resource.data.get("moderationStatus", "")
+in ["approved", "flagged", "rejected", "pending"]
+&& request.resource.data.get("moderatedBy", "") == request.auth.uid;
+}
+function isPublishedAndApprovedPost() {
+return resource.data.get("status", "") == "published"
+&& resource.data.get("moderationStatus", "") == "approved";
+}
+function reactionCountsMatchTransition(
+countsBefore,
+countsAfter,
+typeBefore,
+typeAfter
+) {
+return countsAfter.get("like", 0)
+== countsBefore.get("like", 0)
++ (typeAfter == "like" ? 1 : 0)
+- (typeBefore == "like" ? 1 : 0)
+&& countsAfter.get("love", 0)
+== countsBefore.get("love", 0)
++ (typeAfter == "love" ? 1 : 0)
+- (typeBefore == "love" ? 1 : 0)
+&& countsAfter.get("laugh", 0)
+== countsBefore.get("laugh", 0)
++ (typeAfter == "laugh" ? 1 : 0)
+- (typeBefore == "laugh" ? 1 : 0)
+&& countsAfter.get("celebrate", 0)
+== countsBefore.get("celebrate", 0)
++ (typeAfter == "celebrate" ? 1 : 0)
+- (typeBefore == "celebrate" ? 1 : 0)
+&& countsAfter.get("support", 0)
+== countsBefore.get("support", 0)
++ (typeAfter == "support" ? 1 : 0)
+- (typeBefore == "support" ? 1 : 0)
+&& countsAfter.get("helpful", 0)
+== countsBefore.get("helpful", 0)
++ (typeAfter == "helpful" ? 1 : 0)
+- (typeBefore == "helpful" ? 1 : 0);
+}
+function isValidPostReactionCountUpdate() {
+let reactionPath = /databases/$(database)/documents/communityPosts/$(postId)/reactions/$(request.auth.uid);
+let reactionExistsBefore = exists(reactionPath);
+let reactionExistsAfter = existsAfter(reactionPath);
+let typeBefore = reactionExistsBefore
+? get(reactionPath).data.get("type", "")
+: "";
+let typeAfter = reactionExistsAfter
+? getAfter(reactionPath).data.get("type", "")
+: "";
+let countsBefore = resource.data.get("reactionCounts", {});
+let countsAfter = request.resource.data.get("reactionCounts", {});
+return isAuthenticated()
+&& isPublishedAndApprovedPost()
+&& canSeeCommunityScope(postScope())
+&& request.resource.data.diff(resource.data)
+.affectedKeys().hasOnly(["reactionCounts", "updatedAt"])
+&& (reactionExistsBefore != reactionExistsAfter
+|| typeBefore != typeAfter)
+&& countsBefore is map
+&& countsAfter is map
+&& reactionCountsMatchTransition(
+countsBefore,
+countsAfter,
+typeBefore,
+typeAfter
+);
+}
+function isValidCommentCountUpdate() {
+let newCommentId = request.resource.data.get("lastCommentId", "");
+return isAuthenticated()
+&& isPublishedAndApprovedPost()
+&& canSeeCommunityScope(postScope())
+&& newCommentId is string
+&& newCommentId.size() > 0
+&& request.resource.data.diff(resource.data)
+.affectedKeys().hasOnly([
+"commentCount",
+"lastCommentId",
+"updatedAt"
+])
+&& request.resource.data.get("commentCount", 0)
+== resource.data.get("commentCount", 0) + 1
+&& !exists(
+/databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+)
+&& existsAfter(
+/databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+)
+&& getAfter(
+/databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+).data.get("authorId", "") == request.auth.uid
+&& getAfter(
+/databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+).data.get("postId", "") == postId
+&& getAfter(
+/databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+).data.get("status", "") == "published"
+&& getAfter(
+/databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+).data.get("content", "") is string
+&& getAfter(
+/databases/$(database)/documents/communityPosts/$(postId)/comments/$(newCommentId)
+).data.get("content", "").size() > 0;
+}
+allow read: if isAuthenticated()
+&& canSeeCommunityScope(postScope())
+&& (
+isPublishedAndApprovedPost()
+|| resource.data.get("authorId", "") == request.auth.uid
+|| canModerateCommunityScope(postScope())
+);
+allow create: if isValidNewPost();
+allow update: if isValidPostReactionCountUpdate()
+|| isValidCommentCountUpdate()
+|| isAuthorEditingPost()
+|| isAuthorDeletingPost()
+|| isModeratingPost();
+allow delete: if false;
+match /reactions/{userId} {
+function parentPostIsPublished() {
+return communityPostIsOpen(postId);
+}
+function postCounterMatchesReactionTransition() {
+let postPath = /databases/$(database)/documents/communityPosts/$(postId);
+let reactionPath = /databases/$(database)/documents/communityPosts/$(postId)/reactions/$(userId);
+let postBefore = get(postPath).data;
+let postAfter = getAfter(postPath).data;
+let reactionExistsBefore = exists(reactionPath);
+let reactionExistsAfter = existsAfter(reactionPath);
+let typeBefore = reactionExistsBefore
+? get(reactionPath).data.get("type", "")
+: "";
+let typeAfter = reactionExistsAfter
+? getAfter(reactionPath).data.get("type", "")
+: "";
+let countsBefore = postBefore.get("reactionCounts", {});
+let countsAfter = postAfter.get("reactionCounts", {});
+return postAfter.diff(postBefore).affectedKeys()
+.hasOnly(["reactionCounts", "updatedAt"])
+&& (reactionExistsBefore != reactionExistsAfter
+|| typeBefore != typeAfter)
+&& countsBefore is map
+&& countsAfter is map
+&& countsAfter.get("like", 0)
+== countsBefore.get("like", 0)
++ (typeAfter == "like" ? 1 : 0)
+- (typeBefore == "like" ? 1 : 0)
+&& countsAfter.get("love", 0)
+== countsBefore.get("love", 0)
++ (typeAfter == "love" ? 1 : 0)
+- (typeBefore == "love" ? 1 : 0)
+&& countsAfter.get("laugh", 0)
+== countsBefore.get("laugh", 0)
++ (typeAfter == "laugh" ? 1 : 0)
+- (typeBefore == "laugh" ? 1 : 0)
+&& countsAfter.get("celebrate", 0)
+== countsBefore.get("celebrate", 0)
++ (typeAfter == "celebrate" ? 1 : 0)
+- (typeBefore == "celebrate" ? 1 : 0)
+&& countsAfter.get("support", 0)
+== countsBefore.get("support", 0)
++ (typeAfter == "support" ? 1 : 0)
+- (typeBefore == "support" ? 1 : 0)
+&& countsAfter.get("helpful", 0)
+== countsBefore.get("helpful", 0)
++ (typeAfter == "helpful" ? 1 : 0)
+- (typeBefore == "helpful" ? 1 : 0);
+}
+allow get: if isAuthenticated()
+&& request.auth.uid == userId
+&& parentPostIsPublished();
+allow list: if false;
+allow create: if isAuthenticated()
+&& request.auth.uid == userId
+&& request.resource.data.get("type", "") in [
+"like", "love", "laugh", "celebrate", "support", "helpful"
+]
+&& (
+!request.resource.data.keys().hasAny(["userId"])
+|| request.resource.data.get("userId", "") == userId
+)
+&& parentPostIsPublished()
+&& postCounterMatchesReactionTransition();
+allow update: if isAuthenticated()
+&& request.auth.uid == userId
+&& request.resource.data.get("type", "") in [
+"like", "love", "laugh", "celebrate", "support", "helpful"
+]
+&& (
+!request.resource.data.keys().hasAny(["userId"])
+|| request.resource.data.get("userId", "") == userId
+)
+&& parentPostIsPublished()
+&& postCounterMatchesReactionTransition();
+allow delete: if isAuthenticated()
+&& request.auth.uid == userId
+&& parentPostIsPublished()
+&& postCounterMatchesReactionTransition();
+}
+match /comments/{commentId} {
+function parentPostIsPublished() {
+return communityPostIsOpen(postId);
+}
+function isValidCommentReactionCountUpdate() {
+let reactionPath = /databases/$(database)/documents/communityPosts/$(postId)/comments/$(commentId)/reactions/$(request.auth.uid);
+let reactionExistsBefore = exists(reactionPath);
+let reactionExistsAfter = existsAfter(reactionPath);
+let typeBefore = reactionExistsBefore
+? get(reactionPath).data.get("type", "")
+: "";
+let typeAfter = reactionExistsAfter
+? getAfter(reactionPath).data.get("type", "")
+: "";
+let countsBefore = resource.data.get("reactionCounts", {});
+let countsAfter = request.resource.data.get("reactionCounts", {});
+return isAuthenticated()
+&& parentPostIsPublished()
+&& resource.data.get("status", "") == "published"
+&& request.resource.data.get("status", "") == "published"
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["reactionCounts", "updatedAt"])
+&& (reactionExistsBefore != reactionExistsAfter
+|| typeBefore != typeAfter)
+&& countsBefore is map
+&& countsAfter is map
+&& countsAfter.get("like", 0)
+== countsBefore.get("like", 0)
++ (typeAfter == "like" ? 1 : 0)
+- (typeBefore == "like" ? 1 : 0)
+&& countsAfter.get("love", 0)
+== countsBefore.get("love", 0)
++ (typeAfter == "love" ? 1 : 0)
+- (typeBefore == "love" ? 1 : 0)
+&& countsAfter.get("laugh", 0)
+== countsBefore.get("laugh", 0)
++ (typeAfter == "laugh" ? 1 : 0)
+- (typeBefore == "laugh" ? 1 : 0)
+&& countsAfter.get("celebrate", 0)
+== countsBefore.get("celebrate", 0)
++ (typeAfter == "celebrate" ? 1 : 0)
+- (typeBefore == "celebrate" ? 1 : 0)
+&& countsAfter.get("support", 0)
+== countsBefore.get("support", 0)
++ (typeAfter == "support" ? 1 : 0)
+- (typeBefore == "support" ? 1 : 0)
+&& countsAfter.get("helpful", 0)
+== countsBefore.get("helpful", 0)
++ (typeAfter == "helpful" ? 1 : 0)
+- (typeBefore == "helpful" ? 1 : 0);
+}
+function isAuthorSoftDeletingComment() {
+return isAuthenticated()
+&& (
+resource.data.get("authorId", "") == request.auth.uid
+|| canModerateCommunityScope(
+communityScopeOf(get(communityPostPath(postId)).data)
+)
+)
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["content", "status", "deletedAt", "updatedAt"])
+&& request.resource.data.get("postId", "")
+== resource.data.get("postId", "")
+&& request.resource.data.get("authorId", "")
+== resource.data.get("authorId", "")
+&& request.resource.data.get("status", "") == "deleted"
+&& request.resource.data.get("content", "") == "";
+}
+allow get, list: if isAuthenticated()
+&& parentPostIsPublished();
+allow create: if isAuthenticated()
+&& parentPostIsPublished()
+&& request.resource.data.keys().hasAll([
+"postId",
+"parentCommentId",
+"authorId",
+"author",
+"content",
+"reactionCounts",
+"status",
+"createdAt",
+"updatedAt"
+])
+&& request.resource.data.get("postId", "") == postId
+&& request.resource.data.get("authorId", "") == request.auth.uid
+&& request.resource.data.get("author", {}) is map
+&& request.resource.data.get("author", {}).get("id", "")
+== request.auth.uid
+&& request.resource.data.get("content", "") is string
+&& request.resource.data.get("content", "").size() > 0
+&& request.resource.data.get("content", "").size() <= 2000
+&& request.resource.data.get("status", "") == "published"
+&& request.resource.data.get("reactionCounts", {}) is map
+&& (
+request.resource.data.get("parentCommentId", null) == null
+|| request.resource.data.get("parentCommentId", null) is string
+)
+&& getAfter(
+/databases/$(database)/documents/communityPosts/$(postId)
+).data.get("lastCommentId", "") == commentId
+&& getAfter(
+/databases/$(database)/documents/communityPosts/$(postId)
+).data.get("commentCount", 0)
+== get(
+/databases/$(database)/documents/communityPosts/$(postId)
+).data.get("commentCount", 0) + 1;
+allow update: if isValidCommentReactionCountUpdate()
+|| isAuthorSoftDeletingComment();
+allow delete: if false;
+match /reactions/{userId} {
+function parentCommentIsAvailable() {
+let commentPath = /databases/$(database)/documents/communityPosts/$(postId)/comments/$(commentId);
+return communityPostIsOpen(postId)
+&& exists(commentPath)
+&& get(commentPath).data.get("status", "") == "published";
+}
+function commentCounterMatchesReactionTransition() {
+let commentPath = /databases/$(database)/documents/communityPosts/$(postId)/comments/$(commentId);
+let reactionPath = /databases/$(database)/documents/communityPosts/$(postId)/comments/$(commentId)/reactions/$(userId);
+let reactionExistsBefore = exists(reactionPath);
+let reactionExistsAfter = existsAfter(reactionPath);
+let typeBefore = reactionExistsBefore
+? get(reactionPath).data.get("type", "")
+: "";
+let typeAfter = reactionExistsAfter
+? getAfter(reactionPath).data.get("type", "")
+: "";
+let commentBefore = get(commentPath).data;
+let commentAfter = getAfter(commentPath).data;
+let countsBefore = commentBefore.get("reactionCounts", {});
+let countsAfter = commentAfter.get("reactionCounts", {});
+return commentAfter.diff(commentBefore).affectedKeys()
+.hasOnly(["reactionCounts", "updatedAt"])
+&& (reactionExistsBefore != reactionExistsAfter
+|| typeBefore != typeAfter)
+&& countsBefore is map
+&& countsAfter is map
+&& countsAfter.get("like", 0)
+== countsBefore.get("like", 0)
++ (typeAfter == "like" ? 1 : 0)
+- (typeBefore == "like" ? 1 : 0)
+&& countsAfter.get("love", 0)
+== countsBefore.get("love", 0)
++ (typeAfter == "love" ? 1 : 0)
+- (typeBefore == "love" ? 1 : 0)
+&& countsAfter.get("laugh", 0)
+== countsBefore.get("laugh", 0)
++ (typeAfter == "laugh" ? 1 : 0)
+- (typeBefore == "laugh" ? 1 : 0)
+&& countsAfter.get("celebrate", 0)
+== countsBefore.get("celebrate", 0)
++ (typeAfter == "celebrate" ? 1 : 0)
+- (typeBefore == "celebrate" ? 1 : 0)
+&& countsAfter.get("support", 0)
+== countsBefore.get("support", 0)
++ (typeAfter == "support" ? 1 : 0)
+- (typeBefore == "support" ? 1 : 0)
+&& countsAfter.get("helpful", 0)
+== countsBefore.get("helpful", 0)
++ (typeAfter == "helpful" ? 1 : 0)
+- (typeBefore == "helpful" ? 1 : 0);
+}
+allow get: if isAuthenticated()
+&& request.auth.uid == userId
+&& parentCommentIsAvailable();
+allow list: if false;
+allow create: if isAuthenticated()
+&& request.auth.uid == userId
+&& request.resource.data.get("userId", "") == userId
+&& request.resource.data.get("type", "") in [
+"like", "love", "laugh", "celebrate", "support", "helpful"
+]
+&& parentCommentIsAvailable()
+&& commentCounterMatchesReactionTransition();
+allow update: if isAuthenticated()
+&& request.auth.uid == userId
+&& request.resource.data.get("userId", "") == userId
+&& request.resource.data.get("type", "") in [
+"like", "love", "laugh", "celebrate", "support", "helpful"
+]
+&& parentCommentIsAvailable()
+&& commentCounterMatchesReactionTransition();
+allow delete: if isAuthenticated()
+&& request.auth.uid == userId
+&& parentCommentIsAvailable()
+&& commentCounterMatchesReactionTransition();
+}
+}
+}
+match /users/{userId}/communityBookmarks/{postId} {
+allow read: if isAuthenticated()
+&& request.auth.uid == userId;
+allow create: if isAuthenticated()
+&& request.auth.uid == userId
+&& request.resource.data.get("userId", "") == userId
+&& request.resource.data.get("postId", "") == postId
+&& communityPostIsOpen(postId);
+allow update: if false;
+allow delete: if isAuthenticated()
+&& request.auth.uid == userId;
+}
+match /userFollows/{followId} {
+allow get: if isAuthenticated()
+&& (
+!exists(
+/databases/$(database)/documents/userFollows/$(followId)
+)
+|| resource.data.get("followerId", "") == request.auth.uid
+|| resource.data.get("followingId", "") == request.auth.uid
+);
+allow list: if isAuthenticated()
+&& (
+resource.data.get("followerId", "") == request.auth.uid
+|| resource.data.get("followingId", "") == request.auth.uid
+);
+allow create: if isAuthenticated()
+&& request.resource.data.keys().hasAll([
+"followerId", "followingId", "createdAt"
+])
+&& request.resource.data.get("followerId", "") == request.auth.uid
+&& request.resource.data.get("followingId", "") is string
+&& request.resource.data.get("followingId", "") != request.auth.uid
+&& followId == request.auth.uid
++ "_"
++ request.resource.data.get("followingId", "");
+allow update: if false;
+allow delete: if isAuthenticated()
+&& resource.data.get("followerId", "") == request.auth.uid
+&& followId == request.auth.uid
++ "_"
++ resource.data.get("followingId", "");
+}
+function isValidCommunityTopic(data) {
+return data.name is string
+&& data.name.size() > 0
+&& data.name.size() <= 80
+&& data.slug is string
+&& data.slug.size() > 0
+&& data.slug.size() <= 80
+&& data.active is bool
+&& data.get("sortOrder", 0) is number;
+}
+match /communityTopics/{topicId} {
+allow read: if isAuthenticated();
+allow create, update: if isPlatformAdmin()
+&& isValidCommunityTopic(request.resource.data);
+allow delete: if isPlatformAdmin();
+}
+match /organizations/{organizationId}/communityTopics/{topicId} {
+allow read: if canSeeCommunityScope(organizationId);
+allow create, update: if canModerateCommunityScope(organizationId)
+&& isValidCommunityTopic(request.resource.data);
+allow delete: if canModerateCommunityScope(organizationId);
+}
+match /communityReports/{reportId} {
+allow get, list: if isAuthenticated()
+&& (
+resource.data.reporterId == request.auth.uid
+|| canModerateCommunityScope(resource.data.organizationId)
+);
+allow create: if isAuthenticated()
+&& request.resource.data.keys().hasAll([
+"postId",
+"organizationId",
+"reason",
+"reporterId",
+"status",
+"createdAt"
+])
+&& request.resource.data.keys().hasOnly([
+"postId",
+"commentId",
+"organizationId",
+"reason",
+"details",
+"reporterId",
+"reporterName",
+"postTitle",
+"status",
+"createdAt"
+])
+&& request.resource.data.reporterId == request.auth.uid
+&& request.resource.data.postId is string
+&& reportId == request.auth.uid + "_" + request.resource.data.postId
+&& request.resource.data.reason in [
+"spam",
+"harassment",
+"inappropriate",
+"misinformation",
+"other"
+]
+&& request.resource.data.get("details", "") is string
+&& request.resource.data.get("details", "").size() <= 1000
+&& request.resource.data.status == "open"
+&& request.resource.data.createdAt == request.time
+&& exists(communityPostPath(request.resource.data.postId))
+&& request.resource.data.organizationId
+== communityScopeOf(get(communityPostPath(request.resource.data.postId)).data)
+&& canSeeCommunityScope(request.resource.data.organizationId);
+allow update: if isAuthenticated()
+&& canModerateCommunityScope(resource.data.organizationId)
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["status", "resolvedBy", "resolvedAt", "resolution"])
+&& request.resource.data.status in ["open", "resolved", "dismissed"]
+&& request.resource.data.get("resolvedBy", "") == request.auth.uid;
+allow delete: if false;
+}
+match /communityNotifications/{notificationId} {
+allow get, list: if isAuthenticated()
+&& resource.data.get("recipientId", "") == request.auth.uid;
+allow create: if isAuthenticated()
+&& request.resource.data.get("recipientId", "") is string
+&& request.resource.data.get("recipientId", "") != request.auth.uid
+&& (
+request.resource.data.get("actorId", "") == request.auth.uid
+|| isPlatformAdmin()
+);
+allow update: if isAuthenticated()
+&& resource.data.get("recipientId", "") == request.auth.uid
+&& request.resource.data.get("recipientId", "")
+== resource.data.get("recipientId", "")
+&& request.resource.data.diff(resource.data)
+.affectedKeys().hasOnly(["read", "readAt"]);
+allow delete: if false;
+}
+match /communityConversations/{conversationId} {
+function isConversationParticipant() {
+return isAuthenticated()
+&& resource.data.participantIds is list
+&& request.auth.uid in resource.data.participantIds;
+}
+allow get, list: if isConversationParticipant();
+allow create: if isAuthenticated()
+&& request.resource.data.keys().hasAll([
+"type",
+"participantIds",
+"participantInfo",
+"unreadCounts",
+"createdAt",
+"updatedAt"
+])
+&& request.resource.data.type == "direct"
+&& request.resource.data.participantIds is list
+&& request.resource.data.participantIds.size() == 2
+&& request.auth.uid in request.resource.data.participantIds
+&& request.resource.data.participantIds[0]
+!= request.resource.data.participantIds[1]
+&& request.resource.data.participantInfo is list
+&& request.resource.data.participantInfo.size() == 2
+&& request.resource.data.unreadCounts is map
+&& request.resource.data.get("lastMessage", "") == ""
+&& request.resource.data.createdAt == request.time;
+function isSenderUpdatingSummary() {
+return isConversationParticipant()
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly([
+"lastMessage",
+"lastMessageSenderId",
+"lastMessageAt",
+"unreadCounts",
+"updatedAt"
+])
+&& request.resource.data.lastMessageSenderId == request.auth.uid
+&& request.resource.data.lastMessage is string
+&& request.resource.data.lastMessage.size() <= 5000
+&& request.resource.data.unreadCounts is map
+&& request.resource.data.unreadCounts.get(request.auth.uid, 0)
+<= resource.data.get("unreadCounts", {}).get(request.auth.uid, 0)
+&& request.resource.data.participantIds == resource.data.participantIds;
+}
+function isReaderLoweringOwnCount() {
+return isConversationParticipant()
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["unreadCounts", "updatedAt"])
+&& request.resource.data.unreadCounts is map
+&& request.resource.data.unreadCounts.get(request.auth.uid, -1) >= 0
+&& request.resource.data.unreadCounts.get(request.auth.uid, 0)
+<= resource.data.get("unreadCounts", {}).get(request.auth.uid, 0)
+&& (
+!resource.data.keys().hasAny(["unreadCounts"])
+|| request.resource.data.unreadCounts
+.diff(resource.data.unreadCounts)
+.affectedKeys()
+.hasOnly([request.auth.uid])
+);
+}
+allow update: if isSenderUpdatingSummary()
+|| isReaderLoweringOwnCount()
+|| isConversationParticipant()
+&& request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasOnly(['unreadCounts', 'updatedAt'])
+&& request.resource.data.unreadCounts is map
+&& request.resource.data.unreadCounts
+.get(request.auth.uid, -1) == 0
+&& (
+(
+!resource.data.keys().hasAny(['unreadCounts'])
+&& request.resource.data.unreadCounts.keys()
+.hasOnly([request.auth.uid])
+)
+||
+(
+resource.data.unreadCounts is map
+&& request.resource.data.unreadCounts
+.diff(resource.data.unreadCounts)
+.affectedKeys()
+.hasOnly([request.auth.uid])
+)
+);
+match /messages/{messageId} {
+function isParentConversationParticipant() {
+let conversationPath =
+/databases/$(database)/documents/communityConversations/$(conversationId);
+return isAuthenticated()
+&& exists(conversationPath)
+&& request.auth.uid in
+get(conversationPath).data.participantIds;
+}
+allow get, list: if isParentConversationParticipant();
+allow create: if isParentConversationParticipant()
+&& request.resource.data.senderId == request.auth.uid
+&& request.resource.data.conversationId == conversationId
+&& request.resource.data.content is string
+&& request.resource.data.content.size() <= 5000
+&& request.resource.data.type
+in ["text", "image", "video", "audio", "file"]
+&& request.resource.data.status == "sent"
+&& request.resource.data.readBy == [request.auth.uid]
+&& (
+request.resource.data.get("attachment", null) == null
+|| request.resource.data.attachment is map
+)
+&& request.resource.data.createdAt == request.time;
+allow update: if isParentConversationParticipant()
+&& resource.data.get("senderId", "") != request.auth.uid
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["readBy", "status", "updatedAt"])
+&& request.resource.data.status == "read"
+&& request.resource.data.readBy is list
+&& request.resource.data.readBy.toSet()
+.difference(resource.data.get("readBy", []).toSet())
+== [request.auth.uid].toSet()
+&& request.resource.data.readBy.toSet()
+.hasAll(resource.data.get("readBy", []).toSet());
+allow delete: if false;
+}
+}
+match /communityChatCalls/{callId} {
+function isCallParticipant() {
+return isAuthenticated()
+&& (
+resource.data.get('callerId', '') == request.auth.uid
+|| resource.data.get('calleeId', '') == request.auth.uid
+);
+}
+function conversationContainsBothParticipants(
+conversationId,
+callerId,
+calleeId
+) {
+let conversationPath =
+/databases/$(database)/documents/communityConversations/$(conversationId);
+return exists(conversationPath)
+&& get(conversationPath).data.get('participantIds', []) is list
+&& callerId in get(conversationPath).data.participantIds
+&& calleeId in get(conversationPath).data.participantIds;
+}
+allow get: if isCallParticipant();
+allow list: if isAuthenticated()
+&& resource.data.get('calleeId', '') == request.auth.uid
+&& resource.data.get('status', '') == 'ringing';
+allow create: if isAuthenticated()
+&& request.resource.data.keys().hasAll([
+'conversationId',
+'callerId',
+'calleeId',
+'type',
+'status',
+'offer',
+'answer',
+'createdAt',
+'updatedAt'
+])
+&& request.resource.data.get('callerId', '') == request.auth.uid
+&& request.resource.data.get('calleeId', '') is string
+&& request.resource.data.get('calleeId', '') != request.auth.uid
+&& request.resource.data.get('conversationId', '') is string
+&& request.resource.data.get('type', '') in ['voice', 'video']
+&& request.resource.data.get('status', '') == 'ringing'
+&& request.resource.data.get('offer', null) == null
+&& request.resource.data.get('answer', null) == null
+&& conversationContainsBothParticipants(
+request.resource.data.conversationId,
+request.resource.data.callerId,
+request.resource.data.calleeId
+);
+allow update: if isCallParticipant()
+&& request.resource.data.get('conversationId', '')
+== resource.data.get('conversationId', '')
+&& request.resource.data.get('callerId', '')
+== resource.data.get('callerId', '')
+&& request.resource.data.get('calleeId', '')
+== resource.data.get('calleeId', '')
+&& request.resource.data.get('type', '')
+== resource.data.get('type', '')
+&& request.resource.data.get('createdAt', null)
+== resource.data.get('createdAt', null)
+&& (
+(
+request.auth.uid == resource.data.get('callerId', '')
+&& resource.data.get('status', '') == 'ringing'
+&& request.resource.data.get('status', '') == 'ringing'
+&& request.resource.data.get('offer', null) is map
+&& request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasOnly(['offer', 'updatedAt'])
+)
+||
+(
+request.auth.uid == resource.data.get('calleeId', '')
+&& resource.data.get('status', '') == 'ringing'
+&& request.resource.data.get('status', '') == 'accepted'
+&& request.resource.data.get('answer', null) is map
+&& request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasOnly(['status', 'answer', 'updatedAt'])
+)
+||
+(
+request.auth.uid == resource.data.get('calleeId', '')
+&& resource.data.get('status', '') == 'ringing'
+&& request.resource.data.get('status', '') == 'declined'
+&& request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasOnly(['status', 'updatedAt'])
+)
+||
+(
+resource.data.get('status', '') in ['ringing', 'accepted']
+&& request.resource.data.get('status', '') in ['ended', 'missed']
+&& request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasOnly(['status', 'updatedAt'])
+)
+);
+match /candidates/{candidateId} {
+function isParentCallParticipant() {
+let callPath =
+/databases/$(database)/documents/communityChatCalls/$(callId);
+return isAuthenticated()
+&& exists(callPath)
+&& (
+get(callPath).data.get('callerId', '') == request.auth.uid
+|| get(callPath).data.get('calleeId', '') == request.auth.uid
+);
+}
+allow get, list: if isParentCallParticipant();
+allow create: if isParentCallParticipant()
+&& request.resource.data.get('senderId', '')
+== request.auth.uid
+&& request.resource.data.get('candidate', null) is map;
+allow update, delete: if false;
+}
+}
+match /auditLogs/{auditId} {
+function isValidAuditRecord(data) {
+return data.keys().hasOnly([
+"action",
+"entityType",
+"entityId",
+"actorId",
+"actorName",
+"actorEmail",
+"actorType",
+"outcome",
+"source",
+"reason",
+"metadata",
+"before",
+"after",
+"createdAt"
+])
+&& data.keys().hasAll([
+"action",
+"entityType",
+"actorId",
+"actorType",
+"outcome",
+"source",
+"createdAt"
+])
+&& data.action is string
+&& data.action.size() > 0
+&& data.action.size() <= 200
+&& data.entityType is string
+&& data.entityType.size() > 0
+&& (data.get("entityId", null) == null
+|| data.get("entityId", null) is string)
+&& (data.get("actorName", null) == null
+|| data.get("actorName", null) is string)
+&& (data.get("actorEmail", null) == null
+|| data.get("actorEmail", null) is string)
+&& (data.get("reason", null) == null
+|| data.get("reason", null) is string)
+&& data.get("metadata", {}) is map
+&& data.outcome in [
+"success",
+"failure",
+"denied",
+"cancelled"
+]
+&& data.source == "web"
+&& data.createdAt == request.time;
+}
+allow get, list: if isPlatformAdmin();
+allow create: if isAuthenticated()
+&& isValidAuditRecord(request.resource.data)
+&& request.resource.data.actorId == request.auth.uid
+&& (
+request.resource.data.actorType == "user"
+|| (
+request.resource.data.actorType == "admin"
+&& isPlatformAdmin()
+)
+);
+allow update, delete: if false;
+}
+match /supportTickets/{ticketId} {
+allow read, write: if false;
+match /messages/{messageId} {
+allow read, write: if false;
+}
+}
+match /counters/{counterId} {
+allow read, write: if false;
+}
+match /assistantUsage/{usageId} {
+allow read, write: if false;
+}
+match /organizationServiceRequests/{requestId} {
+allow read, write: if false;
+}
+match /contractTerms/{document=**} {
+allow read, write: if false;
+}
+match /organizations/{organizationId}/contract/{contractId} {
+allow read, write: if false;
+}
+match /organizations/{organizationId}/auditLogs/{eventId} {
+allow get, list: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& isOrganizationAdmin(organizationId)
+);
+allow create, update, delete: if false;
+}
+match /organizations/{organizationId}/announcements/{announcementId} {
+function isOptionalString(data, field, maxSize) {
+return data.get(field, null) == null
+|| (data[field] is string && data[field].size() <= maxSize);
+}
+function isOptionalHttpsUrl(data, field) {
+return data.get(field, null) == null
+|| (
+data[field] is string
+&& data[field].size() <= 1000
+&& data[field].matches("^https://.+")
+);
+}
+function isOptionalDate(data, field) {
+return data.get(field, null) == null
+|| (
+data[field] is string
+&& data[field].matches("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+);
+}
+function isValidAnnouncement(data) {
+return data.keys().hasOnly([
+"organizationId",
+"type",
+"title",
+"message",
+"ctaLabel",
+"ctaUrl",
+"eventDate",
+"honoreeName",
+"theme",
+"font",
+"artwork",
+"imageUrl",
+"startsOn",
+"endsOn",
+"active",
+"createdBy",
+"createdAt",
+"updatedAt"
+])
+&& data.organizationId == organizationId
+&& data.type in ["event", "cohort", "graduation", "shoutout", "general"]
+&& data.title is string
+&& data.title.size() > 0
+&& data.title.size() <= 120
+&& data.message is string
+&& data.message.size() <= 500
+&& data.theme in ["zebron", "sunrise", "royal", "midnight", "forest", "sky", "confetti", "gold"]
+&& data.font in ["default", "serif", "rounded", "display", "mono"]
+&& data.artwork in ["calendar", "celebration", "graduation", "trophy", "star", "groups", "rocket", "campaign", "school", "none"]
+&& data.active is bool
+&& isOptionalString(data, "ctaLabel", 40)
+&& isOptionalString(data, "honoreeName", 80)
+&& isOptionalHttpsUrl(data, "ctaUrl")
+&& isOptionalHttpsUrl(data, "imageUrl")
+&& isOptionalDate(data, "eventDate")
+&& isOptionalDate(data, "startsOn")
+&& isOptionalDate(data, "endsOn");
+}
+function canManageAnnouncements() {
+return isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+}
+allow get, list: if canManageAnnouncements()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationMember(organizationId)
+&& resource.data.get("active", false) == true
+);
+allow create: if canManageAnnouncements()
+&& isValidAnnouncement(request.resource.data)
+&& request.resource.data.createdBy == request.auth.uid;
+allow update: if canManageAnnouncements()
+&& isValidAnnouncement(request.resource.data)
+&& request.resource.data.createdBy == resource.data.createdBy
+&& request.resource.data.get("createdAt", null)
+== resource.data.get("createdAt", null);
+allow delete: if canManageAnnouncements();
+}
+function hasActiveMailboxEntitlement(organizationId) {
+let entitlementPath =
+/databases/$(database)/documents/organizations/$(organizationId)/applications/mailbox;
+return exists(entitlementPath)
+&& get(entitlementPath).data.get("status", "") == "active";
+}
+match /organizations/{organizationId}/inboundMessages/{messageId} {
+allow get, list: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& hasActiveMailboxEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+allow create: if false;
+allow update: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& hasActiveMailboxEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+&& request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasOnly(["status", "read", "archived", "updatedAt"])
+&& request.resource.data.get("status", "") in ["new", "read", "archived"]
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& hasActiveMailboxEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+}
+function organizationMailboxPath(organizationId, mailboxId) {
+return /databases/$(database)/documents/organizations/$(organizationId)/mailboxes/$(mailboxId);
+}
+function isAssignedToOrganizationMailbox(organizationId, mailboxId) {
+return isAuthenticated()
+&& exists(organizationMailboxPath(organizationId, mailboxId))
+&& request.auth.uid in get(organizationMailboxPath(organizationId, mailboxId)).data.get("memberIds", []);
+}
+function canUseOrganizationMailbox(organizationId, mailboxId) {
+return isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& hasActiveMailboxEntitlement(organizationId)
+&& (
+isOrganizationAdmin(organizationId)
+|| (
+isOrganizationStaffOrAbove(organizationId)
+&& isAssignedToOrganizationMailbox(organizationId, mailboxId)
+)
+)
+);
+}
+function isValidOrganizationMailbox(mailboxId) {
+let data = request.resource.data;
+return data.keys().hasOnly([
+"key", "name", "description", "memberIds", "active",
+"createdAt", "createdBy", "updatedAt", "updatedBy"
+])
+&& mailboxId.matches("^[a-z0-9][a-z0-9-]{0,39}$")
+&& mailboxId != "main"
+&& data.key == mailboxId
+&& data.name is string
+&& data.name.size() > 0
+&& data.name.size() <= 60
+&& data.get("description", "") is string
+&& data.get("description", "").size() <= 200
+&& data.memberIds is list
+&& data.memberIds.size() <= 50
+&& data.active is bool;
+}
+match /organizations/{organizationId}/mailboxes/{mailboxId} {
+allow get, list: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& hasActiveMailboxEntitlement(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+);
+allow create, update: if (
+isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& hasActiveMailboxEntitlement(organizationId)
+&& isOrganizationAdmin(organizationId)
+)
+)
+&& isValidOrganizationMailbox(mailboxId);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& hasActiveMailboxEntitlement(organizationId)
+&& isOrganizationAdmin(organizationId)
+);
+match /inboundMessages/{messageId} {
+allow get, list: if canUseOrganizationMailbox(organizationId, mailboxId);
+allow create: if false;
+allow update: if canUseOrganizationMailbox(organizationId, mailboxId)
+&& request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasOnly(["status", "read", "archived", "updatedAt"])
+&& request.resource.data.get("status", "") in ["new", "read", "archived"];
+allow delete: if canUseOrganizationMailbox(organizationId, mailboxId);
+}
+match /sentMessages/{messageId} {
+allow get, list: if canUseOrganizationMailbox(organizationId, mailboxId);
+allow create, update: if false;
+allow delete: if canUseOrganizationMailbox(organizationId, mailboxId);
+}
+}
+match /organizations/{organizationId}/mailboxUsage/{day} {
+allow get, list: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& hasActiveMailboxEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+allow write: if false;
+}
+match /platformMailboxes/{mailboxId} {
+allow get, list: if isPlatformAdmin();
+allow create, update: if isPlatformAdmin()
+&& mailboxId.matches("^[a-z][a-z-]{1,29}$")
+&& request.resource.data.keys().hasOnly([
+"name", "description", "forwardTo", "active",
+"createdAt", "createdBy", "updatedAt", "updatedBy"
+])
+&& request.resource.data.name is string
+&& request.resource.data.name.size() > 0
+&& request.resource.data.name.size() <= 60
+&& request.resource.data.get("description", "") is string
+&& request.resource.data.get("description", "").size() <= 200
+&& request.resource.data.get("forwardTo", "") is string
+&& request.resource.data.get("forwardTo", "").size() <= 254
+&& request.resource.data.active is bool;
+allow delete: if isPlatformAdmin();
+}
+match /platformEmailUsage/{period} {
+allow get, list: if isPlatformAdmin();
+allow write: if false;
+}
+match /organizations/{organizationId}/sentMessages/{messageId} {
+allow get, list: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& hasActiveMailboxEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+allow create, update: if false;
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationConfigurable(organizationId)
+&& hasActiveMailboxEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+}
+match /contactMessages/{messageId} {
+allow get, list: if isPlatformAdmin();
+allow create: if false;
+allow update: if isPlatformAdmin()
+&& request.resource.data.diff(resource.data)
+.affectedKeys()
+.hasOnly(["status", "read", "archived", "updatedAt", "readAt", "archivedAt"]);
+allow delete: if isPlatformAdmin();
+match /replies/{replyId} {
+allow get, list: if isPlatformAdmin();
+allow create, update, delete: if false;
+}
+}
+match /resources/{resourceId} {
+allow get, list: if resource.data.status == "published"
+|| isPlatformAdmin();
+allow create, update: if isPlatformAdmin()
+&& isValidResource();
+allow delete: if isPlatformAdmin();
+}
+function isValidResource() {
+return request.resource.data.name is string
+&& request.resource.data.name.size() > 0
+&& request.resource.data.name.size() <= 200
+&& request.resource.data.slug is string
+&& request.resource.data.slug.size() > 0
+&& request.resource.data.status in ["draft", "pending", "published", "archived"];
+}
+match /categories/{categoryId} {
+allow get, list: if true;
+allow create, update, delete: if isPlatformAdmin();
+}
+match /locations/{locationId} {
+allow get, list: if true;
+allow create, update, delete: if isPlatformAdmin();
+}
+match /submissions/{submissionId} {
+allow get, list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.submittedBy == request.auth.uid
+);
+allow create: if isAuthenticated()
+&& request.resource.data.keys().hasOnly([
+"submittedBy",
+"resourceName",
+"description",
+"website",
+"categoryId",
+"organizationName",
+"location",
+"submitterEmail",
+"status",
+"createdAt"
+])
+&& request.resource.data.submittedBy == request.auth.uid
+&& request.resource.data.status == "pending"
+&& request.resource.data.createdAt == request.time
+&& request.resource.data.resourceName is string
+&& request.resource.data.resourceName.size() > 0
+&& request.resource.data.resourceName.size() <= 200
+&& request.resource.data.description is string
+&& request.resource.data.description.size() <= 5000;
+allow update, delete: if isPlatformAdmin();
+}
+match /jobs/{jobId} {
+allow get: if resource.data.status in ["active", "closed"]
+|| isPlatformAdmin();
+allow list: if resource.data.status == "active"
+|| isPlatformAdmin();
+allow create, update, delete: if isPlatformAdmin();
+}
+match /aiEngineConfig/{configId} {
+allow get: if isPlatformAdmin();
+allow list: if false;
+allow create, update: if isPlatformAdmin()
+&& configId == "settings"
+&& request.resource.data.keys().hasOnly([
+"enabled", "monthlyCallLimit", "userDailyLimit", "model",
+"inputCostPerMillion", "outputCostPerMillion", "updatedAt"
+])
+&& request.resource.data.enabled is bool
+&& request.resource.data.monthlyCallLimit is int
+&& request.resource.data.userDailyLimit is int
+&& request.resource.data.model is string
+&& request.resource.data.model.size() <= 70
+&& request.resource.data.inputCostPerMillion is number
+&& request.resource.data.outputCostPerMillion is number;
+allow delete: if false;
+}
+match /aiUsage/{month} {
+allow get, list: if isPlatformAdmin();
+allow write: if false;
+}
+match /aiUsageLog/{entryId} {
+allow get, list: if isPlatformAdmin();
+allow write: if false;
+}
+match /aiUsageDaily/{entryId} {
+allow read, write: if false;
+}
+match /contentChecks/{checkId} {
+allow get, list: if isPlatformAdmin();
+allow write: if false;
+}
+match /resourceTopics/{key} {
+allow get, list: if true;
+allow create, update, delete: if isPlatformAdmin();
+}
+match /bootcamps/{resourceId} {
+allow get, list: if true;
+allow create, update, delete: if isPlatformAdmin();
+}
+match /bootcampStats/{statId} {
+function addsOne(field) {
+return request.resource.data.diff(resource.data).affectedKeys().hasOnly([field])
+&& request.resource.data[field] == resource.data[field] + 1;
+}
+allow read, delete: if isPlatformAdmin();
+allow create: if request.resource.data.keys().hasOnly(["bootcampId", "programId", "views", "applyClicks"])
+&& request.resource.data.bootcampId is string
+&& request.resource.data.programId is string
+&& statId == request.resource.data.bootcampId + "__" + request.resource.data.programId
+&& request.resource.data.views in [0, 1]
+&& request.resource.data.applyClicks in [0, 1]
+&& request.resource.data.views + request.resource.data.applyClicks == 1
+&& exists(/databases/$(database)/documents/resources/$(request.resource.data.bootcampId));
+allow update: if addsOne("views") || addsOne("applyClicks");
+}
+match /users/{userId}/codeLabProjects/{projectId} {
+allow read, delete: if isCurrentUser(userId);
+allow create, update: if isCurrentUser(userId)
+&& request.resource.data.keys().hasOnly(["name", "language", "code", "updatedAt"])
+&& request.resource.data.name is string
+&& request.resource.data.name.size() <= 80
+&& request.resource.data.language in ["javascript", "python"]
+&& request.resource.data.code is string
+&& request.resource.data.code.size() <= 50000
+&& request.resource.data.updatedAt == request.time;
+}
+match /users/{userId}/codeLabExercises/{exerciseId} {
+allow read, delete: if isCurrentUser(userId);
+allow create, update: if isCurrentUser(userId)
+&& request.resource.data.keys().hasOnly(["key", "language", "code", "passed", "passedAt", "updatedAt"])
+&& request.resource.data.key is string
+&& request.resource.data.key.size() <= 300
+&& request.resource.data.language in ["javascript", "python"]
+&& request.resource.data.code is string
+&& request.resource.data.code.size() <= 50000
+&& request.resource.data.passed is bool
+&& (!("passedAt" in request.resource.data) || request.resource.data.passedAt is timestamp)
+&& request.resource.data.updatedAt == request.time;
+}
+function validCareerPath(data) {
+return data.keys().hasOnly([
+"title", "summary", "description", "field", "level", "salaryRange",
+"outlook", "jobKeywords", "skills", "stages", "status", "order",
+"createdAt", "updatedAt"
+])
+&& data.title is string && data.title.size() > 0 && data.title.size() <= 120
+&& data.summary is string && data.summary.size() <= 240
+&& data.description is string && data.description.size() <= 3000
+&& data.field is string && data.field.size() <= 60
+&& data.level in ["entry", "mid", "senior"]
+&& data.salaryRange is string && data.salaryRange.size() <= 120
+&& data.outlook is string && data.outlook.size() <= 400
+&& data.jobKeywords is string && data.jobKeywords.size() <= 100
+&& data.skills is list && data.skills.size() <= 20
+&& data.stages is list && data.stages.size() <= 10
+&& data.status in ["draft", "published"]
+&& data.order is int && data.order >= 0 && data.order <= 10000
+&& data.updatedAt == request.time;
+}
+match /careerPaths/{pathId} {
+allow get, list: if resource.data.status == "published"
+|| isPlatformAdmin();
+allow create: if isPlatformAdmin()
+&& pathId.matches('^[a-z0-9-]{1,60}$')
+&& validCareerPath(request.resource.data)
+&& request.resource.data.createdAt == request.time;
+allow update: if isPlatformAdmin()
+&& validCareerPath(request.resource.data)
+&& request.resource.data.createdAt == resource.data.createdAt;
+allow delete: if isPlatformAdmin();
+}
+match /users/{userId}/careerPlans/{pathId} {
+allow read, delete: if isCurrentUser(userId);
+allow create: if isCurrentUser(userId)
+&& request.resource.data.keys().hasOnly(["pathId", "pathTitle", "completedStepIds", "startedAt", "updatedAt"])
+&& request.resource.data.pathId == pathId
+&& request.resource.data.pathTitle is string
+&& request.resource.data.pathTitle.size() <= 200
+&& request.resource.data.completedStepIds is list
+&& request.resource.data.completedStepIds.size() <= 200
+&& request.resource.data.startedAt == request.time
+&& request.resource.data.updatedAt == request.time
+&& exists(/databases/$(database)/documents/careerPaths/$(pathId));
+allow update: if isCurrentUser(userId)
+&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["pathTitle", "completedStepIds", "updatedAt"])
+&& request.resource.data.pathTitle is string
+&& request.resource.data.pathTitle.size() <= 200
+&& request.resource.data.completedStepIds is list
+&& request.resource.data.completedStepIds.size() <= 200
+&& request.resource.data.updatedAt == request.time;
+}
+function validCareerProjectWork(data) {
+return data.url is string
+&& data.url.matches('^https://.{1,490}$')
+&& data.notes is string && data.notes.size() <= 2000
+&& data.learnerName is string && data.learnerName.size() <= 120;
+}
+match /careerProjects/{projectId} {
+allow get, list: if isPlatformAdmin()
+|| (isAuthenticated() && resource.data.userId == request.auth.uid);
+allow create: if isAuthenticated()
+&& request.resource.data.keys().hasOnly([
+"userId", "learnerName", "pathId", "pathTitle", "stepId", "stepTitle",
+"url", "notes", "status", "feedback", "reviewerId", "reviewedAt",
+"submittedAt", "updatedAt"
+])
+&& request.resource.data.userId == request.auth.uid
+&& request.resource.data.pathId is string
+&& request.resource.data.stepId is string
+&& projectId == request.auth.uid + "__" + request.resource.data.pathId + "__" + request.resource.data.stepId
+&& request.resource.data.pathTitle is string && request.resource.data.pathTitle.size() <= 200
+&& request.resource.data.stepTitle is string && request.resource.data.stepTitle.size() <= 160
+&& validCareerProjectWork(request.resource.data)
+&& request.resource.data.status == "submitted"
+&& request.resource.data.feedback == ""
+&& request.resource.data.reviewerId == null
+&& request.resource.data.reviewedAt == null
+&& request.resource.data.submittedAt == request.time
+&& request.resource.data.updatedAt == request.time
+&& exists(/databases/$(database)/documents/careerPaths/$(request.resource.data.pathId));
+allow update: if isAuthenticated()
+&& resource.data.userId == request.auth.uid
+&& resource.data.status != "verified"
+&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["learnerName", "url", "notes", "status", "updatedAt"])
+&& request.resource.data.status == "submitted"
+&& validCareerProjectWork(request.resource.data)
+&& request.resource.data.updatedAt == request.time;
+allow update: if isPlatformAdmin()
+&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "feedback", "reviewerId", "reviewedAt"])
+&& request.resource.data.status in ["verified", "needs-work"]
+&& request.resource.data.feedback is string
+&& request.resource.data.feedback.size() <= 2000
+&& request.resource.data.reviewerId == request.auth.uid
+&& request.resource.data.reviewedAt == request.time;
+allow delete: if isPlatformAdmin()
+|| (isAuthenticated()
+&& resource.data.userId == request.auth.uid
+&& resource.data.status != "verified");
+}
+match /users/{userId}/notifications/{notificationId} {
+allow read, delete: if isCurrentUser(userId);
+allow update: if isCurrentUser(userId)
+&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["read"])
+&& request.resource.data.read is bool;
+}
+match /users/{userId}/preferences/{preferenceId} {
+allow read: if isCurrentUser(userId);
+allow create, update: if isCurrentUser(userId)
+&& request.resource.data.updatedAt == request.time
+&& (
+(preferenceId == "notifications"
+&& request.resource.data.keys().hasOnly(["learningEmails", "updatedAt"])
+&& request.resource.data.learningEmails is bool)
+|| (preferenceId == "study"
+&& request.resource.data.keys().hasOnly(["confirmRemoveFromMyLearning", "updatedAt"])
+&& request.resource.data.confirmRemoveFromMyLearning is bool)
+);
+}
+match /users/{userId}/flashcards/{progressId} {
+allow read, delete: if isCurrentUser(userId);
+allow create, update: if isCurrentUser(userId)
+&& request.resource.data.keys().hasOnly(["courseId", "organizationId", "cards", "updatedAt"])
+&& request.resource.data.courseId is string
+&& request.resource.data.courseId.size() <= 200
+&& (request.resource.data.organizationId == null || request.resource.data.organizationId is string)
+&& request.resource.data.cards is map
+&& request.resource.data.cards.size() <= 500
+&& request.resource.data.updatedAt == request.time;
+}
+match /users/{userId}/documents/{documentId} {
+function validDocument(d) {
+return d.keys().hasOnly(["title", "fileName", "format", "contentType", "size",
+"storagePath", "position", "progress", "createdAt", "updatedAt", "openedAt"])
+&& d.title is string && d.title.size() > 0 && d.title.size() <= 200
+&& d.fileName is string && d.fileName.size() > 0 && d.fileName.size() <= 160
+&& d.format in ["pdf", "epub", "docx", "txt", "md"]
+&& d.contentType is string && d.contentType.size() <= 120
+&& d.size is int && d.size > 0 && d.size <= 52428800
+&& d.storagePath == "users/" + userId + "/documents/" + documentId + "/" + d.fileName
+&& d.position is map && d.position.keys().hasOnly(["page", "chapter", "scroll"])
+&& d.progress is number && d.progress >= 0 && d.progress <= 100
+&& (d.openedAt == null || d.openedAt is timestamp)
+&& d.updatedAt == request.time;
+}
+allow read, delete: if isCurrentUser(userId);
+allow create: if isCurrentUser(userId)
+&& validDocument(request.resource.data)
+&& request.resource.data.createdAt == request.time;
+allow update: if isCurrentUser(userId)
+&& validDocument(request.resource.data)
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["title", "position", "progress", "updatedAt", "openedAt"]);
+}
+match /users/{userId}/courseAnnotations/{annotationId} {
+function validAnnotation(data) {
+return data.keys().hasOnly([
+"kind", "courseKey", "courseId", "organizationId", "courseTitle",
+"lessonId", "lessonTitle", "blockIndex", "quote", "prefix", "suffix",
+"color", "note", "createdAt", "updatedAt"
+])
+&& data.kind in ["highlight", "note", "bookmark"]
+&& data.courseKey is string && data.courseKey.size() > 0 && data.courseKey.size() <= 300
+&& data.courseId is string && data.courseId.size() > 0 && data.courseId.size() <= 200
+&& (data.organizationId == null || data.organizationId is string)
+&& data.courseTitle is string && data.courseTitle.size() <= 200
+&& data.lessonId is string && data.lessonId.size() > 0 && data.lessonId.size() <= 200
+&& data.lessonTitle is string && data.lessonTitle.size() <= 200
+&& data.blockIndex is int && data.blockIndex >= -1 && data.blockIndex <= 500
+&& data.quote is string && data.quote.size() <= 1000
+&& data.prefix is string && data.prefix.size() <= 64
+&& data.suffix is string && data.suffix.size() <= 64
+&& data.note is string && data.note.size() <= 2000
+&& (data.kind == "highlight"
+? data.color in ["yellow", "green", "blue", "pink"] && data.quote.size() > 0
+: data.color == null)
+&& (data.kind != "note" || data.quote.size() > 0)
+&& data.updatedAt == request.time;
+}
+allow read, delete: if isCurrentUser(userId);
+allow create: if isCurrentUser(userId)
+&& validAnnotation(request.resource.data)
+&& request.resource.data.createdAt == request.time;
+allow update: if isCurrentUser(userId)
+&& validAnnotation(request.resource.data)
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["color", "kind", "note", "updatedAt"])
+&& (resource.data.kind == "bookmark") == (request.resource.data.kind == "bookmark");
+}
+match /siteReviews/{reviewerId} {
+function validReviewContent(data) {
+return data.keys().hasOnly([
+"userId", "displayName", "about", "rating", "text", "status",
+"moderatorNote", "reviewedAt", "reviewedBy", "createdAt", "updatedAt"
+])
+&& data.userId == reviewerId
+&& data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 60
+&& data.about is string && data.about.size() <= 80
+&& data.rating is int && data.rating >= 1 && data.rating <= 5
+&& data.text is string && data.text.size() >= 20 && data.text.size() <= 800
+&& data.moderatorNote is string && data.moderatorNote.size() <= 300
+&& data.updatedAt == request.time;
+}
+allow get: if resource.data.status == "approved"
+|| isCurrentUser(reviewerId)
+|| isPlatformAdmin();
+allow list: if resource.data.status == "approved" || isPlatformAdmin();
+allow create: if isCurrentUser(reviewerId)
+&& validReviewContent(request.resource.data)
+&& request.resource.data.status == "pending"
+&& request.resource.data.moderatorNote == ""
+&& request.resource.data.reviewedAt == null
+&& request.resource.data.reviewedBy == null
+&& request.resource.data.createdAt == request.time;
+allow update: if (
+isCurrentUser(reviewerId)
+&& validReviewContent(request.resource.data)
+&& request.resource.data.createdAt == resource.data.createdAt
+&& request.resource.data.status == "pending"
+&& request.resource.data.moderatorNote == ""
+&& request.resource.data.reviewedAt == null
+&& request.resource.data.reviewedBy == null
+)
+|| (
+isPlatformAdmin()
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["status", "moderatorNote", "reviewedAt", "reviewedBy", "updatedAt"])
+&& request.resource.data.status in ["pending", "approved", "rejected"]
+&& request.resource.data.moderatorNote is string
+&& request.resource.data.moderatorNote.size() <= 300
+&& request.resource.data.reviewedBy == request.auth.uid
+&& request.resource.data.reviewedAt == request.time
+&& request.resource.data.updatedAt == request.time
+);
+allow delete: if isCurrentUser(reviewerId) || isPlatformAdmin();
+}
+match /users/{userId}/savedJobs/{jobId} {
+allow read, delete: if isCurrentUser(userId);
+allow create, update: if isCurrentUser(userId)
+&& request.resource.data.keys().hasOnly(["jobId", "title", "organizationName", "savedAt"])
+&& request.resource.data.jobId == jobId
+&& request.resource.data.title is string
+&& request.resource.data.title.size() <= 200
+&& request.resource.data.organizationName is string
+&& request.resource.data.organizationName.size() <= 200
+&& request.resource.data.savedAt == request.time
+&& exists(/databases/$(database)/documents/jobs/$(jobId));
+}
+match /users/{userId}/jobAlerts/{alertId} {
+allow read, delete: if isCurrentUser(userId);
+allow create, update: if isCurrentUser(userId)
+&& alertId in ["alert-1", "alert-2", "alert-3", "alert-4", "alert-5"]
+&& request.resource.data.keys().hasOnly([
+"id", "keywords", "state", "workArrangement", "employmentType",
+"active", "createdAt", "lastSentAt"
+])
+&& request.resource.data.id == alertId
+&& request.resource.data.keywords is string
+&& request.resource.data.keywords.size() <= 100
+&& request.resource.data.state is string
+&& request.resource.data.state.size() <= 2
+&& request.resource.data.workArrangement in ["", "on-site", "hybrid", "remote"]
+&& request.resource.data.employmentType in ["", "full-time", "part-time", "contract", "internship", "temporary"]
+&& request.resource.data.active is bool
+&& request.resource.data.get("lastSentAt", null) == (resource == null ? null : resource.data.get("lastSentAt", null))
+&& (
+resource == null
+? request.resource.data.createdAt == request.time
+: request.resource.data.createdAt == resource.data.createdAt
+);
+}
+match /resourceTypes/{typeId} {
+allow get, list: if true;
+allow create, update, delete: if isPlatformAdmin();
+}
+match /taxPayConfigurations/{configurationId} {
+allow get, list: if true;
+allow create, update: if isPlatformAdmin()
+&& request.resource.data.taxYear is int
+&& request.resource.data.taxYear >= 2000
+&& request.resource.data.taxYear <= 2100
+&& request.resource.data.active is bool;
+allow delete: if isPlatformAdmin();
+}
+match /platformConfig/{configId} {
+allow get: if configId == "helpAssistant";
+allow list: if false;
+allow create, update: if configId == "helpAssistant"
+&& isPlatformAdmin()
+&& isValidHelpAssistantSettings();
+allow delete: if configId == "helpAssistant" && isPlatformAdmin();
+}
+function isValidHelpAssistantSettings() {
+let data = request.resource.data;
+return data.keys().hasOnly([
+"enabled", "aiEnabled", "model", "hourlyLimit", "maxSources",
+"maxAnswerWords", "assistantName", "welcomeMessage", "suggestions",
+"extraInstructions", "sources", "updatedAt", "updatedBy"
+])
+&& data.keys().hasAll(["enabled", "aiEnabled", "model", "hourlyLimit", "maxSources", "maxAnswerWords", "sources"])
+&& data.enabled is bool
+&& data.aiEnabled is bool
+&& data.model is string
+&& data.model.matches("^gemini-[a-z0-9.-]{1,60}$")
+&& data.hourlyLimit is int && data.hourlyLimit >= 1 && data.hourlyLimit <= 1000
+&& data.maxSources is int && data.maxSources >= 1 && data.maxSources <= 10
+&& data.maxAnswerWords is int && data.maxAnswerWords >= 50 && data.maxAnswerWords <= 500
+&& data.get("assistantName", "") is string && data.get("assistantName", "").size() <= 60
+&& data.get("welcomeMessage", "") is string && data.get("welcomeMessage", "").size() <= 500
+&& data.get("suggestions", []) is list && data.get("suggestions", []).size() <= 6
+&& data.get("extraInstructions", "") is string && data.get("extraInstructions", "").size() <= 2000
+&& data.sources is map
+&& data.sources.keys().hasOnly(["platformArticles", "organizationArticles", "builtInGuides", "directory"])
+&& data.sources.get("directory", true) is bool
+&& data.get("updatedBy", request.auth.uid) == request.auth.uid;
+}
+match /systemSettings/{settingKey} {
+allow get, list: if true;
+allow create, update, delete: if isPlatformAdmin();
+}
+function isValidAdminLink(data) {
+return data.label is string
+&& data.label.size() > 0
+&& data.label.size() <= 60
+&& data.url is string
+&& data.url.size() <= 2000
+&& data.url.matches('^https?://.+')
+&& data.get("order", 0) is number;
+}
+match /adminLinks/{linkId} {
+allow get, list, delete: if isPlatformAdmin();
+allow create: if isPlatformAdmin()
+&& request.resource.data.keys().hasOnly(["label", "url", "order", "createdAt", "createdBy"])
+&& isValidAdminLink(request.resource.data)
+&& request.resource.data.createdAt == request.time
+&& request.resource.data.createdBy == request.auth.uid;
+allow update: if isPlatformAdmin()
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["label", "url", "updatedAt", "updatedBy"])
+&& isValidAdminLink(request.resource.data)
+&& request.resource.data.updatedAt == request.time
+&& request.resource.data.updatedBy == request.auth.uid;
+}
+match /systemHealth/{checkId} {
+allow get: if isPlatformAdmin();
+allow list, create, update, delete: if false;
+}
+match /featureConfigurations/{featureKey} {
+allow get, list: if true;
+allow create, update, delete: if isPlatformAdmin();
+}
+match /operationalEvents/{eventId} {
+allow get, list, create, update: if isPlatformAdmin();
+allow delete: if false;
+}
+function isValidBlogPost(organizationId) {
+let data = request.resource.data;
+return data.title is string
+&& data.title.size() > 0
+&& data.title.size() <= 160
+&& data.excerpt is string
+&& data.excerpt.size() <= 300
+&& data.content is string
+&& data.content.size() <= 100000
+&& data.topic is string
+&& data.topic.size() <= 60
+&& data.status in ["draft", "in_review", "changes_requested", "scheduled", "published"]
+&& data.section in ["public", "organization", "internal"]
+&& data.organizationId == organizationId
+&& data.authorId is string
+&& data.authorName is string
+&& data.pinned is bool;
+}
+function isValidBlogComment() {
+let data = request.resource.data;
+return data.keys().hasOnly(["authorId", "authorName", "text", "createdAt"])
+&& data.authorId == request.auth.uid
+&& data.authorName is string
+&& data.authorName.size() <= 120
+&& data.text is string
+&& data.text.size() > 0
+&& data.text.size() <= 2000
+&& data.createdAt == request.time;
+}
+function isValidBlogReaction(userId) {
+let data = request.resource.data;
+return data.keys().hasOnly(["userId", "type", "createdAt"])
+&& data.userId == userId
+&& data.type in ["helpful", "insightful"];
+}
+function isOpenPlatformBlogPost(postId) {
+let post = get(/databases/$(database)/documents/blogPosts/$(postId)).data;
+return post.status == "published"
+&& (post.section == "public" || isPlatformAdmin());
+}
+function hasActiveBlogEntitlement(organizationId) {
+let entitlementPath =
+/databases/$(database)/documents/organizations/$(organizationId)/applications/blog;
+return exists(entitlementPath)
+&& get(entitlementPath).data.get("status", "") == "active";
+}
+function isOpenOrganizationBlogPost(organizationId, postId) {
+let post = get(/databases/$(database)/documents/organizations/$(organizationId)/blogPosts/$(postId)).data;
+return post.status == "published"
+&& (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveBlogEntitlement(organizationId)
+&& isOrganizationMember(organizationId)
+)
+);
+}
+match /blogPosts/{postId} {
+allow get, list: if resource.data.section == "public"
+&& resource.data.status == "published";
+allow get, list: if isPlatformAdmin();
+allow create: if isPlatformAdmin()
+&& isValidBlogPost(null)
+&& request.resource.data.section in ["public", "internal"]
+&& request.resource.data.authorId == request.auth.uid;
+allow update: if isPlatformAdmin()
+&& isValidBlogPost(null)
+&& request.resource.data.section == resource.data.section
+&& request.resource.data.authorId == resource.data.authorId;
+allow delete: if isPlatformAdmin();
+match /comments/{commentId} {
+allow get, list: if isOpenPlatformBlogPost(postId);
+allow create: if isAuthenticated()
+&& isOpenPlatformBlogPost(postId)
+&& isValidBlogComment();
+allow delete: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.authorId == request.auth.uid
+);
+}
+match /reactions/{userId} {
+allow get, list: if isOpenPlatformBlogPost(postId);
+allow create, update: if isCurrentUser(userId)
+&& isOpenPlatformBlogPost(postId)
+&& isValidBlogReaction(userId);
+allow delete: if isCurrentUser(userId);
+}
+}
+match /organizations/{organizationId}/blogPosts/{postId} {
+allow get, list: if isPlatformAdmin();
+allow get, list: if isAuthenticated()
+&& isOrganizationOperational(organizationId)
+&& hasActiveBlogEntitlement(organizationId)
+&& isOrganizationMember(organizationId)
+&& resource.data.status == "published";
+allow get, list: if isOrganizationOperational(organizationId)
+&& hasActiveBlogEntitlement(organizationId)
+&& isOrganizationStaffOrAbove(organizationId);
+allow create: if isValidBlogPost(organizationId)
+&& request.resource.data.section == "organization"
+&& request.resource.data.authorId == request.auth.uid
+&& (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveBlogEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+)
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveBlogEntitlement(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+&& request.resource.data.status in ["draft", "in_review"]
+&& request.resource.data.pinned == false
+)
+);
+allow update: if isValidBlogPost(organizationId)
+&& request.resource.data.section == "organization"
+&& request.resource.data.authorId == resource.data.authorId
+&& (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveBlogEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+)
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveBlogEntitlement(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+&& resource.data.authorId == request.auth.uid
+&& resource.data.status in ["draft", "in_review", "changes_requested"]
+&& request.resource.data.status in ["draft", "in_review"]
+&& request.resource.data.pinned == resource.data.pinned
+)
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveBlogEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+)
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveBlogEntitlement(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+&& resource.data.authorId == request.auth.uid
+&& resource.data.status in ["draft", "changes_requested"]
+);
+match /comments/{commentId} {
+allow get, list: if isOpenOrganizationBlogPost(organizationId, postId);
+allow create: if isAuthenticated()
+&& isOpenOrganizationBlogPost(organizationId, postId)
+&& isValidBlogComment();
+allow delete: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& resource.data.authorId == request.auth.uid
+)
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveBlogEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+}
+match /reactions/{userId} {
+allow get, list: if isOpenOrganizationBlogPost(organizationId, postId);
+allow create, update: if isCurrentUser(userId)
+&& isOpenOrganizationBlogPost(organizationId, postId)
+&& isValidBlogReaction(userId);
+allow delete: if isCurrentUser(userId);
+}
+}
+function isPublishedPlatformCourse(courseId) {
+return get(/databases/$(database)/documents/courses/$(courseId)).data.status == "published";
+}
+function hasActiveCoursesEntitlement(organizationId) {
+let entitlementPath =
+/databases/$(database)/documents/organizations/$(organizationId)/applications/courses;
+return exists(entitlementPath)
+&& get(entitlementPath).data.get("status", "") == "active";
+}
+function isOpenOrganizationCourse(organizationId, courseId) {
+return isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+)
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationMember(organizationId)
+&& get(/databases/$(database)/documents/organizations/$(organizationId)/courses/$(courseId)).data.status == "published"
+);
+}
+function canWriteOrganizationCourses(organizationId) {
+return isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+}
+function canDraftOrganizationCourses(organizationId) {
+return isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationStaffOrAbove(organizationId);
+}
+function isUnpublishedOrganizationCourse(organizationId, courseId) {
+let coursePath = /databases/$(database)/documents/organizations/$(organizationId)/courses/$(courseId);
+return (!exists(coursePath) || get(coursePath).data.status in ["draft", "in_review"])
+&& (!existsAfter(coursePath) || getAfter(coursePath).data.status in ["draft", "in_review"]);
+}
+function courseFieldNames() {
+return [
+"title", "summary", "description", "topic", "program", "programOrder", "level", "cover",
+"outcomes", "skills", "modules", "lessonCount", "estimatedMinutes",
+"status", "providerName", "authorId", "authorName", "organizationId", "id", "finalExam",
+"review", "createdAt", "updatedAt", "publishedAt"
+];
+}
+function isValidCourse(organizationId) {
+return request.resource.data.keys().hasOnly(courseFieldNames())
+&& isValidCourseContent(organizationId);
+}
+function isValidCourseUpdate(organizationId) {
+return request.resource.data.diff(resource.data).addedKeys()
+.union(request.resource.data.diff(resource.data).changedKeys())
+.hasOnly(courseFieldNames())
+&& isValidCourseContent(organizationId);
+}
+function isValidCourseContent(organizationId) {
+let data = request.resource.data;
+return (data.get("review", null) == null || data.review is map)
+&& data.title is string
+&& data.title.size() > 0
+&& data.title.size() <= 200
+&& data.get("program", "") is string
+&& data.get("program", "").size() <= 80
+&& (
+data.get("programOrder", null) == null
+|| data.programOrder is int
+|| (data.programOrder is float && data.programOrder == math.floor(data.programOrder))
+)
+&& data.get("summary", "") is string
+&& data.get("summary", "").size() <= 400
+&& data.get("description", "") is string
+&& data.get("description", "").size() <= 20000
+&& data.status in ["draft", "in_review", "published", "archived"]
+&& data.get("organizationId", null) == organizationId
+&& data.get("modules", []) is list
+&& data.get("modules", []).size() <= 60
+&& data.get("outcomes", []) is list
+&& data.get("outcomes", []).size() <= 30
+&& data.get("skills", []) is list
+&& data.get("skills", []).size() <= 30
+&& (
+data.get("finalExam", null) == null
+|| (
+data.finalExam is map
+&& data.finalExam.keys().hasOnly(["quizId", "quizName", "questionCount", "passMark", "timeLimitMinutes", "maxAttempts"])
+&& data.finalExam.quizId is string
+&& data.finalExam.questionCount is int
+&& data.finalExam.questionCount >= 1
+&& data.finalExam.questionCount <= 200
+&& data.finalExam.passMark is int
+&& data.finalExam.passMark >= 1
+&& data.finalExam.passMark <= 100
+)
+);
+}
+function courseLessonFieldNames() {
+return ["title", "moduleId", "order", "minutes", "blocks", "updatedAt"];
+}
+function isValidCourseLesson() {
+return request.resource.data.keys().hasOnly(courseLessonFieldNames())
+&& isValidCourseLessonContent();
+}
+function isValidCourseLessonUpdate() {
+return request.resource.data.diff(resource.data).addedKeys()
+.union(request.resource.data.diff(resource.data).changedKeys())
+.hasOnly(courseLessonFieldNames())
+&& isValidCourseLessonContent();
+}
+function isValidCourseLessonContent() {
+let data = request.resource.data;
+return data.title is string
+&& data.title.size() <= 300
+&& data.blocks is list
+&& data.blocks.size() <= 60
+&& data.minutes is number;
+}
+match /courses/{courseId} {
+allow get, list: if resource.data.status == "published";
+allow get, list: if isPlatformAdmin();
+allow create: if isPlatformAdmin()
+&& isValidCourse(null);
+allow update: if isPlatformAdmin()
+&& isValidCourseUpdate(null);
+allow delete: if isPlatformAdmin();
+match /lessons/{lessonId} {
+allow get, list: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& isPublishedPlatformCourse(courseId)
+);
+allow create: if isPlatformAdmin()
+&& isValidCourseLesson();
+allow update: if isPlatformAdmin()
+&& isValidCourseLessonUpdate();
+allow delete: if isPlatformAdmin();
+}
+}
+match /organizations/{organizationId}/courses/{courseId} {
+allow get, list: if isPlatformAdmin();
+allow get, list: if isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationStaffOrAbove(organizationId);
+allow get, list: if isAuthenticated()
+&& isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationMember(organizationId)
+&& resource.data.status == "published";
+allow create: if canWriteOrganizationCourses(organizationId)
+&& isValidCourse(organizationId);
+allow update: if canWriteOrganizationCourses(organizationId)
+&& isValidCourseUpdate(organizationId);
+allow create: if canDraftOrganizationCourses(organizationId)
+&& isValidCourse(organizationId)
+&& request.resource.data.status in ["draft", "in_review"];
+allow update: if canDraftOrganizationCourses(organizationId)
+&& isValidCourseUpdate(organizationId)
+&& resource.data.status in ["draft", "in_review"]
+&& request.resource.data.status in ["draft", "in_review"];
+allow delete: if canWriteOrganizationCourses(organizationId)
+|| (
+canDraftOrganizationCourses(organizationId)
+&& resource.data.status in ["draft", "in_review"]
+);
+match /lessons/{lessonId} {
+allow get, list: if isAuthenticated()
+&& isOpenOrganizationCourse(organizationId, courseId);
+allow create: if canWriteOrganizationCourses(organizationId)
+&& isValidCourseLesson();
+allow update: if canWriteOrganizationCourses(organizationId)
+&& isValidCourseLessonUpdate();
+allow delete: if canWriteOrganizationCourses(organizationId);
+allow create: if canDraftOrganizationCourses(organizationId)
+&& isUnpublishedOrganizationCourse(organizationId, courseId)
+&& isValidCourseLesson();
+allow update: if canDraftOrganizationCourses(organizationId)
+&& isUnpublishedOrganizationCourse(organizationId, courseId)
+&& isValidCourseLessonUpdate();
+allow delete: if canDraftOrganizationCourses(organizationId)
+&& isUnpublishedOrganizationCourse(organizationId, courseId);
+}
+}
+function isValidCourseAssignment(organizationId, assignmentId) {
+let data = request.resource.data;
+return data.keys().hasOnly([
+"organizationId", "userId", "userName", "courseId", "courseTitle",
+"cover", "lessonId", "lessonTitle", "dueAt", "required", "note",
+"assignedBy", "assignedByName", "assignedAt"
+])
+&& data.organizationId == organizationId
+&& data.userId is string
+&& data.userId.matches("^[A-Za-z0-9_-]{1,128}$")
+&& data.courseId is string
+&& data.courseId.matches("^[A-Za-z0-9_-]{1,128}$")
+&& (
+(data.lessonId == null && assignmentId == data.userId + "__" + data.courseId)
+|| (
+data.lessonId is string
+&& data.lessonId.matches("^[A-Za-z0-9_-]{1,128}$")
+&& assignmentId == data.userId + "__" + data.courseId + "__" + data.lessonId
+)
+)
+&& data.userName is string
+&& data.userName.size() <= 120
+&& data.courseTitle is string
+&& data.courseTitle.size() <= 200
+&& data.cover is string
+&& data.cover.size() <= 20
+&& (data.lessonTitle == null || (data.lessonTitle is string && data.lessonTitle.size() <= 200))
+&& (data.dueAt == null || data.dueAt is timestamp)
+&& data.required is bool
+&& data.note is string
+&& data.note.size() <= 500
+&& data.assignedBy == request.auth.uid
+&& data.assignedByName is string
+&& data.assignedByName.size() <= 120
+&& data.assignedAt == request.time;
+}
+match /organizations/{organizationId}/settings/courses {
+function isValidCourseSettings() {
+let data = request.resource.data;
+return data.keys().hasOnly([
+"enabledPlatformCourseIds",
+"zebronCertifications",
+"externalCertifications",
+"updatedAt",
+"updatedBy"
+])
+&& data.get("enabledPlatformCourseIds", []) is list
+&& data.get("enabledPlatformCourseIds", []).size() <= 500
+&& data.get("zebronCertifications", false) is bool
+&& data.get("externalCertifications", false) is bool
+&& data.updatedAt == request.time
+&& data.updatedBy == request.auth.uid;
+}
+allow get: if isPlatformAdmin()
+|| (
+isAuthenticated()
+&& isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationMember(organizationId)
+);
+allow list: if false;
+allow create, update: if (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationAdmin(organizationId)
+)
+)
+&& isValidCourseSettings();
+allow delete: if isPlatformAdmin();
+}
+match /organizations/{organizationId}/courseAssignments/{assignmentId} {
+allow get, list: if isPlatformAdmin();
+allow get, list: if isAuthenticated()
+&& resource.data.userId == request.auth.uid
+&& isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId);
+allow get, list: if isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationStaffOrAbove(organizationId);
+allow create, update: if canWriteOrganizationCourses(organizationId)
+&& isValidCourseAssignment(organizationId, assignmentId);
+allow delete: if canWriteOrganizationCourses(organizationId);
+}
+function hasActiveVirtualClassroom(organizationId) {
+let entitlementPath =
+/databases/$(database)/documents/organizations/$(organizationId)/applications/virtual-classroom;
+return exists(entitlementPath)
+&& get(entitlementPath).data.get("status", "") == "active";
+}
+function canRunLiveSessions(organizationId) {
+return isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveVirtualClassroom(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+);
+}
+function isValidLiveSession(organizationId) {
+let data = request.resource.data;
+return data.keys().hasOnly([
+"title", "description", "organizationId", "instructorId", "instructorName",
+"startAt", "durationMinutes", "capacity", "provider", "meetingUrl", "recordingUrl",
+"status", "registeredCount", "createdBy", "createdAt", "updatedAt"
+])
+&& data.organizationId == organizationId
+&& data.title is string
+&& data.title.size() > 0
+&& data.title.size() <= 200
+&& data.get("description", "") is string
+&& data.get("description", "").size() <= 5000
+&& data.startAt is timestamp
+&& data.durationMinutes is int
+&& data.durationMinutes >= 5
+&& data.durationMinutes <= 600
+&& data.capacity is int
+&& data.capacity >= 0
+&& data.capacity <= 10000
+&& data.provider in ["jitsi", "meet", "zoom", "teams", "other"]
+&& data.get("meetingUrl", "") is string
+&& data.get("meetingUrl", "").size() <= 500
+&& data.get("recordingUrl", "") is string
+&& data.get("recordingUrl", "").size() <= 500
+&& data.status in ["scheduled", "cancelled"]
+&& data.registeredCount is int;
+}
+match /organizations/{organizationId}/liveSessions/{sessionId} {
+allow get, list: if isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveVirtualClassroom(organizationId)
+&& isOrganizationMember(organizationId)
+);
+allow create: if canRunLiveSessions(organizationId)
+&& isValidLiveSession(organizationId)
+&& request.resource.data.registeredCount == 0;
+allow update: if canRunLiveSessions(organizationId)
+&& isValidLiveSession(organizationId)
+&& request.resource.data.registeredCount == resource.data.registeredCount;
+allow delete: if canRunLiveSessions(organizationId);
+match /registrations/{userId} {
+allow get: if isCurrentUser(userId)
+|| canRunLiveSessions(organizationId);
+allow list: if canRunLiveSessions(organizationId);
+allow create: if false;
+allow update: if canRunLiveSessions(organizationId)
+&& request.resource.data.diff(resource.data).affectedKeys().hasOnly(["attended", "attendanceMarkedAt"])
+&& request.resource.data.attended is bool;
+allow delete: if canRunLiveSessions(organizationId);
+}
+}
+function hasActiveTrainingGroups(organizationId) {
+let entitlementPath =
+/databases/$(database)/documents/organizations/$(organizationId)/applications/training-groups;
+return exists(entitlementPath)
+&& get(entitlementPath).data.get("status", "") == "active";
+}
+function trainingGroupsOpen(organizationId) {
+return isOrganizationOperational(organizationId)
+&& hasActiveTrainingGroups(organizationId);
+}
+function isTrainingGroupStaff(organizationId, groupId) {
+let group = get(/databases/$(database)/documents/organizations/$(organizationId)/trainingGroups/$(groupId)).data;
+return isOrganizationManagerOrAbove(organizationId)
+|| (
+isOrganizationStaffOrAbove(organizationId)
+&& (
+group.get("leadIds", []).hasAny([request.auth.uid])
+|| group.get("instructorIds", []).hasAny([request.auth.uid])
+)
+);
+}
+function isTrainingGroupLocked(group) {
+return group.get("manualStatus", null) == null
+&& group.get("endDate", null) != null
+&& request.time >= group.endDate + duration.value(1, "d")
+&& group.get("reopened", false) != true;
+}
+function isValidTrainingGroup(organizationId) {
+let data = request.resource.data;
+return data.keys().hasOnly([
+"organizationId", "name", "type", "description", "programName",
+"startDate", "endDate", "capacity", "deliveryMode", "location",
+"leadIds", "instructorIds", "manualStatus", "memberCount",
+"reopened", "summaryAt",
+"enrollmentMode", "enrollmentOpensAt", "enrollmentClosesAt", "waitlistEnabled",
+"autoApprove", "applicationQuestions", "pendingRequests", "waitlistCount",
+"createdAt", "createdBy", "updatedAt", "updatedBy"
+])
+&& data.organizationId == organizationId
+&& data.name is string
+&& data.name.size() > 0
+&& data.name.size() <= 150
+&& data.type in ["cohort"]
+&& data.get("description", "") is string
+&& data.get("description", "").size() <= 5000
+&& data.get("programName", "") is string
+&& data.get("programName", "").size() <= 150
+&& (data.get("startDate", null) == null || data.get("startDate", null) is timestamp)
+&& (data.get("endDate", null) == null || data.get("endDate", null) is timestamp)
+&& data.capacity is int
+&& data.capacity >= 0
+&& data.capacity <= 10000
+&& data.deliveryMode in ["online", "in_person", "hybrid"]
+&& data.get("location", "") is string
+&& data.get("location", "").size() <= 300
+&& data.leadIds is list
+&& data.leadIds.size() <= 20
+&& data.instructorIds is list
+&& data.instructorIds.size() <= 50
+&& (data.get("manualStatus", null) == null || data.get("manualStatus", null) in ["draft", "cancelled"])
+&& data.memberCount is int
+&& data.get("reopened", false) is bool
+&& data.get("enrollmentMode", "invite") in ["invite", "request", "application"]
+&& (data.get("enrollmentOpensAt", null) == null || data.get("enrollmentOpensAt", null) is timestamp)
+&& (data.get("enrollmentClosesAt", null) == null || data.get("enrollmentClosesAt", null) is timestamp)
+&& data.get("waitlistEnabled", false) is bool
+&& data.get("autoApprove", false) is bool
+&& data.get("applicationQuestions", []) is list
+&& data.get("applicationQuestions", []).size() <= 5
+&& data.updatedAt == request.time
+&& data.updatedBy == request.auth.uid;
+}
+match /organizations/{organizationId}/trainingGroups/{groupId} {
+allow get: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& (
+isOrganizationStaffOrAbove(organizationId)
+|| (
+isOrganizationMember(organizationId)
+&& exists(/databases/$(database)/documents/organizations/$(organizationId)/trainingGroups/$(groupId)/members/$(request.auth.uid))
+)
+)
+);
+allow list: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+);
+allow create: if (
+isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& (
+isOrganizationAdmin(organizationId)
+|| (
+isOrganizationManagerOrAbove(organizationId)
+&& request.resource.data.leadIds.hasAny([request.auth.uid])
+)
+)
+)
+)
+&& isValidTrainingGroup(organizationId)
+&& request.resource.data.memberCount == 0
+&& request.resource.data.get("pendingRequests", 0) == 0
+&& request.resource.data.get("waitlistCount", 0) == 0
+&& request.resource.data.createdBy == request.auth.uid
+&& request.resource.data.createdAt == request.time;
+allow update: if (
+isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& (
+isOrganizationAdmin(organizationId)
+|| (
+isOrganizationManagerOrAbove(organizationId)
+&& resource.data.get("leadIds", []).hasAny([request.auth.uid])
+&& !isTrainingGroupLocked(resource.data)
+&& request.resource.data.get("reopened", false) == resource.data.get("reopened", false)
+)
+)
+)
+)
+&& isValidTrainingGroup(organizationId)
+&& request.resource.data.get("summaryAt", null) == resource.data.get("summaryAt", null)
+&& request.resource.data.get("pendingRequests", 0) == resource.data.get("pendingRequests", 0)
+&& request.resource.data.get("waitlistCount", 0) == resource.data.get("waitlistCount", 0)
+&& request.resource.data.memberCount == resource.data.memberCount
+&& request.resource.data.createdBy == resource.data.createdBy
+&& request.resource.data.createdAt == resource.data.createdAt;
+allow delete: if (
+isPlatformAdmin()
+|| (trainingGroupsOpen(organizationId) && isOrganizationAdmin(organizationId))
+)
+&& resource.data.get("memberCount", 0) == 0;
+match /members/{userId} {
+allow get: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& (
+isCurrentUser(userId)
+|| isTrainingGroupStaff(organizationId, groupId)
+)
+);
+allow list: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& isTrainingGroupStaff(organizationId, groupId)
+);
+allow write: if false;
+}
+match /requests/{requestUserId} {
+allow get: if isAuthenticated() && request.auth.uid == requestUserId
+|| isPlatformAdmin()
+|| (trainingGroupsOpen(organizationId) && isTrainingGroupStaff(organizationId, groupId));
+allow list: if isPlatformAdmin()
+|| (trainingGroupsOpen(organizationId) && isTrainingGroupStaff(organizationId, groupId));
+allow write: if false;
+}
+match /enrollmentLog/{entryId} {
+allow get, list: if isPlatformAdmin()
+|| (trainingGroupsOpen(organizationId) && isTrainingGroupStaff(organizationId, groupId));
+allow write: if false;
+}
+match /summary/{summaryId} {
+allow get: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& isTrainingGroupStaff(organizationId, groupId)
+);
+allow write: if false;
+}
+match /assignments/{assignmentId} {
+allow get, list: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& (
+isTrainingGroupStaff(organizationId, groupId)
+|| (
+isOrganizationMember(organizationId)
+&& resource.data.get("status", "draft") == "published"
+&& exists(/databases/$(database)/documents/organizations/$(organizationId)/trainingGroups/$(groupId)/members/$(request.auth.uid))
+)
+)
+);
+allow write: if false;
+match /submissions/{submissionUserId} {
+allow get: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& (
+isCurrentUser(submissionUserId)
+|| isTrainingGroupStaff(organizationId, groupId)
+)
+);
+allow list: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& isTrainingGroupStaff(organizationId, groupId)
+);
+allow write: if false;
+}
+}
+match /courses/{courseKey} {
+allow get, list: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& (
+isOrganizationStaffOrAbove(organizationId)
+|| (
+isOrganizationMember(organizationId)
+&& exists(/databases/$(database)/documents/organizations/$(organizationId)/trainingGroups/$(groupId)/members/$(request.auth.uid))
+)
+)
+);
+allow write: if false;
+}
+}
+match /organizations/{organizationId}/trainingGroupEnrollments/{userId} {
+allow get: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& (isCurrentUser(userId) || isOrganizationStaffOrAbove(organizationId))
+);
+allow list: if isPlatformAdmin()
+|| (
+trainingGroupsOpen(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+);
+allow write: if false;
+}
+function pollIsVisibleScope(poll) {
+return poll.contextType == "community"
+? canSeeCommunityScope(poll.get("organizationId", null))
+: (
+poll.contextType == "live"
+&& poll.get("organizationId", null) is string
+&& (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(poll.organizationId)
+&& hasActiveVirtualClassroom(poll.organizationId)
+&& isOrganizationMember(poll.organizationId)
+)
+)
+);
+}
+function canRunPoll(poll) {
+return isAuthenticated()
+&& (
+poll.contextType == "community"
+? (
+(
+poll.createdBy == request.auth.uid
+&& canSeeCommunityScope(poll.get("organizationId", null))
+)
+|| canModerateCommunityScope(poll.get("organizationId", null))
+)
+: (
+poll.contextType == "live"
+&& poll.get("organizationId", null) is string
+&& canRunLiveSessions(poll.organizationId)
+)
+);
+}
+function pollIsClosed(poll) {
+return poll.status == "closed"
+|| (
+poll.get("closesAt", null) != null
+&& request.time >= poll.closesAt
+);
+}
+function canSeePollResults(pollId) {
+let poll = get(/databases/$(database)/documents/polls/$(pollId)).data;
+return pollIsVisibleScope(poll)
+&& (
+canRunPoll(poll)
+|| pollIsClosed(poll)
+|| (
+poll.resultsVisibility == "afterVote"
+&& isAuthenticated()
+&& exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(request.auth.uid))
+)
+|| (
+poll.resultsVisibility == "host"
+&& poll.status != "draft"
+&& poll.get("showResults", false) == true
+)
+);
+}
+function validPollOption(options, i) {
+return options.size() <= i
+|| (
+options[i] is map
+&& options[i].keys().hasOnly(["id", "text"])
+&& options[i].id is string
+&& options[i].id.size() > 0
+&& options[i].id.size() <= 8
+&& options[i].text is string
+&& options[i].text.size() > 0
+&& options[i].text.size() <= 120
+);
+}
+function isValidPoll(data) {
+return data.keys().hasOnly([
+"contextType", "organizationId", "parentId", "question", "options",
+"allowMultiple", "maxChoices", "status", "resultsVisibility",
+"showResults", "closesAt", "createdBy", "createdByName",
+"createdAt", "updatedAt"
+])
+&& data.contextType in ["community", "live"]
+&& (data.organizationId == null || data.organizationId is string)
+&& data.parentId is string
+&& data.parentId.size() > 0
+&& data.parentId.size() <= 128
+&& data.question is string
+&& data.question.size() > 0
+&& data.question.size() <= 300
+&& data.options is list
+&& data.options.size() >= 2
+&& data.options.size() <= 10
+&& validPollOption(data.options, 0)
+&& validPollOption(data.options, 1)
+&& validPollOption(data.options, 2)
+&& validPollOption(data.options, 3)
+&& validPollOption(data.options, 4)
+&& validPollOption(data.options, 5)
+&& validPollOption(data.options, 6)
+&& validPollOption(data.options, 7)
+&& validPollOption(data.options, 8)
+&& validPollOption(data.options, 9)
+&& data.allowMultiple is bool
+&& data.maxChoices is int
+&& data.maxChoices >= 1
+&& data.maxChoices <= data.options.size()
+&& (data.allowMultiple || data.maxChoices == 1)
+&& data.status in ["draft", "open", "closed"]
+&& data.resultsVisibility in ["afterVote", "host"]
+&& data.showResults is bool
+&& (data.closesAt == null || data.closesAt is timestamp)
+&& data.createdBy is string
+&& data.createdByName is string
+&& data.createdByName.size() <= 120;
+}
+match /polls/{pollId} {
+allow get: if pollIsVisibleScope(resource.data)
+&& (resource.data.status != "draft" || canRunPoll(resource.data));
+allow list: if pollIsVisibleScope(resource.data)
+&& (resource.data.status in ["open", "closed"] || canRunPoll(resource.data));
+allow create: if isAuthenticated()
+&& isValidPoll(request.resource.data)
+&& request.resource.data.createdBy == request.auth.uid
+&& request.resource.data.createdAt == request.time
+&& request.resource.data.updatedAt == request.time
+&& request.resource.data.showResults == false
+&& (
+request.resource.data.contextType == "community"
+? (
+request.resource.data.status == "open"
+&& request.resource.data.resultsVisibility == "afterVote"
+&& canSeeCommunityScope(request.resource.data.organizationId)
+)
+: (
+request.resource.data.status in ["draft", "open"]
+&& request.resource.data.resultsVisibility == "host"
+&& request.resource.data.organizationId is string
+&& canRunLiveSessions(request.resource.data.organizationId)
+)
+);
+allow update: if canRunPoll(resource.data)
+&& request.resource.data.diff(resource.data).affectedKeys()
+.hasOnly(["status", "showResults", "closesAt", "updatedAt"])
+&& (
+request.resource.data.status == resource.data.status
+|| request.resource.data.status in ["open", "closed"]
+)
+&& request.resource.data.showResults is bool
+&& (request.resource.data.closesAt == null || request.resource.data.closesAt is timestamp)
+&& request.resource.data.updatedAt == request.time;
+allow delete: if canRunPoll(resource.data);
+match /results/{documentId} {
+allow get: if documentId == "summary" && canSeePollResults(pollId);
+allow list, write: if false;
+}
+match /votes/{userId} {
+allow get: if isCurrentUser(userId);
+allow list, write: if false;
+}
+}
+function dashboardRoleNames() {
+return ["org_member", "org_staff", "org_manager", "org_admin", "org_owner"];
+}
+function isValidDashboard(organizationId) {
+let data = request.resource.data;
+return data.keys().hasOnly([
+"organizationId", "name", "description", "appId", "scope", "ownerId",
+"viewMinRole", "viewMinRank", "editMinRole", "editMinRank", "isDefault",
+"widgets", "templateId", "templateVersion", "createdAt", "updatedAt", "updatedBy"
+])
+&& data.organizationId == organizationId
+&& data.name is string
+&& data.name.size() > 0
+&& data.name.size() <= 80
+&& data.description is string
+&& data.description.size() <= 300
+&& data.appId is string
+&& data.appId.size() > 0
+&& data.appId.size() <= 40
+&& data.scope == "shared"
+&& data.ownerId is string
+&& data.viewMinRole in dashboardRoleNames()
+&& data.editMinRole in dashboardRoleNames()
+&& data.viewMinRank == organizationRoleRank(data.viewMinRole)
+&& data.editMinRank == organizationRoleRank(data.editMinRole)
+&& data.editMinRank >= 3
+&& data.editMinRank >= data.viewMinRank
+&& data.isDefault is bool
+&& data.widgets is list
+&& data.widgets.size() <= 12
+&& data.templateId is string
+&& data.templateId.size() <= 64
+&& data.templateVersion is int
+&& data.updatedBy == request.auth.uid
+&& data.updatedAt == request.time;
+}
+match /organizations/{organizationId}/dashboards/{dashboardId} {
+allow get, list: if isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationMember(organizationId)
+&& resource.data.viewMinRank <= organizationRankOf(organizationId)
+);
+allow create: if isAuthenticated()
+&& isValidDashboard(organizationId)
+&& request.resource.data.ownerId == request.auth.uid
+&& request.resource.data.createdAt == request.time
+&& (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+&& request.resource.data.editMinRank <= organizationRankOf(organizationId)
+)
+)
+&& (request.resource.data.isDefault == false || isOrganizationAdmin(organizationId));
+allow update: if isAuthenticated()
+&& isValidDashboard(organizationId)
+&& request.resource.data.createdAt == resource.data.createdAt
+&& request.resource.data.ownerId == resource.data.ownerId
+&& request.resource.data.appId == resource.data.appId
+&& (
+isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+&& resource.data.editMinRank <= organizationRankOf(organizationId)
+&& request.resource.data.editMinRank <= organizationRankOf(organizationId)
+)
+)
+&& (
+request.resource.data.isDefault == resource.data.isDefault
+|| isOrganizationAdmin(organizationId)
+);
+allow delete: if isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+&& resource.data.editMinRank <= organizationRankOf(organizationId)
+);
+}
+match /organizations/{organizationId}/stats/{appId} {
+allow get: if isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+allow list, write: if false;
+}
+match /certificates/{code} {
+allow get: if true;
+allow list, write: if false;
+}
+match /certifications/{certificationId} {
+allow get, list: if resource.data.get("status", "") == "published"
+|| isPlatformAdmin();
+allow write: if isPlatformAdmin();
+}
+match /organizations/{organizationId}/certifications/{certificationId} {
+allow get, list: if isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationStaffOrAbove(organizationId)
+)
+|| (
+isAuthenticated()
+&& isOrganizationOperational(organizationId)
+&& hasActiveCoursesEntitlement(organizationId)
+&& isOrganizationMember(organizationId)
+&& resource.data.get("status", "") == "published"
+);
+allow write: if canWriteOrganizationCourses(organizationId);
+}
+match /users/{userId}/certifications/{certificationKey} {
+allow get, list: if isCurrentUser(userId)
+|| isPlatformAdmin();
+allow write: if false;
+match /attempts/{attemptId} {
+allow get, list: if isCurrentUser(userId)
+|| isPlatformAdmin();
+allow write: if false;
+}
+}
+match /users/{userId}/courseExams/{progressId} {
+allow get, list: if isCurrentUser(userId)
+|| isPlatformAdmin();
+allow write: if false;
+match /attempts/{attemptId} {
+allow get, list: if isCurrentUser(userId)
+|| isPlatformAdmin();
+allow write: if false;
+}
+}
+match /users/{userId}/hiddenCourses/{progressId} {
+allow read: if isCurrentUser(userId);
+allow create, update: if isCurrentUser(userId)
+&& request.resource.data.keys().hasOnly(["hiddenAt"])
+&& request.resource.data.hiddenAt == request.time;
+allow delete: if isCurrentUser(userId);
+}
+match /users/{userId}/courseProgress/{progressId} {
+allow get, list: if isCurrentUser(userId)
+|| isPlatformAdmin();
+allow write: if false;
+}
+match /outboundMessages/{messageId} {
+allow get, list: if isPlatformAdmin();
+allow create, update, delete: if false;
+}
+function hasActiveBusinessOperations(organizationId) {
+let entitlementPath =
+/databases/$(database)/documents/organizations/$(organizationId)/applications/business-operations;
+return exists(entitlementPath)
+&& get(entitlementPath).data.get("status", "") == "active";
+}
+function canManageOrganizationBusiness(organizationId) {
+return isPlatformAdmin()
+|| (
+isOrganizationOperational(organizationId)
+&& hasActiveBusinessOperations(organizationId)
+&& isOrganizationManagerOrAbove(organizationId)
+);
+}
+function businessOptionalText(data, field, max) {
+return data.get(field, null) == null
+|| (data[field] is string && data[field].size() <= max);
+}
+function businessRequiredText(data, field, max) {
+return data.get(field, null) is string
+&& data[field].size() > 0
+&& data[field].size() <= max;
+}
+function isValidBusiness(data) {
+return data.keys().hasOnly([
+"id", "ownerId", "legalName", "tradeName", "entityType", "stateOfFormation",
+"formationDate", "ein", "registrationNumber", "industry", "naicsCode",
+"locationId", "address", "status", "createdAt", "updatedAt"
+])
+&& businessRequiredText(data, "legalName", 200)
+&& businessRequiredText(data, "entityType", 80)
+&& businessOptionalText(data, "tradeName", 200)
+&& businessOptionalText(data, "ein", 20)
+&& data.status in ["active", "inactive", "closed"]
+&& (data.get("address", null) == null || data.address is map);
+}
+function isValidBusinessTransaction(data) {
+return data.keys().hasOnly([
+"id", "businessId", "type", "date", "amount", "categoryId", "description",
+"customerId", "vendorId", "paymentMethod", "referenceNumber", "accountId",
+"status", "recurring", "taxDeductible", "documentId", "activityId", "notes",
+"createdBy", "createdAt", "updatedAt"
+])
+&& data.type in ["revenue", "expense"]
+&& data.amount is number
+&& data.amount >= 0
+&& data.status in ["pending", "completed", "void", "refunded"]
+&& businessOptionalText(data, "description", 1000)
+&& businessOptionalText(data, "notes", 4000);
+}
+function isValidBusinessActivity(data) {
+return data.keys().hasOnly([
+"id", "businessId", "name", "category", "description", "startDate",
+"endDate", "status", "createdAt", "updatedAt"
+])
+&& businessRequiredText(data, "name", 200)
+&& data.status in ["planned", "active", "inactive"]
+&& businessOptionalText(data, "description", 4000);
+}
+function isValidBusinessCompliance(data) {
+return data.keys().hasOnly([
+"id", "businessId", "name", "category", "jurisdiction", "authority",
+"dueDate", "renewalDate", "status", "notes", "documentId", "completedDate",
+"automaticMonitoring", "createdAt", "updatedAt"
+])
+&& businessRequiredText(data, "name", 200)
+&& data.status in ["current", "upcoming", "action_required", "overdue", "expired", "not_applicable"]
+&& businessOptionalText(data, "notes", 4000);
+}
+function isValidBusinessDocument(data, folder) {
+return data.keys().hasOnly([
+"id", "businessId", "name", "category", "description", "fileName", "mimeType",
+"sizeBytes", "storagePath", "downloadUrl", "uploadedBy", "uploadedAt",
+"expiresAt", "verified", "status", "notes", "createdAt", "updatedAt"
+])
+&& businessRequiredText(data, "name", 200)
+&& data.storagePath is string
+&& data.storagePath.matches(folder + "/" + data.businessId + "/[^/]+")
+&& data.status in ["active", "archived"]
+&& businessOptionalText(data, "notes", 4000);
+}
+function organizationBusinessExists(organizationId, businessId) {
+return businessId is string
+&& exists(/databases/$(database)/documents/organizations/$(organizationId)/businesses/$(businessId));
+}
+match /organizations/{organizationId}/businesses/{businessId} {
+allow read, delete: if canManageOrganizationBusiness(organizationId);
+allow create, update: if canManageOrganizationBusiness(organizationId)
+&& isValidBusiness(request.resource.data);
+}
+match /organizations/{organizationId}/businessTransactions/{recordId} {
+allow read, delete: if canManageOrganizationBusiness(organizationId);
+allow create, update: if canManageOrganizationBusiness(organizationId)
+&& isValidBusinessTransaction(request.resource.data)
+&& organizationBusinessExists(organizationId, request.resource.data.businessId);
+}
+match /organizations/{organizationId}/businessActivities/{recordId} {
+allow read, delete: if canManageOrganizationBusiness(organizationId);
+allow create, update: if canManageOrganizationBusiness(organizationId)
+&& isValidBusinessActivity(request.resource.data)
+&& organizationBusinessExists(organizationId, request.resource.data.businessId);
+}
+match /organizations/{organizationId}/businessCompliance/{recordId} {
+allow read, delete: if canManageOrganizationBusiness(organizationId);
+allow create, update: if canManageOrganizationBusiness(organizationId)
+&& isValidBusinessCompliance(request.resource.data)
+&& organizationBusinessExists(organizationId, request.resource.data.businessId);
+}
+match /organizations/{organizationId}/businessDocuments/{recordId} {
+allow read, delete: if canManageOrganizationBusiness(organizationId);
+allow create, update: if canManageOrganizationBusiness(organizationId)
+&& isValidBusinessDocument(
+request.resource.data,
+"organizations/" + organizationId + "/business-documents"
+)
+&& organizationBusinessExists(organizationId, request.resource.data.businessId);
+}
+function platformBusinessExists(businessId) {
+return businessId is string
+&& exists(/databases/$(database)/documents/businesses/$(businessId));
+}
+match /businesses/{businessId} {
+allow read, delete: if isPlatformAdmin();
+allow create, update: if isPlatformAdmin()
+&& isValidBusiness(request.resource.data);
+}
+match /businessTransactions/{recordId} {
+allow read, delete: if isPlatformAdmin();
+allow create, update: if isPlatformAdmin()
+&& isValidBusinessTransaction(request.resource.data)
+&& platformBusinessExists(request.resource.data.businessId);
+}
+match /businessActivities/{recordId} {
+allow read, delete: if isPlatformAdmin();
+allow create, update: if isPlatformAdmin()
+&& isValidBusinessActivity(request.resource.data)
+&& platformBusinessExists(request.resource.data.businessId);
+}
+match /businessCompliance/{recordId} {
+allow read, delete: if isPlatformAdmin();
+allow create, update: if isPlatformAdmin()
+&& isValidBusinessCompliance(request.resource.data)
+&& platformBusinessExists(request.resource.data.businessId);
+}
+match /businessDocuments/{recordId} {
+allow read, delete: if isPlatformAdmin();
+allow create, update: if isPlatformAdmin()
+&& isValidBusinessDocument(request.resource.data, "business-documents")
+&& platformBusinessExists(request.resource.data.businessId);
+}
+}
+}

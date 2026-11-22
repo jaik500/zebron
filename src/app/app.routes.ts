@@ -120,6 +120,19 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/coding-lab/coding-lab-page.component').then((m) => m.CodingLabPageComponent),
             },
             {
+                // My documents: read your own PDF, EPUB, Word, text and markdown files (features/documents).
+                path: 'documents',
+                canActivate: [authGuard],
+                data: { title: 'Zebron | My documents' },
+                loadComponent: () => import('./features/documents/my-documents.component').then((m) => m.MyDocumentsComponent),
+            },
+            {
+                path: 'documents/:documentId',
+                canActivate: [authGuard],
+                data: { title: 'Zebron | Reading' },
+                loadComponent: () => import('./features/documents/document-reader.component').then((m) => m.DocumentReaderComponent),
+            },
+            {
                 path: 'catalog',
                 data: { title: 'Zebron | Course catalog' },
                 loadComponent: () => import('./features/courses/pages/course-catalog.component').then((m) => m.CourseCatalogComponent),
@@ -1598,17 +1611,6 @@ export const routes: Routes = [
             title: 'Admin | Tax & Pay',
         },
         loadComponent: () => import('./features/admin/pages/tax-pay/tax-pay-admin.component').then((m) => m.TaxPayAdminComponent),
-    },
-    // -----------------------------------------------------
-    // ADMIN QA HUB
-    // -----------------------------------------------------
-    {
-        path: 'admin/qa',
-        canActivate: [adminGuard],
-        data: {
-            title: 'Admin | QA Hub',
-        },
-        loadComponent: () => import('./features/admin/pages/qa/qa-admin.component').then((m) => m.QaAdminComponent),
     },
     // -----------------------------------------------------
     // ADMIN TEST CENTER

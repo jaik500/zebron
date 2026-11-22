@@ -8,7 +8,8 @@ import { logger } from 'firebase-functions';
 import { defineSecret } from 'firebase-functions/params';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 
-import { ARMED_FORCES_AGENCIES, IMPORTED_SERIES, JobSector, sectorLabel, sectorsOf } from './usajobs-sectors';
+import { IMPORTED_SECTORS, isImportedSector, JobSector, sectorLabel, sectorsOf, seriesOf } from './usajobs-sectors';
+import { classifyLevel, isExecutiveTitle, levelLabel } from './usajobs-levels';
 
 const REGION = 'us-central1';
 const TIME_ZONE = 'America/New_York';
@@ -66,6 +67,11 @@ interface UsaJobsDescriptor {
 
   PositionRemuneration?: UsaJobsRemuneration[];
 
+  /** Pay plans, for example [{ Code: "GS" }]. */
+  JobGrade?: {
+    Code?: string;
+  }[];
+
   PositionStartDate?: string;
   PositionEndDate?: string;
   PublicationStartDate?: string;
@@ -85,6 +91,8 @@ interface UsaJobsDescriptor {
       Benefits?: string;
       JobSummary?: string;
       RemoteIndicator?: boolean;
+      LowGrade?: string;
+      HighGrade?: string;
     };
   };
 }
@@ -244,6 +252,20 @@ function getCompensation(descriptor: UsaJobsDescriptor) {
   };
 }
 
+/** A listing Zebron leaves out, and why (its earlier copy, if any, is closed). */
+interface RejectedListing {
+  documentId: string;
+  rejected: 'sector' | 'executive';
+}
+
+function isRejected(value: object): value is RejectedListing {
+  return typeof (value as Partial<RejectedListing>).rejected === 'string';
+}
+
+function documentIdFor(externalJobId: string): string {
+  return `external_usajobs_${externalJobId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+}
+
 function mapUsaJobsItem(item: UsaJobsItem) {
   const descriptor = item.MatchedObjectDescriptor;
 
@@ -252,6 +274,30 @@ function mapUsaJobsItem(item: UsaJobsItem) {
   }
 
   const externalJobId = clean(item.MatchedObjectId);
+
+  /**
+   * Only IT, healthcare, banking/finance/accounting and management jobs
+   * (see usajobs-sectors.ts), at entry, mid or senior level: executive and
+   * very senior jobs are left out (see usajobs-levels.ts).
+   */
+  if (externalJobId) {
+    const sectorsFound = sectorsOf(
+      (descriptor.JobCategory ?? []).map((item) => clean(item.Code)).filter(Boolean),
+      [clean(descriptor.DepartmentName), clean(descriptor.OrganizationName)],
+    );
+    if (!isImportedSector(sectorsFound)) {
+      return { documentId: documentIdFor(externalJobId), rejected: 'sector' } satisfies RejectedListing;
+    }
+    const decision = classifyLevel({
+      payPlans: (descriptor.JobGrade ?? []).map((grade) => clean(grade.Code)),
+      lowGrade: descriptor.UserArea?.Details?.LowGrade,
+      highGrade: descriptor.UserArea?.Details?.HighGrade,
+      title: clean(descriptor.PositionTitle),
+    });
+    if (decision === 'executive') {
+      return { documentId: documentIdFor(externalJobId), rejected: 'executive' } satisfies RejectedListing;
+    }
+  }
 
   const title = clean(descriptor.PositionTitle);
 
@@ -294,20 +340,23 @@ function mapUsaJobsItem(item: UsaJobsItem) {
 
   const category = descriptor.JobCategory?.[0];
 
-  /**
-   * Only IT, healthcare, armed forces and banking/finance/accounting jobs
-   * are imported (see usajobs-sectors.ts).
-   */
   const sectors = sectorsOf(
     (descriptor.JobCategory ?? []).map((item) => clean(item.Code)).filter(Boolean),
     [clean(descriptor.DepartmentName), employer],
   );
 
-  if (sectors.length === 0) {
+  const level = classifyLevel({
+    payPlans: (descriptor.JobGrade ?? []).map((grade) => clean(grade.Code)),
+    lowGrade: descriptor.UserArea?.Details?.LowGrade,
+    highGrade: descriptor.UserArea?.Details?.HighGrade,
+    title,
+  });
+
+  if (!isImportedSector(sectors) || level === 'executive') {
     return null;
   }
 
-  const documentId = `external_usajobs_${externalJobId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  const documentId = documentIdFor(externalJobId);
 
   return {
     documentId,
@@ -344,7 +393,10 @@ function mapUsaJobsItem(item: UsaJobsItem) {
 
       sectors,
 
-      tags: [...sectors.map(sectorLabel), clean(category?.Name), clean(descriptor.DepartmentName)].filter(Boolean),
+      /** entry, mid or senior (usajobs-levels.ts). */
+      experienceLevel: level,
+
+      tags: [...sectors.map(sectorLabel), levelLabel(level), clean(category?.Name), clean(descriptor.DepartmentName)].filter(Boolean),
 
       applicationUrl,
 
@@ -404,8 +456,14 @@ interface UsaJobsSyncResult {
   totalAvailable: number;
   /** Listings by sector (a listing can be in more than one). */
   bySector: Record<JobSector, number>;
-  /** Earlier USAJOBS listings closed because they are outside the sectors. */
+  /** Earlier USAJOBS listings closed because they are outside the imported fields. */
   closedOutsideSectors: number;
+  /** Listings left out this time: executive or very senior. */
+  skippedExecutive: number;
+  /** Listings left out this time: outside the imported fields. */
+  skippedOutsideSectors: number;
+  /** Earlier USAJOBS listings closed because they are executive or very senior. */
+  closedExecutive: number;
   syncedAt: string;
 }
 
@@ -468,18 +526,19 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
   }
 
   /**
-   * Two searches: IT, healthcare and finance jobs by occupational series,
-   * and civilian jobs with the military departments by agency. Listings
-   * found by both are kept once.
+   * One search per imported field (IT, healthcare, finance, management), so
+   * each gets its own newest 500 and the large healthcare list can't crowd
+   * out the others. Listings found by more than one search are kept once.
    */
-  const [bySeries, byAgency] = await Promise.all([
-    searchUsajobs(apiKey, userAgent, { JobCategoryCode: IMPORTED_SERIES.join(';') }),
-    searchUsajobs(apiKey, userAgent, { Organization: ARMED_FORCES_AGENCIES.join(';') }),
-  ]);
+  const searches = await Promise.all(
+    IMPORTED_SECTORS.map((sector) =>
+      searchUsajobs(apiKey, userAgent, { JobCategoryCode: seriesOf(sector).join(';') }),
+    ),
+  );
 
   const seen = new Set<string>();
   const items: UsaJobsItem[] = [];
-  for (const item of [...bySeries.items, ...byAgency.items]) {
+  for (const item of searches.flatMap((search) => search.items)) {
     const id = clean(item.MatchedObjectId);
     if (id && !seen.has(id)) {
       seen.add(id);
@@ -487,7 +546,7 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
     }
   }
 
-  const totalAvailable = bySeries.totalAvailable + byAgency.totalAvailable;
+  const totalAvailable = searches.reduce((sum, search) => sum + search.totalAvailable, 0);
 
   const stateRef = db.collection('jobAggregationState').doc('usajobs');
 
@@ -501,17 +560,28 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
   let updated = 0;
   let skipped = 0;
 
-  const bySector: Record<JobSector, number> = { it: 0, healthcare: 0, 'armed-forces': 0, finance: 0 };
+  const bySector: Record<JobSector, number> = { it: 0, healthcare: 0, finance: 0, management: 0, 'armed-forces': 0 };
   const keptIds = new Set<string>();
+  /** Listings USAJOBS returned that Zebron leaves out: close any earlier copy. */
+  const rejected = new Map<string, RejectedListing['rejected']>();
+  let skippedExecutive = 0;
+  let skippedOutsideSectors = 0;
 
-  const mappedItems = items
-    .map((item) => mapUsaJobsItem(item))
-    .filter((mapped): mapped is NonNullable<ReturnType<typeof mapUsaJobsItem>> => {
-      if (!mapped) {
-        skipped++;
-      }
-      return mapped !== null;
-    });
+  type MappedListing = Extract<NonNullable<ReturnType<typeof mapUsaJobsItem>>, { job: unknown }>;
+  const mappedItems: MappedListing[] = [];
+  for (const item of items) {
+    const mapped = mapUsaJobsItem(item);
+    if (!mapped) {
+      skipped++;
+    } else if (isRejected(mapped)) {
+      skipped++;
+      rejected.set(mapped.documentId, mapped.rejected);
+      if (mapped.rejected === 'executive') skippedExecutive++;
+      else skippedOutsideSectors++;
+    } else if ('job' in mapped) {
+      mappedItems.push(mapped);
+    }
+  }
 
   // Firestore allows 500 writes per batch: write 400 at a time, and read
   // the existing listings for each chunk in one call.
@@ -558,11 +628,13 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
   }
 
   /**
-   * Close earlier USAJOBS listings that are outside the imported sectors
-   * (imported before the sector filter). Listings that are still in a
-   * sector stay open until they expire as usual.
+   * Close earlier USAJOBS listings Zebron no longer imports: outside the
+   * imported fields, or executive / very senior (by this sync's decision, or by
+   * title for listings imported before levels were recorded). Listings that
+   * still qualify stay open until they expire as usual.
    */
   let closedOutsideSectors = 0;
+  let closedExecutive = 0;
   const activeImports = await db
     .collection('jobs')
     .where('createdBy', '==', 'system:usajobs')
@@ -577,22 +649,25 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
       continue;
     }
     const job = doc.data();
-    const stored: unknown = job.sectors;
-    const sectors = Array.isArray(stored) && stored.length
-      ? stored
-      : sectorsOf(
-        [clean(job.categoryId)].filter(Boolean),
-        [clean(job.organizationName), ...(Array.isArray(job.tags) ? job.tags.map(clean) : [])],
-      );
-    if (sectors.length > 0) {
+    const stored: string[] = Array.isArray(job.sectors) ? job.sectors.map(clean) : [];
+    const sectors = [...stored, ...sectorsOf([clean(job.categoryId)].filter(Boolean), [])];
+    const reason =
+      rejected.get(doc.id) ??
+      (!isImportedSector(sectors)
+        ? 'sector'
+        : !job.experienceLevel && isExecutiveTitle(clean(job.title))
+          ? 'executive'
+          : null);
+    if (!reason) {
       continue;
     }
     closeBatch.update(doc.ref, {
       status: 'closed',
-      closedReason: 'category',
+      closedReason: reason === 'executive' ? 'level' : 'category',
       updatedAt: FieldValue.serverTimestamp(),
     });
-    closedOutsideSectors++;
+    if (reason === 'executive') closedExecutive++;
+    else closedOutsideSectors++;
     if (++pending === 400) {
       await closeBatch.commit();
       closeBatch = db.batch();
@@ -622,6 +697,9 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
 
       lastSectorCounts: bySector,
       lastClosedOutsideSectors: closedOutsideSectors,
+      lastSkippedExecutive: skippedExecutive,
+      lastSkippedOutsideSectors: skippedOutsideSectors,
+      lastClosedExecutive: closedExecutive,
 
       lastSyncSource: triggeredBy ? 'manual' : 'scheduled',
 
@@ -640,6 +718,9 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
     totalAvailable,
     bySector,
     closedOutsideSectors,
+    skippedExecutive,
+    skippedOutsideSectors,
+    closedExecutive,
     triggeredBy,
   });
 
@@ -652,6 +733,9 @@ async function runUsajobsSync(triggeredBy: string | null): Promise<UsaJobsSyncRe
     totalAvailable,
     bySector,
     closedOutsideSectors,
+    skippedExecutive,
+    skippedOutsideSectors,
+    closedExecutive,
     syncedAt,
   };
 }

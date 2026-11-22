@@ -8,7 +8,6 @@ rules_version = '2';
 //
 // Paths in use:
 //   communityChat/{conversationId}/attachments/{file}   chat attachments
-//   qaTasks/{taskId}/documents/{file}                   QA Hub documents
 //   organizations/{organizationId}/business-documents/{businessId}/{file}
 //                                                       an organization's Business Operations documents
 //   business-documents/{businessId}/{file}              Zebron's own Business Operations documents
@@ -20,6 +19,7 @@ rules_version = '2';
 //                                                       files a learner hands in
 //   organizations/{organizationId}/branding/{file}      the organization's dashboard logo
 //   users/{userId}/avatar/{file}                        a person's profile photo
+//   users/{userId}/documents/{documentId}/{file}        a person's own documents (My documents reader)
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -78,29 +78,6 @@ service firebase.storage {
 
       // Used to clean up an upload when sending the message fails.
       allow delete: if isParticipant();
-    }
-
-    // ------------------------------------------------------------
-    // QA HUB DOCUMENTS
-    // ------------------------------------------------------------
-    // Platform administrators upload. Active testers assigned to the
-    // task can open its documents.
-    match /qaTasks/{taskId}/documents/{fileName} {
-
-      function isAssignedTester() {
-        return signedIn()
-          && firestore.exists(/databases/(default)/documents/qaTesters/$(request.auth.uid))
-          && firestore.get(/databases/(default)/documents/qaTesters/$(request.auth.uid)).data.get("active", false) == true
-          && firestore.exists(/databases/(default)/documents/qaTasks/$(taskId))
-          && request.auth.uid in firestore.get(/databases/(default)/documents/qaTasks/$(taskId)).data.get("assignedTesterIds", []);
-      }
-
-      allow read: if isPlatformAdmin() || isAssignedTester();
-
-      allow create, update: if isPlatformAdmin()
-        && request.resource.size <= 25 * 1024 * 1024;
-
-      allow delete: if isPlatformAdmin();
     }
 
     // ------------------------------------------------------------
@@ -224,6 +201,22 @@ service firebase.storage {
         && request.resource.contentType.matches('image/(png|jpeg|webp)');
       allow update: if false;
       allow delete: if signedIn() && (request.auth.uid == userId || isPlatformAdmin());
+    }
+
+    // ------------------------------------------------------------
+    // MY DOCUMENTS
+    // ------------------------------------------------------------
+    // A person's own files for the reader (/courses/documents). Private:
+    // only the owner opens, uploads or deletes them. Up to 50 MB; PDF,
+    // EPUB, Word, plain text or markdown (the app sets the type).
+    match /users/{userId}/documents/{documentId}/{fileName} {
+      allow read, delete: if signedIn() && request.auth.uid == userId;
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.size > 0
+        && request.resource.size <= 50 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|application/epub[+]zip|application/vnd[.]openxmlformats-officedocument[.]wordprocessingml[.]document|text/plain|text/markdown');
+      allow update: if false;
     }
 
     // ------------------------------------------------------------

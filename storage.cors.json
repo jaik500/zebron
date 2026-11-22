@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://zebron.org", "https://www.zebron.org", "http://localhost:4200"],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Content-Length", "Content-Range", "Content-Disposition"],
+    "maxAgeSeconds": 3600
+  }
+]

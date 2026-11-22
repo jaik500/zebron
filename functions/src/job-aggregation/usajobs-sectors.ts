@@ -2,16 +2,17 @@
  * The kinds of USAJOBS listings Zebron imports.
  *
  * USAJOBS classifies every federal job by occupational series (a 4-digit
- * code, sent as JobCategory). IT, healthcare and finance jobs are found by
- * series; armed forces jobs are civilian jobs with the military
- * departments, found by agency. A listing is imported only when it falls
- * into at least one sector; it can be in several (an IT job with the Army
- * is both "it" and "armed-forces").
+ * code, sent as JobCategory). Zebron imports IT, healthcare, banking/finance/
+ * accounting and management jobs, found by series (see IMPORTED_SECTORS).
+ * "Armed Forces" is only a tag: a job with the military departments is
+ * imported when it is also in one of those fields (an IT job with the Army
+ * is both "it" and "armed-forces"); other military jobs are not imported.
+ * Executive and very senior jobs are left out (see usajobs-levels.ts).
  *
  * Series codes: https://data.usajobs.gov/api/codelist/occupationalseries
  * Agency codes: https://data.usajobs.gov/api/codelist/agencysubelements
  */
-export type JobSector = 'it' | 'healthcare' | 'armed-forces' | 'finance';
+export type JobSector = 'it' | 'healthcare' | 'finance' | 'management' | 'armed-forces';
 
 export interface JobSectorDefinition {
   key: JobSector;
@@ -100,23 +101,43 @@ export const JOB_SECTORS: readonly JobSectorDefinition[] = [
     ],
   },
   {
+    key: 'management',
+    label: 'Management & Administration',
+    series: [
+      '0301', // Miscellaneous Administration and Program
+      '0340', // Program Management
+      '0341', // Administrative Officer
+      '0342', // Support Services Administration
+      '0343', // Management and Program Analysis
+      '0346', // Logistics Management
+      '1101', // General Business and Industry
+    ],
+  },
+  {
     key: 'armed-forces',
     label: 'Armed Forces',
     series: [],
   },
 ];
 
-/**
- * Military departments (searched with Organization): Defense, Army, Navy,
- * Air Force, Marine Corps, Army and Air National Guard, Coast Guard.
- */
-export const ARMED_FORCES_AGENCIES: readonly string[] = ['DD', 'AR', 'NV', 'AF', 'NV27', 'ARNG', 'AFNG', 'HSAC'];
+/** The fields Zebron imports. Armed Forces is a tag only, never a reason to import. */
+export const IMPORTED_SECTORS: readonly JobSector[] = ['it', 'healthcare', 'finance', 'management'];
 
-/** Recognizes armed forces employers by name (the search above may miss sub-agencies). */
+/** True when a listing is in at least one imported field. */
+export function isImportedSector(sectors: readonly string[]): boolean {
+  return sectors.some((sector) => (IMPORTED_SECTORS as readonly string[]).includes(sector));
+}
+
+/** The occupational series of one imported field, for its own search. */
+export function seriesOf(key: JobSector): readonly string[] {
+  return JOB_SECTORS.find((sector) => sector.key === key)?.series ?? [];
+}
+
+/** Recognizes armed forces employers by name, for the Armed Forces tag. */
 const ARMED_FORCES_NAME =
   /\b(department of defense|department of the army|department of the navy|department of the air force|u\.?s\.? army|u\.?s\.? navy|naval|air force|marine corps|coast guard|national guard|defense (logistics|health|information|contract|finance))\b/i;
 
-/** Every series Zebron imports (IT, healthcare and finance), for JobCategoryCode. */
+/** Every series Zebron imports (IT, healthcare, finance and management). */
 export const IMPORTED_SERIES: readonly string[] = JOB_SECTORS.flatMap((sector) => sector.series);
 
 /**

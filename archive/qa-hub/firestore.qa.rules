@@ -1,0 +1,159 @@
+
+    // ============================================================
+    // QA HUB
+    // ============================================================
+
+    /**
+     * An active QA tester must have an administrator-managed
+     * qaTesters/{userId} document with active == true.
+     *
+     * Users cannot activate their own tester access.
+     */
+    function isActiveQaTester() {
+      return isAuthenticated()
+        && exists(
+          /databases/$(database)/documents/qaTesters/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/qaTesters/$(request.auth.uid)
+        ).data.get("active", false) == true;
+    }
+
+    /**
+     * Verify that the authenticated user is assigned to
+     * the specified QA task.
+     */
+    function isAssignedQaTask(taskId) {
+      return isAuthenticated()
+        && exists(
+          /databases/$(database)/documents/qaTasks/$(taskId)
+        )
+        && request.auth.uid in get(
+          /databases/$(database)/documents/qaTasks/$(taskId)
+        ).data.get("assignedTesterIds", []);
+    }
+
+    // ============================================================
+    // QA TESTERS
+    // ============================================================
+
+    match /qaTesters/{userId} {
+
+      // Administrators can inspect tester records.
+      // Testers can retrieve only their own active record.
+      allow get: if isPlatformAdmin()
+        || (
+          isCurrentUser(userId)
+          && resource.data.get("active", false) == true
+        );
+
+      // Only administrators can list tester records.
+      allow list: if isPlatformAdmin();
+
+      // Only administrators can activate, deactivate,
+      // create, or delete tester records.
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // QA TASKS
+    // ============================================================
+
+    match /qaTasks/{taskId} {
+
+      // Administrators can access all QA tasks.
+      // Testers can access only tasks assigned to them.
+      allow get, list: if isPlatformAdmin()
+        || (
+          isActiveQaTester()
+          && request.auth.uid in resource.data.get(
+            "assignedTesterIds", []
+          )
+        );
+
+      // Only platform administrators can create tasks.
+      allow create: if isPlatformAdmin()
+        && request.resource.data.keys().hasAll([
+          "title",
+          "description",
+          "application",
+          "instructions",
+          "expectedResult",
+          "assignedTesterIds",
+          "status",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.description is string
+        && request.resource.data.application is string
+        && request.resource.data.instructions is string
+        && request.resource.data.expectedResult is string
+        && request.resource.data.assignedTesterIds is list
+        && request.resource.data.status == "open"
+        && request.resource.data.createdBy == request.auth.uid;
+
+      // Only administrators can update tasks.
+      // Preserve the original creator.
+      allow update: if isPlatformAdmin()
+        && request.resource.data.createdBy
+          == resource.data.createdBy;
+
+      // Only administrators can delete tasks.
+      allow delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // QA SUBMISSIONS
+    // ============================================================
+
+    match /qaSubmissions/{submissionId} {
+
+      // Administrators can review all submissions.
+      // Testers can access only their own submissions.
+      allow get, list: if isPlatformAdmin()
+        || (
+          isActiveQaTester()
+          && resource.data.testerId == request.auth.uid
+        );
+
+      // Active testers can submit results only for tasks
+      // assigned to them.
+      allow create: if isActiveQaTester()
+        && request.resource.data.keys().hasAll([
+          "taskId",
+          "testerId",
+          "result",
+          "feedback",
+          "createdAt"
+        ])
+        && request.resource.data.keys().hasOnly([
+          "taskId",
+          "testerId",
+          "result",
+          "feedback",
+          "createdAt"
+        ])
+        && request.resource.data.testerId == request.auth.uid
+        && request.resource.data.taskId is string
+        && request.resource.data.result in [
+          "pass",
+          "fail",
+          "blocked"
+        ]
+        && request.resource.data.feedback is string
+        && request.resource.data.feedback.size() <= 10000
+        && isAssignedQaTask(
+          request.resource.data.taskId
+        )
+        && get(
+          /databases/$(database)/documents/qaTasks/$(request.resource.data.taskId)
+        ).data.get("status", "") != "closed";
+
+      // Submitted results cannot be modified or deleted by
+      // testers. Administrators can correct or remove them.
+      allow update, delete: if isPlatformAdmin();
+    }
+

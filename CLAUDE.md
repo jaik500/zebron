@@ -4,6 +4,11 @@
 > This applies to every change, however small, by any person or AI assistant.
 > How to do it is below.
 
+**Firestore rules:** edit `firestore.rules` (never `firestore.deploy.rules`,
+which is generated), then run `npm run rules:build` and commit both files.
+Keep new rules short: the compact rules have a 200 KiB budget, checked by
+`tests/unit/firestore-rules-build.test.ts`.
+
 **Read `docs/ZEBRON-CONTEXT.md` first.** It explains what Zebron is, the
 stack, repository layout, applications, roles, data model, functions,
 conventions, how to build and deploy, how we work together, and the open

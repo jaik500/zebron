@@ -8,6 +8,7 @@ import { FR_APPS } from './apps';
 import { FR_BLOG } from './blog';
 import { FR_COMMON } from './common';
 import { FR_COURSES } from './courses';
+import { FR_DOCUMENTS } from './documents';
 import { FR_MAILBOX } from './mailbox';
 import { FR_ONBOARDING } from './onboarding';
 import { FR_PARTNER } from './partner';
@@ -19,6 +20,7 @@ export const FRENCH: Readonly<Record<string, string>> = {
   ...FR_BLOG,
   ...FR_COMMON,
   ...FR_COURSES,
+  ...FR_DOCUMENTS,
   ...FR_MAILBOX,
   ...FR_ONBOARDING,
   ...FR_PARTNER,

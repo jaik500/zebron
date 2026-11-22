@@ -899,24 +899,6 @@ service cloud.firestore {
       ).data.get("groupId", "") == groupId;
     }
 
-    function groupAssignmentReferencesSameGroup(
-      organizationId,
-      groupId,
-      groupMembershipId,
-      groupRoleId
-    ) {
-      return activeGroupMembershipExists(
-        organizationId,
-        groupId,
-        groupMembershipId
-      )
-      && activeGroupRoleExists(
-        organizationId,
-        groupId,
-        groupRoleId
-      );
-    }
-
     // ============================================================
     // ORGANIZATION GROUPS
     // ============================================================
@@ -1350,116 +1332,6 @@ service cloud.firestore {
             organizationId,
             groupId,
             roleId
-          )
-        );
-    }
-
-    // ============================================================
-    // GROUP ROLE ASSIGNMENTS
-    // ============================================================
-
-    match /organizations/{organizationId}/groups/{groupId}/roleAssignments/{assignmentId} {
-
-      allow get: if isPlatformAdmin()
-        || (
-          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
-          && isActiveGroup(
-            organizationId,
-            groupId
-          )
-          && groupAssignmentReferencesSameGroup(
-            organizationId,
-            groupId,
-            resource.data.groupMembershipId,
-            resource.data.groupRoleId
-          )
-        )
-        || (
-          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
-          && isActiveGroup(
-            organizationId,
-            groupId
-          )
-          && isOrganizationOperational(organizationId) && isOwnGroupMembership(
-            organizationId,
-            groupId,
-            resource.data.groupMembershipId
-          )
-          && activeGroupRoleExists(
-            organizationId,
-            groupId,
-            resource.data.groupRoleId
-          )
-        );
-
-      allow list: if isPlatformAdmin()
-        || (
-          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
-          && isActiveGroup(
-            organizationId,
-            groupId
-          )
-        )
-        || (
-          (isOrganizationOperational(organizationId) && isOrganizationMember(organizationId))
-          && isActiveGroup(
-            organizationId,
-            groupId
-          )
-          && resource.data.groupMembershipId is string
-          && isOrganizationOperational(organizationId) && isOwnGroupMembership(
-            organizationId,
-            groupId,
-            resource.data.groupMembershipId
-          )
-          && resource.data.active == true
-        );
-
-      allow create: if isPlatformAdmin()
-        || (
-          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
-          && isActiveGroup(
-            organizationId,
-            groupId
-          )
-          && groupAssignmentReferencesSameGroup(
-            organizationId,
-            groupId,
-            request.resource.data.groupMembershipId,
-            request.resource.data.groupRoleId
-          )
-          && request.resource.data.active == true
-        );
-
-      allow update: if isPlatformAdmin()
-        || (
-          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
-          && isActiveGroup(
-            organizationId,
-            groupId
-          )
-          && activeGroupMembershipExists(
-            organizationId,
-            groupId,
-            resource.data.groupMembershipId
-          )
-          && activeGroupRoleExists(
-            organizationId,
-            groupId,
-            resource.data.groupRoleId
-          )
-          && request.resource.data.groupMembershipId
-            == resource.data.groupMembershipId
-          && request.resource.data.groupRoleId
-            == resource.data.groupRoleId
-        );
-
-      allow delete: if isPlatformAdmin()
-        || (
-          isOrganizationConfigurable(organizationId) && isOrganizationAdmin(organizationId)
-          && isActiveGroup(
-            organizationId,
-            groupId
           )
         );
     }
@@ -3827,164 +3699,6 @@ service cloud.firestore {
     }
 
     // ============================================================
-    // QA HUB
-    // ============================================================
-
-    /**
-     * An active QA tester must have an administrator-managed
-     * qaTesters/{userId} document with active == true.
-     *
-     * Users cannot activate their own tester access.
-     */
-    function isActiveQaTester() {
-      return isAuthenticated()
-        && exists(
-          /databases/$(database)/documents/qaTesters/$(request.auth.uid)
-        )
-        && get(
-          /databases/$(database)/documents/qaTesters/$(request.auth.uid)
-        ).data.get("active", false) == true;
-    }
-
-    /**
-     * Verify that the authenticated user is assigned to
-     * the specified QA task.
-     */
-    function isAssignedQaTask(taskId) {
-      return isAuthenticated()
-        && exists(
-          /databases/$(database)/documents/qaTasks/$(taskId)
-        )
-        && request.auth.uid in get(
-          /databases/$(database)/documents/qaTasks/$(taskId)
-        ).data.get("assignedTesterIds", []);
-    }
-
-    // ============================================================
-    // QA TESTERS
-    // ============================================================
-
-    match /qaTesters/{userId} {
-
-      // Administrators can inspect tester records.
-      // Testers can retrieve only their own active record.
-      allow get: if isPlatformAdmin()
-        || (
-          isCurrentUser(userId)
-          && resource.data.get("active", false) == true
-        );
-
-      // Only administrators can list tester records.
-      allow list: if isPlatformAdmin();
-
-      // Only administrators can activate, deactivate,
-      // create, or delete tester records.
-      allow create, update, delete: if isPlatformAdmin();
-    }
-
-    // ============================================================
-    // QA TASKS
-    // ============================================================
-
-    match /qaTasks/{taskId} {
-
-      // Administrators can access all QA tasks.
-      // Testers can access only tasks assigned to them.
-      allow get, list: if isPlatformAdmin()
-        || (
-          isActiveQaTester()
-          && request.auth.uid in resource.data.get(
-            "assignedTesterIds", []
-          )
-        );
-
-      // Only platform administrators can create tasks.
-      allow create: if isPlatformAdmin()
-        && request.resource.data.keys().hasAll([
-          "title",
-          "description",
-          "application",
-          "instructions",
-          "expectedResult",
-          "assignedTesterIds",
-          "status",
-          "createdBy",
-          "createdAt",
-          "updatedAt"
-        ])
-        && request.resource.data.title is string
-        && request.resource.data.title.size() > 0
-        && request.resource.data.description is string
-        && request.resource.data.application is string
-        && request.resource.data.instructions is string
-        && request.resource.data.expectedResult is string
-        && request.resource.data.assignedTesterIds is list
-        && request.resource.data.status == "open"
-        && request.resource.data.createdBy == request.auth.uid;
-
-      // Only administrators can update tasks.
-      // Preserve the original creator.
-      allow update: if isPlatformAdmin()
-        && request.resource.data.createdBy
-          == resource.data.createdBy;
-
-      // Only administrators can delete tasks.
-      allow delete: if isPlatformAdmin();
-    }
-
-    // ============================================================
-    // QA SUBMISSIONS
-    // ============================================================
-
-    match /qaSubmissions/{submissionId} {
-
-      // Administrators can review all submissions.
-      // Testers can access only their own submissions.
-      allow get, list: if isPlatformAdmin()
-        || (
-          isActiveQaTester()
-          && resource.data.testerId == request.auth.uid
-        );
-
-      // Active testers can submit results only for tasks
-      // assigned to them.
-      allow create: if isActiveQaTester()
-        && request.resource.data.keys().hasAll([
-          "taskId",
-          "testerId",
-          "result",
-          "feedback",
-          "createdAt"
-        ])
-        && request.resource.data.keys().hasOnly([
-          "taskId",
-          "testerId",
-          "result",
-          "feedback",
-          "createdAt"
-        ])
-        && request.resource.data.testerId == request.auth.uid
-        && request.resource.data.taskId is string
-        && request.resource.data.result in [
-          "pass",
-          "fail",
-          "blocked"
-        ]
-        && request.resource.data.feedback is string
-        && request.resource.data.feedback.size() <= 10000
-        && isAssignedQaTask(
-          request.resource.data.taskId
-        )
-        && get(
-          /databases/$(database)/documents/qaTasks/$(request.resource.data.taskId)
-        ).data.get("status", "") != "closed";
-
-      // Submitted results cannot be modified or deleted by
-      // testers. Administrators can correct or remove them.
-      allow update, delete: if isPlatformAdmin();
-    }
-
-        // ============================================================
     // AUDIT LOGS
     // ============================================================
 
@@ -4937,6 +4651,36 @@ service cloud.firestore {
 
     // Highlights, notes and lesson bookmarks in courses
     // (features/courses/annotations). Private to the learner.
+    // My documents (reader at /courses/documents): private details of a
+    // person's own files, which live in Storage at
+    // users/{uid}/documents/{documentId}/{fileName}. Only the owner.
+    match /users/{userId}/documents/{documentId} {
+      function validDocument(d) {
+        return d.keys().hasOnly(["title", "fileName", "format", "contentType", "size",
+            "storagePath", "position", "progress", "createdAt", "updatedAt", "openedAt"])
+          && d.title is string && d.title.size() > 0 && d.title.size() <= 200
+          && d.fileName is string && d.fileName.size() > 0 && d.fileName.size() <= 160
+          && d.format in ["pdf", "epub", "docx", "txt", "md"]
+          && d.contentType is string && d.contentType.size() <= 120
+          && d.size is int && d.size > 0 && d.size <= 52428800
+          && d.storagePath == "users/" + userId + "/documents/" + documentId + "/" + d.fileName
+          && d.position is map && d.position.keys().hasOnly(["page", "chapter", "scroll"])
+          && d.progress is number && d.progress >= 0 && d.progress <= 100
+          && (d.openedAt == null || d.openedAt is timestamp)
+          && d.updatedAt == request.time;
+      }
+
+      allow read, delete: if isCurrentUser(userId);
+      allow create: if isCurrentUser(userId)
+        && validDocument(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      // Rename, and remember where the person stopped reading.
+      allow update: if isCurrentUser(userId)
+        && validDocument(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["title", "position", "progress", "updatedAt", "openedAt"]);
+    }
+
     match /users/{userId}/courseAnnotations/{annotationId} {
       function validAnnotation(data) {
         return data.keys().hasOnly([

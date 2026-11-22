@@ -4,7 +4,7 @@ Give this file to an AI assistant (or a new developer) at the start of any
 work on Zebron. It explains what Zebron is, how it is built, where things
 live, the rules every change follows, and how we work together.
 
-- **Last updated:** 21 November 2026 (guide edition 96)
+- **Last updated:** 21 November 2026 (guide edition 103)
 - **Also in the Knowledge Center** as "Zebron platform overview for the team" (support and developers), and introduced on the Internal Blog in "How Zebron works: one page for the whole team" (`scripts/seed-blog-zebron-context.mjs`).
 - **Keep it current:** when a change makes anything here wrong (a new
   application, folder, collection, function, rule or way of working), update
@@ -87,7 +87,8 @@ tests/
   firestore/                security rules tests (need the emulator)
 scripts/                    content seed scripts (programs, courses, question banks, blog)
 docs/                       architecture notes, runbooks, this file
-firestore.rules             Firestore security rules (~254 KB; limit is 256 KiB)
+firestore.rules             Firestore security rules: edit this one (readable, with comments)
+firestore.deploy.rules      generated compact copy that is deployed (npm run rules:build)
 storage.rules               Storage security rules
 firebase.json, .firebaserc, apphosting.yaml
 CLAUDE.md                   instructions for AI assistants
@@ -154,7 +155,7 @@ security.
 
 - `users/{uid}` (+ subcollections: notifications, preferences, courseProgress,
   courseExams, certifications, courseAnnotations, codeLabProjects, codeLabExercises,
-  careerPlans, savedJobs, jobAlerts, flashcards, communityBookmarks)
+  careerPlans, savedJobs, jobAlerts, flashcards, communityBookmarks, documents)
 - `communityProfiles/{uid}`: public profile fields only
 - `organizations/{id}` (+ applications, announcements, auditLogs,
   knowledgeArticles, inboundMessages, sentMessages, mailboxes, mailboxUsage,
@@ -211,7 +212,7 @@ role on the server (`requirePlatformAdministrator` and similar helpers).
   backfillCommunityPostScope
 - **AI tools:** aiAssist, draftTopicContent (platform admins; monthly and
   daily limits in settings)
-- **Jobs:** syncUsajobsJobs, triggerUsajobsSync, verifyUsajobsCredentials
+- **Jobs:** syncUsajobsJobs, triggerUsajobsSync, verifyUsajobsCredentials. USAJOBS imports only IT, healthcare, finance/accounting and management series (one search per field, `usajobs-sectors.ts`) at entry, mid or senior level (`usajobs-levels.ts`: no executive pay plans, no GS-15-only, no director/chief titles); listings that stop qualifying are closed on the next sync
 - **Audit triggers:** audit…Changes for organizations, memberships,
   invitations, applications, contracts, quizzes, emails and more
 - **Scheduled:** processContractTerminations (daily 02:15 ET),
@@ -237,6 +238,15 @@ Secrets (Secret Manager, `firebase functions:secrets:set NAME`):
 - **System settings:** `SettingsService` only saves keys listed in
   `DEFAULT_SETTINGS` (`core/services/settings.service.ts`). Add a new
   setting there first, or saving fails with "Unknown system setting".
+- **My documents (reader):** signed-in people upload their own PDF, EPUB,
+  Word (.docx), text and markdown files at **/courses/documents** and read
+  them in the browser on any device (pdf.js, a built-in EPUB reader, mammoth
+  for Word), with reading themes, text size or zoom, and the place they
+  stopped remembered. Files in Storage `users/{uid}/documents/{id}/{file}`,
+  details in `users/{uid}/documents/{id}`, both owner-only; 50 MB per file,
+  100 files and 500 MB per person. Untrusted HTML goes through an allowlist
+  sanitizer (`reader-html.ts`). Code: `features/documents`. Needs CORS on the
+  Storage bucket (`storage.cors.json`).
 - **Coding Lab:** learner code runs in Web Workers inside a sandboxed iframe
   (`public/coding-lab/sandbox.html`, opaque origin) started by
   `CodeRunnerService`. Learner code must never run on Zebron's own origin.
@@ -346,8 +356,7 @@ All tests are in `tests/` (config: `vitest.config.ts`; one file at a time).
   answer **No** unless you removed them on purpose.
 - Roll back the website in App Hosting → Rollouts; roll back rules with
   `git checkout HEAD~1 -- firestore.rules storage.rules` and deploy.
-- `firestore.rules` is close to Firestore's 256 KiB limit; keep additions
-  compact.
+- Firestore rules: edit `firestore.rules`, then `npm run rules:build` and commit `firestore.deploy.rules` too (the deploy rebuilds it anyway). The compact copy has a 200 KiB budget (Firestore's limit is 256 KiB of text and 250 KB compiled); keep new rules short and prefer callable functions over long field checks. See the "Firestore rules size" developer article.
 
 More: `docs/SCALING-AND-SECURITY-RUNBOOK.md` and the "Deploying Zebron"
 knowledge article.
@@ -392,7 +401,6 @@ status badge. Still open:
 | Priority | Issue | Where |
 | --- | --- | --- |
 | High | Guests can make Zebron email any address (support ticket confirmation includes their text); no CAPTCHA or App Check | `createSupportTicket` in functions/src/support-tickets.ts |
-| High | `firestore.rules` is ~254 KB of a 256 KiB limit | firestore.rules |
 | Medium | Invitation acceptance doesn't require a verified email | organization-invitation-acceptance.ts |
 | Medium | Direct-message `participantInfo` (names and photos) isn't validated: people can pose as someone else | firestore.rules, communityConversations |
 | Medium | Static files cached for a year, including files that keep their name | src/server.ts (`express.static` maxAge) |
