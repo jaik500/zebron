@@ -34,6 +34,7 @@ import { QUIZ_TEXT_MAX, quizSection } from './document-quiz-section';
 import { DocumentService, ReadingPosition, UserDocument } from './document.service';
 import { EpubBook, EpubError, EpubTocEntry, openEpub } from './epub-book';
 import { OfflineDocumentsService } from './offline-documents.service';
+import { BackNavigationService, useBackButton } from '../../core/services/back-navigation.service';
 import { PdfViewComponent } from './pdf-view.component';
 import { sanitizeReaderHtml } from './reader-html';
 import { SentenceRange, blockBreaks, rangeFor, speechLanguage, splitSentences } from './reader-speech';
@@ -116,14 +117,9 @@ interface ReadingRun {
       <!-- Toolbar -->
       <div class="sticky top-16 z-20 border-b border-black/10 backdrop-blur" [style.background]="theme().background + 'ee'">
         <div class="mx-auto flex max-w-6xl items-center gap-0.5 px-2 py-1.5 sm:gap-2 sm:px-4">
-          <a
-            routerLink="/courses/documents"
-            class="zb-reader-tool"
-            [attr.aria-label]="'Back to My documents' | t"
-            [title]="'Back to My documents' | t"
-          >
+          <button type="button" class="zb-reader-tool" [attr.aria-label]="'Back' | t" [title]="'Back' | t" (click)="backNavigation.back()">
             <mat-icon aria-hidden="true">arrow_back</mat-icon>
-          </a>
+          </button>
           <div class="min-w-0 flex-1">
             <h1 class="flex items-center gap-1 text-sm font-semibold sm:text-base">
               <span class="truncate">{{ document()?.title ?? ('Document' | t) }}</span>
@@ -435,6 +431,7 @@ export class DocumentReaderComponent {
   private readonly annotationStore = inject(DocumentAnnotationStore);
   protected readonly offline = inject(OfflineDocumentsService);
   private readonly dialog = inject(MatDialog);
+  protected readonly backNavigation = inject(BackNavigationService);
 
   protected readonly document = signal<UserDocument | null>(null);
   protected readonly state = signal<'loading' | 'ready' | 'missing' | 'error'>('loading');
@@ -485,6 +482,9 @@ export class DocumentReaderComponent {
   );
 
   constructor() {
+    // The reader's bar has its own back arrow (to the previous page, or My documents): hide the top bar's.
+    useBackButton({ hidden: true, fallbackUrl: '/courses/documents' });
+
     const destroyRef = inject(DestroyRef);
 
     // The painter draws this document's highlights wherever its text is shown,

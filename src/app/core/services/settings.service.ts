@@ -59,6 +59,39 @@ const DEFAULT_SETTINGS: SystemSetting[] = [
     clientReadable: true,
   },
 
+  // The look of the "e" in the Zebron name on the home page, chosen from the
+  // gallery in Admin -> Home page look (core/config/brand-marks.ts).
+  {
+    id: 'home.brandMark',
+    key: 'home.brandMark',
+    applicationKey: 'platform',
+    label: 'Home page "e" look',
+    group: 'Appearance',
+    description:
+      'The decoration on the "e" in the Zebron name on the home page (standard, Santa hat, party hat, graduation cap). Choose it in Admin -> Home page look.',
+    type: 'string',
+    value: 'standard',
+    defaultValue: 'standard',
+    editable: true,
+    clientReadable: true,
+  },
+
+  // Built-in looks hidden from the gallery in Admin -> Home page look.
+  {
+    id: 'home.hiddenLooks',
+    key: 'home.hiddenLooks',
+    applicationKey: 'platform',
+    label: 'Hidden home page looks',
+    group: 'Appearance',
+    description:
+      'Keys of built-in home page looks hidden from the gallery in Admin -> Home page look (Standard is never hidden).',
+    type: 'json',
+    value: [],
+    defaultValue: [],
+    editable: true,
+    clientReadable: true,
+  },
+
   // Maintenance mode (Admin -> Configuration -> Maintenance).
   // MaintenanceService reads and writes these two settings.
   {

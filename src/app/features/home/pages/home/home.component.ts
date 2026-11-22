@@ -6,7 +6,7 @@ import { Params, Router, RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
-import { collection, doc, getCountFromServer, getDoc, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import { collection, doc, getCountFromServer, getDoc, getDocs, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 
 import { firestore } from '../../../../core/services/firebase-config';
 import { LocalizationService } from '../../../../core/services/localization.service';
@@ -15,6 +15,9 @@ import { RevealDirective } from '../../../../shared/directives/reveal.directive'
 
 import { HomeText, homeText } from './home.i18n';
 import { HomeReviewsComponent } from '../../reviews/home-reviews.component';
+import { BrandEDecorationComponent } from '../../../../shared/components/brand-e/brand-e-decoration.component';
+import { BrandOrnamentComponent } from '../../../../shared/components/brand-e/brand-ornament.component';
+import { BRAND_MARK_SETTING, BrandMark, brandMarkFor, customLook, isBuiltInLook, letterStyle } from '../../../../core/config/brand-marks';
 import { BlogService } from '../../../blog/blog.service';
 import { BLOG_COVERS, BlogCover, BlogPost, blogDate, isBlogImageSource } from '../../../blog/blog.model';
 import { POPULAR_SEARCHES, RESOURCE_NEEDS } from '../../../resources/resource-needs';
@@ -25,8 +28,12 @@ const HOME_BLOG_POSTS = 3;
 /** Posts the live feed listens to (pinned ones are moved to the front). */
 const BLOG_FEED_SIZE = 12;
 
-/** A post counts as "New" for this many days after it is published. */
-const NEW_POST_DAYS = 7;
+/**
+ * The "New" link at the top of the home page shows the newest public blog
+ * post for this many days after it is published, then hides until a newer
+ * post is published.
+ */
+const NEW_POST_DAYS = 3;
 
 /** Topics shown as quick links in the hero, with their icons. */
 const HERO_TOPICS: { key: string; icon: string }[] = [
@@ -97,7 +104,7 @@ interface HomeStat {
   selector: 'app-home',
   standalone: true,
 
-  imports: [RouterLink, MatIconModule, RevealDirective, HomeReviewsComponent],
+  imports: [RouterLink, MatIconModule, RevealDirective, HomeReviewsComponent, BrandEDecorationComponent, BrandOrnamentComponent],
 
   template: `
     <main class="overflow-x-clip">
@@ -115,8 +122,8 @@ interface HomeStat {
 
         <div class="relative mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 sm:px-6 sm:py-20 lg:grid-cols-[minmax(0,1fr)_24rem] lg:px-8 lg:py-20">
           <div class="min-w-0">
-            <!-- Live blog ticker: the newest post, updates by itself -->
-            @if (latestPost(); as post) {
+            <!-- Live blog ticker: the newest post while it's new (NEW_POST_DAYS), updates by itself -->
+            @if (newPost(); as post) {
               <a
                 [routerLink]="['/blog', post.id]"
                 class="home-rise group mb-6 inline-flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-white/10 py-1 pl-1 pr-3 text-xs text-white/85 backdrop-blur transition hover:border-[#12BFC3]/60 hover:bg-white/15"
@@ -127,7 +134,7 @@ interface HomeStat {
                     <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#032D42] opacity-60 motion-reduce:animate-none"></span>
                     <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#032D42]"></span>
                   </span>
-                  {{ isNew(post) ? t().blogNew : t().blogLatest }}
+                  {{ t().blogNew }}
                 </span>
                 <span class="truncate">{{ post.title }}</span>
                 <mat-icon aria-hidden="true" class="!m-0 !h-4 !w-4 shrink-0 !text-[16px] transition-transform group-hover:translate-x-0.5">arrow_forward</mat-icon>
@@ -141,7 +148,7 @@ interface HomeStat {
               style="--rise-delay: 60ms"
             >
               <span>Z</span>
-              <span aria-hidden="true" class="home-e mx-[-0.01em] inline-block text-[#12BFC3]">e</span>
+              <span aria-hidden="true" class="home-e relative z-[1] mx-[-0.01em] inline-block text-[#12BFC3]" [style]="eStyle()">e<app-brand-e-decoration [mark]="brandMark()" /></span>
               <span>bron</span>
             </div>
 
@@ -248,6 +255,10 @@ interface HomeStat {
 
             <div class="absolute inset-[30%] grid place-items-center rounded-full bg-[#007979] shadow-2xl shadow-[#12BFC3]/30">
               <span class="home-pulse absolute inset-0 rounded-full bg-[#12BFC3]/30"></span>
+              @if (brandMark().circle === 'ornament') {
+                <!-- Christmas look (Admin → Home page look): the circle becomes a hanging ornament. -->
+                <app-brand-ornament />
+              }
               <!-- A lowercase "e" sits low in its line box; the nudge centres it in the circle. -->
               <span class="relative block h-[1em] text-8xl font-black leading-[1em] text-white" style="transform: translateY(-0.1em) scaleX(-1)">e</span>
             </div>
@@ -1000,6 +1011,19 @@ export class HomeComponent {
   /** Newest post by date, for the ticker in the hero. */
   protected readonly latestPost = signal<BlogPost | null>(null);
 
+  /** The look of the "e" (Admin → Home page look); updates as soon as an admin changes it. */
+  protected readonly brandMark = signal<BrandMark>(brandMarkFor('standard'));
+  /** The letter style of the look (sparkler gold, paper-cut…), or none. */
+  protected readonly eStyle = computed(() => letterStyle(this.brandMark().letter));
+
+  /** The newest post, only while it is new; rechecked every hour so the link hides on time on a page left open. */
+  private readonly clock = signal(Date.now());
+  protected readonly newPost = computed(() => {
+    const post = this.latestPost();
+    this.clock();
+    return post && this.isNew(post) ? post : null;
+  });
+
   constructor() {
     // Re-applies the title and description when the language changes.
     effect(() => this.updateSeoMetadata());
@@ -1007,6 +1031,9 @@ export class HomeComponent {
     // Browser only, so server rendering never waits on Firestore.
     afterNextRender(() => {
       this.watchBlog();
+      this.watchBrandMark();
+      const clock = window.setInterval(() => this.clock.set(Date.now()), 60 * 60 * 1000);
+      this.destroyRef.onDestroy(() => window.clearInterval(clock));
       void this.loadStats();
       void this.loadRondpoint();
 
@@ -1044,6 +1071,31 @@ export class HomeComponent {
     );
     observer.observe(video);
     this.destroyRef.onDestroy(() => observer.disconnect());
+  }
+
+  private watchBrandMark(): void {
+    let request = 0;
+    const stop = onSnapshot(
+      doc(firestore, 'systemSettings', BRAND_MARK_SETTING),
+      (snapshot) => {
+        const value = snapshot.get('value');
+        const current = ++request;
+        if (typeof value !== 'string' || isBuiltInLook(value)) {
+          this.brandMark.set(brandMarkFor(value));
+          return;
+        }
+        // A look built in the admin builder.
+        getDoc(doc(firestore, 'homeLooks', value))
+          .then((look) => {
+            if (current === request) this.brandMark.set(look.exists() ? customLook(look.id, look.data()) : brandMarkFor('standard'));
+          })
+          .catch(() => {
+            if (current === request) this.brandMark.set(brandMarkFor('standard'));
+          });
+      },
+      () => this.brandMark.set(brandMarkFor('standard')),
+    );
+    this.destroyRef.onDestroy(stop);
   }
 
   /** Pinned posts first, then the newest; updates as posts are published. */

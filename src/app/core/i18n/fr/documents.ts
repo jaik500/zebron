@@ -127,4 +127,7 @@ export const FR_DOCUMENTS: Readonly<Record<string, string>> = {
   'The whole document': 'Le document entier',
   'My document': 'Mon document',
   'Open document': 'Ouvrir le document',
+  'The document could not be renamed. Try again.': 'Le document n\'a pas pu être renommé. Réessayez.',
+  'The download could not start. Try again.': 'Le téléchargement n\'a pas pu démarrer. Réessayez.',
+  'The document could not be deleted. Try again.': 'Le document n\'a pas pu être supprimé. Réessayez.',
 };

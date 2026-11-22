@@ -184,11 +184,16 @@ const WEEKLY_GOAL_MINUTES = 60;
         }
 
         @if (showCareerCard() || signedIn()) {
-          <!-- Career path and certificates, side by side (one column on phones) -->
-          <div [class]="showCareerCard() && signedIn() ? 'mt-4 grid gap-3 md:grid-cols-2' : 'mt-4 grid gap-3'">
+          <!-- Career path and certificates: one card with two rows on phones, two cards side by side from md up -->
+          <div
+            [class]="
+              'mt-4 grid divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white md:gap-3 md:divide-y-0 md:overflow-visible md:rounded-none md:border-0 md:bg-transparent' +
+              (showCareerCard() && signedIn() ? ' md:grid-cols-2' : '')
+            "
+          >
             @if (showCareerCard()) {
               <!-- Career path: the learner's own, or an invitation to pick one (Zebron Learning only) -->
-              <section class="flex h-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:items-start" aria-labelledby="career-card-title">
+              <section class="flex h-full items-center gap-3 bg-white px-4 py-3 md:items-start md:rounded-2xl md:border md:border-slate-200 md:p-4" aria-labelledby="career-card-title">
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#007979]/10 text-[#007979]" aria-hidden="true">
                   <mat-icon>route</mat-icon>
                 </span>
@@ -236,7 +241,7 @@ const WEEKLY_GOAL_MINUTES = 60;
               <!-- Certificates (was its own tab) -->
               <a
                 [routerLink]="context.basePath + '/certificates'"
-                class="flex h-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-[#007979]/40 hover:shadow-sm md:items-start"
+                class="flex h-full items-center gap-3 bg-white px-4 py-3 transition hover:bg-slate-50 md:items-start md:rounded-2xl md:border md:border-slate-200 md:p-4 md:hover:border-[#007979]/40 md:hover:bg-white md:hover:shadow-sm"
               >
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600" aria-hidden="true">
                   <mat-icon>workspace_premium</mat-icon>

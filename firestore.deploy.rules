@@ -3537,6 +3537,44 @@ match /systemSettings/{settingKey} {
 allow get, list: if true;
 allow create, update, delete: if isPlatformAdmin();
 }
+function isValidHomeLook(lookId, data) {
+return data.keys().hasOnly([
+"label", "occasion", "description", "imageUrl", "imagePath", "placement", "circle", "letter",
+"createdAt", "createdBy", "updatedAt", "updatedBy"
+])
+&& data.label is string && data.label.size() > 0 && data.label.size() <= 40
+&& data.occasion is string && data.occasion.size() <= 60
+&& data.description is string && data.description.size() <= 200
+&& data.imageUrl is string && data.imageUrl.size() <= 2000
+&& data.imageUrl.matches('^https://firebasestorage[.]googleapis[.]com/.+')
+&& data.imagePath is string
+&& data.imagePath.matches('^home-looks/' + lookId + '/[^/]{1,120}$')
+&& data.placement is map
+&& data.placement.keys().hasOnly(["size", "x", "y", "rotate"])
+&& data.placement.keys().hasAll(["size", "x", "y", "rotate"])
+&& data.placement.size is number && data.placement.size >= 0.2 && data.placement.size <= 1.6
+&& data.placement.x is number && data.placement.x >= -0.8 && data.placement.x <= 0.8
+&& data.placement.y is number && data.placement.y >= -0.6 && data.placement.y <= 0.8
+&& data.placement.rotate is number && data.placement.rotate >= -60 && data.placement.rotate <= 60
+&& data.circle in ["standard", "ornament"]
+&& data.get("letter", "standard") in ["standard", "sparkler", "paper-cut"];
+}
+match /homeLooks/{lookId} {
+allow get, list: if true;
+allow create: if isPlatformAdmin()
+&& isValidHomeLook(lookId, request.resource.data)
+&& request.resource.data.createdAt == request.time
+&& request.resource.data.createdBy == request.auth.uid
+&& request.resource.data.updatedAt == request.time
+&& request.resource.data.updatedBy == request.auth.uid;
+allow update: if isPlatformAdmin()
+&& isValidHomeLook(lookId, request.resource.data)
+&& request.resource.data.createdAt == resource.data.createdAt
+&& request.resource.data.createdBy == resource.data.createdBy
+&& request.resource.data.updatedAt == request.time
+&& request.resource.data.updatedBy == request.auth.uid;
+allow delete: if isPlatformAdmin();
+}
 function isValidAdminLink(data) {
 return data.label is string
 && data.label.size() > 0

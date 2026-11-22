@@ -197,6 +197,8 @@ export class AnnotationToolbarComponent {
   private readonly service = this.store ? null : inject(AnnotationService);
   private readonly toast = inject(HotToastService);
   private readonly i18n = inject(I18nService);
+  /** In My documents (a store is provided) every message has a close button. */
+  private readonly toastOptions = this.store ? { dismissible: true, closeLabel: this.i18n.t('Close') } : undefined;
   private readonly logger = inject(LoggerService);
   private readonly injector = inject(Injector);
 
@@ -401,12 +403,12 @@ export class AnnotationToolbarComponent {
     await this.run(async () => {
       if (editing) {
         await this.source().setNote(editing.id, note);
-        this.toast.success(this.i18n.t(note ? 'Note saved.' : 'Note removed.'));
+        this.toast.success(this.i18n.t(note ? 'Note saved.' : 'Note removed.'), this.toastOptions);
       } else if (pending && note && (lesson || this.store)) {
         if (this.store) await this.store.add(pending.blockIndex, pending.anchor, null, note);
         else if (lesson) await this.service!.add(lesson, pending.blockIndex, pending.anchor, null, note);
         document.getSelection()?.removeAllRanges();
-        this.toast.success(this.i18n.t('Note saved.'));
+        this.toast.success(this.i18n.t('Note saved.'), this.toastOptions);
       }
       this.reset();
     });
@@ -417,10 +419,10 @@ export class AnnotationToolbarComponent {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-      this.toast.success(this.i18n.t('Copied.'));
+      this.toast.success(this.i18n.t('Copied.'), this.toastOptions);
     } catch {
       // Older browsers or no permission: the browser's own copy still works.
-      this.toast.error(this.i18n.t('Could not copy. Press Ctrl+C (Cmd+C on a Mac) instead.'));
+      this.toast.error(this.i18n.t('Could not copy. Press Ctrl+C (Cmd+C on a Mac) instead.'), this.toastOptions);
     }
   }
 
@@ -429,7 +431,7 @@ export class AnnotationToolbarComponent {
     if (!editing) return;
     await this.run(async () => {
       await this.source().remove(editing.id);
-      this.toast.success(this.i18n.t(editing.color ? 'Highlight removed.' : 'Note removed.'));
+      this.toast.success(this.i18n.t(editing.color ? 'Highlight removed.' : 'Note removed.'), this.toastOptions);
       this.reset();
     });
   }
@@ -455,7 +457,7 @@ export class AnnotationToolbarComponent {
       await action();
     } catch (error) {
       this.logger.error('AnnotationToolbar', 'Could not save the highlight or note.', error);
-      this.toast.error(this.i18n.t('Could not save. Check your connection and try again.'));
+      this.toast.error(this.i18n.t('Could not save. Check your connection and try again.'), this.toastOptions);
     } finally {
       this.saving.set(false);
     }

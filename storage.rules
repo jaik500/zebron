@@ -176,6 +176,22 @@ service firebase.storage {
       allow delete: if isPlatformAdmin();
     }
 
+    // ------------------------------------------------------------
+    // HOME PAGE LOOKS (Admin -> Home page look builder)
+    // ------------------------------------------------------------
+    // The picture placed on the "e" in the Zebron name: anyone can see
+    // it (the home page shows it), platform administrators upload PNG,
+    // WebP or SVG pictures up to 1 MB. Never replaced, only added.
+    match /home-looks/{lookId}/{fileName} {
+      allow read: if true;
+      allow create: if isPlatformAdmin()
+        && request.resource.size > 0
+        && request.resource.size <= 1024 * 1024
+        && request.resource.contentType.matches('image/(png|webp|svg[+]xml)');
+      allow update: if false;
+      allow delete: if isPlatformAdmin();
+    }
+
     // An organization's posts: its members can see the pictures, its
     // staff and above (who write posts) upload them, managers remove them.
     match /organizations/{organizationId}/blog-images/{fileName} {

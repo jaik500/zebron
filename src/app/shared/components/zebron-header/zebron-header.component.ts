@@ -70,6 +70,8 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { firestore } from '../../../core/services/firebase-config';
 import { PartnerOrganizationContextService } from '../../../core/services/partner-organization-context.service';
 import { PwaService } from '../../../core/services/pwa.service';
+import { BackNavigationService } from '../../../core/services/back-navigation.service';
+import { LocalizationService } from '../../../core/services/localization.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
  
 @Component({
@@ -130,6 +132,22 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           "
         >
  
+          <!-- =================================================
+               BACK (installed app and phones; BackNavigationService)
+               ================================================= -->
+
+          @if (back.visible()) {
+            <button
+              type="button"
+              class="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition hover:bg-white/10 focus:outline-none focus-visible:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60"
+              [attr.aria-label]="'Back' | t"
+              [title]="'Back' | t"
+              (click)="back.back()"
+            >
+              <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">arrow_back</mat-icon>
+            </button>
+          }
+
           <!-- =================================================
                ZEBRON BRAND
                ================================================= -->
@@ -338,7 +356,10 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
                  LANGUAGE SWITCHER
                  ================================================= -->
  
-            <app-language-switcher />
+            <!-- Phones and tablets: signed-in people choose the language in the menu (below). -->
+            <div [class]="isSignedIn() ? 'hidden lg:block' : 'block'">
+              <app-language-switcher />
+            </div>
  
  
             <!-- =================================================
@@ -489,6 +510,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
  
     <mat-menu
       #mobileNavigationMenu="matMenu"
+      (closed)="languageOpen.set(false)"
       class="!min-w-[210px]"
     >
  
@@ -524,6 +546,48 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
       <mat-divider></mat-divider>
 
+      <!-- Language: a dropdown inside the menu (the top-bar button is hidden here on phones and tablets). -->
+      <button
+        mat-menu-item
+        type="button"
+        class="!h-9 !min-h-9"
+        [attr.aria-expanded]="languageOpen()"
+        (click)="$event.stopPropagation(); languageOpen.set(!languageOpen())"
+      >
+        <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">translate</mat-icon>
+        <span class="flex w-full items-center gap-2 text-sm">
+          <span>{{ 'Language' | t }}</span>
+          <span class="ml-auto font-semibold text-[#007979]">{{ localization.currentLanguage().nativeName }}</span>
+          <mat-icon class="!m-0 !h-[18px] !w-[18px] !text-[18px] text-gray-500">{{ languageOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </span>
+      </button>
+      @if (languageOpen()) {
+        <div class="bg-gray-50" role="group" [attr.aria-label]="'Language' | t">
+          @for (language of localization.languages(); track language.code) {
+            @let selected = language.code === localization.language();
+            <button
+              mat-menu-item
+              type="button"
+              class="!h-9 !min-h-9 !pl-11"
+              [disabled]="!language.enabled"
+              [attr.aria-current]="selected ? 'true' : null"
+              (click)="chooseLanguage(language.code)"
+            >
+              <span class="flex w-full items-center gap-2 text-sm">
+                <span [class]="selected ? 'font-semibold text-[#007979]' : 'text-gray-900'">{{ language.nativeName }}</span>
+                @if (!language.enabled) {
+                  <span class="ml-auto rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-semibold text-gray-500">{{ 'Soon' | t }}</span>
+                } @else if (selected) {
+                  <mat-icon class="!m-0 !ml-auto !h-[18px] !w-[18px] !text-[18px] !text-[#007979]" aria-hidden="true">check</mat-icon>
+                }
+              </span>
+            </button>
+          }
+        </div>
+      }
+
+      <mat-divider></mat-divider>
+
       <!-- Installable app (PwaService): shown when this browser can install Zebron. -->
       @if (pwa.canInstall()) {
         <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="pwa.install()">
@@ -543,11 +607,15 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
           title="View your profile"
         >
           @if (photoUrl(); as photo) {
-            <img [src]="photo" alt="" class="mr-2 h-[18px] w-[18px] rounded-full object-cover" referrerpolicy="no-referrer" />
+            <!-- Photo and name on one line (a picture isn't a mat-icon, so it shares the text slot). -->
+            <span class="flex min-w-0 items-center gap-2">
+              <img [src]="photo" alt="" class="h-6 w-6 shrink-0 rounded-full object-cover" referrerpolicy="no-referrer" />
+              <span class="min-w-0 max-w-48 truncate text-sm font-semibold">{{ accountName() }}</span>
+            </span>
           } @else {
             <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">account_circle</mat-icon>
+            <span class="block max-w-48 truncate text-sm font-semibold">{{ accountName() }}</span>
           }
-          <span class="block max-w-48 truncate text-sm font-semibold">{{ accountName() }}</span>
         </button>
         <button mat-menu-item type="button" class="!h-9 !min-h-9" (click)="navigateTo('/notifications')">
           <mat-icon class="!mr-2 !h-[18px] !w-[18px] !text-[18px]">notifications</mat-icon>
@@ -616,6 +684,18 @@ export class ZebronHeaderComponent {
 
   /** Install the Zebron app (menu item). */
   protected readonly pwa = inject(PwaService);
+
+  /** The back arrow before the logo. */
+  protected readonly back = inject(BackNavigationService);
+
+  /** Language in the menu (phones and tablets). */
+  protected readonly localization = inject(LocalizationService);
+  protected readonly languageOpen = signal(false);
+
+  protected chooseLanguage(code: string): void {
+    this.languageOpen.set(false);
+    if (this.localization.isLanguageEnabled(code)) this.localization.setLanguage(code);
+  }
  
   private readonly destroyRef =
     inject(DestroyRef);

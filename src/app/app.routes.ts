@@ -1518,6 +1518,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/pages/resource-types/resource-type-admin.component').then((m) => m.ResourceTypeAdminComponent),
     },
     // -----------------------------------------------------
+    // ADMIN HOME PAGE LOOK (gallery of "e" decorations)
+    // -----------------------------------------------------
+    {
+        path: 'admin/appearance',
+        canActivate: [adminGuard],
+        data: {
+            title: 'Admin | Home page look',
+            header: 'Home page look',
+        },
+        loadComponent: () => import('./features/admin/pages/appearance/home-look-admin.component').then((m) => m.HomeLookAdminComponent),
+    },
+    // -----------------------------------------------------
     // ADMIN AI AND CONTENT CHECKS
     // -----------------------------------------------------
     {

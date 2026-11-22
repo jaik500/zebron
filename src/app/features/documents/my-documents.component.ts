@@ -78,11 +78,14 @@ const FORMAT_COLORS: Record<string, { background: string; color: string }> = {
           <input #fileInput type="file" class="hidden" multiple [accept]="accepted" (change)="onPicked($event)" />
         </div>
 
-        @if (!offline.online()) {
-          <p class="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+        @if (!offline.online() && !offlineNoticeClosed()) {
+          <div class="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="status">
             <mat-icon class="shrink-0 text-amber-700" aria-hidden="true">cloud_off</mat-icon>
             <span>{{ 'You are offline. Documents kept on this device can still be read; adding, renaming and deleting need a connection.' | t }}</span>
-          </p>
+            <button type="button" class="-my-1 -mr-1 ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]" [attr.aria-label]="'Close' | t" [title]="'Close' | t" (click)="offlineNoticeClosed.set(true)">
+              <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">close</mat-icon>
+            </button>
+          </div>
         }
 
         <!-- Drop zone -->
@@ -115,13 +118,18 @@ const FORMAT_COLORS: Record<string, { background: string; color: string }> = {
               <li class="rounded-xl border border-slate-200 bg-white p-3">
                 <div class="flex items-center justify-between gap-3 text-sm">
                   <span class="min-w-0 truncate font-medium text-slate-800">{{ row.name }}</span>
-                  <span class="shrink-0 text-xs" [style.color]="row.status === 'error' ? '#be123c' : '#475569'">
+                  <span class="flex shrink-0 items-center gap-1 text-xs" [style.color]="row.status === 'error' ? '#be123c' : '#475569'">
                     @if (row.status === 'uploading') {
                       {{ row.percent }}%
                     } @else if (row.status === 'done') {
                       {{ 'Added' | t }}
                     } @else {
                       {{ row.message | t }}
+                    }
+                    @if (row.status !== 'uploading') {
+                      <button type="button" class="-my-1 -mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]" [attr.aria-label]="'Close' | t" [title]="'Close' | t" (click)="dismissUpload(row.key)">
+                        <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">close</mat-icon>
+                      </button>
                     }
                   </span>
                 </div>
@@ -136,7 +144,12 @@ const FORMAT_COLORS: Record<string, { background: string; color: string }> = {
         }
 
         @if (loadError()) {
-          <p class="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">{{ loadError() | t }}</p>
+          <div class="mt-6 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">
+            <span>{{ loadError() | t }}</span>
+            <button type="button" class="-my-1 -mr-1 ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007979]" [attr.aria-label]="'Close' | t" [title]="'Close' | t" (click)="loadError.set('')">
+              <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">close</mat-icon>
+            </button>
+          </div>
         } @else if (!service.loaded()) {
           <p class="mt-8 text-center text-sm text-slate-500" role="status">{{ 'Loading your documents...' | t }}</p>
         } @else if (!service.documents().length) {
@@ -261,6 +274,10 @@ export class MyDocumentsComponent {
   protected readonly keeping = signal<ReadonlySet<string>>(new Set());
   /** Offline: the list shows only documents kept on this device. */
   private readonly showingKept = signal(false);
+  /** The offline notice was closed; it shows again the next time the connection drops. */
+  protected readonly offlineNoticeClosed = signal(false);
+  /** Every message here has a close button. */
+  private readonly toastOptions = { dismissible: true, closeLabel: this.i18n.t('Close') };
 
   protected readonly context = courseContextFromRoute(this.route);
   protected readonly canManage = computed(() => this.access.canManage(this.context));
@@ -285,6 +302,10 @@ export class MyDocumentsComponent {
     // Back online after showing only the kept documents: load the full list.
     effect(() => {
       if (this.offline.online() && this.showingKept()) untracked(() => void this.loadList());
+    });
+
+    effect(() => {
+      if (this.offline.online()) this.offlineNoticeClosed.set(false);
     });
   }
 
@@ -320,11 +341,11 @@ export class MyDocumentsComponent {
         listDocumentAnnotations(uid, item.id).catch(() => []),
       ]);
       const kept = await this.offline.keep(uid, item, bytes, annotations);
-      if (kept) this.toast.success(this.i18n.t('"{0}" is kept on this device.', [item.title]));
-      else this.toast.error(this.i18n.t('This device has no room to keep "{0}".', [item.title]));
+      if (kept) this.toast.success(this.i18n.t('"{0}" is kept on this device.', [item.title]), this.toastOptions);
+      else this.toast.error(this.i18n.t('This device has no room to keep "{0}".', [item.title]), this.toastOptions);
     } catch (error) {
       this.logger.error('MyDocuments', 'Could not keep the document on this device.', error);
-      this.toast.error(this.i18n.t('Could not save the document to this device. Try again.'));
+      this.toast.error(this.i18n.t('Could not save the document to this device. Try again.'), this.toastOptions);
     } finally {
       this.keeping.update((ids) => {
         const next = new Set(ids);
@@ -338,7 +359,7 @@ export class MyDocumentsComponent {
     const uid = this.auth.firebaseUser()?.uid;
     if (!uid) return;
     await this.offline.remove(uid, item.id);
-    this.toast.success(this.i18n.t('Removed from this device. It is still in your documents.'));
+    this.toast.success(this.i18n.t('Removed from this device. It is still in your documents.'), this.toastOptions);
   }
 
   protected info(item: UserDocument) {
@@ -394,6 +415,10 @@ export class MyDocumentsComponent {
     }
   }
 
+  protected dismissUpload(key: number): void {
+    this.uploads.update((rows) => rows.filter((row) => row.key !== key));
+  }
+
   private reasonText(reason: string): string {
     switch (reason) {
       case 'format':
@@ -427,6 +452,7 @@ export class MyDocumentsComponent {
       await this.service.rename(item.id, title);
     } catch (error) {
       this.logger.error('MyDocuments', 'Rename failed.', error);
+      this.toast.error(this.i18n.t('The document could not be renamed. Try again.'), this.toastOptions);
     }
   }
 
@@ -435,6 +461,7 @@ export class MyDocumentsComponent {
       window.open(await this.service.downloadUrl(item), '_blank', 'noopener');
     } catch (error) {
       this.logger.error('MyDocuments', 'Could not get the download link.', error);
+      this.toast.error(this.i18n.t('The download could not start. Try again.'), this.toastOptions);
     }
   }
 
@@ -450,6 +477,7 @@ export class MyDocumentsComponent {
       await this.service.remove(item);
     } catch (error) {
       this.logger.error('MyDocuments', 'Delete failed.', error);
+      this.toast.error(this.i18n.t('The document could not be deleted. Try again.'), this.toastOptions);
     }
   }
 }

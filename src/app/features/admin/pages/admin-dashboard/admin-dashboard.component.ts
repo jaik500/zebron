@@ -1090,6 +1090,14 @@ export class AdminDashboardComponent {
     },
 
     {
+      title: 'Home page look',
+      description: 'Dress up the "e" in the Zebron name for the season: Santa hat, party hat, graduation cap or the standard look.',
+      route: '/admin/appearance',
+      actionLabel: 'Choose a look',
+      icon: 'category',
+    },
+
+    {
       title: 'AI and content checks',
       description: 'AI usage and limits, plus weekly checks for broken links, out-of-date listings and duplicates.',
       route: '/admin/ai-content',

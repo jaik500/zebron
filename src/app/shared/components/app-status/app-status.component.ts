@@ -21,12 +21,15 @@ import { PwaService } from '../../../core/services/pwa.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="pointer-events-none fixed inset-x-3 top-[72px] z-40 flex flex-col items-center gap-2 sm:inset-x-auto sm:bottom-5 sm:left-5 sm:top-auto sm:items-start" aria-live="polite">
-      @if (pwa.needsReload() || pwa.updateReady()) {
+      @if ((pwa.needsReload() || pwa.updateReady()) && !updateClosed()) {
         <div class="pointer-events-auto flex max-w-md items-center gap-3 rounded-2xl bg-[#032D42] py-2 pl-4 pr-2 text-sm text-white shadow-lg" role="status">
           <mat-icon class="shrink-0 text-amber-300" aria-hidden="true">system_update</mat-icon>
           <span>{{ (pwa.needsReload() ? 'Zebron needs to reload to keep working.' : 'A new version of Zebron is ready.') | t }}</span>
           <button type="button" class="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#032D42] hover:bg-teal-50" (click)="pwa.reload()">
             {{ 'Reload' | t }}
+          </button>
+          <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" [attr.aria-label]="'Close' | t" [title]="'Close' | t" (click)="updateClosed.set(true)">
+            <mat-icon class="!h-5 !w-5 !text-[20px]" aria-hidden="true">close</mat-icon>
           </button>
         </div>
       }
@@ -48,6 +51,9 @@ import { PwaService } from '../../../core/services/pwa.service';
 export class AppStatusComponent {
   protected readonly pwa = inject(PwaService);
   protected readonly connectivity = inject(ConnectivityService);
+
+  /** Closed: the new version is then used the next time Zebron opens. */
+  protected readonly updateClosed = signal(false);
 
   /** Closed for this time offline; shown again the next time the connection drops. */
   protected readonly offlineDismissed = signal(false);

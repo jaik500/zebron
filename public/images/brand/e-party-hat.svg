@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="82 72 176 140">
+<defs><clipPath id="cone"><path d="M112 160 L168 88 L196 158 Q 154 172 112 160 Z"/></clipPath></defs>
+<path d="M112 160 L168 88 L196 158 Q 154 172 112 160 Z" fill="#7F77DD"/>
+<g clip-path="url(#cone)" fill="#FAC775">
+<path d="M100 150 L210 118 L210 128 L100 160 Z"/><path d="M100 122 L210 90 L210 100 L100 132 Z"/><path d="M100 94 L210 62 L210 72 L100 104 Z"/>
+</g>
+<g clip-path="url(#cone)" fill="#5DCAA5"><circle cx="140" cy="140" r="3.5"/><circle cx="170" cy="112" r="3.5"/><circle cx="160" cy="146" r="3"/><circle cx="152" cy="118" r="3"/></g>
+<path d="M112 160 L168 88 L196 158 Q 154 172 112 160 Z" fill="none" stroke="#3B1A1A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M106 158 Q 154 176 202 156" fill="none" stroke="#FAC775" stroke-width="9" stroke-linecap="round"/>
+<path d="M106 158 Q 154 176 202 156" fill="none" stroke="#3B1A1A" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+<g stroke="#EF9F27" stroke-width="3" stroke-linecap="round"><line x1="168" y1="88" x2="160" y2="90"/><line x1="168" y1="88" x2="176" y2="92"/></g>
+<circle cx="168" cy="86" r="9" fill="#EF9F27" stroke="#3B1A1A" stroke-width="2.5"/>
+</svg>
